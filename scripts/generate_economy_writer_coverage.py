@@ -267,7 +267,11 @@ MIXED_SCHEMA1_IDS = {
     "crafting.recipe", "crafting.forge", "crafting.smith", "crafting.refine",
     "crafting.epic_store", "kingdom.store_purchase", "kingdom.store_refund",
 }
-SCHEMA2_ITEM_TRANSFER_IDS = {
+SCHEMA2_CRAFT_IDS = {
+    "item.poison_mix", "item.encrust_transform", "item.encrust_failure_destroy",
+    "class.drannak_pvp_store", "item.craft_submit",
+}
+SCHEMA2_ITEM_TRANSFER_IDS = SCHEMA2_CRAFT_IDS | {
     "item.command_movement", "item.bulk_movement", "item.movement_submit",
     "item.trusted_steal", "item.creation_completion",
     "death.corpse_creation", "death.resurrection_publication",
@@ -623,6 +627,14 @@ def schema_record(route_id: str, disposition: str) -> dict:
             "tests/async/test_shop_trade_accounting_context.py (focused contract; not a full player journey)",
         ])
     schema2_connected = route_id in SCHEMA2_ITEM_TRANSFER_IDS or route_id == "currency.split"
+    if route_id in SCHEMA2_CRAFT_IDS:
+        evidence.extend([
+            "src/item/item_movement_transaction.c:item_movement_transaction_submit_craft (prepare crafting intent before retained coordinator admission)",
+            "src/economy/item_transfer_accounting.c:item_transfer_craft_accounting_effects (exact consumed inputs, output admissions and consumed-input source lifetime)",
+            "tests/async/item_transfer_mysql_harness.cpp:check_accounted_craft_conservation (both native SQL engines, references, replay, rejection and zero-output failure)",
+            "tests/async/flatfile_craft_conservation_harness.cpp (native authority commit, exact replay and separate-process interrupted recovery)",
+            "tests/async/test_publication_retention_runtime.py (active craft held for original actor and output restoration)",
+        ])
     item_action_coverage = (
         " and spell creation/component consumption, sticks-to-snakes retirement, and key-break retirement"
         if route_id == "item.movement_submit" else ""
@@ -761,8 +773,10 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
     if disposition == "non_writer_candidate":
         decision = "not_a_playable_economy_or_custody_writer"
         policy = NON_WRITERS[route_id]
-    elif route_id in {"item.poison_mix", "item.encrust_transform", "item.encrust_failure_destroy",
-                      "class.drannak_pvp_store", "item.craft_submit", "item.npc_alchemist_vial_grant"}:
+    elif route_id in SCHEMA2_CRAFT_IDS:
+        decision = "block_until_active_craft_journeys"
+        policy = "Physical crafts use the typed schema-2 owner, consumed-input crafting source, exact native retirement/admission and linked references on SQL and flatfile. Native component, replay, rollback and held-publication proofs pass; qualify complete active-epoch server journeys before release. Virtual pouch usage remains unsupported until its counter and UID state share the craft operation."
+    elif route_id == "item.npc_alchemist_vial_grant":
         decision = "refuse_before_allocation_until_native_source_and_root_exist"
         policy = "Active authority refuses at gameplay entry before recipe RNG, wait, UID allocation or mutation. Crafting needs a native schema-2 root with exact input/output references; automatic vial issuance needs a durable zone spawn/source identity. The inactive legacy receipt or fresh-spawn marker does not satisfy those obligations."
     elif route_id == "currency.split":
@@ -849,7 +863,7 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
             policy += " Prove the NPC is provisional before this assignment or preserve its admitted source/sink and revision in one root; existing charm targets and pet restoration cannot be assumed fresh."
         if route_id.startswith("auction."):
             policy += " Keep accepted escrow, seller claim/proceeds, fee and item winner/return custody under the same auction root; no implicit reimbursement."
-    return {"decision": decision, "must_block_on_activation": decision in {"refuse_before_allocation_until_native_source_and_root_exist", "block_until_typed_schema2_accounting", "block_until_projection_proof", "keep_unreachable_or_block_if_reactivated", "sql_component_requires_qualified_root"}, "required_policy": policy}
+    return {"decision": decision, "must_block_on_activation": decision in {"block_until_active_craft_journeys", "refuse_before_allocation_until_native_source_and_root_exist", "block_until_typed_schema2_accounting", "block_until_projection_proof", "keep_unreachable_or_block_if_reactivated", "sql_component_requires_qualified_root"}, "required_policy": policy}
 
 
 def build() -> dict:

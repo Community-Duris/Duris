@@ -16,4 +16,12 @@ economic_accounting_error item_transfer_accounting_intent(
 	economic_source_kind lifecycle_source = {});
 bool item_transfer_accounting_command_supported(const critical_command &command) noexcept;
 
+// Resolve one frozen craft against its locked input custody. Outputs start
+// absent; every input retirement and output admission uses the native ledger's
+// event ordering. Only effect vectors are replaced in the caller's plan.
+economic_accounting_error
+item_transfer_craft_accounting_effects(const item_transfer_payload &payload,
+				       std::span<const economic_item_snapshot> inputs,
+				       economic_accounting_plan *plan);
+
 #endif

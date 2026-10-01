@@ -557,14 +557,6 @@ char *print_poison_ingredients(int ingredients[])
 
 void do_mixpoison(P_char ch, char *argument, int /*cmd*/)
 {
-	if (economic_gameplay_authority::active())
-	{
-		send_to_char(
-			"Poison crafting is unavailable under active economic accounting; your ingredients were preserved.\r\n",
-			ch);
-		return;
-	}
-
 	P_obj vial;
 	char arg[MAX_STRING_LENGTH];
 	int i;
@@ -887,14 +879,6 @@ void do_spellbind(P_char ch, char *argument, int /*cmd*/)
 
 void do_encrust(P_char ch, char *argument, int /*cmd*/)
 {
-	if (economic_gameplay_authority::active())
-	{
-		send_to_char(
-			"Encrust is unavailable under active economic accounting; your item and jewel were preserved.\r\n",
-			ch);
-		return;
-	}
-
 	char arg[MAX_STRING_LENGTH];
 	char arg2[MAX_STRING_LENGTH];
 	char buf1[MAX_STRING_LENGTH];

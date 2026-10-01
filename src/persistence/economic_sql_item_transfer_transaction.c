@@ -483,9 +483,13 @@ unsigned int economic_sql_item_transfer_verify_retained(MYSQL *connection,
 		    static_cast<uint64_t>(intent.admission.metadata.source_event.has_value()))
 			return EILSEQ;
 		item_transfer_result retained_result = {};
+		item_transfer_payload payload = {};
 		if (!item_transfer_command_decode_result(result_payload, result_size,
 							 &retained_result) ||
-		    retained_result.item_count != event_count)
+		    !item_transfer_command_decode_payload(command, &payload) ||
+		    retained_result.item_count != payload.item_count ||
+		    (payload.reason != item_transfer_reason::craft &&
+		     retained_result.item_count != event_count))
 			return EILSEQ;
 		economic_accounting_plan plan;
 		if (economic_plan_decode(std::span<const uint8_t>(reinterpret_cast<const uint8_t *>(
@@ -515,6 +519,31 @@ unsigned int economic_sql_item_transfer_verify_retained(MYSQL *connection,
 		    std::string(reinterpret_cast<const char *>(canonical_plan.data()),
 				canonical_plan.size()) != *values[6])
 			return EILSEQ;
+		if (payload.reason == item_transfer_reason::craft)
+		{
+			std::vector<economic_item_snapshot> inputs;
+			inputs.reserve(payload.item_count);
+			for (size_t index = 0; index < payload.item_count; ++index)
+			{
+				const auto found = std::find_if(
+					plan.items_before.begin(), plan.items_before.end(),
+					[&](const auto &item)
+					{ return item.uid == payload.items[index].item_uid; });
+				if (found == plan.items_before.end())
+					return EILSEQ;
+				inputs.push_back(*found);
+			}
+			economic_accounting_plan expected;
+			expected.metadata = expected_metadata;
+			std::vector<uint8_t> encoded_expected;
+			if (item_transfer_craft_accounting_effects(payload, inputs, &expected) !=
+				    economic_accounting_error::ok ||
+			    economic_plan_normalize(&expected) != economic_accounting_error::ok ||
+			    economic_plan_encode(expected, &encoded_expected) !=
+				    economic_accounting_error::ok ||
+			    encoded_expected != canonical_plan)
+				return EILSEQ;
+		}
 		for (size_t index = 0; index < plan.item_events.size(); ++index)
 		{
 			const auto &event = plan.item_events[index];

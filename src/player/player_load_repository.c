@@ -1125,7 +1125,8 @@ bool load_restitution_runtime_state(MYSQL *connection, player_load_result *resul
 	MYSQL_ROW availability_row;
 	while ((availability_row = mysql_fetch_row(availability)) != nullptr)
 	{
-		if (!availability_row[0])
+		if (!add_result_budget(availability, availability_row, result) ||
+		    !availability_row[0])
 		{
 			mysql_free_result(availability);
 			return false;

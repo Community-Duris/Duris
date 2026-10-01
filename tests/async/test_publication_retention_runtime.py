@@ -10,6 +10,7 @@ from _paths import ROOT, rel
 HARNESS = r'''
 #include "core/utils.h"
 #include "economy/economic_gameplay_authority.h"
+#include "economy/item_transfer_accounting.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "item/item_transfer_command.h"
@@ -40,6 +41,7 @@ static int craft_callbacks = 0;
 static int extractions = 0;
 static int restores = 0;
 static bool allow_restore = false;
+static bool accounting_active = false;
 static obj_data restored_output = {};
 static critical_apply_outcome forced_outcome = critical_apply_outcome::applied;
 
@@ -108,10 +110,20 @@ bool item_ownership_runtime_apply(const item_transfer_payload &, const item_tran
 bool currency_transaction_coin_item_busy(uint64_t) { return false; }
 bool spell_component_retirement_waiting_for_effect(const critical_operation_id &) { return false; }
 bool collector_transaction_item_busy(uint64_t) { return false; }
-bool economic_gameplay_authority::active() { return false; }
+bool economic_gameplay_authority::active() { return accounting_active; }
 economic_accounting_error economic_gameplay_authority::prepare_item_transfer(
-    critical_command *, uint32_t, economic_source_kind) {
-    return economic_accounting_error::ok;
+    critical_command *command, uint32_t pid, economic_source_kind source) {
+    assert(accounting_active && source == economic_source_kind::crafting);
+    critical_operation_id lineage = {}, epoch = {};
+    lineage.bytes[0] = 1; epoch.bytes[0] = 2;
+    std::vector<uint8_t> intent;
+    const auto status = item_transfer_accounting_intent(*command, lineage, epoch, pid,
+                                                       &intent, source);
+    if (status == economic_accounting_error::ok) {
+        command->schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+        command->accounting_intent = std::move(intent);
+    }
+    return status;
 }
 
 bool collector_death_enrollment_attach(P_char, P_obj, const critical_operation_id &,
@@ -139,6 +151,10 @@ critical_apply_result apply_transfer(const critical_command &command, void *)
 {
     item_transfer_payload payload = {};
     assert(item_transfer_command_decode_payload(command, &payload));
+    if (payload.reason == item_transfer_reason::craft) {
+        assert(command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION);
+        assert(item_transfer_accounting_command_supported(command));
+    }
     item_transfer_result result = {};
     result.root_item_uid = payload.selected_item_uid;
     result.item_count = payload.item_count;
@@ -204,7 +220,8 @@ int main(int argc, char **argv)
     runtime_entry.vnum = 42;
     runtime_entry.state = item_custody_state::active;
 
-    assert(critical_command_coordinator_init(argv[1], apply_transfer, nullptr, 1));
+    assert(critical_command_coordinator_init(argv[1], apply_transfer, nullptr, 1,
+                                            nullptr, nullptr, item_transfer_accounting_command_supported));
     item_movement_reject reject = item_movement_reject::none;
     const item_owner_identity destination = {item_owner_type::player, 1001, 0};
     if (!item_movement_transaction_submit(
@@ -292,6 +309,7 @@ int main(int argc, char **argv)
     object_list = &output_a;
     P_obj inputs[] = {&object};
     P_obj outputs[] = {&output_a, &output_b};
+    accounting_active = true;
     assert(item_movement_transaction_submit_craft(&actor, inputs, 1, outputs, 2,
         551, craft_callback, nullptr, 0, &reject));
     character_list = nullptr;
@@ -317,6 +335,7 @@ int main(int argc, char **argv)
     assert(item_movement_transaction_health_copy().pending == 0);
     item_movement_transaction_handle_completions(nullptr, 0);
     assert(extractions == 1 && craft_callbacks == 1);
+    accounting_active = false;
     // Restore the independent movement fixture for the uncertainty scenario.
     object.obj_uid = 5001;
     object.loc_p = LOC_CARRIED; object.loc.carrying = &actor;
@@ -360,6 +379,8 @@ with tempfile.TemporaryDirectory(prefix="duris-publication-retention-") as tempo
             "-D__NO_MYSQL__", "-pthread", "-ffunction-sections", "-fdata-sections",
             "-Isrc", "-Isrc/no_mysql", str(source),
             rel("item/item_movement_transaction.c"), rel("item/item_transfer_command.c"), rel("player_snapshot_codec.c"),
+            rel("item_transfer_accounting.c"), rel("economic_accounting_types.c"),
+            rel("economic_accounting_plan.c"), rel("economic_accounting_intent.c"),
             rel("critical_command.c"), rel("persistence/critical_command_journal.c"),
             rel("persistence/critical_command_coordinator.c"),
             "-Wl,--gc-sections", "-lz", "-lcrypto", "-o", str(binary),

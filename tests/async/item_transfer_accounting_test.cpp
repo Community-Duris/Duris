@@ -1,5 +1,7 @@
 #include "economy/item_transfer_accounting.h"
 #include "world/vnum.obj.h"
+#include "player/player_snapshot_codec.h"
+#include "core/structs.h"
 
 #include <cassert>
 #include <utility>
@@ -602,6 +604,97 @@ void corpse_custody_roots_bind_the_actor_and_exact_corpse()
 	       error::unauthorized);
 }
 
+void craft_intent_and_native_effects_share_one_root()
+{
+	const auto lineage = id(1), epoch = id(2);
+	item_transfer_payload payload = {};
+	payload.from_owner = payload.to_owner = { item_owner_type::player, 10, 0 };
+	payload.reason = item_transfer_reason::craft;
+	payload.reason_id = 551;
+	payload.expected_from_revision = payload.expected_to_revision = 3;
+	payload.selected_item_uid = 200;
+	payload.multi_root = true;
+	payload.item_count = 2;
+	payload.items[0] = { 100, 100, 0, 2, 9001, item_custody_state::active };
+	payload.items[1] = { 101, 100, 100, 4, 9002, item_custody_state::active };
+	player_item_snapshot output = {};
+	output.object_uid = 200;
+	output.vnum = 9003;
+	output.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	output.equipment_slot = -1;
+	player_item_snapshot child = output;
+	child.object_uid = 201;
+	child.parent_index = 0;
+	auto encode_outputs = [&](const std::vector<player_item_snapshot> &items)
+	{
+		std::vector<uint8_t> bytes;
+		assert(player_item_snapshot_list_encode(items, &bytes) ==
+		       player_snapshot_codec_result::ok);
+		payload.item_blob_size = bytes.size();
+		std::copy(bytes.begin(), bytes.end(), payload.item_blob.begin());
+	};
+	encode_outputs({ output, child });
+	auto command = [&]
+	{
+		critical_command result = {};
+		assert(item_transfer_command_build(&result, id(3), payload,
+						   critical_source_site::command,
+						   critical_deadline_class::interactive));
+		return result;
+	};
+	auto admitted = command();
+	std::vector<uint8_t> encoded;
+	assert(item_transfer_accounting_intent(admitted, lineage, epoch, 10, &encoded,
+					       economic_source_kind::crafting) == error::ok);
+	assert(item_transfer_accounting_intent(admitted, lineage, epoch, 11, &encoded,
+					       economic_source_kind::crafting) ==
+	       error::unauthorized);
+	assert(item_transfer_accounting_intent(admitted, lineage, epoch, 10, &encoded,
+					       economic_source_kind::item_action) ==
+	       error::unauthorized);
+	assert(item_transfer_accounting_intent(admitted, lineage, epoch, 10, &encoded,
+					       economic_source_kind::crafting) == error::ok);
+	admitted.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	admitted.accounting_intent = encoded;
+	assert(item_transfer_accounting_command_supported(admitted));
+	economic_frozen_intent intent;
+	assert(economic_intent_decode(encoded, &intent) == error::ok);
+	assert(intent.admission.metadata.reason == economic_reason::crafting_cost);
+	assert(intent.admission.metadata.source_event->sequence == 100);
+	std::vector<economic_item_snapshot> inputs = {
+		{ 100, { payload.from_owner, 100, 0, 2, item_custody_state::active, 7 } },
+		{ 101, { payload.from_owner, 100, 100, 4, item_custody_state::active } }
+	};
+	economic_accounting_plan plan;
+	assert(economic_intent_plan_metadata(admitted, intent, &plan.metadata) == error::ok);
+	assert(item_transfer_craft_accounting_effects(payload, inputs, &plan) == error::ok);
+	assert(plan.item_events.size() == 4 && plan.items_before.size() == 4);
+	assert(plan.item_events[0].after.state == item_custody_state::destroyed);
+	assert(plan.item_events[0].before.equipment_slot == 7 &&
+	       plan.item_events[0].after.equipment_slot == 0);
+	assert(plan.item_events[1].after.parent_uid == 100);
+	assert(plan.item_events[2].before.state == item_custody_state::absent);
+	assert(plan.item_events[3].after.root_uid == 200 &&
+	       plan.item_events[3].after.parent_uid == 200);
+	assert(economic_plan_validate_structure(plan) == error::ok);
+	auto changed = inputs;
+	++changed[0].position.revision;
+	assert(item_transfer_craft_accounting_effects(payload, changed, &plan) != error::ok);
+	// Intended gameplay failure still consumes the frozen inputs, without output.
+	payload.item_blob_size = 0;
+	payload.selected_item_uid = 100;
+	assert(item_transfer_craft_accounting_effects(payload, inputs, &plan) == error::ok);
+	assert(plan.item_events.size() == 2 && plan.items_after.size() == 2);
+	// A craft cannot mint a coin payload through the custody-only owner.
+	payload.selected_item_uid = 200;
+	output.type = ITEM_MONEY;
+	encode_outputs({ output });
+	assert(item_transfer_accounting_intent(command(), lineage, epoch, 10, &encoded,
+					       economic_source_kind::crafting) ==
+	       error::unauthorized);
+	assert(item_transfer_craft_accounting_effects(payload, inputs, &plan) != error::ok);
+}
+
 int main()
 {
 	ordinary_moves_are_bound_to_actor_and_payload();
@@ -613,5 +706,6 @@ int main()
 	logical_creation_source_survives_new_uid_and_command();
 	sourced_room_creation_and_item_retirement_are_bound_to_lifecycle_events();
 	corpse_custody_roots_bind_the_actor_and_exact_corpse();
+	craft_intent_and_native_effects_share_one_root();
 	return 0;
 }
