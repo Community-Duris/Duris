@@ -477,6 +477,8 @@ bool player_save_pipeline_mark(int pid, player_component_mask_t components) {
 }
 bool capture_fails = false;
 bool refuse_enqueue = false;
+bool grant_publication_pending = false;
+bool item_creation_grant_player_publication_pending(P_char) { return grant_publication_pending; }
 player_snapshot pending, captured;
 bool quest_reward_recovery_pending_save_receipts(
     int, std::vector<player_quest_xp_receipt_snapshot> *receipts,
@@ -527,6 +529,15 @@ int main() {
     receipt.operation_id.bytes[0] = 77;
     receipt.effect_id = 6;
     pending.spell_effect_receipts.push_back(receipt);
+    assert(player_save_pipeline_mark(41, PLAYER_COMPONENT_INVENTORY));
+    player_revision_snapshot before_grant, after_grant;
+    assert(player_revision_snapshot_copy(41, &before_grant));
+    grant_publication_pending = true;
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0, &receipt) == player_save_pipeline_result::unavailable);
+    assert(player_revision_snapshot_copy(41, &after_grant));
+    assert(after_grant.dirty_components == before_grant.dirty_components);
+    assert(after_grant.queued_components == 0 && captured.pid == 0);
+    grant_publication_pending = false;
     capture_fails = true;
     assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0, &receipt) == player_save_pipeline_result::capture_failed);
     capture_fails = false;

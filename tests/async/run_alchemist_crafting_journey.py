@@ -3,6 +3,8 @@
 
 Uses the existing isolated combat journey's account, socket and world helpers.
 Requires the combined #551/#661 server and the flat-file repository inspector.
+The optional --creation-save-only mode qualifies #664 with overlapping setup
+grants and saves, then copyover, disconnect and cold reload, without crafting.
 """
 from pathlib import Path
 import os
@@ -26,7 +28,7 @@ def authored(vnum):
     raise AssertionError(f'missing authored object {vnum}')
 
 
-def run(binary, mode='file'):
+def run(binary, mode='file', creation_save_only=False):
     assert mode in ('file', 'redis')
     with tempfile.TemporaryDirectory(prefix='alchemist-crafting-journey-') as temporary:
         root = Path(temporary)
@@ -141,7 +143,7 @@ def run(binary, mode='file'):
         def command(text, duration=.5):
             # Staff fixture grants are asynchronous. Settle the preceding save
             # before starting another setup grant, then await its checkpoint.
-            if text.startswith('load obj '):
+            if text.startswith('load obj ') and not creation_save_only:
                 save_items()
             drain(client, .1)
             client.send(text)
@@ -155,7 +157,7 @@ def run(binary, mode='file'):
             if '[Return to continue' in result:
                 client.send('q')
                 drain(client)
-            if text.startswith('load obj '):
+            if text.startswith('load obj ') and not creation_save_only:
                 save_items()
             return result
 
@@ -226,6 +228,41 @@ def run(binary, mode='file'):
                 (item['uid'], item['vnum']) for item in save_items()}
             print('PASS original socket copyover retains the stolen vial and exact player item UIDs', flush=True)
             command('restore Taverek', 1)
+            if creation_save_only:
+                original = {(item['uid'], item['vnum']) for item in save_items()}
+                for cycle in range(8):
+                    # Await only the existing creation response, as in #664;
+                    # no checkpoint barrier between the two setup grants.
+                    # A simultaneous second load is intentionally refused by
+                    # the existing command busy gate, so submit it after the
+                    # first grant's publication while its save may still run.
+                    if cycle % 2:
+                        first = command('load obj 806\nsave')
+                    else:
+                        client.send('save')
+                        first = command('load obj 806')
+                    second = command('load obj 808')
+                    assert 'Save attempt failed' not in first + second, first + second
+                    items = save_items()
+                    assert len({item['uid'] for item in items}) == len(items), items
+                    assert sum(item['vnum'] == 806 for item in items) == cycle + 1, items
+                    assert sum(item['vnum'] == 808 for item in items) == cycle + 1, items
+                expected = {(item['uid'], item['vnum']) for item in items}
+                assert original <= expected and len(expected - original) == 16
+                client.send('shutdown copyover')
+                client.expect('Copyover complete!', timeout=90)
+                assert expected == {(item['uid'], item['vnum']) for item in save_items()}
+                client.send('quit')
+                client.expect('ACCOUNT MENU', timeout=30)
+                stop()
+                boot()
+                client = journey.reconnect_character(port)
+                assert expected == {(item['uid'], item['vnum']) for item in save_items()}
+                logs = full_logs()
+                assert 'active_custody_absent_from_snapshot' not in logs
+                assert 'outcome=terminal_failure' not in logs
+                print('PASS eight overlapping save/grant rounds: 16 exact new UIDs, copyover, disconnect and cold reload', flush=True)
+                return
             command('load obj 806')
             command('load obj 808')
             inputs = save_items()
@@ -330,4 +367,5 @@ def run(binary, mode='file'):
 
 
 if __name__ == '__main__':
-    run(Path(sys.argv[1]).resolve(), sys.argv[2] if len(sys.argv) > 2 else 'file')
+    run(Path(sys.argv[1]).resolve(), sys.argv[2] if len(sys.argv) > 2 else 'file',
+        '--creation-save-only' in sys.argv[3:])
