@@ -71,7 +71,14 @@ All qualification uses disposable local state or databases.
 - The rested server journey passed with automatic bonuses disabled: actual
   fixed-input melee XP was 3/4/6 for ordinary/staff rested/staff well-rested.
   Staff flag 16 survived cold reload and copyover; live toggles and menu
-  suppression passed. Final combined-port journeys are recorded in the PR.
+  suppression passed on the final combined port.
+- The final combined-port activity smoke journey verified 1,000 ordinary NPCs,
+  real copyover, live disable/enable and retained indexed population. It does
+  not claim to repeat the master performance measurement.
+- Final combined-port real combat, final-player death, corpse loot/removal and
+  cold reload passed. The intentional custody payload-gap death disposition
+  reached the account menu in about 1.0 s, retaining its evidence and value
+  checks; the format 8 injector preserves all existing operation receipts.
 - Authoritative whole-file clang-format and `git diff --check` passed. The WSL
   changed-line wrapper's NTFS temporary-checkout mode artifact has no textual
   formatting difference.
