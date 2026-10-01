@@ -654,6 +654,36 @@ int main()
 
     {
         reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        add_item(result, 1, 10, 101, PLAYER_SNAPSHOT_NO_PARENT, 0);
+        result.item_identities[0].override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME;
+        result.snapshot.items[0].timers[1] = 44;
+        result.snapshot.items[0].anti_flags = 5;
+        result.snapshot.items[0].anti2_flags = 6;
+        result.snapshot.items[0].extra2_flags = 7;
+        result.snapshot.items[0].craftsmanship = 8;
+        player_load_item_materialize_metrics metrics = {};
+        result.snapshot.items[0].dynamic_affects.push_back({1, 2, 3});
+        assert(player_load_items_materialize(&owner.character, result, &metrics));
+        assert(owner.character.carrying->timer[1] == 44);
+        assert(owner.character.carrying->anti_flags == 5);
+        assert(owner.character.carrying->anti2_flags == 6);
+        assert(owner.character.carrying->extra2_flags == 7);
+        assert(owner.character.carrying->craftsmanship == 8);
+        assert(owner.character.carrying->affects &&
+               owner.character.carrying->affects->type == 1 &&
+               owner.character.carrying->affects->data == 2 &&
+               owner.character.carrying->affects->extra2 == 3);
+        item_ownership_runtime_entry entry = {};
+        assert(item_ownership_runtime_lookup(10, &entry));
+        assert(item_owner_identity_equal(entry.owner, {item_owner_type::player, 42, 0}));
+        assert(metrics.outcome == player_load_item_materialize_outcome::applied);
+        release_tree(owner.character.carrying);
+    }
+
+    {
+        reset_test_state();
         player_load_result result = base_result();
         add_item(result, 1, 30, 100, PLAYER_SNAPSHOT_NO_PARENT, -1);
         add_item(result, 2, 31, 101, 0, -1);
