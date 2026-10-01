@@ -19,17 +19,20 @@ MYSQL=(mysql "${MYSQL_SSL[@]}" -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/shopkeeper_item_owner.sql"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/collector_item_owner.sql"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0045_quest_reward_obligation.sql"
+"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0051_player_item_runtime_state.sql"
 DB_NAME="$DB_NAME" "$ROOT/migrations/verify_collector_item_owner.sh"
 DB_NAME="$DB_NAME" "$ROOT/migrations/verify_item_ownership_schema.sh"
 export ITEM_TRANSFER_TEST_DB_NAME="$DB_NAME"
 mkdir -p "$ROOT/bin/tests"
 read -r -a MYSQL_CFLAGS <<< "$(mysql_config --cflags)"
 read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
-g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
+g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fdata-sections -Isrc \
     "${MYSQL_CFLAGS[@]}" tests/async/item_transfer_mysql_harness.cpp \
+    tests/async/item_extra_descr_codec_sql_escape_stub.cpp \
     src/persistence/critical_command.c src/world/epic_command.c src/economy/currency_command.c \
     src/item/item_transfer_command.c src/item/item_transfer_repository.c \
     src/item/economic_accounting_item_reference.c \
+    src/sql/item_extra_descr_codec.c \
 	 src/economy/auction_command.c src/economy/auction_repository.c \
     src/combat/combat_outcome_command.c src/combat/combat_outcome_repository.c \
 	 src/guild/artifact_guild_command.c src/guild/artifact_guild_repository.c \
@@ -46,6 +49,10 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/persistence/corpse_lifecycle_command.c src/persistence/corpse_lifecycle_repository.c \
     src/persistence/player_death_restitution_command.c \
     src/persistence/player_death_restitution_repository.c \
+    src/player/player_snapshot_repository.c src/player/player_load_repository.c \
+    src/player/player_death_recovery_query.c src/player/player_death_conflict_repository.c \
+    src/player/player_save_journal.c \
+    src/player/player_load_topology.c src/persistence/persistence_observability.c \
     src/persistence/economic_accounting_repository.c \
     src/persistence/economic_sql_bank_transaction.c \
     src/persistence/economic_sql_item_transfer_transaction.c \
@@ -60,7 +67,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
     src/persistence/quest_reward_obligation_repository.c \
     src/persistence/critical_command_journal.c src/persistence/critical_command_coordinator.c \
-    "${MYSQL_LIBS[@]}" -lcrypto -lz \
+    -Wl,--gc-sections "${MYSQL_LIBS[@]}" -lcrypto -lz \
     -o "$ROOT/bin/tests/item_transfer_mysql_harness"
 # The accounted lifecycle fixture retains many bounded item payloads in one
 # test frame. The usual 8 MiB shell stack can overflow before its SQL checks.

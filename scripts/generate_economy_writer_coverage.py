@@ -104,7 +104,9 @@ NON_WRITERS = {
     "world.read_object_factory": "read_object instantiates a template into NOWHERE; durable item admission occurs only in a caller with a source and selected owner.",
     "world.zone_reset_stage_cleanup": "Reset branches free freshly allocated objects rejected by artifact, chance, destination or equipment checks before any live owner is assigned.",
     "item.poison_recipe_probe": "Poison recipe display reads and frees sample ingredient/vial templates without giving them to a character.",
-    "item.encrust_virtual_jewel_stage": "A Chaos pouch encrust jewel is instantiated as a temporary recipe descriptor; failed preflight frees it before live publication.",
+    "item.encrust_virtual_jewel_stage": "Virtual Chaos-pouch Encrust allocates a temporary recipe descriptor, then refuses without generated-use mutation or live item publication.",
+    "item.craft_rejected_stage_cleanup": "Frees only detached provisional craft outputs after rejection; admitted input custody is unchanged.",
+    "recovery.sql_player_runtime_rejected_stage": "Discards this failed load attempt's provisional player graph without retiring durable custody.",
     "item.fix_material_probe": "Fix reads and frees a sample material template to describe the required component; the carried component is consumed separately.",
     "artifact.cache_display_probe": "Artifact cache rendering reads and frees fresh templates for names; it never publishes their UIDs.",
     "artifact.flat_list_display_probe": "Flat-file artifact listing reads and frees fresh templates for names; loaded dummy characters are separately unloaded.",
@@ -185,6 +187,7 @@ PROJECTION_ROUTES = {
     "death.resurrection_committed_corpse_cleanup": "Publishes the already committed corpse content return, spent coin-pile cleanup and corpse retirement.",
     "item.pet_teardown_unload": "Unloads live pet objects whose durable owner row remains the pet or player; no destruction event is authorized.",
     "item.ascension_equipment_relink": "After committed ascension, worn items are moved to the same player's carrying list; no new owner event is authorized.",
+    "item.pet_hidden_equipment_relink": "Moves hidden NPC helper gear from worn to carried on the same player-owned pet, retaining its UID and child graph; no player grant or retirement is authorized. Selected-backend custody and save/publication proof remain unqualified.",
     "recovery.sql_player_item_hydration": "Restores player_items only after validating a strict positive decimal saved UID and matching the player owner before prototype allocation; unknown templates can still leave a partial inventory.",
     "recovery.sql_locker_item_hydration": "Restores locker_items only after validating a strict positive decimal saved UID and matching its locker/chest owner before prototype allocation; invalid rows are retained and skipped.",
     "recovery.sql_private_chest_hydration": "Restores a private-chest item only after validating a strict positive decimal saved UID and matching its locker/chest owner before prototype allocation, then publishes it into the chest.",
@@ -218,6 +221,9 @@ PROJECTION_ROUTES = {
 # a source-backed typed critical-command path, sometimes alongside direct legacy
 # effects. Everything else is direct/legacy, projection, or an offline tool.
 SCHEMA1_IDS = {
+    "item.poison_mix", "item.encrust_transform", "item.encrust_failure_destroy",
+    "class.drannak_pvp_store", "item.craft_submit", "item.craft_publication",
+    "item.sql_craft_output_component",
     "currency.coin_steal",
     "ship.coffer_claim", "ship.insurance_fallback",
     "special.money_changer", "special.smelter", "special.rentacleric",
@@ -755,6 +761,10 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
     if disposition == "non_writer_candidate":
         decision = "not_a_playable_economy_or_custody_writer"
         policy = NON_WRITERS[route_id]
+    elif route_id in {"item.poison_mix", "item.encrust_transform", "item.encrust_failure_destroy",
+                      "class.drannak_pvp_store", "item.craft_submit", "item.npc_alchemist_vial_grant"}:
+        decision = "refuse_before_allocation_until_native_source_and_root_exist"
+        policy = "Active authority refuses at gameplay entry before recipe RNG, wait, UID allocation or mutation. Crafting needs a native schema-2 root with exact input/output references; automatic vial issuance needs a durable zone spawn/source identity. The inactive legacy receipt or fresh-spawn marker does not satisfy those obligations."
     elif route_id == "currency.split":
         decision = "allow_sequential_schema2_coin_children"
         policy = "Under active authority, admit only identified player wallets and submit one exact-denomination balanced transfer per eligible recipient. Retain each completion before continuing; stop on failure and report that completed shares remain transferred. The legacy schema-1 branch runs only while accounting is inactive."
@@ -839,7 +849,7 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
             policy += " Prove the NPC is provisional before this assignment or preserve its admitted source/sink and revision in one root; existing charm targets and pet restoration cannot be assumed fresh."
         if route_id.startswith("auction."):
             policy += " Keep accepted escrow, seller claim/proceeds, fee and item winner/return custody under the same auction root; no implicit reimbursement."
-    return {"decision": decision, "must_block_on_activation": decision in {"block_until_typed_schema2_accounting", "block_until_projection_proof", "keep_unreachable_or_block_if_reactivated", "sql_component_requires_qualified_root"}, "required_policy": policy}
+    return {"decision": decision, "must_block_on_activation": decision in {"refuse_before_allocation_until_native_source_and_root_exist", "block_until_typed_schema2_accounting", "block_until_projection_proof", "keep_unreachable_or_block_if_reactivated", "sql_component_requires_qualified_root"}, "required_policy": policy}
 
 
 def build() -> dict:
@@ -1021,7 +1031,7 @@ def main() -> None:
         if not OUTPUT.exists() or OUTPUT.read_text(encoding="utf-8") != encoded:
             raise SystemExit("writer coverage matrix is stale; regenerate it")
     else:
-        OUTPUT.write_text(encoded, encoding="utf-8")
+        OUTPUT.write_bytes(encoded.encode("utf-8"))
     print("writer coverage matrix: " + json.dumps(artifact["counts"], sort_keys=True))
     print("lexical census: " + json.dumps({key: artifact["lexical_census"][key] for key in (
         "current_occurrences", "current_unique_path_line_family_sites", "mapped_sites_still_present",

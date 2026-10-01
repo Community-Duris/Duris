@@ -710,6 +710,44 @@ int main()
 	assert(!item_transfer_command_build(&command, operation(), reward_promotion,
 					    critical_source_site::command,
 					    critical_deadline_class::interactive));
+ {
+ static_assert(static_cast<uint16_t>(item_transfer_reason::trusted_steal) == 26);
+ static_assert(static_cast<uint16_t>(item_transfer_reason::soulbind) == 27);
+ static_assert(static_cast<uint16_t>(item_transfer_reason::slip) == 28);
+ static_assert(static_cast<uint16_t>(item_transfer_reason::craft) == 34);
+ item_transfer_payload craft = {};
+ craft.from_owner = {item_owner_type::player, 42, 0};
+ craft.to_owner = craft.from_owner;
+ craft.reason = item_transfer_reason::craft;
+ craft.multi_root = true;
+ craft.item_count = 1;
+ craft.items[0] = {900, 900, 0, 1, 500, item_custody_state::active};
+ craft.selected_item_uid = 900;
+ craft.expected_from_revision = craft.expected_to_revision = 1;
+ assert(item_transfer_command_build(&command, operation(), craft, critical_source_site::command, critical_deadline_class::interactive));
+ assert(item_transfer_command_decode_payload(command, &decoded) && decoded.reason == item_transfer_reason::craft);
+ // Current v9 same-player soulbind is not a craft compatibility alias.
+ set_reason(&command, item_transfer_reason::soulbind);
+ assert(!item_transfer_command_decode_payload(command, &decoded));
+ // Exact master/draft v7 shape remains replayable without consuming wear's ID.
+ command.payload_version = ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION;
+ command.payload.resize(command.payload.size() - sizeof(uint32_t) * 2 - sizeof(uint64_t));
+ assert(item_transfer_command_decode_payload(command, &decoded) && decoded.reason == item_transfer_reason::craft);
+ set_reason(&command, item_transfer_reason::player_wear);
+ assert(item_transfer_command_decode_payload(command, &decoded) && decoded.reason == item_transfer_reason::craft);
+ static_assert(static_cast<uint16_t>(item_transfer_reason::player_wear) == 29);
+ static_assert(static_cast<uint16_t>(item_transfer_reason::quest_turnin) == 33);
+ item_transfer_payload soulbind = {};
+ soulbind.from_owner = {item_owner_type::player, 42, 0};
+ soulbind.to_owner = {item_owner_type::player, 43, 0};
+ soulbind.reason = item_transfer_reason::soulbind;
+ soulbind.reason_id = 42;
+ soulbind.item_count = 1;
+ soulbind.items[0] = {901, 901, 0, 1, 500, item_custody_state::active};
+ soulbind.selected_item_uid = soulbind.target_root_item_uid = 901;
+ assert(item_transfer_command_build(&command, operation(), soulbind, critical_source_site::command, critical_deadline_class::interactive));
+ assert(item_transfer_command_decode_payload(command, &decoded) && decoded.reason == item_transfer_reason::soulbind);
+ }
 	return 0;
 }
 '''
@@ -735,6 +773,7 @@ with tempfile.TemporaryDirectory(prefix="duris-item-transfer-version-") as temp_
             "-Isrc",
             str(source),
             rel("item_transfer_command.c"),
+            rel("player_snapshot_codec.c"),
             rel("critical_command.c"),
             "-lcrypto",
             "-o",
@@ -742,7 +781,7 @@ with tempfile.TemporaryDirectory(prefix="duris-item-transfer-version-") as temp_
         ],
         cwd=ROOT,
         check=True,
-        capture_output=True,
+        capture_output=False,
         text=True,
     )
     subprocess.run([str(binary)], check=True)

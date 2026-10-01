@@ -624,6 +624,7 @@ int main()
 	player.wallet_revision = 1;
 	player.bank_revision = 1;
 	char_data actor = {};
+	actor.runtime_id = 42;
 	actor.only.pc = &player;
 	actor.player.racewar = 1;
 	char account_name[] = "queue_account";
@@ -663,6 +664,7 @@ int main()
 	pc_only_data sibling_player = {};
 	sibling_player.pid = 43;
 	char_data sibling = {};
+	sibling.runtime_id = 43;
 	sibling.only.pc = &sibling_player;
 	sibling.player.racewar = actor.player.racewar;
 	assert(currency_transaction_player_busy(&sibling));
@@ -858,6 +860,7 @@ int main()
 	pc_only_data recipient_player = {};
 	recipient_player.pid = 45;
 	char_data recipient = {};
+	recipient.runtime_id = 45;
 	recipient.only.pc = &recipient_player;
 	recipient.player.racewar = 1;
 	for (int scenario = 0; scenario < 4; ++scenario)
@@ -923,7 +926,7 @@ int main()
 		assert(coin_callbacks == callbacks_before + 1);
 		assert(submission_count == submitted_before + 1); // No second credit or refund.
 	}
-	// The actual gameplay helper shares admission and preserves existing change-making.
+	// The actual gameplay helper shares admission and preserves exact denominations.
 	currency_transaction_reset_for_tests();
 	coordinator_fenced = false;
 	actor.next = &recipient;
@@ -944,8 +947,8 @@ int main()
 	assert(GET_COPPER(&actor) == 100 && GET_COPPER(&recipient) == 10);
 	coin_transfer_payload give_payload;
 	assert(coin_transfer_command_decode_payload(submitted_command, &give_payload));
-	assert((give_payload.source.after == std::array<int32_t, 4>{0, 6, 0, 0}));
-	assert((give_payload.destination.after == std::array<int32_t, 4>{10, 4, 0, 0}));
+	assert((give_payload.source.after == std::array<int32_t, 4>{60, 0, 0, 0}));
+	assert((give_payload.destination.after == std::array<int32_t, 4>{50, 0, 0, 0}));
 	coin_transfer_result give_result;
 	for (size_t i = 0; i < 4; ++i)
 	{
@@ -964,8 +967,8 @@ int main()
 	coordinator_fenced = false;
 	currency_transaction_handle_completions(&give_ack, 1);
 	assert(coin_announcements == 1 && coin_errors == 0);
-	assert(GET_SILVER(&actor) == 6 && GET_COPPER(&actor) == 0);
-	assert(GET_SILVER(&recipient) == 4 && GET_COPPER(&recipient) == 10);
+	assert(GET_SILVER(&actor) == 0 && GET_COPPER(&actor) == 60);
+	assert(GET_SILVER(&recipient) == 0 && GET_COPPER(&recipient) == 50);
 	assert(submission_count == admitted_before + 1);
 	actor.next = nullptr;
 	character_list = &actor;

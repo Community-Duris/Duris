@@ -8,6 +8,7 @@
 */
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "telemetry/telemetry_runtime.h"
 #include "item/item_actions.h"
 #include "world/difficulty.h"
@@ -751,6 +752,8 @@ void add_follower(P_char ch, P_char leader)
 	k->follower = ch;
 	k->next = leader->followers;
 	leader->followers = k;
+
+	item_restrict_player_pet_equipment(ch);
 
 	// Login stages pet links before placing either character in the world.
 	// Visibility and room broadcasts are only valid after placement.

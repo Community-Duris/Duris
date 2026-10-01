@@ -36,10 +36,22 @@ extern const int top_of_world = 1;
 static item_ownership_runtime_entry runtime_entry = {};
 static int publication_attempts = 0;
 static int completion_calls = 0;
+static int craft_callbacks = 0;
+static int extractions = 0;
+static int restores = 0;
+static bool allow_restore = false;
+static obj_data restored_output = {};
 static critical_apply_outcome forced_outcome = critical_apply_outcome::applied;
 
 void obj_to_obj(P_obj, P_obj) {}
-void extract_obj(P_obj, int) {}
+void extract_obj(P_obj object, int) {
+    ++extractions;
+    P_obj *link = &object_list;
+    while (*link && *link != object) link = &(*link)->next;
+    if (*link) *link = object->next;
+    object->loc_p = LOC_NOWHERE;
+    object->obj_uid = 0;
+}
 void obj_to_char(P_obj object, P_char actor)
 {
     object->loc_p = LOC_CARRIED;
@@ -55,7 +67,22 @@ int panic_corruption_int(const char *, const char *, ...) { return 0; }
 void mark_player_dirty_components(int, uint64_t) {}
 void collector_catalog_cache_invalidate() {}
 void collector_death_enrollment_note_committed(P_obj, const item_transfer_payload &) {}
-void player_load_item_graph_materialize_creation(const item_transfer_payload &, const item_transfer_result &, std::vector<P_obj> *) {}
+bool player_load_item_graph_materialize_creation(const item_transfer_payload &payload, const item_transfer_result &, std::vector<P_obj> *roots) {
+    ++restores;
+    if (!allow_restore) return false;
+    assert(payload.item_count == 1 && payload.items[0].item_uid == 5021);
+    restored_output.obj_uid = payload.items[0].item_uid;
+    restored_output.R_num = 0;
+    restored_output.loc_p = LOC_NOWHERE;
+    restored_output.next = object_list;
+    object_list = &restored_output;
+    roots->push_back(&restored_output);
+    return true;
+}
+void craft_callback(P_char actor, bool committed, const item_transfer_result &result, unsigned int, const uint8_t *, size_t) {
+    assert(actor && committed && result.item_count == 1);
+    ++craft_callbacks;
+}
 
 bool item_ownership_runtime_lookup(uint64_t item_uid, item_ownership_runtime_entry *entry)
 {
@@ -82,6 +109,7 @@ bool currency_transaction_coin_item_busy(uint64_t) { return false; }
 bool spell_component_retirement_waiting_for_effect(const critical_operation_id &) { return false; }
 bool collector_transaction_item_busy(uint64_t) { return false; }
 bool economic_gameplay_authority::active() { return false; }
+bool spell_component_retirement_waiting_for_effect(const critical_operation_id &) { return false; }
 economic_accounting_error economic_gameplay_authority::prepare_item_transfer(
     critical_command *, uint32_t, economic_source_kind) {
     return economic_accounting_error::ok;
@@ -106,15 +134,6 @@ player_snapshot_capture_result player_item_snapshot_tree_capture(P_obj object,
     snapshot.vnum = 42;
     snapshots->push_back(std::move(snapshot));
     return player_snapshot_capture_result::ok;
-}
-
-player_snapshot_codec_result player_item_snapshot_list_encode(const std::vector<player_item_snapshot> &snapshots,
-                                      std::vector<uint8_t> *encoded)
-{
-    if (snapshots.empty() || !encoded)
-        return player_snapshot_codec_result::invalid_value;
-    encoded->assign(1, 1);
-    return player_snapshot_codec_result::ok;
 }
 
 critical_apply_result apply_transfer(const critical_command &command, void *)
@@ -262,6 +281,48 @@ int main(int argc, char **argv)
     assert(completion_calls == 1 && item_movement_transaction_health_copy().pending == 0);
     item_movement_transaction_handle_completions(nullptr, 0);
     assert(completion_calls == 1);
+    // A committed craft stays fenced while the player is absent or the exact
+    // output UID cannot be restored. Publication then retires inputs and notifies once.
+    runtime_entry.owner = destination;
+    obj_data output_a = {};
+    obj_data output_b = {};
+    output_a.obj_uid = 5020; output_b.obj_uid = 5021;
+    output_a.R_num = output_b.R_num = 0;
+    output_a.loc_p = output_b.loc_p = LOC_NOWHERE;
+    output_a.next = &output_b; output_b.next = &object;
+    object_list = &output_a;
+    P_obj inputs[] = {&object};
+    P_obj outputs[] = {&output_a, &output_b};
+    assert(item_movement_transaction_submit_craft(&actor, inputs, 1, outputs, 2,
+        551, craft_callback, nullptr, 0, &reject));
+    character_list = nullptr;
+    bool craft_completed = false;
+    for (int spin = 0; spin < 1000 && !craft_completed; ++spin) {
+        const size_t count = critical_command_coordinator_pulse(completions, 8);
+        item_movement_transaction_handle_completions(completions, count);
+        craft_completed = count > 0;
+        if (!craft_completed) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    assert(craft_completed && craft_callbacks == 0 && extractions == 0);
+    // Simulate an output lost from the live world after durable commit.
+    output_a.next = &object;
+    character_list = &actor;
+    item_movement_transaction_handle_completions(nullptr, 0);
+    assert(restores == 1 && extractions == 0 && craft_callbacks == 0);
+    assert(critical_command_coordinator_health_copy().publication_pending == 1);
+    allow_restore = true;
+    std::this_thread::sleep_for(std::chrono::milliseconds(70));
+    item_movement_transaction_handle_completions(nullptr, 0);
+    assert(restores == 2 && extractions == 1 && craft_callbacks == 1);
+    assert(OBJ_CARRIED_BY(&output_a, &actor) && OBJ_CARRIED_BY(&restored_output, &actor));
+    assert(item_movement_transaction_health_copy().pending == 0);
+    item_movement_transaction_handle_completions(nullptr, 0);
+    assert(extractions == 1 && craft_callbacks == 1);
+    // Restore the independent movement fixture for the uncertainty scenario.
+    object.obj_uid = 5001;
+    object.loc_p = LOC_CARRIED; object.loc.carrying = &actor;
+    object.next = nullptr; object_list = &object;
+    runtime_entry.owner = {item_owner_type::player, 2002, 0};
 
     // Exhausted uncertainty must not invoke the command callback as failure,
     // and must not checkpoint away the only durable retry/reconciliation record.
@@ -299,7 +360,7 @@ with tempfile.TemporaryDirectory(prefix="duris-publication-retention-") as tempo
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
             "-D__NO_MYSQL__", "-pthread", "-ffunction-sections", "-fdata-sections",
             "-Isrc", "-Isrc/no_mysql", str(source),
-            rel("item/item_movement_transaction.c"), rel("item/item_transfer_command.c"),
+            rel("item/item_movement_transaction.c"), rel("item/item_transfer_command.c"), rel("player_snapshot_codec.c"),
             rel("critical_command.c"), rel("persistence/critical_command_journal.c"),
             rel("persistence/critical_command_coordinator.c"),
             "-Wl,--gc-sections", "-lz", "-lcrypto", "-o", str(binary),

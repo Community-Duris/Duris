@@ -97,6 +97,18 @@ int main(int argc, char **argv)
 						      &error) == flatfile_identity_result::ok &&
 			identity.pid == pid && identity.blocked,
 		"membership rename/block did not publish atomically");
+	loaded->acct_character_list->racewar = ACCT_IMMORTAL;
+	loaded->acct_character_list->level = 62;
+	require(flatfile_account_state_save(loaded, &error),
+		"staff membership save failed: " + error);
+	require(flatfile_identity_lookup_pid(root.string(), pid, &identity, &error) ==
+				flatfile_identity_result::ok &&
+			identity.racewar == 2 && identity.level == 62,
+		"staff menu category replaced the established gameplay domain");
+	flatfile_account_state_release(loaded);
+	loaded = flatfile_account_state_load("ACCOUNT-ONE", &error);
+	require(loaded && loaded->acct_character_list && loaded->acct_character_list->racewar == 2,
+		"staff gameplay side did not survive account reload");
 
 	free(loaded->acct_character_list->charname);
 	free(loaded->acct_character_list);

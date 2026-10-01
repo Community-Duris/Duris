@@ -10,6 +10,7 @@ import tempfile
 import unittest
 
 from _paths import extract_function
+from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -144,7 +145,7 @@ int main()
         self.assertRegex(self.single, r"reason == item_transfer_reason::creation,\s*reject\)")
         self.assertIn("if (creation)", self.batch)
         self.assertIn("reason == item_transfer_reason::creation;", self.batch)
-        self.assertIn("return refuse_active_item_submission(true, false, false, true, reject);", self.batch)
+        self.assertTrue(contains(self.batch, "return refuse_active_item_submission(true, false, false, true, reject);"))
         # For a missing retained row, only explicit creation reaches the
         # unsupported-source-admission refusal; destruction is not issuance.
 
@@ -486,7 +487,7 @@ int main()
         purchase = store[store.index('else if (strstr(arg, "1"))'):]
         purchase_guard = purchase.index("economic_gameplay_authority::active()")
         self.assertLess(purchase_guard, purchase.index("read_object(VOBJ_GREATER_ORB_MAGIC"))
-        self.assertLess(purchase_guard, purchase.index("vnum_from_inv(pl, VOBJ_SOUL_SHARD"))
+        self.assertLess(purchase_guard, purchase.index("item_movement_transaction_submit_craft("))
 
         conjure = extract_function("classes/drannak.c", "void do_conjure(")
         conjure_guard = conjure.index("economic_gameplay_authority::active()")

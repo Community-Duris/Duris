@@ -68,9 +68,9 @@ class CollectorCatalogSchemaTest(unittest.TestCase):
                       "economic_sql_activation_receipt"):
             self.assertIn(f"'{table}'", runtime["runtime_table_sql_list"])
             self.assertIn(f"database:{table}", lifecycle_ids)
-        self.assertEqual(runtime["current_table_count"], 223)
+        self.assertEqual(runtime["current_table_count"], 224)
         self.assertEqual(runtime["migration_head"]["id"],
-                         "0051_quest_item_witness_lookup")
+                         "0052_quest_item_witness_lookup")
 
 
 if __name__ == "__main__":
