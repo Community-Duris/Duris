@@ -80,7 +80,8 @@ bool valid_snapshot(const player_snapshot &snapshot)
 		(snapshot.death &&
 		 player_snapshot_is_death_request_schema(snapshot.schema_version)) ||
 		(!snapshot.death &&
-		 (snapshot.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
+		 (snapshot.schema_version == PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION ||
+		  snapshot.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
 		  snapshot.schema_version ==
 			  PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION))) &&
 	       snapshot.pid > 0 && snapshot.revision && snapshot.components &&
@@ -583,10 +584,16 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 					std::move(slot.active->snapshot.quest_xp_receipts);
 				completion.spell_effect_receipts =
 					std::move(slot.active->snapshot.spell_effect_receipts);
+				completion.craft_receipts =
+					std::move(slot.active->snapshot.craft_receipts);
 			}
 			else
+			{
 				completion.failed_spell_effect_receipts =
 					std::move(slot.active->snapshot.spell_effect_receipts);
+				completion.failed_craft_receipts =
+					std::move(slot.active->snapshot.craft_receipts);
+			}
 			remove_active_bytes_locked(slot);
 			slot.active.reset();
 			slot.dispatched = false;

@@ -28,21 +28,36 @@ constexpr uint32_t PLAYER_SNAPSHOT_DEATH_SPELL_EVIDENCE_SCHEMA_VERSION = 14;
 constexpr uint32_t PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION = 15;
 constexpr uint32_t PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION = 16;
 
+// Recipe progression receipts commit with status, skills, notch affects and trophies.
+constexpr uint32_t PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION = 17;
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION = 18;
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_CRAFT_EVIDENCE_SCHEMA_VERSION = 19;
+constexpr size_t PLAYER_CRAFT_RECEIPT_MAX = 64;
+constexpr bool player_snapshot_has_craft_receipt_schema(uint32_t version)
+{
+	return version == PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_CRAFT_EVIDENCE_SCHEMA_VERSION;
+}
+
 constexpr bool player_snapshot_is_death_request_schema(uint32_t version)
 {
-	return version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION ||
+	return version == PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION ||
 	       version == PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION ||
 	       version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION;
 }
 constexpr bool player_snapshot_is_death_evidence_schema(uint32_t version)
 {
-	return version == PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION ||
+	return version == PLAYER_SNAPSHOT_DEATH_CRAFT_EVIDENCE_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION ||
 	       version == PLAYER_SNAPSHOT_DEATH_SPELL_EVIDENCE_SCHEMA_VERSION ||
 	       version == PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION;
 }
 constexpr bool player_snapshot_has_spell_receipt_schema(uint32_t version)
 {
-	return version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION ||
+	return player_snapshot_has_craft_receipt_schema(version) ||
+	       version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION ||
 	       version == PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION ||
 	       version == PLAYER_SNAPSHOT_DEATH_SPELL_EVIDENCE_SCHEMA_VERSION ||
 	       version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION ||
@@ -50,13 +65,16 @@ constexpr bool player_snapshot_has_spell_receipt_schema(uint32_t version)
 }
 constexpr bool player_snapshot_has_quest_receipt_schema(uint32_t version)
 {
-	return version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
+	return player_snapshot_has_craft_receipt_schema(version) ||
+	       version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
 	       version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION ||
 	       version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION ||
 	       version == PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION;
 }
 constexpr uint32_t player_snapshot_death_request_schema(uint32_t version)
 {
+	if (version == PLAYER_SNAPSHOT_DEATH_CRAFT_EVIDENCE_SCHEMA_VERSION)
+		return PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION;
 	if (version == PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION)
 		return PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION;
 	return version == PLAYER_SNAPSHOT_DEATH_SPELL_EVIDENCE_SCHEMA_VERSION ?
@@ -65,6 +83,8 @@ constexpr uint32_t player_snapshot_death_request_schema(uint32_t version)
 }
 constexpr uint32_t player_snapshot_death_evidence_schema(uint32_t version)
 {
+	if (version == PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION)
+		return PLAYER_SNAPSHOT_DEATH_CRAFT_EVIDENCE_SCHEMA_VERSION;
 	if (version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION)
 		return PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION;
 	return version == PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION ?
@@ -296,6 +316,13 @@ struct player_quest_xp_receipt_snapshot
 	uint32_t amount;
 };
 
+struct player_craft_receipt_snapshot
+{
+	critical_operation_id operation_id = {};
+	uint32_t discipline = 0;
+	uint32_t experience = 0;
+};
+
 struct player_spell_effect_receipt_snapshot
 {
 	critical_operation_id operation_id;
@@ -373,6 +400,7 @@ struct player_snapshot
 	std::vector<player_trophy_snapshot> trophies;
 	std::vector<player_quest_xp_receipt_snapshot> quest_xp_receipts;
 	std::vector<player_spell_effect_receipt_snapshot> spell_effect_receipts;
+	std::vector<player_craft_receipt_snapshot> craft_receipts = {};
 	bool recipes_are_external;
 	std::string output_preferences;
 	std::optional<player_death_snapshot> death;

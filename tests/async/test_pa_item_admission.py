@@ -485,9 +485,10 @@ int main()
 
         store = extract_function("classes/drannak.c", "int pvp_store(")
         purchase = store[store.index('else if (strstr(arg, "1"))'):]
-        purchase_guard = purchase.index("economic_gameplay_authority::active()")
-        self.assertLess(purchase_guard, purchase.index("read_object(VOBJ_GREATER_ORB_MAGIC"))
-        self.assertLess(purchase_guard, purchase.index("item_movement_transaction_submit_craft("))
+        self.assertNotIn("economic_gameplay_authority::active()", purchase)
+        self.assertIn("item_movement_transaction_submit_craft(", purchase)
+        self.assertIn("shards.data(), shards.size(), &orb, 1", purchase)
+        self.assertNotIn("extract_obj(shard", purchase)
 
         conjure = extract_function("classes/drannak.c", "void do_conjure(")
         conjure_guard = conjure.index("economic_gameplay_authority::active()")

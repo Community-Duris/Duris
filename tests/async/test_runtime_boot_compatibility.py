@@ -70,7 +70,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         """
         report = runtime.validate()
         # Includes death evidence/recovery and SQL lifecycle tables.
-        self.assertEqual(report["current_table_count"], 224)
+        self.assertEqual(report["current_table_count"], 225)
         for table in ("player_death_disposition", "player_death_custody",
                       "player_death_conflict_evidence"):
             self.assertIn("'" + table + "'", self.header)
@@ -84,7 +84,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertIn("'economic_sql_activation_receipt'", self.header)
         self.assertIn("'economic_sql_global_activation'", self.header)
         self.assertEqual(report["migration_head"],
-                         "0052_quest_item_witness_lookup")
+                         "0053_craft_progression")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)
@@ -113,10 +113,10 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         import tempfile
         from unittest import mock
         value = runtime.load()
-        self.assertEqual(value["migration_head"]["sequence"], 52)
-        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 52)
+        self.assertEqual(value["migration_head"]["sequence"], 53)
+        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 53)
         self.assertEqual(value["staging_0045_migration_head"]["id"],
-                         "0052_quest_item_witness_lookup")
+                         "0053_craft_progression")
         self.assertNotEqual(value["migration_head"]["history_checksum"],
                             value["staging_0045_migration_head"]["history_checksum"])
         with tempfile.TemporaryDirectory() as directory:

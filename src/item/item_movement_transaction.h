@@ -1,6 +1,7 @@
 #ifndef ITEM_MOVEMENT_TRANSACTION_H
 #define ITEM_MOVEMENT_TRANSACTION_H
 #include "combat/chaos_pouch_types.h"
+#include "item/craft_recipe_continuation.h"
 
 #include "persistence/critical_command_coordinator.h"
 #include "item/item_transfer_command.h"
@@ -130,7 +131,8 @@ bool item_movement_transaction_submit_craft(
 	const void *context, size_t context_size, item_movement_reject *reject = NULL,
 	P_obj retained_pouch = nullptr, const chaos_material_pouch_usage *pouch_usage = nullptr,
 	size_t pouch_usage_count = 0,
-	chaos_pouch_usage_mode pouch_mode = chaos_pouch_usage_mode::generated);
+	chaos_pouch_usage_mode pouch_mode = chaos_pouch_usage_mode::generated,
+	const craft_recipe_continuation *recipe = nullptr);
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
 					  P_obj target_container = NULL,
 					  economic_source_kind source = {}, uint64_t source_id = 0);
@@ -179,6 +181,8 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 bool item_movement_transaction_restore_replayed_command(const critical_command &command);
 // Copy outstanding spell publications for a player's load request. The loader
 // only needs receipts for commands whose publication is still fenced.
+bool item_movement_transaction_pending_craft_progression(
+	uint32_t actor_pid, std::vector<critical_operation_id> *operations);
 bool item_movement_transaction_pending_spell_effects(
 	uint32_t actor_pid, std::vector<critical_operation_id> *operations);
 bool item_movement_transaction_restore_replayed_publication(

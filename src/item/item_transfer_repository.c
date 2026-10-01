@@ -1,5 +1,6 @@
 #include "item/item_transfer_repository.h"
 #include "item/craft_pouch_mutation.h"
+#include "item/craft_recipe_continuation.h"
 #include "economy/item_transfer_accounting.h"
 #include "core/defines.h"
 #include "player/player_snapshot_codec.h"
@@ -2056,6 +2057,29 @@ bool execute_craft(MYSQL *connection, const critical_command &command,
 					 static_cast<int>(payload.to_owner.id))) ||
 	    !update_owner_revision(connection, payload.from_owner, owner_revision))
 		return false;
+	if (payload.continuation.kind == item_transfer_continuation_kind::craft_recipe)
+	{
+		craft_recipe_continuation terms;
+		if (!craft_recipe_continuation_decode(payload.continuation.data, &terms) ||
+		    !craft_recipe_continuation_matches(terms, payload))
+			return false;
+		constexpr char hex[] = "0123456789abcdef";
+		std::string operation_hex;
+		operation_hex.reserve(32);
+		for (uint8_t byte : command.operation_id.bytes)
+		{
+			operation_hex += hex[byte >> 4];
+			operation_hex += hex[byte & 15];
+		}
+		if (!run_sql(connection,
+			     "INSERT INTO player_craft_progression "
+			     "(operation_id,pid,discipline,experience) VALUES (UNHEX('" +
+				     operation_hex + "')," + std::to_string(terms.player_pid) +
+				     "," + std::to_string(static_cast<uint32_t>(terms.discipline)) +
+				     "," + std::to_string(terms.experience) + ")") ||
+		    mysql_affected_rows(connection) != 1)
+			return false;
+	}
 	result->from_owner_revision = owner_revision + 1;
 	result->to_owner_revision = owner_revision + 1;
 	if (custody_delta)

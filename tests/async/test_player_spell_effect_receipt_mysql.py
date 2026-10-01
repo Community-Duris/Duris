@@ -11,6 +11,8 @@ ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
 #include "player/player_snapshot_repository.h"
 #include "player/player_snapshot_codec.h"
+#include "player/player_load_repository.h"
+#include "persistence/persistence_observability.h"
 #include "classes/necromancy.h"
 #include "core/files.h"
 #include "world/vnum.obj.h"
@@ -164,6 +166,65 @@ void verify_economic_receipts(MYSQL *db, uint32_t pid) {
     execute(db,"DELETE FROM critical_operation_inbox WHERE operation_id IN (UNHEX('"+offering+"'),UNHEX('"+grant+"'),UNHEX('"+cash+"'))");
 }
 
+void verify_craft_progression(MYSQL *db, uint32_t pid) {
+    const auto player = std::to_string(pid);
+    const std::string operation = "ed000000000000000000000000000000";
+    execute(db, "INSERT INTO player_data(pid,name,account_name,save_revision,exp) VALUES("+player+",'CraftProgressionFixture','CraftFixtureAccount',1,100)");
+    execute(db, "INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,command_type,schema_version,payload_version,status,result_payload) VALUES(UNHEX('"+operation+"'),UNHEX(REPEAT('00',32)),UNHEX(REPEAT('00',32)),5,1,10,1,X'')");
+    execute(db, "INSERT INTO player_craft_progression(operation_id,pid,discipline,experience) VALUES(UNHEX('"+operation+"'),"+player+",1,7000)");
+    player_snapshot snapshot={}; snapshot.pid=pid; snapshot.revision=2;
+    snapshot.schema_version=PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
+    snapshot.components=PLAYER_COMPONENT_STATUS|PLAYER_COMPONENT_SKILLS|PLAYER_COMPONENT_AFFECTS|PLAYER_COMPONENT_TROPHIES;
+    snapshot.encoded_size_bound=8192;
+    snapshot.status_integers.push_back({player_status_field::experience,7100,0,false});
+    snapshot.skills.push_back({123,51,90}); snapshot.affects.push_back({1234,40,0,0,0,0});
+    snapshot.trophies.push_back({42,100});
+    player_craft_receipt_snapshot receipt={}; receipt.operation_id.bytes[0]=0xed;
+    receipt.discipline=1; receipt.experience=7000; snapshot.craft_receipts.push_back(receipt);
+    const std::string row=" FROM player_craft_progression WHERE operation_id=UNHEX('"+operation+"')";
+    execute(db,"CREATE TRIGGER craft_progression_save_failure BEFORE UPDATE ON player_craft_progression FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='injected recipe save failure'");
+    const auto failed = player_snapshot_repository_apply(db,snapshot);
+    assert(failed.outcome==player_save_apply_outcome::terminal_failure && failed.error_code==1644);
+    assert(scalar(db,"SELECT exp FROM player_data WHERE pid="+player)==100);
+    assert(scalar(db,"SELECT save_revision FROM player_data WHERE pid="+player)==1);
+    assert(scalar(db,"SELECT applied_revision"+row)==0);
+    assert(scalar(db,"SELECT COUNT(*) FROM player_skills WHERE pid="+player)==0);
+    assert(scalar(db,"SELECT COUNT(*) FROM player_affects WHERE pid="+player)==0);
+    execute(db,"DROP TRIGGER craft_progression_save_failure");
+    const auto applied = player_snapshot_repository_apply(db,snapshot);
+    if (applied.outcome != player_save_apply_outcome::applied)
+        std::cerr << "recipe checkpoint outcome=" << static_cast<unsigned>(applied.outcome)
+                  << " error=" << applied.error_code << " sql=" << mysql_error(db) << '\n';
+    assert(applied.outcome==player_save_apply_outcome::applied);
+    assert(scalar(db,"SELECT exp FROM player_data WHERE pid="+player)==7100);
+    assert(scalar(db,"SELECT applied_revision"+row)==2);
+    assert(player_snapshot_repository_apply(db,snapshot).outcome==player_save_apply_outcome::already_applied);
+    execute(db,"INSERT INTO player_spell_effect_receipt(pid,operation_id,effect_id) VALUES("+player+",UNHEX('"+operation+"'),6)");
+    player_load_request request={}; request.request_id=1; request.player_name="CraftProgressionFixture";
+    request.pending_craft_operations={receipt.operation_id};
+    request.pending_spell_effect_operations={receipt.operation_id};
+    request.deadline_usec=persistence_observability_now_usec()+PLAYER_LOAD_TIMEOUT_USEC;
+    const auto loaded=player_load_repository_execute(db,request);
+    if (loaded.outcome!=player_load_outcome::applied)
+        std::cerr << "recipe load outcome=" << static_cast<unsigned>(loaded.outcome)
+                  << " error=" << loaded.error_code << " component=" << loaded.failed_component
+                  << " queries=" << loaded.metrics.query_count << '\n';
+    assert(loaded.outcome==player_load_outcome::applied && loaded.snapshot.revision==2);
+    assert(loaded.craft_receipts.size()==1 && loaded.craft_receipts[0].experience==7000);
+    assert(loaded.spell_effect_receipts.size()==1 && loaded.metrics.query_count==PLAYER_LOAD_QUERY_MAX);
+    auto changed=snapshot; changed.craft_receipts[0].experience++;
+    assert(player_snapshot_repository_apply(db,changed).outcome==player_save_apply_outcome::terminal_failure);
+    execute(db,"UPDATE player_craft_progression SET applied_revision=0 WHERE operation_id=UNHEX('"+operation+"')");
+    assert(player_snapshot_repository_apply(db,snapshot).outcome==player_save_apply_outcome::terminal_failure);
+    execute(db,"DELETE"+row);
+    execute(db,"DELETE FROM critical_operation_inbox WHERE operation_id=UNHEX('"+operation+"')");
+    execute(db,"DELETE FROM player_affects WHERE pid="+player);
+    execute(db,"DELETE FROM player_skills WHERE pid="+player);
+    execute(db,"DELETE FROM player_spell_effect_receipt WHERE pid="+player);
+    execute(db,"DELETE FROM zone_trophy WHERE pid="+player);
+    execute(db,"DELETE FROM player_data WHERE pid="+player);
+}
+
 int main() {
     const char *host = std::getenv("DB_HOST");
     const char *database = std::getenv("DB_NAME");
@@ -177,7 +238,7 @@ int main() {
     const unsigned int port = port_text ? std::strtoul(port_text, nullptr, 10) : 3306;
     if (!db || !mysql_real_connect(db, host, user, password, database, port,
                                    nullptr, 0)) return 2;
-    const int pid = static_cast<int>(scalar(db, "SELECT COALESCE(MAX(pid),0) FROM player_data") + 1);
+    const int pid = static_cast<int>(scalar(db, "SELECT COALESCE(MAX(pid),0) FROM player_data WHERE pid<2147483646") + 1);
     execute(db, "INSERT INTO player_data(pid,name,save_revision) VALUES(" +
                 std::to_string(pid) + ",'SpellReceiptFixture',1)");
     player_snapshot snapshot = {};
@@ -462,6 +523,7 @@ int main() {
     execute(db, "DELETE FROM player_affects WHERE pid=" + id);
     verify_economic_receipts(db, pid);
     execute(db, "DELETE FROM player_data WHERE pid=" + id);
+    verify_craft_progression(db, pid+1);
     mysql_close(db);
     std::cout << "spell affect and quest XP exact receipt SQL transactions: ok\n";
 }

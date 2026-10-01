@@ -168,12 +168,14 @@ assert "chaos_starter_materials_enabled()" in NANNY
 CRAFTING = source("crafting.c").read_text(encoding="utf-8", errors="replace")
 assert "chaos_material_pouch_available" in CRAFTING
 assert "!chaos_pouch && (invLowMats < numLowest || invHighMats < numHighest)" in CRAFTING
-assert "!chaos_pouch && (numLowest > 0)" in CRAFTING
-assert "!chaos_pouch && (invVnum == lowQualityMaterialVnum)" in CRAFTING
+assert "int low = use_pouch ? 0 : plan.low_material_count;" in CRAFTING
+assert "int high = use_pouch ? 0 : plan.high_material_count;" in CRAFTING
 assert "chaos_material_pouch_report_generated_failure" in CRAFTING
 assert CRAFTING.count("chaos_material_pouch_report_generated_failure") >= 2
 assert "chaos_material_pouch_can_record_generated" in CRAFTING
-assert "if (!chaos_material_pouch_record_generated" in CRAFTING
+assert "chaos_material_pouch_record_generated" not in CRAFTING
+assert "item_movement_transaction_submit_craft" in CRAFTING
+assert "use_pouch ? usage : nullptr" in CRAFTING
 ENHANCE = source("enhance.c").read_text(encoding="utf-8", errors="replace")
 assert "if (!pouch)" in ENHANCE
 assert "chaos_material_pouch_is(source)" in ENHANCE

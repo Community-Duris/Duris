@@ -1,6 +1,7 @@
 #include "item/item_transfer_command.h"
 #include "item/quest_reward_continuation.h"
 #include "item/craft_pouch_mutation.h"
+#include "item/craft_recipe_continuation.h"
 
 #include "player/player_snapshot_codec.h"
 
@@ -697,6 +698,9 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	     !valid_account_reward_duplicate_promotion_continuation(payload, payload_version)) ||
 	    (payload.continuation.kind == item_transfer_continuation_kind::craft_pouch_usage &&
 	     payload_version < ITEM_TRANSFER_PAYLOAD_VERSION) ||
+	    (payload.continuation.kind == item_transfer_continuation_kind::craft_recipe &&
+	     (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
+	      payload.reason != item_transfer_reason::craft)) ||
 	    (payload.continuation.kind != item_transfer_continuation_kind::none &&
 	     payload.continuation.kind != item_transfer_continuation_kind::quest_offering &&
 	     payload.continuation.kind != item_transfer_continuation_kind::soulbind_transfer &&
@@ -706,7 +710,8 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 		     item_transfer_continuation_kind::account_reward_retirement &&
 	     payload.continuation.kind !=
 		     item_transfer_continuation_kind::account_reward_duplicate_promotion &&
-	     payload.continuation.kind != item_transfer_continuation_kind::craft_pouch_usage))
+	     payload.continuation.kind != item_transfer_continuation_kind::craft_pouch_usage &&
+	     payload.continuation.kind != item_transfer_continuation_kind::craft_recipe))
 		return false;
 	const bool corpse_create = payload.reason == item_transfer_reason::corpse_create;
 	const bool corpse_loot = payload.reason == item_transfer_reason::corpse_loot;
@@ -779,6 +784,15 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 		    (outputs.empty() && !find_payload_item(payload, payload.selected_item_uid)) ||
 		    payload.item_count + outputs.size() > CRITICAL_COMMAND_MAX_KEYS - 2)
 			return false;
+		if (payload.continuation.kind == item_transfer_continuation_kind::craft_recipe)
+		{
+			craft_recipe_continuation recipe;
+			if (!craft_recipe_continuation_decode(payload.continuation.data, &recipe) ||
+			    !craft_recipe_continuation_matches(recipe, payload) ||
+			    outputs.size() != 1 || outputs[0].object_uid != recipe.output_uid ||
+			    outputs[0].vnum != static_cast<int32_t>(recipe.recipe_vnum))
+				return false;
+		}
 		for (const player_item_snapshot &output : outputs)
 			for (size_t index = 0; index < payload.item_count; ++index)
 				if (output.object_uid == payload.items[index].item_uid)

@@ -15,6 +15,7 @@
 #include "flatfile/flatfile_item_accounting_reference.h"
 #include "flatfile/flatfile_shop_trade_materialization.h"
 #include "item/craft_pouch_mutation.h"
+#include "flatfile/flatfile_craft_progression.h"
 #include "flatfile/flatfile_shop_trade_repository.h"
 #include "persistence/persistence_mode.h"
 #include "economy/coin_transfer_command.h"
@@ -3354,6 +3355,28 @@ flatfile_item_repository_result flatfile_item_repository_prepare_locker_remove(
 	return prepare_custody_remove(root, lock, 0, locker_custody, {}, operation, error);
 }
 
+flatfile_item_repository_result flatfile_item_repository_craft_root_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &operation, std::string *error)
+{
+	if (!lock.matches(root) || critical_operation_id_is_zero(operation))
+		return flatfile_item_repository_result::invalid;
+	ownership_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_item_repository_result::ok)
+		return loaded;
+	for (const auto &entry : catalog.operations)
+		if (entry.operation_id.bytes == operation.bytes)
+			return !entry.result_code && !entry.coin_operation &&
+					       entry.result.root_item_uid &&
+					       entry.result.item_count &&
+					       entry.result.from_owner_revision &&
+					       entry.result.max_item_revision ?
+				       flatfile_item_repository_result::ok :
+				       flatfile_item_repository_result::invalid;
+	return flatfile_item_repository_result::not_found;
+}
+
 critical_apply_result flatfile_item_repository_apply(const std::string &root,
 						     const critical_command &command)
 {
@@ -3400,6 +3423,34 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 					  digest.size()))
 				return { critical_apply_outcome::terminal_failure, catalog.revision,
 					 EEXIST };
+			if (!entry.result_code &&
+			    payload.continuation.kind ==
+				    item_transfer_continuation_kind::craft_recipe)
+			{
+				craft_recipe_continuation terms;
+				player_snapshot obligation;
+				if (!craft_recipe_continuation_decode(payload.continuation.data,
+								      &terms))
+					return { critical_apply_outcome::terminal_failure,
+						 catalog.revision, EILSEQ };
+				const auto read = flatfile_craft_receipt_read(
+					root, terms.player_pid, command.operation_id, true,
+					&obligation, &error);
+				if (read != flatfile_player_load_result::ok ||
+				    obligation.craft_receipts[0].discipline !=
+					    static_cast<uint32_t>(terms.discipline) ||
+				    obligation.craft_receipts[0].experience != terms.experience)
+					return {
+						read == flatfile_player_load_result::io_error ?
+							critical_apply_outcome::retryable_failure :
+							critical_apply_outcome::terminal_failure,
+						catalog.revision,
+						static_cast<unsigned int>(
+							read == flatfile_player_load_result::io_error ?
+								EIO :
+								EILSEQ)
+					};
+			}
 			if (accounted)
 			{
 				flatfile_accounting_record retained;
@@ -3721,7 +3772,8 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 	bool include_materialization = false;
 	if (!result_code && command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
 	    (payload.item_blob_size ||
-	     payload.continuation.kind == item_transfer_continuation_kind::craft_pouch_usage))
+	     payload.continuation.kind == item_transfer_continuation_kind::craft_pouch_usage ||
+	     payload.continuation.kind == item_transfer_continuation_kind::craft_recipe))
 	{
 		const auto prepared = flatfile_item_transfer_materialization_prepare(
 			root, authority, command.operation_id, payload, &materialization, &error);
@@ -3765,6 +3817,41 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 	{
 		return { critical_apply_outcome::retryable_failure, catalog.revision, ENOMEM };
 	}
+	std::vector<flatfile_authority_operation> recipe_operations;
+	try
+	{
+		if (!result_code &&
+		    payload.continuation.kind == item_transfer_continuation_kind::craft_recipe)
+		{
+			craft_recipe_continuation terms;
+			if (!craft_recipe_continuation_decode(payload.continuation.data, &terms) ||
+			    !craft_recipe_continuation_matches(terms, payload))
+				return { critical_apply_outcome::terminal_failure, catalog.revision,
+					 EILSEQ };
+			player_snapshot obligation = {};
+			obligation.schema_version = PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
+			obligation.pid = terms.player_pid;
+			obligation.revision = 1;
+			obligation.components = PLAYER_CHECKPOINT_COMPONENT_ALL;
+			obligation.craft_receipts.push_back(
+				{ command.operation_id, static_cast<uint32_t>(terms.discipline),
+				  terms.experience });
+			std::vector<uint8_t> bytes;
+			if (!flatfile_player_snapshot_encode_file(obligation, &bytes))
+				return { critical_apply_outcome::terminal_failure, catalog.revision,
+					 EILSEQ };
+			recipe_operations.push_back(
+				{ flatfile_authority_store::players,
+				  flatfile_authority_operation_kind::write,
+				  flatfile_craft_receipt_filename(terms.player_pid,
+								  command.operation_id, true),
+				  std::move(bytes) });
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { critical_apply_outcome::retryable_failure, catalog.revision, ENOMEM };
+	}
 	if (accounted)
 	{
 		flatfile_accounting_record record;
@@ -3785,10 +3872,11 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 						   critical_apply_outcome::terminal_failure,
 				 catalog.revision,
 				 static_cast<unsigned int>(errno == ENOMEM ? ENOMEM : EILSEQ) };
-		std::vector<flatfile_authority_operation> operations;
+		std::vector<flatfile_authority_operation> operations = std::move(recipe_operations);
 		try
 		{
 			operations.reserve(images.size() + 4);
+
 			for (auto &image : images)
 				operations.push_back({ flatfile_authority_store::domains,
 						       flatfile_authority_operation_kind::write,
@@ -3847,8 +3935,26 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 	}
 	else
 	{
-		const auto committed =
-			flatfile_authority_transaction_commit(root, authority, images, &error);
+		try
+		{
+			if (!recipe_operations.empty())
+				for (auto &image : images)
+					recipe_operations.push_back(
+						{ flatfile_authority_store::domains,
+						  flatfile_authority_operation_kind::write,
+						  std::move(image.filename),
+						  std::move(image.bytes) });
+		}
+		catch (const std::bad_alloc &)
+		{
+			return { critical_apply_outcome::retryable_failure, catalog.revision,
+				 ENOMEM };
+		}
+		const auto committed = recipe_operations.empty() ?
+					       flatfile_authority_transaction_commit(
+						       root, authority, images, &error) :
+					       flatfile_authority_transaction_commit_operations(
+						       root, authority, recipe_operations, &error);
 		if (committed != flatfile_authority_transaction_result::ok)
 			return {
 				committed == flatfile_authority_transaction_result::io_error ?

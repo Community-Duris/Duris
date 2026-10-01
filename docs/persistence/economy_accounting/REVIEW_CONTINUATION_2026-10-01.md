@@ -248,6 +248,32 @@ pass. Route qualification and activation remain blocked.
 Other pouch writers, including recipe/forge output, paid enhancement and debug
 generation, still need their own compound transaction and recovery proof.
 
+## Recipe transaction and progression catch-up
+
+Craft and Forge now freeze exact physical requirements, retained pouch updates,
+the fresh output UID, and recipe progression under one item transaction. The
+serialized continuation retains player, discipline and XP terms across recovery.
+Progression checkpoints include status, skills, affects and trophies. Exact save
+ACKs release the publication; failed saves retry without rerolling skill notches
+or granting XP again. Craft receipt frames survive journal compaction and require
+exact success or verified obsolete-operation proof during replay.
+
+Immutable migration 0053 retains SQL progression obligations and advances their
+applied revision atomically with the player save. Canonical and staging histories
+contain 53 migrations and the runtime schema contains 225 tables. Disposable
+MariaDB 10.11.14 and MySQL 8.0.46 tests pass item-root rollback, exact replay,
+progression-save rollback, conflicting receipt refusal and scoped cold-load reads.
+The flatfile transaction tests pass root obligations, interrupted save recovery,
+scoped receipts and exact replay. Sanitizers pass the recipe planner, progression
+retry/reconnect owner and ordinary/death/evidence snapshot codecs. Worker,
+checkpoint merge and journal tests cover stale ACKs and mixed operation receipts.
+
+Production builds passed before the journal change; its SQL rebuild also passed.
+The final flatfile rebuild and native restore fault matrix are still in progress.
+Actual recipe command/copyover/two-cold-restart qualification remains pending.
+These component proofs do not qualify accounting activation or the remaining
+paid enhancement, debug-generation, audit and R1-R8 release requirements.
+
 Completed component checks cannot qualify an unexecuted player route. The remaining
 R1-R8 requirements, full gameplay and fault matrix, independent audit,
 activation/refusal coverage, lifecycle proof, and flatfile parity still govern

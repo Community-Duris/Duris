@@ -19,6 +19,7 @@
 #include "flatfile/flatfile_shop_trade_repository.h"
 #include "flatfile/flatfile_boon_repository.h"
 #include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_craft_progression.h"
 #include "kingdom/kingdom_restore.h"
 
 // Native parsers may log diagnostics containing identities; this process reports
@@ -289,6 +290,38 @@ int main(int argc, char **argv)
 		}
 		for (const auto &entry : std::filesystem::directory_iterator(root + "/players"))
 		{
+			if (entry.path().extension() == ".craft" || entry.path().extension() == ".craft-obligation")
+			{
+				const auto stem = entry.path().stem().string();
+				const auto separator = stem.find('-');
+				require(separator != std::string::npos);
+				int32_t pid = 0;
+				const auto parsed = std::from_chars(stem.data(), stem.data() + separator, pid);
+				require(parsed.ec == std::errc() && parsed.ptr == stem.data() + separator &&
+					pid > 0 && stem.substr(0, separator) == std::to_string(pid));
+				critical_operation_id operation = {};
+				require(critical_operation_id_from_hex(stem.substr(separator + 1).c_str(), &operation));
+				const bool obligation = entry.path().extension() == ".craft-obligation";
+				require(entry.path().filename() == flatfile_craft_receipt_filename(pid, operation, obligation));
+				flatfile_identity_record identity;
+				require(flatfile_identity_lookup_pid(root, pid, &identity, &error) == flatfile_identity_result::ok &&
+					(!identity.active || known.count(pid) == 1));
+				flatfile_authority_lock authority;
+				require(authority.acquire(root, &error));
+				require(flatfile_item_repository_craft_root_locked(root, authority, operation, &error) == flatfile_item_repository_result::ok);
+				player_snapshot receipt;
+				require(flatfile_craft_receipt_read(root, pid, operation, obligation, &receipt, &error) == flatfile_player_load_result::ok);
+				if (!obligation)
+				{
+					player_snapshot frozen, snapshot;
+					require(flatfile_craft_receipt_read(root, pid, operation, true, &frozen, &error) == flatfile_player_load_result::ok &&
+						flatfile_craft_receipt_equal(receipt.craft_receipts[0], frozen.craft_receipts[0]));
+					const auto read = flatfile_player_snapshot_read(root, pid, &snapshot, &error);
+					require(read == flatfile_player_load_result::ok ? receipt.revision <= snapshot.revision :
+						read == flatfile_player_load_result::not_found && !identity.active);
+				}
+				continue;
+			}
 			if (entry.path().extension() == ".spell")
 			{
 				const auto stem = entry.path().stem().string();

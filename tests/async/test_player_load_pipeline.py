@@ -36,6 +36,15 @@ bool player_save_pipeline_save_admitted(int) { return true; }
 // This fixture isolates load-queue mechanics with a healthy save side. Actual
 // replay readiness is exercised by test_death_journal_pipeline_lifecycle.py.
 bool player_save_pipeline_loads_allowed() { return true; }
+bool item_movement_transaction_pending_craft_progression(
+    uint32_t pid, std::vector<critical_operation_id> *operations)
+{
+    assert(pid > 0 && operations);
+    critical_operation_id operation = {};
+    operation.bytes[1] = static_cast<uint8_t>(pid);
+    operations->push_back(operation);
+    return true;
+}
 bool item_movement_transaction_pending_spell_effects(
     uint32_t pid, std::vector<critical_operation_id> *operations)
 {
@@ -82,8 +91,11 @@ player_load_result execute(const player_load_request &request, void *raw)
         assert(request.pending_spell_effect_operations.size() == 1);
         assert(request.pending_spell_effect_operations[0].bytes[0] ==
                static_cast<uint8_t>(request.pid));
+        assert(request.pending_craft_operations.size() == 1);
+        assert(request.pending_craft_operations[0].bytes[1] == static_cast<uint8_t>(request.pid));
     } else {
         assert(request.pending_spell_effect_operations.empty());
+        assert(request.pending_craft_operations.empty());
     }
     auto &state = *static_cast<callback_state *>(raw);
     if (request.request_id >= 1000)

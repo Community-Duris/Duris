@@ -77,7 +77,8 @@ assert "extract_used_poison_ingredients" not in salchemist_c
 assert "obj_to_char" not in poison
 assert "obj_to_char(new_item, ch)" not in encrust
 assert "chaos_material_pouch_record_generated" not in encrust
-assert "Virtual Chaos-pouch encrust is temporarily unavailable" in encrust
+assert "Virtual Chaos-pouch encrust is temporarily unavailable" not in encrust
+assert "virtual_jewel ? &pouch_usage : nullptr" in encrust
 assert "if (craft.kind == 1)" in salchemist_c
 assert "while (outputs.size() < max_poison_batch)" in poison
 assert "used.insert(ingredient)" in poison

@@ -17,6 +17,7 @@ HARNESS = r'''
 #include "player/player_snapshot.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
+#include "player/craft_progression_hooks.h"
 #include "persistence/persistence_checkpoint.h"
 
 #include <array>
@@ -47,6 +48,16 @@ static obj_data restored_output = {};
 static critical_apply_outcome forced_outcome = critical_apply_outcome::applied;
 static bool publication_malloc_fail = false;
 static uint16_t expected_craft_inputs = 1;
+static bool recipe_progression_ready = false;
+static int recipe_publications = 0, recipe_acknowledgements = 0;
+craft_progression_publication_result publish_recipe(const critical_operation_id &, P_char actor,
+                                                    const craft_recipe_continuation &terms) {
+    assert(actor && terms.player_pid == 1001 && terms.experience == 7000 && terms.output_uid == 5030);
+    ++recipe_publications;
+    return recipe_progression_ready ? craft_progression_publication_result::ready :
+                                    craft_progression_publication_result::waiting;
+}
+void recipe_acknowledged(const critical_operation_id &) { ++recipe_acknowledgements; }
 
 void *__malloc(size_t size, const char *, const char *, int) { return publication_malloc_fail ? nullptr : std::malloc(size); }
 void __free(void *value, const char *, int) { std::free(value); }
@@ -392,6 +403,43 @@ int main(int argc, char **argv)
     str_free(pouch.ex_description->description);
     __free(pouch.ex_description,nullptr,0);
     pouch.ex_description = nullptr;
+    // Recipe output publication retains the root until progression has its
+    // independent player-save ACK. Retrying must not retire inputs twice.
+    obj_data recipe_output = {};
+    recipe_output.obj_uid = 5030; recipe_output.R_num = 0; recipe_output.loc_p = LOC_NOWHERE;
+    object.obj_uid = runtime_entry.item_uid;
+    object.loc_p = LOC_CARRIED; object.loc.carrying = &actor; object.next = nullptr;
+    recipe_output.next = &object; object_list = &recipe_output;
+    runtime_entry.owner = destination;
+    expected_craft_inputs = 1;
+    craft_progression_hooks.publish = publish_recipe;
+    craft_progression_hooks.acknowledged = recipe_acknowledged;
+    craft_recipe_continuation recipe;
+    recipe.player_pid=1001; recipe.experience=7000; recipe.recipe_vnum=42; recipe.output_uid=5030;
+    P_obj recipe_outputs[] = {&recipe_output};
+    assert(item_movement_transaction_submit_craft(&actor, inputs, 1, recipe_outputs, 1,
+        42, craft_callback, nullptr, 0, &reject, nullptr, nullptr, 0,
+        chaos_pouch_usage_mode::generated, &recipe));
+    craft_completed=false;
+    for(int spin=0;spin<1000&&!craft_completed;++spin) {
+        const size_t count=critical_command_coordinator_pulse(completions,8);
+        item_movement_transaction_handle_completions(completions,count);
+        craft_completed=count>0;
+        if(!craft_completed) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    assert(craft_completed && recipe_publications==1 && recipe_acknowledgements==0);
+    assert(extractions==3 && craft_callbacks==2 && OBJ_CARRIED_BY(&recipe_output,&actor));
+    assert(item_movement_transaction_health_copy().pending==1);
+    assert(critical_command_coordinator_health_copy().publication_pending==1);
+    std::vector<critical_operation_id> pending_recipes;
+    assert(item_movement_transaction_pending_craft_progression(1001,&pending_recipes) && pending_recipes.size()==1);
+    recipe_progression_ready=true;
+    std::this_thread::sleep_for(std::chrono::milliseconds(70));
+    item_movement_transaction_handle_completions(nullptr,0);
+    assert(extractions==3 && craft_callbacks==3 && recipe_acknowledgements==1);
+    assert(item_movement_transaction_health_copy().pending==0);
+    assert(item_movement_transaction_pending_craft_progression(1001,&pending_recipes) && pending_recipes.empty());
+    craft_progression_hooks={};
     accounting_active = false;
     // Restore the independent movement fixture for the uncertainty scenario.
     object.obj_uid = 5001;

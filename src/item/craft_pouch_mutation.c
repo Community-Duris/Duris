@@ -1,4 +1,5 @@
 #include "item/craft_pouch_mutation.h"
+#include "item/craft_recipe_continuation.h"
 #include "player/player_snapshot_codec.h"
 #include "world/vnum.obj.h"
 
@@ -143,6 +144,30 @@ bool craft_pouch_mutation_from_payload(const item_transfer_payload &payload,
 {
 	if (!mutation)
 		return false;
+	if (payload.continuation.kind == item_transfer_continuation_kind::craft_recipe)
+	{
+		craft_recipe_continuation recipe;
+		if (!craft_recipe_continuation_decode(payload.continuation.data, &recipe) ||
+		    !craft_recipe_continuation_matches(recipe, payload))
+			return false;
+		if (recipe.pouch_mutation.empty())
+		{
+			*mutation = {};
+			return true;
+		}
+		try
+		{
+			item_transfer_payload pouch_payload = payload;
+			pouch_payload.continuation.kind =
+				item_transfer_continuation_kind::craft_pouch_usage;
+			pouch_payload.continuation.data = std::move(recipe.pouch_mutation);
+			return craft_pouch_mutation_from_payload(pouch_payload, mutation);
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+	}
 	if (payload.continuation.kind == item_transfer_continuation_kind::none)
 	{
 		if (!payload.continuation.data.empty())

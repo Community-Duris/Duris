@@ -33,5 +33,9 @@ flatfile_player_load_result flatfile_player_snapshot_read(const std::string &roo
 flatfile_player_load_result
 flatfile_player_snapshot_read_file(const std::string &directory, const std::string &filename,
 				   int32_t pid, player_snapshot *snapshot, std::string *error);
+// Prepare a complete checksummed file without publishing it. Authority owners
+// can stage a small immutable receipt with the same reader as player snapshots.
+bool flatfile_player_snapshot_encode_file(const player_snapshot &snapshot,
+					  std::vector<uint8_t> *bytes);
 
 #endif

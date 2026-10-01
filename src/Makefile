@@ -281,6 +281,7 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/drannak.o \
 				 item/enhance.o \
 				 economy/crafting.o \
+				 economy/craft_progression.o \
 				 economy/mining.o \
 				 economy/mining_config.o \
 				 item/random_equipment_config.o \

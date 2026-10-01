@@ -8,6 +8,7 @@
 #include "player/player_load_pets.h"
 #include "player/player_save_pipeline.h"
 #include "world/quest_reward_recovery.h"
+#include "player/craft_progression_hooks.h"
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "world/db.h"
@@ -887,6 +888,11 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 	      (PLAYER_LOAD_DEGRADED_ITEMS | PLAYER_LOAD_DEGRADED_PETS |
 	       PLAYER_LOAD_DEGRADED_RECOVERY)))
 	{
+		if ((!result.craft_receipts.empty() && !craft_progression_hooks.recover) ||
+		    (craft_progression_hooks.recover &&
+		     !craft_progression_hooks.recover(result.pid, result.craft_receipts.data(),
+						      result.craft_receipts.size())))
+			return false;
 		spell_component_retirement_recover_receipts(static_cast<uint32_t>(result.pid),
 							    result.spell_effect_receipts.data(),
 							    result.spell_effect_receipts.size());

@@ -1981,6 +1981,18 @@ bool player_load_request_valid(const player_load_request &request, uint64_t now_
 			if (request.pending_spell_effect_operations[prior].bytes == operation.bytes)
 				return false;
 	}
+	if (request.pending_craft_operations.size() > PLAYER_CRAFT_RECEIPT_MAX ||
+	    (!request.include_items && !request.pending_craft_operations.empty()))
+		return false;
+	for (size_t index = 0; index < request.pending_craft_operations.size(); ++index)
+	{
+		if (critical_operation_id_is_zero(request.pending_craft_operations[index]))
+			return false;
+		for (size_t prior = 0; prior < index; ++prior)
+			if (request.pending_craft_operations[prior].bytes ==
+			    request.pending_craft_operations[index].bytes)
+				return false;
+	}
 	if (request.death_recovery_query.kind != player_death_recovery_query_kind::none)
 		return pid_identity && !request.include_items && !request.include_pets &&
 		       player_death_recovery_query_request_valid(request.death_recovery_query,
@@ -2324,6 +2336,115 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 				result.error_code = ENOMEM;
 				mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
 					      "spell_effect_receipts");
+			}
+			mysql_free_result(rows);
+		}
+	}
+	if (!request.pending_craft_operations.empty())
+	{
+		MYSQL_RES *rows = nullptr;
+		bool query_oom = false;
+		try
+		{
+			std::string statement =
+				"SELECT c.operation_id,c.discipline,c.experience,c.applied_revision FROM player_craft_progression c "
+				"JOIN critical_operation_inbox i ON i.operation_id=c.operation_id "
+				"WHERE i.status=1 AND i.result_code=0 AND c.applied_revision>0 AND c.pid=" +
+				std::to_string(result.pid) + " AND c.operation_id IN (";
+			constexpr char hex[] = "0123456789abcdef";
+			for (size_t index = 0; index < request.pending_craft_operations.size();
+			     ++index)
+			{
+				if (index)
+					statement += ',';
+				statement += "UNHEX('";
+				for (uint8_t byte : request.pending_craft_operations[index].bytes)
+				{
+					statement += hex[byte >> 4];
+					statement += hex[byte & 15];
+				}
+				statement += "')";
+			}
+			statement += ") LIMIT " +
+				     std::to_string(request.pending_craft_operations.size() + 1);
+			rows = query(connection, statement, &result);
+		}
+		catch (const std::bad_alloc &)
+		{
+			query_oom = true;
+			result.error_code = ENOMEM;
+			mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY, "craft_receipts");
+		}
+		if (!rows)
+		{
+			if (!query_oom)
+				result.error_code = mysql_errno(connection);
+			mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY, "craft_receipts");
+		}
+		else
+		{
+			try
+			{
+				result.craft_receipts.reserve(
+					request.pending_craft_operations.size());
+				MYSQL_ROW row = nullptr;
+				while ((row = mysql_fetch_row(rows)))
+				{
+					if (!add_result_budget(rows, row, &result))
+					{
+						result.error_code = EOVERFLOW;
+						mark_degraded(&result,
+							      PLAYER_LOAD_DEGRADED_RECOVERY,
+							      "craft_receipts");
+						break;
+					}
+					const unsigned long *lengths = mysql_fetch_lengths(rows);
+					uint64_t discipline = 0, experience = 0,
+						 applied_revision = 0;
+					if (!lengths || !row[0] || lengths[0] != 16 ||
+					    !parse_unsigned(row[1], 2, &discipline) ||
+					    !discipline ||
+					    !parse_unsigned(row[2], INT32_MAX, &experience) ||
+					    !parse_unsigned(row[3], result.snapshot.revision,
+							    &applied_revision) ||
+					    !applied_revision ||
+					    result.craft_receipts.size() >=
+						    request.pending_craft_operations.size())
+					{
+						result.error_code = EINVAL;
+						mark_degraded(&result,
+							      PLAYER_LOAD_DEGRADED_RECOVERY,
+							      "craft_receipts");
+						break;
+					}
+					player_craft_receipt_snapshot receipt = {};
+					std::copy_n(reinterpret_cast<const uint8_t *>(row[0]), 16,
+						    receipt.operation_id.bytes.begin());
+					receipt.discipline = static_cast<uint32_t>(discipline);
+					receipt.experience = static_cast<uint32_t>(experience);
+					if (std::find_if(
+						    result.craft_receipts.begin(),
+						    result.craft_receipts.end(),
+						    [&](const auto &existing) {
+							    return existing.operation_id.bytes ==
+								   receipt.operation_id.bytes;
+						    }) != result.craft_receipts.end())
+					{
+						mark_degraded(&result,
+							      PLAYER_LOAD_DEGRADED_RECOVERY,
+							      "craft_receipts");
+						result.error_code = EILSEQ;
+						break;
+					}
+					result.craft_receipts.push_back(receipt);
+				}
+			}
+			catch (const std::bad_alloc &)
+			{
+				result.craft_receipts.clear();
+				result.error_code = ENOMEM;
+				mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+					      "craft_receipts");
 			}
 			mysql_free_result(rows);
 		}

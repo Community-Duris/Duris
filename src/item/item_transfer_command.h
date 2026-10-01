@@ -172,6 +172,7 @@ enum class item_transfer_continuation_kind : uint32_t
 	account_reward_retirement = 4,
 	account_reward_duplicate_promotion = 5,
 	craft_pouch_usage = 6,
+	craft_recipe = 7,
 };
 
 enum class item_spell_component_effect : uint32_t
@@ -186,7 +187,9 @@ enum class item_spell_component_effect : uint32_t
 
 constexpr size_t item_transfer_continuation_limit(item_transfer_continuation_kind kind)
 {
-	return kind == item_transfer_continuation_kind::craft_pouch_usage ?
+	return kind == item_transfer_continuation_kind::craft_recipe ?
+		       ITEM_TRANSFER_POUCH_CONTINUATION_MAX_BYTES + 32 :
+	       kind == item_transfer_continuation_kind::craft_pouch_usage ?
 		       ITEM_TRANSFER_POUCH_CONTINUATION_MAX_BYTES :
 		       ITEM_TRANSFER_CONTINUATION_MAX_BYTES;
 }
