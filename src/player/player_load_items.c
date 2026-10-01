@@ -325,7 +325,11 @@ void attach_loaded_inventory(P_char character, const std::vector<P_obj> &objects
 	for (size_t index : roots)
 	{
 		P_obj object = objects[index];
-		const int slot = items[index].equipment_slot;
+		// Pet hydration precedes the owner link. Keep hidden helper roots in
+		// this NPC's inventory instead of reactivating legacy worn snapshots.
+		const int slot = IS_NPC(character) && (object->extra_flags & ITEM_NOSHOW) ?
+					 0 :
+					 items[index].equipment_slot;
 		if (slot > 0)
 		{
 			character->equipment[slot - 1] = object;

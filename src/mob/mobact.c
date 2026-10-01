@@ -7099,6 +7099,8 @@ int IsBetterObject(P_char ch, P_obj obj, int foo)
 
 void CheckEqWorthUsing(P_char ch, P_obj obj)
 {
+	if (item_restricted_for_player_pet(ch, obj))
+		return;
 	P_obj ob = NULL, ob2 = NULL;
 
 	if (!obj || !ch)
@@ -8299,8 +8301,7 @@ bool MobDestroyWall(P_char ch, P_obj wall, bool bTryHit)
 			// about the cmd.
 			if (obj_index[wall->R_num].func.obj)
 			{
-				bImpossible = !((*obj_index[wall->R_num].func.obj)(
-					wall, ch, CMD_HIT, cmdBuf));
+				bImpossible = !(invoke_object_special(wall, ch, CMD_HIT, cmdBuf));
 				// special for PATROLS - if the wall isn't hittable, then
 				// use a special dispel magic
 				if (bImpossible && IS_PATROL(ch))

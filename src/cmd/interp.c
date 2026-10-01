@@ -11,6 +11,7 @@
  */
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "telemetry/telemetry_runtime.h"
 #include "item/item_actions.h"
 #include "item/artifact_mana.h"
@@ -2781,8 +2782,7 @@ bool special(P_char ch, int cmd, char *arg)
 	{
 		if (ch->equipment[j] && (ch->equipment[j]->R_num >= 0) &&
 		    obj_index[ch->equipment[j]->R_num].func.obj)
-			if ((*obj_index[ch->equipment[j]->R_num].func.obj)(ch->equipment[j], ch,
-									   cmd, arg))
+			if (invoke_object_special(ch->equipment[j], ch, cmd, arg))
 				return (1);
 	}
 	/*
@@ -2791,7 +2791,7 @@ bool special(P_char ch, int cmd, char *arg)
 	for (i = ch->carrying; i; i = i->next_content)
 	{
 		if ((i->R_num >= 0) && obj_index[i->R_num].func.obj)
-			if ((*obj_index[i->R_num].func.obj)(i, ch, cmd, arg))
+			if (invoke_object_special(i, ch, cmd, arg))
 				return (1);
 	}
 	if (!ALONE(ch))
@@ -2831,7 +2831,7 @@ bool special(P_char ch, int cmd, char *arg)
 	 */
 	for (i = world[ch->in_room].contents; i; i = i->next_content)
 		if ((i->R_num >= 0) && obj_index[i->R_num].func.obj)
-			if ((*obj_index[i->R_num].func.obj)(i, ch, cmd, arg))
+			if (invoke_object_special(i, ch, cmd, arg))
 				return (1);
 
 	return (0);
