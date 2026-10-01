@@ -8011,6 +8011,13 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 			send_to_char("You do not have that item in your inventory yet.\r\n", ch);
 		return FALSE;
 	}
+	if (item_restricted_for_player_pet(ch, obj_object))
+	{
+		if (showit)
+			send_to_char("You cannot use that hidden equipment.\r\n", ch);
+		return FALSE;
+	}
+
 	if (!can_equip_soulbound_item(ch, obj_object, showit))
 		return FALSE;
 
@@ -9652,8 +9659,8 @@ void do_search(P_char ch, char *argument, int /*cmd*/)
 			   */
 				if (k->R_num >= 0 && obj_index[k->R_num].func.obj)
 				{
-					proc_handled = (*obj_index[k->R_num].func.obj)(
-						k, ch, CMD_FOUND, NULL);
+					proc_handled =
+						invoke_object_special(k, ch, CMD_FOUND, NULL);
 				}
 				if (!proc_handled)
 				{

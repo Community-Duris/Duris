@@ -121,6 +121,7 @@ bool copyover_training_dummy_is(P_char ch)
 struct copyover_worker_resume_guard
 {
 	bool armed = true;
+	bool redis_released = false;
 	~copyover_worker_resume_guard()
 	{
 		if (!armed)
@@ -129,6 +130,8 @@ struct copyover_worker_resume_guard
 		critical_command_coordinator_resume();
 		critical_outbox_resume();
 		player_save_pipeline_resume();
+		if (redis_released)
+			redis_world_recovery_resume_after_copyover();
 	}
 };
 
@@ -1105,6 +1108,12 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 
 	logit(LOG_STATUS, "copyover: saved %d descs, %d mobs, %d objs, %d doors", num_descs,
 	      num_mobs, num_objs, num_rooms);
+	if (!redis_world_recovery_prepare_copyover())
+	{
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
+	}
+	resume_workers.redis_released = true;
 
 	// All prerequisite saves and the complete copyover file are durable. Only
 	// now may non-preservable transports be disconnected.

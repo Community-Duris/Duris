@@ -43,6 +43,8 @@ fixture = fixture.replace('void act(const char *, int, P_char, P_obj, void *, in
 fixture = fixture.replace("// INSERT_PRODUCTION_ABORT",
                           function(ROOT / "src/net/sparser.c", "void do_abort(P_char ch,"))
 callbacks = "\n".join([
+    function(ROOT / "src/item/objmisc.c", "bool item_restricted_for_player_pet("),
+    function(ROOT / "src/item/objmisc.c", "int invoke_object_special("),
     function(ROOT / "src/specs/specs.underworld.c", "void resolve_avernus_drain("),
     function(ROOT / "src/specs/specs.underworld.c", "int avernus("),
     function(ROOT / "src/combat/attack_effects.c", "bool weapon_proc("),
@@ -50,6 +52,7 @@ callbacks = "\n".join([
 ])
 
 DOUBLES = r'''
+#include "combat/attack_continuation.h"
 #include "item/weapon_actions.c"
 #include "item/native_artifact_actions.h"
 bool native_artifact_owns(int) { return false; }
@@ -210,8 +213,9 @@ static void avernus_parity() {
     assert(avernus(s.source, s.actor, CMD_SAY, stone));
     assert(stone_calls == 1 && s.source->timer[0] == wall_time);
     choices.push_back(0);
-    // Same direct callback invocation used by do_backstab, bypassing weapon_proc.
-    assert(obj_index[0].func.obj(s.source, s.actor, CMD_MELEE_HIT, reinterpret_cast<char *>(s.target)));
+    // Same guarded callback route used by do_backstab, bypassing weapon_proc.
+    assert(invoke_object_special(s.source, s.actor, CMD_MELEE_HIT,
+                                 reinterpret_cast<char *>(s.target)));
     assert(effects.empty()); advance(); assert(effects.size() == 2);
 }
 
@@ -391,6 +395,7 @@ with tempfile.TemporaryDirectory(prefix="duris-weapon-actions-") as directory:
     subprocess.run([str(binary)], check=True, env=env)
 
 backstab = function(ROOT / "src/cmd/actoff.c", "bool single_stab(")
-assert "obj_index[weapon->R_num].func.obj" in backstab and "CMD_MELEE_HIT" in backstab
+assert "invoke_object_special(weapon, ch, CMD_MELEE_HIT" in backstab
+assert "obj_index[weapon->R_num].func.obj)(" not in backstab
 assert "weapon_proc(" not in "\n".join(line.split("//", 1)[0] for line in backstab.splitlines())
 print("Backstab retains the direct callback route covered by the Avernus pilot")

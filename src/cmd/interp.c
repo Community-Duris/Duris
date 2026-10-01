@@ -12,6 +12,7 @@
 
 #include "core/prototypes.h"
 #include "cmd/track.h"
+#include "item/objmisc.h"
 #include "telemetry/telemetry_runtime.h"
 #include "item/item_actions.h"
 #include "item/artifact_mana.h"
@@ -2792,8 +2793,7 @@ bool special(P_char ch, int cmd, char *arg)
 	{
 		if (ch->equipment[j] && (ch->equipment[j]->R_num >= 0) &&
 		    obj_index[ch->equipment[j]->R_num].func.obj)
-			if ((*obj_index[ch->equipment[j]->R_num].func.obj)(ch->equipment[j], ch,
-									   cmd, arg))
+			if (invoke_object_special(ch->equipment[j], ch, cmd, arg))
 				return (1);
 	}
 	/*
@@ -2802,7 +2802,7 @@ bool special(P_char ch, int cmd, char *arg)
 	for (i = ch->carrying; i; i = i->next_content)
 	{
 		if ((i->R_num >= 0) && obj_index[i->R_num].func.obj)
-			if ((*obj_index[i->R_num].func.obj)(i, ch, cmd, arg))
+			if (invoke_object_special(i, ch, cmd, arg))
 				return (1);
 	}
 	if (!ALONE(ch))
@@ -2842,7 +2842,7 @@ bool special(P_char ch, int cmd, char *arg)
 	 */
 	for (i = world[ch->in_room].contents; i; i = i->next_content)
 		if ((i->R_num >= 0) && obj_index[i->R_num].func.obj)
-			if ((*obj_index[i->R_num].func.obj)(i, ch, cmd, arg))
+			if (invoke_object_special(i, ch, cmd, arg))
 				return (1);
 
 	return (0);
@@ -3261,7 +3261,6 @@ void assign_command_pointers(void)
 	CMD_N(CMD_ENCRUST, STAT_NORMAL + POS_STANDING, do_encrust, 0, TRUE);
 	CMD_N(CMD_SPELLBIND, STAT_NORMAL + POS_STANDING, do_spellbind, 0, TRUE);
 	CMD_N(CMD_FIX, STAT_NORMAL + POS_STANDING, do_fix, 0, TRUE);
-	CMD_N(CMD_MIX, STAT_NORMAL + POS_STANDING, do_mix, 0, TRUE);
 	CMD_N(CMD_SMELT, STAT_NORMAL + POS_STANDING, do_smelt, 0, TRUE);
 	CMD_N(CMD_TEST_DESC, STAT_NORMAL + POS_PRONE, do_testdesc, LESSER_G, FALSE);
 	CMD_N(CMD_TESTCOLOR, STAT_NORMAL + POS_PRONE, do_testcolor, 0, FALSE);

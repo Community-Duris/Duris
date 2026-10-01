@@ -304,7 +304,7 @@ int main()
 	assert(applied.outcome == critical_apply_outcome::applied);
 	assert(scalar("SELECT realized_price_copper FROM economic_accounting_operation "
 		      "WHERE operation_id=" +
-		      literal(command.operation_id)) == static_cast<int64_t>(listing.price_value));
+		      literal(command.operation_id)) == static_cast<uint64_t>(listing.price_value));
 	collector_command_result result = {};
 	assert(collector_command_decode_result(applied.result_payload.data(), applied.result_size,
 					       &result));

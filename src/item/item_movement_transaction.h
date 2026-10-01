@@ -121,6 +121,14 @@ bool item_movement_transaction_submit_batch(
 	item_movement_reject *reject, item_movement_publication_fn publication,
 	economic_source_kind lifecycle_source, uint64_t logical_source_id,
 	const item_transfer_continuation &continuation);
+// Atomically retire captured input trees and publish one or more detached output
+// trees through the existing critical-command coordinator.
+bool item_movement_transaction_submit_craft(P_char actor, P_obj const *inputs, size_t input_count,
+					    P_obj const *outputs, size_t output_count,
+					    int64_t recipe_id,
+					    item_movement_completion_fn completion,
+					    const void *context, size_t context_size,
+					    item_movement_reject *reject = NULL);
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
 					  P_obj target_container = NULL,
 					  economic_source_kind source = {}, uint64_t source_id = 0);

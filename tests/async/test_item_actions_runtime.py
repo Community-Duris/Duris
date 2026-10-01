@@ -18,6 +18,10 @@ scheduler = next(ast.literal_eval(node.value) for node in fixture.body
                  and any(isinstance(t, ast.Name) and t.id == "HARNESS" for t in node.targets))
 platform = scheduler.split("struct record_payload\n", 1)[0]
 platform = platform.replace("DEFINE_LABEL_CALLBACK(event_item_action_active)", "")
+platform = platform.replace("P_char get_linked_char(P_char, ush_int)\n{\n\treturn nullptr;\n}",
+                            "extern P_char fixture_pet_master;\n"
+                            "P_char get_linked_char(P_char, ush_int type) { "
+                            "return type == LNK_PET ? fixture_pet_master : nullptr; }")
 platform = platform.replace('void panic_corruption(const char *, const char *, ...)\n{\n\tthrow panic_signal{};\n}',
                            'void panic_corruption(const char *, const char *format, ...) { '
                            'va_list args; va_start(args, format); vfprintf(stderr, format, args); '
@@ -38,6 +42,7 @@ def function_body(text, signature):
 abort_command = function_body((ROOT / "src/net/sparser.c").read_text(), "void do_abort(P_char ch,")
 
 HARNESS = r'''
+P_char fixture_pet_master = nullptr;
 #define clock_gettime nevent_test_clock_gettime
 #include "item/item_actions.c"
 #undef clock_gettime
@@ -562,6 +567,32 @@ static void test_bounded_telemetry() {
       } }
 }
 
+static void test_hidden_pet_selection_and_completion() {
+    for (bool active : {false, true}) {
+        {
+            scene s(active);
+            fixture_pet_master = s.target;
+            SET_BIT(s.actor->specials.act, ACT_ISNPC);
+            SET_BIT(s.source->extra_flags, ITEM_NOSHOW);
+            assert(s.start() == item_action_start::suppressed);
+            assert(!item_actions_pending() && !s.report.commits && !s.report.effects);
+            fixture_pet_master = nullptr;
+        }
+        {
+            scene s(active);
+            SET_BIT(s.source->extra_flags, ITEM_NOSHOW);
+            assert(s.start() == item_action_start::scheduled);
+            // The source remains worn at the same UID: independently of the
+            // charm-time normalization, completion must re-check pet policy.
+            fixture_pet_master = s.target;
+            SET_BIT(s.actor->specials.act, ACT_ISNPC);
+            advance();
+            assert(!item_actions_pending() && !s.report.effects && s.report.finishes == 1);
+            fixture_pet_master = nullptr;
+        }
+    }
+}
+
 int main() {
     nevent_bind_game_thread();
     ne_dead_event_pool = &test_pool;
@@ -578,6 +609,7 @@ int main() {
     test_effect_transitions();
     test_carry_self_reload_and_rearm_rejection();
     test_bounded_telemetry();
+    test_hidden_pet_selection_and_completion();
     std::puts("Item actions: scheduler, identities, costs, cancellation, timing and effect lifetime passed");
 }
 '''
@@ -585,7 +617,9 @@ int main() {
 with tempfile.TemporaryDirectory(prefix="duris-item-actions-") as directory:
     source = Path(directory) / "harness.cpp"
     binary = Path(directory) / "harness"
-    source.write_text(platform + HARNESS.replace("// INSERT_PRODUCTION_ABORT", abort_command))
+    source.write_text(platform + function_body((ROOT / "src/item/objmisc.c").read_text(),
+                                                   "bool item_restricted_for_player_pet(") +
+                      HARNESS.replace("// INSERT_PRODUCTION_ABORT", abort_command))
     subprocess.run([
         "g++", "-std=c++20", "-O1", "-g", "-ffunction-sections", "-fdata-sections",
         "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-pthread",
