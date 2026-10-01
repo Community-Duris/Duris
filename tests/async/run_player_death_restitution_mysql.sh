@@ -22,8 +22,8 @@ TOOLS_CONTAINER="duris-issue-331-tools-$$"
 TOOLS_CREATED=0
 
 cleanup() {
-    if [[ "$TOOLS_CREATED" == 1 ]]; then docker rm -f "$TOOLS_CONTAINER" >/dev/null 2>&1 || true; fi
-    if [[ "$DB_CREATED" == 1 ]]; then docker rm -f "$DB_CONTAINER" >/dev/null 2>&1 || true; fi
+    if [[ "$TOOLS_CREATED" == 1 ]]; then docker rm -fv "$TOOLS_CONTAINER" >/dev/null 2>&1 || true; fi
+    if [[ "$DB_CREATED" == 1 ]]; then docker rm -fv "$DB_CONTAINER" >/dev/null 2>&1 || true; fi
     if [[ "$NETWORK_CREATED" == 1 ]]; then docker network rm "$NETWORK" >/dev/null 2>&1 || true; fi
     rm -rf "$TMP"
 }
@@ -34,9 +34,11 @@ NETWORK_CREATED=1
 if [[ "$DB_IMAGE" == mysql:* ]]; then
     ROOT_PASSWORD_ENV=MYSQL_ROOT_PASSWORD
     DATABASE_ENV=MYSQL_DATABASE
+    MYSQL_CLIENT=mysql
 else
     ROOT_PASSWORD_ENV=MARIADB_ROOT_PASSWORD
     DATABASE_ENV=MARIADB_DATABASE
+    MYSQL_CLIENT=mariadb
 fi
 docker create --name "$DB_CONTAINER" --network "$NETWORK" \
     -e "$ROOT_PASSWORD_ENV=$DB_PASSWORD" -e "$DATABASE_ENV=$DB_NAME" \
@@ -45,7 +47,7 @@ DB_CREATED=1
 docker start "$DB_CONTAINER" >/dev/null
 
 printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail' \
-    'exec docker exec -e MYSQL_PWD="${MYSQL_PWD:-}" -i "'"$DB_CONTAINER"'" mysql --protocol=TCP --host=127.0.0.1 --port=3306 "$@"' > "$MYSQL_WRAPPER"
+    'exec docker exec -e MYSQL_PWD="${MYSQL_PWD:-}" -i "'"$DB_CONTAINER"'" '"$MYSQL_CLIENT"' --protocol=TCP --host=127.0.0.1 --port=3306 "$@"' > "$MYSQL_WRAPPER"
 chmod 700 "$MYSQL_WRAPPER"
 export MYSQL_PWD="$DB_PASSWORD"
 for attempt in $(seq 1 45); do

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Golden vectors and round trips for the schema-12 recovery wire format."""
+"""Golden vectors and round trips for the schema-13 recovery wire format."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ int main()
     header.zone_count = 4;
     header.complete = 1;
     const std::array<unsigned char, WORLD_RECOVERY_WIRE_HEADER_BYTES> expected_header = {
-        0x57,0x52,0x31,0x32, 0x0c,0x00,0x00,0x00, 0x40,0x00,0x00,0x00,
+        0x57,0x52,0x31,0x32, 0x0d,0x00,0x00,0x00, 0x40,0x00,0x00,0x00,
         0x08,0x07,0x06,0x05,0x04,0x03,0x02,0x01,
         0xfe,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
         0x18,0x17,0x16,0x15,0x14,0x13,0x12,0x11,
@@ -136,9 +136,10 @@ int main()
     assert(decoded_item.wear_flags == item.wear_flags);
     assert(!std::strcmp(decoded_item.action_description, item.action_description));
     assert(decoded_item.affect_modifiers[0] == -5 && decoded_item.bitvector5 == item.bitvector5);
-    assert(encoded_object[604] == 4 && encoded_object[607] == 1);
+    assert(encoded_object[3200] == 4 && encoded_object[3203] == 1);
 
     copyover_mob mob = {};
+    mob.shopkeeper_shop_id = -1;
     mob.vnum = 10;
     mob.idnum = 20;
     mob.room = 30;
@@ -174,6 +175,23 @@ int main()
            decoded_mob.num_affects == 1);
     assert(decoded_affect.type == affect.type && decoded_affect.flags == affect.flags &&
            decoded_affect.bitvector5 == affect.bitvector5);
+    assert(decoded_mob.shopkeeper_shop_id == -1); // Legacy wire must not claim shop zero.
+    mob.shopkeeper_shop_id = 480;
+    memcpy(native_mob.data(), &mob, sizeof(mob));
+    assert(world_recovery_encode_record(world_recovery_record_type::mob, native_mob.data(),
+                                        native_mob.size(), encoded_mob.data(),
+                                        encoded_mob.size(), &encoded_size));
+    assert(encoded_size == 354 && !memcmp(encoded_mob.data()+346, "SHP1", 4));
+    assert(world_recovery_decode_record(world_recovery_record_type::mob, encoded_mob.data(),
+                                        encoded_size, &native));
+    memcpy(&decoded_mob, native.data(), sizeof(decoded_mob));
+    assert(decoded_mob.shopkeeper_shop_id == 480);
+    for (size_t truncated = 347; truncated < 354; ++truncated)
+        assert(!world_recovery_decode_record(world_recovery_record_type::mob, encoded_mob.data(),
+                                             truncated, &native));
+    memset(encoded_mob.data()+350, 0xff, 4);
+    assert(!world_recovery_decode_record(world_recovery_record_type::mob, encoded_mob.data(),
+                                         encoded_size, &native));
 
     std::vector<unsigned char> floor;
     assert(world_recovery_encode_floor_object(native_object.data(), native_object.size(), &floor));
@@ -225,4 +243,4 @@ assert "const bool succeeded = prepared && execute_batch(context, job)" in FLOOR
 assert "prepared ? redis_observability_now_usec() : 0" in FLOOR
 assert FLOOR.index("prepare_batch(job)") < FLOOR.index("execute_batch(context, job)")
 
-print("schema-12 little-endian recovery codec golden vectors passed")
+print("schema-13 little-endian recovery codec golden vectors passed")

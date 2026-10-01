@@ -137,7 +137,8 @@ player_snapshot death_snapshot(int pid, uint64_t owner_revision)
 	snapshot.death->corpse.push_back(gloves);
 
 	player_item_snapshot spellbook = item(51005, 7, 0, ITEM_SPELLBOOK, ITEM_TAKE, 0,
-					      "qaspellbook recovered spellbook", "a recovered spellbook");
+					      "qaspellbook recovered spellbook",
+					      "a recovered spellbook");
 	spellbook.values = { 27, 1, 0, 0, 0, 0, 0, 0 };
 	spellbook.extra_descriptions.push_back({ "SPELLBOOK", "", true, { 601, 602 } });
 	snapshot.death->corpse.push_back(spellbook);

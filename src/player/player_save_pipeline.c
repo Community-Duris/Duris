@@ -23,6 +23,7 @@
 #include <limits>
 #include <mutex>
 #include <new>
+#include <set>
 #include <thread>
 #include <utility>
 
@@ -56,6 +57,10 @@ bool stop_requested = false;
 bool accepting = false;
 bool append_inflight = false;
 int append_inflight_pid = 0;
+/* One failed graph may be recaptured once.  Keep the PID armed until a later
+ * database acknowledgement proves custody and payload agree; otherwise every
+ * rejected recapture creates a new revision and an unbounded wizlog loop. */
+std::set<int32_t> custody_recapture_armed;
 
 player_save_apply_fn selected_snapshot_apply()
 {
@@ -386,10 +391,10 @@ void player_save_pipeline_shutdown(void)
 /** Mark player components dirty and advance any outstanding terminal fence to the new revision. */
 bool player_save_pipeline_mark(int pid, player_component_mask_t components)
 {
-#ifdef __NO_MYSQL__
+	/* Equipment and inventory are one custody graph.  Saving either half alone can
+	 * delete container descendants or make an exact custody comparison impossible. */
 	if (components & (PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY))
 		components |= PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY;
-#endif
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	if (!accepting)
 		return false;
@@ -421,6 +426,8 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
 {
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0)
 		return player_save_pipeline_result::invalid;
+	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return player_save_pipeline_result::unavailable;
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		if (find_target_save_login_fence_locked(GET_PID(ch)))
@@ -465,6 +472,8 @@ player_save_pipeline_result player_save_pipeline_request(P_char ch,
 							 player_component_mask_t components,
 							 int save_intent, int room_vnum)
 {
+	if (ch && IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return player_save_pipeline_result::unavailable;
 	if (!ch || IS_NPC(ch) || !player_save_pipeline_mark(GET_PID(ch), components))
 		return player_save_pipeline_result::invalid;
 	return player_save_pipeline_checkpoint_dirty(ch, save_intent, room_vnum);
@@ -511,6 +520,8 @@ player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_in
 {
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0 || !timeout_msec)
 		return player_save_terminal_result::invalid;
+	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return player_save_terminal_result::unavailable;
 	const int pid = GET_PID(ch);
 	player_revision_t revision = 0;
 	if (!begin_terminal_fence(pid, &revision))
@@ -533,6 +544,13 @@ player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
 {
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0 || !corpse || !timeout_msec)
 		return player_save_terminal_result::invalid;
+	// A payload-gap load keeps its valid item graph read-only. Its only safe
+	// terminal write is the immutable death disposition, which records that
+	// graph and quarantines matching durable custody. Every other degraded load
+	// may be missing state the disposition cannot reconstruct.
+	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED) &&
+	    !IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_ITEM_PAYLOAD_GAP))
+		return player_save_terminal_result::unavailable;
 	const int pid = GET_PID(ch);
 	player_revision_t revision = 0;
 	if (!begin_terminal_fence(pid, &revision))
@@ -643,6 +661,9 @@ void player_save_pipeline_pulse(void)
 	player_save_completion completions[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
 	int32_t missing_baseline[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
 	size_t missing_baseline_count = 0;
+	player_save_completion custody_mismatches[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
+	bool custody_recapture_allowed[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
+	size_t custody_mismatch_count = 0;
 	const size_t completed =
 		player_save_worker_pulse(completions, PLAYER_SAVE_PIPELINE_PULSE_BUDGET);
 	{
@@ -650,6 +671,10 @@ void player_save_pipeline_pulse(void)
 		health.completions += completed;
 		for (size_t index = 0; index < completed; ++index)
 		{
+			if (completions[index].outcome == player_save_apply_outcome::applied ||
+			    completions[index].outcome ==
+				    player_save_apply_outcome::already_applied)
+				custody_recapture_armed.erase(completions[index].pid);
 			if (trace_player_saves())
 			{
 				const auto &completion = completions[index];
@@ -682,7 +707,46 @@ void player_save_pipeline_pulse(void)
 				    player_save_apply_outcome::terminal_failure &&
 			    completions[index].error_code == ENOENT && completions[index].pid > 0)
 				missing_baseline[missing_baseline_count++] = completions[index].pid;
+			if (completions[index].outcome ==
+				    player_save_apply_outcome::terminal_failure &&
+			    completions[index].error_code ==
+				    PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH &&
+			    completions[index].pid > 0)
+			{
+				custody_mismatches[custody_mismatch_count] = completions[index];
+				custody_recapture_allowed[custody_mismatch_count] =
+					custody_recapture_armed.insert(completions[index].pid)
+						.second;
+				++custody_mismatch_count;
+			}
 		}
+	}
+	for (size_t index = 0; index < custody_mismatch_count; ++index)
+	{
+		bool recapture_scheduled = false;
+		for (P_char ch = custody_recapture_allowed[index] ? character_list : NULL; ch;
+		     ch = ch->next)
+			if (IS_PC(ch) && GET_PID(ch) == custody_mismatches[index].pid &&
+			    GET_STAT(ch) != STAT_DEAD &&
+			    !IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+			{
+				/* Custody may advance after a snapshot is sealed (for example,
+				 * an item granted during login).  Preserve the rejection, then
+				 * capture the current graph instead of retrying stale bytes or
+				 * requiring the player to issue a manual save. */
+				persistence_schedule_character_save(ch, RENT_CRASH, 2,
+								    "custody-mismatch-recapture");
+				recapture_scheduled = true;
+				break;
+			}
+		persistence_alert(AVATAR, "player_save", "redacted", "none", "none",
+				  "custody_payload_mismatch_rejected",
+				  "pid=%d revision=%llu components=%llu destructive_write=0 "
+				  "recapture_scheduled=%d",
+				  custody_mismatches[index].pid,
+				  (unsigned long long)custody_mismatches[index].revision,
+				  (unsigned long long)custody_mismatches[index].components,
+				  recapture_scheduled ? 1 : 0);
 	}
 	for (size_t index = 0; index < missing_baseline_count; ++index)
 	{

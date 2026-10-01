@@ -210,6 +210,7 @@ static obj_data item(int type, int flags, bool two = false, int weight = 1)
 	obj.condition = 100;
 	obj.weight = weight;
 	obj.loc_p = LOC_CARRIED;
+	obj.loc.carrying = &actor;
 	obj.value[2] = 10;
 	return obj;
 }
@@ -226,6 +227,7 @@ static void remove(P_obj obj)
 	}
 	assert(found);
 	obj->loc_p = LOC_CARRIED;
+	obj->loc.carrying = &actor;
 }
 static void scribe_cycle(P_obj book, P_obj pen)
 {
@@ -314,6 +316,14 @@ int main()
 	for (auto &row : strength)
 		row.wield_w = 100;
 	skills[1].name = "fixture";
+	reset();
+	auto detached = item(ITEM_WEAPON, ITEM_WIELD);
+	detached.loc_p = LOC_NOWHERE;
+	detached.loc.carrying = nullptr;
+	message.clear();
+	assert(!wear(&actor, &detached, 12, true));
+	assert(message == "You do not have that item in your inventory yet.\r\n");
+	assert(actor.equipment[PRIMARY_WEAPON] == nullptr);
 	auto weapon = item(ITEM_WEAPON, ITEM_WIELD);
 	auto great = item(ITEM_WEAPON, ITEM_WIELD, true);
 	auto book = item(ITEM_SPELLBOOK, ITEM_HOLD);

@@ -48,6 +48,7 @@
 #include "net/gmcp.h"
 #include "guild/guildhall.h"
 #include "world/hardcore_config.h"
+#include "world/zone_story_quest_runtime.h"
 #include "combat/justice.h"
 #include "core/mm.h"
 #include "account/multiplay_whitelist.h"
@@ -56,7 +57,8 @@
 #include "player/player_load_items.h"
 #include "player/player_load_pets.h"
 #include "player/player_load_pipeline.h"
-#include "player/player_death_restitution_adapter.h"
+#include "player/player_death_restitution_locker.h"
+#include "player/player_save_pipeline.h"
 #include "persistence/persistence_observability.h"
 #include "player/player_revision_state.h"
 #include "redis/redis_presence_runtime.h"
@@ -164,6 +166,40 @@ void ensure_pconly_pool(void)
 				  offsetof(struct pc_only_data, switched),
 				  mm_find_best_chunk(sizeof(struct pc_only_data), 10, 25));
 	}
+}
+
+static void release_preentry_character(P_desc d)
+{
+	if (!d || !d->character)
+		return;
+	P_char character = d->character;
+	item_creation_grant_cancel_batch_before_entry(character);
+	d->character = NULL;
+	character->desc = NULL;
+	free_char(character);
+}
+
+static bool account_creation_side_allowed(P_desc d)
+{
+#ifdef USE_ACCOUNT
+	if (!d || !d->account || !d->character)
+		return true;
+	const account_racewar_admission admission = account_check_racewar_admission(
+		d, GET_RACEWAR(d->character), false, IS_TRUSTED(d->character));
+	if (admission.allowed)
+		return true;
+
+	char buf[512];
+	account_format_racewar_denial(&admission, buf, sizeof(buf));
+	SEND_TO_Q(buf, d);
+	release_preentry_character(d);
+	STATE(d) = CON_DISPLAY_ACCT_MENU;
+	display_account_menu(d, NULL);
+	return false;
+#else
+	(void)d;
+	return true;
+#endif
 }
 
 void swapstat(P_desc d, char *arg);
@@ -897,7 +933,7 @@ void load_obj_to_newbies(P_char ch)
    free.
    -JAB */
 
-bool _parse_name(char *arg, char *name)
+bool _parse_name(char *arg, char *name, bool character_name)
 {
 	int i;
 	const char *smart_ass[] = { "someone",	 "somebody",  "me",	   "self",	"all",
@@ -945,6 +981,12 @@ bool _parse_name(char *arg, char *name)
 	if (search_block(name, smart_ass, TRUE) >= 0)
 		return TRUE;
 	if (sub_string_set(name, rude_ass))
+		return TRUE;
+
+	/* do_start_impl() makes an OVERLORD of any character named on god_list, so
+	 * no character may take one of those names, even after a wipe frees it.
+	 * Account names grant nothing and skip this check. */
+	if (character_name && god_check(name))
 		return TRUE;
 
 	return FALSE;
@@ -1220,6 +1262,15 @@ void enter_game(P_desc d)
 	P_desc i;
 	P_nevent evp;
 	P_Guild guild;
+	if (zone_story_quest_runtime::ready())
+	{
+		std::string zone_story_error;
+		if (!zone_story_quest_runtime::remember_character(ch, &zone_story_error))
+			logit(LOG_DEBUG, "[enter_game] zone-story identity save failed for %s: %s",
+			      ch && GET_NAME(ch) ? GET_NAME(ch) : "<unknown>",
+			      zone_story_error.empty() ? "unspecified persistence failure" :
+							 zone_story_error.c_str());
+	}
 
 	logit(LOG_FILE, "[enter_game] name=%s level=%d rtype=%d", ch ? GET_NAME(ch) : "(null)",
 	      ch ? GET_LEVEL(ch) : -1, d ? d->rtype : -1);
@@ -1936,6 +1987,7 @@ void enter_game(P_desc d)
 
 	do_look(ch, 0, -4);
 	account_bound_reward_on_login(ch);
+	player_death_restitution_locker_notice(ch);
 
 	if (has_innate(ch, INNATE_SUMMON_BOOK))
 	{
@@ -2031,7 +2083,7 @@ void select_terminal(P_desc d, const char *arg)
 #else
 	//  account stuff instead of name
 	STATE(d) = CON_GET_ACCT_NAME;
-	SEND_TO_Q("Please enter your account name: ", d);
+	send_account_name_prompt(d);
 #endif
 }
 
@@ -2108,7 +2160,7 @@ void select_name(P_desc d, char *arg, int flag)
 		//  close_socket(d);
 		return;
 	}
-	if (_parse_name(arg, tmp_name))
+	if (_parse_name(arg, tmp_name, true))
 	{
 		SEND_TO_Q("Illegal name, please try another.\r\n", d);
 		SEND_TO_Q("Name: ", d);
@@ -2479,18 +2531,28 @@ void reconnect(P_desc d, P_char tmp_ch)
 	send_offline_messages(d->character);
 }
 
+static bool legacy_load_outcome_needs_sync_retry(player_load_outcome outcome)
+{
+	return outcome == player_load_outcome::retryable_failure ||
+	       outcome == player_load_outcome::timed_out ||
+	       outcome == player_load_outcome::cancelled || outcome == player_load_outcome::stale;
+}
+
+static bool execute_legacy_load_sync(P_desc d, player_load_result *result_out)
+{
+	if (!d || !d->character || GET_PID(d->character) <= 0 || !GET_NAME(d->character))
+		return false;
+	player_load_request request = {};
+	request.request_id = player_load_pipeline_next_request_id();
+	request.pid = GET_PID(d->character);
+	request.player_name = GET_NAME(d->character);
+	request.deadline_usec = persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+	return player_load_pipeline_execute_sync(request, result_out);
+}
+
 static void finish_legacy_player_login(P_desc d)
 {
 	char buf[MAX_STRING_LENGTH];
-	if (d && d->character && GET_PID(d->character) > 0 &&
-	    !player_death_restitution_runtime_login_admit(GET_PID(d->character)))
-	{
-		SEND_TO_Q(
-			"That character is temporarily unavailable; please try again shortly.\r\n",
-			d);
-		STATE(d) = CON_FLUSH;
-		return;
-	}
 	if ((used_descs >= avail_descs) && (GET_LEVEL(d->character) < AVATAR))
 	{
 		SEND_TO_Q("Sorry, the game is almost full and the last slot is reserved...\r\n", d);
@@ -2564,7 +2626,15 @@ void nanny_player_load_complete(P_desc d, player_load_result result)
 	}
 	d->player_load_request_id = 0;
 	d->player_load_pid = 0;
-	if (result.outcome != player_load_outcome::applied || result.pid <= 0)
+	if (legacy_load_outcome_needs_sync_retry(result.outcome))
+	{
+		player_load_result retry = {};
+		if (execute_legacy_load_sync(d, &retry))
+			result = std::move(retry);
+	}
+	if ((result.outcome != player_load_outcome::applied &&
+	     result.outcome != player_load_outcome::degraded) ||
+	    result.pid <= 0)
 	{
 		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
 		SEND_TO_Q(
@@ -2578,19 +2648,12 @@ void nanny_player_load_complete(P_desc d, player_load_result result)
 		STATE(d) = CON_NAME;
 		return;
 	}
-	if (!player_death_restitution_runtime_login_admit(result.pid))
+	if (!player_save_pipeline_save_admitted(result.pid))
 	{
-		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
-		SEND_TO_Q(
-			"That character is temporarily unavailable; please try again shortly.\r\n",
-			d);
-		if (d->character)
-		{
-			free_char(d->character);
-			d->character = NULL;
-		}
-		STATE(d) = CON_NAME;
-		return;
+		result.outcome = player_load_outcome::degraded;
+		result.degraded_components |= PLAYER_LOAD_DEGRADED_RECOVERY;
+		if (!result.failed_component)
+			result.failed_component = "recovery";
 	}
 
 	char password[sizeof(d->character->only.pc->pwd)] = {};
@@ -2701,28 +2764,9 @@ void select_pwd(P_desc d, char *arg)
 				if (!tmp_ch->desc && IS_PC(tmp_ch) &&
 				    !str_cmp(GET_NAME(d->character), GET_NAME(tmp_ch)))
 				{
-					if (!player_death_restitution_runtime_login_admit(
-						    GET_PID(tmp_ch)))
-					{
-						SEND_TO_Q(
-							"That character is temporarily unavailable; please try again shortly.\r\n",
-							d);
-						STATE(d) = CON_FLUSH;
-						return;
-					}
 					reconnect(d, tmp_ch);
 					return;
 				}
-			}
-
-			if (GET_PID(d->character) > 0 &&
-			    !player_death_restitution_runtime_login_admit(GET_PID(d->character)))
-			{
-				SEND_TO_Q(
-					"That character is temporarily unavailable; please try again shortly.\r\n",
-					d);
-				STATE(d) = CON_FLUSH;
-				return;
 			}
 
 			if (d->character->only.pc->pwd[0] != '$')
@@ -2743,11 +2787,20 @@ void select_pwd(P_desc d, char *arg)
 			if (player_load_pipeline_submit(request) !=
 			    player_load_submit_outcome::accepted)
 			{
-				d->player_load_pid = 0;
-				SEND_TO_Q(
-					"Player loading is temporarily unavailable. Please try again.\r\n",
-					d);
-				STATE(d) = CON_FLUSH;
+				player_load_result blocking = {};
+				if (!player_load_pipeline_execute_sync(request, &blocking))
+				{
+					d->player_load_pid = 0;
+					SEND_TO_Q(
+						"Player loading is temporarily unavailable. Please try again.\r\n",
+						d);
+					STATE(d) = CON_FLUSH;
+					return;
+				}
+				d->player_load_request_id = request.request_id;
+				d->player_load_mode = PLAYER_LOAD_MODE_LEGACY;
+				STATE(d) = CON_PLAYER_LOAD;
+				nanny_player_load_complete(d, std::move(blocking));
 				return;
 			}
 			d->player_load_request_id = request.request_id;
@@ -3686,6 +3739,8 @@ void select_class(P_desc d, char *arg)
 		GET_RACEWAR(d->character) = RACEWAR_UNDEAD;
 	else if (IS_HARPY(d->character))
 		GET_RACEWAR(d->character) = RACEWAR_NEUTRAL;
+	if (!account_creation_side_allowed(d))
+		return;
 
 	/* pass through here, they don't get an alignment d->characterchoice. */
 
@@ -3827,6 +3882,8 @@ void select_alignment(P_desc d, char *arg)
 		GET_RACEWAR(d->character) = RACEWAR_UNDEAD;
 	else if (IS_HARPY(d->character))
 		GET_RACEWAR(d->character) = RACEWAR_NEUTRAL;
+	if (!account_creation_side_allowed(d))
+		return;
 
 	/* does this race get to choose a hometown ? */
 	home = find_hometown(GET_RACE(d->character), false);
@@ -5104,7 +5161,19 @@ void nanny(P_desc d, char *arg)
 #ifdef USE_ACCOUNT
 		if (d->character)
 		{
-			// New character entering the game for the first time
+			account_racewar_admission admission = {};
+			if (!account_commit_character_admission(d, d->character, false, &admission))
+			{
+				char buf[512];
+				account_format_racewar_denial(&admission, buf, sizeof(buf));
+				SEND_TO_Q(buf, d);
+				release_preentry_character(d);
+				STATE(d) = CON_ACCT_SELECT_CHAR;
+				display_character_list(d);
+				break;
+			}
+
+			// New character entering the game for the first time.
 			echo_on(d);
 			STATE(d) = CON_PLAYING;
 			enter_game(d);

@@ -3,7 +3,6 @@
 
 #include "flatfile/flatfile_player_repository.h"
 #include "persistence/persistence_observability.h"
-#include "player/player_save_pipeline.h"
 #include "sql/sql_pool.h"
 
 #ifndef __NO_MYSQL__
@@ -117,6 +116,9 @@ void record_result_locked(const player_load_result &result)
 	{
 	case player_load_outcome::applied:
 		++health.applied;
+		break;
+	case player_load_outcome::degraded:
+		++health.degraded;
 		break;
 	case player_load_outcome::retryable_failure:
 		++health.retryable_failures;
@@ -309,11 +311,8 @@ player_load_submit_outcome player_load_pipeline_submit(player_load_request reque
 	const uint64_t request_id = request.request_id;
 	if (!player_load_request_valid(request, now))
 		return player_load_submit_outcome::invalid;
-	if (request.pid > 0 && !player_save_pipeline_save_admitted(request.pid))
-		return player_load_submit_outcome::unavailable;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
-	if (!health.running || stop_requested || !execute_callback ||
-	    (request.pid > 0 && !player_save_pipeline_save_admitted(request.pid)))
+	if (!health.running || stop_requested || !execute_callback)
 		return player_load_submit_outcome::unavailable;
 	if (active_ids.count(request.request_id))
 		return player_load_submit_outcome::duplicate;
@@ -411,6 +410,61 @@ bool player_load_pipeline_wait(player_load_request request, player_load_result *
 	}
 }
 
+bool player_load_pipeline_execute_sync(player_load_request request, player_load_result *result_out)
+{
+	if (!result_out || !player_load_request_valid(request, now_usec()))
+		return false;
+	player_load_execute_fn execute = nullptr;
+	void *context = nullptr;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		execute = execute_callback;
+		context = execute_context;
+	}
+	if (!execute)
+		execute = selected_execute_callback();
+	if (!execute)
+		return false;
+
+#ifndef __NO_MYSQL__
+	if (sql_worker_thread_init() != 0)
+		return false;
+	struct mysql_thread_guard
+	{
+		~mysql_thread_guard() { mysql_thread_end(); }
+	} thread_guard;
+#endif
+
+	try
+	{
+		*result_out = execute(request, context);
+	}
+	catch (const std::bad_alloc &)
+	{
+		*result_out = {};
+		result_out->request_id = request.request_id;
+		result_out->pid = request.pid;
+		result_out->outcome = player_load_outcome::retryable_failure;
+		result_out->error_code = ENOMEM;
+	}
+	catch (...)
+	{
+		*result_out = {};
+		result_out->request_id = request.request_id;
+		result_out->pid = request.pid;
+		result_out->outcome = player_load_outcome::retryable_failure;
+		result_out->error_code = EFAULT;
+	}
+	if (result_out->request_id != request.request_id ||
+	    (request.pid > 0 && result_out->pid != request.pid) || result_out->pid <= 0)
+	{
+		result_out->request_id = request.request_id;
+		result_out->pid = request.pid;
+		result_out->outcome = player_load_outcome::stale;
+	}
+	return true;
+}
+
 bool player_load_pipeline_pid_pending(int pid)
 {
 	if (pid <= 0)
@@ -429,7 +483,7 @@ bool player_load_pipeline_pid_pending(int pid)
 
 bool player_load_pipeline_login_admit(int pid)
 {
-	return pid > 0 && player_save_pipeline_save_admitted(pid);
+	return pid > 0;
 }
 
 player_load_pipeline_health player_load_pipeline_health_copy(void)

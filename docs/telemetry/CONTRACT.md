@@ -22,7 +22,9 @@ telemetry, retention, account linkage or automatic balance changes are authorize
 - #264 owns logical session/connection state and cumulative counters.
 - #266 owns pure activity evidence/classification and contextual interval splitting.
 - #265 alone owns gameplay/lifecycle hooks and shared build registration after its
-  predecessors merge. #268 owns external rollups; #269 owns report presentation.
+  predecessors merge. #267 owns the additive progression fact extension and the
+  telemetry-only XP/level hooks in `world/limits.c`; see `PROGRESSION.md`. #268
+  owns external rollups; #269 owns report presentation.
 - No new header includes game character, SQL, socket, mutex or filesystem types.
   Standalone compilation must work both with and without `__NO_MYSQL__`.
 - Flat-file authority explicitly reports disabled/unsupported telemetry. There is
@@ -165,6 +167,9 @@ unserialized record-version constant.
   dropped-record count and reason. Bounds zero/zero mean unknown, not empty proof.
 - Configuration: immutable bounded effective snapshot admitted before any new
   record references its identity; uses the same finite control reserve.
+- Progression: one observed XP storage fact or one level transition with bounded
+  source/reason/modifier fields, mutable before/after snapshots, and explicit
+  observation status. Level-threshold values are not reward/loss totals.
 
 An all-zero session reference is allowed only for process-wide gap/config records.
 Every other payload must identify its subject and scope. Partial identities are

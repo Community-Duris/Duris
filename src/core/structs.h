@@ -33,6 +33,7 @@
 #include "net/ansi.h"
 #include "net/output_channel.h"
 #include "net/output_preference_state.h"
+#include "economy/shopkeeper_save_policy.h"
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -190,6 +191,7 @@ struct shop_data
 	::byte temper1; /* * How does keeper react if no money       */
 	::byte temper2; /* * How does keeper react when attacked     */
 	::byte dirty; /* needs save to db                          */
+	struct shopkeeper_save_retry_state dirty_save_retry;
 	shop_proc_type func; /* * Secondary spec_proc for shopkeeper      */
 };
 
@@ -1237,6 +1239,7 @@ struct pc_only_data
 	OutputPreferenceState output_preferences;
 	player_held_pet_state *held_pets; // owned snapshots; never active followers
 	int pid; // replacement for PC's ->nr
+	uint32_t load_degraded_components; // runtime-only admission disposition; never persisted
 
 	char *poofIn;
 	char *poofOut;
@@ -1342,9 +1345,15 @@ struct pc_only_data
 struct npc_only_data
 { /* values only used by NPCs  */
 	int R_num; // replacement for NPC's ->nr
+	// Durable shop identity for a live NPC.  -1 means that the instance has
+	// not been bound to a shop; the template/rnum alone is not authoritative
+	// when roaming shops share a mobile prototype.
+	int shopkeeper_shop_id;
 
 	int idnum; /* Given only to pets, used for crashsave */
 	uint32_t summon_kind; // stable summoned_pet_kind; zero for ordinary area mobs
+	bool alchemist_vial_roll_done; // one decision for a finalized fresh world spawn
+	unsigned long long alchemist_action_until_pulse; // both NPC AI entry points
 	bool summoned_instance; // survives loss of charm/ownership until extraction
 	bool transport_recovery_pending;
 	char recovered_transport_rider[50];
@@ -1366,6 +1375,12 @@ struct npc_only_data
 	P_char orig_char; /* used instead of memory ptr to keep
 	                      track of who is controlling the mob */
 	int lowest_hit; /* lowest hitpoints this mob ever reached */
+	/* Runtime-only state for non-hostile PvP balance targets. */
+	bool training_dummy;
+	bool training_dummy_fixed;
+	int training_dummy_gear;
+	uint64_t training_dummy_damage;
+	uint64_t training_dummy_last_attacker_runtime_id;
 	//  P_mprog_list mpact;
 	//  int mpactnum;
 };
@@ -1520,6 +1535,8 @@ struct char_data
 	struct char_obj_link_data *obj_linked;
 	unsigned int runtime_flags;
 	uint64_t runtime_id; /* process-local identity; changes whenever storage is reused */
+	uint64_t durable_pet_uid; /* stable corpse-derived follower custody identity */
+	uint32_t durable_pet_owner_pid; /* survives loss of the live master link */
 	/* Telemetry identity is runtime-only and intentionally not persisted. */
 	uint64_t telemetry_session_sequence;
 	uint64_t telemetry_session_producer_boot_id;

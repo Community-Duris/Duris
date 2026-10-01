@@ -355,7 +355,7 @@ bool valid_death(const player_snapshot &snapshot)
 		if (!row.item.item_uid || !observed.insert(row.item.item_uid).second ||
 		    row.item.vnum <= 0 ||
 		    row.item.expected_state > item_custody_state::quarantined ||
-		    row.owner.type > item_owner_type::collector)
+		    row.owner.type > item_owner_type::pet)
 			return false;
 		if (row.item.expected_state == item_custody_state::absent)
 		{
@@ -690,6 +690,7 @@ player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snaps
 		out.vector(snapshot.pets,
 			   [&](const auto &pet)
 			   {
+				   out.number<uint64_t>(pet.pet_uid);
 				   out.number<int32_t>(pet.mob_vnum);
 				   out.number<int32_t>(pet.order);
 				   out.number<int32_t>(pet.hit);
@@ -753,9 +754,9 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		if (!in.number(snapshot.schema_version))
 			return in.result;
 		const uint32_t wire_version = snapshot.schema_version;
-		if (wire_version == 1 || wire_version == 3)
+		if (wire_version == 1 || wire_version == 3 || wire_version == 5)
 			snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
-		if (wire_version == 2 || wire_version == 4)
+		if (wire_version == 2 || wire_version == 4 || wire_version == 6)
 			snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
 		if (snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
 		    snapshot.schema_version != PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION)
@@ -829,6 +830,8 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		    !in.vector(snapshot.pets,
 			       [&](auto &pet)
 			       {
+				       if (wire_version >= 7 && !in.number(pet.pet_uid))
+					       return false;
 				       const bool base =
 					       in.number(pet.mob_vnum) && in.number(pet.order) &&
 					       in.number(pet.hit) && in.number(pet.max_hit) &&

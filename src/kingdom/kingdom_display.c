@@ -447,6 +447,17 @@ void kingdom_show_status(struct char_data *ch, const kingdom_realm &realm)
 	APPENDF(out, " &+wGuards     &n: &+G%d&n permitted &+w(1 per %d squares held)&n\r\n",
 		kingdom_guard_allowance(realm), kingdom_cfg.guards_per_squares);
 
+	/* The works are guildhall rooms; kingdom_works_built() asks the main hall
+	 * what stands in it rather than this file keeping a list. */
+	char works[96] = "";
+
+	kingdom_works_describe(kingdom_works_built(realm.assoc_id), works, sizeof(works));
+	if (works[0])
+		APPENDF(out, " &+wWorks      &n: &+G%s&n\r\n", works);
+	else
+		APPENDF(out, " &+wWorks      &n: &+wnone -- 'kingdom build' raises a forge, loom,"
+			     " jeweller or store&n\r\n");
+
 	APPENDF(out,
 		" &+wUpkeep     &n: &+Y%ld&n coin due &+w(%ld per square per cycle, a cycle is"
 		" %d minutes)&n\r\n",
@@ -588,6 +599,15 @@ bool kingdom_guild_society_lines(int assoc_id, char *out, size_t out_len)
 			" is %d minutes).&n\n",
 			kingdom_upkeep_due(*realm), kingdom_cfg.upkeep_per_square,
 			kingdom_cfg.upkeep_period_seconds / 60);
+
+	/* The works standing in the main hall: the same words `kingdom status`
+	 * uses, from the same question put to the hall. */
+	char works[96] = "";
+
+	kingdom_works_describe(kingdom_works_built(assoc_id), works, sizeof(works));
+	checked_appendf(out, out_len, "Realm works:         %s%s&n.\n", works[0] ? "&+W" : "&+w",
+			works[0] ? works :
+				   "none yet -- a forge, loom, jeweller and store may be built");
 
 	/* Dormancy. Same test and same "lost" wording as the status table's seat
 	 * line, with what dormancy actually costs the guild spelled out, because

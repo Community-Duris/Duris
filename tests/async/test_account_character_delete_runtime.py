@@ -27,9 +27,10 @@ guild = (ROOT / 'src/guild/assocs.c').read_text()
 prototypes = (ROOT / 'src/core/prototypes.h').read_text()
 # Menu loads must not instantiate inventory/pets before free_char().
 load = function(account, 'P_char load_char_into_game(')
-assert 'STATE(d) == CON_ACCT_DELETE_CHAR' in load
-assert 'request.include_items = false;' in load
-assert 'request.include_pets = false;' in load
+request_builder = function(account, 'bool build_account_load_request(')
+assert 'STATE(d) == CON_ACCT_DELETE_CHAR' in request_builder
+assert 'request.include_items = false;' in request_builder
+assert 'request.include_pets = false;' in request_builder
 
 enum_start = prototypes.index('enum class character_delete_result')
 enum_end = prototypes.index('};', enum_start) + 2
@@ -52,6 +53,7 @@ prelude = r'''
 #include <cstring>
 #include <strings.h>
 #include <cctype>
+#include <cstdint>
 #include <string>
 #define TRUE 1
 #define FALSE 0
@@ -106,6 +108,9 @@ static Guild fixture_guild;
 constexpr int PERSISTENCE_MODE_FLATFILE_PRIMARY=1;
 int persistence_mode_get() { return mode; }
 const char *persistence_mode_flatfile_root() { return "fixture"; }
+namespace zone_story_quest_runtime {
+bool erase_character(uint32_t, std::string *) { return true; }
+}
 enum class flatfile_character_delete_result { ok, already_deleted, io_error };
 flatfile_character_delete_result flatfile_character_delete(const std::string&, int, const std::string&, std::string*) {
     ++backend_calls;

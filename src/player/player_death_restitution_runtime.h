@@ -29,6 +29,9 @@ struct player_death_restitution_runtime_callbacks
 enum class player_death_restitution_runtime_result : uint8_t
 {
 	accepted = 1,
+	// The operation is retained, but its critical-command journal append is
+	// still owned by the coordinator's admission worker.
+	awaiting_durability,
 	attached,
 	invalid_plan,
 	unauthorized,
@@ -40,6 +43,11 @@ enum class player_death_restitution_runtime_result : uint8_t
 	journal_uncertain,
 	journal_failure,
 	identity_conflict,
+	duplicate_staging,
+	no_staging,
+	malformed_chunk,
+	incomplete_chunk,
+	chunk_limit,
 };
 
 struct player_death_restitution_runtime_submission
@@ -67,8 +75,7 @@ player_death_restitution_runtime_result player_death_restitution_runtime_submit_
 // Restore the target fence for a command read from the durable critical-command
 // journal.  This validates the actual replayed payload and acquires the fence
 // without submitting a duplicate operation.
-player_death_restitution_runtime_result
-player_death_restitution_runtime_restore_replayed_command(
+player_death_restitution_runtime_result player_death_restitution_runtime_restore_replayed_command(
 	const critical_command &command,
 	const player_death_restitution_runtime_callbacks &callbacks, void *context,
 	player_death_restitution_runtime_submission *submission);

@@ -29,6 +29,7 @@
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_shopkeeper_restore.h"
 #include "item/item_ownership_runtime.h"
+#include "item/encumbrance_policy.h"
 #include "combat/justice.h"
 #include "core/mm.h"
 #include "classes/necromancy.h"
@@ -38,6 +39,9 @@
 #include "persistence/persistence_mode.h"
 #include "world/handler.h"
 #include "world/random.zone.h"
+#ifndef _PFILE_
+#include "world/zone_story_quest_runtime.h"
+#endif
 #include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/item_extra_descr_codec.h"
@@ -67,6 +71,7 @@ static int short_size = sizeof(short);
 static int stat_vers, obj_vers, skill_vers;
 [[maybe_unused]] static int aff_vers, witness_vers;
 extern struct shop_data *shop_index;
+extern int number_of_shops;
 
 // flag to skip corpse saves during boot (loading from db)
 int skip_corpse_save = 0;
@@ -1707,6 +1712,16 @@ int writeCharacter(P_char ch, int type, int room)
 				    type == RENT_CAMPED || type == RENT_DEATH ||
 				    type == RENT_POOFARTI || type == RENT_SWAPARTI ||
 				    type == RENT_FIGHTARTI);
+	if (!is_locker_char && IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+	{
+		// A degraded load may have omitted durable inventory or sidecar state. Treat
+		// save as a safe no-op until a clean cold load can hydrate every component;
+		// publishing the partial runtime snapshot would destroy the unresolved rows.
+		logit(LOG_DEBUG,
+		      "writeCharacter: deferred degraded player save pid=%d components=0x%x",
+		      GET_PID(ch), ch->only.pc->load_degraded_components);
+		return 1;
+	}
 	if (!is_locker_char && GET_PID(ch) > 0 && !player_save_pipeline_save_admitted(GET_PID(ch)))
 		return 0;
 	const bool corpse_raise_save_pending = corpse_raise_player_save_fenced(ch);
@@ -2055,6 +2070,19 @@ character_delete_result delete_character_result(P_char ch, bool bDeleteLocker)
 		remove_char_from_list(ch->desc->account, ch->player.name, false);
 #endif
 	delete_ship_runtime(GET_NAME(ch));
+#ifndef _PFILE_
+	std::string zone_story_error;
+	if (!zone_story_quest_runtime::erase_character(static_cast<uint32_t>(GET_PID(ch)),
+						       &zone_story_error))
+	{
+		logit(LOG_DEBUG,
+		      "deleteCharacter(): zone-story state cleanup requires reconciliation pid=%d: %s",
+		      GET_PID(ch),
+		      zone_story_error.empty() ? "unspecified persistence failure" :
+						 zone_story_error.c_str());
+		return character_delete_result::reconciliation_required;
+	}
+#endif
 	return character_delete_result::deleted;
 }
 
@@ -3307,7 +3335,8 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 					 */
 					GET_CARRYING_W(ch) = 0;
 					for (obj = ch->carrying; obj; obj = obj->next_content)
-						GET_CARRYING_W(ch) += GET_OBJ_WEIGHT(obj);
+						GET_CARRYING_W(ch) +=
+							encumbrance_weight(GET_OBJ_WEIGHT(obj));
 				}
 				return root_obj ? root_obj : (P_obj)1;
 			}
@@ -3343,6 +3372,8 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 			if (o_f_flag & O_F_CONTAINS)
 				ignore++;
 		}
+		else
+			REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 
 		obj->g_key = 1;
 
@@ -3676,7 +3707,7 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 
 		GET_CARRYING_W(ch) = 0;
 		for (obj = ch->carrying; obj; obj = obj->next_content)
-			GET_CARRYING_W(ch) += GET_OBJ_WEIGHT(obj);
+			GET_CARRYING_W(ch) += encumbrance_weight(GET_OBJ_WEIGHT(obj));
 	}
 
 	return root_obj ? root_obj : (P_obj)1;
@@ -3724,6 +3755,7 @@ P_obj read_one_object(char *read_buf)
 		logit(LOG_DEBUG, "read_one_object(): could not load object %d\n", V_num);
 		return NULL;
 	}
+	REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 
 	obj->g_key = 1;
 	obj->craftsmanship = GET_SHORT(buf);
@@ -4754,12 +4786,21 @@ P_char restorePet(char *id)
 	return ch;
 }
 
+static bool saved_item_uid_key(P_obj item, char *key, size_t size)
+{
+	if (!item || !item->obj_uid || !key || size < sizeof "item.uid.18446744073709551615")
+		return false;
+	const int length = snprintf(key, size, "item.uid.%llu",
+				    static_cast<unsigned long long>(item->obj_uid));
+	return length > 0 && static_cast<size_t>(length) < size;
+}
+
 void writeSavedItem(P_obj item)
 {
 	if (!item)
 		return;
 
-	if (item->cost < 100)
+	if (item->cost < 100 && item->db_item_id <= 0 && item->type != ITEM_STORAGE)
 		return;
 
 	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
@@ -4783,10 +4824,12 @@ void writeSavedItem(P_obj item)
 	}
 
 	char item_key[MAX_STRING_LENGTH];
-	snprintf(item_key, MAX_STRING_LENGTH, "item.%s.%ld", FirstWord(item->name), (long)item);
-
-	for (char *p = item_key; *p; p++)
-		*p = LOWER(*p);
+	if (!saved_item_uid_key(item, item_key, sizeof item_key))
+	{
+		persistence_alert(AVATAR, "saved_item", "sql_write", "none", "none", "missing_uid",
+				  "item_vnum=%d", OBJ_VNUM(item));
+		return;
+	}
 
 	if (!OBJ_ROOM(item))
 	{
@@ -4816,7 +4859,6 @@ void restoreSavedItems(void)
 
 void PurgeSavedItemFile(P_obj item)
 {
-	char *tmp;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 
 	if (!item)
@@ -4833,9 +4875,12 @@ void PurgeSavedItemFile(P_obj item)
 		return;
 	}
 
-	snprintf(Gbuf2, MAX_STRING_LENGTH, "item.%s.%ld", FirstWord(item->name), (long)item);
-	for (tmp = Gbuf2; *tmp; tmp++)
-		*tmp = LOWER(*tmp);
+	if (!saved_item_uid_key(item, Gbuf2, sizeof Gbuf2))
+	{
+		persistence_alert(AVATAR, "saved_item", "sql_purge", "none", "none", "missing_uid",
+				  "item_vnum=%d", OBJ_VNUM(item));
+		return;
+	}
 	if (!sql_delete_saved_item(Gbuf2))
 		logit(LOG_FILE, "sql_delete_saved_item failed");
 
@@ -4851,19 +4896,37 @@ void PurgeSavedItemFile(P_obj item)
 	return;
 }
 
-int writeShopKeeper(P_char ch)
+int writeShopKeeper(P_char ch, int shop_nr)
 {
+	if (!shop_index || shop_nr < 0 || shop_nr >= number_of_shops)
+		return 0;
+
 	if (!ch || !GET_NAME(ch) || IS_PC(GET_PLYR(ch)))
+	{
+		shop_index[shop_nr].dirty = 1;
 		return 0;
+	}
 
-	if (IS_NPC(ch) && !IS_SHOPKEEPER(ch))
+	/* The caller already has the authoritative shop identity.  Do not
+	 * rediscover it from a room/template pair: roaming templates are shared,
+	 * and a failed discovery must not lose the dirty state. */
+	if (shop_index[shop_nr].keeper != GET_RNUM(ch))
+	{
+		shop_index[shop_nr].dirty = 1;
 		return 0;
+	}
 
-	int shop_nr;
-	for (shop_nr = 0; shop_index[shop_nr].keeper != GET_RNUM(ch); shop_nr++)
-		;
+	if (sql_save_shopkeeper(ch, shop_nr))
+	{
+		shop_index[shop_nr].dirty = 0;
+		shopkeeper_save_retry_reset(&shop_index[shop_nr].dirty_save_retry);
+		return 1;
+	}
 
-	return sql_save_shopkeeper(ch, shop_nr) ? 1 : 0;
+	shop_index[shop_nr].dirty = 1;
+	shopkeeper_save_retry_reset(&shop_index[shop_nr].dirty_save_retry);
+	logit(LOG_DEBUG, "writeShopKeeper: shop=%d outcome=retry leaving_dirty=1", shop_nr);
+	return 0;
 }
 
 int deleteShopKeeper(int id)
@@ -4899,14 +4962,24 @@ void restore_shopkeepers(void)
 		return;
 	}
 #ifndef __NO_MYSQL__
-	sql_restore_shopkeepers();
+	if (!sql_restore_shopkeepers())
+		fatal_boot_error(
+			"shopkeeper",
+			"SQL shopkeeper restore incomplete; refusing to publish partial stock");
 #endif
 }
 
-void save_dirty_shopkeepers(void)
+bool save_dirty_shopkeepers(bool force)
 {
+	// Flat-file trades commit stock/custody atomically in their own journal.
+	// Legacy SQL dirty flags are not an outstanding SQL save in that mode.
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return true;
 #ifndef __NO_MYSQL__
-	sql_save_dirty_shopkeepers();
+	return sql_save_dirty_shopkeepers(force);
+#else
+	(void)force;
+	return true;
 #endif
 }
 

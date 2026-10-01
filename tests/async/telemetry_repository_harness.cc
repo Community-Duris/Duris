@@ -2,6 +2,7 @@
 // disposable loopback database. The private connection factory is a fixture
 // seam; the real production factory has separate trust-boundary tests.
 #include "telemetry/telemetry_repository.h"
+#include "telemetry/telemetry_failure.h"
 #include "persistence/persistence_mode.h"
 
 #include <atomic>
@@ -10,6 +11,7 @@
 #include <cstring>
 #include <iterator>
 #include <thread>
+#include <utility>
 
 static const char *case_name = "startup";
 #define CHECK(condition)                                                                           \
@@ -38,6 +40,22 @@ static telemetry_repository_config repository_config(telemetry_producer_id fresh
 int main()
 {
 	case_name = "no-mysql";
+	CHECK(telemetry_classify_sql_failure(1213U, telemetry_sql_phase::statement) ==
+	      telemetry_failure_class::transient_transaction);
+	CHECK(telemetry_classify_sql_failure(1205U, telemetry_sql_phase::statement) ==
+	      telemetry_failure_class::transient_transaction);
+	CHECK(telemetry_classify_sql_failure(2013U, telemetry_sql_phase::statement) ==
+	      telemetry_failure_class::transient_connection);
+	CHECK(telemetry_classify_sql_failure(1054U, telemetry_sql_phase::statement) ==
+	      telemetry_failure_class::permanent_schema);
+	CHECK(telemetry_classify_sql_failure(1146U, telemetry_sql_phase::statement) ==
+	      telemetry_failure_class::permanent_schema);
+	CHECK(telemetry_classify_sql_failure(1142U, telemetry_sql_phase::statement) ==
+	      telemetry_failure_class::permanent_permission);
+	CHECK(telemetry_classify_sql_failure(1366U, telemetry_sql_phase::statement) ==
+	      telemetry_failure_class::invalid_record);
+	CHECK(telemetry_classify_sql_failure(1054U, telemetry_sql_phase::commit) ==
+	      telemetry_failure_class::commit_ambiguous);
 	telemetry_repository_shutdown();
 	auto config = repository_config();
 	config.schema_version = 0;
@@ -76,6 +94,10 @@ enum class fault_kind
 	statement,
 	allocation,
 	deadlock,
+	unknown_column,
+	permission,
+	invalid_data,
+	startup_permission,
 	rollback_lost,
 	commit_lost_committed,
 	commit_lost_rolled_back
@@ -109,6 +131,14 @@ extern "C" int __wrap_mysql_real_query(MYSQL *connection, const char *query, uns
 	++query_calls;
 	injected_error = 0;
 	const std::string sql(query, length);
+	if (fault == fault_kind::startup_permission &&
+	    sql == "SELECT * FROM telemetry_interval LIMIT 0")
+	{
+		fault = fault_kind::none;
+		injected_handle = connection;
+		injected_error = 1142U;
+		return 1;
+	}
 	if (sql == "COMMIT" && (fault == fault_kind::commit_lost_committed ||
 				fault == fault_kind::commit_lost_rolled_back))
 	{
@@ -130,7 +160,9 @@ extern "C" int __wrap_mysql_real_query(MYSQL *connection, const char *query, uns
 	}
 	if (sql.find("INSERT INTO telemetry_interval") != std::string::npos &&
 	    (fault == fault_kind::statement || fault == fault_kind::deadlock ||
-	     fault == fault_kind::rollback_lost || fault == fault_kind::allocation))
+	     fault == fault_kind::unknown_column || fault == fault_kind::permission ||
+	     fault == fault_kind::invalid_data || fault == fault_kind::rollback_lost ||
+	     fault == fault_kind::allocation))
 	{
 		if (fault_insert_skips)
 		{
@@ -145,7 +177,11 @@ extern "C" int __wrap_mysql_real_query(MYSQL *connection, const char *query, uns
 			CHECK(__real_mysql_real_query(connection, "ROLLBACK", 8) == 0);
 		rollback_pending = selected == fault_kind::rollback_lost;
 		injected_handle = connection;
-		injected_error = selected == fault_kind::deadlock ? 1213U : 1205U;
+		injected_error = selected == fault_kind::deadlock	? 1213U :
+				 selected == fault_kind::unknown_column ? 1054U :
+				 selected == fault_kind::permission	? 1142U :
+				 selected == fault_kind::invalid_data	? 1366U :
+									  1205U;
 		return 1;
 	}
 	return __real_mysql_real_query(connection, query, length);
@@ -158,6 +194,15 @@ static void execute(const std::string &sql)
 		std::fprintf(stderr, "Fixture SQL failed with numeric error %u\n",
 			     __real_mysql_errno(observer));
 		std::exit(1);
+	}
+}
+static void execute_migration_statement(const std::string &sql)
+{
+	execute(sql);
+	if (sql.find("EXECUTE ") != std::string::npos)
+	{
+		if (auto *result = mysql_store_result(observer))
+			mysql_free_result(result);
 	}
 }
 static unsigned long long scalar(const char *sql)
@@ -220,9 +265,9 @@ static void reset_fixture()
 	injected_error = 0;
 	factory_unavailable = false;
 	mode = PERSISTENCE_MODE_MARIADB_PRIMARY;
-	for (const char *table :
-	     { "telemetry_interval", "telemetry_session", "telemetry_config",
-	       "telemetry_player_day", "telemetry_cohort_day", "telemetry_rollup_state" })
+	for (const char *table : { "telemetry_interval", "telemetry_session", "telemetry_config",
+				   "telemetry_player_day", "telemetry_cohort_day",
+				   "telemetry_rollup_state", "telemetry_quarantine" })
 		execute(std::string("DELETE FROM ") + table);
 	CHECK(telemetry_repository_init(repository_config()) ==
 	      telemetry_repository_outcome::ready);
@@ -265,6 +310,120 @@ static telemetry_record checkpoint_record(unsigned int revision, unsigned long l
 	checkpoint.at_utc_usec = interval.header.occurrence_utc_usec;
 	checkpoint.cumulative = { total, total, 0, 0, total, 0 };
 	checkpoint.config_id = interval.payload.interval.config_id;
+	CHECK(telemetry_record_is_valid(record));
+	return record;
+}
+static telemetry_record progression_record(unsigned long long sequence, long long applied_xp)
+{
+	const auto interval = interval_record();
+	telemetry_record record{};
+	record.header = interval.header;
+	record.header.kind = telemetry_record_kind::progression;
+	record.header.key.record_seq = sequence;
+	auto &progression = record.payload.progression;
+	progression.session = interval.payload.interval.session;
+	progression.connection = interval.payload.interval.connection;
+	progression.at_monotonic_usec = 1200;
+	progression.at_utc_usec = interval.header.occurrence_utc_usec + 1200;
+	progression.kind = telemetry_progression_kind::experience_observed;
+	progression.source = telemetry_progression_source::quest;
+	progression.reason = telemetry_progression_reason::earned;
+	progression.observation_status = telemetry_progression_observation_status::observed_mutable;
+	progression.modifier_flags = TELEMETRY_PROGRESSION_MODIFIER_NONE;
+	progression.requested_xp = applied_xp;
+	progression.computed_xp = applied_xp;
+	progression.applied_xp = applied_xp;
+	progression.before_exp = 100;
+	progression.after_exp = 100 + applied_xp;
+	progression.before_level = 10;
+	progression.after_level = 10;
+	progression.reserved = 0;
+	progression.threshold_xp = 0;
+	progression.dimensions = interval.payload.interval.dimensions;
+	progression.config_id = interval.payload.interval.config_id;
+	progression.classifier_version = interval.payload.interval.classifier_version;
+	progression.policy_version = interval.payload.interval.policy_version;
+	progression.quality_flags = TELEMETRY_QUALITY_NONE;
+	CHECK(telemetry_record_is_valid(record));
+	return record;
+}
+static telemetry_encounter_source encounter_source()
+{
+	const auto interval = interval_record();
+	return { interval.payload.interval.session.environment_id,
+		 interval.payload.interval.session.season_id,
+		 interval.payload.interval.config_id,
+		 interval.payload.interval.classifier_version,
+		 interval.payload.interval.policy_version,
+		 interval.payload.interval.dimensions.zone_vnum,
+		 7001U };
+}
+static telemetry_record encounter_record(unsigned long long sequence)
+{
+	const auto interval = interval_record();
+	telemetry_record record{};
+	record.header = interval.header;
+	record.header.kind = telemetry_record_kind::encounter;
+	record.header.key.record_seq = sequence;
+	auto &encounter = record.payload.encounter;
+	encounter.encounter = { { 701U, 702U }, 703U };
+	encounter.kind = telemetry_encounter_event_kind::close;
+	encounter.mode = telemetry_encounter_mode::pve;
+	encounter.outcome = telemetry_encounter_outcome::death;
+	encounter.revision = 2U;
+	encounter.source = encounter_source();
+	encounter.at_monotonic_usec = 5000U;
+	encounter.at_utc_usec = 1004000;
+	encounter.start_monotonic_usec = 1000U;
+	encounter.start_utc_usec = 1000000;
+	encounter.elapsed_usec = 4000U;
+	encounter.participant_count = 2U;
+	encounter.expected_credit_count = 1U;
+	encounter.quality_flags = TELEMETRY_QUALITY_LATE;
+	CHECK(telemetry_record_is_valid(record));
+	return record;
+}
+static telemetry_record combat_summary_record(unsigned long long sequence)
+{
+	const auto interval = interval_record();
+	telemetry_record record{};
+	record.header = interval.header;
+	record.header.kind = telemetry_record_kind::combat_summary;
+	record.header.key.record_seq = sequence;
+	auto &summary = record.payload.combat_summary;
+	summary.encounter = { { 701U, 702U }, 703U };
+	summary.source = encounter_source();
+	summary.mode = telemetry_encounter_mode::pve;
+	summary.outcome = telemetry_encounter_outcome::death;
+	summary.actor_kind = telemetry_combat_actor_kind::player;
+	summary.revision = 2U;
+	summary.actor_id = interval.payload.interval.session.subject_id;
+	summary.actor_pid = interval.payload.interval.session.pid;
+	summary.owner_subject_id = summary.actor_id;
+	summary.unique_player_count = 1U;
+	summary.participant_count = 2U;
+	summary.dropped_participant_count = 1U;
+	summary.power_band = 10U;
+	summary.opponent_power_band = 12U;
+	summary.opponent_count = 3U;
+	summary.modifier_flags = TELEMETRY_COMBAT_MODIFIER_SPELL |
+				 TELEMETRY_COMBAT_MODIFIER_TANKING;
+	summary.start_monotonic_usec = 1000U;
+	summary.end_monotonic_usec = 5000U;
+	summary.start_utc_usec = 1000000;
+	summary.end_utc_usec = 1004000;
+	summary.damage_dealt = 111U;
+	summary.damage_taken = 112U;
+	summary.healing_attempted = 50U;
+	summary.effective_healing = 40U;
+	summary.overhealing = 10U;
+	summary.control_applications = 3U;
+	summary.casting_attempts = 5U;
+	summary.casting_completions = 3U;
+	summary.casting_aborts = 1U;
+	summary.casting_elapsed_usec = 600U;
+	summary.tanking_usec = 700U;
+	summary.quality_flags = TELEMETRY_QUALITY_CLOCK_DISCONTINUITY;
 	CHECK(telemetry_record_is_valid(record));
 	return record;
 }
@@ -311,6 +470,77 @@ static void replay_and_isolation_tests()
 	CHECK(result.results[1].outcome == telemetry_apply_outcome::rejected_invalid);
 	CHECK(result.results[2].outcome == telemetry_apply_outcome::applied);
 	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval") == 3U);
+}
+
+static void progression_replay_tests()
+{
+	case_name = "progression replay is idempotent and conflicts are visible";
+	reset_fixture();
+	seed_config();
+	auto original = progression_record(20, 25);
+	expect_one(original, telemetry_apply_outcome::applied);
+	expect_one(original, telemetry_apply_outcome::duplicate_identical);
+	auto conflict = original;
+	conflict.payload.progression.applied_xp++;
+	conflict.payload.progression.after_exp++;
+	expect_one(conflict, telemetry_apply_outcome::duplicate_conflict);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=6") == 1U);
+}
+
+static void typed_extension_mapping_tests()
+{
+	case_name = "typed extension fields use their migrated columns";
+	reset_fixture();
+	seed_config();
+	const auto interval = interval_record();
+	const auto progression = progression_record(20, 25);
+	const auto encounter = encounter_record(21);
+	const auto combat = combat_summary_record(22);
+	const telemetry_record batch[] = { interval, progression, encounter, combat };
+	const auto result = telemetry_repository_apply(batch, std::size(batch));
+	CHECK(result.outcome == telemetry_batch_outcome::committed);
+	CHECK(result.applied_count == std::size(batch));
+	CHECK(result.duplicate_count == 0U && result.invalid_count == 0U &&
+	      result.conflict_count == 0U);
+
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=6 "
+		     "AND progression_kind=1 AND progression_source=5 AND progression_reason=1 "
+		     "AND progression_observation_status=1 AND progression_modifier_flags=0 "
+		     "AND progression_requested_xp=25 AND progression_computed_xp=25 "
+		     "AND progression_applied_xp=25 AND progression_before_exp=100 "
+		     "AND progression_after_exp=125 AND progression_before_level=10 "
+		     "AND progression_after_level=10 AND progression_threshold_xp=0") == 1U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=7 "
+		     "AND encounter_start_monotonic_usec=1000 "
+		     "AND encounter_start_utc_usec=1000000 AND encounter_quality_flags=256 "
+		     "AND start_monotonic_usec IS NULL AND start_utc_usec IS NULL "
+		     "AND quality_flags IS NULL") == 1U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_kind=8 "
+		     "AND combat_start_monotonic_usec=1000 AND combat_end_monotonic_usec=5000 "
+		     "AND combat_start_utc_usec=1000000 AND combat_end_utc_usec=1004000 "
+		     "AND combat_damage_dealt=111 AND combat_damage_taken=112 "
+		     "AND combat_healing_attempted=50 AND combat_effective_healing=40 "
+		     "AND combat_overhealing=10 AND combat_control_applications=3 "
+		     "AND combat_casting_attempts=5 AND combat_casting_completions=3 "
+		     "AND combat_casting_aborts=1 AND combat_casting_elapsed_usec=600 "
+		     "AND combat_tanking_usec=700 AND combat_quality_flags=128 "
+		     "AND start_monotonic_usec IS NULL AND end_monotonic_usec IS NULL "
+		     "AND start_utc_usec IS NULL AND end_utc_usec IS NULL "
+		     "AND quality_flags IS NULL") == 1U);
+
+	expect_one(progression, telemetry_apply_outcome::duplicate_identical);
+	expect_one(encounter, telemetry_apply_outcome::duplicate_identical);
+	expect_one(combat, telemetry_apply_outcome::duplicate_identical);
+	auto progression_conflict = progression;
+	progression_conflict.payload.progression.applied_xp++;
+	progression_conflict.payload.progression.after_exp++;
+	expect_one(progression_conflict, telemetry_apply_outcome::duplicate_conflict);
+	auto encounter_conflict = encounter;
+	encounter_conflict.payload.encounter.quality_flags |= TELEMETRY_QUALITY_SEQUENCE_GAP;
+	expect_one(encounter_conflict, telemetry_apply_outcome::duplicate_conflict);
+	auto combat_conflict = combat;
+	combat_conflict.payload.combat_summary.damage_dealt++;
+	expect_one(combat_conflict, telemetry_apply_outcome::duplicate_conflict);
 }
 
 static void config_and_scope_tests()
@@ -510,6 +740,60 @@ static void fault_tests()
 	}
 }
 
+static void failure_taxonomy_tests()
+{
+	for (const auto &test :
+	     { std::pair{ fault_kind::unknown_column, telemetry_failure_class::permanent_schema },
+	       std::pair{ fault_kind::permission, telemetry_failure_class::permanent_permission } })
+	{
+		case_name = "permanent statement failures retain identity and open health circuit";
+		reset_fixture();
+		seed_config();
+		const auto record = interval_record();
+		fault = test.first;
+		const auto failed = telemetry_repository_apply(&record, 1U);
+		CHECK(failed.outcome == telemetry_batch_outcome::permanent_failure);
+		CHECK(failed.failure_class == test.second);
+		CHECK(failed.result_count == 1U);
+		CHECK(failed.results[0].outcome == telemetry_apply_outcome::permanent_failure);
+		CHECK(failed.results[0].failure_class == test.second);
+		CHECK(failed.first_record_seq == record.header.key.record_seq);
+		CHECK(failed.last_record_seq == record.header.key.record_seq);
+		const auto health = telemetry_repository_health_copy();
+		CHECK(health.state == telemetry_health_state::circuit_open);
+		CHECK(health.last_failure_class == test.second);
+		CHECK(health.last_failure_producer.boot_id == record.header.key.producer.boot_id);
+		CHECK(health.last_failure_first_record_seq == record.header.key.record_seq);
+		CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval") == 1U);
+	}
+
+	case_name = "record data violation is durably quarantined without blocking later records";
+	reset_fixture();
+	seed_config();
+	auto invalid = interval_record();
+	fault = fault_kind::invalid_data;
+	const auto quarantined = telemetry_repository_apply(&invalid, 1U);
+	CHECK(quarantined.outcome == telemetry_batch_outcome::committed_with_rejections);
+	CHECK(quarantined.failure_class == telemetry_failure_class::invalid_record);
+	CHECK(quarantined.invalid_count == 1U);
+	CHECK(quarantined.quarantined_count == 1U);
+	CHECK(quarantined.results[0].outcome == telemetry_apply_outcome::quarantined_invalid);
+	CHECK(quarantined.results[0].failure_class == telemetry_failure_class::invalid_record);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_quarantine") == 1U);
+	CHECK(scalar("SELECT gap_reason FROM telemetry_quarantine") ==
+	      static_cast<unsigned int>(telemetry_gap_reason::record_quarantined));
+	CHECK(scalar("SELECT quality_flags FROM telemetry_quarantine") ==
+	      TELEMETRY_QUALITY_SEQUENCE_GAP);
+	CHECK(scalar("SELECT OCTET_LENGTH(payload_sha256) FROM telemetry_quarantine") == 32U);
+	CHECK(scalar("SELECT OCTET_LENGTH(record_payload) FROM telemetry_quarantine") ==
+	      sizeof(telemetry_record));
+	auto later = invalid;
+	++later.header.key.record_seq;
+	CHECK(telemetry_repository_apply(&later, 1U).outcome == telemetry_batch_outcome::committed);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval") == 2U);
+	CHECK(telemetry_repository_health_copy().quarantined_records == 1U);
+}
+
 static telemetry_apply_batch_result apply_without_allocation_escape(const telemetry_record *records,
 								    std::size_t count)
 {
@@ -637,11 +921,25 @@ static void startup_fencing_tests()
 	case_name = "missing table prevents healthy startup and releases ownership lock";
 	execute("RENAME TABLE telemetry_interval TO telemetry_interval_fixture_hidden");
 	CHECK(telemetry_repository_init(repository_config()) ==
-	      telemetry_repository_outcome::unavailable);
-	CHECK(telemetry_repository_health_copy().state == telemetry_health_state::degraded);
+	      telemetry_repository_outcome::permanent_failure);
+	CHECK(telemetry_repository_health_copy().state == telemetry_health_state::circuit_open);
+	CHECK(telemetry_repository_health_copy().last_failure_class ==
+	      telemetry_failure_class::permanent_schema);
 	CHECK(scalar("SELECT GET_LOCK(CONCAT('duris.telemetry.',MD5(DATABASE())),2)") == 1U);
 	CHECK(scalar("SELECT RELEASE_LOCK(CONCAT('duris.telemetry.',MD5(DATABASE())))") == 1U);
 	execute("RENAME TABLE telemetry_interval_fixture_hidden TO telemetry_interval");
+	CHECK(telemetry_repository_init(repository_config()) ==
+	      telemetry_repository_outcome::ready);
+	shutdown_fixture();
+	case_name = "startup permission failure is permanent and releases ownership lock";
+	fault = fault_kind::startup_permission;
+	CHECK(telemetry_repository_init(repository_config()) ==
+	      telemetry_repository_outcome::permanent_failure);
+	CHECK(telemetry_repository_health_copy().last_failure_class ==
+	      telemetry_failure_class::permanent_permission);
+	CHECK(telemetry_repository_health_copy().last_error_code == 1142U);
+	CHECK(scalar("SELECT GET_LOCK(CONCAT('duris.telemetry.',MD5(DATABASE())),2)") == 1U);
+	CHECK(scalar("SELECT RELEASE_LOCK(CONCAT('duris.telemetry.',MD5(DATABASE())))") == 1U);
 	CHECK(telemetry_repository_init(repository_config()) ==
 	      telemetry_repository_outcome::ready);
 }
@@ -656,8 +954,10 @@ static void fresh_producer_tests()
 	expect_one(existing, telemetry_apply_outcome::applied);
 	shutdown_fixture();
 	CHECK(telemetry_repository_init(repository_config(reused)) ==
-	      telemetry_repository_outcome::unavailable);
-	CHECK(telemetry_repository_health_copy().state == telemetry_health_state::degraded);
+	      telemetry_repository_outcome::permanent_failure);
+	CHECK(telemetry_repository_health_copy().state == telemetry_health_state::circuit_open);
+	CHECK(telemetry_repository_health_copy().last_failure_class ==
+	      telemetry_failure_class::permanent_repository);
 	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval") == 2U);
 
 	// A joined owner shutdown resets freshness state, so a different producer
@@ -796,7 +1096,7 @@ static void bounds_and_lifecycle_tests()
 
 int main(int argc, char **argv)
 {
-	CHECK(argc == 2);
+	CHECK(argc >= 2);
 	const char *ack = std::getenv("TELEMETRY_REPOSITORY_DISPOSABLE");
 	CHECK(ack && std::strcmp(ack, "1") == 0);
 	const char *port = std::getenv("TELEMETRY_REPOSITORY_PORT");
@@ -817,27 +1117,33 @@ int main(int argc, char **argv)
 	execute("DROP DATABASE IF EXISTS duris_telemetry_test");
 	execute("CREATE DATABASE duris_telemetry_test");
 	CHECK(mysql_select_db(observer, "duris_telemetry_test") == 0);
-	std::ifstream migration(argv[1]);
-	CHECK(migration.good());
-	std::string schema;
-	for (std::string line; std::getline(migration, line);)
-		if (line.rfind("--", 0) != 0)
-			schema += line + "\n";
-	std::size_t start = 0;
-	for (std::size_t end = schema.find(';'); end != std::string::npos;
-	     end = schema.find(';', start))
+	for (int migration_index = 1; migration_index < argc; ++migration_index)
 	{
-		execute(schema.substr(start, end - start));
-		start = end + 1;
+		std::ifstream migration(argv[migration_index]);
+		CHECK(migration.good());
+		std::string schema;
+		for (std::string line; std::getline(migration, line);)
+			if (line.rfind("--", 0) != 0)
+				schema += line + "\n";
+		std::size_t start = 0;
+		for (std::size_t end = schema.find(';'); end != std::string::npos;
+		     end = schema.find(';', start))
+		{
+			execute_migration_statement(schema.substr(start, end - start));
+			start = end + 1;
+		}
 	}
 	initialization_stop_tests();
 	allocation_failure_tests();
 	golden_tests();
 	replay_and_isolation_tests();
+	progression_replay_tests();
+	typed_extension_mapping_tests();
 	config_and_scope_tests();
 	global_scope_tests();
 	checkpoint_tests();
 	fault_tests();
+	failure_taxonomy_tests();
 	startup_fencing_tests();
 	fresh_producer_tests();
 	bounds_and_lifecycle_tests();

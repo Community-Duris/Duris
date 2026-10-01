@@ -159,10 +159,55 @@ SELECT GROUP_CONCAT(CONCAT_WS(':',assoc_id,slot,guard_class,level)
                     ORDER BY assoc_id,slot SEPARATOR '|') FROM kingdom_garrison;")
 [[ "$legacy_garrison_rows" == "3:0:1:12|3:16:2:20" ]]
 
+# 0029 must upgrade the pre-diagnostic inbox shape, retain existing receipts,
+# default every preexisting failure_stage to zero, and remain safe to replay.
+docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -e "
+USE $LEGACY_DB_NAME;
+CREATE TABLE critical_operation_inbox (
+  operation_id BINARY(16) NOT NULL,
+  command_hash BINARY(32) NOT NULL,
+  keys_hash BINARY(32) NOT NULL,
+  command_type SMALLINT UNSIGNED NOT NULL,
+  schema_version INT UNSIGNED NOT NULL,
+  payload_version SMALLINT UNSIGNED NOT NULL,
+  status TINYINT UNSIGNED NOT NULL,
+  result_code INT UNSIGNED NOT NULL DEFAULT 0,
+  durable_revision BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  result_payload VARBINARY(4096) NOT NULL,
+  created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  committed_at TIMESTAMP(6) NULL DEFAULT NULL,
+  PRIMARY KEY (operation_id),
+  KEY idx_critical_inbox_status_created (status, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO critical_operation_inbox
+  (operation_id,command_hash,keys_hash,command_type,schema_version,payload_version,
+   status,result_code,durable_revision,result_payload)
+VALUES (UNHEX(REPEAT('11',16)),UNHEX(REPEAT('22',32)),UNHEX(REPEAT('33',32)),
+        17,1,1,3,116,4,'');"
+for _ in 1 2; do
+    docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
+        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/0029_critical_failure_stage.sql"
+    docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
+        -e DB_PASSWD="$PASSWORD" -e DB_NAME="$LEGACY_DB_NAME" \
+        "$NAME" /tmp/0029_critical_failure_stage.sh >/dev/null
+done
+legacy_failure_stage=$("${LEGACY_MYSQL[@]}" -e "
+SELECT CONCAT(COUNT(*),':',SUM(failure_stage=0),':',MIN(result_code),':',MIN(durable_revision))
+FROM critical_operation_inbox;")
+[[ "$legacy_failure_stage" == "1:1:116:4" ]]
+
 docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c "mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/bootstrap_multithread_safe.sql"
 # Apply every registered step and its verifier, including an exact replay.
 for replay in 1 2; do
     for file in "${MIGRATION_FILES[@]}"; do
+        # 0022 intentionally adds nullable progression columns to
+        # telemetry_interval. The sealed 0014 verifier checks the original
+        # 154-column shape, so it is valid before 0022 but cannot describe the
+        # later shape on the second idempotence replay. Later verifiers cover
+        # the resulting shape; do not weaken the first-pass check.
+        if [[ "$replay" == 2 && "$(basename "$file")" == "0014_telemetry_storage.sh" ]]; then
+            continue
+        fi
         if [[ "$file" == *.sql ]]; then
             docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
                 "mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/$(basename "$file")"

@@ -1,0 +1,470 @@
+#include "world/zone_story_quest_feature.h"
+
+#include "core/defines.h"
+
+#include <cstdlib>
+#include <iostream>
+#include <string>
+#include <tuple>
+
+namespace
+{
+void require(bool condition, const char *message)
+{
+	if (!condition)
+	{
+		std::cerr << message << '\n';
+		std::exit(1);
+	}
+}
+
+zone_story_quest_tracking::quest_definition definition(const char *id, int zone)
+{
+	return {
+		.definition_id = id,
+		.source_system = "zone_story",
+		.zone_number = zone,
+		.source_area = "production-qst",
+		.giver_vnum = zone * 100 + 1,
+		.completion_key = id,
+		.active = true,
+		.eligible_for_zone_completion = true,
+		.repeatable = true,
+		.content_revision = 7,
+		.display_name = zone == 900 ? "Recover the harbor sigil" : "Carry the dusk message",
+		.giver_name = zone == 900 ? "the harbor master" : "the dusk archivist",
+		.zone_name = zone == 900 ? "The Ember Coast" : "The Dusk Archive",
+		.objective = zone == 900 ? "Bring the lost sigil back to the harbor master." :
+					   "Deliver the sealed message to the dusk archivist.",
+	};
+}
+
+zone_story_quest_feature::completion_event completion(const char *txid, const char *quest, int zone,
+						      uint32_t direct, int64_t at,
+						      std::vector<uint32_t> credited)
+{
+	zone_story_quest_feature::completion_event event;
+	event.transaction = {
+		.schema_version =
+			zone_story_quest_tracking::ZONE_STORY_QUEST_TRACKING_SCHEMA_VERSION,
+		.transaction_id = txid,
+		.quest_definition_id = quest,
+		.zone_number = zone,
+		.direct_completer_pid = direct,
+		.credited_pids = std::move(credited),
+		.room_vnum = zone * 100 + 10,
+		.completed_at = at,
+		.season_id = 7,
+		.content_revision = 7
+	};
+	event.character_name = direct == 42 ? "Alice" : direct == 77 ? "Bob" : "Cara";
+	event.level = 10;
+	event.racewar = 1;
+	event.party_context_known = event.transaction.credited_pids.size() > 1;
+	event.party_size = static_cast<uint32_t>(event.transaction.credited_pids.size());
+	event.strongest_party_level = 10;
+	return event;
+}
+} // namespace
+
+int main()
+{
+	using namespace zone_story_quest_feature;
+	using namespace zone_story_quest_tracking;
+
+	zone_story_quest_catalog::catalog catalog = {
+		.content_revision = 7,
+		.definitions = { definition("zone-story:900:001", 900),
+				 definition("zone-story:900:002", 900),
+				 definition("zone-story:901:001", 901),
+				 definition("zone-story:901:002", 901) }
+	};
+	service tracker(catalog);
+	std::string error;
+	completion_event conflicting =
+		completion("tx-conflict", "zone-story:900:001", 900, 42, 172800050, { 42 });
+	telemetry_observation collision;
+	collision.observation_id = "completion:tx-conflict";
+	collision.quest_definition_id = "zone-story:900:002";
+	collision.content_revision = 7;
+	collision.observed_at = conflicting.transaction.completed_at;
+	collision.pid = 42;
+	collision.level = 10;
+	collision.racewar = 1;
+	collision.party_size = 1;
+	collision.strongest_party_level = 10;
+	collision.outcome = telemetry_outcome::success;
+	collision.accessible = true;
+	require(tracker.record_telemetry(collision, &error) == result::applied,
+		"telemetry collision fixture was not applied");
+	require(tracker.record_completion(conflicting, &error) == result::conflict &&
+			tracker.summary_for(7, 42).completed == 0,
+		"telemetry conflict left a phantom completion behind");
+
+	completion_event first =
+		completion("tx-1", "zone-story:900:001", 900, 42, 172800100, { 42 });
+	require(tracker.record_completion(first, &error) == result::applied,
+		"first completion was not applied");
+	require(tracker.record_completion(first, &error) == result::already_applied,
+		"replayed completion was not idempotent");
+
+	completion_event group =
+		completion("tx-2", "zone-story:900:002", 900, 42, 172800200, { 42, 77 });
+	require(tracker.record_completion(group, &error) == result::applied,
+		"group completion was not applied");
+	require(credit_mask_for_pid(group.transaction, 42) ==
+			(ZONE_STORY_CREDIT_PERSONAL | ZONE_STORY_CREDIT_GROUP_PARTICIPANT |
+			 ZONE_STORY_CREDIT_LEADERSHIP),
+		"leadership mask was not preserved");
+
+	completion_event third =
+		completion("tx-3", "zone-story:901:001", 901, 77, 172800300, { 77 });
+	require(tracker.record_completion(third, &error) == result::applied,
+		"second character completion was not applied");
+
+	tracker.remember_character(7, 91, "Offline");
+	const zone_progress alice_zone = tracker.progress_for_zone(7, 42, 900);
+	require(alice_zone.completed == 2 && alice_zone.total == 2 && alice_zone.milestone_100,
+		"zone completion did not use distinct definitions");
+	const personal_summary alice = tracker.summary_for(7, 42);
+	require(alice.completed == 2 && alice.total == 4 && alice.full_zones == 1,
+		"personal summary was incorrect");
+	const personal_summary bob = tracker.summary_for(7, 77);
+	require(bob.completed == 2 && bob.total == 4,
+		"group participant did not receive distinct completion credit");
+	tracker.remember_character(7, 42, "Alice", true, RACEWAR_GOOD);
+	tracker.remember_character(7, 77, "Bob", true, RACEWAR_EVIL);
+
+	const leaderboard_page board = tracker.leaderboard(7, 0, 0, 10, 42);
+	require(board.total_entries == 2 && board.own_rank == 1,
+		"overall leaderboard included a zero-completion character or lost own rank");
+	require(board.entries[0].completed == 2 && board.entries[0].total == 4,
+		"leaderboard did not expose exact completion values");
+	require(board.entries[0].rank == board.entries[1].rank,
+		"equal exact values did not share a rank");
+	const std::string leaderboard_output = tracker.render_leaderboard(7, 0, 0, 10, 42, true);
+	const std::string plain_leaderboard = tracker.render_leaderboard(7, 0, 0, 10, 42, false);
+	const std::string hidden_zone_leaderboard =
+		tracker.render_leaderboard(7, 900, 0, 10, 42, false);
+	require(leaderboard_output.find("&+Y* ") != std::string::npos &&
+			leaderboard_output.find("&+YAlice&n") != std::string::npos &&
+			leaderboard_output.find("&+RBob&n") != std::string::npos &&
+			leaderboard_output.find("&+C2 unique quests&n") != std::string::npos &&
+			leaderboard_output.find("&+W(50.00%)&n") != std::string::npos &&
+			leaderboard_output.find("may lag actual completions by up to 12 hours") !=
+				std::string::npos &&
+			plain_leaderboard.find("2 unique quests (50.00%)") != std::string::npos &&
+			leaderboard_output.find("PID") == std::string::npos &&
+			leaderboard_output.find("900") == std::string::npos &&
+			plain_leaderboard.find("* #1") != std::string::npos &&
+			plain_leaderboard.find("full zones") == std::string::npos &&
+			hidden_zone_leaderboard == plain_leaderboard &&
+			plain_leaderboard.find('&') == std::string::npos,
+		"leaderboard output did not enforce the worldwide player-facing format");
+	const std::string colored_state = tracker.serialize_state(&error);
+	service colored_recovered(catalog);
+	require(colored_recovered.deserialize_state(colored_state, &error) &&
+			colored_recovered.render_leaderboard(7, 0, 0, 10, 0, true)
+					.find("&+YAlice&n") != std::string::npos &&
+			colored_recovered.render_leaderboard(7, 0, 0, 10, 0, true)
+					.find("&+RBob&n") != std::string::npos,
+		"racewar color identity did not survive state recovery");
+
+	service delayed_tracker(catalog);
+	completion_event delayed_completion =
+		completion("tx-delayed", "zone-story:900:001", 900, 42, 1000000, { 42 });
+	delayed_completion.party_context_known = true;
+	delayed_completion.party_size = 1;
+	delayed_completion.strongest_party_level = 10;
+	require(delayed_tracker.record_completion(delayed_completion, &error) == result::applied,
+		"delayed leaderboard completion was not applied");
+	delayed_tracker.remember_character(7, 42, "Alice", true, RACEWAR_GOOD);
+	require(delayed_tracker.leaderboard(7, 0, 0, 10, 42, 1000000).total_entries == 0,
+		"leaderboard exposed a completion before its publication delay elapsed");
+	const std::string delayed_leaderboard =
+		delayed_tracker.render_leaderboard(7, 0, 0, 10, 42, false, 1000000 + 12 * 60 * 60);
+	require(delayed_leaderboard.find("1 unique quests (25.00%)") != std::string::npos,
+		"leaderboard did not publish a completion after its 12-hour delay");
+
+	completion_event duplicate_name =
+		completion("tx-duplicate-name", "zone-story:901:002", 901, 91, 172800350, { 91 });
+	duplicate_name.party_context_known = true;
+	duplicate_name.party_size = 1;
+	duplicate_name.strongest_party_level = 10;
+	require(tracker.record_completion(duplicate_name, &error) == result::applied,
+		"duplicate-name completion was not applied");
+	tracker.remember_character(7, 91, "Alice");
+	require(tracker.leaderboard(7, 0, 0, 10, 42).total_entries == 2,
+		"leaderboard exposed the same display name more than once");
+
+	completion_event staff_completion =
+		completion("tx-staff", "zone-story:901:002", 901, 88, 172800360, { 88 });
+	staff_completion.party_context_known = true;
+	staff_completion.party_size = 1;
+	staff_completion.strongest_party_level = 10;
+	require(tracker.record_completion(staff_completion, &error) == result::applied,
+		"staff exclusion fixture was not applied");
+	tracker.remember_character(7, 88, "Staff", false);
+	const leaderboard_page staff_filtered = tracker.leaderboard(7, 0, 0, 10, 42);
+	require(staff_filtered.total_entries == 2 &&
+			tracker.render_leaderboard(7, 0, 0, 10, 42, false).find("Staff") ==
+				std::string::npos,
+		"leaderboard included a character explicitly excluded from public ranking");
+	service empty_tracker(catalog);
+	const std::string empty_leaderboard =
+		empty_tracker.render_leaderboard(7, 0, 0, 10, 42, false);
+	require(empty_leaderboard.find("You have 0 unique quests (0.00%) and are unranked") !=
+			std::string::npos,
+		"empty leaderboard did not expose the viewer's current progress");
+
+	const std::string color_output = tracker.render_zone(7, 42, 900, "Alice", true);
+	const std::string plain_output = tracker.render_zone(7, 42, 900, "Alice", false);
+	require(color_output.find("&+") != std::string::npos &&
+			plain_output.find("The Ember Coast") != std::string::npos &&
+			plain_output.find("Zone 900") == std::string::npos &&
+			plain_output.find('&') == std::string::npos,
+		"achievement renderer did not honor color preference");
+	const std::string summary_output = tracker.render_summary(7, 42, "Alice", false);
+	require(summary_output.find("The Ember Coast") != std::string::npos &&
+			summary_output.find("The Dusk Archive") == std::string::npos &&
+			summary_output.find("Zone 900") == std::string::npos,
+		"personal achievement summary did not filter zero-progress zones");
+
+	const personal_summary empty_summary = empty_tracker.summary_for(7, 42);
+	const std::string empty_summary_output =
+		empty_tracker.render_summary(7, 42, "Alice", false);
+	require(empty_summary.completed == 0 && empty_summary.total == 4 &&
+			empty_summary.full_zones == 0 && empty_summary.zones.empty() &&
+			empty_summary_output.find("Overall: 0 unique quests (0.00%)") !=
+				std::string::npos &&
+			empty_summary_output.find("The Ember Coast:") == std::string::npos &&
+			empty_summary_output.find("The Dusk Archive:") == std::string::npos &&
+			empty_tracker.render_zone(7, 42, 901, "Alice", false)
+					.find("Completed: 0 unique quests (0.00%)") !=
+				std::string::npos,
+		"empty achievement list changed overall totals or per-zone zero progress");
+
+	zone_story_quest_catalog::catalog list_catalog = catalog;
+	zone_story_quest_tracking::quest_definition unnamed_empty_zone =
+		definition("zone-story:902:001", 902);
+	unnamed_empty_zone.zone_name.clear();
+	list_catalog.definitions.push_back(unnamed_empty_zone);
+	service list_tracker(list_catalog);
+	for (const auto &[transaction_id, quest_id, zone_number, completed_at] :
+	     std::vector<std::tuple<const char *, const char *, int, int64_t>>{
+		     { "tx-list-900-1", "zone-story:900:001", 900, 172801000 },
+		     { "tx-list-900-2", "zone-story:900:002", 900, 172801100 },
+		     { "tx-list-901-1", "zone-story:901:001", 901, 172801200 } })
+	{
+		const completion_event event =
+			completion(transaction_id, quest_id, zone_number, 42, completed_at, { 42 });
+		require(list_tracker.record_completion(event, &error) == result::applied,
+			"zone-list completion fixture was not applied");
+	}
+	list_tracker.remember_character(7, 42, "Alice");
+	const personal_summary list_summary = list_tracker.summary_for(7, 42);
+	const std::string list_output = list_tracker.render_summary(7, 42, "Alice", false);
+	const auto ember_position = list_output.find("The Ember Coast: 2 unique quests");
+	const auto dusk_position = list_output.find("The Dusk Archive: 1 unique quests");
+	require(list_summary.zones.size() == 2 && list_summary.zones[0].zone_number == 900 &&
+			list_summary.zones[0].completed == 2 &&
+			list_summary.zones[1].zone_number == 901 &&
+			list_summary.zones[1].completed == 1 &&
+			list_output.find("This area") == std::string::npos &&
+			ember_position != std::string::npos && dusk_position != std::string::npos &&
+			ember_position < dusk_position,
+		"zone achievement list was not filtered and sorted by completed quests");
+
+	zone_story_quest_catalog::catalog tie_catalog;
+	tie_catalog.content_revision = 7;
+	for (int zone = 940; zone < 972; ++zone)
+	{
+		const std::string quest_id = "zone-story:" + std::to_string(zone) + ":001";
+		auto tied_definition = definition(quest_id.c_str(), zone);
+		tied_definition.zone_name = zone == 940 ? "Z last" : "A shared name";
+		tie_catalog.definitions.push_back(std::move(tied_definition));
+	}
+	service tie_tracker(tie_catalog);
+	for (const auto &tied_definition : tie_catalog.definitions)
+	{
+		const std::string transaction_id = "tx-tie-" + tied_definition.definition_id;
+		const completion_event event =
+			completion(transaction_id.c_str(), tied_definition.definition_id.c_str(),
+				   tied_definition.zone_number, 42, 172802000, { 42 });
+		require(tie_tracker.record_completion(event, &error) == result::applied,
+			"tied zone completion fixture was not applied");
+	}
+	const personal_summary tie_summary = tie_tracker.summary_for(7, 42);
+	require(tie_summary.zones.size() == tie_catalog.definitions.size() &&
+			tie_summary.completed == tie_summary.total &&
+			tie_summary.full_zones == tie_catalog.definitions.size(),
+		"tied zone ordering changed exact totals or completed-zone counts");
+	for (size_t index = 0; index < tie_summary.zones.size(); ++index)
+	{
+		const int expected_zone =
+			index + 1 == tie_summary.zones.size() ? 940 : 941 + static_cast<int>(index);
+		require(tie_summary.zones[index].completed == 1 &&
+				tie_summary.zones[index].zone_number == expected_zone,
+			"equal completion counts did not use name then zone-number tie-breakers");
+	}
+
+	daily_policy policy;
+	policy.enabled = true;
+	policy.minimum_attempts = 2;
+	policy.minimum_distinct_pids = 2;
+	policy.minimum_successes = 2;
+	tracker.set_daily_policy(policy);
+	for (uint32_t pid : { 100U, 101U })
+	{
+		telemetry_observation observation;
+		observation.observation_id = "evidence-" + std::to_string(pid);
+		observation.quest_definition_id = "zone-story:901:002";
+		observation.content_revision = 7;
+		observation.observed_at = 172800400 + pid;
+		observation.pid = pid;
+		observation.level = 10;
+		observation.racewar = 1;
+		observation.outcome = telemetry_outcome::success;
+		observation.accessible = true;
+		observation.party_size = 1;
+		observation.strongest_party_level = 10;
+		require(tracker.record_telemetry(observation, &error) == result::applied,
+			"telemetry evidence was not recorded");
+	}
+	const evidence_summary evidence = tracker.evidence_for("zone-story:901:002", 7);
+	require(evidence.suitable && evidence.observed_attempts >= 2 && evidence.distinct_pids >= 2,
+		"evidence policy did not produce a suitable candidate");
+	const int64_t daily_now = 200 * 86400 + 100;
+	const daily_assignment assignment = tracker.assign_daily(7, 42, 10, 1, daily_now, &error);
+	require(assignment.status == daily_status::assigned &&
+			assignment.quest_definition_id == "zone-story:901:002",
+		"daily assignment did not select the evidence-backed quest");
+	require(tracker.assign_daily(7, 42, 10, 1, daily_now, &error).quest_definition_id ==
+			assignment.quest_definition_id,
+		"daily assignment rerolled within a fixed period");
+	const std::string daily_score = tracker.render_daily_score(7, 42, 10, 1, daily_now, false);
+	require(daily_score.find("quest available") != std::string::npos &&
+			daily_score.find("Objective") == std::string::npos &&
+			daily_score.find("The Dusk Archive") == std::string::npos,
+		"score exposed more than the minimum daily reminder");
+	const std::string daily_detail = tracker.render_daily(7, 42, 10, 1, daily_now, false);
+	require(daily_detail.find("Carry the dusk message") != std::string::npos &&
+			daily_detail.find("The Dusk Archive") != std::string::npos &&
+			daily_detail.find("dusk archivist") != std::string::npos &&
+			daily_detail.find("completion_key") == std::string::npos,
+		"daily quest detail was not player-facing");
+
+	completion_event daily_completion = completion("tx-daily", "zone-story:901:002", 901, 42,
+						       assignment.assigned_at + 100, { 42 });
+	require(tracker.record_completion(daily_completion, &error) == result::applied,
+		"daily authoritative completion was not applied");
+	require(tracker.complete_daily(7, 42, "tx-daily", daily_completion.transaction.completed_at,
+				       &error) == result::already_applied,
+		"daily reward was not finalized exactly once");
+	require(tracker.summary_for(7, 42).renown == 1,
+		"daily completion awarded the wrong renown amount");
+	require(tracker.summary_for(7, 42).completed == 3,
+		"daily repeat completion incorrectly changed zone numerator more than once");
+	require(tracker.render_daily(7, 42, 10, 1, daily_now, false).find("Renown: 1") !=
+			std::string::npos,
+		"daily output did not expose the committed renown total");
+
+	const std::string serialized = tracker.serialize_state(&error);
+	service recovered(catalog);
+	recovered.set_daily_policy(policy);
+	require(recovered.deserialize_state(serialized, &error), "state did not recover");
+	require(recovered.summary_for(7, 42).renown == 1 &&
+			recovered.progress_for_zone(7, 42, 900).completed == 2,
+		"recovered state lost completion or renown");
+	require(serialized.find("H|7|88") != std::string::npos &&
+			recovered.render_leaderboard(7, 0, 0, 10, 88, false).find("Staff") ==
+				std::string::npos,
+		"leaderboard exclusion did not survive state recovery");
+	require(recovered.daily_for(7, 42, service::period_for(daily_now)).status ==
+			daily_status::completed,
+		"recovered daily assignment did not remain completed");
+
+	recovered.remember_character(8, 42, "OldSeasonName");
+	telemetry_observation deleted_observation;
+	deleted_observation.observation_id = "deleted-pid-observation";
+	deleted_observation.quest_definition_id = "zone-story:900:001";
+	deleted_observation.content_revision = 7;
+	deleted_observation.observed_at = daily_now + 1000;
+	deleted_observation.pid = 42;
+	deleted_observation.level = 10;
+	deleted_observation.racewar = 1;
+	deleted_observation.outcome = telemetry_outcome::success;
+	deleted_observation.accessible = true;
+	require(recovered.record_telemetry(deleted_observation, &error) == result::applied,
+		"deletion telemetry fixture was not applied");
+	require(recovered.erase_character_all_seasons(42, 9),
+		"all-season character deletion tombstone was not applied");
+	require(recovered.summary_for(7, 42).completed == 0 &&
+			recovered.summary_for(8, 42).character_name.empty() &&
+			recovered.evidence_for("zone-story:900:001", 7).observed_attempts == 0,
+		"all-season deletion retained personal or telemetry state");
+	const std::string deleted_serialized = recovered.serialize_state(&error);
+	require(deleted_serialized.find("X|7|42") != std::string::npos &&
+			deleted_serialized.find("X|8|42") != std::string::npos &&
+			deleted_serialized.find("X|9|42") != std::string::npos &&
+			deleted_serialized.find("C|7|42|") == std::string::npos,
+		"all-season deletion did not persist PID tombstones");
+	service recovered_after_delete(catalog);
+	recovered_after_delete.set_daily_policy(policy);
+	require(recovered_after_delete.deserialize_state(deleted_serialized, &error),
+		"state did not recover after all-season deletion");
+	require(recovered_after_delete.summary_for(7, 42).completed == 0 &&
+			recovered_after_delete.summary_for(7, 77).completed == 2 &&
+			recovered_after_delete.evidence_for("zone-story:900:001", 7)
+					.observed_attempts == 0,
+		"deletion tombstone did not survive restart without erasing a group member");
+
+	service disabled(catalog);
+	require(disabled.get_daily_policy().enabled == false,
+		"daily quests were not disabled by default");
+	require(disabled.render_daily(7, 42, 10, 1, daily_now, false).empty() &&
+			disabled.render_daily_score(7, 42, 10, 1, daily_now, false).empty(),
+		"disabled daily output exposed the feature");
+	require(disabled.daily_for(7, 42, service::period_for(daily_now)).status ==
+			daily_status::none,
+		"disabled daily rendering created durable assignment state");
+	service disabled_after_assignment(catalog);
+	disabled_after_assignment.set_daily_policy(policy);
+	for (uint32_t pid : { 100U, 101U })
+	{
+		telemetry_observation observation;
+		observation.observation_id = "disabled-evidence-" + std::to_string(pid);
+		observation.quest_definition_id = "zone-story:901:002";
+		observation.content_revision = 7;
+		observation.observed_at = 172800500 + pid;
+		observation.pid = pid;
+		observation.level = 10;
+		observation.racewar = 1;
+		observation.party_size = 1;
+		observation.strongest_party_level = 10;
+		observation.outcome = telemetry_outcome::success;
+		observation.accessible = true;
+		require(disabled_after_assignment.record_telemetry(observation, &error) ==
+				result::applied,
+			"disabled reward evidence fixture was not applied");
+	}
+	const daily_assignment disabled_fixture =
+		disabled_after_assignment.assign_daily(7, 42, 10, 1, daily_now, &error);
+	disabled_after_assignment.set_daily_policy(daily_policy{});
+	completion_event disabled_completion =
+		completion("tx-disabled", disabled_fixture.quest_definition_id.c_str(), 901, 42,
+			   disabled_fixture.assigned_at + 100, { 42 });
+	require(disabled_after_assignment.record_completion(disabled_completion, &error) ==
+				result::applied &&
+			disabled_after_assignment.summary_for(7, 42).renown == 0,
+		"disabling daily quests allowed a new reward to be earned");
+
+	zone_story_quest_catalog::catalog empty_catalog = { .content_revision = 7,
+							    .definitions = {} };
+	service no_quests(empty_catalog);
+	require(no_quests.render_summary(7, 42, "Alice", false).find("N/A") != std::string::npos,
+		"no-quest catalog did not render explicit N/A");
+
+	std::cout << "zone-story quest feature domain regression passed\n";
+	return 0;
+}

@@ -13,9 +13,17 @@ def verify_shutdown_contract() -> None:
     assert "telemetry_runtime_final_reap(void)" in header
     comm = (ROOT / "src/net/comm.c").read_text()
     main = comm[comm.index("int main(") :]
-    assert main.index("telemetry_runtime_shutdown(") < main.index(
-        "telemetry_runtime_final_reap()"
-    ) < main.index("shutdown_mysql();")
+    run = comm[comm.index("int run_the_game(int port, int sslport)") :]
+    run = run[: run.index("/* Accept new connects")]
+    assert "const int game_exit_status = run_the_game(port, sslport);" in main
+    assert main.index("run_the_game(port, sslport)") < main.index(
+        "telemetry_runtime_shutdown("
+    ) < main.index("telemetry_runtime_final_reap()") < main.index(
+        "shutdown_mysql();"
+    ) < main.index("return game_exit_status;")
+    assert "exit(" not in run
+    for status in (52, 54, 55):
+        assert f"return {status};" in run
 
 
 def main(*, exhaustion: bool = False) -> None:
@@ -56,8 +64,13 @@ def main(*, exhaustion: bool = False) -> None:
                     str(ROOT / "src/telemetry" / name)
                     for name in (
                         "telemetry_activity.c",
+                        "telemetry_combat_summary.c",
                         "telemetry_config.c",
+                        "telemetry_encounter.c",
+                        "telemetry_failure.c",
+                        "telemetry_health.c",
                         "telemetry_queue.c",
+                        "telemetry_progression.c",
                         "telemetry_runtime.c",
                         "telemetry_session.c",
                         "telemetry_transport.c",

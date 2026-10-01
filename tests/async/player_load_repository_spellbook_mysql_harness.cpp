@@ -94,13 +94,16 @@ void __free(void *pointer, const char *, int)
 bool item_owner_identity_valid(const item_owner_identity &owner)
 {
 	return owner.type > item_owner_type::unknown && owner.type <= item_owner_type::shopkeeper &&
-	       ((owner.type == item_owner_type::system || owner.type == item_owner_type::destruction) ?
-			owner.id == 0 && owner.context_id == 0 : owner.id != 0);
+	       ((owner.type == item_owner_type::system ||
+		 owner.type == item_owner_type::destruction) ?
+			owner.id == 0 && owner.context_id == 0 :
+			owner.id != 0);
 }
 
 bool item_owner_identity_equal(const item_owner_identity &left, const item_owner_identity &right)
 {
-	return left.type == right.type && left.id == right.id && left.context_id == right.context_id;
+	return left.type == right.type && left.id == right.id &&
+	       left.context_id == right.context_id;
 }
 
 bool item_ownership_runtime_hydrate_batch(const item_ownership_runtime_entry *, size_t)
@@ -222,15 +225,17 @@ std::vector<uint8_t> captured_spell_bitmap()
 	std::vector<uint8_t> bitmap(bitmap_bytes, 0);
 	for (int32_t spell : CAPTURED_SPELLS)
 	{
-		require(spell >= 0 && spell < MAX_SKILLS, "captured spell is outside the skill table");
-		bitmap[static_cast<size_t>(spell) / 8] = static_cast<uint8_t>(
-			bitmap[static_cast<size_t>(spell) / 8] | static_cast<uint8_t>(1U << (spell % 8)));
+		require(spell >= 0 && spell < MAX_SKILLS,
+			"captured spell is outside the skill table");
+		bitmap[static_cast<size_t>(spell) / 8] =
+			static_cast<uint8_t>(bitmap[static_cast<size_t>(spell) / 8] |
+					     static_cast<uint8_t>(1U << (spell % 8)));
 	}
 	return bitmap;
 }
 
 player_death_restitution_item_state make_state(const std::vector<uint8_t> &keyword,
-							       const std::vector<uint8_t> &description)
+					       const std::vector<uint8_t> &description)
 {
 	player_death_restitution_item_state state = {};
 	state.item_uid = ITEM_UID;
@@ -254,13 +259,14 @@ player_death_restitution_item_state make_state(const std::vector<uint8_t> &keywo
 	state.material = 4;
 	state.condition = 97;
 	state.affects.push_back({ 7, -3 });
-	state.extra_descriptions.push_back({ { 'l', 'o', 'r', 'e' }, { 'c', 'a', 'p', 't', 'u', 'r', 'e', 'd' } });
+	state.extra_descriptions.push_back(
+		{ { 'l', 'o', 'r', 'e' }, { 'c', 'a', 'p', 't', 'u', 'r', 'e', 'd' } });
 	state.extra_descriptions.push_back({ keyword, description });
 	return state;
 }
 
 std::vector<uint8_t> encode_state(const std::vector<uint8_t> &keyword,
-						  const std::vector<uint8_t> &description)
+				  const std::vector<uint8_t> &description)
 {
 	std::vector<uint8_t> encoded;
 	const player_death_restitution_item_state state = make_state(keyword, description);
@@ -274,60 +280,75 @@ void seed_fixture(MYSQL *connection, const std::vector<uint8_t> &payload)
 	const std::string payload_hex = hex_encode(payload);
 	const std::string digest_hex = sha256_hex(payload);
 	execute_sql(connection,
-		"INSERT INTO accounts(account_name,password) VALUES('" + ACCOUNT + "','')");
+		    "INSERT INTO accounts(account_name,password) VALUES('" + ACCOUNT + "','')");
 	execute_sql(connection,
-		"INSERT INTO player_data(pid,name,account_name,save_revision,active) VALUES(" +
-			std::to_string(PID) + ",'spellbook-fidelity','" + ACCOUNT + "',1,1)");
-	execute_sql(connection,
+		    "INSERT INTO player_data(pid,name,account_name,save_revision,active) VALUES(" +
+			    std::to_string(PID) + ",'spellbook-fidelity','" + ACCOUNT + "',1,1)");
+	execute_sql(
+		connection,
 		"INSERT INTO item_owner_revision(owner_type,owner_id,owner_context_id,revision) VALUES"
-		"(1," + std::to_string(PID) + ",0,7)");
-	execute_sql(connection,
+		"(1," + std::to_string(PID) +
+			",0,7)");
+	execute_sql(
+		connection,
 		"INSERT INTO player_items(id,pid,vnum,equip_slot,container_id,quantity,weight,cost,timer,"
 		"extra_flags,wear_flags,item_type,value0,value1,value2,value3,value4,value5,value6,value7,"
 		"name,short_descr,description,action_descr,bitvector1,bitvector2,bitvector3,bitvector4,"
 		"bitvector5,item_material,obj_uid,item_condition) VALUES(" +
 			std::to_string(ITEM_ID) + "," + std::to_string(PID) + "," +
-			std::to_string(ITEM_VNUM) + ",2,NULL,1,1,2,-1,0,0,20,0,0,0,0,0,0,0,0,"
-		"'projection','projection','projection','projection',0,0,0,0,0,1," +
+			std::to_string(ITEM_VNUM) +
+			",2,NULL,1,1,2,-1,0,0,20,0,0,0,0,0,0,0,0,"
+			"'projection','projection','projection','projection',0,0,0,0,0,1," +
 			std::to_string(ITEM_UID) + ",98)");
-	execute_sql(connection,
+	execute_sql(
+		connection,
 		"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,"
 		"owner_id,owner_context_id,item_revision,vnum,state) VALUES(" +
 			std::to_string(ITEM_UID) + "," + std::to_string(ITEM_UID) + ",NULL,1," +
 			std::to_string(PID) + ",0,11," + std::to_string(ITEM_VNUM) + ",1)");
-	execute_sql(connection,
+	execute_sql(
+		connection,
 		"INSERT INTO player_death_restitution_receipt(restitution_id,source_pid,death_revision,"
 		"recipient_pid,death_operation_id,evidence_digest,plan_digest,status,actor,reason) VALUES"
-		"(UNHEX('" + RECEIPT_ID + "')," + std::to_string(PID) + ",9," + std::to_string(PID) +
-		",UNHEX('11111111111111111111111111111111'),UNHEX(REPEAT('22',32)),"
-		"UNHEX(REPEAT('33',32)),2,'spellbook-test','captured spell fidelity')");
-	execute_sql(connection,
+		"(UNHEX('" +
+			RECEIPT_ID + "')," + std::to_string(PID) + ",9," + std::to_string(PID) +
+			",UNHEX('11111111111111111111111111111111'),UNHEX(REPEAT('22',32)),"
+			"UNHEX(REPEAT('33',32)),2,'spellbook-test','captured spell fidelity')");
+	execute_sql(
+		connection,
 		"INSERT INTO player_death_restitution_item(restitution_id,item_uid,vnum,disposition,"
-		"classification,metadata_digest,metadata_payload) VALUES(UNHEX('" + RECEIPT_ID + "')," +
-			std::to_string(ITEM_UID) + "," + std::to_string(ITEM_VNUM) + ",1,'spellbook',"
-		"UNHEX('" + digest_hex + "'),UNHEX('" + payload_hex + "'))");
-	execute_sql(connection,
+		"classification,metadata_digest,metadata_payload) VALUES(UNHEX('" +
+			RECEIPT_ID + "')," + std::to_string(ITEM_UID) + "," +
+			std::to_string(ITEM_VNUM) +
+			",1,'spellbook',"
+			"UNHEX('" +
+			digest_hex + "'),UNHEX('" + payload_hex + "'))");
+	execute_sql(
+		connection,
 		"INSERT INTO player_death_restitution_delivery(item_uid,restitution_id,source_pid,"
 		"death_revision,recipient_pid,source_item_revision,delivered_item_revision,"
-		"delivered_item_id,metadata_digest,original_payload) VALUES(" + std::to_string(ITEM_UID) +
-		",UNHEX('" + RECEIPT_ID + "')," + std::to_string(PID) + ",9," + std::to_string(PID) +
-		",11,11," + std::to_string(ITEM_ID) + ",UNHEX('" + digest_hex + "'),UNHEX('" +
+		"delivered_item_id,metadata_digest,original_payload) VALUES(" +
+			std::to_string(ITEM_UID) + ",UNHEX('" + RECEIPT_ID + "')," +
+			std::to_string(PID) + ",9," + std::to_string(PID) + ",11,11," +
+			std::to_string(ITEM_ID) + ",UNHEX('" + digest_hex + "'),UNHEX('" +
 			payload_hex + "'))");
-	execute_sql(connection,
+	execute_sql(
+		connection,
 		"INSERT INTO player_death_restitution_runtime(item_uid,recipient_pid,state_payload,"
-		"state_digest) VALUES(" + std::to_string(ITEM_UID) + "," + std::to_string(PID) +
-		",UNHEX('" + payload_hex + "'),UNHEX('" + digest_hex + "'))");
+		"state_digest) VALUES(" +
+			std::to_string(ITEM_UID) + "," + std::to_string(PID) + ",UNHEX('" +
+			payload_hex + "'),UNHEX('" + digest_hex + "'))");
 	require(scalar(connection, "SELECT COUNT(*) FROM player_spellbooks WHERE pid=" +
-				std::to_string(PID)) == "0",
+					   std::to_string(PID)) == "0",
 		"fixture unexpectedly seeded player_spellbooks rows");
 }
 
 void replace_runtime_payload(MYSQL *connection, const std::vector<uint8_t> &payload)
 {
 	execute_sql(connection,
-		"UPDATE player_death_restitution_runtime SET state_payload=UNHEX('" +
-			hex_encode(payload) + "'),state_digest=UNHEX('" + sha256_hex(payload) +
-			"') WHERE item_uid=" + std::to_string(ITEM_UID));
+		    "UPDATE player_death_restitution_runtime SET state_payload=UNHEX('" +
+			    hex_encode(payload) + "'),state_digest=UNHEX('" + sha256_hex(payload) +
+			    "') WHERE item_uid=" + std::to_string(ITEM_UID));
 }
 
 player_load_result load_fixture(MYSQL *connection, uint64_t request_id)
@@ -360,13 +381,14 @@ void verify_loaded_spellbook(const player_load_result &result, const char *encod
 	require(item.equipment_slot == 2 && item.parent_index == PLAYER_SNAPSHOT_NO_PARENT,
 		"loader did not preserve live placement from the ownership projection");
 	require(item.string_mask == 15 && item.name == "captured" &&
-			item.short_description == "spellbook" && item.description == "authoritative" &&
-			item.action_description == "death",
+			item.short_description == "spellbook" &&
+			item.description == "authoritative" && item.action_description == "death",
 		"loader did not preserve the captured item fields");
 	require(item.values == std::array<int32_t, 8>{ 11, 22, 33, 44, 55, 66, 77, 88 } &&
 			item.timers[0] == 1234 && item.extra_flags == 0x12345678U &&
 			item.wear_flags == 77 && item.type == 20 && item.material == 4 &&
-			item.condition == 97 && item.bitvectors ==
+			item.condition == 97 &&
+			item.bitvectors ==
 				std::array<uint64_t, 5>{ 0x11, 0x22, 0x33, 0x44, 0x55 } &&
 			item.affects[0] == std::array<int16_t, 2>{ 7, -3 },
 		"loader did not preserve the captured item state fields");
@@ -391,7 +413,8 @@ void verify_materialized_spellbook(const player_load_result &result)
 	player_load_item_materialize_metrics metrics = {};
 	const item_owner_identity owner = { item_owner_type::player, PID, 0 };
 	if (!player_load_item_graph_materialize_detached(items, result.item_identities, owner,
-							 result.item_owner_revision, false, true, &roots, &metrics))
+							 result.item_owner_revision, false, true,
+							 &roots, &metrics))
 	{
 		std::cerr << "materializer outcome=" << static_cast<unsigned>(metrics.outcome)
 			  << " items=" << metrics.item_count << '\n';
@@ -410,7 +433,8 @@ void verify_materialized_spellbook(const player_load_result &result)
 			break;
 		}
 	require(book && book->description &&
-			std::memcmp(book->description, expected_bitmap.data(), expected_bitmap.size()) == 0,
+			std::memcmp(book->description, expected_bitmap.data(),
+				    expected_bitmap.size()) == 0,
 		"materializer did not recreate the captured spell bitmap");
 	extract_obj(roots[0], 0);
 }
@@ -428,8 +452,7 @@ void verify_rejects_incomplete_bitmap(MYSQL *connection)
 void verify_rejects_malformed_json(MYSQL *connection)
 {
 	const std::vector<uint8_t> malformed = encode_state(
-		{ 'S', 'P', 'E', 'L', 'L', 'B', 'O', 'O', 'K' },
-		{ '[', '1', ',', '1', ']' });
+		{ 'S', 'P', 'E', 'L', 'L', 'B', 'O', 'O', 'K' }, { '[', '1', ',', '1', ']' });
 	replace_runtime_payload(connection, malformed);
 	const player_load_result result = load_fixture(connection, 203);
 	require(result.outcome == player_load_outcome::component_failure &&
@@ -449,8 +472,9 @@ int main()
 	const char *database = std::getenv("DB_NAME");
 	const char *port_text = std::getenv("DB_PORT");
 	if (!host || !user || !password || !database || !port_text ||
-		!mysql_real_connect(connection, host, user, password, database,
-						static_cast<unsigned int>(std::strtoul(port_text, nullptr, 10)), nullptr, 0))
+	    !mysql_real_connect(connection, host, user, password, database,
+				static_cast<unsigned int>(std::strtoul(port_text, nullptr, 10)),
+				nullptr, 0))
 		fail("database connection failed", connection);
 
 	const std::vector<uint8_t> raw_keyword = { 3, 1, 3 };
@@ -461,9 +485,9 @@ int main()
 	verify_materialized_spellbook(raw_loaded);
 	verify_rejects_incomplete_bitmap(connection);
 
-	const std::vector<uint8_t> json_payload = encode_state(
-		{ 'S', 'P', 'E', 'L', 'L', 'B', 'O', 'O', 'K' },
-		{ '[', '1', ',', '7', ',', '3', '1', ']' });
+	const std::vector<uint8_t> json_payload =
+		encode_state({ 'S', 'P', 'E', 'L', 'L', 'B', 'O', 'O', 'K' },
+			     { '[', '1', ',', '7', ',', '3', '1', ']' });
 	replace_runtime_payload(connection, json_payload);
 	const player_load_result json_loaded = load_fixture(connection, 201);
 	verify_loaded_spellbook(json_loaded, "canonical captured JSON");
@@ -471,10 +495,12 @@ int main()
 	verify_rejects_malformed_json(connection);
 	replace_runtime_payload(connection, json_payload);
 	require(scalar(connection, "SELECT COUNT(*) FROM player_spellbooks WHERE pid=" +
-				std::to_string(PID)) == "0",
+					   std::to_string(PID)) == "0",
 		"spellbook test gained a player_spellbooks row");
 	mysql_close(connection);
-	std::cout << "isolated spellbook IST1 loader fidelity passed: raw bitmap and canonical JSON restored "
-			  << CAPTURED_SPELLS.size() << " captured spell IDs through materialization; malformed evidence failed closed\n";
+	std::cout
+		<< "isolated spellbook IST1 loader fidelity passed: raw bitmap and canonical JSON restored "
+		<< CAPTURED_SPELLS.size()
+		<< " captured spell IDs through materialization; malformed evidence failed closed\n";
 	return 0;
 }

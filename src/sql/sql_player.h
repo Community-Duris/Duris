@@ -83,7 +83,7 @@ bool sql_load_player_items(P_char ch);
 bool sql_load_player_shapechanges(P_char ch);
 
 // pet save/load for crash recovery
-bool sql_save_player_pets(P_char ch, int save_type);
+bool sql_save_player_pets(P_char ch, int save_type, int save_room_vnum);
 bool sql_load_player_pets(P_char ch);
 
 // ============================================================================
@@ -229,8 +229,8 @@ bool sql_load_all_corpses(void);
 bool sql_save_shopkeeper(P_char ch, int shop_nr);
 bool sql_delete_shopkeeper(int shop_nr);
 P_char sql_restore_shopkeeper(int shop_nr);
-void sql_restore_shopkeepers(void);
-void sql_save_dirty_shopkeepers(void);
+bool sql_restore_shopkeepers(void);
+bool sql_save_dirty_shopkeepers(bool force = false);
 
 // saved items
 bool sql_save_saved_item(P_obj item, const char *item_key);

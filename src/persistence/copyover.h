@@ -12,7 +12,7 @@
 const char *copyover_state_file();
 #define COPYOVER_FILE copyover_state_file()
 #define COPYOVER_MAGIC "COPY"
-#define COPYOVER_VERSION 15 // telemetry session handoff; reads versions 12-14 too
+#define COPYOVER_VERSION 16 // shopkeeper identity + telemetry; reads versions 12-15 too
 
 // copyover file header
 struct copyover_header
@@ -83,6 +83,7 @@ struct copyover_mob
 	int gold; // mob's gold
 	int birthplace; // original zone spawn room vnum
 	transport_snapshot transport;
+	int shopkeeper_shop_id; // exact shop binding; -1 when not a shopkeeper
 };
 
 // affect data for copyover - matches affected_type fields

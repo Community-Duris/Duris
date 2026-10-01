@@ -17,6 +17,7 @@
 #include <string.h>
 #include <time.h>
 #include "combat/ctf.h"
+#include "combat/training_dummy.h"
 #include "world/graph.h"
 #include "magic/spells.h"
 
@@ -138,6 +139,11 @@ void do_mount(P_char ch, char *argument, int /*cmd*/)
 	if (mount == ch)
 	{
 		send_to_char("Ride on your own back?  How?\r\n", ch);
+		return;
+	}
+	if (training_dummy_is(mount))
+	{
+		send_to_char("The training dummy is anchored and cannot be ridden.\r\n", ch);
 		return;
 	}
 	if (IS_MORPH(ch))

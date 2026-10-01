@@ -110,6 +110,46 @@ cargo information board~
 33 15 3 0 7 0 0 0 0 0 0
 0 0 99993 0 0 0 0 0
 0 0 100
+#48014
+anvil forge hearth iron~
+&+La great iron anvil&n~
+&+LA great iron anvil squats before the banked hearth here.&n~
+~
+12 15 4 0 14 0 65536 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+#48015
+loom looms ash~
+&+ya tall ash loom&n~
+&+yA tall loom of dark-stained ash stands here, its warp drawn taut.&n~
+~
+12 6 4 0 14 0 65536 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+#48016
+bench workbench jeweller jewellers~
+&+ca jeweller's workbench&n~
+&+cA broad jeweller's workbench stands here beneath the lamps.&n~
+~
+12 6 4 0 14 0 65536 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+#48017
+counter store ledger bell~
+&+Ythe guild store's counter&n~
+&+YA broad counter crosses the room, a ledger open upon it.  '&+Wlist&+Y' and '&+Wbuy&+Y' here.&n~
+~
+12 6 4 0 14 0 65536 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+#48018
+kingdom crafted blank _kingdom_craft_~
+a piece of kingdom work~
+A piece of kingdom work lies here.~
+~
+12 0 3 0 7 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+1 0 100
 #48100
 board~
 &+ya board&N~

@@ -80,7 +80,7 @@ assert "request.allow_pre_entry && request.target_container_uid" in TRANSACTION_
 COMM = (ROOT / "src/net/comm.c").read_text(encoding="utf-8")
 gate = re.search(r"creation_grant_input\s*=([^;]*item_creation_grant_blocks_commands[^;]*);", COMM)
 assert gate is not None
-assert "point->connected == CON_PLAYING" in " ".join(gate.group(1).split())
+assert "descriptor->connected == CON_PLAYING" in " ".join(gate.group(1).split())
 
 # Maintenance must refuse before admission is quiesced: a multi-root kit can
 # still have detached roots after the currently active operation is drained.

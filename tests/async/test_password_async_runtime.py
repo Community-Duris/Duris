@@ -15,7 +15,7 @@ for path in ("account/account.c", "account/account_recovery_nanny.c",
     assert "bcrypt_hash_password(" not in text, path
     assert "bcrypt_verify_password(" not in text, path
 comm = (SRC / "net/comm.c").read_text()
-assert comm.index("password_async_pulse(point)") < comm.index("get_casting_cmd_from_q(t_ch, &point->input, comm)")
+assert comm.index("session_input_authentication_pending(point)") < comm.index("select_session_input(point, t_ch, comm)")
 assert "password_async_cancel(d);" in comm
 ws = (SRC / "net/ws_handlers.c").read_text()
 assert "d->login_password_job || d->password_request" in ws

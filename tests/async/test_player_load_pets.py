@@ -22,7 +22,7 @@ subprocess.run(
 )
 
 for contract in (
-    "FROM player_pets WHERE owner_pid=",
+    "FROM player_pets pp LEFT JOIN item_owner_revision rev",
     "FROM player_pet_items ppi",
     "player_pet_item_affects",
     "player_pet_item_extra_descr",
@@ -35,7 +35,7 @@ assert REPOSITORY.count("load_pets(connection") == 1
 for contract in (
     "player_load_pets_stage",
     "player_load_pets_discard",
-    "item_ownership_runtime_hydrate_batch",
+    "item_ownership_runtime_hydrate_many_atomic",
     "player_load_pets_commit",
 ):
     assert contract in MATERIALIZE
@@ -51,12 +51,14 @@ for contract in (
 assert "request.include_pets = true" in COPYOVER
 assert "player_load_pets_place(ch);" in COPYOVER
 assert "setup_pet(pet, ch, -1" not in COPYOVER
-direct_pet_save = SQL_PLAYER[SQL_PLAYER.index("bool sql_save_player_pets(P_char ch, int save_type)",
+direct_pet_save = SQL_PLAYER[SQL_PLAYER.index("bool sql_save_player_pets(P_char ch, int save_type, int save_room_vnum)",
                                              SQL_PLAYER.index("#else")):
                                 SQL_PLAYER.index("bool sql_load_player_pets(P_char /*ch*/)",
                                                  SQL_PLAYER.index("#else"))]
 assert "player_snapshot_capture" in direct_pet_save
 assert "player_snapshot_repository_write_pets" in direct_pet_save
+assert "pet_room_vnum = save_room_vnum" in direct_pet_save
+assert "ch->in_room >= 0 && ch->in_room <= top_of_world" in direct_pet_save
 assert "player_load_pets_place(ch)" in NANNY
 assert "sql_load_player_pets(ch)" not in NANNY
 assert "DELETE FROM player_pets WHERE owner_pid" not in REPOSITORY

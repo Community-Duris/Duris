@@ -26,6 +26,8 @@ HARNESS = r'''
 #include "core/structs.h"
 #include "core/utils.h"
 
+bool training_dummy_capture_target_allowed(P_char) { return true; }
+
 #include <cassert>
 #include <cstdarg>
 #include <cstdlib>
@@ -105,7 +107,9 @@ void add_pet(player_load_result &result, uint64_t database_id, int vnum, int ord
     pet.charm_duration = 12;
     pet.room_vnum = result.snapshot.room_vnum;
     result.snapshot.pets.push_back(pet);
-    result.pet_identities.push_back({ database_id, {} });
+    player_load_pet_identity identity = {};
+    identity.database_id = database_id;
+    result.pet_identities.push_back(identity);
 }
 
 void add_pet_item(player_load_result &result, size_t pet_index, uint64_t database_id,
@@ -650,6 +654,36 @@ int main()
 
     {
         reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        add_item(result, 1, 10, 101, PLAYER_SNAPSHOT_NO_PARENT, 0);
+        result.item_identities[0].override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME;
+        result.snapshot.items[0].timers[1] = 44;
+        result.snapshot.items[0].anti_flags = 5;
+        result.snapshot.items[0].anti2_flags = 6;
+        result.snapshot.items[0].extra2_flags = 7;
+        result.snapshot.items[0].craftsmanship = 8;
+        player_load_item_materialize_metrics metrics = {};
+        result.snapshot.items[0].dynamic_affects.push_back({1, 2, 3});
+        assert(player_load_items_materialize(&owner.character, result, &metrics));
+        assert(owner.character.carrying->timer[1] == 44);
+        assert(owner.character.carrying->anti_flags == 5);
+        assert(owner.character.carrying->anti2_flags == 6);
+        assert(owner.character.carrying->extra2_flags == 7);
+        assert(owner.character.carrying->craftsmanship == 8);
+        assert(owner.character.carrying->affects &&
+               owner.character.carrying->affects->type == 1 &&
+               owner.character.carrying->affects->data == 2 &&
+               owner.character.carrying->affects->extra2 == 3);
+        item_ownership_runtime_entry entry = {};
+        assert(item_ownership_runtime_lookup(10, &entry));
+        assert(item_owner_identity_equal(entry.owner, {item_owner_type::player, 42, 0}));
+        assert(metrics.outcome == player_load_item_materialize_outcome::applied);
+        release_tree(owner.character.carrying);
+    }
+
+    {
+        reset_test_state();
         player_load_result result = base_result();
         add_item(result, 1, 30, 100, PLAYER_SNAPSHOT_NO_PARENT, -1);
         add_item(result, 2, 31, 101, 0, -1);
@@ -682,6 +716,43 @@ int main()
             result.item_owner_revision, true, true, &roots, &metrics));
         assert(roots.empty() && metrics.outcome ==
                player_load_item_materialize_outcome::invalid_snapshot);
+    }
+
+    // #590: pet restore happens before its PC-owner link exists. Legacy hidden
+    // worn roots become carried, while UID, children, binding flags and custody
+    // remain intact; ordinary visible equipment still activates normally.
+    {
+        reset_test_state();
+        test_character restored(42);
+        npc_only_data npc = {};
+        restored.character.specials.act = ACT_ISNPC;
+        restored.character.only.npc = &npc;
+        player_load_result result = base_result();
+        add_item(result, 1, 59001, 100, PLAYER_SNAPSHOT_NO_PARENT, PRIMARY_WEAPON + 1);
+        add_item(result, 2, 59002, 101, 0, 0);
+        add_item(result, 3, 59003, 101, PLAYER_SNAPSHOT_NO_PARENT, HOLD + 1);
+        result.snapshot.items[0].extra_flags |= ITEM_NOSHOW;
+        const item_owner_identity custody = { item_owner_type::pet, 42, 590 };
+        for (auto &identity : result.item_identities)
+            identity.owner = custody;
+        player_load_item_materialize_metrics metrics = {};
+        assert(player_load_item_graph_materialize_for_owner(
+            &restored.character, result.snapshot.items, result.item_identities,
+            custody, result.item_owner_revision, true, true, &metrics));
+        P_obj hidden = restored.character.carrying;
+        assert(hidden && hidden->obj_uid == 59001 && hidden->contains &&
+               hidden->contains->obj_uid == 59002 && IS_NOSHOW(hidden));
+        assert(!restored.character.equipment[PRIMARY_WEAPON]);
+        assert(restored.character.equipment[HOLD] &&
+               restored.character.equipment[HOLD]->obj_uid == 59003);
+        for (uint64_t uid : {59001, 59002, 59003}) {
+            item_ownership_runtime_entry entry = {};
+            assert(item_ownership_runtime_lookup(uid, &entry));
+            assert(item_owner_identity_equal(entry.owner, custody));
+        }
+        assert(item_ownership_runtime_size() == 3);
+        release_tree(hidden);
+        release_tree(restored.character.equipment[HOLD]);
     }
 
     // Distinct native books coexist; reordered copies are duplicate metadata.
@@ -915,9 +986,25 @@ int main()
         result.snapshot.pets[0].room_vnum = 122;
         std::vector<P_char> pets;
         player_load_pet_materialize_metrics metrics = {};
-        assert(!player_load_pets_stage(&owner.character, result, &pets, &metrics));
-        result.snapshot.pets[0].room_vnum = result.snapshot.room_vnum;
         assert(player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        assert(pets.size() == 1 && pets[0]);
+        player_load_pets_discard(&pets);
+    }
+    {
+        reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        result.snapshot.room_vnum = 123;
+        add_pet(result, 3001, 200);
+        result.snapshot.pets[0].room_vnum = 122;
+        result.snapshot.pets[0].hold_reason = pet_hold_reason::custody_pending;
+        std::vector<P_char> pets;
+        player_load_pet_materialize_metrics metrics = {};
+        assert(player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        assert(pets.size() == 1 && !pets[0]);
+        assert(owner.pc.held_pets && owner.pc.held_pets->pets.size() == 1 &&
+               owner.pc.held_pets->pets[0].hold_reason == pet_hold_reason::custody_pending &&
+               owner.pc.held_pets->pets[0].room_vnum == 122);
         player_load_pets_discard(&pets);
     }
     {

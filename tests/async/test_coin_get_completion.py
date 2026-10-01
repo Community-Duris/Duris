@@ -62,6 +62,7 @@ struct char_data
 	pc_only_data *only_pc;
 };
 using P_char = char_data *;
+#define IS_PC(ch) ((ch)->only_pc != nullptr)
 #define GET_PID(ch) ((ch)->only_pc->pid)
 
 struct coin_transfer_endpoint

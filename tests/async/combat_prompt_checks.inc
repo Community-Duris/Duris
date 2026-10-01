@@ -31,6 +31,11 @@ static void combat_prompt_matrix()
 	attacker.points.hit = attacker.points.max_hit = victim.points.hit = victim.points.max_hit =
 		100;
 	attacker.points.max_mana = attacker.points.max_vitality = 100;
+	// A zero prompt mask still consumes the pending prompt state.
+	pc.prompt = 0;
+	desc.prompt_mode = true;
+	make_prompt(&desc);
+	assert(drain(&desc).empty() && !desc.prompt_mode);
 	OutputProfilePreferences a, b, c;
 	damage_messages message{ "You strike $N%s.",
 				 "$n strikes you%s.",

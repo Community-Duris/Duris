@@ -22,6 +22,7 @@
 #include "combat/arena.h"
 #include "core/config.h"
 #include "combat/damage.h"
+#include "combat/training_dummy.h"
 #include "classes/disguise.h"
 #include "net/gmcp.h"
 #include "combat/justice.h"
@@ -1498,6 +1499,9 @@ void do_disarm(P_char ch, char *arg, int /*cmd*/)
 
 void event_meditation(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
+	if (!IS_AFFECTED(ch, AFF_MEDITATE))
+		return;
+
 	if (GET_CHAR_SKILL(ch, SKILL_ADVANCED_MEDITATION) / 2 > number(0, 100))
 	{
 		if (IS_AFFECTED(ch, AFF_BLIND))
@@ -2232,6 +2236,12 @@ void shapechange_learn(P_char ch, char *mobname)
 	if (!(mob = get_char_room_vis(ch, mobname)))
 	{
 		send_to_char("You can't see anything here by this name.\n", ch);
+		return;
+	}
+
+	if (!training_dummy_shape_target_allowed(mob))
+	{
+		send_to_char("The training dummy cannot be used as a shapechange form.\n", ch);
 		return;
 	}
 

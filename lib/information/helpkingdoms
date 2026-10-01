@@ -164,7 +164,8 @@ back to something it can pay.
 
 Converting, claiming and abandoning are the LEADER'S acts alone. They
 spend the treasury and change what the guild owes every cycle, and no
-lesser rank may do them.
+lesser rank may do them. Building the realm's workshops, below, is the
+leader's too.
 
 
 THE HALL AND THE REALM
@@ -374,10 +375,11 @@ restocked toward its accustomed TOTAL of nodes, all kinds counted
 together, however hard it is worked - and every replacement rolls its
 own kind, so the supply moves about rather than running down.
 
-Nodes are drawn on the overhead map as a coloured letter - s for a
-seam of stone, t for timber, f for fibre, w for water, and m for the
-fungal stands of the Underdark. Everyone sees them, with no skill or
-distance test to pass - even the deep forest that hides men and beasts
+Nodes are drawn on the overhead map as a coloured letter - o for a
+seam of stone or ore, t for timber, f for fibre, w for water, and m
+for the fungal stands of the Underdark. A ship is an S, so a seam is
+never one of those. Everyone sees them, with no skill or distance
+test to pass - even the deep forest that hides men and beasts
 on the map does not hide a node, for a stand of timber IS the visible
 feature of a forest - though anything else standing on the square is
 drawn ahead of the node. Underdark nodes are drawn dimmer than surface
@@ -397,6 +399,63 @@ A realm TWO rungs into arrears banks nothing. One missed cycle costs
 only the guards; the second stops the stores, and they stay stopped
 until a reckoning the treasury can actually meet - paying coin in
 between reckonings does not restart them by itself.
+
+
+THE WORKS: FORGE, LOOM, JEWELLER AND GUILD STORE
+------------------------------------------------
+A kingdom can put what its people gather to work. Its MAIN guildhall
+may raise four workshops, each a new room of its own:
+
+  the forge        weapons and metal armour, from mineral and wood
+  the loom         cloaks, belts, robes, hoods and gloves, from fibre
+                   and water
+  the jeweller     rings, bracelets and necklaces, from mineral and
+                   water
+  the guild store  where members buy what the other three make
+
+  kingdom build <forge|loom|jeweller|store> <direction>     (leader)
+
+Stand in the main hall and name a direction with no exit; the new
+room opens that way. Each costs 20,000 platinum on the shipped
+settings, paid from the GUILD TREASURY like land and guards. A hall
+may have one of each. The store may only be built once at least one
+workshop stands, and none may be built in an outpost. They carry no
+upkeep of their own.
+
+THE STORE SELLS WHAT THE WORKSHOPS MAKE, and nothing else: a hall with
+a forge and a store sells forge work only. In the store, 'list' shows
+every piece your workshops make, priced for YOU, and 'buy <item>
+[variant]' buys one. Only full members of the kingdom's own guild may
+buy - not allies, not applicants, not anyone on parole - and the store
+is shut while the realm is dormant or in arrears.
+
+EVERY PIECE IS MADE FOR ITS BUYER'S LEVEL at the moment it is bought.
+Its stats, its weapon dice, its price and the material it draws all
+rise with that level, to a ceiling at level 56. A level 10 cannot buy
+level-56 work, and a level 56 gets sound mid-level gear. On the
+shipped settings a piece of weight W costs W x (2 + level) platinum
+and draws W x (4 + level/2) units of the realm's stores, split 70/30
+between its workshop's two resources. W is 1.5 for a one-handed weapon
+or body armour, 2 for a two-handed weapon, 1.2 for a shield, 0.8 for
+jewellery and 1 for anything else - so a level-56 longsword costs 87
+platinum and draws 34 mineral and 14 wood.
+
+Some pieces come in more than one form, and the buyer chooses: 'buy
+ring health', 'buy ring accuracy', 'buy belt endurance'. 'list' names
+the forms each piece offers.
+
+WHAT THE BUYER PAYS IS DESTROYED. The platinum goes nowhere - not to
+the treasury, not to the leader - so the store is never a way to turn
+the realm's stores into coin. The material comes out of the realm's
+stores all or nothing, as it does for land: a piece the realm cannot
+supply in full is marked 'out of materials' and cannot be bought until
+more is harvested.
+
+STORE GEAR IS BOUND TO ITS BUYER. It is soulbound - only the buyer may
+wear it, and it cannot be given, dropped or passed to an alt - and no
+shop will buy it. It carries no magical effects of any kind: no haste,
+no sanctuary, no procs, only armour, hit points, mana, attributes,
+hitroll and damroll.
 
 
 SUBCOMMANDS
@@ -428,6 +487,9 @@ kingdom promote    - raise one guard to the next realm tier, naming it
                      re-school it at the same time. (leader)
 kingdom champion   - raise the realm's one champion. Takes TWO differing
                      classes, and wants all eighty squares. (leader)
+kingdom build      - raise the forge, the loom, the jeweller or the
+                     guild store as a new room of the main hall. Takes
+                     the workshop and a direction. (leader)
 kingdom prospect   - would a realm stand where you are? If not, why not,
                      and which way the nearest ground that would take
                      one lies. NEEDS NO GUILD - it is the verb for
@@ -455,7 +517,8 @@ finish, or it stops where it is.
 other verb is for FULL MEMBERS of a guild, and belonging to one is not
 the same as being a full member of it: an applicant, a banned
 character or one on parole has no realm to speak for, and nothing they
-gather is banked either. Converting, claiming and abandoning are the
-leader's alone, as above.
+gather is banked either. Converting, claiming, abandoning and building
+are the leader's alone, as above. Buying in the guild store asks only
+full membership.
 
 See also: KINGDOM, SOCIETY, GUILDHALL

@@ -170,7 +170,7 @@ bool currency_command_encode_payload(const currency_command_payload &payload,
 	if (!encoded || !payload.pid || !valid_reason(payload.reason) ||
 	    !valid_name(payload.account_name.data(), &name_length) ||
 	    !vector_valid(payload.wallet_delta) || !vector_valid(payload.bank_delta) ||
-	    !any_delta(payload))
+	    (!any_delta(payload) && payload.reason != currency_reason_type::corpse_lifecycle))
 		return false;
 	encoded->assign(CURRENCY_COMMAND_PAYLOAD_BYTES, 0);
 	put_u32(encoded->data() + PID_OFFSET, payload.pid);
@@ -216,7 +216,8 @@ bool currency_command_decode_payload(const critical_command &command,
 	return payload->pid && valid_reason(payload->reason) &&
 	       valid_name(payload->account_name.data(), &checked_length) &&
 	       checked_length == name_length && vector_valid(payload->wallet_delta) &&
-	       vector_valid(payload->bank_delta) && any_delta(*payload) &&
+	       vector_valid(payload->bank_delta) &&
+	       (any_delta(*payload) || payload->reason == currency_reason_type::corpse_lifecycle) &&
 	       currency_account_key(payload->account_name.data(), payload->racewar, &account_key) &&
 	       command.keys.size() == 2 && command.expected_revisions.size() == 2 &&
 	       critical_entity_key_equal(command.keys[0], player_key) &&

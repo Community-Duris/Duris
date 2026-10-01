@@ -32,7 +32,7 @@ template <typename F> void wait_for(F condition) {
 }
 static size_t result_depth() {
     std::lock_guard<std::mutex> lock(coordinator_mutex);
-    return raw_results.size();
+    return completion_delivery.size(critical_completion_channel::execution);
 }
 static critical_command command(unsigned int tag) {
     critical_command result = {};
@@ -47,6 +47,15 @@ static critical_command command(unsigned int tag) {
     return result;
 }
 static critical_apply_result apply(const critical_command &cmd, void *) {
+    if (cmd.payload[0] == 200 || cmd.payload[0] == 202) {
+        critical_apply_result result = {cmd.payload[0] == 200 ? critical_apply_outcome::applied :
+                                       critical_apply_outcome::already_applied, 73, 0};
+        result.result_size = 4096;
+        static_assert(CRITICAL_COMPLETION_RESULT_MAX_BYTES >= 4096);
+        for (size_t n = 0; n < result.result_size; ++n)
+            result.result_payload[n] = static_cast<uint8_t>((n * 7 + 3) % 251);
+        return result;
+    }
     if (cmd.payload[0] == 2) {
         if (++attempts == CRITICAL_COORDINATOR_MAX_RETRIES + 1)
             wait_for([] { return release_last.load(); });
@@ -63,7 +72,7 @@ static void capacity_case(const std::string &directory, size_t capacity,
     exhausted_outcome = outcome;
     assert(critical_command_coordinator_init(directory.c_str(), apply, nullptr, 2));
     const auto failed = command(2);
-    assert(critical_command_coordinator_submit(failed) == critical_submit_result::accepted);
+    assert(critical_command_coordinator_submit(failed) == critical_submit_result::awaiting_durability);
     // A retry that can still run needs no output slot, even with a null buffer.
     for (unsigned int n = 0; n < CRITICAL_COORDINATOR_MAX_RETRIES; ++n) {
         wait_for([] { return result_depth() == 1; });
@@ -78,7 +87,7 @@ static void capacity_case(const std::string &directory, size_t capacity,
         const auto other = command(10 + i);
         expected.emplace(operation_key(other.operation_id), i % 2 ?
                          critical_apply_outcome::terminal_failure : critical_apply_outcome::applied);
-        assert(critical_command_coordinator_submit(other) == critical_submit_result::accepted);
+        assert(critical_command_coordinator_submit(other) == critical_submit_result::awaiting_durability);
     }
     wait_for([&] { return result_depth() == capacity; });
     release_last = true;
@@ -121,8 +130,31 @@ static void capacity_case(const std::string &directory, size_t capacity,
            capacity, unsigned(outcome), seen.size());
     critical_command_coordinator_shutdown();
 }
+static void large_result_case(const std::string &directory) {
+    assert(critical_command_coordinator_init(directory.c_str(), apply, nullptr, 2));
+    for (unsigned int tag : {200, 202}) {
+        const auto large = command(tag);
+        assert(critical_command_coordinator_submit(large) == critical_submit_result::awaiting_durability);
+        wait_for([] { return result_depth() == 1; });
+        critical_completion delivered = {};
+        assert(critical_command_coordinator_pulse(&delivered, 1) == 1);
+        assert(critical_operation_id_equal(delivered.operation_id, large.operation_id));
+        assert(delivered.outcome == (tag == 200 ? critical_apply_outcome::applied :
+                                    critical_apply_outcome::already_applied));
+        assert(delivered.result_size == 4096 && delivered.durable_revision == 73);
+        for (size_t n = 0; n < delivered.result_size; ++n)
+            assert(delivered.result_payload[n] == static_cast<uint8_t>((n * 7 + 3) % 251));
+        critical_completion cached = {};
+        assert(critical_command_coordinator_get_completed(large.operation_id, &cached));
+        assert(cached.result_size == delivered.result_size);
+        assert(cached.result_payload == delivered.result_payload);
+    }
+    critical_command_coordinator_shutdown();
+    puts("4096-byte fresh and replay completions survive delivery and retained lookup");
+}
 int main(int argc, char **argv) {
     assert(argc == 2);
+    large_result_case(std::string(argv[1]) + "/large");
     for (auto outcome : {critical_apply_outcome::retryable_failure, critical_apply_outcome::ambiguous_commit})
         for (size_t capacity : {0, 1, 64})
             capacity_case(std::string(argv[1]) + "/" + std::to_string(unsigned(outcome)) +

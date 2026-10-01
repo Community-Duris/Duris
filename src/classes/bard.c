@@ -18,6 +18,7 @@
 #include <string.h>
 #include "combat/damage.h"
 #include "combat/justice.h"
+#include "combat/training_dummy.h"
 #include "magic/spells.h"
 
 /*
@@ -771,6 +772,12 @@ void bard_charm(int /*l*/, P_char ch, P_char victim, int song)
 	P_obj tmp_obj;
 	P_char follower;
 	struct follow_type *fol, *next_fol;
+
+	if (training_dummy_is(victim))
+	{
+		send_to_char("The training dummy has no mind to charm.\r\n", ch);
+		return;
+	}
 
 	if (GET_MASTER(victim) || GET_MASTER(ch))
 		return;

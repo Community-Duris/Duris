@@ -96,6 +96,7 @@ static const char *KINGDOM_SYNTAX =
 	"  kingdom respec <#> <class>   re-school a guard, same rank    (leader)\r\n"
 	"  kingdom champion <class> <class>  raise the realm's one champion (leader)\r\n"
 	"  kingdom champion respec <class> <class>  re-school it        (leader)\r\n"
+	"  kingdom build <work> <dir>  raise a forge, loom, jeweller or store (leader)\r\n"
 	"  kingdom help             the long explanation\r\n";
 
 static const char *KINGDOM_DISABLED = "Kingdoms are not enabled on this world.\r\n";
@@ -523,6 +524,22 @@ static void kingdom_cmd_help(P_char ch)
 	out += "  Harvested resources are held by the realm, not by the treasury, and are\r\n";
 	out += "  spent on the realm's own works. They cannot be withdrawn by anyone.\r\n";
 
+	out += "\r\n&+WThe works&n\r\n";
+	out += "  The main hall may raise a forge, a loom, a jeweller and a guild store, one\r\n";
+	out += "  of each, as new rooms: '&+Wkingdom build <work> <direction>&n', leader only.\r\n";
+	snprintf(line, sizeof(line), "  A workshop costs %s from the guild treasury,\r\n",
+		 kingdom_coin_string(kingdom_cfg.station_cost));
+	out += line;
+	snprintf(line, sizeof(line),
+		 "  the store %s, and the store only once a workshop stands.\r\n",
+		 kingdom_coin_string(kingdom_cfg.store_cost));
+	out += line;
+	out += "  In the store, '&+Wlist&n' and '&+Wbuy <item> [form]&n' sell what the hall's\r\n";
+	out += "  workshops make, made for the BUYER'S level (to 56) and paid for twice: in\r\n";
+	out += "  platinum, which is destroyed, and in the realm's resources. Only the buyer\r\n";
+	out += "  can wear a piece, since it is made to their level; anyone may carry or sell\r\n";
+	out += "  it for a little, and it carries no effects.\r\n";
+
 	out += "\r\n'&+Whelp kingdoms&n' holds the full rules.\r\n\r\n";
 	out += KINGDOM_SYNTAX;
 
@@ -745,6 +762,10 @@ void do_kingdom(P_char ch, char *argument, int /*cmd*/)
 	else if (is_abbrev(token, "respec"))
 	{
 		kingdom_roster_respec(ch, rest);
+	}
+	else if (is_abbrev(token, "build"))
+	{
+		kingdom_build_work(ch, rest);
 	}
 	else
 	{

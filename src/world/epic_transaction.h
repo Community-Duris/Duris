@@ -9,7 +9,7 @@
 #include <cstdint>
 
 constexpr size_t EPIC_PENDING_MAX = 1024;
-constexpr size_t EPIC_PENDING_CONTEXT_MAX_BYTES = 64;
+constexpr size_t EPIC_PENDING_CONTEXT_MAX_BYTES = 256;
 
 using epic_completion_fn = void (*)(P_char character, bool committed,
 				    const epic_command_result &result, unsigned int error_code,

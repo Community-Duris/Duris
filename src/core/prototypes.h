@@ -650,6 +650,7 @@ void do_snoop(P_char, char *, int);
 void do_start(P_char, int);
 void do_start_deferred_newbie_kit(P_char, int);
 void do_stat(P_char, char *, int);
+void do_training_dummy(P_char, char *, int);
 void do_switch(P_char, char *, int);
 void do_teleport(P_char, char *, int);
 void do_text_reload(P_char, char *, int);
@@ -683,8 +684,11 @@ void do_nchat(P_char, char *, int);
 void do_jestros(P_char ch, char *argument, int cmd);
 void do_tranquilize(P_char ch, char *argument, int cmd);
 void do_storage(P_char ch, char *arg, int cmd);
+void newb_spellup(P_char ch, P_char victim);
 void do_newb_spellup_all(P_char ch, char *arg, int cmd);
 void do_newb_spellup(P_char ch, char *arg, int cmd);
+void community_spellup_command(P_char ch, char *arg);
+void community_spellup_reset_for_boot(void);
 void do_givepet(P_char ch, char *arg, int cmd);
 void do_petition_block(P_char, char *, int);
 void concat_which_flagsde(const char *flagType, const flagDef flagNames[], char *buf);
@@ -844,7 +848,7 @@ int real_object0(const int);
 int real_room(const int);
 int real_room0(const int);
 int writePet(P_char);
-int writeShopKeeper(P_char);
+int writeShopKeeper(P_char, int shop_nr);
 void MemReport(void);
 void boot_db(int);
 void boot_pose_messages(void);
@@ -1035,6 +1039,10 @@ bool check_nevents();
 // epic.c
 void refund_epic_skills(P_char ch);
 
+/* ferryact.c */
+bool is_ferry_object(P_obj);
+void ferry_forget_object(P_obj);
+
 /* fight.c */
 bool rapier_dirk(P_char, P_char);
 int calculate_thac_zero(P_char, int);
@@ -1182,6 +1190,11 @@ void checkFragList(P_char ch);
 /* random.mob.c */
 P_char create_random_mob(int theme, int mob_level);
 void do_namedreport(P_char ch, char *argument, int cmd);
+
+/* training_dummy.c */
+void training_dummy_bootstrap();
+bool training_dummy_is(P_char ch);
+void training_dummy_record_damage(P_char ch, int damage);
 
 /* random.zone.c */
 void display_random_zones(P_char ch);
@@ -1337,6 +1350,7 @@ void char_from_room(P_char);
 bool char_to_room(P_char, int, int);
 void equip_char(P_char, P_obj, int, int);
 void extract_char(P_char);
+void hold_durable_pet_items(P_char);
 extern uint64_t character_removal_generation;
 void extract_char_after_terminal_save(P_char);
 void extract_obj(P_obj obj,
@@ -1867,7 +1881,12 @@ void do_teach(P_char, char *, int);
 void handle_scribe(P_char, P_char, P_obj, void *);
 void handle_spell_mem(P_char);
 void handle_undead_mem(P_char);
-void stop_memorizing(P_char);
+enum class memorization_stop_reason : uint8_t
+{
+	voluntary,
+	disrupted
+};
+void stop_memorizing(P_char, memorization_stop_reason = memorization_stop_reason::disrupted);
 int forget_spells(P_char, int);
 void do_stance(P_char, char *, int);
 int memorize_last_spell(P_char ch);
@@ -2060,7 +2079,7 @@ void create_denied_file(const char *, char *);
 int getNewPCidNumb(void);
 void setNewPCidNumbfromFile(void);
 char *statstr(int);
-bool _parse_name(char *, char *);
+bool _parse_name(char *, char *, bool);
 bool has_avail_class(P_desc);
 void display_classtable(P_desc);
 extern int invitemode;
@@ -2302,7 +2321,7 @@ void show_stats_to_char(P_char ch);
 
 P_obj accept_gem_for_debt(P_char, P_char, int);
 void restore_shopkeepers(void);
-void save_dirty_shopkeepers(void);
+bool save_dirty_shopkeepers(bool force = false);
 void push(struct stack_data *stack, int pushval);
 int topp(struct stack_data *stack);
 int pop(struct stack_data *stack);
@@ -2352,7 +2371,7 @@ void AddDeadChar(P_char);
 void AddDeadObj(P_obj);
 void game_loop(int, int);
 void game_up_message(int);
-void run_the_game(int, int);
+int run_the_game(int, int);
 
 /* sparser.c */
 
@@ -2474,6 +2493,7 @@ void resolve_nova(P_char);
 void spell_spore_burst(int, P_char, char *, int, P_char, P_obj);
 void spell_siren_song(int, P_char, char *, int, P_char, P_obj);
 void spell_harmonic_resonance(int, P_char, char *, int, P_char, P_obj);
+const char *elemental_aura_failure_message(P_char);
 void spell_elemental_aura(int, P_char, char *, int, P_char, P_obj);
 void spell_summon_insects(int, P_char, char *, int, P_char, P_obj);
 void spell_consecrate_land(int, P_char, char *, int, P_char, P_obj);
@@ -3192,13 +3212,8 @@ void do_specialize(P_char, char *, int);
 void event_enchant(P_char ch, P_char victim, P_obj obj, void *data);
 void do_encrust(P_char, char *, int);
 void do_spellbind(P_char, char *, int);
-void do_mix(P_char, char *, int);
 void do_fix(P_char, char *, int);
 void do_forge(P_char, char *, int);
-P_obj get_bottle(P_char);
-int spl2potion(int);
-P_obj get_potion(P_char);
-bool MobAlchemistGetPotions(P_char, int, int);
 bool randomize_potion_non_damage(P_obj, int);
 void do_enchant(P_char, char *, int);
 P_obj check_furnace(P_char);

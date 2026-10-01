@@ -43,6 +43,7 @@ using namespace std;
 #include "world/hardcore_config.h"
 #include "combat/justice.h"
 #include "world/map.h"
+#include "world/zone_story_quest_runtime.h"
 #include "economy/nexus_stones.h"
 #include "economy/currency_transaction.h"
 #include "item/objmisc.h"
@@ -70,6 +71,7 @@ using namespace std;
 #include "classes/specializations.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
+#include "telemetry/telemetry_runtime.h"
 #include "world/vnum.obj.h"
 #include "combat/chaos_materials.h"
 #include "economy/tradeskill.h"
@@ -4028,17 +4030,18 @@ void show_vnums(P_char ch)
 #define WORLD_QUESTS 9
 #define WORLD_CARGO 10
 #define WORLD_DEBUG_E 11
-#define MAX_WORLD 11
+#define WORLD_TELEMETRY 12
+#define MAX_WORLD 12
 
 const char *world_keywords[MAX_WORLD + 2] = { "stats",	     "zones",	"events", "rooms",
 					      "objects",     "mobiles", "debug",  "vnums",
 					      "persistence", "quests",	"cargo",  "debug_events",
-					      "\n" };
+					      "telemetry",   "\n" };
 
 const int world_values[] = {
-	WORLD_STATS, WORLD_ZONES, WORLD_EVENTS,	     WORLD_ROOMS,  WORLD_OBJECTS, WORLD_MOBILES,
-	WORLD_DEBUG, WORLD_VNUMS, WORLD_PERSISTENCE, WORLD_QUESTS, WORLD_CARGO,	  WORLD_DEBUG_E,
-	-1
+	WORLD_STATS,	 WORLD_ZONES, WORLD_EVENTS,	 WORLD_ROOMS,  WORLD_OBJECTS, WORLD_MOBILES,
+	WORLD_DEBUG,	 WORLD_VNUMS, WORLD_PERSISTENCE, WORLD_QUESTS, WORLD_CARGO,   WORLD_DEBUG_E,
+	WORLD_TELEMETRY, -1
 };
 
 extern const char *get_function_name(void *);
@@ -4487,18 +4490,32 @@ static void show_world_persistence(P_char ch)
 	send_to_char(line, ch);
 
 	snprintf(line, sizeof(line),
-		 "critical_commands state=%s queued=%llu inflight=%llu blocked=%llu bytes=%llu "
+		 "critical_commands state=%s awaiting=%llu admission_queue_bytes=%llu "
+		 "admission_worker=%d append_inflight=%d durable_admissions=%llu "
+		 "admission_failures=%llu admission_uncertain=%llu queued=%llu inflight=%llu "
+		 "blocked=%llu publication_pending=%llu bytes=%llu "
 		 "fences=%llu completed_cache=%llu high_water=%llu/%llu accepted=%llu "
 		 "attached=%llu completed=%llu retries=%llu ambiguous=%llu terminal=%llu "
 		 "stale=%llu overloads=%llu oldest_age_ms=%llu journal=%s "
 		 "journal_records=%llu journal_bytes=%llu journal_corrupt=%llu journal_io=%llu "
 		 "journal_quota=%d\n",
-		 !critical.initialized		      ? "stopped" :
-		 critical.blocked		      ? "blocked" :
-		 critical.queued || critical.inflight ? "pending" :
-							"ready",
+		 !critical.initialized	      ? "stopped" :
+		 critical.blocked	      ? "blocked" :
+		 critical.admission_uncertain ? "uncertain" :
+		 critical.awaiting_durability || critical.append_inflight || critical.queued ||
+				 critical.inflight || critical.publication_pending ?
+						"pending" :
+						"ready",
+		 (unsigned long long)critical.awaiting_durability,
+		 (unsigned long long)critical.admission_queue_bytes,
+		 critical.admission_worker_running ? 1 : 0, critical.append_inflight ? 1 : 0,
+		 (unsigned long long)critical.durable_admissions,
+		 (unsigned long long)critical.admission_failures,
+		 (unsigned long long)critical.admission_uncertain,
 		 (unsigned long long)critical.queued, (unsigned long long)critical.inflight,
-		 (unsigned long long)critical.blocked, (unsigned long long)critical.retained_bytes,
+		 (unsigned long long)critical.blocked,
+		 (unsigned long long)critical.publication_pending,
+		 (unsigned long long)critical.retained_bytes,
 		 (unsigned long long)critical.fenced_keys,
 		 (unsigned long long)critical.completed_cache,
 		 (unsigned long long)critical.high_water_operations,
@@ -4616,7 +4633,8 @@ static void show_world_persistence(P_char ch)
 	snprintf(line, sizeof(line),
 		 "player_save state=%s queued=%llu inflight=%llu bytes=%llu oldest_age_ms=%llu "
 		 "high_water_pids=%llu high_water_bytes=%llu submitted=%llu coalesced=%llu "
-		 "applied=%llu stale=%llu retryable=%llu terminal=%llu retries_exhausted=%llu "
+		 "applied=%llu stale=%llu retryable=%llu terminal=%llu "
+		 "custody_payload_mismatch=%llu retries_exhausted=%llu "
 		 "age_limit_exceeded=%d workers=%u/%u stop_pending=%d "
 		 "max_capture_to_apply_us=%llu max_apply_us=%llu "
 		 "max_ack_us=%llu max_revision_gap=%llu\n",
@@ -4634,6 +4652,7 @@ static void show_world_persistence(P_char ch)
 		 (unsigned long long)player_saves.applied, (unsigned long long)player_saves.stale,
 		 (unsigned long long)player_saves.retryable_failures,
 		 (unsigned long long)player_saves.terminal_failures,
+		 (unsigned long long)player_saves.custody_payload_mismatches,
 		 (unsigned long long)player_saves.retries_exhausted,
 		 player_saves.age_limit_exceeded, player_saves.running_workers,
 		 player_saves.worker_threads, player_saves.stop_pending,
@@ -4655,6 +4674,122 @@ static void show_world_persistence(P_char ch)
 
 	snprintf(line, sizeof(line), "oldest_save_age_ms=%llu\n",
 		 (unsigned long long)oldest_save_age_msec);
+	send_to_char(line, ch);
+}
+
+static void show_world_telemetry(P_char ch)
+{
+	telemetry_monotonic_usec now = 0U;
+	telemetry_utc_usec ignored_utc = TELEMETRY_UTC_UNKNOWN;
+	(void)telemetry_runtime_now(&now, &ignored_utc);
+	const telemetry_health_status status = telemetry_runtime_health_status_copy(now);
+	const telemetry_health_snapshot &health = status.health;
+	char line[MAX_STRING_LENGTH];
+	char inflight_kinds[160]{};
+	char failure_kinds[160]{};
+	char reason_flags[160]{};
+	(void)telemetry_health_record_kind_mask_format(health.inflight_record_kind_mask,
+						       inflight_kinds, sizeof(inflight_kinds));
+	(void)telemetry_health_record_kind_mask_format(health.last_failure_record_kind_mask,
+						       failure_kinds, sizeof(failure_kinds));
+	(void)telemetry_health_reason_mask_format(status.active_reason_mask, reason_flags,
+						  sizeof(reason_flags));
+	const unsigned int enabled = health.state != telemetry_health_state::disabled &&
+						     health.state !=
+							     telemetry_health_state::stopped ?
+					     1U :
+					     0U;
+
+	send_to_char("Telemetry health (metadata only)\n", ch);
+	snprintf(line, sizeof(line),
+		 "state=%s enabled=%u backend=%s schema=%u alert=%s reasons=%u reason_flags=%s "
+		 "interval_us=%llu "
+		 "advisory_lock=%s\n",
+		 telemetry_health_state_name(health.state), enabled,
+		 telemetry_health_backend_name(health.backend), health.schema_version,
+		 telemetry_health_alert_severity_name(status.active_severity),
+		 status.active_reason_mask, reason_flags,
+		 (unsigned long long)status.configured_interval_usec,
+		 telemetry_health_advisory_lock_name(health.advisory_lock_state));
+	send_to_char(line, ch);
+	if (status.last_commit_age_available != 0U)
+		snprintf(line, sizeof(line),
+			 "producer=%llu:%llu last_admitted_seq=%llu last_committed_seq=%llu "
+			 "last_commit_monotonic_us=%llu last_commit_age_ms=%llu\n",
+			 (unsigned long long)health.producer.boot_id,
+			 (unsigned long long)health.producer.process_id,
+			 (unsigned long long)health.last_admitted_record_seq,
+			 (unsigned long long)health.last_committed_record_seq,
+			 (unsigned long long)health.last_success_monotonic_usec,
+			 (unsigned long long)(status.last_commit_age_usec / 1'000U));
+	else
+		snprintf(line, sizeof(line),
+			 "producer=%llu:%llu last_admitted_seq=%llu last_committed_seq=%llu "
+			 "last_commit=never\n",
+			 (unsigned long long)health.producer.boot_id,
+			 (unsigned long long)health.producer.process_id,
+			 (unsigned long long)health.last_admitted_record_seq,
+			 (unsigned long long)health.last_committed_record_seq);
+	send_to_char(line, ch);
+	snprintf(line, sizeof(line),
+		 "records admitted=%llu/%llu applied=%llu duplicate=%llu stale=%llu invalid=%llu "
+		 "conflict=%llu quarantined=%llu dropped=%llu/%llu\n",
+		 (unsigned long long)health.admitted_detail,
+		 (unsigned long long)health.admitted_control,
+		 (unsigned long long)health.applied_records,
+		 (unsigned long long)health.duplicate_records,
+		 (unsigned long long)health.stale_checkpoint_records,
+		 (unsigned long long)health.invalid_records,
+		 (unsigned long long)health.conflict_records,
+		 (unsigned long long)health.quarantined_records,
+		 (unsigned long long)health.dropped_detail,
+		 (unsigned long long)health.dropped_control);
+	send_to_char(line, ch);
+	snprintf(line, sizeof(line),
+		 "queue depth=%llu capacity=%u high_water=%llu inflight=%u seq=%llu-%llu "
+		 "record_kinds=%s\n",
+		 (unsigned long long)health.queue_depth, health.queue_capacity,
+		 (unsigned long long)health.queue_high_water, health.inflight_active,
+		 (unsigned long long)health.inflight_first_record_seq,
+		 (unsigned long long)health.inflight_last_record_seq, inflight_kinds);
+	send_to_char(line, ch);
+	if (status.last_failure_age_available != 0U)
+		snprintf(
+			line, sizeof(line),
+			"failure class=%s error=%u monotonic_us=%llu age_ms=%llu producer=%llu:%llu "
+			"seq=%llu-%llu "
+			"record_kinds=%s retries=%u\n",
+			telemetry_health_failure_class_name(health.last_failure_class),
+			health.last_error_code,
+			(unsigned long long)health.last_failure_monotonic_usec,
+			(unsigned long long)(status.last_failure_age_usec / 1'000U),
+			(unsigned long long)health.last_failure_producer.boot_id,
+			(unsigned long long)health.last_failure_producer.process_id,
+			(unsigned long long)health.last_failure_first_record_seq,
+			(unsigned long long)health.last_failure_last_record_seq, failure_kinds,
+			health.last_failure_retry_attempts);
+	else
+		snprintf(line, sizeof(line),
+			 "failure class=%s error=%u age=never record_kinds=%s\n",
+			 telemetry_health_failure_class_name(health.last_failure_class),
+			 health.last_error_code, failure_kinds);
+	send_to_char(line, ch);
+	snprintf(line, sizeof(line),
+		 "retry inflight=%u repository=%u backoff_us=%llu retryable=%llu ambiguous=%llu "
+		 "circuit_opens=%llu alert_duration_ms=%llu\n",
+		 health.inflight_retry_attempts, health.repository_retry_attempts,
+		 (unsigned long long)health.retry_backoff_remaining_usec,
+		 (unsigned long long)health.retryable_failures,
+		 (unsigned long long)health.ambiguous_commits,
+		 (unsigned long long)health.circuit_open_count,
+		 (unsigned long long)(status.active_alert_duration_usec / 1'000U));
+	send_to_char(line, ch);
+	snprintf(line, sizeof(line),
+		 "coverage gaps=%llu unclosed_tails=%llu attributable_us=%llu unknown_us=%llu\n",
+		 (unsigned long long)health.sequence_gap_count,
+		 (unsigned long long)health.unclosed_tail_count,
+		 (unsigned long long)health.attributable_duration_usec,
+		 (unsigned long long)health.unknown_duration_usec);
 	send_to_char(line, ch);
 }
 
@@ -4994,6 +5129,10 @@ void do_world(P_char ch, char *argument, int /*cmd*/)
 
 	case WORLD_PERSISTENCE:
 		show_world_persistence(ch);
+		break;
+
+	case WORLD_TELEMETRY:
+		show_world_telemetry(ch);
 		break;
 
 	case WORLD_CARGO:
@@ -6574,6 +6713,19 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 		snprintf(buf, MAX_STRING_LENGTH, "&+yBartender Quests Remaining:&n %d\n",
 			 RemainingBartenderQuests);
 		send_to_char(buf, ch);
+	}
+
+	if (IS_PC(ch))
+	{
+		if (zone_story_quest_runtime::service())
+		{
+			const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&
+					    ch->desc->term_type != TERM_SKIP_ANSI;
+			std::string daily =
+				zone_story_quest_runtime::render_daily_score(ch, colors);
+			if (!daily.empty())
+				send_to_char(daily.c_str(), ch);
+		}
 	}
 
 	if (IS_PC(ch))

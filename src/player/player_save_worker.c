@@ -505,6 +505,8 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 			break;
 		case player_save_apply_outcome::terminal_failure:
 			saturating_increment(health.terminal_failures);
+			if (completion.error_code == PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH)
+				saturating_increment(health.custody_payload_mismatches);
 			player_revision_fail_inflight(completion.pid, completion.revision,
 						      completion.components);
 			finished = true;

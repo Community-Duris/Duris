@@ -10,6 +10,7 @@
 #include "combat/damage.h"
 #include "combat/guard.h"
 #include "combat/justice.h"
+#include "combat/training_dummy.h"
 #include "core/mm.h"
 #include "item/objmisc.h"
 #include "magic/spells.h"
@@ -179,6 +180,13 @@ void do_disguise(P_char ch, char *arg, int /*cmd*/)
 		if (!target)
 		{
 			send_to_char("Disguise as who?\r\n", ch);
+			return;
+		}
+
+		if (!training_dummy_disguise_target_allowed(target))
+		{
+			send_to_char("The training dummy cannot be used as a disguise.\r\n", ch);
+			free_char(target);
 			return;
 		}
 

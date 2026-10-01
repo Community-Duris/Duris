@@ -42,6 +42,7 @@
 #include "cmd/interp.h"
 #include "cmd/divine_refusal_policy.h"
 #include "core/utils.h"
+#include "telemetry/telemetry_runtime.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -51,6 +52,7 @@
 #include "combat/guard.h"
 #include "guild/guildhall.h"
 #include "combat/justice.h"
+#include "combat/training_dummy.h"
 #include "economy/collector_presence.h"
 #include "item/item_actions.h"
 #include "item/objmisc.h"
@@ -1723,6 +1725,10 @@ void do_kill(P_char ch, char *argument, int /*cmd*/)
 		{
 			send_to_char("Not a chance...\n", ch);
 		}
+		else if (training_dummy_is(victim))
+		{
+			do_hit(ch, argument, CMD_HIT);
+		}
 		else
 		{
 			if (IS_PC(victim))
@@ -2721,6 +2727,9 @@ void do_flee(P_char ch, char *argument, int cmd)
 	}
 	else
 	{
+		if (IS_PC(ch))
+			(void)telemetry_runtime_game_encounter_leave(
+				ch, telemetry_encounter_outcome::flee);
 		if (IS_PC(ch) && !GET_CLASS(ch, CLASS_ROGUE) &&
 		    !has_innate(ch, INNATE_IMPROVED_FLEE))
 		{
@@ -6207,7 +6216,7 @@ bool single_stab(P_char ch, P_char victim, P_obj weapon)
 	//  Yes weapon procs on backstabs - Drannak
 	if (obj_index[weapon->R_num].func.obj)
 	{
-		(*obj_index[weapon->R_num].func.obj)(weapon, ch, CMD_MELEE_HIT, (char *)victim);
+		invoke_object_special(weapon, ch, CMD_MELEE_HIT, (char *)victim);
 	}
 
 	if (weapon->value[4])
@@ -7958,6 +7967,9 @@ void do_retreat(P_char ch, char *arg, int /*cmd*/)
 			act(Gbuf1, TRUE, ch, 0, 0, TO_ROOM);
 		}
 		do_simple_move(ch, dir, 0);
+		if (IS_PC(ch))
+			(void)telemetry_runtime_game_encounter_leave(
+				ch, telemetry_encounter_outcome::withdrawal);
 	}
 	else
 	{ // Failure!

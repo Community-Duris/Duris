@@ -33,6 +33,20 @@ PRELUDE = r'''
 #include <map>
 #include <string>
 
+/* Extracted production bodies do not carry sparser.c's telemetry header or
+ * link the runtime object. Keep this focused gameplay fixture deterministic
+ * while preserving the production call sites under test. */
+void telemetry_runtime_game_combat_cast_attempt(P_char, int) {}
+void telemetry_runtime_game_combat_cast_complete(P_char) {}
+void telemetry_runtime_game_combat_cast_abort(P_char) {}
+/* fight.c and sparser.c are lifted without the production training-dummy
+ * translation unit. Keep this harness focused on death-field behavior by
+ * providing the ordinary-world predicate stubs it needs. */
+bool training_dummy_is(P_char) { return false; }
+bool training_dummy_target_allowed(P_char, P_char) { return true; }
+void training_dummy_retarget_nonpet(P_char, P_char) {}
+bool safe_room_spell_target_allowed(P_char, int, P_char) { return true; }
+
 static room_data rooms[2]{};
 P_room world = rooms;
 static index_data indexes[1]{};
@@ -141,6 +155,7 @@ P_char stack_area(P_char, int, int) { return nullptr; }
 void zone_spellmessage(int, bool, const char *, const char *) { ++announcements; }
 void CharWait(P_char, int) {}
 bool cast_common_generic(P_char, int) { return true; }
+const char *elemental_aura_failure_message(P_char) { return nullptr; }
 void StopCasting(P_char ch) { REMOVE_BIT(ch->specials.affected_by2, AFF2_CASTING); }
 void appear(P_char, bool) {}
 int BOUNDED(int low, int val, int high) { return std::clamp(val, low, high); }

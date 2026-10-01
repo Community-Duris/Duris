@@ -153,6 +153,34 @@ player_load_result identity_failure(const player_load_request &request,
 	return result;
 }
 
+void mark_degraded(player_load_result *result, uint32_t component, const char *stage)
+{
+	if (!result)
+		return;
+	result->outcome = player_load_outcome::degraded;
+	result->degraded_components |= component;
+	if (!result->failed_component)
+		result->failed_component = stage;
+}
+
+void clear_items_and_pets(player_load_result *result)
+{
+	if (!result)
+		return;
+	result->snapshot.items.clear();
+	result->snapshot.pets.clear();
+	result->item_identities.clear();
+	result->pet_identities.clear();
+	result->item_owner_revision = 0;
+	result->authoritative_item_count = 0;
+	result->authoritative_pet_item_count = 0;
+	result->stale_item_rows = 0;
+	result->missing_payload_rows = 0;
+	result->promoted_item_rows = 0;
+	result->repaired_item_rows = 0;
+	result->snapshot.components = PLAYER_LOAD_SESSION01_COMPONENTS;
+}
+
 // The ownership file is authoritative. A payload item it does not list, or lists as
 // somebody else's or as inactive, is one skippable row: refusing it here would make the
 // character permanently unloadable over a single inconsistent entry. Skipped rows are
@@ -309,25 +337,74 @@ bool reconcile_item_ownership(const std::string &root, player_load_result *resul
 		return false;
 	}
 	uint64_t next_database_id = 1;
+	size_t pet_owned_count = 0;
+	size_t pet_materialized_count = 0;
 	if (!build_item_identities(&result->snapshot.items, owned, owner, owner_revision,
 				   &next_database_id, &consumed, &result->item_identities, result))
 		goto invalid;
 	for (size_t index = 0; index < result->snapshot.pets.size(); ++index)
 	{
-		result->pet_identities[index].database_id = index + 1;
-		if (!build_item_identities(&result->snapshot.pets[index].items, owned, owner,
-					   owner_revision, &next_database_id, &consumed,
-					   &result->pet_identities[index].item_identities, result))
+		const uint64_t pet_uid = result->snapshot.pets[index].pet_uid;
+		const item_owner_identity pet_owner =
+			pet_uid ? item_owner_identity{ item_owner_type::pet, pet_uid,
+						       static_cast<uint64_t>(result->pid) } :
+				  owner;
+		uint64_t pet_revision = owner_revision;
+		std::unordered_map<uint64_t, flatfile_item_ownership_record> pet_owned;
+		if (pet_uid)
+		{
+			std::vector<flatfile_item_ownership_record> pet_records;
+			const auto read = flatfile_item_repository_load_owner_locked(
+				root, authority, pet_owner, &pet_revision, &pet_records, &error);
+			if (read != flatfile_item_repository_result::ok)
+			{
+				result->outcome =
+					read == flatfile_item_repository_result::io_error ?
+						player_load_outcome::retryable_failure :
+						player_load_outcome::component_failure;
+				result->error_code =
+					read == flatfile_item_repository_result::io_error ? EIO :
+											    EILSEQ;
+				result->failed_component = "pet_ownership";
+				return false;
+			}
+			pet_owned_count += pet_records.size();
+			try
+			{
+				for (const auto &record : pet_records)
+					if (!pet_owned.emplace(record.item_uid, record).second)
+						goto invalid;
+			}
+			catch (const std::bad_alloc &)
+			{
+				result->outcome = player_load_outcome::retryable_failure;
+				result->error_code = ENOMEM;
+				result->failed_component = "pet_ownership";
+				return false;
+			}
+		}
+		auto &identity = result->pet_identities[index];
+		identity.database_id = index + 1;
+		identity.pet_uid = pet_uid;
+		identity.owner_revision = pet_revision;
+		if (!build_item_identities(&result->snapshot.pets[index].items,
+					   pet_uid ? pet_owned : owned, pet_owner, pet_revision,
+					   &next_database_id, &consumed, &identity.item_identities,
+					   result))
 			goto invalid;
+		if (pet_uid)
+			pet_materialized_count += identity.item_identities.size();
 	}
-	if (consumed.size() > records.size())
+	if (consumed.size() > records.size() + pet_owned_count ||
+	    pet_materialized_count > consumed.size())
 		goto invalid;
 	// An ownership record whose payload item is gone cannot be rebuilt, but it must not
 	// refuse the load either. Preserve it for explicit operator repair; snapshot saves are
 	// not allowed to rewrite authoritative custody.
-	result->missing_payload_rows = records.size() - consumed.size();
+	result->missing_payload_rows = records.size() + pet_owned_count - consumed.size();
 	result->item_owner_revision = owner_revision;
-	result->authoritative_item_count = consumed.size();
+	result->authoritative_item_count = consumed.size() - pet_materialized_count;
+	result->authoritative_pet_item_count = pet_materialized_count;
 	return true;
 
 invalid:
@@ -671,7 +748,12 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 		return result;
 	}
 	if (request.include_items && !reconcile_item_ownership(root, &result))
-		return result;
+	{
+		clear_items_and_pets(&result);
+		mark_degraded(&result, PLAYER_LOAD_DEGRADED_ITEMS, "item_ownership");
+		if (request.include_pets)
+			result.degraded_components |= PLAYER_LOAD_DEGRADED_PETS;
+	}
 	int64_t snapshot_racewar = 0;
 	if (!snapshot_signed(result.snapshot, player_status_field::racewar, &snapshot_racewar) ||
 	    snapshot_racewar != identity.racewar)
@@ -686,20 +768,24 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 		root, identity.pid, identity.account, identity.racewar, &domains, &error);
 	if (domains_loaded != flatfile_player_domain_result::ok)
 	{
-		result.outcome = domains_loaded == flatfile_player_domain_result::io_error ?
-					 player_load_outcome::retryable_failure :
-					 player_load_outcome::component_failure;
 		result.error_code =
 			domains_loaded == flatfile_player_domain_result::not_found ? ENOENT :
 			domains_loaded == flatfile_player_domain_result::io_error  ? EIO :
 										     EILSEQ;
-		result.failed_component = "domains";
-		return result;
+		mark_degraded(&result, PLAYER_LOAD_DEGRADED_BANK | PLAYER_LOAD_DEGRADED_GAMEPLAY,
+			      "domains");
+		result.read_components = 0;
+		result.domains = {};
+		result.recent_pvp_deaths.clear();
+		result.completed_epic_zones.clear();
 	}
-	result.domains = domains.domains;
-	result.recent_pvp_deaths = std::move(domains.recent_pvp_deaths);
-	result.completed_epic_zones = std::move(domains.completed_epic_zones);
-	result.read_components = PLAYER_LOAD_SESSION04_READS;
+	else
+	{
+		result.domains = domains.domains;
+		result.recent_pvp_deaths = std::move(domains.recent_pvp_deaths);
+		result.completed_epic_zones = std::move(domains.completed_epic_zones);
+		result.read_components = PLAYER_LOAD_SESSION04_READS;
+	}
 	if (!request.include_pets)
 	{
 		result.snapshot.pets.clear();
@@ -719,7 +805,8 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 	result.metrics.byte_count = result.snapshot.encoded_size_bound;
 	result.metrics.row_count = 1;
 	result.metrics.transaction_usec = persistence_observability_now_usec() - started;
-	result.outcome = player_load_outcome::applied;
+	if (!result.degraded_components)
+		result.outcome = player_load_outcome::applied;
 	return result;
 }
 

@@ -11,6 +11,7 @@
 #include "world/db.h"
 #include "core/utils.h"
 #include "persistence/copyover.h"
+#include "combat/training_dummy.h"
 #include "world/generated_npc_state.h"
 #include "item/item_movement_transaction.h"
 #include "sql/sql_player.h"
@@ -78,6 +79,20 @@ extern void clear_char(P_char ch);
 
 static int copyover_in_progress = 0;
 
+static bool copyover_version_supported(int version)
+{
+	return version >= 12 && version <= COPYOVER_VERSION;
+}
+
+static size_t copyover_mob_bytes_for_version(int version)
+{
+	if (version == 12)
+		return offsetof(copyover_mob, transport);
+	if (version < COPYOVER_VERSION)
+		return offsetof(copyover_mob, shopkeeper_shop_id);
+	return sizeof(copyover_mob);
+}
+
 const char *copyover_state_file()
 {
 	const char *path = getenv("COPYOVER_STATE_FILE");
@@ -86,9 +101,19 @@ const char *copyover_state_file()
 
 namespace
 {
+/* Copyover is also compiled by small persistence-only fixtures that do not
+ * link the gameplay training-dummy module.  The marker is the persistence
+ * boundary we need here, so keep this predicate local instead of introducing
+ * a gameplay-link dependency into the serializer. */
+bool copyover_training_dummy_is(P_char ch)
+{
+	return ch && IS_NPC(ch) && ch->only.npc && ch->only.npc->training_dummy;
+}
+
 struct copyover_worker_resume_guard
 {
 	bool armed = true;
+	bool redis_released = false;
 	~copyover_worker_resume_guard()
 	{
 		if (!armed)
@@ -97,6 +122,8 @@ struct copyover_worker_resume_guard
 		critical_command_coordinator_resume();
 		critical_outbox_resume();
 		player_save_pipeline_resume();
+		if (redis_released)
+			redis_world_recovery_resume_after_copyover();
 	}
 };
 
@@ -129,9 +156,8 @@ bool copyover_has_durable_shopkeepers()
 		return false;
 	copyover_header header = {};
 	const bool current = fread(&header, sizeof(header), 1, file) == 1 &&
-			     memcmp(header.magic, COPYOVER_MAGIC, 4) == 0 &&
-			     (header.version == COPYOVER_VERSION || header.version == 14 ||
-			      header.version == 13);
+			     memcmp(header.magic, COPYOVER_MAGIC, 4) == 0 && header.version >= 13 &&
+			     copyover_version_supported(header.version);
 	fclose(file);
 	return current;
 }
@@ -482,6 +508,7 @@ static int write_mob_entry(FILE *fp, P_char mob)
 
 	entry.gold = GET_GOLD(mob);
 	entry.birthplace = GET_BIRTHPLACE(mob);
+	entry.shopkeeper_shop_id = mob->only.npc ? mob->only.npc->shopkeeper_shop_id : -1;
 	transport_capture(mob, &entry.transport);
 
 	return fwrite(&entry, sizeof(entry), 1, fp) == 1;
@@ -689,11 +716,14 @@ static void count_copyover_items(int *num_descs, int *num_mobs, int *num_objs, i
 		}
 	}
 
-	// count living mobs (skip linked pets; player-owned pets are saved per descriptor)
+	// Count living mobs (skip linked pets; player-owned pets are saved per descriptor).
+	// Training dummies are bootstrapped from the current creation-room table;
+	// replaying their prototype would lose the dummy marker and make them
+	// ordinary attackable NPCs after copyover.
 	for (ch = character_list; ch; ch = ch->next)
 	{
 		if (IS_NPC(ch) && ch->in_room >= 0 && !GET_MASTER(ch) &&
-		    !ch->only.npc->summoned_instance)
+		    !ch->only.npc->summoned_instance && !copyover_training_dummy_is(ch))
 		{
 			(*num_mobs)++;
 		}
@@ -748,6 +778,19 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 			"\r\n*** Copyover cancelled: starter equipment is still being granted; retry after completion. ***\r\n");
 		return false;
 	}
+	// Only playing plain-Telnet descriptors can survive exec. Leave every
+	// connection on the live process if even one would be dropped.
+	for (d = descriptor_list; d; d = d->next)
+		if (d->descriptor >= 0 &&
+		    (d->connected != CON_PLAYING || !d->character || d->websocket || d->sslses))
+		{
+			logit(LOG_STATUS,
+			      "copyover: non-preservable connection fd=%d state=%d ws=%d ssl=%d; aborting",
+			      d->descriptor, d->connected, d->websocket, d->sslses ? 1 : 0);
+			notify_copyover_failure(
+				"\r\n*** Copyover cancelled: a connection cannot survive this handoff; server remains live. ***\r\n");
+			return false;
+		}
 
 	logit(LOG_STATUS, "copyover: saving world state...");
 	logit(LOG_STATUS, "copyover: world=%p top_of_world=%d", (void *)world, top_of_world);
@@ -872,7 +915,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	if (!fp)
 	{
 		logit(LOG_STATUS, "copyover: cant open %s for writing", copyover_tmp);
-		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		return false;
 	}
 
@@ -893,7 +936,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	    fwrite(&ws_desc, sizeof(int), 1, fp) != 1)
 	{
 		logit(LOG_STATUS, "copyover: failed to write header/sockets");
-		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		fclose(fp);
 		unlink(copyover_tmp);
 		return false;
@@ -911,7 +954,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 				      "copyover: failed to write descriptor entry for %s host=%s term_type=%d",
 				      GET_NAME(d->character), d->host, d->term_type);
 				notify_copyover_failure(
-					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
+					"\r\n*** Copyover FAILED - server remains live. ***\r\n");
 				fclose(fp);
 				unlink(copyover_tmp);
 				return false;
@@ -925,17 +968,18 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	if (!write_telemetry_copyover_state(fp, num_descs))
 	{
 		logit(LOG_STATUS, "copyover: failed to write telemetry session handoff state");
-		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		fclose(fp);
 		unlink(copyover_tmp);
 		return false;
 	}
 
-	// write mobs (skip linked pets; player-owned pets are saved per descriptor)
+	// Write mobs (skip linked pets; player-owned pets are saved per descriptor).
+	// Training dummies are recreated by training_dummy_bootstrap() during boot.
 	for (ch = character_list; ch; ch = ch->next)
 	{
 		if (IS_NPC(ch) && ch->in_room >= 0 && !GET_MASTER(ch) &&
-		    !ch->only.npc->summoned_instance)
+		    !ch->only.npc->summoned_instance && !copyover_training_dummy_is(ch))
 		{
 			if (!write_mob_entry(fp, ch) || !write_mob_affects(fp, ch) ||
 			    !write_mob_inventory(fp, ch) || !write_generated_npc_state(fp, ch))
@@ -943,7 +987,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 				logit(LOG_STATUS, "copyover: failed to write mob entry for %s",
 				      GET_NAME(ch));
 				notify_copyover_failure(
-					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
+					"\r\n*** Copyover FAILED - server remains live. ***\r\n");
 				fclose(fp);
 				unlink(copyover_tmp);
 				return false;
@@ -969,7 +1013,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 				logit(LOG_STATUS, "copyover: failed to write object entry vnum %d",
 				      OBJ_VNUM(obj));
 				notify_copyover_failure(
-					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
+					"\r\n*** Copyover FAILED - server remains live. ***\r\n");
 				fclose(fp);
 				unlink(copyover_tmp);
 				return false;
@@ -991,7 +1035,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 					      "copyover: failed to write room door %d/%d", room,
 					      dir);
 					notify_copyover_failure(
-						"\r\n*** Copyover FAILED - reconnect. ***\r\n");
+						"\r\n*** Copyover FAILED - server remains live. ***\r\n");
 					fclose(fp);
 					unlink(copyover_tmp);
 					return false;
@@ -1004,7 +1048,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	{
 		logit(LOG_STATUS, "copyover: failed to close %s: %s", copyover_tmp,
 		      strerror(errno));
-		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		unlink(copyover_tmp);
 		return false;
 	}
@@ -1012,13 +1056,19 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	{
 		logit(LOG_STATUS, "copyover: failed to publish %s as %s: %s", copyover_tmp,
 		      COPYOVER_FILE, strerror(errno));
-		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		unlink(copyover_tmp);
 		return false;
 	}
 
 	logit(LOG_STATUS, "copyover: saved %d descs, %d mobs, %d objs, %d doors", num_descs,
 	      num_mobs, num_objs, num_rooms);
+	if (!redis_world_recovery_prepare_copyover())
+	{
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
+	}
+	resume_workers.redis_released = true;
 
 	// All prerequisite saves and the complete copyover file are durable. Only
 	// now may non-preservable transports be disconnected.
@@ -1119,6 +1169,43 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 
 // find_player_by_name already declared in prototypes.h
 
+#ifdef USE_ACCOUNT
+static P_acct copyover_load_account(const std::string &authoritative_account_name,
+				    int32_t player_id, const char *player_name)
+{
+	if (authoritative_account_name.empty() || !player_name || !*player_name)
+	{
+		logit(LOG_STATUS, "copyover: loaded player has no authoritative account identity");
+		return NULL;
+	}
+
+	P_acct account = allocate_account();
+	if (!account)
+	{
+		logit(LOG_STATUS, "copyover: failed to allocate restored account");
+		return NULL;
+	}
+	account->acct_name = str_dup(authoritative_account_name.c_str());
+	if (!account->acct_name || read_account(account) == -1 || !account->acct_name ||
+	    strcasecmp(account->acct_name, authoritative_account_name.c_str()))
+	{
+		logit(LOG_STATUS, "copyover: failed to load authoritative account");
+		return free_account(account);
+	}
+
+	for (struct acct_chars *character = account->acct_character_list; character;
+	     character = character->next)
+	{
+		if (character->pid == player_id && character->charname &&
+		    !strcasecmp(character->charname, player_name))
+			return account;
+	}
+
+	logit(LOG_STATUS, "copyover: restored account does not own loaded character");
+	return free_account(account);
+}
+#endif
+
 // load a player character for copyover recovery
 static P_char copyover_load_player(const char *name, P_desc d)
 {
@@ -1131,13 +1218,21 @@ static P_char copyover_load_player(const char *name, P_desc d)
 	request.deadline_usec = now + PLAYER_LOAD_TIMEOUT_USEC;
 	request.include_items = true;
 	request.include_pets = true;
-	if (!player_load_pipeline_wait(request, &result, PLAYER_LOAD_TIMEOUT_USEC / 1000) ||
-	    result.request_id != request.request_id ||
-	    result.outcome != player_load_outcome::applied)
+	const bool worker_loaded =
+		player_load_pipeline_wait(request, &result, PLAYER_LOAD_TIMEOUT_USEC / 1000);
+	if (!worker_loaded || result.request_id != request.request_id ||
+	    (result.outcome != player_load_outcome::applied &&
+	     result.outcome != player_load_outcome::degraded))
 	{
-		logit(LOG_STATUS, "copyover: worker load failed (request=%llu outcome=%u)",
-		      (unsigned long long)request.request_id, (unsigned int)result.outcome);
-		return NULL;
+		player_load_result retry = {};
+		if (!player_load_pipeline_execute_sync(request, &retry) ||
+		    retry.request_id != request.request_id)
+		{
+			logit(LOG_STATUS, "copyover: player load failed (request=%llu outcome=%u)",
+			      (unsigned long long)request.request_id, (unsigned int)result.outcome);
+			return NULL;
+		}
+		result = std::move(retry);
 	}
 	player = (P_char)mm_get(dead_mob_pool);
 	if (!player)
@@ -1167,6 +1262,15 @@ static P_char copyover_load_player(const char *name, P_desc d)
 		free_char(player);
 		return NULL;
 	}
+#ifdef USE_ACCOUNT
+	P_acct account = copyover_load_account(result.account_name, result.pid, GET_NAME(player));
+	if (!account)
+	{
+		free_char(player);
+		return NULL;
+	}
+	d->account = account;
+#endif
 	return player;
 }
 
@@ -1196,8 +1300,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 	// read and verify header
 	if (fread(&header, sizeof(header), 1, fp) != 1 ||
 	    memcmp(header.magic, COPYOVER_MAGIC, 4) != 0 ||
-	    (header.version != COPYOVER_VERSION && header.version != 14 && header.version != 13 &&
-	     header.version != 12))
+	    !copyover_version_supported(header.version))
 	{
 		logit(LOG_STATUS, "copyover_recover: invalid header or version mismatch");
 		goto copyover_recover_fail;
@@ -1283,19 +1386,6 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 				ch->desc = d;
 				d->connected = CON_PLAYING;
 
-#ifdef USE_ACCOUNT
-				// restore account for preserved telnet connections
-				d->account = allocate_account();
-				if (d->account)
-				{
-					d->account->acct_name = str_dup(desc_entry.player_name);
-					if (read_account(d->account) == -1)
-					{
-						d->account = free_account(d->account);
-					}
-				}
-#endif
-
 				// make them alive
 				SET_POS(ch, POS_STANDING + STAT_NORMAL);
 
@@ -1344,7 +1434,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		descriptor_list = d;
 	}
 
-	if (header.version == COPYOVER_VERSION)
+	if (header.version >= 15)
 	{
 		if (!read_telemetry_copyover_state(fp, header.num_descriptors, &telemetry_entries))
 		{
@@ -1369,10 +1459,11 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		copyover_carried_item inv_entries[256];
 		int num_affs, num_inv;
 
-		const size_t mob_bytes = header.version == 12 ? offsetof(copyover_mob, transport) :
-								sizeof(mob_entry);
+		const size_t mob_bytes = copyover_mob_bytes_for_version(header.version);
 		if (fread(&mob_entry, mob_bytes, 1, fp) != 1)
 			goto copyover_recover_fail;
+		if (header.version < COPYOVER_VERSION)
+			mob_entry.shopkeeper_shop_id = -1;
 
 		// read affects into temp array
 		num_affs = mob_entry.num_affects;
@@ -1462,6 +1553,8 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		// restore gold
 		GET_GOLD(mob) = mob_entry.gold;
 		GET_BIRTHPLACE(mob) = mob_entry.birthplace;
+		if (mob_entry.shopkeeper_shop_id >= 0)
+			bind_shopkeeper(mob, mob_entry.shopkeeper_shop_id);
 		transport_restore(mob, mob_entry.transport);
 
 		// restore affects
@@ -1668,7 +1761,7 @@ void copyover_count_items(int *num_mobs, int *num_objs, int *num_rooms)
 	for (ch = character_list; ch; ch = ch->next)
 	{
 		if (IS_NPC(ch) && ch->in_room >= 0 && !GET_MASTER(ch) &&
-		    !ch->only.npc->summoned_instance)
+		    !ch->only.npc->summoned_instance && !copyover_training_dummy_is(ch))
 		{
 			(*num_mobs)++;
 		}
@@ -1708,7 +1801,11 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 	P_obj obj;
 	size_t offset = 0;
 
-	if (max_len < sizeof(entry))
+	/* Keep this predicate self-contained: world-singletons extracts this
+	 * serializer into a persistence-only harness without the file-local
+	 * helper above. */
+	if (!mob || (IS_NPC(mob) && mob->only.npc && mob->only.npc->training_dummy) ||
+	    max_len < sizeof(entry))
 		return -1;
 
 	int mob_rnum = GET_RNUM(mob);
@@ -1778,6 +1875,7 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 
 	entry.gold = GET_GOLD(mob);
 	entry.birthplace = GET_BIRTHPLACE(mob);
+	entry.shopkeeper_shop_id = mob->only.npc ? mob->only.npc->shopkeeper_shop_id : -1;
 	transport_capture(mob, &entry.transport);
 
 	memcpy(buf + offset, &entry, sizeof(entry));
@@ -1966,6 +2064,8 @@ P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *byt
 	SET_POS(mob, POS_STANDING + STAT_NORMAL);
 	GET_GOLD(mob) = mob_entry.gold;
 	GET_BIRTHPLACE(mob) = mob_entry.birthplace;
+	if (mob_entry.shopkeeper_shop_id >= 0)
+		bind_shopkeeper(mob, mob_entry.shopkeeper_shop_id);
 	transport_restore(mob, mob_entry.transport);
 
 	// restore affects

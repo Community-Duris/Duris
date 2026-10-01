@@ -103,6 +103,7 @@ void write_to_q(const char *, txt_q *, int) { std::abort(); }
 uint64_t persistence_observability_now_usec() { std::abort(); }
 uint64_t player_load_pipeline_next_request_id() { std::abort(); }
 bool player_load_pipeline_wait(player_load_request, player_load_result *, uint64_t) { std::abort(); }
+bool player_load_pipeline_execute_sync(player_load_request, player_load_result *) { std::abort(); }
 bool player_load_materialize(P_char, const player_load_result &) { std::abort(); }
 void player_load_pets_place(P_char) { std::abort(); }
 void *_mm_get(mm_ds *, const char *, int) { std::abort(); }
@@ -124,6 +125,8 @@ affected_type *affect_to_char(P_char, affected_type *) { std::abort(); }
 char affect_total(P_char, int) { std::abort(); }
 void equip_char(P_char, P_obj, int, int) { std::abort(); }
 void obj_to_char(P_obj, P_char) { std::abort(); }
+int bind_shopkeeper_calls = 0;
+void bind_shopkeeper(P_char, int) { ++bind_shopkeeper_calls; }
 
 // Exercise a real process replacement. Only the executable destination changes;
 // the production save, publication, counting and recovery functions are intact.
@@ -241,6 +244,7 @@ int main(int argc, char **argv)
     extract_obj(corpse, FALSE);
     item_ownership_runtime_reset();
     assert(!object_list);
+    assert(bind_shopkeeper_calls == 0);
     std::puts("[PASS] production copyover save/exec/recover preserves corpse, generated loot and live custody without SQL");
 }
 '''
@@ -258,6 +262,6 @@ with tempfile.TemporaryDirectory(prefix="duris-copyover-custody-") as temp:
                    "src/player/pet_restore_state.c",
                             "src/item/item_ownership_runtime.c", "src/item/item_transfer_command.c",
                             "src/redis/redis_command_observability.c", "-Wl,--gc-sections",
-                            "-lz", "-pthread", "-lgnutls", "-o", str(temp / "fixture")],
+                            "-lz", "-pthread", "-lgnutls", "-lbsd", "-o", str(temp / "fixture")],
                    cwd=ROOT, check=True)
     subprocess.run([str(temp / "fixture")], cwd=temp, check=True, timeout=60)

@@ -50,15 +50,18 @@ if PREDICATE_SIGNATURE not in comm_text:
 
 # Source contract: the dispatch decision must use the predicate, and the
 # predicate itself must be driven by AFF2_CASTING rather than !CAN_ACT.
-assert "casting_input = casting_input_for_descriptor(point, t_ch);" in comm_text
+selection_start = comm_text.index("static session_input_route select_session_input")
+selection_end = comm_text.index("static void dispatch_session_input", selection_start)
+selection = comm_text[selection_start:selection_end]
+assert "const bool casting_input = casting_input_for_descriptor(descriptor, character);" in selection
 PREDICATE = extract(comm_path, PREDICATE_SIGNATURE)
 assert "IS_AFFECTED2(character, AFF2_CASTING)" in PREDICATE
 assert "!CAN_ACT" not in PREDICATE
 assert "descriptor->connected == CON_PLAYING" in PREDICATE
 assert "!descriptor->showstr_count" in PREDICATE
 assert "!descriptor->str" in PREDICATE
-assert "casting_input ? get_casting_cmd_from_q(t_ch, &point->input, comm)" in comm_text
-assert "(CAN_ACT(t_ch) || casting_input)" in comm_text
+assert "get_casting_cmd_from_q(character, &descriptor->input, input)" in selection
+assert "(!CAN_ACT(character) && !casting_input)" in selection
 
 SEARCH_BLOCK = extract(interp_path, "int old_search_block(const char *argument")
 COMMAND_NUMBER = extract(interp_path, "static int input_command_number(const char *input)")

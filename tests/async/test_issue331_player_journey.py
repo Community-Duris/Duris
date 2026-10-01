@@ -26,12 +26,26 @@ PLAN_DIR = Path(os.environ.get(
     "ISSUE331_PLAN_DIR",
     "/opt/data/workspaces/.hermes/plans/duris-issue-331-restitution",
 ))
-DB_CONTAINER = os.environ["ISSUE331_DB_CONTAINER"]
-RUNTIME_CONTAINER = os.environ["ISSUE331_RUNTIME_CONTAINER"]
-GAME_PORT = int(os.environ["ISSUE331_GAME_PORT"])
-GAME_HOST = os.environ["ISSUE331_GAME_HOST"]
-DB_NAME = os.environ["DB_NAME"]
-DB_PASSWORD = os.environ["DB_PASSWORD"]
+ISSUE331_REQUIRED_ENV = (
+    "ISSUE331_DB_CONTAINER",
+    "ISSUE331_RUNTIME_CONTAINER",
+    "ISSUE331_GAME_PORT",
+    "ISSUE331_GAME_HOST",
+    "DB_NAME",
+    "DB_PASSWORD",
+)
+
+
+def issue331_environment_available() -> bool:
+    return all(os.environ.get(name) for name in ISSUE331_REQUIRED_ENV)
+
+
+DB_CONTAINER = os.environ.get("ISSUE331_DB_CONTAINER", "")
+RUNTIME_CONTAINER = os.environ.get("ISSUE331_RUNTIME_CONTAINER", "")
+GAME_PORT = int(os.environ.get("ISSUE331_GAME_PORT", "0"))
+GAME_HOST = os.environ.get("ISSUE331_GAME_HOST", "")
+DB_NAME = os.environ.get("DB_NAME", "")
+DB_PASSWORD = os.environ.get("DB_PASSWORD", "")
 ARTIFACT = Path(os.environ.get(
     "ISSUE331_ARTIFACT",
     str(PLAN_DIR / "artifacts" / "dms_new"),
@@ -710,6 +724,12 @@ def write_private_evidence(lines: list[str], transcript: str = "") -> None:
 
 
 def main() -> int:
+    if not issue331_environment_available():
+        print(
+            "ISSUE331_PLAYER_JOURNEY_SKIPPED: run the disposable MySQL shell "
+            "runner to provide the task-owned environment"
+        )
+        return 0
     if not ARTIFACT.is_file() or not os.access(ARTIFACT, os.X_OK):
         raise HarnessError(f"verified server artifact is unavailable: {ARTIFACT}")
     PLAN_DIR.mkdir(parents=True, exist_ok=True)

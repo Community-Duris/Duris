@@ -4,6 +4,7 @@
 #include "core/utils.h"
 #include "cmd/interp.h"
 #include "item/item_movement_transaction.h"
+#include "item/item_transfer_repository.h"
 #include "account/account_reward.h"
 #include "account/account_reward_config.h"
 #include "account/account_reward_snapshot.h"
@@ -14,6 +15,7 @@
 #include "sql/sql_player.h"
 #endif
 
+#include <algorithm>
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
@@ -158,7 +160,12 @@ static void mark_reward_item(P_obj obj, const char *account, unsigned long long 
 	obj->str_mask |= STRUNG_KEYS;
 	obj->name = str_dup(name);
 	beautify_reward_item(obj);
-	SET_BIT(obj->extra_flags, ITEM_NOSELL | ITEM_NORENT | ITEM_NODROP | ITEM_NOREPAIR);
+	/* Account rewards already have explicit summon, dismiss, expiry, revocation, and
+	 * death policies.  Marking the live instance NORENT put it in conflict with
+	 * durable item custody: the ownership ledger retained the item while player
+	 * snapshots deliberately omitted its only payload. */
+	SET_BIT(obj->extra_flags, ITEM_NOSELL | ITEM_NODROP | ITEM_NOREPAIR);
+	REMOVE_BIT(obj->extra_flags, ITEM_NORENT);
 	SET_BIT(obj->extra2_flags, ITEM2_SOULBIND | ITEM2_ACCOUNT_BOUND | ITEM2_NOLOOT);
 	REMOVE_BIT(obj->extra_flags, ITEM_SECRET | ITEM_INVISIBLE);
 }
@@ -214,6 +221,33 @@ static bool promote_reward_contents(P_obj container)
 			obj_to_obj_at_end(child, container);
 			return false;
 		}
+	}
+	return true;
+}
+
+/** Retire one persisted reward before removing its live duplicate.
+ *
+ * extract_obj() intentionally has no persistence side effects.  Reward
+ * deduplication is a real destruction transition, so it must retire custody and
+ * remove the matching player projection in one transaction before extraction.
+ */
+static bool retire_saved_reward_instance(P_char ch, P_obj obj)
+{
+	if (!ch || !obj || !obj->obj_uid)
+		return ch && obj;
+	const uint64_t uid = obj->obj_uid;
+	if (!sql_begin_transaction())
+		return false;
+	bool ok =
+		item_transfer_repository_revoke_roots_preserving_children(DB, &uid, 1) &&
+		qry("UPDATE player_items child JOIN player_items reward ON child.container_id=reward.id SET child.container_id=reward.container_id WHERE reward.pid=%d AND reward.obj_uid=%llu",
+		    GET_PID(ch), (unsigned long long)uid) &&
+		qry("DELETE FROM player_items WHERE pid=%d AND obj_uid=%llu", GET_PID(ch),
+		    (unsigned long long)uid);
+	if (!ok || !sql_commit())
+	{
+		sql_rollback();
+		return false;
 	}
 	return true;
 }
@@ -276,6 +310,95 @@ static std::string escape_sql(const char *value)
 	std::vector<char> escaped(strlen(value) * 2 + 1);
 	unsigned long length = mysql_real_escape_string(DB, escaped.data(), value, strlen(value));
 	return std::string(escaped.data(), length);
+}
+
+static std::string compact_duration(long long seconds, bool round_up = false)
+{
+	char text[32];
+	long long value;
+	const char *suffix;
+
+	if (seconds < 0)
+		seconds = 0;
+	if (seconds >= 86400)
+	{
+		value = round_up ? (seconds + 86399) / 86400 : seconds / 86400;
+		suffix = "d";
+	}
+	else if (seconds >= 3600)
+	{
+		value = round_up ? (seconds + 3599) / 3600 : seconds / 3600;
+		suffix = "h";
+	}
+	else if (seconds >= 60)
+	{
+		value = round_up ? (seconds + 59) / 60 : seconds / 60;
+		suffix = "m";
+	}
+	else
+	{
+		value = seconds;
+		suffix = "s";
+	}
+	snprintf(text, sizeof(text), "%lld%s", value, suffix);
+	return text;
+}
+
+static std::string divineclaim_table_field(const std::string &value, size_t width)
+{
+	if (value.size() <= width)
+		return value;
+	if (width <= 3)
+		return value.substr(0, width);
+	return value.substr(0, width - 3) + "...";
+}
+
+static std::string divineclaim_lifetime_text(const RewardGrant &grant)
+{
+	if (grant.remaining_pwipes > 0)
+	{
+		char text[32];
+		snprintf(text, sizeof(text), "%d wipe%s", grant.remaining_pwipes,
+			 grant.remaining_pwipes == 1 ? "" : "s");
+		return text;
+	}
+	if (grant.expires_seconds >= 0)
+		return compact_duration(grant.expires_seconds, true) + " left";
+	return "perm";
+}
+
+static void send_divineclaim_instance_lines(P_char ch, const std::vector<std::string> &instances)
+{
+	const size_t max_line_width = 96;
+	const std::string first_prefix = "       instances: ";
+	const std::string continuation_prefix = "                  ";
+	std::string line;
+	bool first_line = true;
+
+	for (const std::string &instance : instances)
+	{
+		std::string candidate = line.empty() ? instance : line + ", " + instance;
+		size_t prefix_width = first_line ? first_prefix.size() : continuation_prefix.size();
+		if (!line.empty() && prefix_width + candidate.size() > max_line_width)
+		{
+			if (first_line)
+				send_to_char_f(ch, "       &+Linstances:&n &+w%s&n\r\n",
+					       line.c_str());
+			else
+				send_to_char_f(ch, "                  &+w%s&n\r\n", line.c_str());
+			first_line = false;
+			line = instance;
+		}
+		else
+			line = candidate;
+	}
+
+	if (line.empty())
+		return;
+	if (first_line)
+		send_to_char_f(ch, "       &+Linstances:&n &+w%s&n\r\n", line.c_str());
+	else
+		send_to_char_f(ch, "                  &+w%s&n\r\n", line.c_str());
 }
 
 static bool canonical_account(const char *requested, std::string *canonical)
@@ -348,6 +471,25 @@ static bool clear_saved_grant(const RewardGrant &grant)
 	snprintf(stable_marker, sizeof(stable_marker), "%s%llu:%s ", ACCOUNT_REWARD_MARKER,
 		 grant.id, grant.account.c_str());
 	std::string stable_q = escape_sql(stable_marker);
+	std::vector<uint64_t> custody_uids;
+	for (P_obj obj = object_list; obj; obj = obj->next)
+		if (grant_marker_matches(obj, grant) && obj->obj_uid)
+			custody_uids.push_back(obj->obj_uid);
+	auto collect_saved_uids = [&](MYSQL_RES *rows) -> bool
+	{
+		if (!rows)
+			return false;
+		MYSQL_ROW row;
+		while ((row = mysql_fetch_row(rows)) != NULL)
+			if (row[0])
+			{
+				uint64_t uid = strtoull(row[0], NULL, 10);
+				if (uid)
+					custody_uids.push_back(uid);
+			}
+		mysql_free_result(rows);
+		return true;
+	};
 	if (grant.template_version == 0)
 	{
 		char legacy_marker[256];
@@ -355,6 +497,17 @@ static bool clear_saved_grant(const RewardGrant &grant)
 			 grant.account.c_str());
 		std::string legacy_q = escape_sql(legacy_marker),
 			    account_q = escape_sql(grant.account.c_str());
+		if (!collect_saved_uids(db_query(
+			    "SELECT pi.obj_uid FROM player_items pi JOIN player_data pd ON pd.pid=pi.pid WHERE (pd.account_name='%s' OR EXISTS (SELECT 1 FROM account_characters ac WHERE ac.char_name=pd.name AND ac.account_name='%s')) AND (LEFT(pi.name,CHAR_LENGTH('%s'))='%s' OR LEFT(pi.name,CHAR_LENGTH('%s'))='%s') AND pi.vnum=%d FOR UPDATE",
+			    account_q.c_str(), account_q.c_str(), stable_q.c_str(),
+			    stable_q.c_str(), legacy_q.c_str(), legacy_q.c_str(), grant.vnum)))
+			return false;
+		std::sort(custody_uids.begin(), custody_uids.end());
+		custody_uids.erase(std::unique(custody_uids.begin(), custody_uids.end()),
+				   custody_uids.end());
+		if (!item_transfer_repository_revoke_roots_preserving_children(
+			    DB, custody_uids.data(), custody_uids.size()))
+			return false;
 		if (!qry("UPDATE player_items child JOIN player_items reward ON child.container_id=reward.id JOIN player_data pd ON pd.pid=reward.pid SET child.container_id=reward.container_id WHERE (pd.account_name='%s' OR EXISTS (SELECT 1 FROM account_characters ac WHERE ac.char_name=pd.name AND ac.account_name='%s')) AND (LEFT(reward.name,CHAR_LENGTH('%s'))='%s' OR LEFT(reward.name,CHAR_LENGTH('%s'))='%s') AND reward.vnum=%d",
 			 account_q.c_str(), account_q.c_str(), stable_q.c_str(), stable_q.c_str(),
 			 legacy_q.c_str(), legacy_q.c_str(), grant.vnum))
@@ -364,6 +517,16 @@ static bool clear_saved_grant(const RewardGrant &grant)
 			account_q.c_str(), account_q.c_str(), stable_q.c_str(), stable_q.c_str(),
 			legacy_q.c_str(), legacy_q.c_str(), grant.vnum);
 	}
+	if (!collect_saved_uids(db_query(
+		    "SELECT obj_uid FROM player_items WHERE LEFT(name,CHAR_LENGTH('%s'))='%s' FOR UPDATE",
+		    stable_q.c_str(), stable_q.c_str())))
+		return false;
+	std::sort(custody_uids.begin(), custody_uids.end());
+	custody_uids.erase(std::unique(custody_uids.begin(), custody_uids.end()),
+			   custody_uids.end());
+	if (!item_transfer_repository_revoke_roots_preserving_children(DB, custody_uids.data(),
+								       custody_uids.size()))
+		return false;
 	if (!qry("UPDATE player_items child JOIN player_items reward ON child.container_id=reward.id SET child.container_id=reward.container_id WHERE LEFT(reward.name,CHAR_LENGTH('%s'))='%s'",
 		 stable_q.c_str(), stable_q.c_str()))
 		return false;
@@ -460,6 +623,7 @@ static P_obj existing_character_instance(P_char ch, const RewardGrant &grant,
 					 bool remove_duplicates)
 {
 	P_obj keep = NULL;
+	bool removed_duplicate = false;
 	for (P_obj obj = object_list, next; obj; obj = next)
 	{
 		next = obj->next;
@@ -470,14 +634,21 @@ static P_obj existing_character_instance(P_char ch, const RewardGrant &grant,
 			keep = obj;
 		else if (remove_duplicates)
 		{
-			if (promote_reward_contents(obj))
+			if (promote_reward_contents(obj) && retire_saved_reward_instance(ch, obj))
+			{
 				extract_obj(obj);
+				removed_duplicate = true;
+			}
 			else
 				logit(LOG_WIZ,
-				      "divineclaim: duplicate reward #%llu retained because its contents could not be released safely",
+				      "divineclaim: duplicate reward #%llu retained because its contents or custody could not be released safely",
 				      grant.id);
 		}
 	}
+	if (removed_duplicate && !do_save_silent(ch, 1))
+		logit(LOG_WIZ,
+		      "divineclaim: failed to save duplicate cleanup for reward #%llu on %s",
+		      grant.id, GET_NAME(ch));
 	return keep;
 }
 
@@ -747,6 +918,15 @@ static void dismiss_player_grant(P_char ch, const RewardGrant &selected)
 				   instance->short_description :
 				   (selected.display_name.empty() ? "your divine reward" :
 								    selected.display_name);
+	if (!retire_saved_reward_instance(ch, instance))
+	{
+		logit(LOG_WIZ, "divineclaim: failed to retire dismissed reward #%llu for %s",
+		      selected.id, GET_NAME(ch));
+		send_to_char(
+			"The divine records could not release that reward safely. Nothing was removed; please try again later.\r\n",
+			ch);
+		return;
+	}
 	extract_obj(instance);
 	bool saved = do_save_silent(ch, 1);
 	long long remaining = cooldown_remaining(selected.id, GET_PID(ch));
@@ -927,29 +1107,82 @@ static bool list_grants(P_char ch, const char *account)
 	}
 	if (grants.empty())
 		return false;
-	send_to_char("Active divine account rewards:\r\n", ch);
-	for (const RewardGrant &grant : grants)
+	send_to_char_f(ch, "&+WActive &+CDivine Account Rewards &+Y(%zu)&n\r\n", grants.size());
+	for (size_t group_start = 0; group_start < grants.size();)
 	{
-		MYSQL_RES *res = db_query(
-			"SELECT GROUP_CONCAT(CONCAT(pd.name,' (',GREATEST(0,TIMESTAMPDIFF(SECOND,s.last_summoned_at,NOW())),'s ago)') ORDER BY pd.name SEPARATOR ', ') FROM account_bound_reward_summons s LEFT JOIN player_data pd ON pd.pid=s.pid WHERE s.grant_id=%llu",
-			grant.id);
-		MYSQL_ROW row = res ? mysql_fetch_row(res) : NULL;
-		std::string instances = res ? ((row && row[0] && *row[0]) ? row[0] : "none yet") :
-					      "unavailable";
-		if (!res)
-			logit(LOG_WIZ, "divineclaim: instance listing failed for grant %llu",
-			      grant.id);
-		if (res)
-			mysql_free_result(res);
-		send_to_char_f(
-			ch,
-			"  #%llu account=%s reward=%s (vnum %d) granted_by=%s granted=%s ago expires=%s instances=%s\r\n",
-			grant.id, grant.account.c_str(),
-			grant.display_name.empty() ? "legacy vnum reward" :
-						     grant.display_name.c_str(),
-			grant.vnum, grant.granted_by.empty() ? "unknown" : grant.granted_by.c_str(),
-			human_duration(grant.age_seconds).c_str(), lifetime_text(grant).c_str(),
-			instances.c_str());
+		size_t group_end = group_start + 1;
+		while (group_end < grants.size() &&
+		       grants[group_end].account == grants[group_start].account)
+			++group_end;
+		size_t group_count = group_end - group_start;
+		send_to_char_f(ch, "\r\n&+Y%s&n &+W(%zu reward%s)&n\r\n",
+			       grants[group_start].account.c_str(), group_count,
+			       group_count == 1 ? "" : "s");
+		send_to_char(
+			"  &+CID     Reward                                          Vnum   By         Age  Life       Copies&n\r\n",
+			ch);
+
+		for (size_t i = group_start; i < group_end; ++i)
+		{
+			const RewardGrant &grant = grants[i];
+			std::vector<std::string> instances;
+			int instance_count = -1;
+			MYSQL_RES *res = db_query(
+				"SELECT pd.name,GREATEST(0,TIMESTAMPDIFF(SECOND,s.last_summoned_at,NOW())) FROM account_bound_reward_summons s LEFT JOIN player_data pd ON pd.pid=s.pid WHERE s.grant_id=%llu ORDER BY pd.name",
+				grant.id);
+			if (res)
+			{
+				MYSQL_ROW row;
+				instance_count = 0;
+				while ((row = mysql_fetch_row(res)) != NULL)
+				{
+					std::string name = row[0] && *row[0] ? row[0] : "unknown";
+					long long age = row[1] ? strtoll(row[1], NULL, 10) : 0;
+					instances.push_back(name + " (" + compact_duration(age) +
+							    " ago)");
+					++instance_count;
+				}
+				mysql_free_result(res);
+			}
+			else
+			{
+				logit(LOG_WIZ,
+				      "divineclaim: instance listing failed for grant %llu",
+				      grant.id);
+			}
+
+			std::string id = "#" + std::to_string(grant.id);
+			std::string reward_name = grant.display_name.empty() ?
+							  "legacy vnum reward" :
+							  grant.display_name;
+			std::string granted_by_name = grant.granted_by.empty() ? "unknown" :
+										 grant.granted_by;
+			std::string reward = divineclaim_table_field(reward_name, 42);
+			std::string granted_by = divineclaim_table_field(granted_by_name, 9);
+			std::string age = compact_duration(grant.age_seconds);
+			std::string lifetime = divineclaim_lifetime_text(grant);
+			std::string copies = instance_count < 0 ? "?" :
+								  std::to_string(instance_count);
+			const char *lifetime_color =
+				grant.remaining_pwipes > 0 ?
+					"&+Y" :
+					(grant.expires_seconds >= 0 ? "&+C" : "&+G");
+			const char *copies_color =
+				instance_count < 0 ? "&+R" : (instance_count > 0 ? "&+G" : "&+w");
+
+			send_to_char_f(
+				ch,
+				"  &+W%7s&n &+W%-42s&n &+C%6d&n &+Y%-9s&n &+w%5s&n %s%-9s&n %s%6s&n\r\n",
+				id.c_str(), reward.c_str(), grant.vnum, granted_by.c_str(),
+				age.c_str(), lifetime_color, lifetime.c_str(), copies_color,
+				copies.c_str());
+
+			if (instance_count > 0)
+				send_divineclaim_instance_lines(ch, instances);
+			else if (instance_count < 0)
+				send_to_char("       &+Linstances:&n &+Runavailable&n\r\n", ch);
+		}
+		group_start = group_end;
 	}
 	return true;
 }

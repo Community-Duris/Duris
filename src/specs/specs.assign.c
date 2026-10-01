@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "core/structs.h"
 #include "world/db.h"
 #include "world/events.h"
@@ -31,6 +32,7 @@
 #include "economy/tradeskill.h"
 #include "world/vnum.mob.h"
 #include "world/vnum.obj.h"
+#include "world/zone_story_quest_runtime.h"
 
 extern const int top_of_world;
 extern P_index mob_index;
@@ -1261,6 +1263,14 @@ void assign_mobiles(void)
 	logit(LOG_STATUS, "   Booting quests.");
 	fprintf(stderr, "--    Booting the quests.\r\n");
 	boot_the_quests();
+	std::string zone_story_error;
+	if (!zone_story_quest_runtime::bootstrap(&zone_story_error))
+		logit(LOG_DEBUG, "Zone-story quest catalog disabled at boot: %s",
+		      zone_story_error.c_str());
+	else
+		logit(LOG_STATUS, "Zone-story quest catalog ready: %zu definitions, revision %u",
+		      zone_story_quest_runtime::service()->catalog().definitions.size(),
+		      zone_story_quest_runtime::content_revision());
 	logit(LOG_STATUS, "   Assigning questers.");
 	fprintf(stderr, "--    Assigning the questors.\r\n");
 	assign_the_questers();
@@ -2659,5 +2669,5 @@ void item_procs(void)
 
 	for (i = object_list; i; i = i->next)
 		if (obj_index[i->R_num].func.obj)
-			(*obj_index[i->R_num].func.obj)(i, NULL, 0, NULL);
+			invoke_object_special(i, NULL, 0, NULL);
 }

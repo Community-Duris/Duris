@@ -27,6 +27,7 @@
 #include "combat/damage.h"
 #include "classes/disguise.h"
 #include "combat/justice.h"
+#include "combat/training_dummy.h"
 #include "core/mm.h"
 #include "item/objmisc.h"
 #include "world/specs.prototypes.h"
@@ -1508,6 +1509,12 @@ void spell_clone_form(int level, P_char ch, char *arg, int /*type*/, P_char vict
 				return;
 			}
 		}
+	}
+
+	if (!training_dummy_clone_target_allowed(target))
+	{
+		send_to_char("The training dummy cannot be used as a clone form.\r\n", ch);
+		return;
 	}
 
 	if (IS_NPC(target))

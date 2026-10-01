@@ -27,13 +27,14 @@ int top_of_objt = 4;
 int top_of_zone_table = -1;
 zone_data *zone_table = nullptr;
 zone_data *zone = nullptr;
-shop_data shops[2] = {};
+shop_data shops[7] = {};
 shop_data *shop_index = shops;
 int number_of_shops = 2;
 const char *dirs[] = { "north", "east", "south", "west", "up", "down" };
 const char *dirs2[] = { "north", "east", "south", "west", "up", "down" };
 extern const int rev_dir[] = { 2, 3, 0, 1, 5, 4 };
 std::unordered_map<P_char, P_char> mounts;
+std::unordered_map<P_char, P_char> masters;
 struct scheduled_event
 {
 	event_func callback;
@@ -45,14 +46,24 @@ int bfs_cur_marker = 1;
 int players_landed = 0;
 bool shop_save_succeeds = true;
 int shops_saved = 0;
+int saved_shop_rooms[7] = { -1, -1, -1, -1, -1, -1, -1 };
+bool fail_shop_placement = false;
 persistence_mode persistence_mode_get()
 {
 	return PERSISTENCE_MODE_MARIADB_PRIMARY;
 }
-bool sql_save_shopkeeper(P_char, int)
+bool sql_save_shopkeeper(P_char ch, int shop)
 {
 	++shops_saved;
+	if (!ch->only.npc || ch->only.npc->shopkeeper_shop_id != shop)
+		return false;
+	saved_shop_rooms[shop] = shop_index[shop].shop_is_roaming ? world[ch->in_room].number :
+								    shop_index[shop].in_room;
 	return shop_save_succeeds;
+}
+bool sql_save_dirty_shopkeepers(bool)
+{
+	return true;
 }
 
 void logit(const char *, const char *, ...) {}
@@ -100,6 +111,8 @@ int real_mobile0(int v)
 }
 P_char get_linked_char(P_char ch, ush_int type)
 {
+	if (type == LNK_PET && masters.count(ch))
+		return masters.at(ch);
 	return type == LNK_RIDING && mounts.count(ch) ? mounts.at(ch) : nullptr;
 }
 P_char get_linking_char(P_char ch, ush_int type)
@@ -142,6 +155,12 @@ void char_from_room(P_char ch)
 bool char_to_room(P_char ch, int room, int)
 {
 	assert(room >= 0 && room <= top_of_world);
+	if (fail_shop_placement)
+	{
+		fail_shop_placement = false;
+		extract_char(ch);
+		return false;
+	}
 	ch->in_room = room;
 	ch->next_in_room = world[room].people;
 	world[room].people = ch;
@@ -151,6 +170,13 @@ bool char_to_room(P_char ch, int room, int)
 		char_to_room(rider, room, -1);
 	}
 	return true;
+}
+int char_in_list(const P_char candidate)
+{
+	for (P_char ch = character_list; ch; ch = ch->next)
+		if (ch == candidate)
+			return true;
+	return false;
 }
 P_char read_mobile(int v, int mode)
 {
@@ -162,6 +188,7 @@ P_char read_mobile(int v, int mode)
 	ch->only.npc = new npc_only_data{};
 	ch->only.npc->R_num = r;
 	ch->only.npc->idnum = next_id++;
+	ch->only.npc->shopkeeper_shop_id = -1;
 	ch->in_room = -1;
 	ch->next = character_list;
 	character_list = ch;
@@ -344,6 +371,7 @@ void run_event(P_char ch)
 void clear_world()
 {
 	mounts.clear();
+	masters.clear();
 	while (character_list)
 		extract_char(character_list);
 	while (object_list)
@@ -374,7 +402,9 @@ int main()
 		obj_index[i].virtual_number = 420 + i;
 	shops[0].keeper = shops[1].keeper = 2;
 	shops[0].in_room = 29437;
+	shops[0].shop_is_roaming = 0;
 	shops[1].in_room = 29438;
+	shops[1].shop_is_roaming = 0;
 	shops[0].producing[0] = 1;
 	shops[1].producing[0] = 2;
 	shops[0].number_items_produced = shops[1].number_items_produced = 1;
@@ -393,9 +423,31 @@ int main()
 	equip_char(keeper, equipment, 1, 0);
 	P_char other = mob_at(2, 4);
 	P_char ordinary = mob_at(2, 5);
-	assert(singleton_shop_id(keeper) == 0 && singleton_shop_id(other) == 1 &&
-	       singleton_shop_id(ordinary) < 0);
+	masters[ordinary] = keeper; // controlled template copy is never a shop candidate
+	char_from_room(keeper);
+	char_to_room(keeper, 5, -1);
+	bind_shopkeeper(keeper, 0);
+	char_from_room(other);
+	char_to_room(other, 5, -1);
+	GET_BIRTHPLACE(other) = world[5].number;
+	assert(singleton_shop_id(keeper) == 0);
+	assert(singleton_shop_id(other) < 0); // unbound fixed shop away from home
+	bind_shopkeeper(other, 1);
+	assert(singleton_shop_id(other) == 1); // explicit binding survives off-home room
+	other->only.npc->shopkeeper_shop_id = -1;
+	GET_BIRTHPLACE(other) = shops[1].in_room;
+	assert(singleton_shop_id(other) == 1); // fixed identity is recoverable before copyover
+	P_char controlled = mob_at(2, 5);
+	masters[controlled] = keeper;
+	assert(singleton_shop_id(controlled) < 0);
+	assert(singleton_shop_id(ordinary) < 0);
+	shops[0].shop_is_roaming = 1;
+	shops[0].in_room = 0; // room 0 is configuration, not the live roaming room
+	REMOVE_BIT(keeper->specials.act, ACT_SENTINEL);
+	bind_shopkeeper(keeper, 0);
+	assert(!IS_SET(keeper->specials.act, ACT_SENTINEL));
 	assert(snapshot_shopkeepers_for_copyover() && shops_saved == 2);
+	assert(saved_shop_rooms[0] == world[5].number && saved_shop_rooms[1] == shops[1].in_room);
 	shop_save_succeeds = false;
 	assert(!snapshot_shopkeepers_for_copyover());
 	shop_save_succeeds = true;
@@ -413,7 +465,7 @@ int main()
 		reconcile_shopkeepers(false);
 		initialize_transport();
 		assert(mob_index[0].number == 1 && obj_index[0].number == 2 &&
-		       mob_index[2].number == 3);
+		       mob_index[2].number == 4);
 		assert(keeper->equipment[1] == equipment && stock->loc.carrying == keeper);
 		assert(singleton_shop_id(other) == 1 && ordinary->in_room == 5);
 	}
@@ -526,6 +578,82 @@ int main()
 	assert(mob_index[0].number == 1 && players_landed > 0);
 	assert((!GET_MOUNT(rider) && rider->in_room == 0) ||
 	       (!GET_MOUNT(rider2) && rider2->in_room == 0));
+	// persistence identities and missing instances are reconstructed by room.
+	clear_world();
+	number_of_shops = 7;
+	shops[1].keeper = 3;
+	shops[1].in_room = rooms[5].number;
+	for (int shop = 2; shop < 7; ++shop)
+	{
+		shops[shop].keeper = 2;
+		shops[shop].in_room = rooms[shop - 2].number;
+		shops[shop].shop_is_roaming = 0;
+		shops[shop].number_items_produced = 1;
+		shops[shop].producing[0] = 1;
+	}
+	// Shop 2 models the historical roaming dealer identity. A durable snapshot
+	// may have been captured in any dealer room before the fixed identities
+	// existed; retain its binding and stock while returning it to its anchor.
+	shops[2].shop_is_roaming = 1;
+	auto assert_local_dealers = [&]()
+	{
+		for (int room = 0; room < 5; ++room)
+		{
+			int count = 0;
+			P_char dealer = nullptr;
+			for (P_char local = world[room].people; local; local = local->next_in_room)
+				if (IS_NPC(local) && GET_RNUM(local) == 2)
+				{
+					dealer = local;
+					++count;
+				}
+			assert(count == 1 && singleton_shop_id(dealer) == room + 2 &&
+			       IS_SET(dealer->specials.act, ACT_SENTINEL));
+			bool has_produced_stock = false;
+			for (P_obj object = dealer->carrying; object; object = object->next_content)
+				if (object->R_num == 1)
+					has_produced_stock = true;
+			assert(has_produced_stock);
+		}
+	};
+	P_char legacy = mob_at(2, 2);
+	bind_shopkeeper(legacy, 2);
+	P_obj legacy_stock = read_object(3, REAL);
+	obj_to_char(legacy_stock, legacy);
+	remember_boot_shopkeepers();
+	reconcile_shopkeepers(false);
+	assert(legacy->in_room == 0 && GET_BIRTHPLACE(legacy) == world[0].number &&
+	       legacy_stock->loc.carrying == legacy);
+	assert_local_dealers();
+	P_char stable_dealers[5] = {};
+	for (int room = 0; room < 5; ++room)
+		stable_dealers[room] = world[room].people;
+	for (int cycle = 0; cycle < 5; ++cycle)
+	{
+		remember_boot_shopkeepers();
+		reconcile_shopkeepers(false);
+		assert_local_dealers();
+		for (int room = 0; room < 5; ++room)
+			assert(world[room].people == stable_dealers[room]);
+	}
+	extract_char(world[2].people);
+	remember_boot_shopkeepers();
+	fail_shop_placement = true;
+	reconcile_shopkeepers(false);
+	assert(!world[2].people);
+	reconcile_shopkeepers(false);
+	assert_local_dealers();
+
+	// A recovered generation with zero dealers converges to the same five
+	// identities and independently snapshot-able inventories.
+	clear_world();
+	remember_boot_shopkeepers();
+	reconcile_shopkeepers(false);
+	assert_local_dealers();
+	shops_saved = 0;
+	shop_save_succeeds = true;
+	assert(snapshot_shopkeepers_for_copyover() && shops_saved == 5);
+
 	clear_world();
 	puts("singleton counts, shared shops, stock, five recovery cycles, riders and travel passed");
 }

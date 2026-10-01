@@ -1,6 +1,7 @@
 #include "world/world_recovery_pipeline.h"
 
 #include "persistence/copyover.h"
+#include "combat/training_dummy.h"
 #include "world/generated_npc_state.h"
 #include "world/db.h"
 #include "item/item_ownership_runtime.h"
@@ -38,6 +39,13 @@ extern bool sql_persistence_reconcile_world_recovery_items(
 	item_ownership_runtime_entry *authoritative, size_t authoritative_capacity);
 namespace
 {
+/* Recovery fixtures are intentionally linkable without the gameplay module;
+ * inspect the persisted runtime marker locally at this low-level boundary. */
+bool recovery_training_dummy_is(P_char ch)
+{
+	return ch && IS_NPC(ch) && ch->only.npc && ch->only.npc->training_dummy;
+}
+
 enum class capture_stage : uint8_t
 {
 	idle,
@@ -308,16 +316,23 @@ bool capture_item_tree(P_obj object, int room_vnum, uint64_t root_uid, uint64_t 
 		entry.values[index] = object->value[index];
 	for (int index = 0; index < 6; ++index)
 		entry.timers[index] = static_cast<int64_t>(object->timer[index]);
-	if (object->name)
-		strlcpy(entry.name, object->name, sizeof(entry.name));
-	if (object->short_description)
-		strlcpy(entry.short_description, object->short_description,
-			sizeof(entry.short_description));
-	if (object->description)
-		strlcpy(entry.description, object->description, sizeof(entry.description));
-	if (object->action_description)
-		strlcpy(entry.action_description, object->action_description,
-			sizeof(entry.action_description));
+	auto copy_text = [](char *destination, size_t capacity, const char *source)
+	{
+		if (!source)
+			return true;
+		const size_t length = strnlen(source, capacity);
+		if (length >= capacity)
+			return false;
+		memcpy(destination, source, length + 1);
+		return true;
+	};
+	if (!copy_text(entry.name, sizeof(entry.name), object->name) ||
+	    !copy_text(entry.short_description, sizeof(entry.short_description),
+		       object->short_description) ||
+	    !copy_text(entry.description, sizeof(entry.description), object->description) ||
+	    !copy_text(entry.action_description, sizeof(entry.action_description),
+		       object->action_description))
+		return false;
 	entry.wear_flags = object->wear_flags;
 	entry.extra_flags = object->extra_flags;
 	entry.anti_flags = object->anti_flags;
@@ -356,7 +371,15 @@ int write_object_record(P_obj object, int room_vnum, char *buffer, size_t maximu
 	if (!object || !buffer || room_vnum <= 0 || maximum < sizeof(world_recovery_object_record))
 		return -1;
 	// capture_item_tree initializes each emitted entry; do not clear unused capacity.
-	std::array<world_recovery_item_snapshot, WORLD_RECOVERY_MAX_ITEM_TREE> items;
+	std::vector<world_recovery_item_snapshot> items;
+	try
+	{
+		items.resize(WORLD_RECOVERY_MAX_ITEM_TREE);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return -1;
+	}
 	uint32_t count = 0;
 	bool skip = false;
 	if (!capture_item_tree(object, room_vnum, 0, 0, items.data(), &count, &skip,
@@ -383,7 +406,7 @@ int write_object_record(P_obj object, int room_vnum, char *buffer, size_t maximu
 
 int write_mob_record(P_char mob, char *buffer, size_t maximum)
 {
-	if (!mob || !buffer || maximum < sizeof(copyover_mob))
+	if (!mob || recovery_training_dummy_is(mob) || !buffer || maximum < sizeof(copyover_mob))
 		return -1;
 	copyover_mob entry = {};
 	const int mob_rnum = GET_RNUM(mob);
@@ -400,6 +423,7 @@ int write_mob_record(P_char mob, char *buffer, size_t maximum)
 	entry.max_vitality = GET_MAX_VITALITY(mob);
 	entry.position = GET_POS(mob);
 	entry.birthplace = GET_BIRTHPLACE(mob);
+	entry.shopkeeper_shop_id = mob->only.npc ? mob->only.npc->shopkeeper_shop_id : -1;
 	transport_capture(mob, &entry.transport);
 	// Currency is authoritative player state and must not be replayed from a fuzzy world view.
 	entry.gold = 0;
@@ -543,8 +567,10 @@ bool capture_one_record()
 		{
 			P_char ch = active_capture.next_character;
 			active_capture.next_character = ch->next;
+			// Dummies are deterministic boot fixtures, not durable world NPCs.
+			// Replaying the prototype would drop their safety marker/profile.
 			if (!IS_NPC(ch) || ch->in_room < 0 || GET_MASTER(ch) ||
-			    ch->only.npc->summoned_instance)
+			    ch->only.npc->summoned_instance || recovery_training_dummy_is(ch))
 				return true;
 			const int size = write_mob_record(
 				ch, reinterpret_cast<char *>(capture_buffer.data()),

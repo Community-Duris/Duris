@@ -683,9 +683,12 @@ int main()
     corpse.weight = 53;
     bag.obj_uid = 901; bag.type = ITEM_CONTAINER; bag.weight = 13;
     gloves.obj_uid = 902; gloves.type = ITEM_ARMOR; gloves.weight = 3;
-    gloves.name = const_cast<char *>("boreal hardwood gloves");
-    gloves.short_description = const_cast<char *>("some boreal hardwood gloves");
-    gloves.description = const_cast<char *>("Some boreal hardwood gloves are here.");
+    const std::string long_name = "boreal " + std::string(120, 'k') + " gloves";
+    const std::string long_short = "some " + std::string(140, 's') + " gloves";
+    const std::string long_description = "Some " + std::string(180, 'd') + " gloves are here.";
+    gloves.name = const_cast<char *>(long_name.c_str());
+    gloves.short_description = const_cast<char *>(long_short.c_str());
+    gloves.description = const_cast<char *>(long_description.c_str());
     gloves.wear_flags = ITEM_TAKE | ITEM_WEAR_HANDS;
     gloves.extra_flags = ITEM_GLOW; gloves.anti_flags = 7; gloves.anti2_flags = 9;
     gloves.extra2_flags = 11; gloves.material = 3; gloves.cost = 1234;
@@ -778,8 +781,9 @@ int main()
         assert(!std::strcmp(gear->short_description, gloves.short_description));
         assert(!std::strcmp(gear->name, gloves.name));
         assert(!std::strcmp(gear->description, gloves.description));
-        assert(gear->wear_flags == gloves.wear_flags && do_get_obj_is_takeable(&mortal, gear));
-        assert(!do_get_obj_is_takeable(&mortal, restored_fixed));
+        assert(gear->wear_flags == gloves.wear_flags &&
+               item_command_object_is_takeable(&mortal, gear));
+        assert(!item_command_object_is_takeable(&mortal, restored_fixed));
         assert(gear->extra_flags == gloves.extra_flags && gear->anti_flags == 7 && gear->anti2_flags == 9);
         assert(gear->extra2_flags == 11 && gear->material == 3 && gear->cost == 1234);
         assert(gear->condition == 42 && gear->craftsmanship == 17 && gear->weight == 3);
@@ -912,7 +916,11 @@ HARNESS = HARNESS.replace("int main()", FALLBACK_SUPPORT + "\nint main()", 1)
 
 
 COPYOVER_HELPERS = section(COPYOVER, "int copyover_write_obj_to_buffer", "int copyover_write_door_to_buffer") + section(COPYOVER, "P_obj copyover_restore_obj_from_buffer", "int copyover_restore_door_from_buffer") + section(COPYOVER, "static int write_obj_entry", "// raw write to socket fd")
-TAKEABILITY = section((SRC / "actobj.c").read_text(), "static bool do_get_obj_is_takeable", "static bool do_get_container_item_is_takeable")
+TAKEABILITY = section(
+    (SRC / "item/item_command_policy.c").read_text(),
+    "bool item_command_object_is_takeable",
+    "bool item_command_container_is_valid",
+)
 SELECTOR = section(HANDLER, "P_obj get_obj_in_list_vis", "/*\n * search the entire world for an object")
 SELECTOR_STUBS = r'''
 bool ac_can_see_obj(P_char, P_obj, int) { return true; }
@@ -955,7 +963,7 @@ print("[PASS] failed recovery and forced zone reset restore exactly one owned gr
 
 for token in (
     "WORLD_RECOVERY_MAX_BYTES = 64 * 1024 * 1024",
-    "WORLD_RECOVERY_MAX_RECORD_BYTES = 512 * 1024",
+    "WORLD_RECOVERY_MAX_RECORD_BYTES = 2 * 1024 * 1024",
     "WORLD_RECOVERY_MAX_FLOOR_BYTES = 16 * 1024 * 1024",
     "WORLD_RECOVERY_MAX_FLOOR_RECORDS = 32768",
     "WORLD_RECOVERY_CAPTURE_RECORD_BUDGET = 1024",

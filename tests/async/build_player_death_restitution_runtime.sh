@@ -17,6 +17,7 @@ g++ -std=c++20 -O1 -Wall -Wextra -Wpedantic -Werror \
     src/player/player_load_repository.c src/player/player_load_topology.c \
     src/player/player_load_items.c src/player/player_snapshot_codec.c \
     src/player/player_snapshot_repository.c src/persistence/persistence_observability.c \
+    src/persistence/player_death_restitution_command.c \
     src/sql/item_extra_descr_codec.c src/sql/sql_player.c src/sql/sql_pool.c \
     -Wl,--gc-sections -lmysqlclient -lcrypto -lpthread -o "$OUT"
 g++ -std=c++20 -O1 -Wall -Wextra -Wpedantic -Werror \

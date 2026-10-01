@@ -34,10 +34,11 @@ assert comm.count('initialize_transport();') == 2  # declaration and post-recove
 assert loop.index('redis_world_recovery_boot_clear();') < loop.index('initialize_transport();')
 assert loop.index('copyover_recover(') < loop.index('reconcile_shopkeepers(')
 copyover = (ROOT / 'src/persistence/copyover.c').read_text()
-assert 'header.version != 12' in copyover
+assert 'copyover_version_supported(header.version)' in copyover
+assert 'version >= 12 && version <= COPYOVER_VERSION' in copyover
 durable_shopkeepers = copyover[copyover.index('bool copyover_has_durable_shopkeepers()'):copyover.index('int is_copyover_boot(void)')]
-assert 'header.version == 13' in durable_shopkeepers
-assert 'header.version == 12' not in durable_shopkeepers
+assert 'copyover_version_supported(header.version)' in durable_shopkeepers
+assert 'memcmp(header.magic, COPYOVER_MAGIC, 4)' in durable_shopkeepers
 assert 'offsetof(copyover_mob, transport)' in copyover
 assert copyover.count('transport_capture(mob, &entry.transport);') == 2
 assert copyover.count('transport_restore(mob, mob_entry.transport);') == 2

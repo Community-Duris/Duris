@@ -61,6 +61,8 @@ constexpr int LNK_CONSENT = 0;
 #define IS_RACEWAR_GOOD(c) true
 #define GET_NAME(c) ((c)->name)
 #define REMOVE_BIT(v,b) ((v) &= ~(b))
+bool training_dummy_is(P_char) { return false; }
+enum class telemetry_encounter_outcome { withdrawal = 5 };
 void purge_linked_auras(P_char) {}
 bool in_command_aura(P_char) { return false; }
 void remove_aura_message(P_char, P_char) {}
@@ -84,6 +86,8 @@ int telemetry_runtime_game_context(P_char c, descriptor *) {
     observed.emplace_back(c, n);
     return 0;
 }
+int telemetry_runtime_game_encounter_group_sync(P_char) { return 0; }
+int telemetry_runtime_game_encounter_leave(P_char, telemetry_encounter_outcome) { return 0; }
 '''
     cases = r'''
 int last_size(P_char c) {

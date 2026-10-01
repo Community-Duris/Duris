@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
+import hashlib
 import json
 import pathlib
+import re
 import sys
 
 
@@ -18,6 +20,138 @@ REQUIRED_FIELDS = {
     "repeatable",
     "content_revision",
 }
+
+QUEST_BLOCK_RE = re.compile(r"^#(-?\d+)\s*$")
+GOAL_RE = re.compile(r"^([GR])\s+([ITCSE])\s+(-?\d+)\s*$")
+
+
+def active_quest_files(source_root):
+    """Return qst files in the exact order consumed by make_qst.c.
+
+    ``make_all`` runs ``make_qst`` with ``areas/`` as its working directory,
+    so the compiler reads the top-level ``areas/AREA`` list.  The similarly
+    named ``areas/qst/AREA`` file is a narrower historical list and is not
+    the production static quest input.
+    """
+    areas_root = source_root / "areas"
+    quest_root = areas_root / "qst"
+    area_list = areas_root / "AREA"
+    files = []
+    for raw_line in area_list.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("*"):
+            continue
+        parts = line.split()
+        name = parts[0]
+        path = quest_root / f"{name}.qst"
+        if path.is_file():
+            files.append(path)
+    return files
+
+
+def completion_key(give_goals, receive_goals, disappear):
+    """Encode the legacy Q block identity without depending on prose text."""
+    give = ",".join(f"{kind}:{number}" for kind, number in sorted(give_goals))
+    receive = ",".join(f"{kind}:{number}" for kind, number in sorted(receive_goals))
+    return f"give={give};receive={receive};disappear={int(disappear)}"
+
+
+def production_catalog(source_root, content_revision=1):
+    """Build the eligible catalog from active legacy static/story qst sources.
+
+    Bartender/random world quests are intentionally absent: they are generated
+    at runtime and have no stable zone-story definition identity.
+    """
+    definitions = []
+    seen_contracts = set()
+    for path in active_quest_files(source_root):
+        current_giver = None
+        current_block = None
+        blocks = []
+
+        def finish_block():
+            nonlocal current_block
+            if current_block is not None:
+                blocks.append(current_block)
+                current_block = None
+
+        for raw_line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            line = raw_line.strip()
+            giver_match = QUEST_BLOCK_RE.match(line)
+            if giver_match:
+                finish_block()
+                current_giver = int(giver_match.group(1))
+                continue
+            if line == "$":
+                finish_block()
+                current_giver = None
+                continue
+            if line in {"Q", "QA"}:
+                finish_block()
+                if current_giver is not None:
+                    current_block = {
+                        "giver_vnum": current_giver,
+                        "give": [],
+                        "receive": [],
+                        "disappear": False,
+                    }
+                continue
+            if line == "D" and current_block is not None:
+                current_block["disappear"] = True
+                continue
+            goal_match = GOAL_RE.match(line)
+            if goal_match and current_block is not None:
+                group, kind, number = goal_match.groups()
+                (current_block["give"] if group == "G" else current_block["receive"]).append(
+                    (kind, int(number))
+                )
+
+        finish_block()
+        for block in blocks:
+            giver_vnum = block["giver_vnum"]
+            key = completion_key(block["give"], block["receive"], block["disappear"])
+            base_key = (giver_vnum, key)
+            # Multiple Q blocks with the same giver and completion contract
+            # are alternative prose/turn-in routes for one accomplishment.
+            # Dedupe them so reordering those blocks cannot change identities
+            # or inflate the denominator.
+            if base_key in seen_contracts:
+                continue
+            seen_contracts.add(base_key)
+            encoded_key = key.encode("utf-8").hex()
+            # Runtime quest_data retains the giver VNUM but not the source
+            # AREA filename.  Duris' zone namespace is the giver-vnum
+            # hundred-block; the historical low-vnum heavens questers are
+            # assigned to zone 1 explicitly.
+            zone_number = max(1, giver_vnum // 100)
+            definitions.append(
+                {
+                    "definition_id": f"zone-story:qst:{giver_vnum}:{encoded_key}",
+                    "source_system": "zone_story",
+                    "zone_number": zone_number,
+                    "source_area": path.stem,
+                    "giver_vnum": giver_vnum,
+                    "completion_key": encoded_key,
+                    "active": True,
+                    "eligible_for_zone_completion": True,
+                    "repeatable": True,
+                    "content_revision": content_revision,
+                }
+            )
+
+    definitions.sort(key=lambda item: (item["zone_number"], item["definition_id"]))
+    fingerprint_payload = json.dumps(definitions, sort_keys=True, separators=(",", ":")).encode()
+    return {
+        "schema_version": 1,
+        "content_revision": content_revision,
+        "source": {
+            "kind": "legacy_static_qst",
+            "area_list": "areas/AREA",
+            "excludes": ["bartender_random_world_quests"],
+            "fingerprint_sha256": hashlib.sha256(fingerprint_payload).hexdigest(),
+        },
+        "definitions": definitions,
+    }
 
 
 def diagnostic(index, code, message):
@@ -135,11 +269,29 @@ def report_for(catalog):
 
 def main():
     parser = argparse.ArgumentParser(description="Validate the zone-story quest catalog")
-    parser.add_argument("--catalog", type=pathlib.Path, required=True)
+    parser.add_argument("--catalog", type=pathlib.Path)
+    parser.add_argument("--source-root", type=pathlib.Path,
+                        help="build a production catalog from areas/AREA and areas/qst")
+    parser.add_argument("--production-output", type=pathlib.Path,
+                        help="write the generated production catalog JSON")
+    parser.add_argument("--content-revision", type=int, default=1)
     parser.add_argument("--json", action="store_true", dest="as_json")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    report = report_for(load_catalog(args.catalog))
+    if bool(args.catalog) == bool(args.source_root):
+        parser.error("provide exactly one of --catalog or --source-root")
+    if args.content_revision <= 0:
+        parser.error("--content-revision must be positive")
+    catalog = (
+        production_catalog(args.source_root.resolve(), args.content_revision)
+        if args.source_root
+        else load_catalog(args.catalog)
+    )
+    if args.production_output:
+        args.production_output.parent.mkdir(parents=True, exist_ok=True)
+        args.production_output.write_text(json.dumps(catalog, indent=2, sort_keys=True) + "\n",
+                                           encoding="utf-8")
+    report = report_for(catalog)
     if args.as_json:
         print(json.dumps(report, indent=2, sort_keys=True))
     else:

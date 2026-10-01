@@ -20,6 +20,7 @@
 #include "world/map.h"
 #include "magic/spells.h"
 #include "world/vnum.obj.h"
+#include "combat/training_dummy.h"
 
 /* external variables */
 
@@ -473,6 +474,12 @@ void spell_awe(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || IS_TRUSTED(victim))
 	{
+		return;
+	}
+
+	if (training_dummy_is(victim))
+	{
+		send_to_char("The training dummy has no mind to awe.\r\n", ch);
 		return;
 	}
 
@@ -1473,6 +1480,11 @@ void spell_domination(int level, P_char ch, char * /*arg*/, int /*type*/, P_char
 	if (victim == ch)
 	{
 		send_to_char("Dominate yourself? You're wierd.\r\n", ch);
+		return;
+	}
+	if (training_dummy_is(victim))
+	{
+		send_to_char("The training dummy has no mind to dominate.\r\n", ch);
 		return;
 	}
 	if (GET_MASTER(victim) || GET_MASTER(ch) || level < GET_LEVEL(victim) ||

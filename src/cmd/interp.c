@@ -11,6 +11,7 @@
  */
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "telemetry/telemetry_runtime.h"
 #include "item/item_actions.h"
 #include "item/artifact_mana.h"
@@ -72,6 +73,79 @@ static bool is_normal_movement_command(int cmd)
 	return (cmd >= CMD_NORTH && cmd <= CMD_DOWN) || (cmd >= CMD_NORTHWEST && cmd <= CMD_SE);
 }
 
+/* Meditation should only yield to an action that uses the character's body,
+ * position, or concentration.  These commands only report information (or,
+ * for read/examine, ask the room to describe something) and do not represent
+ * a physical action by the character. */
+static bool command_preserves_meditation(int cmd, const char *argument)
+{
+	switch (cmd)
+	{
+	case CMD_LOOK:
+	case CMD_GLANCE:
+	case CMD_EXITS:
+	case CMD_LISTEN:
+	case CMD_INVENTORY:
+	case CMD_EQUIPMENT:
+	case CMD_SCORE:
+	case CMD_STAT:
+	case CMD_TIME:
+	case CMD_WEATHER:
+	case CMD_WHO:
+	case CMD_READ:
+	case CMD_EXAMINE:
+		return true;
+	case CMD_GROUP:
+	{
+		char first[MAX_INPUT_LENGTH];
+
+		/* `group` only reports the current group without an argument.  A
+		 * targeted group command can change another character's state. */
+		one_argument(argument, first);
+		return !*first;
+	}
+	case CMD_PUT:
+	{
+		char first[MAX_INPUT_LENGTH];
+		char second[MAX_INPUT_LENGTH];
+		char destination[MAX_INPUT_LENGTH];
+
+		/* Coin pickup reports arrive asynchronously.  Allow the trigger that
+		 * bags that report to run without throwing away an active meditation.
+		 * The ordinary item-put path remains an interruption.  Match do_put's
+		 * accepted shape so malformed coin commands still interrupt meditation. */
+		argument = one_argument(argument, first);
+		if (!*first)
+			return false;
+		if (!strcmp(first, "all.coins"))
+		{
+			one_argument(argument, destination);
+			return *destination;
+		}
+		if (!is_number(first) || first[0] == '-' || strlen(first) > 7)
+			return false;
+		bool nonzero = false;
+		for (const char *digit = first; *digit; ++digit)
+		{
+			if (*digit != '0')
+			{
+				nonzero = true;
+				break;
+			}
+		}
+		if (!nonzero)
+			return false;
+		argument = one_argument(argument, second);
+		if (coin_type(second) == COIN_NONE)
+			return false;
+		one_argument(argument, destination);
+		return *destination;
+	}
+	default:
+		return false;
+	}
+}
+
 static telemetry_runtime_evidence_kind telemetry_command_evidence_kind(int cmd)
 {
 	if (cmd == CMD_SAY || cmd == CMD_SAY2 || cmd == CMD_GSHOUT || cmd == CMD_TELL ||
@@ -126,6 +200,38 @@ extern P_index obj_index;
 extern P_room world;
 
 bool command_confirm;
+
+/* Confirmation-required commands normally use descriptor state to remember
+ * the pending command.  A linkdead player has no descriptor, but can still be
+ * targeted by internal command dispatch (notably `force`).  In that case an
+ * explicit `confirm` may execute immediately; an unconfirmed command must not
+ * be dispatched because there is nowhere to store or answer its prompt. */
+static bool prepare_command_confirmation(P_char character, const char *full_command,
+					 const char *command_argument)
+{
+	if (!character || !full_command || !command_argument)
+	{
+		command_confirm = FALSE;
+		return false;
+	}
+
+	command_confirm = IS_NPC(character) ||
+			  (character->desc && character->desc->confirm_state == CONFIRM_DONE) ||
+			  !strcmp(command_argument, "confirm");
+	if (command_confirm)
+	{
+		if (character->desc)
+			character->desc->confirm_state = CONFIRM_NONE;
+		return true;
+	}
+
+	if (!character->desc)
+		return false;
+
+	character->desc->confirm_state = CONFIRM_AWAIT;
+	strcpy(character->desc->last_command, full_command);
+	return true;
+}
 
 void do_prestige(P_char ch, char *argument, int cmd);
 void check_aggro_from_command(P_char exec_char);
@@ -1163,7 +1269,8 @@ const char *command[MAX_CMD] = {
 	"pulse",
 	"collector",
 	"restitution",
-	"\n" /* MAX_CMD = 864, MAX_CMD_LIST = 1000 */
+	"dummy",
+	"\n" /* MAX_CMD = 865, MAX_CMD_LIST = 1000 */
 };
 
 const char *fill_words[] = { "in", "from", "with", "the", "on", "at", "to", "\n" };
@@ -1341,6 +1448,33 @@ bool cmd_depends_on_item_movement(int cmd)
 	case CMD_ASK:
 	case CMD_BUY:
 	case CMD_SELL:
+	case CMD_VALUE:
+	case CMD_REPAIR:
+	case CMD_APPRAISE:
+	case CMD_LORE:
+	case CMD_WRITE:
+	case CMD_ITEMMANA:
+	case CMD_AUCTION:
+	case CMD_FORGE:
+	case CMD_REFINE:
+	case CMD_ENHANCE:
+	case CMD_CRAFT:
+	case CMD_ENCRUST:
+	case CMD_SPELLBIND:
+	case CMD_FIX:
+	case CMD_MIX:
+	case CMD_MIXPOISON:
+	case CMD_SMELT:
+	case CMD_ENCHANT:
+	case CMD_MAKE:
+	case CMD_SCRIBE:
+	case CMD_DISGUISE:
+	case CMD_LOCK:
+	case CMD_UNLOCK:
+	case CMD_PICK:
+	case CMD_RENT:
+	case CMD_QUIT:
+	case CMD_CAMP:
 	case CMD_EQUIPMENT:
 	case CMD_INVENTORY:
 	case CMD_COLLECTOR:
@@ -2072,7 +2206,7 @@ void command_interpreter(P_char ch, char *argument)
 				    (cmd != CMD_RECLINE) && (cmd != CMD_EAT) &&
 				    (cmd != CMD_DRINK) && (cmd != CMD_MEDITATE) &&
 				    (cmd != CMD_RWC) && (cmd != CMD_ASSIMILATE) &&
-				    IS_AFFECTED2(exec_char, AFF2_CONCEALMENT))
+				    (cmd != CMD_TUPOR) && IS_AFFECTED2(exec_char, AFF2_CONCEALMENT))
 				{
 					send_to_char("You reappear, visible to all.\r\n",
 						     exec_char);
@@ -2222,7 +2356,10 @@ void command_interpreter(P_char ch, char *argument)
 						 cmd != CMD_GCC && cmd != CMD_HELP &&
 						 cmd != CMD_RWC && cmd != CMD_OUTPOST &&
 						 cmd != CMD_NEXUS && cmd != CMD_FRAGLIST &&
-						 cmd != CMD_DEFOREST && cmd != CMD_ARTIFACTS)
+						 cmd != CMD_DEFOREST && cmd != CMD_ARTIFACTS &&
+						 cmd != CMD_TUPOR &&
+						 !command_preserves_meditation(
+							 cmd, argument + begin + look_at))
 					{
 						// Advanced med allows you to continue meditating while doing the below commands.
 						// At 60 skill, you no longer have to worry about these commands.
@@ -2266,42 +2403,29 @@ void command_interpreter(P_char ch, char *argument)
 				return;
 			}
 
-			/* Record only a recognized command that survived parser, state,
-			 * permission, special-proc, and item-teleport gates.  The old comm.c
-			 * hook ran before pager/editor handling and treated rejected input as
-			 * player activity. */
-			if (cmd_info[cmd].req_confirm != 1 ||
-			    (exec_char->desc && (exec_char->desc->confirm_state == CONFIRM_DONE ||
-						 !strcmp(argument + begin + look_at, "confirm"))))
-				telemetry_record_recognized_command(ch, exec_char, cmd);
-
 			// Execute the bloody thing!!!
-			if ((cmd_info[cmd].req_confirm == 1) &&
-			    (IS_NPC(exec_char) ||
-			     (exec_char->desc->confirm_state == CONFIRM_DONE) ||
-			     !strcmp(argument + begin + look_at, "confirm")))
+			if (cmd_info[cmd].req_confirm == 1)
 			{
-				if (exec_char->desc)
-				{
-					exec_char->desc->confirm_state = CONFIRM_NONE;
-				}
-				command_confirm = TRUE;
-				((*cmd_info[cmd].command_pointer)(exec_char,
-								  argument + begin + look_at, cmd));
-			}
-			else if (cmd_info[cmd].req_confirm == 1)
-			{
-				if (exec_char->desc)
-				{
-					exec_char->desc->confirm_state = CONFIRM_AWAIT;
-				}
-				strcpy(exec_char->desc->last_command, argument);
-				command_confirm = FALSE;
+				if (!prepare_command_confirmation(exec_char, argument,
+								  argument + begin + look_at))
+					return;
+
+				/* Record only a confirmed command that survived parser, state,
+				 * permission, special-proc, and item-teleport gates. */
+				if (command_confirm)
+					telemetry_record_recognized_command(ch, exec_char, cmd);
+
 				((*cmd_info[cmd].command_pointer)(exec_char,
 								  argument + begin + look_at, cmd));
 			}
 			else
 			{
+				/* Record only a recognized command that survived parser, state,
+				 * permission, special-proc, and item-teleport gates.  The old comm.c
+				 * hook ran before pager/editor handling and treated rejected input as
+				 * player activity. */
+				telemetry_record_recognized_command(ch, exec_char, cmd);
+
 				if (exec_char->desc)
 				{
 					exec_char->desc->confirm_state = CONFIRM_NONE;
@@ -2658,8 +2782,7 @@ bool special(P_char ch, int cmd, char *arg)
 	{
 		if (ch->equipment[j] && (ch->equipment[j]->R_num >= 0) &&
 		    obj_index[ch->equipment[j]->R_num].func.obj)
-			if ((*obj_index[ch->equipment[j]->R_num].func.obj)(ch->equipment[j], ch,
-									   cmd, arg))
+			if (invoke_object_special(ch->equipment[j], ch, cmd, arg))
 				return (1);
 	}
 	/*
@@ -2668,7 +2791,7 @@ bool special(P_char ch, int cmd, char *arg)
 	for (i = ch->carrying; i; i = i->next_content)
 	{
 		if ((i->R_num >= 0) && obj_index[i->R_num].func.obj)
-			if ((*obj_index[i->R_num].func.obj)(i, ch, cmd, arg))
+			if (invoke_object_special(i, ch, cmd, arg))
 				return (1);
 	}
 	if (!ALONE(ch))
@@ -2708,7 +2831,7 @@ bool special(P_char ch, int cmd, char *arg)
 	 */
 	for (i = world[ch->in_room].contents; i; i = i->next_content)
 		if ((i->R_num >= 0) && obj_index[i->R_num].func.obj)
-			if ((*obj_index[i->R_num].func.obj)(i, ch, cmd, arg))
+			if (invoke_object_special(i, ch, cmd, arg))
 				return (1);
 
 	return (0);
@@ -3126,7 +3249,6 @@ void assign_command_pointers(void)
 	CMD_N(CMD_ENCRUST, STAT_NORMAL + POS_STANDING, do_encrust, 0, TRUE);
 	CMD_N(CMD_SPELLBIND, STAT_NORMAL + POS_STANDING, do_spellbind, 0, TRUE);
 	CMD_N(CMD_FIX, STAT_NORMAL + POS_STANDING, do_fix, 0, TRUE);
-	CMD_N(CMD_MIX, STAT_NORMAL + POS_STANDING, do_mix, 0, TRUE);
 	CMD_N(CMD_SMELT, STAT_NORMAL + POS_STANDING, do_smelt, 0, TRUE);
 	CMD_N(CMD_TEST_DESC, STAT_NORMAL + POS_PRONE, do_testdesc, LESSER_G, FALSE);
 	CMD_N(CMD_TESTCOLOR, STAT_NORMAL + POS_PRONE, do_testcolor, 0, FALSE);
@@ -3275,7 +3397,7 @@ void assign_command_pointers(void)
 	CMD_Y(CMD_VIS, STAT_DEAD + POS_PRONE, do_vis, 0, TRUE);
 	CMD_Y(CMD_WAKE, STAT_SLEEPING + POS_PRONE, do_wake, 0, TRUE);
 	//  CMD_Y(CMD_TUPOR, STAT_SLEEPING + POS_PRONE, do_tupor, 0, TRUE);
-	CMD_Y(CMD_TUPOR, STAT_SLEEPING + POS_PRONE, do_assimilate, 0, TRUE);
+	CMD_Y(CMD_TUPOR, STAT_SLEEPING + POS_PRONE, do_assimilate, 0, FALSE);
 	CMD_Y(CMD_WEATHER, STAT_RESTING + POS_PRONE, do_weather, 0, FALSE);
 	CMD_Y(CMD_WHIRLWIND, STAT_NORMAL + POS_STANDING, do_whirlwind, 0, TRUE);
 	CMD_Y(CMD_WIELD, STAT_RESTING + POS_PRONE, do_wield, 0, TRUE);
@@ -3330,6 +3452,7 @@ void assign_command_pointers(void)
 	CMD_Y(CMD_ITEMMANA, STAT_RESTING + POS_PRONE, do_itemmana, 0, FALSE);
 	CMD_GRT(CMD_PULSE, STAT_DEAD + POS_PRONE, do_pulse, LESSER_G);
 	CMD_Y(CMD_COLLECTOR, STAT_NORMAL + POS_STANDING, collector_service_command, 0, FALSE);
+	CMD_Y(CMD_DUMMY, STAT_DEAD + POS_PRONE, do_training_dummy, 0, FALSE);
 	CMD_N(CMD_POLL, STAT_NORMAL + POS_PRONE, do_poll, 30, FALSE);
 	CMD_GRT(CMD_NEWCHAR, STAT_DEAD + POS_PRONE, do_newchar, OVERLORD);
 

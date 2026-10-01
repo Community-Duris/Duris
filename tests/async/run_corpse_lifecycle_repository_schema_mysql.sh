@@ -44,6 +44,8 @@ done
 "${MYSQL[@]}" -e \
 	"CREATE DATABASE $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/bootstrap_multithread_safe.sql"
+"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0013_pet_restore_state.sql"
+"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0028_pet_custody.sql"
 
 mkdir -p "$ROOT/bin/tests"
 read -r -a MYSQL_CFLAGS <<< "$(mysql_config --cflags)"
@@ -64,6 +66,8 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread \
 	src/economy/collector_codec.c src/economy/collector_policy.c \
 	src/economy/collector_repository.c src/persistence/corpse_lifecycle_command.c \
 	src/persistence/corpse_lifecycle_repository.c \
+	src/persistence/player_death_restitution_command.c \
+	src/persistence/player_death_restitution_repository.c \
 	src/persistence/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
 	-o "$ROOT/bin/tests/corpse_lifecycle_repository_mysql_harness"
 "$ROOT/bin/tests/corpse_lifecycle_repository_mysql_harness"

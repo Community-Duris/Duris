@@ -16,15 +16,16 @@ constexpr size_t PLAYER_LOAD_NAME_MAX = 32;
 constexpr size_t PLAYER_LOAD_BASE_QUERY_MAX = 24;
 // Fixed-cost restitution table discovery and exact-state overlay, not per-item queries.
 constexpr size_t PLAYER_LOAD_RESTITUTION_QUERY_MAX = 2;
-constexpr size_t PLAYER_LOAD_QUERY_MAX =
-	PLAYER_LOAD_BASE_QUERY_MAX + PLAYER_LOAD_RESTITUTION_QUERY_MAX;
+constexpr size_t PLAYER_LOAD_PET_CUSTODY_QUERY_MAX = 1;
+constexpr size_t PLAYER_LOAD_QUERY_MAX = PLAYER_LOAD_BASE_QUERY_MAX +
+					 PLAYER_LOAD_RESTITUTION_QUERY_MAX +
+					 PLAYER_LOAD_PET_CUSTODY_QUERY_MAX;
 constexpr uint64_t PLAYER_LOAD_TIMEOUT_USEC = UINT64_C(3000000);
 constexpr size_t PLAYER_LOAD_ITEM_MAX = PLAYER_SNAPSHOT_MAX_OBJECTS;
 // A payload row the ownership ledger no longer backs is skipped rather than refusing the
-// load, and the next full save rewrites player_items from the snapshot, so a skipped row
-// is a deleted item. One such row is a data glitch worth absorbing; this many is a
-// systemic ledger fault, and refusing the load so staff can repair it loses nothing,
-// while skipping would destroy the inventory silently and for good.
+// load. The degraded login path never publishes a partial snapshot back over authoritative
+// custody, so this remains a bounded diagnostic/quarantine threshold rather than a login
+// admission gate.
 constexpr size_t PLAYER_LOAD_ITEM_SKIP_MAX = 32;
 constexpr size_t PLAYER_LOAD_ITEM_AFFECT_MAX = 4;
 constexpr size_t PLAYER_LOAD_ITEM_DESCRIPTION_MAX = 64;
@@ -61,6 +62,7 @@ enum player_load_item_override : uint16_t
 	PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR4 = UINT16_C(1) << 6,
 	PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR5 = UINT16_C(1) << 7,
 	PLAYER_LOAD_ITEM_OVERRIDE_AFFECTS = UINT16_C(1) << 8,
+	PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME = UINT16_C(1) << 9,
 };
 
 constexpr uint16_t PLAYER_LOAD_ITEM_OVERRIDE_ALL =
@@ -88,12 +90,15 @@ struct player_load_item_identity
 struct player_load_pet_identity
 {
 	uint64_t database_id = 0;
+	uint64_t pet_uid = 0;
+	uint64_t owner_revision = 0;
 	std::vector<player_load_item_identity> item_identities;
 };
 
 enum class player_load_outcome : uint8_t
 {
 	applied,
+	degraded,
 	not_found,
 	retryable_failure,
 	component_failure,
@@ -102,6 +107,18 @@ enum class player_load_outcome : uint8_t
 	cancelled,
 	stale,
 };
+
+// Secondary load domains may be unavailable or malformed without making the core player
+// identity unplayable. These bits travel with an admitted degraded result so the game thread
+// can quarantine the affected runtime state and prevent a partial save from overwriting the
+// durable source of truth.
+constexpr uint32_t PLAYER_LOAD_DEGRADED_COMPONENTS = UINT32_C(1) << 0;
+constexpr uint32_t PLAYER_LOAD_DEGRADED_ITEMS = UINT32_C(1) << 1;
+constexpr uint32_t PLAYER_LOAD_DEGRADED_PETS = UINT32_C(1) << 2;
+constexpr uint32_t PLAYER_LOAD_DEGRADED_GAMEPLAY = UINT32_C(1) << 3;
+constexpr uint32_t PLAYER_LOAD_DEGRADED_BANK = UINT32_C(1) << 4;
+constexpr uint32_t PLAYER_LOAD_DEGRADED_RECOVERY = UINT32_C(1) << 5;
+constexpr uint32_t PLAYER_LOAD_DEGRADED_PIPELINE = UINT32_C(1) << 6;
 
 struct player_load_request
 {
@@ -143,11 +160,13 @@ struct player_load_result
 	uint64_t request_id = 0;
 	int32_t pid = 0;
 	player_load_outcome outcome = player_load_outcome::component_failure;
+	uint32_t degraded_components = 0;
 	unsigned int error_code = 0;
 	player_snapshot snapshot = {};
 	player_load_domain_state domains = {};
 	uint64_t item_owner_revision = 0;
 	size_t authoritative_item_count = 0;
+	size_t authoritative_pet_item_count = 0;
 	size_t stale_item_rows = 0;
 	// Authoritative custody rows for this player whose payload row is gone. The item
 	// cannot be rebuilt, but one such row must not make the character unloadable.

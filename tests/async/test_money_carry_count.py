@@ -54,6 +54,7 @@ struct synchronous_item { uint64_t uid; P_obj object; bool scrap;
 struct bulk_get_state {
     std::vector<std::string> rejections;
     bool failed = false;
+    bool count_limit_reported = false;
     std::vector<uint64_t> durable_items;
     std::vector<synchronous_item> synchronous_items;
 };
@@ -78,10 +79,10 @@ bool do_get_finalize_container_item_or_reject(P_char, P_char, P_obj, P_obj obj,
     int &, bool &, bool, int, int, int, const char *, const char *, bool &fail)
 { if (!obj->takeable) { fail = true; return false; } ++finalized; return true; }
 bool isname(const char *filter, const char *name) { return !strcmp(filter, name); }
-bool do_get_obj_is_takeable(P_char, P_obj obj) { return obj->takeable; }
+bool item_command_object_is_takeable(P_char, P_obj obj) { return obj->takeable; }
 bool account_bound_reward_owner(P_char, P_obj) { return true; }
 bool checkgetput(P_char, P_obj) { return false; }
-bool uses_generic_item_ownership(P_obj obj) { return obj->type != ITEM_MONEY; }
+bool item_command_uses_durable_ownership(P_obj obj) { return obj->type != ITEM_MONEY; }
 void reject_bulk_get_object(bulk_get_state &state, P_obj, const char *) { state.failed = true; }
 '''
 
@@ -119,10 +120,17 @@ int main()
                         filter, local, carried, weight, state, stop);
                     assert(accepted == (!filter && count < actor.cap));
                     assert(!stop);
+                    if (!filter && count >= actor.cap) {
+                        assert(!select_bulk_get_item(&actor, &bag, &ordinary,
+                            filter, local, carried, weight, state, stop));
+                        assert(state.rejections.size() == 1);
+                    }
                     const int before_coins = carried;
                     assert(select_bulk_get_item(&actor, &bag, &money, filter,
                         local, carried, weight, state, stop));
                     assert(carried == before_coins);
+                    if (filter)
+                        assert(state.rejections.empty());
                     assert(state.synchronous_items.size() == 1);
                     assert(state.durable_items.size() == (accepted ? 1u : 0u));
                 }

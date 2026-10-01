@@ -15,6 +15,8 @@ HARNESS = r'''
 #include <climits>
 #include <iostream>
 
+bool training_dummy_capture_target_allowed(P_char) { return true; }
+
 index_data indexes[1] = {};
 P_index obj_index = indexes;
 P_index mob_index = indexes;

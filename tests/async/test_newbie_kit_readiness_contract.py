@@ -22,9 +22,19 @@ newbie_kit = newbie_kit.split("/* check for a legal player name", 1)[0]
 assert "item_creation_grant_defer(" in newbie_kit
 assert "item_creation_grant_prepare_pulse();" in comm
 
-command_gate = comm.split("casting_input =", 1)[1].split("PROFILE_END(commands)", 1)[0]
-assert contains(command_gate, "item_creation_grant_blocks_commands(t_ch)")
-assert command_gate.index("!creation_grant_input") < command_gate.index("get_from_q(")
+# The command gate is now part of the named session-input decision boundary;
+# keep the readiness check tied to that phase rather than the old monolithic
+# command sweep.
+command_gate = comm.split("static session_input_route select_session_input", 1)[1].split(
+    "static void dispatch_session_input", 1
+)[0]
+assert contains(command_gate, "item_creation_grant_blocks_commands(character)")
+assert command_gate.index("creation_grant_input") < command_gate.index(
+    "get_casting_cmd_from_q("
+)
+assert command_gate.index("creation_grant_input") < command_gate.index(
+    "get_playing_cmd_from_q("
+)
 
 output_gate = comm.split("int process_output(P_desc t)", 1)[1].split(
     "int process_input(P_desc t)", 1

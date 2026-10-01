@@ -1,11 +1,136 @@
 &+W======================================================================&n
 &+Y                           DURIS PLAYER NEWS&n
 &+W======================================================================&n
-&+WUpdated: September 14, 2026&n
+&+WUpdated: September 21, 2026&n
 
-Welcome back! This catch-up covers December 14, 2025 to September 14, 2026.
+Welcome back! This catch-up covers December 14, 2025 to September 21, 2026.
 The newest changes come first. Each month has short sections so you can
 find what matters to your character. Later updates replace older rules.
+
+&+R09/15/26 - 09/21/26&n &+L-&n &+YKingdom works, quest records, practice targets & more!&n
+&+W----------------------------------------------------------------------&n
+
+&+CKingdom workshops and made-to-measure gear&n
+&+Y-&n Kingdom leaders can expand a main guildhall with a &+Rforge&n, &+Mloom&n,
+  &+Cjeweller&n and &+Yguild store&n. Use
+  &+C'kingdom build <forge|loom|jeweller|store> <direction>'&n.
+&+Y-&n Each room costs &+Y20,000 platinum&n from the guild treasury. A hall may
+  have &+Yone&n of each, and a store needs at least one workshop first.
+&+Y-&n The forge makes weapons and metal armour, the loom makes cloth and
+  leather pieces, and the jeweller makes rings, bracelets and necklaces.
+&+Y-&n In the store, &+C'list'&n shows the pieces your workshops can make and
+  &+C'buy <item> [variant]'&n orders one. Only full members may shop, and the
+  realm must be active, out of arrears and able to supply every material.
+&+Y-&n Every piece is fitted to its buyer's level, up to &+Ylevel 56&n. Prices,
+  weapon dice, armour and stats scale with that level; a level-&+Y56&n
+  longsword, for example, costs &+Y87 platinum&n, &+Y34 mineral&n and
+  &+Y14 wood&n on the shipped settings.
+&+Y-&n Store gear has solid re-equipping stats but no procs or magical effect
+  flags. It may be carried, dropped, looted and sold, but &+Wonly the
+  original buyer may wear it&n.
+&+Y-&n Alliance tribute owed now survives guild saves instead of silently
+  resetting.
+
+&+CZone-story achievements, rankings and practice targets&n
+&+Y-&n Eligible static zone, story and lore quest completions are now recorded
+  for each character and survive logout and restart. Repeating the same
+  quest does not inflate your distinct completion total.
+&+Y-&n Mortal group members in the same room when an eligible quest is completed
+  receive their own completion credit too.
+&+Y-&n Use &+C'achievements zones'&n for your private area summary and
+  &+C'achievements zone <area>'&n for a progress bar and the
+  &+Y25%&n, &+Y50%&n, &+Y75%&n and &+G100%&n milestones in one area.
+&+Y-&n Use &+C'leaderboard quests [page]'&n to compare worldwide totals. It shows
+  each eligible mortal's exact unique count and percentage to
+  &+Ytwo decimal places&n; public standings may be up to &+Y12 hours&n behind.
+&+Y-&n A profiled &+Ctraining dummy&n now waits in every distinct character-
+  creation room. It stays at full health, never retaliates and records all
+  damage that lands, so attacks and single-target spells can be tested safely.
+&+Y-&n Type &+C'dummy report'&n to see its level, race, class, armour, saves and
+  accumulated damage. Type &+C'dummy reset'&n to clear the meter for a fresh
+  test.
+
+&+CMagic, meditation and class fixes&n
+&+Y-&n Meditation now continues while you use passive commands such as
+  &+C'look'&n, &+C'exits'&n, &+C'inventory'&n, &+C'equipment'&n, &+C'score'&n,
+  &+C'weather'&n, &+C'who'&n, &+C'read'&n and display-only &+C'group'&n.
+  Coin-only &+C'put'&n commands also leave the trance intact.
+&+Y-&n &+C'tupor'&n now uses the normal spell-slot recovery path, begins with your
+  highest incomplete circle and gives clear feedback if it is already active.
+  Waking or changing posture cancels it without the old &+Y2-second&n shock;
+  hostile disruption still imposes a brief recovery.
+&+Y-&n Rejected &+CElemental Aura&n casts now explain whether another aura or the
+  room's terrain is the problem, and fail before consuming mana or a prepared
+  spell.
+&+Y-&n &+CWind Blade&n is now delivered before the game tries to wield it. If your
+  weapon slot changes while it forms, the blade remains safely in inventory.
+&+Y-&n Dragoon conjured weapons apply their &+Y10%&n life cost only after the weapon
+  arrives. Summoned Books and Totems keep the old copy unless the replacement
+  is successfully delivered.
+&+Y-&n &+RDread Blade&n victims no longer keep its temporary &+Y+15 spell save&n
+  after the dark spell resolves, and vampiric hit points above maximum now
+  decay gradually instead of snapping straight back to maximum.
+&+Y-&n Paladin aura status now clears when its last linked aura breaks.
+  &+C'Unspecialize'&n also stops immediately when you have no specialization,
+  so it cannot spend &+Y10 epic points&n when there is nothing to remove.
+
+&+CItems, shops, companions and recovery&n
+&+Y-&n Owned raised followers can now accept ordinary durable equipment and give
+  it back safely, including backpacks with all their contents. Their carried
+  and worn gear stays with them through saves, reconnects and restarts.
+  Ordinary charmed creatures still refuse these durable transfers.
+&+Y-&n Produced shop items can be bought in batches of &+Y1 to 50&n with
+  &+C'buy <item> <container> [amount]'&n. Each item is paid for and delivered
+  in order, with clear totals if only part of a batch can be completed.
+&+Y-&n Commands that depend on an item now wait for an earlier item movement to
+  finish. Rapid sequences such as &+C'get pick bag'&n followed by
+  &+C'repair pick'&n no longer fail because the item is still arriving.
+&+Y-&n &+C'Empty'&n now moves a container's complete nested contents through the
+  durable transfer path, keeping the source intact if the move cannot finish.
+&+Y-&n Weapons lost to a combat fumble, Fumble Gauntlets or a floor-dropping
+  critical disarm now reach the room only after ownership follows them. If
+  that move is refused, the weapon remains safely in your inventory.
+&+Y-&n Corpse coin looting can finish after a successful &+C'flee'&n when the exact
+  corpse and chosen pile remain in the original room. A full inventory now
+  produces &+Yone&n carry-limit warning per bulk haul instead of one per item.
+&+Y-&n Saved ground items, including nested containers, now survive repeated
+  server restarts instead of disappearing after the first recovery boot.
+&+Y-&n If approved recovery belongs to a character that has since been deleted,
+  the belongings can be delivered to the surviving account's locker in a
+  bag named for that character. A login banner points the account to it.
+
+&+CWorld services, ships and travel&n
+&+Y-&n The &+Llocal herb dealer&n is trading again in &+Yfour&n mortal locations:
+  &+MLlzazan Ghetto of Arachdrathos&n, &+LNa&+rx&n,
+  &+LShady &+GGrove&n and &+WTharnadia&n.
+&+Y-&n Mounted players can no longer bypass player-only gatekeepers because
+  the mount moved first. This repairs gates in
+  &+LThe &+rSc&+Ro&+Yrc&+Rh&+red&+L Valley&n, &+gGhore&n,
+  &+bBraddistock &+WMansion&n, The &+LShadow &+gForest&n, the Clawed Caverns,
+  &+wVillage of &+ySplit Shield&n, &+CJotunheim&n and &+gVerzanan&n.
+&+Y-&n &+bThe Sai&+Blor's Tat&+btoo&n achievement and its free-sloop reward
+  now unlock at &+Ylevel 20&n instead of &+Ylevel 30&n. Existing ship owners
+  receive &+Y100 platinum&n instead.
+&+Y-&n Hull purchases now accept colored ship names by visible length. Names may
+  contain up to &+Y20 visible characters&n without color codes exhausting the
+  purchase buffer.
+&+Y-&n The interactive &+CPower Atlas&n now includes all &+Y56&n legal Human and Orc
+  multiclass pairings, compared at levels &+Y21&n, &+Y31&n, &+Y46&n,
+  &+Y50&n and &+Y56&n. Browse it at:
+  &+Chttps://community-duris.github.io/Duris/power-atlas/&n
+
+&+CLogin, clients and everyday stability&n
+&+Y-&n Login and reconnect are more resilient: a temporary problem loading
+  optional belongings, pets, bank data or history no longer strands an
+  otherwise valid character. Unresolved state stays protected from overwrite.
+&+Y-&n GMCP on/off feedback now matches the setting you chose, character-level
+  opt-out applies to broadcast channels, and an empty prompt no longer leaves
+  a stale prompt pending in supporting clients.
+&+Y-&n Waking now returns you to a consistent resting posture. If an old mixed
+  standing/resting state appears, &+C'rest'&n or &+C'stand'&n repairs it cleanly.
+&+Y-&n Racewar side-change cooldowns are now enforced consistently during native
+  and web character creation, selection and reconnect, closing paths that
+  could admit a mortal before the cooldown was checked and saved.
 
 &+R09/07/26 - 09/14/26 - Kingdoms, magic tune-ups, lag-free play & more!&n
 &+W----------------------------------------------------------------------&n
@@ -918,4 +1043,3 @@ Zone Updates:
 &+L  have also been re-arranged. Type help speclist in game.&n
 
 &+WWe hope you all enjoy this new wipe and that there will be lots of action!&n
-

@@ -300,25 +300,47 @@ int main()
 
 comm = (SRC / "net" / "comm.c").read_text()
 makefile = (SRC / "Makefile").read_text()
-dispatch_start = index(comm, "if (point->showstr_count)")
-dispatch_end = index(comm, "const uint64_t command_sweep_us", dispatch_start)
+dispatch_start = index(comm, "static void dispatch_session_input")
+dispatch_end = index(comm, "static bool run_connection_phase", dispatch_start)
 dispatch = comm[dispatch_start:dispatch_end]
 
-assert contains(dispatch, "show_string(point, comm);")
-assert contains(dispatch, "string_add(point, comm);")
-assert contains(dispatch, "dispatch_playing_command(t_ch, comm);")
-assert contains(dispatch, "nanny(point, comm);")
+assert contains(dispatch, "show_string(descriptor, input);")
+assert contains(dispatch, "string_add(descriptor, input);")
+assert contains(dispatch, "dispatch_playing_command(character, input);")
+assert contains(dispatch, "nanny(descriptor, input);")
 assert contains(dispatch, "COMMAND_LATENCY_PAGER")
 assert contains(dispatch, "COMMAND_LATENCY_EDITOR")
 assert contains(dispatch, "COMMAND_LATENCY_PLAYING")
 assert contains(dispatch, "COMMAND_LATENCY_NANNY")
 assert not contains(dispatch, "descriptor_latency.finish();")
-assert index(comm, "descriptor_latency.finish();") < index(comm, "casting_input =", index(comm, "/* process_commands */"))
+session_start = index(comm, "static void run_session_input_phase")
+session_end = index(comm, "static void run_output_phase", session_start)
+session = comm[session_start:session_end]
+assert contains(session, "session_input_authentication_pending(point)")
+assert contains(session, "repair_session_command_gate(t_ch)")
+assert contains(session, "select_session_input(point, t_ch, comm)")
+assert contains(session, "dispatch_session_input(point, t_ch, comm, route, &command_latency)")
+assert index(session, "descriptor_latency.finish();") < index(session, "repair_session_command_gate")
 assert contains(comm, "COMMAND_LATENCY_SSL")
 assert contains(comm, "COMMAND_LATENCY_DESCRIPTOR")
 assert contains(comm, "command_latency_report_throttled(&command_report_state, &command_latency,")
+loop_start = index(comm, "while (!shutdownflag)")
+loop_end = index(comm, "\n\tif (_copyover)", loop_start)
+loop = comm[loop_start:loop_end]
+phase_calls = [
+    "run_connection_phase(context)",
+    "run_session_input_phase(context)",
+    "run_output_phase(context)",
+    "run_event_phase(context)",
+    "run_recurring_persistence_phase(context)",
+    "run_activity_phase(context)",
+    "run_combat_phase(context)",
+    "run_pulse_reset_phase(context)",
+]
+phase_positions = [index(loop, call) for call in phase_calls]
+assert phase_positions == sorted(phase_positions)
 reporting_start = index(comm, "command_latency_log_buffer command_report")
-reporting_end = index(comm, "PROFILE_START(prompts)", reporting_start)
+reporting_end = index(comm, "static void run_output_phase", reporting_start)
 reporting = comm[reporting_start:reporting_end]
 assert contains(reporting, 'logit(LOG_STATUS, "%s", command_report.text);')
 assert not contains(reporting, "statuslog(")

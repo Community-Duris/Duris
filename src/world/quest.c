@@ -19,6 +19,8 @@
 #include <glob.h>
 #include "magic/spells.h"
 #include "sql/sql.h"
+#include "world/zone_story_quest_runtime.h"
+#include <time.h>
 
 /* external variables */
 
@@ -532,6 +534,15 @@ int quester(P_char ch, P_char pl, int cmd, char *arg)
 		{
 			if (quest_completion(qcp, ch, pl))
 			{
+				const int room_vnum =
+					(world && pl->in_room >= 0) ? world[pl->in_room].number : 0;
+				std::string tracking_error;
+				if (!zone_story_quest_runtime::record_legacy_completion(
+					    pl, qcp, room_vnum, static_cast<int64_t>(time(NULL)),
+					    &tracking_error))
+					logit(LOG_DEBUG,
+					      "zone-story quest completion was not recorded: %s",
+					      tracking_error.c_str());
 				give_reward(qcp, ch, pl);
 				if (qcp->disappear)
 				{ /* mob disappear after this quest */

@@ -44,7 +44,12 @@ if not match:
     checks.append(("game_loop present", False))
     loop = ""
 else:
-    loop = match.group(0)
+    # The pulse body is now owned by named helpers.  Keep the top-level
+    # game_loop check, but inspect the contiguous phase/orchestration region
+    # for the measurements that used to live inside that function.
+    phase_start = comm.index("static bool run_connection_phase")
+    phase_end = comm.index("general utility stuff", match.end())
+    loop = comm[phase_start:phase_end]
 
 if loop:
     checks.append((

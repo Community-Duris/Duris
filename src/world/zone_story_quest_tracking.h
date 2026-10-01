@@ -29,6 +29,12 @@ struct quest_definition
 	bool eligible_for_zone_completion = false;
 	bool repeatable = false;
 	uint32_t content_revision = 0;
+	/* Optional player-facing metadata.  Stable identities and persistence use
+	 * the fields above; these labels may change without changing earned credit. */
+	std::string display_name;
+	std::string giver_name;
+	std::string zone_name;
+	std::string objective;
 };
 
 struct completion_transaction

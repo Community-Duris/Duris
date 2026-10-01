@@ -177,4 +177,6 @@ jobs:
             scripts/backup_pfiles.sh \
             scripts/clear-redis.sh \
             scripts/cycle_mud.sh \
-            scripts/start_mud.sh
+            scripts/start_mud.sh \
+            migrations/repair_stale_pet_custody.sh \
+            tests/async/run_pet_repository_mysql.sh

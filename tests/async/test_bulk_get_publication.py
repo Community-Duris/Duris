@@ -80,9 +80,15 @@ enum class item_transfer_reason { unknown };
 static std::string output;
 static bool isname(const char *filter, const char *name) { return !strcmp(filter, name); }
 static bool account_bound_reward_owner(P_char, P_obj) { return false; }
-static bool do_get_obj_is_takeable(P_char, P_obj object) { return object->weight >= 0; }
+static bool item_command_object_is_takeable(P_char, P_obj object)
+{
+    return object->weight >= 0;
+}
 static bool checkgetput(P_char, P_obj) { return false; }
-static bool uses_generic_item_ownership(P_obj object) { return object->type != ITEM_MONEY; }
+static bool item_command_uses_durable_ownership(P_obj object)
+{
+    return object->type != ITEM_MONEY;
+}
 static void send_to_char(const char *message, P_char) { output += message; }
 '''
 

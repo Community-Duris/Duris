@@ -46,6 +46,22 @@ static std::map<int, int> dirty, commands;
 static std::string fixture_messages;
 static bool recover_creation = false;
 static obj_data recovered_creation = {};
+static int grant_callback_count = 0;
+static bool grant_callback_committed = false;
+static uint64_t grant_callback_uid = 0;
+static P_obj grant_callback_successor = nullptr;
+static void grant_callback(P_char actor, uint64_t item_uid, bool committed, unsigned int)
+{
+    ++grant_callback_count;
+    grant_callback_committed = committed;
+    grant_callback_uid = item_uid;
+    if (committed && grant_callback_successor)
+    {
+        P_obj successor = grant_callback_successor;
+        grant_callback_successor = nullptr;
+        assert(item_creation_grant_submit_to_player(actor, successor, actor));
+    }
+}
 void logit(const char *, const char *, ...) {}
 void statuslog(int, const char *, ...) {}
 void persistence_alert(int, const char *, const char *, const char *, const char *, const char *,
@@ -133,6 +149,17 @@ void extract_obj(P_obj obj, int)
     *at = obj->next;
     obj->next = nullptr;
 }
+critical_submit_result critical_command_coordinator_submit_for_publication(critical_command)
+{
+    assert(false && "default caller unexpectedly requested publication retention");
+    return critical_submit_result::unavailable;
+}
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &)
+{
+    assert(false && "default caller unexpectedly acknowledged publication");
+    return false;
+}
+
 critical_submit_result critical_command_coordinator_submit(critical_command command)
 {
     if (submit_result == critical_submit_result::accepted) submitted.push_back(std::move(command));
@@ -183,6 +210,7 @@ struct fixture
         for (P_obj obj : {&bag, &food, &extra, &child})
         {
             obj->obj_uid = id++; obj->R_num = 0; obj->loc_p = LOC_NOWHERE;
+            SET_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
             obj->next = object_list; object_list = obj;
         }
         bag.type = ITEM_CONTAINER;
@@ -220,6 +248,34 @@ static void deliver(const critical_completion &completion)
 }
 int main()
 {
+    // A final-publication callback runs exactly once and may safely enqueue the
+    // next creation after the completed request releases its queue slot.
+    {
+        fixture f;
+        grant_callback_count = 0; grant_callback_committed = false;
+        grant_callback_uid = 0; grant_callback_successor = &f.extra;
+        assert(item_creation_grant_submit_to_player_with_completion(
+            &f.actor, &f.bag, &f.actor, nullptr, grant_callback));
+        deliver(next_completion(critical_apply_outcome::applied));
+        assert(grant_callback_count == 1 && grant_callback_committed);
+        assert(grant_callback_uid == 100 && publications[100] == 1);
+        assert(submitted.size() == 1);
+        deliver(next_completion(critical_apply_outcome::applied));
+        assert(publications[102] == 1 && grant_callback_count == 1);
+    }
+    // Terminal ownership failure discards the detached item before reporting
+    // failure, allowing a caller to refund payment without exposing the item.
+    {
+        fixture f;
+        grant_callback_count = 0; grant_callback_committed = true;
+        grant_callback_uid = 0; grant_callback_successor = nullptr;
+        assert(item_creation_grant_submit_to_player_with_completion(
+            &f.actor, &f.bag, &f.actor, nullptr, grant_callback));
+        deliver(next_completion(critical_apply_outcome::terminal_failure));
+        assert(grant_callback_count == 1 && !grant_callback_committed);
+        assert(grant_callback_uid == 100 && extractions[100] == 1);
+        assert(publications[100] == 0 && !item_movement_transaction_player_busy(&f.actor));
+    }
     // A timed reward during preparation remains independent of the atomic kit.
     // It survives both successful publication and a terminal kit rejection.
     for (bool commit : {false, true})
@@ -403,7 +459,8 @@ int main()
         assert(!item_movement_transaction_player_busy(&f.actor));
         assert(f.bag.extra_flags == ITEM_TRANSIENT);
         // Capture a worn transient and a carried weapon, with an independently
-        // no-rent transient present. Only no-rent is filtered from the save.
+        // no-rent transient present. Durable custody wins over the lossy no-rent
+        // filter so every authoritative payload remains reconstructible.
         obj_from_char(&f.bag);
         f.bag.loc_p = LOC_WORN;
         f.bag.loc.wearing = &f.actor;
@@ -411,14 +468,16 @@ int main()
         std::vector<player_item_snapshot> saved, decoded;
         assert(player_item_snapshot_list_capture(&f.actor, true, true, true, &saved, nullptr) ==
                player_snapshot_capture_result::ok);
-        assert(saved.size() == 2 && saved[0].object_uid == 100);
+        assert(saved.size() == 3 && saved[0].object_uid == 100);
         assert(saved[0].extra_flags == ITEM_TRANSIENT && saved[0].equipment_slot == 1);
-        assert(saved[1].object_uid == 101 && saved[1].equipment_slot == 0);
+        assert(saved[1].object_uid == 102 && saved[1].equipment_slot == 0);
+        assert(saved[1].extra_flags == (ITEM_TRANSIENT | ITEM_NORENT));
+        assert(saved[2].object_uid == 101 && saved[2].equipment_slot == 0);
         std::vector<uint8_t> bytes;
         assert(player_item_snapshot_list_encode(saved, &bytes) == player_snapshot_codec_result::ok);
         assert(player_item_snapshot_list_decode(bytes.data(), bytes.size(), &decoded) ==
                player_snapshot_codec_result::ok);
-        assert(decoded.size() == 2 && decoded[0].object_uid == 100);
+        assert(decoded.size() == 3 && decoded[0].object_uid == 100);
         assert(decoded[0].extra_flags == ITEM_TRANSIENT && decoded[0].equipment_slot == 1);
         for (const auto &item : decoded)
         {

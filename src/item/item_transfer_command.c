@@ -1,5 +1,7 @@
 #include "item/item_transfer_command.h"
 
+#include "player/player_snapshot_codec.h"
+
 #include <openssl/sha.h>
 
 #include <algorithm>
@@ -332,6 +334,8 @@ critical_entity_type entity_type_for_owner(item_owner_type type)
 		return critical_entity_type::shopkeeper;
 	case item_owner_type::collector:
 		return critical_entity_type::collector;
+	case item_owner_type::pet:
+		return critical_entity_type::pet;
 	default:
 		return critical_entity_type::system;
 	}
@@ -360,6 +364,13 @@ bool valid_reason(item_transfer_reason reason)
 	case item_transfer_reason::shop_sell:
 	case item_transfer_reason::mobile_claim:
 	case item_transfer_reason::death_restitution:
+	case item_transfer_reason::corpse_raise_pet:
+	case item_transfer_reason::pet_give:
+	case item_transfer_reason::pet_return:
+	case item_transfer_reason::trusted_steal:
+	case item_transfer_reason::craft:
+	case item_transfer_reason::soulbind:
+	case item_transfer_reason::slip:
 		return true;
 	case item_transfer_reason::collector_collect:
 	case item_transfer_reason::collector_buyback:
@@ -368,6 +379,44 @@ bool valid_reason(item_transfer_reason reason)
 		return false;
 	}
 	return false;
+}
+
+bool decode_craft_outputs(const item_transfer_payload &payload,
+			  std::vector<player_item_snapshot> *outputs)
+{
+	if (!outputs || payload.reason != item_transfer_reason::craft ||
+	    payload.item_blob_size > payload.item_blob.size())
+		return false;
+	outputs->clear();
+	if (!payload.item_blob_size)
+		return true;
+	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					     outputs) != player_snapshot_codec_result::ok ||
+	    outputs->empty() || outputs->size() > ITEM_TRANSFER_MAX_ITEMS)
+		return false;
+	std::vector<uint64_t> uids;
+	try
+	{
+		uids.reserve(outputs->size());
+		for (size_t index = 0; index < outputs->size(); ++index)
+		{
+			const player_item_snapshot &output = (*outputs)[index];
+			if (!output.object_uid || output.vnum <= 0 ||
+			    output.parent_index >= static_cast<int32_t>(index) ||
+			    output.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    (index == 0 && output.object_uid != payload.selected_item_uid) ||
+			    (index && output.parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+			     output.object_uid == payload.selected_item_uid))
+				return false;
+			uids.push_back(output.object_uid);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	std::sort(uids.begin(), uids.end());
+	return std::adjacent_find(uids.begin(), uids.end()) == uids.end();
 }
 
 const item_transfer_entry *find_payload_item(const item_transfer_payload &payload,
@@ -384,6 +433,19 @@ const item_transfer_entry *find_payload_item(const item_transfer_payload &payloa
 
 uint64_t selected_root_for(const item_transfer_payload &payload, uint64_t item_uid)
 {
+	if (payload.reason == item_transfer_reason::craft)
+	{
+		const item_transfer_entry *entry = find_payload_item(payload, item_uid);
+		for (size_t depth = 0; entry && depth <= payload.item_count; ++depth)
+		{
+			const item_transfer_entry *parent =
+				find_payload_item(payload, entry->parent_item_uid);
+			if (!parent)
+				return entry->item_uid;
+			entry = parent;
+		}
+		return 0;
+	}
 	if (!payload.multi_root)
 		return payload.selected_item_uid ? payload.selected_item_uid :
 						   payload.items[0].root_item_uid;
@@ -433,6 +495,12 @@ bool target_topology_for(const item_transfer_payload &payload, uint64_t item_uid
 	const uint64_t selected_root = selected_root_for(payload, item_uid);
 	if (!entry || !selected_root || !root_item_uid || !parent_item_uid)
 		return false;
+	if (payload.reason == item_transfer_reason::craft)
+	{
+		*root_item_uid = entry->root_item_uid;
+		*parent_item_uid = entry->parent_item_uid;
+		return true;
+	}
 	*root_item_uid = payload.target_parent_item_uid ? payload.target_root_item_uid :
 							  selected_root;
 	*parent_item_uid = item_uid == selected_root ? payload.target_parent_item_uid :
@@ -454,14 +522,78 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 		return false;
 	const bool corpse_create = payload.reason == item_transfer_reason::corpse_create;
 	const bool corpse_loot = payload.reason == item_transfer_reason::corpse_loot;
-	const bool corpse_context_required = payload_version >=
-						     ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
-					     (corpse_create || corpse_loot);
+	const bool corpse_raise_pet = payload.reason == item_transfer_reason::corpse_raise_pet;
+	const bool world_corpse_raise_pet =
+		corpse_raise_pet && payload.from_owner.type == item_owner_type::room &&
+		payload.from_owner.id && payload.from_owner.id <= INT32_MAX &&
+		!payload.from_owner.context_id && payload.to_owner.type == item_owner_type::pet &&
+		payload.to_owner.id && payload.to_owner.context_id &&
+		payload.to_owner.context_id <= INT32_MAX && payload.multi_root &&
+		!payload.target_root_item_uid && !payload.target_parent_item_uid &&
+		static_cast<uint64_t>(payload.reason_id) == payload.to_owner.id;
+	const bool pet_give = payload.reason == item_transfer_reason::pet_give;
+	const bool pet_return = payload.reason == item_transfer_reason::pet_return;
+	const bool trusted_steal = payload.reason == item_transfer_reason::trusted_steal;
+	const bool craft = payload.reason == item_transfer_reason::craft;
+	const bool soulbind = payload.reason == item_transfer_reason::soulbind;
+	const bool slip = payload.reason == item_transfer_reason::slip;
+	const bool player_transfer = trusted_steal || soulbind || slip;
+	if (player_transfer &&
+	    (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
+	     payload.from_owner.type != item_owner_type::player ||
+	     payload.to_owner.type != item_owner_type::player || !payload.from_owner.id ||
+	     !payload.to_owner.id || payload.from_owner.id > INT32_MAX ||
+	     payload.to_owner.id > INT32_MAX || payload.from_owner.context_id ||
+	     payload.to_owner.context_id || payload.from_owner.id == payload.to_owner.id ||
+	     payload.multi_root || payload.target_parent_item_uid ||
+	     payload.reason_id != static_cast<int64_t>(payload.from_owner.id)))
+		return false;
+	if (craft)
+	{
+		std::vector<player_item_snapshot> outputs;
+		if (payload_version < ITEM_TRANSFER_BATCH_PAYLOAD_VERSION ||
+		    payload.from_owner.type != item_owner_type::player ||
+		    payload.to_owner.type != item_owner_type::player ||
+		    !item_owner_identity_equal(payload.from_owner, payload.to_owner) ||
+		    !payload.from_owner.id || payload.from_owner.context_id ||
+		    payload.to_owner.context_id || !payload.multi_root ||
+		    !payload.selected_item_uid || payload.target_root_item_uid ||
+		    payload.target_parent_item_uid || payload.expected_target_parent_revision ||
+		    !decode_craft_outputs(payload, &outputs) ||
+		    (outputs.empty() && !find_payload_item(payload, payload.selected_item_uid)) ||
+		    payload.item_count + outputs.size() > CRITICAL_COMMAND_MAX_KEYS - 2)
+			return false;
+		for (const player_item_snapshot &output : outputs)
+			for (size_t index = 0; index < payload.item_count; ++index)
+				if (output.object_uid == payload.items[index].item_uid)
+					return false;
+	}
+	// Other commands do not update the pet's physical item projection.
+	if ((payload.from_owner.type == item_owner_type::pet ||
+	     payload.to_owner.type == item_owner_type::pet) &&
+	    !pet_give && !pet_return && !corpse_raise_pet)
+		return false;
+	if ((pet_give && (payload.from_owner.type != item_owner_type::player ||
+			  payload.to_owner.type != item_owner_type::pet ||
+			  payload.from_owner.id != payload.to_owner.context_id ||
+			  payload.reason_id != static_cast<int64_t>(payload.to_owner.id))) ||
+	    (pet_return && (payload.from_owner.type != item_owner_type::pet ||
+			    payload.to_owner.type != item_owner_type::player ||
+			    payload.from_owner.context_id != payload.to_owner.id ||
+			    payload.reason_id != static_cast<int64_t>(payload.from_owner.id))) ||
+	    ((pet_give || pet_return) && (payload.multi_root || payload.target_parent_item_uid)))
+		return false;
+	const bool corpse_context_required =
+		payload_version >= ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
+		(corpse_create || corpse_loot || (corpse_raise_pet && !world_corpse_raise_pet));
 	if (corpse_context_required != payload.corpse.present ||
 	    (corpse_create && (payload.from_owner.type != item_owner_type::player ||
 			       payload.to_owner.type != item_owner_type::corpse)) ||
 	    (corpse_loot && (payload.from_owner.type != item_owner_type::corpse ||
-			     payload.to_owner.type != item_owner_type::player)))
+			     payload.to_owner.type != item_owner_type::player)) ||
+	    (corpse_raise_pet && !world_corpse_raise_pet &&
+	     (payload.from_owner.type != item_owner_type::corpse ||
+	      payload.to_owner.type != item_owner_type::pet)))
 		return false;
 	if (payload.corpse.present)
 	{
@@ -499,18 +631,21 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 		return false;
 	if (payload.multi_root)
 	{
-		const bool batch_reason = payload.reason == item_transfer_reason::player_get ||
-					  payload.reason == item_transfer_reason::player_drop ||
-					  payload.reason == item_transfer_reason::player_put ||
-					  payload.reason == item_transfer_reason::locker_deposit ||
-					  payload.reason == item_transfer_reason::locker_withdraw ||
-					  payload.reason == item_transfer_reason::corpse_loot ||
-					  payload.reason == item_transfer_reason::corpse_create ||
-					  payload.reason == item_transfer_reason::destruction;
+		const bool batch_reason =
+			payload.reason == item_transfer_reason::player_get ||
+			payload.reason == item_transfer_reason::player_drop ||
+			payload.reason == item_transfer_reason::player_put ||
+			payload.reason == item_transfer_reason::locker_deposit ||
+			payload.reason == item_transfer_reason::locker_withdraw ||
+			payload.reason == item_transfer_reason::corpse_loot ||
+			payload.reason == item_transfer_reason::corpse_raise_pet ||
+			payload.reason == item_transfer_reason::corpse_create ||
+			payload.reason == item_transfer_reason::destruction || craft;
 		const bool creation_batch = creation &&
 					    payload.reason == item_transfer_reason::creation;
 		if (payload_version < ITEM_TRANSFER_BATCH_PAYLOAD_VERSION ||
-		    payload.selected_item_uid || (!creation_batch && !batch_reason) ||
+		    (!craft && payload.selected_item_uid) || (!creation_batch && !batch_reason) ||
+		    (craft && (!payload.selected_item_uid || !payload.multi_root)) ||
 		    (creation_batch &&
 		     (payload.to_owner.type != item_owner_type::player ||
 		      payload.target_root_item_uid || payload.target_parent_item_uid)) ||
@@ -647,6 +782,8 @@ bool item_transfer_selected_roots(const item_transfer_payload &payload,
 
 uint64_t item_transfer_result_root(const item_transfer_payload &payload)
 {
+	if (payload.reason == item_transfer_reason::craft)
+		return payload.selected_item_uid;
 	uint64_t result = 0;
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
@@ -668,12 +805,14 @@ bool item_transfer_target_topology(const item_transfer_payload &payload, uint64_
 
 bool item_owner_identity_valid(const item_owner_identity &owner)
 {
-	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::collector)
+	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::pet)
 		return false;
 	if (owner.type == item_owner_type::system || owner.type == item_owner_type::destruction)
 		return owner.id == 0 && owner.context_id == 0;
 	if (owner.type == item_owner_type::collector)
 		return owner.id != 0 && owner.context_id == 0;
+	if (owner.type == item_owner_type::pet)
+		return owner.id != 0 && owner.context_id != 0 && owner.context_id <= INT32_MAX;
 	return owner.id != 0;
 }
 
@@ -754,6 +893,20 @@ bool populate_command_entities(critical_command *command, const item_transfer_pa
 		command->expected_revisions.push_back(
 			{ parent_key, payload.expected_target_parent_revision });
 	}
+	if (payload.reason == item_transfer_reason::craft)
+	{
+		std::vector<player_item_snapshot> outputs;
+		if (!decode_craft_outputs(payload, &outputs))
+			return false;
+		for (const player_item_snapshot &output : outputs)
+		{
+			const critical_entity_key output_key = { critical_entity_type::item,
+								 output.object_uid };
+			command->keys.push_back(output_key);
+			command->expected_revisions.push_back(
+				{ output_key, ITEM_TRANSFER_ABSENT_REVISION });
+		}
+	}
 	if (payload.collector.present)
 	{
 		const critical_entity_key catalog_key = { critical_entity_type::collector,
@@ -799,10 +952,11 @@ bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 	put_u64(encoded->data() + REASON_ID_OFFSET, static_cast<uint64_t>(payload.reason_id));
 	put_u64(encoded->data() + FROM_REVISION_OFFSET, payload.expected_from_revision);
 	put_u64(encoded->data() + TO_REVISION_OFFSET, payload.expected_to_revision);
-	const uint64_t selected = payload.multi_root ? 0 :
-						       (payload.selected_item_uid ?
-								payload.selected_item_uid :
-								payload.items[0].root_item_uid);
+	const uint64_t selected =
+		(payload.multi_root && payload.reason != item_transfer_reason::craft) ?
+			0 :
+			(payload.selected_item_uid ? payload.selected_item_uid :
+						     payload.items[0].root_item_uid);
 	put_u64(encoded->data() + SELECTED_ITEM_OFFSET, selected);
 	put_u64(encoded->data() + TARGET_ROOT_OFFSET,
 		payload.multi_root ?
@@ -870,8 +1024,16 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 	payload->target_parent_item_uid = get_u64(command.payload.data() + TARGET_PARENT_OFFSET);
 	payload->expected_target_parent_revision =
 		get_u64(command.payload.data() + TARGET_PARENT_REVISION_OFFSET);
-	payload->multi_root = command.payload_version >= ITEM_TRANSFER_BATCH_PAYLOAD_VERSION &&
-			      payload->selected_item_uid == 0;
+	// The unpublished craft draft used value 27 before master assigned it to
+	// soulbind. Only that draft's same-player shape can mean craft; real soulbind
+	// records always move between distinct players. Validation below remains strict.
+	if (command.payload_version == 7 && payload->reason == item_transfer_reason::soulbind &&
+	    payload->from_owner.type == item_owner_type::player &&
+	    item_owner_identity_equal(payload->from_owner, payload->to_owner))
+		payload->reason = item_transfer_reason::craft;
+	payload->multi_root =
+		command.payload_version >= ITEM_TRANSFER_BATCH_PAYLOAD_VERSION &&
+		(payload->selected_item_uid == 0 || payload->reason == item_transfer_reason::craft);
 	if (!payload->item_count || payload->item_count > ITEM_TRANSFER_MAX_ITEMS)
 		return false;
 	const bool variable_items = command.payload_version >= ITEM_TRANSFER_BATCH_PAYLOAD_VERSION;

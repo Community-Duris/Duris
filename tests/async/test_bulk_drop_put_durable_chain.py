@@ -4,6 +4,9 @@
 from _paths import SRC
 
 ACTOBJ = (SRC / "actobj.c").read_text(encoding="utf-8", errors="replace")
+POLICY = (SRC / "item/item_command_policy.c").read_text(
+    encoding="utf-8", errors="replace"
+)
 MOVEMENT = (SRC / "item_movement_transaction.c").read_text(
     encoding="utf-8", errors="replace"
 )
@@ -41,7 +44,9 @@ def normalize_cxx(source):
 do_drop = function_body(ACTOBJ, "void do_drop(")
 do_dropalldot = function_body(ACTOBJ, "void do_dropalldot(")
 do_put = function_body(ACTOBJ, "void do_put(")
-ownership_filter = function_body(ACTOBJ, "static bool uses_generic_item_ownership(")
+ownership_filter = function_body(
+    POLICY, "bool item_command_uses_durable_ownership("
+)
 ownership_filter_body = ownership_filter[
     ownership_filter.index("{") + 1 : ownership_filter.rindex("}")
 ]
@@ -120,7 +125,7 @@ ok &= check(
 ok &= check(
     "transient drop paths run only after the durable commit",
     "finish_bulk_drop_after_commit(actor, state);" in drop_completion
-    and "uses_generic_item_ownership(object)" in drop_finish,
+    and "item_command_uses_durable_ownership(object)" in drop_finish,
 )
 ok &= check(
     "cursed and soulbound roots remain excluded",
@@ -151,10 +156,10 @@ ok &= check(
     "transient put paths run only after the durable commit",
     "finish_bulk_put_after_commit(actor, state, container);" in put_completion
     # The split is chosen once, in start_bulk_put(). Re-deriving it here from
-    # uses_generic_item_ownership() would strand an item whose runtime ownership
+    # item_command_uses_durable_ownership() would strand an item whose runtime ownership
     # row activates while the batch commits: neither pass would claim it.
     and "bulk_put_batch_claimed(state, object)" in put_finish
-    and "uses_generic_item_ownership(object)" not in put_finish,
+    and "item_command_uses_durable_ownership(object)" not in put_finish,
 )
 ok &= check(
     "the serialized durable chains are gone",

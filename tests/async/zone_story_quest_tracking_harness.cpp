@@ -27,7 +27,11 @@ zone_story_quest_tracking::quest_definition definition(const char *id, int32_t z
 		 .active = true,
 		 .eligible_for_zone_completion = true,
 		 .repeatable = true,
-		 .content_revision = 7 };
+		 .content_revision = 7,
+		 .display_name = "Fixture quest",
+		 .giver_name = "the fixture giver",
+		 .zone_name = "Fixture area",
+		 .objective = "Complete the fixture quest." };
 }
 } // namespace
 

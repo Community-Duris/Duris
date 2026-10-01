@@ -215,6 +215,14 @@ static void chat_presentation_matrix()
 	gmcp_comm_channel_output(&alice, chat, animated, "water");
 	assert(chat_packets.empty());
 	REMOVE_BIT(alice.specials.act3, PLR3_NOGMCP);
+	// Direct and broadcast GMCP delivery use the same per-character opt-out.
+	SET_BIT(bob.specials.act3, PLR3_NOGMCP);
+	gmcp_comm_channel_output(&bob, chat, animated, "water");
+	assert(chat_packets.empty());
+	gmcp_broadcast_channel("say", "Alice", "water", nullptr);
+	assert(chat_packets.size() == 1 && chat_packets[0].first == &da);
+	chat_packets.clear();
+	REMOVE_BIT(bob.specials.act3, PLR3_NOGMCP);
 
 	OutputChatMessage dollars{ "tell", "Alice", "cost $$5 &+g$$n&n" };
 	OutputContext dollar_context{ OutputChannel::ChatTell, OutputPolicy::Static, nullptr,

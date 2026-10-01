@@ -52,6 +52,12 @@ using namespace std;
 #define GH_TOWN_PORTAL_VNUM 48011
 #define GH_LIBRARY_TOME_VNUM 48012
 #define GH_CARGO_BOARD_VNUM 48013
+/* The kingdom workshops' props (areas/obj/guildhalls.obj). Decoration only:
+ * they carry no wear flags, so nobody can pick one up and walk off with it. */
+#define GH_FORGE_ANVIL_VNUM 48014
+#define GH_LOOM_VNUM 48015
+#define GH_JEWELLER_BENCH_VNUM 48016
+#define GH_STORE_COUNTER_VNUM 48017
 
 #define GH_ROOM_TEMPLATE_ENTRANCE 48000
 #define GH_ROOM_TEMPLATE_HEARTSTONE 48001
@@ -65,6 +71,12 @@ using namespace std;
 #define GH_ROOM_TEMPLATE_BANK 48008
 #define GH_ROOM_TEMPLATE_TOWN_PORTAL 48009
 #define GH_ROOM_TEMPLATE_CARGO 48010
+/* The kingdom workshops name AND describe themselves from these templates:
+ * every other guildhall room takes only its name from its template. */
+#define GH_ROOM_TEMPLATE_FORGE 48011
+#define GH_ROOM_TEMPLATE_LOOM 48012
+#define GH_ROOM_TEMPLATE_JEWELLER 48013
+#define GH_ROOM_TEMPLATE_GUILDSTORE 48014
 
 #define GH_GOLEM_WARRIOR 48001
 #define GH_GOLEM_CLERIC 48002
@@ -85,7 +97,16 @@ using namespace std;
 #define GH_ROOM_TYPE_TOWN_PORTAL 8
 #define GH_ROOM_TYPE_LIBRARY 9
 #define GH_ROOM_TYPE_CARGO 10
-#define GH_ROOM_NUM_TYPES 11
+/* A kingdom's three workshops and its store (src/kingdom/kingdom_craft.c).
+ * Only a kingdom builds them, with `kingdom build` and never with construct,
+ * and only in its main hall. */
+#define GH_ROOM_TYPE_FORGE 11
+#define GH_ROOM_TYPE_LOOM 12
+#define GH_ROOM_TYPE_JEWELLER 13
+#define GH_ROOM_TYPE_GUILDSTORE 14
+/* The flat-file validator's bound (FLATFILE_GUILDHALL_ROOM_TYPE_COUNT) must
+ * move with this; guildhall_db.c static_asserts the pair. */
+#define GH_ROOM_NUM_TYPES 15
 
 /*
  rooms values are type-specific
@@ -126,7 +147,15 @@ int guildhall_window_room(int room, P_char ch, int cmd, char *arg);
 int guildhall_window(P_obj obj, P_char ch, int cmd, char *arg);
 int guildhall_heartstone(P_obj obj, P_char ch, int cmd, char *arg);
 int guildhall_bank_room(int room, P_char ch, int cmd, char *arg);
+/* The kingdom guild store: hands `list` and `buy` to the kingdom module. */
+int guildhall_store_room(int room, P_char ch, int cmd, char *arg);
 int guildhall_cargo_board(P_obj obj, P_char ch, int cmd, char *arg);
+
+/* Build a kingdom workshop or the guild store as a NEW room of `type` off
+ * from_vnum in `dir` (guildhall_cmds.c). True only once the room is live AND
+ * saved; false leaves the hall exactly as it was, in memory and in storage, so
+ * a caller may charge on true and credit back on false. */
+bool construct_workshop_room(int id, int from_vnum, int dir, int type);
 
 int check_gh_home(P_char ch, int r_room);
 P_obj find_gh_library_book_obj(P_char ch);
@@ -346,6 +375,46 @@ struct CargoRoom : public GuildhallRoom
 		, board(NULL)
 	{
 	}
+};
+
+/* A kingdom workshop -- forge, loom or jeweller -- or the guild store. One
+ * class for all four, because they differ only in data: the template room
+ * that names and describes them, the prop that stands in them, and (for the
+ * store) the room proc that answers `list` and `buy`. */
+struct WorkshopRoom : public GuildhallRoom
+{
+	bool init();
+	bool deinit();
+
+	P_obj prop;
+	/* The description init() found on the room, restored by deinit() so a
+	 * room handed back to the pool does not go on describing a forge. */
+	char *plain_description;
+	/* The copy of the template's description init() put on the room. Owned
+	 * here: deinit() frees it only if it is still the room's. */
+	char *workshop_description;
+	const int prop_vnum;
+
+	WorkshopRoom(int _template_vnum, int _prop_vnum)
+		: GuildhallRoom(_template_vnum)
+		, prop(NULL)
+		, plain_description(NULL)
+		, workshop_description(NULL)
+		, prop_vnum(_prop_vnum)
+	{
+	}
+
+	/* ~Guildhall() clears its rooms without deinitialising them, so a hall
+	 * deleted outside Guildhall::remove() would leave this room's description
+	 * copy allocated and its prop standing. Deleting one deinitialises it.
+	 *
+	 * The paths that do deinitialise first -- Guildhall::reload(), and the
+	 * rollback in construct_workshop_room() -- then call it twice, which does
+	 * nothing the second time: each step is guarded (the proc only while it is
+	 * still ours, the prop only while it still stands there as itself, the
+	 * description only while ours is the one on the room) and each pointer is
+	 * cleared as it goes. */
+	~WorkshopRoom() override { deinit(); }
 };
 
 //

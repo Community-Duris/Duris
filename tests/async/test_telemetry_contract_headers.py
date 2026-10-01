@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
 PUBLIC_HEADERS = (
     "telemetry/telemetry_types.h",
+    "telemetry/telemetry_progression.h",
     "telemetry/telemetry_runtime.h",
     "telemetry/telemetry_transport.h",
     "telemetry/telemetry_repository.h",
@@ -24,6 +25,7 @@ PUBLIC_HEADERS = (
 
 POSITIVE_HARNESS = r'''
 #include "telemetry/telemetry_types.h"
+#include "telemetry/telemetry_progression.h"
 #include "telemetry/telemetry_runtime.h"
 #include "telemetry/telemetry_transport.h"
 #include "telemetry/telemetry_repository.h"
@@ -46,6 +48,7 @@ static_assert(std::is_standard_layout_v<telemetry_record>);
 static_assert(std::is_trivially_copyable_v<telemetry_interval_payload>);
 static_assert(std::is_trivially_copyable_v<telemetry_session_checkpoint_payload>);
 static_assert(std::is_trivially_copyable_v<telemetry_configuration_payload>);
+static_assert(std::is_trivially_copyable_v<telemetry_progression_payload>);
 static_assert(std::is_trivially_copyable_v<telemetry_connection_transition>);
 static_assert(std::is_trivially_copyable_v<telemetry_health_snapshot>);
 
@@ -70,6 +73,7 @@ static_assert(telemetry_record_kind_is_control(telemetry_record_kind::session_ch
 static_assert(telemetry_record_kind_is_control(telemetry_record_kind::configuration));
 static_assert(!telemetry_record_kind_is_control(telemetry_record_kind::interval));
 static_assert(static_cast<std::uint8_t>(telemetry_record_kind::configuration) == 5U);
+static_assert(static_cast<std::uint8_t>(telemetry_record_kind::progression) == 6U);
 static_assert(static_cast<std::uint8_t>(telemetry_lifecycle_kind::session_entered) == 1U);
 static_assert(static_cast<std::uint8_t>(telemetry_lifecycle_kind::session_exited) == 2U);
 static_assert(static_cast<std::uint8_t>(telemetry_lifecycle_kind::connection_attached) == 3U);
@@ -253,11 +257,16 @@ using enqueue_signature = telemetry_enqueue_result (*)(telemetry_record);
 using apply_signature = telemetry_apply_batch_result (*)(const telemetry_record *, std::size_t);
 using transition_signature = telemetry_capture_result (*)(telemetry_connection_transition);
 using config_signature = telemetry_capture_result (*)(telemetry_config_snapshot);
+using progression_signature = telemetry_capture_result (*)(struct char_data *,
+                                                            struct descriptor_data *,
+                                                            telemetry_progression_observation);
 static_assert(std::is_same_v<decltype(&telemetry_runtime_init), runtime_init_signature>);
 static_assert(std::is_same_v<decltype(&telemetry_transport_enqueue), enqueue_signature>);
 static_assert(std::is_same_v<decltype(&telemetry_repository_apply), apply_signature>);
 static_assert(std::is_same_v<decltype(&telemetry_runtime_connection_transition),
                              transition_signature>);
+static_assert(std::is_same_v<decltype(&telemetry_runtime_game_progression),
+                             progression_signature>);
 static_assert(std::is_same_v<decltype(&telemetry_config_publish), config_signature>);
 constexpr telemetry_session_resume resume = [] {
     telemetry_session_resume value{};
