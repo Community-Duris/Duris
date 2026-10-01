@@ -417,14 +417,15 @@ def main():
         source.write_text('\n'.join([PRELUDE,
             extract_function('comm.c', 'int get_from_q(struct txt_q *queue, char *dest)'),
             extract_function('comm.c', 'int process_output(P_desc t)'), DRIVER]))
-        subprocess.run(['g++', '-std=c++20', '-g', '-O1', '-ffunction-sections', '-fdata-sections',
+        # Keep both sanitizers; this functional fixture does not need optimized dependencies.
+        subprocess.run(['g++', '-std=c++20', '-g', '-O0', '-ffunction-sections', '-fdata-sections',
                         '-fsanitize=address,undefined', '-Isrc', str(source),
                         *[str(SRC / name) for name in ['output_profiles.c', 'output_style.c', 'prompt.c', 'ansi.c', 'mccp.c', 'unicode.c', 'json_utils.c', 'safe_format.c',
                             'item_movement_transaction.c', 'item_ownership_runtime.c',
                             'item_transfer_command.c', "craft_pouch_mutation.c", "chaos_pouch_ledger.c", 'critical_command.c',
                             'player_snapshot_capture.c', 'player_snapshot_codec.c']],
                         '-Wl,--gc-sections', '-Wl,--wrap=write', '-lz', '-lcrypto', '-lcjson', '-o', str(binary)],
-                       cwd=ROOT, check=True, timeout=180)
+                       cwd=ROOT, check=True, timeout=300)
         subprocess.run([str(binary)], check=True, timeout=30)
 
 
