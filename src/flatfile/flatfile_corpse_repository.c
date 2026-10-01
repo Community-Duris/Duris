@@ -380,8 +380,8 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 	const bool releases_nested = payload.action == corpse_lifecycle_action::release_nested;
 	const bool nested_player = releases_nested && payload.destination_player_pid;
 	const bool disposes_legacy_custody = releases_custody || destroys_custody ||
-					       resurrects_custody || raises_follower ||
-					       releases_nested;
+					     resurrects_custody || raises_follower ||
+					     releases_nested;
 	const bool disposes_custody = disposes_legacy_custody || raises_world;
 	const auto prepared =
 		raises_world ?
@@ -398,21 +398,21 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 	    prepared == flatfile_world_item_result::already_exists ||
 	    prepared == flatfile_world_item_result::unchanged ||
 	    (prepared == flatfile_world_item_result::ok &&
-	     !(raises_world ? world_raise.catalog_revision :
-	       disposes_legacy_custody ? release.catalog_revision : mutation.catalog_revision)))
+	     !(raises_world	       ? world_raise.catalog_revision :
+	       disposes_legacy_custody ? release.catalog_revision :
+					 mutation.catalog_revision)))
 		return { critical_apply_outcome::terminal_failure, catalog.revision, EILSEQ };
 	bool include_release_artifacts = false;
 	if (prepared == flatfile_world_item_result::ok && disposes_custody)
 	{
 		const auto item_prepared =
-			raises_world ?
-				flatfile_item_repository_prepare_world_corpse_raise(
-					root, authority, payload, world_raise.expected_items,
-					world_raise.durable_uids, world_raise.discarded_uids,
-					&release_items, &error) :
-				flatfile_item_repository_prepare_corpse_release(
-					root, authority, payload, release.expected_items, &release_items,
-					&error);
+			raises_world ? flatfile_item_repository_prepare_world_corpse_raise(
+					       root, authority, payload, world_raise.expected_items,
+					       world_raise.durable_uids, world_raise.discarded_uids,
+					       &release_items, &error) :
+				       flatfile_item_repository_prepare_corpse_release(
+					       root, authority, payload, release.expected_items,
+					       &release_items, &error);
 		if (item_prepared != flatfile_item_repository_result::ok)
 			return { item_prepared == flatfile_item_repository_result::io_error ?
 					 critical_apply_outcome::retryable_failure :
@@ -423,7 +423,8 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 							 flatfile_item_repository_result::io_error ?
 						 EIO :
 						 EILSEQ) };
-		if (!raises_world && (releases_custody || resurrects_custody ||
+		if (!raises_world &&
+		    (releases_custody || resurrects_custody ||
 		     (releases_nested && !nested_player)) &&
 		    release_items.room_owner_revision != release.room_revision)
 			return { critical_apply_outcome::terminal_failure, catalog.revision,
@@ -431,19 +432,19 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 		const auto artifact_prepared =
 			raises_world ? flatfile_artifact_result::unchanged :
 			releases_custody || (releases_nested && !nested_player) ?
-				flatfile_artifact_prepare_corpse_release(
-					root, authority, payload.owner_pid, payload.room_vnum,
-					command.accepted_at_usec, release.items, &release_artifacts,
-					&error) :
-			destroys_custody ?
-				flatfile_artifact_prepare_corpse_destruction(
-					root, authority, payload.owner_pid,
-					command.accepted_at_usec, release.items, &release_artifacts,
-					&error) :
-				flatfile_artifact_prepare_corpse_resurrection(
-					root, authority, payload.owner_pid,
-					payload.destination_player_pid, command.accepted_at_usec,
-					release.items, &release_artifacts, &error);
+				       flatfile_artifact_prepare_corpse_release(
+					       root, authority, payload.owner_pid,
+					       payload.room_vnum, command.accepted_at_usec,
+					       release.items, &release_artifacts, &error) :
+			destroys_custody ? flatfile_artifact_prepare_corpse_destruction(
+						   root, authority, payload.owner_pid,
+						   command.accepted_at_usec, release.items,
+						   &release_artifacts, &error) :
+					   flatfile_artifact_prepare_corpse_resurrection(
+						   root, authority, payload.owner_pid,
+						   payload.destination_player_pid,
+						   command.accepted_at_usec, release.items,
+						   &release_artifacts, &error);
 		if (artifact_prepared != flatfile_artifact_result::ok &&
 		    artifact_prepared != flatfile_artifact_result::unchanged)
 			return { artifact_prepared == flatfile_artifact_result::io_error ?
@@ -513,7 +514,8 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 	}
 	if (prepared == flatfile_world_item_result::ok && materializes_items)
 	{
-		const auto &materialized_items = raises_world ? world_raise.pet_items : release.items;
+		const auto &materialized_items = raises_world ? world_raise.pet_items :
+								release.items;
 		const auto materialization_prepared =
 			flatfile_corpse_resurrection_materialization_prepare(
 				root, authority, command.operation_id, payload, materialized_items,
@@ -542,12 +544,11 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 	operation.command_digest = digest;
 	operation.result_code = prepared == flatfile_world_item_result::ok ? collector_result_code :
 									     result_code(prepared);
-	operation.durable_revision =
-		prepared == flatfile_world_item_result::ok ?
-			(raises_world ? world_raise.catalog_revision :
-			 disposes_legacy_custody ? release.catalog_revision :
-						    mutation.catalog_revision) :
-			catalog.revision + 1;
+	operation.durable_revision = prepared == flatfile_world_item_result::ok ?
+					     (raises_world ? world_raise.catalog_revision :
+					      disposes_legacy_custody ? release.catalog_revision :
+									mutation.catalog_revision) :
+					     catalog.revision + 1;
 	if (!operation.result_code)
 	{
 		corpse_lifecycle_result result = {};
@@ -555,9 +556,9 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 		result.save_id = payload.save_id;
 		result.action = payload.action;
 		result.corpse_revision = mutation.corpse_revision;
-		result.catalog_revision =
-			raises_world ? world_raise.catalog_revision :
-			disposes_legacy_custody ? release.catalog_revision : mutation.catalog_revision;
+		result.catalog_revision = raises_world		  ? world_raise.catalog_revision :
+					  disposes_legacy_custody ? release.catalog_revision :
+								    mutation.catalog_revision;
 		if (disposes_custody)
 		{
 			result.corpse_owner_revision = release_items.corpse_owner_revision;
@@ -605,7 +606,7 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 			{
 				images.push_back(std::move(release_items.after_image));
 				images.push_back(raises_world ? std::move(world_raise.after_image) :
-							       std::move(release.after_image));
+								std::move(release.after_image));
 				if (include_release_artifacts)
 					images.push_back(std::move(release_artifacts.after_image));
 				if (include_resurrection_wallet)

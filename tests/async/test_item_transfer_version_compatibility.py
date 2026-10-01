@@ -216,6 +216,35 @@ int main()
 	assert(target_root == 200 && target_parent == 0);
 	auto batch_command = command;
 
+	// A bulk `put all` may select several carried roots, including a container with
+	// children.  Only each selected root is reparented to the destination; descendants
+	// must remain below their original container instead of being flattened beside it.
+	item_transfer_payload nested_put = {};
+	nested_put.from_owner = { item_owner_type::player, 42, 0 };
+	nested_put.to_owner = nested_put.from_owner;
+	nested_put.reason = item_transfer_reason::player_put;
+	nested_put.reason_id = 900;
+	nested_put.expected_from_revision = 9;
+	nested_put.expected_to_revision = 9;
+	nested_put.target_root_item_uid = 900;
+	nested_put.target_parent_item_uid = 900;
+	nested_put.expected_target_parent_revision = 3;
+	nested_put.multi_root = true;
+	nested_put.item_count = 3;
+	nested_put.items[0] = { 100, 100, 0, 5, 500, item_custody_state::active };
+	nested_put.items[1] = { 101, 100, 100, 6, 501, item_custody_state::active };
+	nested_put.items[2] = { 200, 200, 0, 7, 502, item_custody_state::active };
+	assert(item_transfer_command_build(&command, operation(), nested_put,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_command_decode_payload(command, &decoded));
+	assert(item_transfer_target_topology(decoded, 100, &target_root, &target_parent));
+	assert(target_root == 900 && target_parent == 900);
+	assert(item_transfer_target_topology(decoded, 101, &target_root, &target_parent));
+	assert(target_root == 900 && target_parent == 100);
+	assert(item_transfer_target_topology(decoded, 200, &target_root, &target_parent));
+	assert(target_root == 900 && target_parent == 900);
+
 	item_transfer_payload pet = {};
 	pet.from_owner = { item_owner_type::player, 42, 0 };
 	pet.to_owner = { item_owner_type::pet, 1000, 42 };

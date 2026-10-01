@@ -1039,6 +1039,10 @@ bool check_nevents();
 // epic.c
 void refund_epic_skills(P_char ch);
 
+/* ferryact.c */
+bool is_ferry_object(P_obj);
+void ferry_forget_object(P_obj);
+
 /* fight.c */
 bool rapier_dirk(P_char, P_char);
 int calculate_thac_zero(P_char, int);
@@ -2075,7 +2079,7 @@ void create_denied_file(const char *, char *);
 int getNewPCidNumb(void);
 void setNewPCidNumbfromFile(void);
 char *statstr(int);
-bool _parse_name(char *, char *);
+bool _parse_name(char *, char *, bool);
 bool has_avail_class(P_desc);
 void display_classtable(P_desc);
 extern int invitemode;
@@ -2367,7 +2371,7 @@ void AddDeadChar(P_char);
 void AddDeadObj(P_obj);
 void game_loop(int, int);
 void game_up_message(int);
-void run_the_game(int, int);
+int run_the_game(int, int);
 
 /* sparser.c */
 

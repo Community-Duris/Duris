@@ -16,6 +16,7 @@
 ;
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "item/forced_weapon_drop.h"
 #include "item/native_artifact_actions.h"
 #include "core/structs.h"
@@ -2387,8 +2388,8 @@ void event_revenant_crown(P_char ch, P_char /*victim*/, P_obj obj, void * /*data
 			if (temp_obj)
 			{
 				if (obj_index[temp_obj->R_num].func.obj != NULL)
-					(*obj_index[temp_obj->R_num].func.obj)(
-						temp_obj, ch, CMD_REMOVE, (char *)"all");
+					invoke_object_special(temp_obj, ch, CMD_REMOVE,
+							      (char *)"all");
 				obj_to_char(unequip_char(ch, k), ch);
 			}
 		}
@@ -2431,8 +2432,7 @@ int revenant_helm(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 			if (obj_index[temp_obj->R_num].func.obj != NULL)
 			{
 				// Call the objects remove proc if there might be one.
-				(*obj_index[temp_obj->R_num].func.obj)(temp_obj, ch, CMD_REMOVE,
-								       (char *)"all");
+				invoke_object_special(temp_obj, ch, CMD_REMOVE, (char *)"all");
 			}
 			obj_to_char(unequip_char(ch, k), ch);
 			if (!IS_ALIVE(ch))
@@ -2549,8 +2549,8 @@ void event_dragonlord_check(P_char ch, P_char /*victim*/, P_obj obj, void * /*da
 			if (temp_obj)
 			{
 				if (obj_index[temp_obj->R_num].func.obj != NULL)
-					(*obj_index[temp_obj->R_num].func.obj)(
-						temp_obj, ch, CMD_REMOVE, (char *)"all");
+					invoke_object_special(temp_obj, ch, CMD_REMOVE,
+							      (char *)"all");
 				obj_to_char(unequip_char(ch, k), ch);
 			}
 		}
@@ -2603,9 +2603,8 @@ int dragonlord_plate_old(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
 				if (temp_obj && (obj != temp_obj))
 				{
 					if (obj_index[temp_obj->R_num].func.obj != NULL)
-						(*obj_index[temp_obj->R_num].func.obj)(
-							temp_obj, temp_ch, CMD_REMOVE,
-							(char *)"all");
+						invoke_object_special(temp_obj, temp_ch, CMD_REMOVE,
+								      (char *)"all");
 					obj_to_char(unequip_char(temp_ch, k), temp_ch);
 				}
 			}

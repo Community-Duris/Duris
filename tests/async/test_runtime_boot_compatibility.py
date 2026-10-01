@@ -99,7 +99,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertLess(hydrate, redis)
         self.assertLess(redis, run_game)
 
-        game = self.comm[self.comm.index("void run_the_game(int port, int sslport)"):
+        game = self.comm[self.comm.index("int run_the_game(int port, int sslport)"):
                          self.comm.index("void game_loop(int port, int sslport)")]
         for boundary in ("player_load_pipeline_init", "locker_async_init",
                          "player_save_pipeline_init",

@@ -804,6 +804,57 @@ query_result verify_player_item_custody(MYSQL *connection, const player_snapshot
 				  query_result{ false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
 }
 
+// A death disposition deliberately has no active inventory snapshot: the live
+// items are recorded in its immutable corpse payload instead. Before removing
+// the old player_items projection, prove that every stored payload is present
+// in that corpse. A custody row with no payload may then be quarantined by its
+// captured root without making the normal complete-save check destructive.
+query_result verify_player_death_item_payload(MYSQL *connection, const player_snapshot &snapshot)
+{
+	if (!snapshot.death || !snapshot.items.empty())
+		return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+	std::unordered_map<uint64_t, int32_t> captured;
+	try
+	{
+		captured.reserve(snapshot.death->corpse.size());
+		for (const player_item_snapshot &item : snapshot.death->corpse)
+			if (!item.object_uid || item.vnum <= 0 ||
+			    !captured.emplace(item.object_uid, item.vnum).second)
+				return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { false, ENOMEM };
+	}
+	const query_result query =
+		execute(connection, "SELECT obj_uid,vnum FROM player_items WHERE pid=" +
+					    std::to_string(snapshot.pid) + " FOR UPDATE");
+	if (!query.ok)
+		return query;
+	MYSQL_RES *rows = mysql_store_result(connection);
+	if (!rows)
+		return { false, mysql_errno(connection) };
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(rows)) != nullptr)
+	{
+		uint64_t item_uid = 0;
+		if (!parse_custody_uint64(row[0], &item_uid) || !item_uid || !row[1])
+		{
+			mysql_free_result(rows);
+			return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+		}
+		const auto found = captured.find(item_uid);
+		if (found == captured.end() || std::to_string(found->second) != row[1])
+		{
+			mysql_free_result(rows);
+			return { false, PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH };
+		}
+		captured.erase(found);
+	}
+	mysql_free_result(rows);
+	return { true, 0 };
+}
+
 query_result apply_items(MYSQL *connection, const player_snapshot &snapshot)
 {
 	const bool equipment = snapshot.components & PLAYER_COMPONENT_EQUIPMENT;
@@ -813,7 +864,9 @@ query_result apply_items(MYSQL *connection, const player_snapshot &snapshot)
 	 * prove its payload/custody equivalence before the destructive projection. */
 	if (equipment && inventory)
 	{
-		const query_result verified = verify_player_item_custody(connection, snapshot);
+		const query_result verified =
+			snapshot.death ? verify_player_death_item_payload(connection, snapshot) :
+					 verify_player_item_custody(connection, snapshot);
 		if (!verified.ok)
 			return verified;
 	}
@@ -1213,7 +1266,9 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 	// Death records require their custody disposition to commit with this save.
 	// Never acknowledge one through the ordinary component-only writer.
 	if (snapshot.death ? snapshot.schema_version != PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION ||
-				     snapshot.death->corpse.empty() :
+				     snapshot.death->corpse.empty() ||
+				     snapshot.components != PLAYER_CHECKPOINT_COMPONENT_ALL ||
+				     !snapshot.items.empty() :
 			     snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION)
 		return { player_save_apply_outcome::terminal_failure, 0, ENOTSUP };
 

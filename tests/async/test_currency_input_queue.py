@@ -425,7 +425,8 @@ static item_owner_identity admitted_owner;
 bool item_movement_transaction_submit(P_char, P_obj, P_obj parent,
     const item_owner_identity &from, const item_owner_identity &to,
     item_transfer_reason reason, int64_t, item_movement_completion_fn callback,
-    const void *context, size_t size, P_obj, item_movement_reject *)
+    const void *context, size_t size, P_obj, item_movement_reject *,
+    item_movement_publication_fn)
 {
     assert(item_owner_identity_equal(from, to));
     assert(reason == item_transfer_reason::player_get && size == sizeof(admission_context));

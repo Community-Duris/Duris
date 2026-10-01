@@ -30,6 +30,10 @@
 #include "world/vnum.obj.h"
 #include "world/weather.h"
 #include "kingdom/kingdom.h"
+#include "item/item_movement_transaction.h"
+#include "item/item_ownership_runtime.h"
+#include "persistence/persistence_checkpoint.h"
+#include "player/player_revision_state.h"
 
 /*
  * external variables
@@ -53,11 +57,103 @@ extern struct dex_app_type dex_app[];
 extern struct str_app_type str_app[];
 extern struct zone_data *zone_table;
 extern struct sector_data *sector_table;
+extern P_obj object_list;
 extern void check_room_links(P_char, int, int);
 extern bool grease_check(P_char);
 extern int get_number_allies_in_room(P_char ch, int room_index);
 extern int get_weight_allies_in_room(P_char ch, int room_index);
 void send_movement_noise(P_char ch, int num);
+
+struct key_break_context
+{
+	uint64_t item_uid;
+};
+
+static P_obj find_key_break_object(uint64_t item_uid)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == item_uid)
+			return object;
+	return NULL;
+}
+
+static bool publish_key_break(P_char actor, bool committed, const item_transfer_result &,
+			      unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	key_break_context context = {};
+	if (encoded && encoded_size == sizeof(context))
+		memcpy(&context, encoded, sizeof(context));
+	if (!actor || !context.item_uid)
+		return false;
+	if (!committed)
+	{
+		send_to_char("Your key cracks, but remains intact.\r\n", actor);
+		return true;
+	}
+
+	P_obj key = find_key_break_object(context.item_uid);
+	// A reconnect after the durable destruction may already have omitted the key.
+	if (!key)
+		return true;
+	if (!OBJ_CARRIED_BY(key, actor) && !OBJ_WORN_BY(key, actor))
+	{
+		persistence_alert(AVATAR, "item_movement", "key_break_publish", "none", "none",
+				  "stale_live_topology", "item_uid=%llu", context.item_uid);
+		return false;
+	}
+
+	act("Damn!  You broke your key!", FALSE, actor, 0, 0, TO_CHAR);
+	act("$n's key breaks off in the lock!", FALSE, actor, 0, 0, TO_ROOM);
+	if (actor->equipment[HOLD] == key)
+		unequip_char(actor, HOLD);
+	extract_obj(key, TRUE);
+	mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
+							     PLAYER_COMPONENT_EQUIPMENT |
+							     PLAYER_COMPONENT_INVENTORY);
+	return true;
+}
+
+static bool break_key(P_char actor, P_obj key)
+{
+	if (!actor || !key)
+		return false;
+	if (IS_NPC(actor) || !key->obj_uid)
+	{
+		act("Damn!  You broke your key!", FALSE, actor, 0, 0, TO_CHAR);
+		act("$n's key breaks off in the lock!", FALSE, actor, 0, 0, TO_ROOM);
+		if (actor->equipment[HOLD] == key)
+			unequip_char(actor, HOLD);
+		extract_obj(key, TRUE);
+		return true;
+	}
+
+	item_ownership_runtime_entry ownership = {};
+	const item_owner_identity player_owner = { item_owner_type::player,
+						   static_cast<uint64_t>(GET_PID(actor)), 0 };
+	if (!item_ownership_runtime_lookup(key->obj_uid, &ownership) ||
+	    !item_owner_identity_equal(ownership.owner, player_owner))
+	{
+		persistence_alert(AVATAR, "item_movement", "key_break", "none", "none",
+				  "owner_mismatch", "item_uid=%llu", key->obj_uid);
+		send_to_char("Your key cracks, but remains intact.\r\n", actor);
+		return false;
+	}
+
+	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	const key_break_context context = { key->obj_uid };
+	item_movement_reject reject = item_movement_reject::none;
+	if (!item_movement_transaction_submit(actor, key, NULL, player_owner, destruction,
+					      item_transfer_reason::destruction, OBJ_VNUM(key),
+					      NULL, &context, sizeof(context), NULL, &reject,
+					      publish_key_break))
+	{
+		persistence_alert(AVATAR, "item_movement", "key_break", "none", "none",
+				  item_movement_reject_name(reject), "item_uid=%llu", key->obj_uid);
+		send_to_char("Your key cracks, but remains intact.\r\n", actor);
+		return false;
+	}
+	return true;
+}
 
 static void telemetry_gameplay_context_changed(P_char ch)
 {
@@ -2959,14 +3055,7 @@ void do_unlock(P_char ch, char *argument, int /*cmd*/)
 			if (key_obj && key_obj->value[1] > 0)
 				if (number(0, 99) < key_obj->value[1])
 				{
-					act("Damn!  You broke your key!", FALSE, ch, 0, 0, TO_CHAR);
-					act("$n's key breaks off in the lock!", FALSE, ch, 0, 0,
-					    TO_ROOM);
-					if (ch->equipment[HOLD] && (ch->equipment[HOLD] == key_obj))
-						unequip_char(ch, HOLD);
-					extract_obj(
-						key_obj,
-						TRUE); // Not that there are any artifact keys but ok.
+					break_key(ch, key_obj);
 					key_obj = NULL;
 				}
 		}
@@ -3032,12 +3121,7 @@ void do_unlock(P_char ch, char *argument, int /*cmd*/)
 		if (key_obj && key_obj->value[1] > 0)
 			if (number(0, 99) < key_obj->value[1])
 			{
-				act("Damn!  You broke your key!", FALSE, ch, 0, 0, TO_CHAR);
-				act("$n's key breaks off in the lock!", FALSE, ch, 0, 0, TO_ROOM);
-				if (ch->equipment[HOLD] && (ch->equipment[HOLD] == key_obj))
-					unequip_char(ch, HOLD);
-				extract_obj(key_obj,
-					    TRUE); // Not that there are any artifact keys but ok.
+				break_key(ch, key_obj);
 				key_obj = NULL;
 			}
 		/*

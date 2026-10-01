@@ -62,7 +62,7 @@ class ItemCommandPipelineContractTests(unittest.TestCase):
         self.assertEqual(ACTOBJ.count("locker_owner_for_room("), 0)
         self.assertEqual(ACTOBJ.count("locker_owner_for_container("), 1)
         self.assertEqual(ACTOBJ.count("item_command_resolve_drop_destination("), 2)
-        self.assertEqual(ACTOBJ.count("item_command_resolve_put_destination("), 2)
+        self.assertEqual(ACTOBJ.count("item_command_resolve_put_destination("), 6)
 
     def test_policy_has_explicit_boundaries_and_no_live_publication(self):
         self.assertIn("ITEM_TRANSIENT", POLICY_C)

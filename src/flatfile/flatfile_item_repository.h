@@ -133,8 +133,7 @@ flatfile_item_repository_result flatfile_item_repository_prepare_world_corpse_ra
 	const std::string &root, const flatfile_authority_lock &lock,
 	const corpse_lifecycle_payload &payload,
 	const std::vector<flatfile_corpse_custody_item> &expected_items,
-	const std::vector<uint64_t> &durable_uids,
-	const std::vector<uint64_t> &discarded_uids,
+	const std::vector<uint64_t> &durable_uids, const std::vector<uint64_t> &discarded_uids,
 	flatfile_item_corpse_release_mutation *mutation, std::string *error);
 flatfile_item_repository_result flatfile_item_repository_prepare_player_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,

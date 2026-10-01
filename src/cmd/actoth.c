@@ -2190,6 +2190,8 @@ static bool persistence_save_character_terminal_with_policy(P_char ch, int type,
 /** Wait for terminal durability; retain a safe crash-save retry when logout cannot proceed. */
 bool persistence_save_character_terminal(P_char ch, int type)
 {
+	if (type == RENT_INN || type == RENT_CAMPED)
+		return persistence_save_character_terminal_with_policy(ch, type, 5000, false);
 	return persistence_save_character_terminal_with_policy(ch, type, 2000, true);
 }
 
