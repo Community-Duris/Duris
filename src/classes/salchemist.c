@@ -567,46 +567,6 @@ int got_all_poison_ingredients(P_char ch, int required[])
 	return 1;
 }
 
-void extract_used_poison_ingredients(P_char ch, int ingredients[])
-{
-	int found[MAX_INGREDIENTS + 1];
-	P_obj used_objs[MAX_INGREDIENTS + 1];
-	P_obj t_obj, next_obj;
-	int object_id;
-	int i;
-
-	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-	{
-		found[i] = ingredients[i];
-		used_objs[i] = NULL;
-	}
-
-	for (t_obj = ch->carrying; t_obj; t_obj = next_obj)
-	{
-		next_obj = t_obj->next_content;
-
-		object_id = obj_index[t_obj->R_num].virtual_number;
-
-		for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-		{
-			if (found[i] == object_id)
-			{
-				found[i] = 0;
-				used_objs[i] = t_obj;
-				break;
-			}
-		}
-	}
-
-	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-	{
-		if (used_objs[i])
-		{
-			extract_obj(used_objs[i]);
-		}
-	}
-}
-
 P_obj get_vial(P_char ch)
 {
 	P_obj t_obj, next_obj;

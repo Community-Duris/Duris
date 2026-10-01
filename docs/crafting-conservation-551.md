@@ -41,8 +41,33 @@ Local commands:
 - `make -C src PERSISTENCE_BACKEND=mariadb` and `PERSISTENCE_BACKEND=flatfile` in the maintained build image, GCC13.3.
 - `./scripts/format.sh --rev origin/master --check` and `git diff --check`.
 
-The database/native tests and builds are local qualification. They do not claim staff-character gameplay for all three writers or an `experimental-accounting` source/recovery port. PR573 stays a draft pending that gameplay review. Apply migration 0031 through the normal migration workflow before booting the revised SQL server; no operational migration was run here.
+The combined #573/#663 real-server journey passed with flat-file authority and
+with isolated MySQL plus Redis world recovery. It exercised three copyovers,
+trusted staff theft of an automatic VNUM 102 vial, actual Assassin poison mixing,
+NPC death and corpse loot, epic Encrust, Harvester exchange, acknowledged saves,
+account-menu exit and cold reconnect. Exact consumed UIDs disappear once and
+all output/vial UIDs survive reload. SQL runtime-state bytes are identical after
+normal save/load and Redis cold recovery. Ordinary player stealing is currently
+disabled; the theft proof uses the supported trusted staff route. Combat was
+observed through two controlled NPCs; cadence is measured by the native fixture.
+
+Gameplay qualification exposed and repaired staff membership saving that
+replaced the gameplay racewar with the account menu's immortal category,
+copyover using a character name instead of its authoritative account name, and
+exec retaining the old Redis writer lease. Account restoration verifies PID/name
+membership. Redis writers drain before the lease is released, after the durable
+copyover file is published and before transports change; failed exec resumes
+recovery. Focused native regressions cover refusals and recovery.
+
+Apply migration 0031 through the normal migration workflow before booting the
+revised SQL server. Disposable SQL gameplay databases used normal adoption,
+application and replay. No configured game database or production migration
+was changed. The experimental-accounting delivery has its own IDs, migration
+history and activation requirements; these master results do not certify active
+accounting crafting or automatic vial issuance.
 
 The unsupported player mixing retirement also removes its exclusive ingredient
 lookup/selection/extraction and bottle-selection helpers. This keeps the later
 NPC stock cleanup compatible without retaining unreachable player code.
+
+The replaced poison extraction helper is also retired: exact ingredient retirement now belongs solely to the durable craft receipt.

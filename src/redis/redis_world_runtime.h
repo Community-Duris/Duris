@@ -33,5 +33,7 @@ void event_save_world_state(P_char ch, P_char victim, P_obj obj, void *data);
 void redis_world_recovery_pulse(void);
 bool redis_world_recovery_drain(uint64_t timeout_msec);
 bool redis_world_recovery_quiesce(void);
+bool redis_world_recovery_prepare_copyover(void);
+void redis_world_recovery_resume_after_copyover(void);
 
 #endif

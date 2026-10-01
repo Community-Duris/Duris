@@ -73,7 +73,7 @@ pvp = section(drannak_c, "int pvp_store", "// Proc for weapon")
 for writer in (poison, encrust, pvp):
     assert "item_movement_transaction_submit_craft" in writer
 
-assert "extract_used_poison_ingredients" not in poison
+assert "extract_used_poison_ingredients" not in salchemist_c
 assert "obj_to_char" not in poison
 assert "obj_to_char(new_item, ch)" not in encrust
 assert "chaos_material_pouch_record_generated" not in encrust
@@ -107,6 +107,7 @@ helper = section(salchemist_c, "struct alchemy_craft_context", "struct spellbind
 vial_helper = section(salchemist_c, "P_obj get_vial", "char *print_poison_ingredients")
 harness = r'''
 #include <cassert>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
