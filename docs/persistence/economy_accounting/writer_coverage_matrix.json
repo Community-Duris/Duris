@@ -9,24 +9,24 @@
   ],
   "counts": {
     "dormant_writer_candidates": 14,
-    "draft_registry_rows": 863,
-    "function_definition_anchors_verified": 855,
-    "matrix_rows": 863,
+    "draft_registry_rows": 864,
+    "function_definition_anchors_verified": 856,
+    "matrix_rows": 864,
     "non_function_candidate_anchors": 8,
-    "non_writer_or_out_of_scope_candidates": 94,
+    "non_writer_or_out_of_scope_candidates": 96,
     "offline_operational_writer_routes": 3,
-    "routes_with_current_schema_1_path": 77,
+    "routes_with_current_schema_1_path": 84,
     "routes_with_schema_2_gameplay_producer": 9,
     "routes_with_unified_double_entry_evidence": 2,
-    "runtime_mutation_and_projection_routes": 752,
+    "runtime_mutation_and_projection_routes": 751,
     "supplemental_candidates_found": 0
   },
   "coverage_complete": false,
   "disposition_counts": {
     "dormant_writer_candidate": 14,
-    "non_writer_candidate": 94,
+    "non_writer_candidate": 96,
     "offline_operational_writer": 3,
-    "runtime_mutation_route": 688,
+    "runtime_mutation_route": 687,
     "runtime_projection_route": 64
   },
   "global_schema_and_accounting_evidence": {
@@ -39,33 +39,33 @@
     "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified."
   },
   "known_unknowns": [
-    "The matrix reconciles 863 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
+    "The matrix reconciles 864 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
     "The lexical census is fully mapped; this does not establish that every reachable economic mutation has passed executable review.",
     "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2815,
-    "current_unique_path_line_family_sites": 2757,
+    "current_occurrences": 2816,
+    "current_unique_path_line_family_sites": 2758,
     "draft_registry_census_complete": true,
     "draft_source_commit": "4ac592b2f46156d2bd19c1c3c304ad5b703fd263",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2757,
+    "draft_unique_sites": 2758,
     "family_occurrences": {
       "coin_assignment": 160,
       "coin_bulk_mutation": 16,
       "direct_cash_assignment": 12,
-      "economic_submit": 179,
-      "item_lifecycle": 1150,
-      "item_publication": 1072,
+      "economic_submit": 186,
+      "item_lifecycle": 1147,
+      "item_publication": 1068,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
-      "sql_economy": 54
+      "sql_economy": 55
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 863-row registry maps 2757 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
-    "mapped_sites_still_present": 2757,
-    "mapped_unique_sites_from_draft_rows": 2757,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 864-row registry maps 2758 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2758,
+    "mapped_unique_sites_from_draft_rows": 2758,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -588,7 +588,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1904
+          1614
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_enchant",
@@ -4193,7 +4193,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1661
+          1695
         ],
         "file": "src/classes/drannak.c",
         "function": "christmas_proc",
@@ -4250,7 +4250,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          784
+          818
         ],
         "file": "src/classes/drannak.c",
         "function": "create_recipe",
@@ -4261,21 +4261,21 @@
     },
     {
       "blocking_policy_after_activation": {
-        "decision": "block_until_typed_schema2_accounting",
+        "decision": "refuse_before_allocation_until_native_source_and_root_exist",
         "must_block_on_activation": true,
-        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+        "required_policy": "Active authority refuses at gameplay entry before recipe RNG, wait, UID allocation or mutation. Crafting needs a native schema-2 root with exact input/output references; automatic vial issuance needs a durable zone spawn/source identity. The inactive legacy receipt or fresh-spawn marker does not satisfy those obligations."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
       "current_critical_command_schema": {
         "accounting_intent_attached_by_current_gameplay_route": false,
-        "current_schema": null,
+        "current_schema": 1,
         "evidence": [
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
-        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
+        "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
       "disposition": "runtime_mutation_route",
@@ -4292,28 +4292,33 @@
           "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
-        "status": "no_operation_level_double_entry_evidence",
+        "status": "legacy_domain_ledger_only_not_double_entry",
         "unified_operation_postings_observed": false
       },
       "id": "class.drannak_pvp_store",
       "native_effects": {
-        "custody_effect": "See the source-backed route detail.",
-        "holding_effect": "See the source-backed route detail.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
         "native_state_targets": [
-          "Native function state plus existing repository/flat-file authority where applicable"
+          "item_current_owner and item_ownership_ledger",
+          "player_items and player_item_runtime_state",
+          "flat-file custody and exact retained craft snapshots"
         ]
       },
       "reason": "item_create",
+      "refusal_source_evidence": [
+        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          370
+          390
         ],
         "file": "src/classes/drannak.c",
         "function": "pvp_store",
         "original_draft_symbol": "pvp_store"
       },
-      "source_classification": "PvP reward store purchase and equipment grant in src/classes/drannak.c:pvp_store",
+      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active accounting refuses before recipe RNG, wait, allocation or mutation.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -4364,7 +4369,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          859
+          893
         ],
         "file": "src/classes/drannak.c",
         "function": "random_recipe",
@@ -4421,7 +4426,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          900
+          934
         ],
         "file": "src/classes/drannak.c",
         "function": "random_zone_item",
@@ -4478,7 +4483,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          325
+          326
         ],
         "file": "src/classes/drannak.c",
         "function": "vnum_from_inv",
@@ -5858,7 +5863,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4006
+          4142
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_coin_apply",
@@ -9633,8 +9638,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          468,
-          12334
+          470,
+          12417
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_account_bank_deposit_balances",
@@ -16489,7 +16494,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1338
+          1449
         ],
         "file": "src/item/item_transfer_command.c",
         "function": "item_transfer_command_build",
@@ -17069,8 +17074,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2288,
-          2300
+          2729,
+          2741
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17132,7 +17137,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1044
+          1256
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -17194,7 +17199,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          944
+          1156
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -17379,7 +17384,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          825
+          1037
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -17685,7 +17690,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2053
+          1763
         ],
         "file": "src/classes/salchemist.c",
         "function": "event_enchant",
@@ -17696,21 +17701,22 @@
     },
     {
       "blocking_policy_after_activation": {
-        "decision": "block_until_typed_schema2_accounting",
+        "decision": "refuse_before_allocation_until_native_source_and_root_exist",
         "must_block_on_activation": true,
-        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+        "required_policy": "Active authority refuses at gameplay entry before recipe RNG, wait, UID allocation or mutation. Crafting needs a native schema-2 root with exact input/output references; automatic vial issuance needs a durable zone spawn/source identity. The inactive legacy receipt or fresh-spawn marker does not satisfy those obligations."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
       "current_critical_command_schema": {
         "accounting_intent_attached_by_current_gameplay_route": false,
-        "current_schema": null,
+        "current_schema": 1,
         "evidence": [
+          "src/item/item_transfer_command.c:1077",
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
-        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
+        "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
       "disposition": "runtime_mutation_route",
@@ -17729,50 +17735,54 @@
           "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
-        "status": "no_operation_level_double_entry_evidence",
+        "status": "legacy_domain_ledger_only_not_double_entry",
         "unified_operation_postings_observed": false
       },
       "id": "item.encrust_failure_destroy",
       "native_effects": {
-        "custody_effect": "Failed encrust directly destroys the carried base item and jewel; virtual jewel cost may already be recorded.",
-        "holding_effect": "No coin balance changes; the Chaos pouch generated-usage counter can change where noted.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
         "native_state_targets": [
-          "runtime player/NPC/furnace object graph",
-          "item_current_owner and item_ownership_ledger for admitted UIDs",
-          "Chaos pouch generated-usage counter where a virtual jewel is used"
+          "item_current_owner and item_ownership_ledger",
+          "player_items and player_item_runtime_state",
+          "flat-file custody and exact retained craft snapshots"
         ]
       },
       "reachability_evidence": "do_encrust source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_destroy",
+      "refusal_source_evidence": [
+        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1124
+          886
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
         "original_draft_symbol": "do_encrust"
       },
-      "source_classification": "Failed encrust directly destroys the carried base item and jewel; virtual jewel generation count may already be recorded.",
+      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active accounting refuses before recipe RNG, wait, allocation or mutation.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
       "blocking_policy_after_activation": {
-        "decision": "block_until_typed_schema2_accounting",
+        "decision": "refuse_before_allocation_until_native_source_and_root_exist",
         "must_block_on_activation": true,
-        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+        "required_policy": "Active authority refuses at gameplay entry before recipe RNG, wait, UID allocation or mutation. Crafting needs a native schema-2 root with exact input/output references; automatic vial issuance needs a durable zone spawn/source identity. The inactive legacy receipt or fresh-spawn marker does not satisfy those obligations."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
       "current_critical_command_schema": {
         "accounting_intent_attached_by_current_gameplay_route": false,
-        "current_schema": null,
+        "current_schema": 1,
         "evidence": [
+          "src/item/item_transfer_command.c:1077",
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
-        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
+        "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
       "disposition": "runtime_mutation_route",
@@ -17791,100 +17801,41 @@
           "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
-        "status": "no_operation_level_double_entry_evidence",
-        "unified_operation_postings_observed": false
-      },
-      "id": "item.encrust_generated_counter_orphan",
-      "native_effects": {
-        "custody_effect": "After chaos_material_pouch_record_generated succeeds, a failed new-item allocation frees the virtual jewel and returns; the pouch debit has already occurred.",
-        "holding_effect": "No coin balance changes; the Chaos pouch generated-usage counter can change where noted.",
-        "native_state_targets": [
-          "runtime player/NPC/furnace object graph",
-          "item_current_owner and item_ownership_ledger for admitted UIDs",
-          "Chaos pouch generated-usage counter where a virtual jewel is used"
-        ]
-      },
-      "reachability_evidence": "do_encrust source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
-      "reason": "item_create",
-      "source": {
-        "anchor_status": "function_definition_verified",
-        "definition_lines": [
-          1124
-        ],
-        "file": "src/classes/salchemist.c",
-        "function": "do_encrust",
-        "original_draft_symbol": "do_encrust"
-      },
-      "source_classification": "After chaos_material_pouch_record_generated increments the pouch generated-use counter, a failed new-item allocation frees the virtual jewel and returns with no completed output item.",
-      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
-    },
-    {
-      "blocking_policy_after_activation": {
-        "decision": "block_until_typed_schema2_accounting",
-        "must_block_on_activation": true,
-        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
-      },
-      "counts_as_operational_writer": false,
-      "counts_as_runtime_writer": true,
-      "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
-        "current_schema": null,
-        "evidence": [
-          "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
-        ],
-        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
-        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
-        "schema_2_gameplay_producer_connected": false
-      },
-      "disposition": "runtime_mutation_route",
-      "double_entry_evidence": {
-        "global_evidence": [
-          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
-          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
-        ],
-        "legacy_domain_evidence": [
-          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
-        ],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
-        "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "balanced economic_accounting_coin_posting rows where currency changes",
-          "linked item event references for custody-changing roots"
-        ],
-        "status": "no_operation_level_double_entry_evidence",
+        "status": "legacy_domain_ledger_only_not_double_entry",
         "unified_operation_postings_observed": false
       },
       "id": "item.encrust_transform",
       "native_effects": {
-        "custody_effect": "Successful encrust makes a replacement item, extracts base item and jewel, then calls obj_to_char on the new item.",
-        "holding_effect": "No coin balance changes; the Chaos pouch generated-usage counter can change where noted.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
         "native_state_targets": [
-          "runtime player/NPC/furnace object graph",
-          "item_current_owner and item_ownership_ledger for admitted UIDs",
-          "Chaos pouch generated-usage counter where a virtual jewel is used"
+          "item_current_owner and item_ownership_ledger",
+          "player_items and player_item_runtime_state",
+          "flat-file custody and exact retained craft snapshots"
         ]
       },
       "reachability_evidence": "do_encrust source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_create",
+      "refusal_source_evidence": [
+        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1124
+          886
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
         "original_draft_symbol": "do_encrust"
       },
-      "source_classification": "Successful encrust makes a replacement item, extracts base item and jewel, then calls obj_to_char on the new item.",
+      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active accounting refuses before recipe RNG, wait, allocation or mutation.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
       "blocking_policy_after_activation": {
         "decision": "not_a_playable_economy_or_custody_writer",
         "must_block_on_activation": false,
-        "required_policy": "A Chaos pouch encrust jewel is instantiated as a temporary recipe descriptor; failed preflight frees it before live publication."
+        "required_policy": "Virtual Chaos-pouch Encrust refuses before generated-use mutation or provisional jewel allocation."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": false,
@@ -17902,11 +17853,11 @@
       "disposition": "non_writer_candidate",
       "double_entry_evidence": {
         "existing_evidence": [],
-        "note": "A Chaos pouch encrust jewel is instantiated as a temporary recipe descriptor; failed preflight frees it before live publication.",
+        "note": "Virtual Chaos-pouch Encrust refuses before generated-use mutation or provisional jewel allocation.",
         "status": "not_applicable",
         "unified_operation_postings_observed": false
       },
-      "exclusion_reason": "A Chaos pouch encrust jewel is instantiated as a temporary recipe descriptor; failed preflight frees it before live publication.",
+      "exclusion_reason": "Virtual Chaos-pouch Encrust refuses before generated-use mutation or provisional jewel allocation.",
       "id": "item.encrust_virtual_jewel_stage",
       "native_effects": {
         "custody_effect": "none",
@@ -17918,13 +17869,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1124
+          886
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
         "original_draft_symbol": "do_encrust"
       },
-      "source_classification": "Chaos pouch branch reads a virtual jewel descriptor and frees it on failed preflight without admitting that descriptor UID.",
+      "source_classification": "Virtual Chaos-pouch Encrust now refuses before generated-use mutation or jewel allocation.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -18433,7 +18384,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          662
+          874
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -18495,7 +18446,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          669
+          881
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -18618,7 +18569,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1424
+          1199
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_fix",
@@ -18665,7 +18616,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1424
+          1199
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_fix",
@@ -19568,7 +19519,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2535
+          2976
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19630,7 +19581,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2348
+          2789
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20616,74 +20567,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1710
+          1969
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
         "original_draft_symbol": "item_movement_transaction_submit"
       },
       "source_classification": "Shared durable item movement envelopes.",
-      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
-    },
-    {
-      "blocking_policy_after_activation": {
-        "decision": "block_until_typed_schema2_accounting",
-        "must_block_on_activation": true,
-        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
-      },
-      "counts_as_operational_writer": false,
-      "counts_as_runtime_writer": true,
-      "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
-        "current_schema": null,
-        "evidence": [
-          "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
-        ],
-        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
-        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
-        "schema_2_gameplay_producer_connected": false
-      },
-      "disposition": "runtime_mutation_route",
-      "double_entry_evidence": {
-        "global_evidence": [
-          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
-          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
-        ],
-        "legacy_domain_evidence": [
-          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
-        ],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
-        "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "balanced economic_accounting_coin_posting rows where currency changes",
-          "linked item event references for custody-changing roots"
-        ],
-        "status": "no_operation_level_double_entry_evidence",
-        "unified_operation_postings_observed": false
-      },
-      "id": "item.npc_alchemist_potion_grant",
-      "native_effects": {
-        "custody_effect": "Mob alchemist helper repeatedly creates and places potion objects on an NPC, called by mobact combat logic.",
-        "holding_effect": "No coin balance changes; the Chaos pouch generated-usage counter can change where noted.",
-        "native_state_targets": [
-          "runtime player/NPC/furnace object graph",
-          "item_current_owner and item_ownership_ledger for admitted UIDs"
-        ]
-      },
-      "reachability_evidence": "MobAlchemistGetPotions source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
-      "reason": "item_create",
-      "source": {
-        "anchor_status": "function_definition_verified",
-        "definition_lines": [
-          1698
-        ],
-        "file": "src/classes/salchemist.c",
-        "function": "MobAlchemistGetPotions",
-        "original_draft_symbol": "MobAlchemistGetPotions"
-      },
-      "source_classification": "Mob alchemist helper repeatedly creates and places potion objects on an NPC, called by mobact combat logic.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -21056,21 +20946,22 @@
     },
     {
       "blocking_policy_after_activation": {
-        "decision": "block_until_typed_schema2_accounting",
+        "decision": "refuse_before_allocation_until_native_source_and_root_exist",
         "must_block_on_activation": true,
-        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+        "required_policy": "Active authority refuses at gameplay entry before recipe RNG, wait, UID allocation or mutation. Crafting needs a native schema-2 root with exact input/output references; automatic vial issuance needs a durable zone spawn/source identity. The inactive legacy receipt or fresh-spawn marker does not satisfy those obligations."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
       "current_critical_command_schema": {
         "accounting_intent_attached_by_current_gameplay_route": false,
-        "current_schema": null,
+        "current_schema": 1,
         "evidence": [
+          "src/item/item_transfer_command.c:1077",
           "src/persistence/critical_command.h:9-10",
           "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
         ],
-        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
-        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
+        "route_mode": "schema_1_typed_command_path",
         "schema_2_gameplay_producer_connected": false
       },
       "disposition": "runtime_mutation_route",
@@ -21089,91 +20980,34 @@
           "balanced economic_accounting_coin_posting rows where currency changes",
           "linked item event references for custody-changing roots"
         ],
-        "status": "no_operation_level_double_entry_evidence",
-        "unified_operation_postings_observed": false
-      },
-      "id": "item.poison_ingredients_sink",
-      "native_effects": {
-        "custody_effect": "Helper selects carried poison ingredients by VNUM and extracts them after poison vial creation.",
-        "holding_effect": "No coin balance changes; the Chaos pouch generated-usage counter can change where noted.",
-        "native_state_targets": [
-          "runtime player/NPC/furnace object graph",
-          "item_current_owner and item_ownership_ledger for admitted UIDs"
-        ]
-      },
-      "reachability_evidence": "extract_used_poison_ingredients source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
-      "reason": "item_destroy",
-      "source": {
-        "anchor_status": "function_definition_verified",
-        "definition_lines": [
-          598
-        ],
-        "file": "src/classes/salchemist.c",
-        "function": "extract_used_poison_ingredients",
-        "original_draft_symbol": "extract_used_poison_ingredients"
-      },
-      "source_classification": "Helper selects carried poison ingredients by VNUM and extracts them after poison vial creation.",
-      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
-    },
-    {
-      "blocking_policy_after_activation": {
-        "decision": "block_until_typed_schema2_accounting",
-        "must_block_on_activation": true,
-        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
-      },
-      "counts_as_operational_writer": false,
-      "counts_as_runtime_writer": true,
-      "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
-        "current_schema": null,
-        "evidence": [
-          "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
-        ],
-        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
-        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
-        "schema_2_gameplay_producer_connected": false
-      },
-      "disposition": "runtime_mutation_route",
-      "double_entry_evidence": {
-        "global_evidence": [
-          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
-          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
-        ],
-        "legacy_domain_evidence": [
-          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
-        ],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
-        "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "balanced economic_accounting_coin_posting rows where currency changes",
-          "linked item event references for custody-changing roots"
-        ],
-        "status": "no_operation_level_double_entry_evidence",
+        "status": "legacy_domain_ledger_only_not_double_entry",
         "unified_operation_postings_observed": false
       },
       "id": "item.poison_mix",
       "native_effects": {
-        "custody_effect": "Poison mixing creates a new vial for the player, then separately extracts the old vial and ingredients.",
-        "holding_effect": "No coin balance changes; the Chaos pouch generated-usage counter can change where noted.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
         "native_state_targets": [
-          "runtime player/NPC/furnace object graph",
-          "item_current_owner and item_ownership_ledger for admitted UIDs"
+          "item_current_owner and item_ownership_ledger",
+          "player_items and player_item_runtime_state",
+          "flat-file custody and exact retained craft snapshots"
         ]
       },
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_create",
+      "refusal_source_evidence": [
+        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          732
+          558
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_mixpoison",
         "original_draft_symbol": "do_mixpoison"
       },
-      "source_classification": "Poison mixing creates a new vial for the player, then separately extracts the old vial and ingredients.",
+      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active accounting refuses before recipe RNG, wait, allocation or mutation.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -21214,135 +21048,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          710
+          536
         ],
         "file": "src/classes/salchemist.c",
         "function": "print_poison_ingredients",
         "original_draft_symbol": "print_poison_ingredients"
       },
       "source_classification": "Recipe display reads sample ingredient and poison vial templates, then frees them without owner publication.",
-      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
-    },
-    {
-      "blocking_policy_after_activation": {
-        "decision": "block_until_typed_schema2_accounting",
-        "must_block_on_activation": true,
-        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
-      },
-      "counts_as_operational_writer": false,
-      "counts_as_runtime_writer": true,
-      "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
-        "current_schema": null,
-        "evidence": [
-          "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
-        ],
-        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
-        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
-        "schema_2_gameplay_producer_connected": false
-      },
-      "disposition": "runtime_mutation_route",
-      "double_entry_evidence": {
-        "global_evidence": [
-          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
-          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
-        ],
-        "legacy_domain_evidence": [
-          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
-        ],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
-        "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "balanced economic_accounting_coin_posting rows where currency changes",
-          "linked item event references for custody-changing roots"
-        ],
-        "status": "no_operation_level_double_entry_evidence",
-        "unified_operation_postings_observed": false
-      },
-      "id": "item.potion_ingredients_sink",
-      "native_effects": {
-        "custody_effect": "Helper selects carried potion ingredients and extracts them on a failed/finished mixing loop.",
-        "holding_effect": "No coin balance changes; the Chaos pouch generated-usage counter can change where noted.",
-        "native_state_targets": [
-          "runtime player/NPC/furnace object graph",
-          "item_current_owner and item_ownership_ledger for admitted UIDs"
-        ]
-      },
-      "reachability_evidence": "extract_used_ingredients source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
-      "reason": "item_destroy",
-      "source": {
-        "anchor_status": "function_definition_verified",
-        "definition_lines": [
-          638
-        ],
-        "file": "src/classes/salchemist.c",
-        "function": "extract_used_ingredients",
-        "original_draft_symbol": "extract_used_ingredients"
-      },
-      "source_classification": "Helper selects carried potion ingredients and extracts them on a failed/finished mixing loop.",
-      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
-    },
-    {
-      "blocking_policy_after_activation": {
-        "decision": "block_until_typed_schema2_accounting",
-        "must_block_on_activation": true,
-        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
-      },
-      "counts_as_operational_writer": false,
-      "counts_as_runtime_writer": true,
-      "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
-        "current_schema": null,
-        "evidence": [
-          "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
-        ],
-        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
-        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
-        "schema_2_gameplay_producer_connected": false
-      },
-      "disposition": "runtime_mutation_route",
-      "double_entry_evidence": {
-        "global_evidence": [
-          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
-          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
-        ],
-        "legacy_domain_evidence": [
-          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
-        ],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
-        "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "balanced economic_accounting_coin_posting rows where currency changes",
-          "linked item event references for custody-changing roots"
-        ],
-        "status": "no_operation_level_double_entry_evidence",
-        "unified_operation_postings_observed": false
-      },
-      "id": "item.potion_mix",
-      "native_effects": {
-        "custody_effect": "Potion mixing creates an output on success, destroys the old bottle on every iteration and may grant a replacement bottle.",
-        "holding_effect": "No coin balance changes; the Chaos pouch generated-usage counter can change where noted.",
-        "native_state_targets": [
-          "runtime player/NPC/furnace object graph",
-          "item_current_owner and item_ownership_ledger for admitted UIDs"
-        ]
-      },
-      "reachability_evidence": "do_mix source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
-      "reason": "item_create",
-      "source": {
-        "anchor_status": "function_definition_verified",
-        "definition_lines": [
-          820
-        ],
-        "file": "src/classes/salchemist.c",
-        "function": "do_mix",
-        "original_draft_symbol": "do_mix"
-      },
-      "source_classification": "Potion mixing creates an output on success, destroys the old bottle on every iteration and may grant a replacement bottle.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -21445,7 +21157,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1320
+          1532
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -21507,7 +21219,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          876
+          1088
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -21875,7 +21587,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          731
+          943
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -22470,7 +22182,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1553
+          1328
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_smelt",
@@ -22531,7 +22243,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1553
+          1328
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_smelt",
@@ -22594,7 +22306,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1823
+          2172
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_execute_at_offset",
@@ -22655,7 +22367,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2445
+          2797
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_destroy_owners",
@@ -22947,7 +22659,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1793
+          1503
         ],
         "file": "src/classes/salchemist.c",
         "function": "thrusted_eq_proc",
@@ -24922,8 +24634,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          294,
-          5481
+          296,
+          5564
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_account",
@@ -24983,8 +24695,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          270,
-          1241
+          272,
+          1243
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_player",
@@ -28589,7 +28301,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7111
+          6923
         ],
         "file": "src/mob/mobact.c",
         "function": "IsBetterObject",
@@ -28648,7 +28360,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1070
+          1068
         ],
         "file": "src/mob/mobact.c",
         "function": "CastMageSpell",
@@ -28708,7 +28420,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8515
+          8327
         ],
         "file": "src/mob/mobact.c",
         "function": "MobHuntCheck",
@@ -29061,7 +28773,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6075
+          5887
         ],
         "file": "src/mob/mobact.c",
         "function": "MobThief",
@@ -30691,7 +30403,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1743
+          1763
         ],
         "file": "src/player/player_snapshot_repository.c",
         "function": "apply_death",
@@ -31193,8 +30905,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          464,
-          12199
+          466,
+          12282
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_account_bank",
@@ -31254,8 +30966,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          235,
-          4069
+          237,
+          4127
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_status",
@@ -32172,7 +31884,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2044
+          2053
         ],
         "file": "src/persistence/copyover.c",
         "function": "copyover_restore_mob_from_buffer",
@@ -32234,7 +31946,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1321
+          1330
         ],
         "file": "src/persistence/copyover.c",
         "function": "copyover_recover",
@@ -33094,7 +32806,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          895
+          924
         ],
         "file": "src/player/player_load_items.c",
         "function": "player_load_items_discard",
@@ -33281,8 +32993,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          417,
-          10998
+          419,
+          11081
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33343,8 +33055,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          413,
-          9468
+          415,
+          9551
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_saved_item",
@@ -33405,8 +33117,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          409,
-          9414
+          411,
+          9497
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_saved_item",
@@ -33532,8 +33244,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          382,
-          8328
+          384,
+          8411
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -33580,8 +33292,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          382,
-          8328
+          384,
+          8411
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -33628,7 +33340,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          911
+          913
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_format_item_diff_fields_and_free_proto",
@@ -33691,7 +33403,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6318
+          6401
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_locker_items_filtered",
@@ -33754,8 +33466,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          253,
-          4523
+          255,
+          4581
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_items",
@@ -33818,8 +33530,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          552,
-          7179
+          554,
+          7262
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_private_chest_items",
@@ -33882,8 +33594,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          417,
-          10998
+          419,
+          11081
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33930,8 +33642,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          417,
-          10998
+          419,
+          11081
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33994,7 +33706,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9556
+          9639
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -34056,7 +33768,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9556
+          9639
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -34103,7 +33815,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9508
+          9591
         ],
         "file": "src/sql/sql_player.c",
         "function": "discard_shopkeeper_restore_stage",
@@ -34150,7 +33862,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7328
+          7411
         ],
         "file": "src/sql/sql_player.c",
         "function": "free_temp_char",
@@ -36446,8 +36158,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          442,
-          11776
+          444,
+          11859
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_ship",
@@ -36506,8 +36218,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          434,
-          11658
+          436,
+          11741
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_ship",
@@ -36567,8 +36279,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          430,
-          11404
+          432,
+          11487
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_ship",
@@ -48319,8 +48031,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1951,
-          2775
+          1954,
+          2778
         ],
         "file": "src/world/db.c",
         "function": "read_mobile",
@@ -48474,7 +48186,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3055
+          3058
         ],
         "file": "src/world/db.c",
         "function": "instantiate_object_template",
@@ -48590,7 +48302,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          72
+          71
         ],
         "file": "src/mob/mobpatrol.c",
         "function": "mobPatrol_SetupNew",
@@ -49523,7 +49235,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3173
+          3176
         ],
         "file": "src/world/db.c",
         "function": "read_object",
@@ -49583,7 +49295,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3288
+          3291
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50058,7 +49770,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3288
+          3291
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50119,7 +49831,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3288
+          3291
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50179,7 +49891,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3288
+          3291
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50239,7 +49951,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3288
+          3291
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50299,7 +50011,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3288
+          3291
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50346,7 +50058,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3288
+          3291
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50757,6 +50469,369 @@
         "original_draft_symbol": "item_restrict_player_pet_equipment"
       },
       "source_classification": "Relinks hidden NPC helper gear from worn to carried on the same player-owned pet, preserving the UID and child graph; no player grant or item retirement is authorized.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "refuse_before_allocation_until_native_source_and_root_exist",
+        "must_block_on_activation": true,
+        "required_policy": "Active authority refuses at gameplay entry before recipe RNG, wait, UID allocation or mutation. Crafting needs a native schema-2 root with exact input/output references; automatic vial issuance needs a durable zone spawn/source identity. The inactive legacy receipt or fresh-spawn marker does not satisfy those obligations."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation.",
+        "route_mode": "legacy_direct_without_a_schema_1_command_at_this_function",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "no_operation_level_double_entry_evidence",
+        "unified_operation_postings_observed": false
+      },
+      "id": "item.npc_alchemist_vial_grant",
+      "native_effects": {
+        "custody_effect": "One fresh inactive NPC may carry one real VNUM102. Active accounting performs no vial mutation.",
+        "holding_effect": "No coin effect.",
+        "native_state_targets": [
+          "fresh NPC inventory and once-per-spawn decision marker",
+          "future durable zone spawn/source and exact UID custody"
+        ]
+      },
+      "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
+      "reason": "item_create",
+      "refusal_source_evidence": [
+        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          177
+        ],
+        "file": "src/classes/npc_alchemist.c",
+        "function": "npc_alchemist_world_spawn",
+        "original_draft_symbol": "npc_alchemist_world_spawn"
+      },
+      "source_classification": "One 10% VNUM 102 roll per finalized fresh NPC spawn while accounting is inactive. Active authority refuses before RNG, marker, allocation or publication; durable zone spawn/source identity is not implemented.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "refuse_before_allocation_until_native_source_and_root_exist",
+        "must_block_on_activation": true,
+        "required_policy": "Active authority refuses at gameplay entry before recipe RNG, wait, UID allocation or mutation. Crafting needs a native schema-2 root with exact input/output references; automatic vial issuance needs a durable zone spawn/source identity. The inactive legacy receipt or fresh-spawn marker does not satisfy those obligations."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": 1,
+        "evidence": [
+          "src/item/item_transfer_command.c:1077",
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
+        "route_mode": "schema_1_typed_command_path",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "legacy_domain_ledger_only_not_double_entry",
+        "unified_operation_postings_observed": false
+      },
+      "id": "item.craft_submit",
+      "native_effects": {
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "native_state_targets": [
+          "item_current_owner and item_ownership_ledger",
+          "player_items and player_item_runtime_state",
+          "flat-file custody and exact retained craft snapshots"
+        ]
+      },
+      "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
+      "reason": "item_create",
+      "refusal_source_evidence": [
+        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          2481
+        ],
+        "file": "src/item/item_movement_transaction.c",
+        "function": "item_movement_transaction_submit_craft",
+        "original_draft_symbol": "item_movement_transaction_submit_craft"
+      },
+      "source_classification": "Builds one legacy retained exact-input/output craft receipt. Active authority refuses before UID reservation; no active schema-2 craft owner is implemented.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": 1,
+        "evidence": [
+          "src/item/item_transfer_command.c:1077",
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
+        "route_mode": "schema_1_typed_command_path",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "legacy_domain_ledger_only_not_double_entry",
+        "unified_operation_postings_observed": false
+      },
+      "id": "item.craft_publication",
+      "native_effects": {
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "native_state_targets": [
+          "item_current_owner and item_ownership_ledger",
+          "player_items and player_item_runtime_state",
+          "flat-file custody and exact retained craft snapshots"
+        ]
+      },
+      "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
+      "reason": "item_create",
+      "refusal_source_evidence": [
+        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          683
+        ],
+        "file": "src/item/item_movement_transaction.c",
+        "function": "publish_craft",
+        "original_draft_symbol": "publish_craft"
+      },
+      "source_classification": "Projects the exact committed inactive craft result: retire selected live inputs once, reconstruct outputs with retained UIDs, and publish only to the committed player owner.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "Frees only detached provisional craft outputs after rejection; admitted input custody is unchanged."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "Frees only detached provisional craft outputs after rejection; admitted input custody is unchanged.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "Frees only detached provisional craft outputs after rejection; admitted input custody is unchanged.",
+      "id": "item.craft_rejected_stage_cleanup",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
+      "reason": "item_create",
+      "refusal_source_evidence": [
+        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          726
+        ],
+        "file": "src/item/item_movement_transaction.c",
+        "function": "discard_craft_outputs",
+        "original_draft_symbol": "discard_craft_outputs"
+      },
+      "source_classification": "Frees only detached provisional outputs after rejection; admitted input custody is unchanged.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": 1,
+        "evidence": [
+          "src/item/item_transfer_command.c:1077",
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
+        "route_mode": "schema_1_typed_command_path",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "legacy_domain_ledger_only_not_double_entry",
+        "unified_operation_postings_observed": false
+      },
+      "id": "item.sql_craft_output_component",
+      "native_effects": {
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "native_state_targets": [
+          "item_current_owner and item_ownership_ledger",
+          "player_items and player_item_runtime_state",
+          "flat-file custody and exact retained craft snapshots"
+        ]
+      },
+      "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
+      "reason": "item_create",
+      "refusal_source_evidence": [
+        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1632
+        ],
+        "file": "src/item/item_transfer_repository.c",
+        "function": "insert_craft_output_item",
+        "original_draft_symbol": "insert_craft_output_item"
+      },
+      "source_classification": "SQL component inserts an exact output custody row inside the owning inactive craft transaction. Active typed craft roots remain unsupported.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "Discards this failed load attempt's provisional player graph without retiring durable custody."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "Discards this failed load attempt's provisional player graph without retiring durable custody.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "Discards this failed load attempt's provisional player graph without retiring durable custody.",
+      "id": "recovery.sql_player_runtime_rejected_stage",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
+      "reason": "item_create",
+      "refusal_source_evidence": [
+        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          255,
+          4581
+        ],
+        "file": "src/sql/sql_player.c",
+        "function": "sql_load_player_items",
+        "original_draft_symbol": "sql_load_player_items"
+      },
+      "source_classification": "Malformed rich runtime state discards only this load attempt\u2019s materialized object graph; durable player item rows remain unchanged.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     }
   ],

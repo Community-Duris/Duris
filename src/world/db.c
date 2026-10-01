@@ -47,6 +47,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include "world/object_template.h"
+#include "classes/npc_alchemist.h"
 #include "account/newbie_kit_plan.h"
 #include "economy/economic_gameplay_authority.h"
 
@@ -644,6 +645,8 @@ void boot_db(int mini_mode)
 	fprintf(stderr, "-- Spells.\n");
 	logit(LOG_STATUS, "   Spells.");
 	assign_spell_pointers();
+
+	npc_alchemist_cache_templates();
 
 	// Parse starter prototypes before any descriptors can request a kit.
 	for (int vnum : newbie_kit_template_vnums())
@@ -3350,6 +3353,7 @@ void reset_zone(int zone, int force_item_repop)
 					GET_BIRTHPLACE(mob) = world[ZCMD.arg3].number;
 					apply_zone_modifier(mob);
 					char_to_room(mob, ZCMD.arg3, -2);
+					npc_alchemist_world_spawn(mob);
 					last_cmd = 1;
 				}
 				else
@@ -3608,6 +3612,7 @@ void reset_zone(int zone, int force_item_repop)
 				if (configured_shop >= 0)
 					bind_shopkeeper(mob, configured_shop);
 				char_to_room(mob, ZCMD.arg3, -2);
+				npc_alchemist_world_spawn(mob);
 				last_cmd = last_mob_load = 1;
 				break;
 
@@ -3954,6 +3959,7 @@ void reset_zone(int zone, int force_item_repop)
 					GET_BIRTHPLACE(mob) = world[ZCMD.arg3].number;
 					apply_zone_modifier(mob);
 					char_to_room(mob, ZCMD.arg3, -2);
+					npc_alchemist_world_spawn(mob);
 					add_follower(mob, last_mob_followable);
 					strcpy(buf, "group all");
 					command_interpreter(last_mob, buf);
@@ -4002,6 +4008,7 @@ void reset_zone(int zone, int force_item_repop)
 					GET_BIRTHPLACE(mob) = world[ZCMD.arg3].number;
 					apply_zone_modifier(mob);
 					char_to_room(mob, ZCMD.arg3, -2);
+					npc_alchemist_world_spawn(mob);
 					snprintf(buf, MAX_STRING_LENGTH, "%s",
 						 FirstWord(GET_NAME(mob)));
 					if (!IS_SET(mob->specials.act, ACT_SENTINEL))

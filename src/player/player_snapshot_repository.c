@@ -469,6 +469,26 @@ query_result insert_item_rows(MYSQL *connection, const std::vector<player_item_s
 		if (!item_id)
 			return { false, EIO };
 		ids.push_back(item_id);
+		if (!pet_items)
+		{
+			player_item_snapshot standalone = row;
+			standalone.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+			std::vector<uint8_t> runtime;
+			if (player_item_snapshot_list_encode({ standalone }, &runtime) !=
+			    player_snapshot_codec_result::ok)
+				return { false, EINVAL };
+			result = execute(
+				connection,
+				"INSERT INTO player_item_runtime_state(item_id,payload) VALUES(" +
+					std::to_string(item_id) + "," +
+					quote(connection,
+					      std::string(reinterpret_cast<const char *>(
+								  runtime.data()),
+							  runtime.size())) +
+					")");
+			if (!result.ok)
+				return result;
+		}
 
 		std::unordered_set<uint64_t> affect_keys;
 		std::unordered_set<std::string> description_keys;

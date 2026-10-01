@@ -7,6 +7,9 @@
 #include "item/item_uid_allocator.h"
 #include "player/player_snapshot.h"
 #include "player/player_snapshot_codec.h"
+#include "player/player_snapshot_repository.h"
+#include "player/player_load_repository.h"
+#include "persistence/persistence_observability.h"
 
 #include <algorithm>
 #include <array>
@@ -440,6 +443,34 @@ void check_restitution_runtime_transfer(MYSQL *connection)
 			std::to_string(uid) + "," + std::to_string(uid) + ",NULL,1,41,0,1,1901,1)");
 	const uint64_t source_revision = owner_revision(connection, source);
 	const uint64_t target_revision = owner_revision(connection, target);
+	item_transfer_payload craft = {};
+	craft.from_owner = source;
+	craft.to_owner = source;
+	craft.reason = item_transfer_reason::craft;
+	craft.reason_id = 9002;
+	craft.expected_from_revision = source_revision;
+	craft.expected_to_revision = source_revision;
+	craft.selected_item_uid = uid;
+	craft.target_root_item_uid = 0;
+	craft.multi_root = true;
+	craft.item_count = 1;
+	craft.items[0] = { uid, uid, 0, 1, 1901, item_custody_state::active };
+	const critical_apply_result rejected_craft = apply(connection, 16, craft);
+	assert(rejected_craft.outcome == critical_apply_outcome::terminal_failure &&
+	       rejected_craft.error_code == EPERM);
+	assert(scalar(connection,
+		      ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
+		       std::to_string(uid) + " AND owner_id=41 AND state=1 AND item_revision=1").c_str()) == 1);
+	assert(scalar(connection,
+		      ("SELECT COUNT(*) FROM player_death_restitution_delivery WHERE item_uid=" +
+		       std::to_string(uid)).c_str()) ==
+	       1);
+	const std::vector<uint8_t> preserved_payload = read_blob(
+		connection,
+		("SELECT state_payload FROM player_death_restitution_runtime WHERE item_uid=" +
+		 std::to_string(uid)).c_str());
+	assert(preserved_payload == initial_payload);
+	assert(owner_revision(connection, source) == source_revision);
 	item_transfer_payload transfer = {};
 	transfer.from_owner = source;
 	transfer.to_owner = target;
@@ -1843,6 +1874,118 @@ void check_quest_reward_obligation(MYSQL *&connection)
 	puts("PASS: committed SQL quest offering retains exact reward obligation and replays once");
 }
 
+void check_craft_conservation(MYSQL *connection)
+{
+	const item_owner_identity owner = { item_owner_type::player, 551, 0 };
+	execute(connection,
+		"INSERT INTO player_data(pid,name,account_name) VALUES(551,'CraftConservation','CraftFixture')");
+	execute(connection,
+		"INSERT INTO item_owner_revision(owner_type,owner_id,owner_context_id,revision) VALUES(1,551,0,1)");
+	execute(connection,
+		"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,item_revision,vnum,state) VALUES(55101,55101,NULL,1,551,0,1,102,1),(55102,55102,NULL,1,551,0,1,103,1)");
+	player_item_snapshot output = runtime_item(55103, 771, 1900001234);
+	output.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	output.craftsmanship = 4;
+	output.anti_flags = 11;
+	output.anti2_flags = 12;
+	output.extra2_flags = 13;
+	output.generated_key = 551;
+	output.dynamic_affects.push_back({ 1, 2, 3 });
+	const auto encoded = encode_runtime_item(output);
+	item_transfer_payload craft = {};
+	craft.from_owner = craft.to_owner = owner;
+	craft.expected_from_revision = craft.expected_to_revision = 1;
+	craft.reason = item_transfer_reason::craft;
+	craft.reason_id = 551;
+	craft.multi_root = true;
+	craft.selected_item_uid = output.object_uid;
+	craft.item_count = 2;
+	craft.items[0] = { 55101, 55101, 0, 1, 102, item_custody_state::active };
+	craft.items[1] = { 55102, 55102, 0, 1, 103, item_custody_state::active };
+	craft.item_blob_size = encoded.size();
+	std::copy(encoded.begin(), encoded.end(), craft.item_blob.begin());
+	auto applied = apply(connection, 31, craft);
+	if (applied.outcome != critical_apply_outcome::applied)
+		fprintf(stderr, "craft outcome=%u error=%u stage=%u sql=%s\n",
+			(unsigned)applied.outcome, applied.error_code,
+			(unsigned)applied.failure_stage, mysql_error(connection));
+	assert(applied.outcome == critical_apply_outcome::applied);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM item_current_owner WHERE owner_id=551 AND owner_type=1 AND state=1") ==
+	       1);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM item_current_owner WHERE item_uid IN(55101,55102) AND owner_type=8 AND state=2") ==
+	       2);
+	assert(owner_revision(connection, owner) == 2);
+	const auto stored = read_blob(
+		connection,
+		"SELECT state.payload FROM player_item_runtime_state state JOIN player_items pi ON pi.id=state.item_id WHERE pi.obj_uid=55103");
+	assert(stored == encoded);
+	// Exercise the ordinary save writer and a fresh repository load, independently
+	// of the craft receipt. Rich state must survive replacing physical item rows.
+	player_snapshot checkpoint = {};
+	checkpoint.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+	checkpoint.pid = 551;
+	checkpoint.revision = 1;
+	checkpoint.components = PLAYER_COMPONENT_INVENTORY | PLAYER_COMPONENT_EQUIPMENT;
+	checkpoint.items = { output };
+	assert(player_snapshot_repository_apply(connection, checkpoint).outcome ==
+	       player_save_apply_outcome::applied);
+	player_load_request request = {};
+	request.request_id = 551;
+	request.pid = 551;
+	request.account_name = "CraftFixture";
+	request.deadline_usec = persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+	auto reloaded = player_load_repository_execute(connection, request);
+	if (reloaded.outcome != player_load_outcome::applied)
+		fprintf(stderr, "craft reload outcome=%u error=%u component=%s\n",
+			(unsigned)reloaded.outcome, reloaded.error_code,
+			reloaded.failed_component ? reloaded.failed_component : "none");
+	assert(reloaded.outcome == player_load_outcome::applied &&
+	       reloaded.snapshot.items.size() == 1);
+	const auto &loaded = reloaded.snapshot.items[0];
+	assert(loaded.object_uid == output.object_uid &&
+	       loaded.craftsmanship == output.craftsmanship);
+	assert(loaded.generated_key == output.generated_key && loaded.timers == output.timers);
+	assert(loaded.anti_flags == output.anti_flags && loaded.anti2_flags == output.anti2_flags &&
+	       loaded.extra2_flags == output.extra2_flags);
+	assert(loaded.dynamic_affects.size() == output.dynamic_affects.size() &&
+	       loaded.extra_descriptions.size() == output.extra_descriptions.size());
+	applied = apply(connection, 31, craft);
+	assert(applied.outcome == critical_apply_outcome::already_applied);
+	assert(scalar(connection, "SELECT COUNT(*) FROM player_items WHERE obj_uid=55103") == 1);
+	// A later stale command cannot consume the committed output or admit another.
+	craft.expected_from_revision = craft.expected_to_revision = 1;
+	craft.selected_item_uid = 55104;
+	output.object_uid = 55104;
+	const auto stale_bytes = encode_runtime_item(output);
+	craft.item_blob_size = stale_bytes.size();
+	std::copy(stale_bytes.begin(), stale_bytes.end(), craft.item_blob.begin());
+	applied = apply(connection, 32, craft);
+	assert(applied.outcome == critical_apply_outcome::terminal_failure);
+	assert(scalar(connection, "SELECT COUNT(*) FROM player_items WHERE obj_uid=55104") == 0);
+	assert(owner_revision(connection, owner) == 2);
+	craft = {};
+	craft.from_owner = craft.to_owner = owner;
+	craft.expected_from_revision = craft.expected_to_revision = 2;
+	craft.reason = item_transfer_reason::craft;
+	craft.reason_id = 551;
+	craft.multi_root = true;
+	craft.selected_item_uid = 55103;
+	craft.item_count = 1;
+	craft.items[0] = { 55103, 55103, 0, 1, output.vnum, item_custody_state::active };
+	applied = apply(connection, 33, craft);
+	assert(applied.outcome == critical_apply_outcome::applied);
+	assert(owner_revision(connection, owner) == 3);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM item_current_owner WHERE owner_id=551 AND owner_type=1 AND state=1") ==
+	       0);
+	assert(scalar(connection, "SELECT COUNT(*) FROM player_items WHERE obj_uid=55103") == 0);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM player_item_runtime_state state LEFT JOIN player_items pi ON pi.id=state.item_id WHERE pi.id IS NULL") ==
+	       0);
+}
+
 int main()
 {
 	assert(mysql_library_init(0, nullptr, nullptr) == 0);
@@ -2255,7 +2398,7 @@ int main()
 	check_dispatch_fence_commit_and_rollback(connection);
 	check_sql_accounted_item_transfer(connection);
 	check_quest_reward_obligation(connection);
-	for (uint8_t id = 1; id <= 15; ++id)
+	for (uint8_t id = 1; id <= 16; ++id)
 	{
 		const std::string hex = operation_hex(id);
 		execute(connection,
@@ -2267,6 +2410,7 @@ int main()
 			("DELETE FROM critical_outbox WHERE operation_id=UNHEX('" + hex + "')")
 				.c_str());
 	}
+	check_craft_conservation(connection);
 	mysql_close(connection);
 	return 0;
 }

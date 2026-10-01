@@ -35,6 +35,13 @@ progress_notice = body.index("*** Copyover in progress... ***")
 execute = body.index("execl(")
 
 checks = {
+    "copyover restores the durable account identity":
+        "copyover_load_account(result.account_name, result.pid, GET_NAME(player))" in recover and
+        "str_dup(desc_entry.player_name)" not in recover,
+    "copyover releases Redis only after durable handoff and before transports close":
+        publish < body.index("redis_world_recovery_prepare_copyover()") < close,
+    "failed exec resumes Redis recovery":
+        "redis_world_recovery_resume_after_copyover()" in copyover,
     "copyover returns failure": body.count("return false;") >= 10,
     "connected death retries are serialized and disconnected retries block copyover":
         "death_extract_retry_pending(pending_character)" in body and
