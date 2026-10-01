@@ -393,6 +393,10 @@ player_load_submit_outcome player_load_pipeline_submit(player_load_request reque
 	    !item_movement_transaction_pending_spell_effects(
 		    static_cast<uint32_t>(request.pid), &request.pending_spell_effect_operations))
 		return player_load_submit_outcome::unavailable;
+	if (request.pid > 0 && request.include_items &&
+	    !item_movement_transaction_pending_craft_progression(static_cast<uint32_t>(request.pid),
+								 &request.pending_craft_operations))
+		return player_load_submit_outcome::unavailable;
 	if (!player_load_request_valid(request, now))
 		return player_load_submit_outcome::invalid;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
@@ -501,6 +505,10 @@ bool player_load_pipeline_execute_sync(player_load_request request, player_load_
 	if (request.pid > 0 && request.include_items &&
 	    !item_movement_transaction_pending_spell_effects(
 		    static_cast<uint32_t>(request.pid), &request.pending_spell_effect_operations))
+		return false;
+	if (request.pid > 0 && request.include_items &&
+	    !item_movement_transaction_pending_craft_progression(static_cast<uint32_t>(request.pid),
+								 &request.pending_craft_operations))
 		return false;
 	if (!result_out || !player_load_request_valid(request, now_usec()))
 		return false;

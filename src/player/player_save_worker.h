@@ -103,7 +103,8 @@ inline bool player_save_result_matches_exact_request(const player_snapshot &snap
 						     const player_save_apply_result &result)
 {
 	const bool exact_required = snapshot.death || !snapshot.quest_xp_receipts.empty() ||
-				    !snapshot.spell_effect_receipts.empty();
+				    !snapshot.spell_effect_receipts.empty() ||
+				    !snapshot.craft_receipts.empty();
 	return !exact_required || ((result.outcome == player_save_apply_outcome::applied ||
 				    result.outcome == player_save_apply_outcome::already_applied) &&
 				   result.durable_revision == snapshot.revision);
@@ -128,6 +129,8 @@ struct player_save_completion
 	std::vector<player_spell_effect_receipt_snapshot> spell_effect_receipts;
 	// A final failed attempt releases the owner's retry gate without granting an ACK.
 	std::vector<player_spell_effect_receipt_snapshot> failed_spell_effect_receipts;
+	std::vector<player_craft_receipt_snapshot> craft_receipts = {};
+	std::vector<player_craft_receipt_snapshot> failed_craft_receipts = {};
 };
 
 enum class player_save_submit_result : uint8_t

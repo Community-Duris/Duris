@@ -2,6 +2,7 @@
 #include "flatfile/flatfile_boon_repository.h"
 #include "flatfile/flatfile_identity_repository.h"
 #include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_craft_progression.h"
 #include "flatfile/flatfile_artifact_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "persistence/persistence_observability.h"
@@ -735,6 +736,111 @@ static void spell_receipt_matrix(const fs::path &path)
 		<< "flat spell receipts: affect/save atomicity, separate-process recovery, scoped history, corruption/conflict refusal, death retry\n";
 }
 
+static void craft_progression_matrix(const fs::path &path, bool retain_receipt = false)
+{
+	const auto root = path.string();
+	for (const auto &directory : { path, path / "players", path / "domains", path / "identities",
+		path / "identities/names", path / "player-deaths" })
+	{
+		fs::create_directories(directory);
+		fs::permissions(directory, fs::perms::owner_all, fs::perm_options::replace);
+	}
+	std::string error;
+	int32_t pid = 0;
+	for (int index = 0; index < 42; ++index)
+		require(flatfile_identity_allocate_pid(root, &pid, &error) == flatfile_identity_result::ok,
+			"craft fixture identity");
+	require(flatfile_identity_claim(root, 42, "Player", "Account-One", &error) == flatfile_identity_result::ok,
+		"craft fixture name");
+	auto baseline = make_full(1);
+	baseline.pets.clear();
+	baseline.status_integers.push_back({player_status_field::experience,100,0,false});
+	require(flatfile_player_snapshot_apply(root,baseline,&error).outcome == player_save_apply_outcome::applied,
+		"craft baseline: "+error);
+	auto output = baseline.items.back();
+	output.object_uid = 200;
+	output.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	output.equipment_slot = 0;
+	std::vector<uint8_t> encoded;
+	require(player_item_snapshot_list_encode({output},&encoded) == player_snapshot_codec_result::ok,
+		"craft output encoding");
+	item_transfer_payload payload = {};
+	payload.from_owner = payload.to_owner = {item_owner_type::player,42,0};
+	payload.expected_from_revision = payload.expected_to_revision = 1;
+	payload.reason = item_transfer_reason::craft;
+	payload.reason_id = output.vnum;
+	payload.multi_root = true;
+	payload.selected_item_uid = output.object_uid;
+	payload.item_count = 2;
+	payload.items[0] = {100,100,0,1,500,item_custody_state::active};
+	payload.items[1] = {101,100,100,1,501,item_custody_state::active};
+	payload.item_blob_size = encoded.size();
+	std::copy(encoded.begin(),encoded.end(),payload.item_blob.begin());
+	craft_recipe_continuation terms;
+	terms.player_pid=42; terms.recipe_vnum=output.vnum; terms.output_uid=200; terms.experience=7000;
+	payload.continuation.kind = item_transfer_continuation_kind::craft_recipe;
+	require(craft_recipe_continuation_encode(terms,&payload.continuation.data),"craft terms");
+	critical_operation_id operation = {}; operation.bytes[0]=0xf1;
+	critical_command command = {};
+	require(item_transfer_command_build(&command,operation,payload,critical_source_site::operator_repair,
+		critical_deadline_class::interactive),"craft command");
+	command.accepted_at_usec=1;
+	const auto obligation = path/"players"/flatfile_craft_receipt_filename(42,operation,true);
+	const auto applied_receipt = path/"players"/flatfile_craft_receipt_filename(42,operation);
+	setenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT","1",1);
+	require(flatfile_item_repository_apply(root,command).outcome == critical_apply_outcome::retryable_failure,
+		"craft root refusal");
+	unsetenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT");
+	require(!fs::exists(obligation),"refused craft left a progression obligation");
+	require(flatfile_item_repository_apply(root,command).outcome == critical_apply_outcome::applied,
+		"craft root commit: "+error);
+	require(fs::exists(obligation) && !fs::exists(applied_receipt),"craft root and award were conflated");
+	auto checkpoint = baseline;
+	checkpoint.schema_version=PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
+	checkpoint.revision=2;
+	checkpoint.components=PLAYER_COMPONENT_STATUS|PLAYER_COMPONENT_SKILLS|PLAYER_COMPONENT_AFFECTS|PLAYER_COMPONENT_TROPHIES;
+	checkpoint.status_integers.back().signed_value=7100;
+	checkpoint.craft_receipts.push_back({operation,1,7000});
+	player_load_request request; request.pid=42; request.account_name="Account-One"; request.request_id=1;
+	request.pending_craft_operations={operation};
+	const auto load = [&] {
+		request.deadline_usec=persistence_observability_now_usec()+PLAYER_LOAD_TIMEOUT_USEC;
+		return flatfile_player_load_repository_execute(root,request);
+	};
+	setenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT","1",1);
+	require(flatfile_player_snapshot_apply(root,checkpoint,&error).outcome == player_save_apply_outcome::retryable_failure,
+		"craft save refusal: "+error);
+	unsetenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT");
+	auto loaded=load();
+	require(loaded.outcome == player_load_outcome::applied && loaded.snapshot.revision==1 &&
+		loaded.craft_receipts.empty() && !fs::exists(applied_receipt),"failed save acknowledged progression");
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE","1",1);
+	require(flatfile_player_snapshot_apply(root,checkpoint,&error).outcome == player_save_apply_outcome::retryable_failure,
+		"interrupted craft save: "+error);
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	loaded=load();
+	require(loaded.outcome == player_load_outcome::applied && loaded.snapshot.revision==2 &&
+		loaded.craft_receipts.size()==1 && loaded.craft_receipts[0].experience==7000,
+		"craft player save and receipt did not recover together");
+	require(flatfile_player_snapshot_apply(root,checkpoint,&error).outcome == player_save_apply_outcome::already_applied,
+		"craft save exact replay");
+	auto wrong=checkpoint; ++wrong.craft_receipts[0].experience;
+	require(flatfile_player_snapshot_apply(root,wrong,&error).outcome == player_save_apply_outcome::terminal_failure,
+		"changed craft terms acknowledged");
+	std::ifstream receipt_input(applied_receipt, std::ios::binary);
+	const std::vector<char> receipt_bytes{std::istreambuf_iterator<char>(receipt_input), std::istreambuf_iterator<char>()};
+	receipt_input.close();
+	fs::remove(applied_receipt);
+	require(flatfile_player_snapshot_apply(root,checkpoint,&error).outcome == player_save_apply_outcome::terminal_failure,
+		"stale craft save manufactured a missing receipt");
+	if (retain_receipt) {
+		std::ofstream receipt_output(applied_receipt, std::ios::binary);
+		receipt_output.write(receipt_bytes.data(), receipt_bytes.size());
+		require(receipt_output.good(), "craft fixture receipt restore");
+	}
+	std::cout<<"flat craft progression: root obligation, failed save, interrupted recovery, scoped receipts and replay passed\n";
+}
+
 static void quest_xp_matrix(const fs::path &path, uint32_t version, bool group = false,
 			    bool terminal = false)
 {
@@ -1260,6 +1366,7 @@ int main(int argc, char **argv)
 	const fs::path root = argv[1];
 	coin_player_matrix(root / "coin-player");
 	spell_receipt_matrix(root / "spell-player");
+	craft_progression_matrix(root / "craft-player");
 	quest_xp_matrix(root / "quest-xp-solo", 4);
 	quest_xp_matrix(root / "quest-xp-current-solo", 5);
 	quest_xp_matrix(root / "quest-xp-group", 5, true);

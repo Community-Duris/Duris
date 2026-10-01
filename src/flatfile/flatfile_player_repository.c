@@ -8,6 +8,7 @@
 #include "persistence/persistence_observability.h"
 #include "persistence/persistence_mode.h"
 #include "player/player_snapshot_codec.h"
+#include "flatfile/flatfile_craft_progression.h"
 
 #include <algorithm>
 #include <array>
@@ -56,7 +57,8 @@ bool valid_snapshot(const player_snapshot &snapshot)
 {
 	return (snapshot.death ?
 			player_snapshot_is_death_request_schema(snapshot.schema_version) :
-			(snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ||
+			(snapshot.schema_version == PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION ||
+			 snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ||
 			 snapshot.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
 			 snapshot.schema_version ==
 				 PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION)) &&
@@ -528,14 +530,47 @@ flatfile_player_load_result verify_death_receipt(const std::string &root,
 		       flatfile_player_load_result::invalid;
 }
 
+flatfile_player_load_result verify_craft_receipts(const std::string &root,
+						  const flatfile_authority_lock &authority,
+						  const player_snapshot &request,
+						  player_revision_t durable_revision,
+						  std::string *error)
+{
+	for (const auto &expected : request.craft_receipts)
+	{
+		const auto committed = flatfile_item_repository_craft_root_locked(
+			root, authority, expected.operation_id, error);
+		if (committed != flatfile_item_repository_result::ok)
+			return committed == flatfile_item_repository_result::io_error ?
+				       flatfile_player_load_result::io_error :
+				       flatfile_player_load_result::invalid;
+		player_snapshot obligation, stored;
+		auto read = flatfile_craft_receipt_read(root, request.pid, expected.operation_id,
+							true, &obligation, error);
+		if (read != flatfile_player_load_result::ok)
+			return read;
+		read = flatfile_craft_receipt_read(root, request.pid, expected.operation_id, false,
+						   &stored, error);
+		if (read != flatfile_player_load_result::ok)
+			return read;
+		if (!flatfile_craft_receipt_equal(expected, obligation.craft_receipts[0]) ||
+		    !flatfile_craft_receipt_equal(expected, stored.craft_receipts[0]) ||
+		    stored.revision > durable_revision)
+			return flatfile_player_load_result::invalid;
+	}
+	return flatfile_player_load_result::ok;
+}
+
 // Load the player and only requested receipt identities under the same recovered
 // authority cut. Historical receipts never consume the snapshot's row budget.
 flatfile_player_load_result load_snapshot_with_spell_receipts(
 	const std::string &root, int32_t pid, const std::vector<critical_operation_id> &operations,
 	player_snapshot *snapshot, std::vector<player_load_spell_effect_receipt> *receipts,
-	std::string *error)
+	std::string *error, const std::vector<critical_operation_id> &craft_operations = {},
+	std::vector<player_craft_receipt_snapshot> *craft_receipts = nullptr)
 {
-	if (pid <= 0 || !snapshot || !receipts ||
+	if (craft_operations.size() > PLAYER_CRAFT_RECEIPT_MAX ||
+	    (!craft_operations.empty() && !craft_receipts) || pid <= 0 || !snapshot || !receipts ||
 	    operations.size() > PLAYER_SPELL_EFFECT_RECEIPT_MAX)
 		return flatfile_player_load_result::invalid;
 	flatfile_player_snapshot_lock snapshot_lock;
@@ -568,6 +603,34 @@ flatfile_player_load_result load_snapshot_with_spell_receipts(
 				return flatfile_player_load_result::invalid;
 			receipts->push_back(
 				{ operation, stored.spell_effect_receipts.front().effect_id });
+		}
+		for (const auto &operation : craft_operations)
+		{
+			if (critical_operation_id_is_zero(operation) ||
+			    !seen.insert(flatfile_craft_receipt_filename(pid, operation)).second)
+				return flatfile_player_load_result::invalid;
+			player_snapshot stored, obligation;
+			auto read = flatfile_craft_receipt_read(root, pid, operation, false,
+								&stored, error);
+			if (read == flatfile_player_load_result::not_found)
+				continue;
+			if (read != flatfile_player_load_result::ok)
+				return read;
+			const auto committed = flatfile_item_repository_craft_root_locked(
+				root, authority, operation, error);
+			if (committed != flatfile_item_repository_result::ok)
+				return committed == flatfile_item_repository_result::io_error ?
+					       flatfile_player_load_result::io_error :
+					       flatfile_player_load_result::invalid;
+			read = flatfile_craft_receipt_read(root, pid, operation, true, &obligation,
+							   error);
+			if (read != flatfile_player_load_result::ok)
+				return read;
+			if (stored.revision > snapshot->revision ||
+			    !flatfile_craft_receipt_equal(stored.craft_receipts[0],
+							  obligation.craft_receipts[0]))
+				return flatfile_player_load_result::invalid;
+			craft_receipts->push_back(stored.craft_receipts[0]);
 		}
 	}
 	catch (const std::bad_alloc &)
@@ -864,7 +927,8 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 
 	const flatfile_player_load_result snapshot_loaded = load_snapshot_with_spell_receipts(
 		root, identity.pid, request.pending_spell_effect_operations, &result.snapshot,
-		&result.spell_effect_receipts, &error);
+		&result.spell_effect_receipts, &error, request.pending_craft_operations,
+		&result.craft_receipts);
 	if (snapshot_loaded != flatfile_player_load_result::ok)
 	{
 		result.failed_component = "snapshot";
@@ -1156,6 +1220,9 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 			if (verified == flatfile_player_load_result::ok)
 				verified = verify_spell_receipts(root, snapshot,
 								 materialized.revision, error);
+			if (verified == flatfile_player_load_result::ok)
+				verified = verify_craft_receipts(root, authority, snapshot,
+								 materialized.revision, error);
 			if (verified != flatfile_player_load_result::ok)
 				return { verified == flatfile_player_load_result::io_error ?
 						 player_save_apply_outcome::retryable_failure :
@@ -1191,7 +1258,8 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 					 player_save_apply_outcome::stale_revision,
 				 materialized.revision, 0, player_save_custody_diagnosis::none,
 				 !snapshot.death && (!snapshot.quest_xp_receipts.empty() ||
-						     !snapshot.spell_effect_receipts.empty()) };
+						     !snapshot.spell_effect_receipts.empty() ||
+						     !snapshot.craft_receipts.empty()) };
 		}
 		if (!merge_snapshot(snapshot, &materialized))
 			return { player_save_apply_outcome::terminal_failure, materialized.revision,
@@ -1250,9 +1318,58 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 				       spell_receipt_filename(snapshot.pid, receipt.operation_id),
 				       std::move(receipt_bytes) });
 	}
+	for (const auto &receipt : snapshot.craft_receipts)
+	{
+		const auto committed = flatfile_item_repository_craft_root_locked(
+			root, authority, receipt.operation_id, error);
+		if (committed != flatfile_item_repository_result::ok)
+			return { committed == flatfile_item_repository_result::io_error ?
+					 player_save_apply_outcome::retryable_failure :
+					 player_save_apply_outcome::terminal_failure,
+				 0, EILSEQ };
+		player_snapshot obligation, stored;
+		const auto entitlement = flatfile_craft_receipt_read(
+			root, snapshot.pid, receipt.operation_id, true, &obligation, error);
+		if (entitlement != flatfile_player_load_result::ok ||
+		    !flatfile_craft_receipt_equal(receipt, obligation.craft_receipts[0]))
+			return { entitlement == flatfile_player_load_result::io_error ?
+					 player_save_apply_outcome::retryable_failure :
+					 player_save_apply_outcome::terminal_failure,
+				 0, EILSEQ };
+		const auto read = flatfile_craft_receipt_read(
+			root, snapshot.pid, receipt.operation_id, false, &stored, error);
+		if (read == flatfile_player_load_result::ok)
+		{
+			if (stored.revision > prior_revision ||
+			    !flatfile_craft_receipt_equal(receipt, stored.craft_receipts[0]))
+				return { player_save_apply_outcome::terminal_failure, 0, EILSEQ };
+			continue;
+		}
+		if (read != flatfile_player_load_result::not_found)
+			return { read == flatfile_player_load_result::io_error ?
+					 player_save_apply_outcome::retryable_failure :
+					 player_save_apply_outcome::terminal_failure,
+				 0, EILSEQ };
+		stored = {};
+		stored.schema_version = PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
+		stored.pid = snapshot.pid;
+		stored.revision = snapshot.revision;
+		stored.components = PLAYER_CHECKPOINT_COMPONENT_ALL;
+		stored.craft_receipts.push_back(receipt);
+		std::vector<uint8_t> bytes;
+		if (!flatfile_player_snapshot_encode_file(stored, &bytes))
+			return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
+		operations.push_back(
+			{ flatfile_authority_store::players,
+			  flatfile_authority_operation_kind::write,
+			  flatfile_craft_receipt_filename(snapshot.pid, receipt.operation_id),
+			  std::move(bytes) });
+	}
+	materialized.craft_receipts.clear();
 	materialized.spell_effect_receipts.clear();
 	materialized.quest_xp_receipts.clear();
-	if (materialized.schema_version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION ||
+	if (materialized.schema_version == PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION ||
+	    materialized.schema_version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION ||
 	    materialized.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION)
 		materialized.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
 	std::vector<uint8_t> bytes;
@@ -1301,7 +1418,7 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 				 0, EIO };
 	}
 	if (snapshot.death || !snapshot.spell_effect_receipts.empty() ||
-	    !snapshot.quest_xp_receipts.empty())
+	    !snapshot.quest_xp_receipts.empty() || !snapshot.craft_receipts.empty())
 	{
 		operations.push_back({ flatfile_authority_store::players,
 				       flatfile_authority_operation_kind::write,

@@ -3534,7 +3534,9 @@
       "terminal_action": "retain",
       "exception": "none",
       "protected_record": false,
-      "dependencies": ["database:player_items"]
+      "dependencies": [
+        "database:player_items"
+      ]
     },
     {
       "id": "database:multiplay_whitelist",
@@ -7931,6 +7933,37 @@
       "exception": "protected_recovery_replay_or_restore_horizon",
       "protected_record": true,
       "dependencies": []
+    },
+    {
+      "id": "database:player_craft_progression",
+      "kind": "database_table",
+      "locator": "player_craft_progression",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "player_pid_and_recipe_operation_id",
+      "technical_purpose": "Retain frozen recipe awards and application revisions with their item root and player progression save",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:critical_operation_inbox"
+      ]
     }
   ]
 }

@@ -20,7 +20,6 @@ def main():
                "src/economy/coin_transfer_accounting.c",
                "src/economy/item_transfer_accounting.c",
                "src/economy/coin_transfer_command.c",
-               "src/player/player_snapshot_codec.c",
                "src/persistence/critical_command_coordinator.c",
                "src/persistence/critical_command_journal.c",
                "src/world/epic_command.c", "src/combat/combat_outcome_command.c", *SOURCES[1:]]

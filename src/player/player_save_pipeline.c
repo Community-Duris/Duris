@@ -17,6 +17,7 @@
 #include "magic/spell_item_lifecycle.h"
 #include "item/item_movement_transaction.h"
 #include "world/quest_reward_recovery.h"
+#include "player/craft_progression_hooks.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -379,7 +380,8 @@ bool merge_quest_xp_receipts(player_snapshot *target, const player_snapshot &sou
 	    (!player_snapshot_is_death_request_schema(target->schema_version) &&
 	     target->schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
 	     target->schema_version != PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION &&
-	     target->schema_version != PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION))
+	     target->schema_version != PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION &&
+	     target->schema_version != PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION))
 		return false;
 	size_t added = 0;
 	for (const auto &candidate : source.quest_xp_receipts)
@@ -434,7 +436,7 @@ bool merge_quest_xp_receipts(player_snapshot *target, const player_snapshot &sou
 	{
 		return false;
 	}
-	if (target->death)
+	if (target->death && !player_snapshot_has_craft_receipt_schema(target->schema_version))
 		target->schema_version = PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION;
 	else if (target->schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION)
 		target->schema_version = PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION;
@@ -450,7 +452,8 @@ bool merge_spell_effect_receipts(player_snapshot *target, const player_snapshot 
 	    (!player_snapshot_is_death_request_schema(target->schema_version) &&
 	     target->schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
 	     target->schema_version != PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION &&
-	     target->schema_version != PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION))
+	     target->schema_version != PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION &&
+	     target->schema_version != PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION))
 		return false;
 	size_t added = 0;
 	for (const auto &candidate : source.spell_effect_receipts)
@@ -500,12 +503,75 @@ bool merge_spell_effect_receipts(player_snapshot *target, const player_snapshot 
 	{
 		return false;
 	}
-	target->schema_version =
-		target->death ? (target->quest_xp_receipts.empty() ?
+	if (!player_snapshot_has_craft_receipt_schema(target->schema_version))
+		target->schema_version =
+			target->death ?
+				(target->quest_xp_receipts.empty() ?
 					 PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION :
 					 PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION) :
 				PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION;
 	target->encoded_size_bound += schema_overhead + 20 * added;
+	return true;
+}
+
+bool merge_craft_receipts(player_snapshot *target, const player_snapshot &source)
+{
+	if (!target || source.craft_receipts.empty())
+		return true;
+	size_t added = 0;
+	for (const auto &candidate : source.craft_receipts)
+	{
+		const auto found = std::find_if(
+			target->craft_receipts.begin(), target->craft_receipts.end(),
+			[&](const auto &existing)
+			{ return existing.operation_id.bytes == candidate.operation_id.bytes; });
+		if (found != target->craft_receipts.end())
+		{
+			if (found->discipline != candidate.discipline ||
+			    found->experience != candidate.experience)
+				return false;
+		}
+		else
+			++added;
+	}
+	const size_t overhead =
+		player_snapshot_has_craft_receipt_schema(target->schema_version) ?
+			0 :
+			4 +
+				(player_snapshot_has_quest_receipt_schema(target->schema_version) ?
+					 0 :
+					 4) +
+				(player_snapshot_has_spell_receipt_schema(target->schema_version) ?
+					 0 :
+					 4);
+	if (target->craft_receipts.size() + added > PLAYER_CRAFT_RECEIPT_MAX ||
+	    (target->components & CRAFT_PROGRESSION_COMPONENTS) != CRAFT_PROGRESSION_COMPONENTS ||
+	    target->encoded_size_bound > PLAYER_SNAPSHOT_MAX_BYTES ||
+	    overhead > PLAYER_SNAPSHOT_MAX_BYTES - target->encoded_size_bound ||
+	    added > (PLAYER_SNAPSHOT_MAX_BYTES - target->encoded_size_bound - overhead) / 24)
+		return false;
+	try
+	{
+		target->craft_receipts.reserve(target->craft_receipts.size() + added);
+		for (const auto &candidate : source.craft_receipts)
+			if (std::none_of(target->craft_receipts.begin(),
+					 target->craft_receipts.end(),
+					 [&](const auto &existing) {
+						 return existing.operation_id.bytes ==
+							candidate.operation_id.bytes;
+					 }))
+				target->craft_receipts.push_back(candidate);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	target->schema_version =
+		target->death ? (target->death->conflict_evidence ?
+					 PLAYER_SNAPSHOT_DEATH_CRAFT_EVIDENCE_SCHEMA_VERSION :
+					 PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION) :
+				PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
+	target->encoded_size_bound += overhead + 24 * added;
 	return true;
 }
 
@@ -557,10 +623,24 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 				if (found == queued.spell_effect_receipts.end())
 					return player_save_pipeline_result::capture_failed;
 			}
+			for (const auto &receipt : snapshot.craft_receipts)
+				if (std::none_of(
+					    queued.craft_receipts.begin(),
+					    queued.craft_receipts.end(),
+					    [&](const auto &pending)
+					    {
+						    return pending.operation_id.bytes ==
+								   receipt.operation_id.bytes &&
+							   pending.discipline ==
+								   receipt.discipline &&
+							   pending.experience == receipt.experience;
+					    }))
+					return player_save_pipeline_result::capture_failed;
 			return player_save_pipeline_result::coalesced;
 		}
 		if (!merge_quest_xp_receipts(&snapshot, queued) ||
-		    !merge_spell_effect_receipts(&snapshot, queued))
+		    !merge_spell_effect_receipts(&snapshot, queued) ||
+		    !merge_craft_receipts(&snapshot, queued))
 			return player_save_pipeline_result::capture_failed;
 		if ((snapshot.components & queued.components) != queued.components)
 			return player_save_pipeline_result::capture_failed;
@@ -746,6 +826,10 @@ static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 	if (!spell_component_retirement_pending_save_receipts(
 		    GET_PID(ch), &pending_effects.spell_effect_receipts))
 		return player_save_pipeline_result::capture_failed;
+	if (!craft_progression_pending_save_receipts(GET_PID(ch), &pending_effects.craft_receipts))
+		return player_save_pipeline_result::capture_failed;
+	if (!pending_effects.craft_receipts.empty())
+		required_components |= CRAFT_PROGRESSION_COMPONENTS;
 	if (spell_effect_receipt)
 	{
 		try
@@ -851,10 +935,12 @@ static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 			return player_save_pipeline_result::capture_failed;
 	}
 	if (!pending_effects.quest_xp_receipts.empty() ||
-	    !pending_effects.spell_effect_receipts.empty())
+	    !pending_effects.spell_effect_receipts.empty() ||
+	    !pending_effects.craft_receipts.empty())
 	{
 		if (!merge_quest_xp_receipts(&snapshot, pending_effects) ||
-		    !merge_spell_effect_receipts(&snapshot, pending_effects))
+		    !merge_spell_effect_receipts(&snapshot, pending_effects) ||
+		    !merge_craft_receipts(&snapshot, pending_effects))
 			return player_save_pipeline_result::capture_failed;
 		std::vector<uint8_t> encoded;
 		if (player_snapshot_encode(snapshot, &encoded) != player_snapshot_codec_result::ok)
@@ -1092,7 +1178,9 @@ player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
 	    !merge_quest_xp_receipts(&snapshot, pending_effects) ||
 	    !spell_component_retirement_pending_save_receipts(
 		    pid, &pending_effects.spell_effect_receipts) ||
-	    !merge_spell_effect_receipts(&snapshot, pending_effects))
+	    !merge_spell_effect_receipts(&snapshot, pending_effects) ||
+	    !craft_progression_pending_save_receipts(pid, &pending_effects.craft_receipts) ||
+	    !merge_craft_receipts(&snapshot, pending_effects))
 		return player_save_terminal_result::unavailable;
 	std::vector<uint8_t> encoded;
 	if (player_snapshot_encode(snapshot, &encoded) != player_snapshot_codec_result::ok)
@@ -1348,6 +1436,19 @@ void player_save_pipeline_pulse(void)
 	}
 	for (size_t index = 0; index < completed; ++index)
 	{
+		if (craft_progression_hooks.saved)
+		{
+			if (!completions[index].craft_receipts.empty())
+				craft_progression_hooks.saved(
+					completions[index].pid, true,
+					completions[index].craft_receipts.data(),
+					completions[index].craft_receipts.size());
+			if (!completions[index].failed_craft_receipts.empty())
+				craft_progression_hooks.saved(
+					completions[index].pid, false,
+					completions[index].failed_craft_receipts.data(),
+					completions[index].failed_craft_receipts.size());
+		}
 		if (!completions[index].quest_xp_receipts.empty())
 			quest_reward_recovery_save_acknowledged(
 				completions[index].pid, completions[index].revision,
