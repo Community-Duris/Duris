@@ -6,6 +6,7 @@
 #include "player/player_death_recovery_query.h"
 #include "player/player_snapshot.h"
 #include "item/quest_reward_continuation.h"
+#include "persistence/quest_reward_obligation_repository.h"
 
 #include <array>
 #include <cstdint>
@@ -21,7 +22,9 @@ constexpr size_t PLAYER_LOAD_BASE_QUERY_MAX = 24;
 constexpr size_t PLAYER_LOAD_RESTITUTION_QUERY_MAX = 2;
 constexpr size_t PLAYER_LOAD_PET_CUSTODY_QUERY_MAX = 1;
 constexpr size_t PLAYER_LOAD_DEATH_GATE_QUERY_MAX = 1;
-constexpr size_t PLAYER_LOAD_QUEST_REWARD_QUERY_MAX = 1;
+// The XP entitlement SELECT is included in the base. Obligation recovery adds
+// its SELECT and two fixed, set-based native economic witness reads.
+constexpr size_t PLAYER_LOAD_QUEST_REWARD_QUERY_MAX = QUEST_REWARD_PENDING_QUERY_MAX;
 // The primary-key lock precedes the consistent view. Name-based requests also
 // resolve the PID before starting that transaction, then revalidate under lock.
 constexpr size_t PLAYER_LOAD_IDENTITY_LOCK_QUERY_MAX = 1;

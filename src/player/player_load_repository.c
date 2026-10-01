@@ -2141,10 +2141,13 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	{
 		std::vector<quest_reward_obligation_record> obligations;
 		unsigned int database_error = 0;
+		quest_reward_read_metrics metrics;
 		const auto loaded = quest_reward_obligation_repository_pending(
 			connection, static_cast<uint32_t>(result.pid), &obligations,
-			&database_error);
-		++result.metrics.query_count;
+			&database_error, &metrics);
+		result.metrics.query_count += metrics.query_count;
+		result.metrics.row_count += metrics.row_count;
+		result.metrics.byte_count += metrics.byte_count;
 		if (loaded == quest_reward_obligation_result::ok)
 		{
 			try
@@ -2156,10 +2159,6 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 						  std::move(obligation.continuation),
 						  obligation.terms, obligation.xp_applied_mask,
 						  obligation.economic_applied_mask });
-				result.metrics.row_count +=
-					static_cast<uint32_t>(result.pending_quest_rewards.size());
-				for (const auto &obligation : result.pending_quest_rewards)
-					result.metrics.byte_count += obligation.continuation.size();
 			}
 			catch (const std::bad_alloc &)
 			{
@@ -2180,10 +2179,13 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	{
 		std::vector<quest_reward_xp_entitlement_record> entitlements;
 		unsigned int database_error = 0;
+		quest_reward_read_metrics metrics;
 		const auto loaded = quest_reward_xp_entitlement_repository_pending(
 			connection, static_cast<uint32_t>(result.pid), &entitlements,
-			&database_error);
-		++result.metrics.query_count;
+			&database_error, &metrics);
+		result.metrics.query_count += metrics.query_count;
+		result.metrics.row_count += metrics.row_count;
+		result.metrics.byte_count += metrics.byte_count;
 		if (loaded == quest_reward_obligation_result::ok)
 		{
 			try
@@ -2193,8 +2195,6 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 					result.pending_quest_xp_entitlements.push_back(
 						{ entitlement.offering_operation, entitlement.terms,
 						  entitlement.reward_index, entitlement.amount });
-				result.metrics.row_count += static_cast<uint32_t>(
-					result.pending_quest_xp_entitlements.size());
 			}
 			catch (const std::bad_alloc &)
 			{
