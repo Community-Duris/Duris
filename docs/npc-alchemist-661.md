@@ -87,16 +87,17 @@ Virtual combat never consumes the vial.
 The hook is absent from generic `read_mobile` and restore paths. The runtime
 marker is not a new durable spawn identity: restoring an existing NPC must keep
 using the existing restore path, without invoking fresh zone-finalization hooks.
-A cold world reset creates new spawns and therefore new rolls. Live copyover and
-restart preservation of a selected grant remains a gameplay qualification item.
+A cold world reset creates new spawns and therefore new rolls. Three real copyovers preserved selected NPC identities and exactly one vial.
+SQL/Redis cold recovery also preserved a depleted NPC without rerolling its grant.
 
 Eight independently authored VNUM 102 load lines remain in five zone files:
 Alatorin (3), Khildarak (2), Llzazan (1), Surfacekeeps (1), Tharnadia (1).
 Their supply remains in addition to the new per-spawn chance.
 
 The native fixture moves a granted carried vial to a player inventory and proves
-the actual Assassin `get_vial` selector recognizes it. Full theft/corpse-loot and
-`do_mixpoison` gameplay remains to be exercised before this draft is approved.
+the actual Assassin `get_vial` selector recognizes it. The combined live journey also exercised trusted staff theft, actual NPC death
+and corpse loot, and actual `do_mixpoison` using the stolen vial. Ordinary player
+stealing is currently disabled, so the theft proof uses the supported staff route.
 
 ## Writer inventory amendment
 
@@ -127,6 +128,18 @@ port and its SQL/flat-file restore/replay evidence.
 - Source guards confirm all four fresh-spawn entry points and removed helper
   unreachability. No area content or migration changes are included.
 
-The PR stays draft for real staff-character NPC combat/loot/poison gameplay and
-review. Accounting integration is a subsequent branch delivery requirement.
-No configured or production database was modified for this feature.
+The combined #573/#663 real-server journey passed on flat-file authority and
+isolated MySQL plus Redis. It observes a virtual mixture attack through the real
+combat scheduler in controlled NPC combat, steals and mixes an automatically
+granted vial, loots another from an actual corpse, retains NPC/player identities
+through three copyovers, and verifies unchanged SQL craft runtime bytes after
+cold recovery. A depleted recovered NPC does not reroll. Run
+`python3 tests/async/run_alchemist_crafting_journey.py <combined-binary> file`
+or `... redis` with the documented isolated SQL environment; migration adoption,
+application and replay use the normal runner. The cadence fixture covers 60
+level/round/modifier scenarios at 0.3333-0.3336 of the reference caster rate.
+
+Accounting integration is a separate branch delivery: active automatic vial
+issuance requires a durable zone spawn/source owner. The safe port refuses this
+unsupported writer before RNG or UID allocation. Virtual combat remains usable.
+No configured or production database was changed.
