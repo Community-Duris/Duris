@@ -41,6 +41,7 @@
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/world_activity.h"
 #include "cmd/interp.h"
 #include "cmd/divine_refusal_policy.h"
 #include "cmd/divine_refusal_content.h"
@@ -2847,7 +2848,7 @@ void do_flee(P_char ch, char *argument, int cmd)
 		 * impossible chases
 		 */
 		disarm_char_nevents(was_fighting, event_mob_mundane);
-		add_event(event_mob_mundane, WAIT_SEC / 2, was_fighting, 0, 0, 0, 0, 0);
+		world_activity_schedule_mundane_after(was_fighting, WAIT_SEC / 2);
 	}
 }
 

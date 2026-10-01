@@ -15,7 +15,9 @@
 inline constexpr std::size_t TELEMETRY_CONFIG_CANONICAL_BYTES = 70U;
 inline constexpr std::size_t TELEMETRY_CONFIG_PENDING_MAX = 4U;
 inline constexpr std::size_t TELEMETRY_CONFIG_IDENTITY_REGISTRY_MAX = 64U;
-inline constexpr std::size_t TELEMETRY_CONFIG_PROPERTY_MAX = 19U;
+/* Registry IDs are append-only: never renumber a property used by a sealed
+ * catalog row.  New effective context is added at the end of the registry. */
+inline constexpr std::size_t TELEMETRY_CONFIG_PROPERTY_MAX = 20U;
 inline constexpr std::size_t TELEMETRY_CONFIG_PROPERTY_DIGEST_BYTES =
 	TELEMETRY_CONFIG_FINGERPRINT_BYTES;
 inline constexpr std::uint16_t TELEMETRY_CONFIG_PROPERTY_SCHEMA_VERSION = 1U;
