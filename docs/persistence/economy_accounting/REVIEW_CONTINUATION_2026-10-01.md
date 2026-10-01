@@ -130,6 +130,70 @@ are explicitly selected production artifacts, rather than claims that the
 regression suite's cache rebuilt them. The kit checks do not exercise virtual
 pouch encrust; that feature's explicit refusal remains unfinished.
 
+## Physical craft accounting and load verification
+
+Physical crafting now has a schema-2 owner on SQL and flatfile. Admission freezes
+the crafting reason, actor, lineage/epoch and a source derived from the consumed
+input lifetime, before retained coordinator admission. The common effect builder
+checks the locked native inputs, preserves historical tombstone topology, and
+records exact input retirements and new output admissions. It refuses coin
+creation, changed input state, duplicate UIDs and unsupported metadata. Intended
+recipe failure may retire inputs without producing an output.
+
+SQL commits native input/output rows, the source claim and exact item references
+under the same transaction. Replay opens a fresh session and verifies all
+input/output witnesses against the retained canonical plan. Flatfile commits the
+equivalent catalog/evidence changes under its authority journal; separate-process
+fault tests cover pre-commit, durable-journal and partially-installed recovery.
+The actual publication owner retains the fence while the actor is unavailable
+or output reconstruction is withheld, then publishes and acknowledges once.
+
+Native MySQL 8.0.46 and MariaDB 10.11.14 craft harnesses pass rich nested output,
+four exact input/output references, fresh-session replay, changed-ID/duplicate
+refusal, rollback and zero-output failure. Flatfile native craft and recovery
+tests and the typed admission tests pass. The item-accounting tests run under
+ASan/UBSan. Poison mixing, physical Encrust and Harvester shard exchange now
+reach this owner instead of their former blanket active-accounting refusal.
+Virtual pouch Encrust still refuses before RNG or counter mutation; an atomic
+pouch state update and collection operation remain required.
+
+Real-server crafting journeys pass on both SQL engines with private Redis and
+on flatfile. They retain original NPC identity and vial UIDs over two
+socket-preserving copyovers, retire the stolen vial and poison ingredients
+exactly, exercise NPC alchemy and physical Encrust, exchange three Harvester
+shards, and reload original craft UIDs. SQL cold recovery also preserves all
+three rich craft payloads byte-for-byte and the depleted NPC identity without
+reroll. Those journeys use SQL SHA-256
+`f204a6bd5f6fa690bb7c784a116242d8098aff5c2aac32ff1fb5818dff6aec53`
+and flatfile SHA-256
+`dbeabb9f7eb54557052bf45e6c8714230f339e91797e681b38eee577013bc894`.
+They exercise legacy gameplay, separately from the active native/admission and
+publication proofs; complete active-epoch server qualification remains open.
+
+The SQL loader's declared budget now includes all fixed quest witness reads and
+the optional pending spell receipt query: 33 SELECT/transaction statements for
+the maintained PID path, 34 with name resolution and 35 with the receipt read.
+Native exact-count tests include the worst supported request. Schema-discovery
+rows now contribute to row/byte metrics instead of escaping the load budget.
+Both engines pass the standalone loader and raw-bitmap/canonical-JSON spellbook
+materialization fixture; malformed spellbook evidence degrades and quarantines
+the item domain without returning a partial inventory. Standalone runner
+dependencies now match the current loader, and the disposable spellbook schema
+runner uses the full immutable migration history. Docker execution itself is
+unavailable locally; the native dual-engine harness is separate evidence.
+
+Strict production builds after the metrics repair pass with SQL SHA-256
+`3a2ab4afc82569998ca22789dde5c814905a08f90037782dc9b4281d47c9d1fd`
+and flatfile SHA-256
+`4b1dbf3046fdd4d4a72cf563e4cdac6555f92e6fe14b67d74712ce4d43eb6ad3`.
+These final build hashes are distinct from the preceding gameplay artifacts.
+The generated writer matrix now identifies 14 schema-2 producer routes,
+including five physical craft routes. It retains the activation block pending
+their full server journeys; backend qualification statuses remain unverified.
+All 52 current writer-coverage contract tests pass after regenerating this
+matrix. The ordinary accounting validator passes; release qualification remains
+blocked for the remaining runtime routes.
+
 Completed component checks cannot qualify an unexecuted player route. The remaining
 R1-R8 requirements, full gameplay and fault matrix, independent audit,
 activation/refusal coverage, lifecycle proof, and flatfile parity still govern

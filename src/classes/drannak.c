@@ -430,13 +430,6 @@ int pvp_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 
 		else if (strstr(arg, "1"))
 		{
-			if (economic_gameplay_authority::active())
-			{
-				send_to_char(
-					"Shard purchases are unavailable while item accounting is active.\r\n",
-					pl);
-				return TRUE;
-			}
 			// Check for SHARDS_FOR_ORB soul shards
 			if (vnum_in_inv(pl, VOBJ_SOUL_SHARD) < SHARDS_FOR_ORB)
 			{

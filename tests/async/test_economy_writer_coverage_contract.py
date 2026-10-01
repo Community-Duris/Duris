@@ -895,10 +895,16 @@ class SplitEconomyActivationContract(unittest.TestCase):
                          "item.npc_alchemist_potion_grant", "item.poison_ingredients_sink",
                          "item.encrust_generated_counter_orphan"} <= retired)
         self.assertTrue(retired.isdisjoint(self.routes))
-        for route_id in ("item.poison_mix", "item.encrust_transform", "item.craft_submit",
-                         "class.drannak_pvp_store", "item.npc_alchemist_vial_grant"):
+        for route_id in coverage.SCHEMA2_CRAFT_IDS:
+            self.assertTrue(self.routes[route_id]["current_critical_command_schema"]
+                            ["schema_2_gameplay_producer_connected"])
+            self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]
+                            ["must_block_on_activation"])
             self.assertEqual(self.routes[route_id]["blocking_policy_after_activation"]["decision"],
-                             "refuse_before_allocation_until_native_source_and_root_exist")
+                             "block_until_active_craft_journeys")
+        self.assertEqual(self.routes["item.npc_alchemist_vial_grant"]
+                         ["blocking_policy_after_activation"]["decision"],
+                         "refuse_before_allocation_until_native_source_and_root_exist")
 
     def test_artifact_item_sites_separate_display_boot_restore_and_live_replacement(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())

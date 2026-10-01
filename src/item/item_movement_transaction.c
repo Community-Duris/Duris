@@ -2494,8 +2494,6 @@ bool item_movement_transaction_submit_craft(P_char actor, P_obj const *inputs, s
 	if (!reject)
 		reject = &discarded;
 	*reject = item_movement_reject::none;
-	if (economic_gameplay_authority::active())
-		return reject_with(reject, item_movement_reject::active_accounting_unsupported);
 	const bool valid_actor = actor && IS_PC(actor) && GET_PID(actor) > 0;
 	if (!valid_actor || !inputs || !input_count || input_count > ITEM_TRANSFER_MAX_ITEMS ||
 	    (output_count && (!outputs || output_count > ITEM_TRANSFER_MAX_ITEMS)) ||
@@ -2609,6 +2607,11 @@ bool item_movement_transaction_submit_craft(P_char actor, P_obj const *inputs, s
 					 critical_source_site::command,
 					 critical_deadline_class::interactive))
 		return reject_with(reject, item_movement_reject::command_build_failure);
+	if (economic_gameplay_authority::active() &&
+	    economic_gameplay_authority::prepare_item_transfer(
+		    &command, static_cast<uint32_t>(GET_PID(actor)),
+		    economic_source_kind::crafting) != economic_accounting_error::ok)
+		return reject_with(reject, item_movement_reject::active_accounting_unsupported);
 	pending_movement entry = { .actor_pid = static_cast<uint32_t>(GET_PID(actor)),
 				   .actor_runtime_id = actor->runtime_id,
 				   .payload = payload,

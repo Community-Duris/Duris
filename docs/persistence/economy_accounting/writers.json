@@ -512,7 +512,7 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1743,
+          1727,
           "money_helper"
         ]
       ],
@@ -3696,12 +3696,12 @@
       "sites": [
         [
           "src/classes/drannak.c",
-          1714,
+          1707,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          1714,
+          1707,
           "item_publication"
         ]
       ],
@@ -3738,12 +3738,12 @@
       "sites": [
         [
           "src/classes/drannak.c",
-          854,
+          847,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          868,
+          861,
           "item_publication"
         ]
       ],
@@ -3757,9 +3757,9 @@
       "integration_issue": 480,
       "owner": "primary / #480",
       "coverage": "legacy",
-      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active accounting refuses before recipe RNG, wait, allocation or mutation.",
-      "authority_boundary": "One retained inactive craft receipt owns all exact input retirements and output admissions; an active schema-2 craft owner is required before activation.",
-      "current_support": "Legacy craft conservation qualified on SQL and flat-file. Native active accounting craft root/source/reference integration remains unsupported and refused.",
+      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
+      "current_support": "Active schema-2 admission, atomic native craft conservation, replay and rollback pass component/native tests on both SQL engines and flatfile. Real-server legacy craft/restart journeys pass separately; a full active-epoch gameplay journey remains unqualified. Virtual Chaos-pouch Encrust remains refused pending atomic pouch state updates.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -3777,7 +3777,10 @@
       "test_candidates": [
         "tests/async/test_issue_551_crafting_conservation.py",
         "tests/async/test_issue_551_flatfile_craft.py",
-        "tests/async/run_alchemist_crafting_journey.py"
+        "tests/async/run_alchemist_crafting_journey.py",
+        "tests/async/test_item_transfer_accounting.py",
+        "tests/async/item_transfer_mysql_harness.cpp",
+        "tests/async/test_publication_retention_runtime.py"
       ],
       "sites": [
         [
@@ -3792,27 +3795,27 @@
         ],
         [
           "src/classes/drannak.c",
-          456,
+          449,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          464,
+          457,
           "economic_submit"
         ],
         [
           "src/classes/drannak.c",
-          469,
+          462,
           "item_lifecycle"
         ]
       ],
       "evidence": [],
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ],
       "native_effects": {
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -3851,12 +3854,12 @@
       "sites": [
         [
           "src/classes/drannak.c",
-          924,
+          917,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          928,
+          921,
           "item_lifecycle"
         ]
       ],
@@ -3893,12 +3896,12 @@
       "sites": [
         [
           "src/classes/drannak.c",
-          938,
+          931,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          942,
+          935,
           "item_lifecycle"
         ]
       ],
@@ -14619,32 +14622,32 @@
         ],
         [
           "src/item/item_movement_transaction.c",
-          2726,
+          2729,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2734,
+          2737,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2746,
+          2749,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2872,
+          2875,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2890,
+          2893,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2948,
+          2951,
           "economic_submit"
         ],
         [
@@ -15146,7 +15149,7 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1815,
+          1799,
           "item_lifecycle"
         ]
       ],
@@ -15169,9 +15172,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active accounting refuses before recipe RNG, wait, allocation or mutation.",
-      "authority_boundary": "One retained inactive craft receipt owns all exact input retirements and output admissions; an active schema-2 craft owner is required before activation.",
-      "current_support": "Legacy craft conservation qualified on SQL and flat-file. Native active accounting craft root/source/reference integration remains unsupported and refused.",
+      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
+      "current_support": "Active schema-2 admission, atomic native craft conservation, replay and rollback pass component/native tests on both SQL engines and flatfile. Real-server legacy craft/restart journeys pass separately; a full active-epoch gameplay journey remains unqualified. Virtual Chaos-pouch Encrust remains refused pending atomic pouch state updates.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -15189,14 +15192,17 @@
       "test_candidates": [
         "tests/async/test_issue_551_crafting_conservation.py",
         "tests/async/test_issue_551_flatfile_craft.py",
-        "tests/async/run_alchemist_crafting_journey.py"
+        "tests/async/run_alchemist_crafting_journey.py",
+        "tests/async/test_item_transfer_accounting.py",
+        "tests/async/item_transfer_mysql_harness.cpp",
+        "tests/async/test_publication_retention_runtime.py"
       ],
       "sites": [],
       "evidence": [],
       "reachability_evidence": "do_encrust source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "native_effects": {
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -15204,7 +15210,7 @@
         ]
       },
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ]
     },
     {
@@ -15215,9 +15221,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active accounting refuses before recipe RNG, wait, allocation or mutation.",
-      "authority_boundary": "One retained inactive craft receipt owns all exact input retirements and output admissions; an active schema-2 craft owner is required before activation.",
-      "current_support": "Legacy craft conservation qualified on SQL and flat-file. Native active accounting craft root/source/reference integration remains unsupported and refused.",
+      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
+      "current_support": "Active schema-2 admission, atomic native craft conservation, replay and rollback pass component/native tests on both SQL engines and flatfile. Real-server legacy craft/restart journeys pass separately; a full active-epoch gameplay journey remains unqualified. Virtual Chaos-pouch Encrust remains refused pending atomic pouch state updates.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -15235,37 +15241,40 @@
       "test_candidates": [
         "tests/async/test_issue_551_crafting_conservation.py",
         "tests/async/test_issue_551_flatfile_craft.py",
-        "tests/async/run_alchemist_crafting_journey.py"
+        "tests/async/run_alchemist_crafting_journey.py",
+        "tests/async/test_item_transfer_accounting.py",
+        "tests/async/item_transfer_mysql_harness.cpp",
+        "tests/async/test_publication_retention_runtime.py"
       ],
       "sites": [
         [
           "src/classes/salchemist.c",
-          1024,
+          1008,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1028,
+          "economic_submit"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1039,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
           1044,
-          "economic_submit"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1055,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1060,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1126,
+          1110,
           "economic_submit"
         ],
         [
           "src/classes/salchemist.c",
-          1130,
+          1114,
           "item_lifecycle"
         ]
       ],
@@ -15273,7 +15282,7 @@
       "reachability_evidence": "do_encrust source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "native_effects": {
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -15281,7 +15290,7 @@
         ]
       },
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ]
     },
     {
@@ -15313,22 +15322,22 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          978,
+          962,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1002,
+          986,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1009,
+          993,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1016,
+          1000,
           "item_lifecycle"
         ]
       ],
@@ -16024,12 +16033,12 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1309,
+          1293,
           "item_publication"
         ],
         [
           "src/classes/salchemist.c",
-          1310,
+          1294,
           "item_lifecycle"
         ]
       ],
@@ -16073,17 +16082,17 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1263,
+          1247,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1270,
+          1254,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1273,
+          1257,
           "item_lifecycle"
         ]
       ],
@@ -17238,7 +17247,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          2999,
+          3002,
           "item_lifecycle"
         ]
       ],
@@ -17275,7 +17284,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          2850,
+          2853,
           "item_lifecycle"
         ]
       ],
@@ -18514,9 +18523,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active accounting refuses before recipe RNG, wait, allocation or mutation.",
-      "authority_boundary": "One retained inactive craft receipt owns all exact input retirements and output admissions; an active schema-2 craft owner is required before activation.",
-      "current_support": "Legacy craft conservation qualified on SQL and flat-file. Native active accounting craft root/source/reference integration remains unsupported and refused.",
+      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
+      "current_support": "Active schema-2 admission, atomic native craft conservation, replay and rollback pass component/native tests on both SQL engines and flatfile. Real-server legacy craft/restart journeys pass separately; a full active-epoch gameplay journey remains unqualified. Virtual Chaos-pouch Encrust remains refused pending atomic pouch state updates.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -18534,22 +18543,25 @@
       "test_candidates": [
         "tests/async/test_issue_551_crafting_conservation.py",
         "tests/async/test_issue_551_flatfile_craft.py",
-        "tests/async/run_alchemist_crafting_journey.py"
+        "tests/async/run_alchemist_crafting_journey.py",
+        "tests/async/test_item_transfer_accounting.py",
+        "tests/async/item_transfer_mysql_harness.cpp",
+        "tests/async/test_publication_retention_runtime.py"
       ],
       "sites": [
         [
           "src/classes/salchemist.c",
-          636,
+          628,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          659,
+          651,
           "economic_submit"
         ],
         [
           "src/classes/salchemist.c",
-          665,
+          657,
           "item_lifecycle"
         ]
       ],
@@ -18557,7 +18569,7 @@
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "native_effects": {
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -18565,7 +18577,7 @@
         ]
       },
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ]
     },
     {
@@ -18607,12 +18619,12 @@
         ],
         [
           "src/classes/salchemist.c",
-          594,
+          586,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          598,
+          590,
           "item_lifecycle"
         ]
       ],
@@ -19681,72 +19693,87 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1393,
+          1377,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1396,
+          1380,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1399,
+          1383,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1402,
+          1386,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1405,
+          1389,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1408,
+          1392,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1411,
+          1395,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1414,
+          1398,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1417,
+          1401,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1420,
+          1404,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1423,
+          1407,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1426,
+          1410,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1429,
+          1413,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1432,
+          1416,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1419,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1422,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1431,
           "item_lifecycle"
         ],
         [
@@ -19756,12 +19783,12 @@
         ],
         [
           "src/classes/salchemist.c",
-          1438,
+          1446,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1447,
+          1450,
           "item_lifecycle"
         ],
         [
@@ -19771,22 +19798,7 @@
         ],
         [
           "src/classes/salchemist.c",
-          1462,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1466,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1467,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1468,
+          1452,
           "item_publication"
         ]
       ],
@@ -19830,17 +19842,17 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1364,
+          1348,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1368,
+          1352,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1369,
+          1353,
           "item_publication"
         ]
       ],
@@ -19901,7 +19913,7 @@
         ],
         [
           "src/item/item_transfer_repository.c",
-          1919,
+          1950,
           "sql_economy"
         ]
       ],
@@ -19937,12 +19949,12 @@
       "sites": [
         [
           "src/item/item_transfer_repository.c",
-          2851,
+          2883,
           "economic_submit"
         ],
         [
           "src/item/item_transfer_repository.c",
-          2918,
+          2950,
           "economic_submit"
         ]
       ],
@@ -20174,7 +20186,7 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1538,
+          1522,
           "item_lifecycle"
         ]
       ],
@@ -27963,7 +27975,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          2880,
+          2883,
           "economic_submit"
         ],
         [
@@ -45513,9 +45525,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Builds one legacy retained exact-input/output craft receipt. Active authority refuses before UID reservation; no active schema-2 craft owner is implemented.",
-      "authority_boundary": "One retained inactive craft receipt owns all exact input retirements and output admissions; an active schema-2 craft owner is required before activation.",
-      "current_support": "Legacy craft conservation qualified on SQL and flat-file. Native active accounting craft root/source/reference integration remains unsupported and refused.",
+      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
+      "current_support": "Active schema-2 admission, atomic native craft conservation, replay and rollback pass component/native tests on both SQL engines and flatfile. Real-server legacy craft/restart journeys pass separately; a full active-epoch gameplay journey remains unqualified. Virtual Chaos-pouch Encrust remains refused pending atomic pouch state updates.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -45532,7 +45544,10 @@
       },
       "test_candidates": [
         "tests/async/test_issue_551_crafting_conservation.py",
-        "tests/async/test_npc_alchemist_runtime.py"
+        "tests/async/test_npc_alchemist_runtime.py",
+        "tests/async/test_item_transfer_accounting.py",
+        "tests/async/item_transfer_mysql_harness.cpp",
+        "tests/async/test_publication_retention_runtime.py"
       ],
       "sites": [
         [
@@ -45542,7 +45557,7 @@
         ],
         [
           "src/item/item_movement_transaction.c",
-          2608,
+          2606,
           "economic_submit"
         ]
       ],
@@ -45550,7 +45565,7 @@
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "native_effects": {
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -45558,7 +45573,7 @@
         ]
       },
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ]
     },
     {
@@ -45569,9 +45584,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Projects the exact committed inactive craft result: retire selected live inputs once, reconstruct outputs with retained UIDs, and publish only to the committed player owner.",
-      "authority_boundary": "One retained inactive craft receipt owns all exact input retirements and output admissions; an active schema-2 craft owner is required before activation.",
-      "current_support": "Legacy craft conservation qualified on SQL and flat-file. Native active accounting craft root/source/reference integration remains unsupported and refused.",
+      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
+      "current_support": "Active schema-2 admission, atomic native craft conservation, replay and rollback pass component/native tests on both SQL engines and flatfile. Real-server legacy craft/restart journeys pass separately; a full active-epoch gameplay journey remains unqualified. Virtual Chaos-pouch Encrust remains refused pending atomic pouch state updates.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -45588,7 +45603,10 @@
       },
       "test_candidates": [
         "tests/async/test_issue_551_crafting_conservation.py",
-        "tests/async/test_npc_alchemist_runtime.py"
+        "tests/async/test_npc_alchemist_runtime.py",
+        "tests/async/test_item_transfer_accounting.py",
+        "tests/async/item_transfer_mysql_harness.cpp",
+        "tests/async/test_publication_retention_runtime.py"
       ],
       "sites": [
         [
@@ -45606,7 +45624,7 @@
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "native_effects": {
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -45614,7 +45632,7 @@
         ]
       },
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ]
     },
     {
@@ -46115,7 +46133,7 @@
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 464,
+      "line": 457,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_craft("
     },
@@ -46139,49 +46157,49 @@
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 456,
+      "line": 449,
       "family": "item_lifecycle",
       "excerpt": "orb = read_object(VOBJ_GREATER_ORB_MAGIC, VIRTUAL);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 469,
+      "line": 462,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(orb);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 854,
+      "line": 847,
       "family": "item_lifecycle",
       "excerpt": "objrecipe = read_object(400210, VIRTUAL);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 924,
+      "line": 917,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(reward);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 928,
+      "line": 921,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(reward);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 938,
+      "line": 931,
       "family": "item_lifecycle",
       "excerpt": "reward = read_object(real_object(getItemFromZone(GET_ZONE(ch))), REAL);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 942,
+      "line": 935,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(reward);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 1714,
+      "line": 1707,
       "family": "item_lifecycle",
       "excerpt": "obj_to_char(read_object(400217, VIRTUAL), mob);"
     },
@@ -46193,13 +46211,13 @@
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 868,
+      "line": 861,
       "family": "item_publication",
       "excerpt": "obj_to_char(objrecipe, ch);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 1714,
+      "line": 1707,
       "family": "item_publication",
       "excerpt": "obj_to_char(read_object(400217, VIRTUAL), mob);"
     },
@@ -46739,25 +46757,25 @@
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1743,
+      "line": 1727,
       "family": "money_helper",
       "excerpt": "if (SUB_MONEY(ch, circle * 10000, 0) != 0)"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 659,
+      "line": 651,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_craft("
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1044,
+      "line": 1028,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_craft("
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1126,
+      "line": 1110,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_craft(ch, inputs, 2, &new_item, 1, OBJ_VNUM(jewel),"
     },
@@ -46775,265 +46793,265 @@
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 594,
+      "line": 586,
       "family": "item_lifecycle",
       "excerpt": "P_obj poison_vial = read_object(poison_data[i].vnum, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 598,
+      "line": 590,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(poison_vial);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 636,
+      "line": 628,
       "family": "item_lifecycle",
       "excerpt": "P_obj output = read_object(poison_data[i].vnum, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 665,
+      "line": 657,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(output);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 978,
+      "line": 962,
       "family": "item_lifecycle",
       "excerpt": "jewel = read_object(static_cast<int>(jewel_vnum), VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1002,
+      "line": 986,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1009,
+      "line": 993,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1016,
+      "line": 1000,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1024,
+      "line": 1008,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1055,
+      "line": 1039,
       "family": "item_lifecycle",
       "excerpt": "P_obj new_item = read_object(1251, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1060,
+      "line": 1044,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1130,
+      "line": 1114,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(new_item);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1263,
+      "line": 1247,
       "family": "item_lifecycle",
       "excerpt": "P_obj needed = read_object(imat, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1270,
+      "line": 1254,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(needed);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1273,
+      "line": 1257,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(needed);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1310,
+      "line": 1294,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(t_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1364,
+      "line": 1348,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(first_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1368,
+      "line": 1352,
       "family": "item_lifecycle",
       "excerpt": "ash = read_object(2670, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1393,
+      "line": 1377,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400261, VIRTUAL); // medium iron"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1396,
+      "line": 1380,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400262, VIRTUAL); // large iron"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1399,
+      "line": 1383,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400264, VIRTUAL); // medium steel"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1402,
+      "line": 1386,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400265, VIRTUAL); // large steel"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1405,
+      "line": 1389,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400267, VIRTUAL); // medium copper"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1408,
+      "line": 1392,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400268, VIRTUAL); // large copper"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1411,
+      "line": 1395,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400270, VIRTUAL); // medium silver"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1414,
+      "line": 1398,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400271, VIRTUAL); // large silver"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1417,
+      "line": 1401,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400273, VIRTUAL); // medium gold"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1420,
+      "line": 1404,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400274, VIRTUAL); // large gold"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1423,
+      "line": 1407,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400276, VIRTUAL); // medium platinum"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1426,
+      "line": 1410,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400277, VIRTUAL); // large platinum"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1429,
+      "line": 1413,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400279, VIRTUAL); // medium mithril"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1432,
+      "line": 1416,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400280, VIRTUAL); // large mithril"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1435,
+      "line": 1419,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400282, VIRTUAL); // medium adamantium"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1438,
+      "line": 1422,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400283, VIRTUAL); // large adamantium"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1447,
+      "line": 1431,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(362, VIRTUAL); // Alloy"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1451,
+      "line": 1435,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(2670, VIRTUAL); // Ash"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1462,
+      "line": 1446,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(362, VIRTUAL); // Alloy"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1466,
+      "line": 1450,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(first_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1467,
+      "line": 1451,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(second_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1538,
+      "line": 1522,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // A random eq arti?"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1815,
+      "line": 1799,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item, TRUE); // Not an arti, but ok."
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1309,
+      "line": 1293,
       "family": "item_publication",
       "excerpt": "obj_from_char(t_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1369,
+      "line": 1353,
       "family": "item_publication",
       "excerpt": "obj_to_obj(ash, furnace);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1468,
+      "line": 1452,
       "family": "item_publication",
       "excerpt": "obj_to_obj(new_obj, furnace);"
     },
@@ -53849,49 +53867,49 @@
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2608,
+      "line": 2606,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2726,
+      "line": 2729,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2734,
+      "line": 2737,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2746,
+      "line": 2749,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2872,
+      "line": 2875,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2880,
+      "line": 2883,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2890,
+      "line": 2893,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2948,
+      "line": 2951,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room,"
     },
@@ -53933,13 +53951,13 @@
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2850,
+      "line": 2853,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2999,
+      "line": 3002,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
@@ -54077,13 +54095,13 @@
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 2851,
+      "line": 2883,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 2918,
+      "line": 2950,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, *payload,"
     },
@@ -54113,7 +54131,7 @@
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1919,
+      "line": 1950,
       "family": "sql_economy",
       "excerpt": "\"UPDATE item_current_owner SET coin_payload=? WHERE item_uid=? AND item_revision=?\";"
     },

@@ -16,7 +16,7 @@
     "non_writer_or_out_of_scope_candidates": 96,
     "offline_operational_writer_routes": 3,
     "routes_with_current_schema_1_path": 84,
-    "routes_with_schema_2_gameplay_producer": 9,
+    "routes_with_schema_2_gameplay_producer": 14,
     "routes_with_unified_double_entry_evidence": 2,
     "runtime_mutation_and_projection_routes": 751,
     "supplemental_candidates_found": 0
@@ -588,7 +588,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1618
+          1602
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_enchant",
@@ -4193,7 +4193,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1695
+          1688
         ],
         "file": "src/classes/drannak.c",
         "function": "christmas_proc",
@@ -4250,7 +4250,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          818
+          811
         ],
         "file": "src/classes/drannak.c",
         "function": "create_recipe",
@@ -4261,22 +4261,42 @@
     },
     {
       "blocking_policy_after_activation": {
-        "decision": "refuse_before_allocation_until_native_source_and_root_exist",
+        "decision": "block_until_active_craft_journeys",
         "must_block_on_activation": true,
-        "required_policy": "Active authority refuses at gameplay entry before recipe RNG, wait, UID allocation or mutation. Crafting needs a native schema-2 root with exact input/output references; automatic vial issuance needs a durable zone spawn/source identity. The inactive legacy receipt or fresh-spawn marker does not satisfy those obligations."
+        "required_policy": "Physical crafts use the typed schema-2 owner, consumed-input crafting source, exact native retirement/admission and linked references on SQL and flatfile. Native component, replay, rollback and held-publication proofs pass; qualify complete active-epoch server journeys before release. Virtual pouch usage remains unsupported until its counter and UID state share the craft operation."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
       "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
+        "accounting_intent_attached_by_current_gameplay_route": true,
         "current_schema": 1,
         "evidence": [
           "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17",
+          "src/item/item_movement_transaction.c:item_movement_transaction_submit_craft (prepare crafting intent before retained coordinator admission)",
+          "src/economy/item_transfer_accounting.c:item_transfer_craft_accounting_effects (exact consumed inputs, output admissions and consumed-input source lifetime)",
+          "tests/async/item_transfer_mysql_harness.cpp:check_accounted_craft_conservation (both native SQL engines, references, replay, rejection and zero-output failure)",
+          "tests/async/flatfile_craft_conservation_harness.cpp (native authority commit, exact replay and separate-process interrupted recovery)",
+          "tests/async/test_publication_retention_runtime.py (active craft held for original actor and output restoration)",
+          "src/item/item_movement_transaction.c:1563-1668,1817-1928 (prepare eligible ordinary, bulk, trusted-steal, sourced creation/destruction, corpse creation/loot, and resurrection item handoffs while accounting is active)",
+          "src/economy/economic_gameplay_authority.c:254-295 (freeze the typed schema-2 item intent)",
+          "src/economy/item_transfer_accounting.c (bind player/corpse ownership endpoints and actors; restrict creation and non-coin retirement to typed source events)",
+          "src/persistence/economic_sql_item_transfer_transaction.c:136-167,352-394,426-482 (SQL source claims, custody references, and retained replay verification)",
+          "tests/async/item_transfer_mysql_harness.cpp:692-1002 (SQL sourced player/room creation, ordinary transfer, trusted-steal, retirement references, and replay)",
+          "src/flatfile/flatfile_accounting_dispatch.c:8-20 (schema-2 item dispatch to the typed item owner)",
+          "src/flatfile/flatfile_item_repository.c:2570-2635,2970-3070 (atomic custody/accounting/reference commit and exact replay verification)",
+          "src/flatfile/flatfile_accounting_store.c:641-704 (source claim staging and retained verification)",
+          "src/cmd/actmove.c:117-160 (key break submits item-action retirement before extracting the runtime object)",
+          "src/world/quest.c:228-231 (quest reward room creation retains the typed source event)",
+          "src/magic/spell_conjuration.c (transactional minor creation, create food, conjured item grants, component consumption, and sticks-to-snakes arrow retirement)",
+          "src/magic/magic.c and src/magic/spell_item_lifecycle.h (batch spell-component retirement and completion dispatch)",
+          "src/magic/spell_conjuration.c, src/magic/spell_spore_cloud.c, src/magic/spells.c, and src/classes/necromancy.c (spell effects resume after component retirement commits)",
+          "tests/async/economic_accounting_flatfile_gate_test.cpp:224-381 (sourced room creation/retirement, exact references, replay rejection and journal recovery)",
+          "tests/async/item_transfer_accounting_test.cpp (sourced room creation and item-action retirement admission)"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
-        "route_mode": "schema_1_typed_command_path",
-        "schema_2_gameplay_producer_connected": false
+        "interpretation": "Schema 1 remains the inactive/legacy path. When the accounting authority is active, eligible player get/drop/put/give moves, trusted-steal handoffs, typed-source player/room creation grants, and item-action consumption/destruction use a frozen schema-2 intent on SQL and flat-file; each backend stores the item operation, source claim when required, exact custody references and result atomically. Other item destruction/extraction paths and money-valued item creation/destruction remain unsupported.",
+        "route_mode": "schema_1_when_inactive_schema_2_item_accounting_when_active",
+        "schema_2_gameplay_producer_connected": true
       },
       "disposition": "runtime_mutation_route",
       "double_entry_evidence": {
@@ -4284,20 +4304,23 @@
           "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
           "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
         ],
-        "legacy_domain_evidence": [],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
-        "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "balanced economic_accounting_coin_posting rows where currency changes",
-          "linked item event references for custody-changing roots"
+        "legacy_domain_evidence": [
+          "Eligible SQL and flat-file player transfers, corpse custody handoffs, sourced player/room creation, and item-action consumption/destruction use the typed schema-2 custody operation, source claim where applicable, exact economic_accounting_item_reference rows, and native custody result. Route-specific gameplay acceptance remains pending; these custody-only roots do not assign market value, and money-valued item creation/destruction remains unsupported until balanced coin postings are added."
         ],
-        "status": "legacy_domain_ledger_only_not_double_entry",
+        "note": "The typed item-transfer owner persists exact SQL and flat-file custody references; complete writer coverage and route-specific gameplay acceptance are pending, so activation remains blocked.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation with frozen schema-2 intent",
+          "exact economic_accounting_item_reference for each item ownership event",
+          "matching item_current_owner and item_ownership_ledger rows",
+          "flat-file authority journal covering item_ownership catalog, accounting operation/source claim and item reference bucket",
+          "retained critical-command inbox/result for idempotent replay"
+        ],
+        "status": "typed_schema2_item_custody_reference_without_coin_effect",
         "unified_operation_postings_observed": false
       },
       "id": "class.drannak_pvp_store",
       "native_effects": {
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
@@ -4307,7 +4330,7 @@
       },
       "reason": "item_create",
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
@@ -4318,7 +4341,7 @@
         "function": "pvp_store",
         "original_draft_symbol": "pvp_store"
       },
-      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active accounting refuses before recipe RNG, wait, allocation or mutation.",
+      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -4369,7 +4392,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          893
+          886
         ],
         "file": "src/classes/drannak.c",
         "function": "random_recipe",
@@ -4426,7 +4449,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          934
+          927
         ],
         "file": "src/classes/drannak.c",
         "function": "random_zone_item",
@@ -5863,7 +5886,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4147
+          4200
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_coin_apply",
@@ -17074,8 +17097,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2734,
-          2746
+          2737,
+          2749
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17690,7 +17713,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1767
+          1751
         ],
         "file": "src/classes/salchemist.c",
         "function": "event_enchant",
@@ -17701,23 +17724,43 @@
     },
     {
       "blocking_policy_after_activation": {
-        "decision": "refuse_before_allocation_until_native_source_and_root_exist",
+        "decision": "block_until_active_craft_journeys",
         "must_block_on_activation": true,
-        "required_policy": "Active authority refuses at gameplay entry before recipe RNG, wait, UID allocation or mutation. Crafting needs a native schema-2 root with exact input/output references; automatic vial issuance needs a durable zone spawn/source identity. The inactive legacy receipt or fresh-spawn marker does not satisfy those obligations."
+        "required_policy": "Physical crafts use the typed schema-2 owner, consumed-input crafting source, exact native retirement/admission and linked references on SQL and flatfile. Native component, replay, rollback and held-publication proofs pass; qualify complete active-epoch server journeys before release. Virtual pouch usage remains unsupported until its counter and UID state share the craft operation."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
       "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
+        "accounting_intent_attached_by_current_gameplay_route": true,
         "current_schema": 1,
         "evidence": [
           "src/item/item_transfer_command.c:1077",
           "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17",
+          "src/item/item_movement_transaction.c:item_movement_transaction_submit_craft (prepare crafting intent before retained coordinator admission)",
+          "src/economy/item_transfer_accounting.c:item_transfer_craft_accounting_effects (exact consumed inputs, output admissions and consumed-input source lifetime)",
+          "tests/async/item_transfer_mysql_harness.cpp:check_accounted_craft_conservation (both native SQL engines, references, replay, rejection and zero-output failure)",
+          "tests/async/flatfile_craft_conservation_harness.cpp (native authority commit, exact replay and separate-process interrupted recovery)",
+          "tests/async/test_publication_retention_runtime.py (active craft held for original actor and output restoration)",
+          "src/item/item_movement_transaction.c:1563-1668,1817-1928 (prepare eligible ordinary, bulk, trusted-steal, sourced creation/destruction, corpse creation/loot, and resurrection item handoffs while accounting is active)",
+          "src/economy/economic_gameplay_authority.c:254-295 (freeze the typed schema-2 item intent)",
+          "src/economy/item_transfer_accounting.c (bind player/corpse ownership endpoints and actors; restrict creation and non-coin retirement to typed source events)",
+          "src/persistence/economic_sql_item_transfer_transaction.c:136-167,352-394,426-482 (SQL source claims, custody references, and retained replay verification)",
+          "tests/async/item_transfer_mysql_harness.cpp:692-1002 (SQL sourced player/room creation, ordinary transfer, trusted-steal, retirement references, and replay)",
+          "src/flatfile/flatfile_accounting_dispatch.c:8-20 (schema-2 item dispatch to the typed item owner)",
+          "src/flatfile/flatfile_item_repository.c:2570-2635,2970-3070 (atomic custody/accounting/reference commit and exact replay verification)",
+          "src/flatfile/flatfile_accounting_store.c:641-704 (source claim staging and retained verification)",
+          "src/cmd/actmove.c:117-160 (key break submits item-action retirement before extracting the runtime object)",
+          "src/world/quest.c:228-231 (quest reward room creation retains the typed source event)",
+          "src/magic/spell_conjuration.c (transactional minor creation, create food, conjured item grants, component consumption, and sticks-to-snakes arrow retirement)",
+          "src/magic/magic.c and src/magic/spell_item_lifecycle.h (batch spell-component retirement and completion dispatch)",
+          "src/magic/spell_conjuration.c, src/magic/spell_spore_cloud.c, src/magic/spells.c, and src/classes/necromancy.c (spell effects resume after component retirement commits)",
+          "tests/async/economic_accounting_flatfile_gate_test.cpp:224-381 (sourced room creation/retirement, exact references, replay rejection and journal recovery)",
+          "tests/async/item_transfer_accounting_test.cpp (sourced room creation and item-action retirement admission)"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
-        "route_mode": "schema_1_typed_command_path",
-        "schema_2_gameplay_producer_connected": false
+        "interpretation": "Schema 1 remains the inactive/legacy path. When the accounting authority is active, eligible player get/drop/put/give moves, trusted-steal handoffs, typed-source player/room creation grants, and item-action consumption/destruction use a frozen schema-2 intent on SQL and flat-file; each backend stores the item operation, source claim when required, exact custody references and result atomically. Other item destruction/extraction paths and money-valued item creation/destruction remain unsupported.",
+        "route_mode": "schema_1_when_inactive_schema_2_item_accounting_when_active",
+        "schema_2_gameplay_producer_connected": true
       },
       "disposition": "runtime_mutation_route",
       "double_entry_evidence": {
@@ -17726,21 +17769,23 @@
           "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
         ],
         "legacy_domain_evidence": [
-          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+          "item_ownership_ledger remains the native custody ledger; the accounting proof is the separate typed operation and linked item references.",
+          "Eligible SQL and flat-file player transfers, corpse custody handoffs, sourced player/room creation, and item-action consumption/destruction use the typed schema-2 custody operation, source claim where applicable, exact economic_accounting_item_reference rows, and native custody result. Route-specific gameplay acceptance remains pending; these custody-only roots do not assign market value, and money-valued item creation/destruction remains unsupported until balanced coin postings are added."
         ],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "note": "The typed item-transfer owner persists exact SQL and flat-file custody references; complete writer coverage and route-specific gameplay acceptance are pending, so activation remains blocked.",
         "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "balanced economic_accounting_coin_posting rows where currency changes",
-          "linked item event references for custody-changing roots"
+          "economic_accounting_operation with frozen schema-2 intent",
+          "exact economic_accounting_item_reference for each item ownership event",
+          "matching item_current_owner and item_ownership_ledger rows",
+          "flat-file authority journal covering item_ownership catalog, accounting operation/source claim and item reference bucket",
+          "retained critical-command inbox/result for idempotent replay"
         ],
-        "status": "legacy_domain_ledger_only_not_double_entry",
+        "status": "typed_schema2_item_custody_reference_without_coin_effect",
         "unified_operation_postings_observed": false
       },
       "id": "item.encrust_failure_destroy",
       "native_effects": {
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
@@ -17751,39 +17796,59 @@
       "reachability_evidence": "do_encrust source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_destroy",
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          888
+          880
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
         "original_draft_symbol": "do_encrust"
       },
-      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active accounting refuses before recipe RNG, wait, allocation or mutation.",
+      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
       "blocking_policy_after_activation": {
-        "decision": "refuse_before_allocation_until_native_source_and_root_exist",
+        "decision": "block_until_active_craft_journeys",
         "must_block_on_activation": true,
-        "required_policy": "Active authority refuses at gameplay entry before recipe RNG, wait, UID allocation or mutation. Crafting needs a native schema-2 root with exact input/output references; automatic vial issuance needs a durable zone spawn/source identity. The inactive legacy receipt or fresh-spawn marker does not satisfy those obligations."
+        "required_policy": "Physical crafts use the typed schema-2 owner, consumed-input crafting source, exact native retirement/admission and linked references on SQL and flatfile. Native component, replay, rollback and held-publication proofs pass; qualify complete active-epoch server journeys before release. Virtual pouch usage remains unsupported until its counter and UID state share the craft operation."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
       "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
+        "accounting_intent_attached_by_current_gameplay_route": true,
         "current_schema": 1,
         "evidence": [
           "src/item/item_transfer_command.c:1077",
           "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17",
+          "src/item/item_movement_transaction.c:item_movement_transaction_submit_craft (prepare crafting intent before retained coordinator admission)",
+          "src/economy/item_transfer_accounting.c:item_transfer_craft_accounting_effects (exact consumed inputs, output admissions and consumed-input source lifetime)",
+          "tests/async/item_transfer_mysql_harness.cpp:check_accounted_craft_conservation (both native SQL engines, references, replay, rejection and zero-output failure)",
+          "tests/async/flatfile_craft_conservation_harness.cpp (native authority commit, exact replay and separate-process interrupted recovery)",
+          "tests/async/test_publication_retention_runtime.py (active craft held for original actor and output restoration)",
+          "src/item/item_movement_transaction.c:1563-1668,1817-1928 (prepare eligible ordinary, bulk, trusted-steal, sourced creation/destruction, corpse creation/loot, and resurrection item handoffs while accounting is active)",
+          "src/economy/economic_gameplay_authority.c:254-295 (freeze the typed schema-2 item intent)",
+          "src/economy/item_transfer_accounting.c (bind player/corpse ownership endpoints and actors; restrict creation and non-coin retirement to typed source events)",
+          "src/persistence/economic_sql_item_transfer_transaction.c:136-167,352-394,426-482 (SQL source claims, custody references, and retained replay verification)",
+          "tests/async/item_transfer_mysql_harness.cpp:692-1002 (SQL sourced player/room creation, ordinary transfer, trusted-steal, retirement references, and replay)",
+          "src/flatfile/flatfile_accounting_dispatch.c:8-20 (schema-2 item dispatch to the typed item owner)",
+          "src/flatfile/flatfile_item_repository.c:2570-2635,2970-3070 (atomic custody/accounting/reference commit and exact replay verification)",
+          "src/flatfile/flatfile_accounting_store.c:641-704 (source claim staging and retained verification)",
+          "src/cmd/actmove.c:117-160 (key break submits item-action retirement before extracting the runtime object)",
+          "src/world/quest.c:228-231 (quest reward room creation retains the typed source event)",
+          "src/magic/spell_conjuration.c (transactional minor creation, create food, conjured item grants, component consumption, and sticks-to-snakes arrow retirement)",
+          "src/magic/magic.c and src/magic/spell_item_lifecycle.h (batch spell-component retirement and completion dispatch)",
+          "src/magic/spell_conjuration.c, src/magic/spell_spore_cloud.c, src/magic/spells.c, and src/classes/necromancy.c (spell effects resume after component retirement commits)",
+          "tests/async/economic_accounting_flatfile_gate_test.cpp:224-381 (sourced room creation/retirement, exact references, replay rejection and journal recovery)",
+          "tests/async/item_transfer_accounting_test.cpp (sourced room creation and item-action retirement admission)"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
-        "route_mode": "schema_1_typed_command_path",
-        "schema_2_gameplay_producer_connected": false
+        "interpretation": "Schema 1 remains the inactive/legacy path. When the accounting authority is active, eligible player get/drop/put/give moves, trusted-steal handoffs, typed-source player/room creation grants, and item-action consumption/destruction use a frozen schema-2 intent on SQL and flat-file; each backend stores the item operation, source claim when required, exact custody references and result atomically. Other item destruction/extraction paths and money-valued item creation/destruction remain unsupported.",
+        "route_mode": "schema_1_when_inactive_schema_2_item_accounting_when_active",
+        "schema_2_gameplay_producer_connected": true
       },
       "disposition": "runtime_mutation_route",
       "double_entry_evidence": {
@@ -17792,21 +17857,23 @@
           "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
         ],
         "legacy_domain_evidence": [
-          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+          "item_ownership_ledger remains the native custody ledger; the accounting proof is the separate typed operation and linked item references.",
+          "Eligible SQL and flat-file player transfers, corpse custody handoffs, sourced player/room creation, and item-action consumption/destruction use the typed schema-2 custody operation, source claim where applicable, exact economic_accounting_item_reference rows, and native custody result. Route-specific gameplay acceptance remains pending; these custody-only roots do not assign market value, and money-valued item creation/destruction remains unsupported until balanced coin postings are added."
         ],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "note": "The typed item-transfer owner persists exact SQL and flat-file custody references; complete writer coverage and route-specific gameplay acceptance are pending, so activation remains blocked.",
         "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "balanced economic_accounting_coin_posting rows where currency changes",
-          "linked item event references for custody-changing roots"
+          "economic_accounting_operation with frozen schema-2 intent",
+          "exact economic_accounting_item_reference for each item ownership event",
+          "matching item_current_owner and item_ownership_ledger rows",
+          "flat-file authority journal covering item_ownership catalog, accounting operation/source claim and item reference bucket",
+          "retained critical-command inbox/result for idempotent replay"
         ],
-        "status": "legacy_domain_ledger_only_not_double_entry",
+        "status": "typed_schema2_item_custody_reference_without_coin_effect",
         "unified_operation_postings_observed": false
       },
       "id": "item.encrust_transform",
       "native_effects": {
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
@@ -17817,18 +17884,18 @@
       "reachability_evidence": "do_encrust source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_create",
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          888
+          880
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
         "original_draft_symbol": "do_encrust"
       },
-      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active accounting refuses before recipe RNG, wait, allocation or mutation.",
+      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -17869,7 +17936,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          888
+          880
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
@@ -18569,7 +18636,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1203
+          1187
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_fix",
@@ -18616,7 +18683,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1203
+          1187
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_fix",
@@ -19519,7 +19586,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2982
+          2985
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19581,7 +19648,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2794
+          2797
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20946,23 +21013,43 @@
     },
     {
       "blocking_policy_after_activation": {
-        "decision": "refuse_before_allocation_until_native_source_and_root_exist",
+        "decision": "block_until_active_craft_journeys",
         "must_block_on_activation": true,
-        "required_policy": "Active authority refuses at gameplay entry before recipe RNG, wait, UID allocation or mutation. Crafting needs a native schema-2 root with exact input/output references; automatic vial issuance needs a durable zone spawn/source identity. The inactive legacy receipt or fresh-spawn marker does not satisfy those obligations."
+        "required_policy": "Physical crafts use the typed schema-2 owner, consumed-input crafting source, exact native retirement/admission and linked references on SQL and flatfile. Native component, replay, rollback and held-publication proofs pass; qualify complete active-epoch server journeys before release. Virtual pouch usage remains unsupported until its counter and UID state share the craft operation."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
       "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
+        "accounting_intent_attached_by_current_gameplay_route": true,
         "current_schema": 1,
         "evidence": [
           "src/item/item_transfer_command.c:1077",
           "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17",
+          "src/item/item_movement_transaction.c:item_movement_transaction_submit_craft (prepare crafting intent before retained coordinator admission)",
+          "src/economy/item_transfer_accounting.c:item_transfer_craft_accounting_effects (exact consumed inputs, output admissions and consumed-input source lifetime)",
+          "tests/async/item_transfer_mysql_harness.cpp:check_accounted_craft_conservation (both native SQL engines, references, replay, rejection and zero-output failure)",
+          "tests/async/flatfile_craft_conservation_harness.cpp (native authority commit, exact replay and separate-process interrupted recovery)",
+          "tests/async/test_publication_retention_runtime.py (active craft held for original actor and output restoration)",
+          "src/item/item_movement_transaction.c:1563-1668,1817-1928 (prepare eligible ordinary, bulk, trusted-steal, sourced creation/destruction, corpse creation/loot, and resurrection item handoffs while accounting is active)",
+          "src/economy/economic_gameplay_authority.c:254-295 (freeze the typed schema-2 item intent)",
+          "src/economy/item_transfer_accounting.c (bind player/corpse ownership endpoints and actors; restrict creation and non-coin retirement to typed source events)",
+          "src/persistence/economic_sql_item_transfer_transaction.c:136-167,352-394,426-482 (SQL source claims, custody references, and retained replay verification)",
+          "tests/async/item_transfer_mysql_harness.cpp:692-1002 (SQL sourced player/room creation, ordinary transfer, trusted-steal, retirement references, and replay)",
+          "src/flatfile/flatfile_accounting_dispatch.c:8-20 (schema-2 item dispatch to the typed item owner)",
+          "src/flatfile/flatfile_item_repository.c:2570-2635,2970-3070 (atomic custody/accounting/reference commit and exact replay verification)",
+          "src/flatfile/flatfile_accounting_store.c:641-704 (source claim staging and retained verification)",
+          "src/cmd/actmove.c:117-160 (key break submits item-action retirement before extracting the runtime object)",
+          "src/world/quest.c:228-231 (quest reward room creation retains the typed source event)",
+          "src/magic/spell_conjuration.c (transactional minor creation, create food, conjured item grants, component consumption, and sticks-to-snakes arrow retirement)",
+          "src/magic/magic.c and src/magic/spell_item_lifecycle.h (batch spell-component retirement and completion dispatch)",
+          "src/magic/spell_conjuration.c, src/magic/spell_spore_cloud.c, src/magic/spells.c, and src/classes/necromancy.c (spell effects resume after component retirement commits)",
+          "tests/async/economic_accounting_flatfile_gate_test.cpp:224-381 (sourced room creation/retirement, exact references, replay rejection and journal recovery)",
+          "tests/async/item_transfer_accounting_test.cpp (sourced room creation and item-action retirement admission)"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
-        "route_mode": "schema_1_typed_command_path",
-        "schema_2_gameplay_producer_connected": false
+        "interpretation": "Schema 1 remains the inactive/legacy path. When the accounting authority is active, eligible player get/drop/put/give moves, trusted-steal handoffs, typed-source player/room creation grants, and item-action consumption/destruction use a frozen schema-2 intent on SQL and flat-file; each backend stores the item operation, source claim when required, exact custody references and result atomically. Other item destruction/extraction paths and money-valued item creation/destruction remain unsupported.",
+        "route_mode": "schema_1_when_inactive_schema_2_item_accounting_when_active",
+        "schema_2_gameplay_producer_connected": true
       },
       "disposition": "runtime_mutation_route",
       "double_entry_evidence": {
@@ -20971,21 +21058,23 @@
           "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
         ],
         "legacy_domain_evidence": [
-          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+          "item_ownership_ledger remains the native custody ledger; the accounting proof is the separate typed operation and linked item references.",
+          "Eligible SQL and flat-file player transfers, corpse custody handoffs, sourced player/room creation, and item-action consumption/destruction use the typed schema-2 custody operation, source claim where applicable, exact economic_accounting_item_reference rows, and native custody result. Route-specific gameplay acceptance remains pending; these custody-only roots do not assign market value, and money-valued item creation/destruction remains unsupported until balanced coin postings are added."
         ],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "note": "The typed item-transfer owner persists exact SQL and flat-file custody references; complete writer coverage and route-specific gameplay acceptance are pending, so activation remains blocked.",
         "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "balanced economic_accounting_coin_posting rows where currency changes",
-          "linked item event references for custody-changing roots"
+          "economic_accounting_operation with frozen schema-2 intent",
+          "exact economic_accounting_item_reference for each item ownership event",
+          "matching item_current_owner and item_ownership_ledger rows",
+          "flat-file authority journal covering item_ownership catalog, accounting operation/source claim and item reference bucket",
+          "retained critical-command inbox/result for idempotent replay"
         ],
-        "status": "legacy_domain_ledger_only_not_double_entry",
+        "status": "typed_schema2_item_custody_reference_without_coin_effect",
         "unified_operation_postings_observed": false
       },
       "id": "item.poison_mix",
       "native_effects": {
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
@@ -20996,7 +21085,7 @@
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_create",
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
@@ -21007,7 +21096,7 @@
         "function": "do_mixpoison",
         "original_draft_symbol": "do_mixpoison"
       },
-      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active accounting refuses before recipe RNG, wait, allocation or mutation.",
+      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -22182,7 +22271,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1332
+          1316
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_smelt",
@@ -22243,7 +22332,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1332
+          1316
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_smelt",
@@ -22306,7 +22395,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2172
+          2203
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_execute_at_offset",
@@ -22367,7 +22456,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2795
+          2827
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_destroy_owners",
@@ -22659,7 +22748,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1507
+          1491
         ],
         "file": "src/classes/salchemist.c",
         "function": "thrusted_eq_proc",
@@ -50537,23 +50626,43 @@
     },
     {
       "blocking_policy_after_activation": {
-        "decision": "refuse_before_allocation_until_native_source_and_root_exist",
+        "decision": "block_until_active_craft_journeys",
         "must_block_on_activation": true,
-        "required_policy": "Active authority refuses at gameplay entry before recipe RNG, wait, UID allocation or mutation. Crafting needs a native schema-2 root with exact input/output references; automatic vial issuance needs a durable zone spawn/source identity. The inactive legacy receipt or fresh-spawn marker does not satisfy those obligations."
+        "required_policy": "Physical crafts use the typed schema-2 owner, consumed-input crafting source, exact native retirement/admission and linked references on SQL and flatfile. Native component, replay, rollback and held-publication proofs pass; qualify complete active-epoch server journeys before release. Virtual pouch usage remains unsupported until its counter and UID state share the craft operation."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
       "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
+        "accounting_intent_attached_by_current_gameplay_route": true,
         "current_schema": 1,
         "evidence": [
           "src/item/item_transfer_command.c:1077",
           "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17",
+          "src/item/item_movement_transaction.c:item_movement_transaction_submit_craft (prepare crafting intent before retained coordinator admission)",
+          "src/economy/item_transfer_accounting.c:item_transfer_craft_accounting_effects (exact consumed inputs, output admissions and consumed-input source lifetime)",
+          "tests/async/item_transfer_mysql_harness.cpp:check_accounted_craft_conservation (both native SQL engines, references, replay, rejection and zero-output failure)",
+          "tests/async/flatfile_craft_conservation_harness.cpp (native authority commit, exact replay and separate-process interrupted recovery)",
+          "tests/async/test_publication_retention_runtime.py (active craft held for original actor and output restoration)",
+          "src/item/item_movement_transaction.c:1563-1668,1817-1928 (prepare eligible ordinary, bulk, trusted-steal, sourced creation/destruction, corpse creation/loot, and resurrection item handoffs while accounting is active)",
+          "src/economy/economic_gameplay_authority.c:254-295 (freeze the typed schema-2 item intent)",
+          "src/economy/item_transfer_accounting.c (bind player/corpse ownership endpoints and actors; restrict creation and non-coin retirement to typed source events)",
+          "src/persistence/economic_sql_item_transfer_transaction.c:136-167,352-394,426-482 (SQL source claims, custody references, and retained replay verification)",
+          "tests/async/item_transfer_mysql_harness.cpp:692-1002 (SQL sourced player/room creation, ordinary transfer, trusted-steal, retirement references, and replay)",
+          "src/flatfile/flatfile_accounting_dispatch.c:8-20 (schema-2 item dispatch to the typed item owner)",
+          "src/flatfile/flatfile_item_repository.c:2570-2635,2970-3070 (atomic custody/accounting/reference commit and exact replay verification)",
+          "src/flatfile/flatfile_accounting_store.c:641-704 (source claim staging and retained verification)",
+          "src/cmd/actmove.c:117-160 (key break submits item-action retirement before extracting the runtime object)",
+          "src/world/quest.c:228-231 (quest reward room creation retains the typed source event)",
+          "src/magic/spell_conjuration.c (transactional minor creation, create food, conjured item grants, component consumption, and sticks-to-snakes arrow retirement)",
+          "src/magic/magic.c and src/magic/spell_item_lifecycle.h (batch spell-component retirement and completion dispatch)",
+          "src/magic/spell_conjuration.c, src/magic/spell_spore_cloud.c, src/magic/spells.c, and src/classes/necromancy.c (spell effects resume after component retirement commits)",
+          "tests/async/economic_accounting_flatfile_gate_test.cpp:224-381 (sourced room creation/retirement, exact references, replay rejection and journal recovery)",
+          "tests/async/item_transfer_accounting_test.cpp (sourced room creation and item-action retirement admission)"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
-        "route_mode": "schema_1_typed_command_path",
-        "schema_2_gameplay_producer_connected": false
+        "interpretation": "Schema 1 remains the inactive/legacy path. When the accounting authority is active, eligible player get/drop/put/give moves, trusted-steal handoffs, typed-source player/room creation grants, and item-action consumption/destruction use a frozen schema-2 intent on SQL and flat-file; each backend stores the item operation, source claim when required, exact custody references and result atomically. Other item destruction/extraction paths and money-valued item creation/destruction remain unsupported.",
+        "route_mode": "schema_1_when_inactive_schema_2_item_accounting_when_active",
+        "schema_2_gameplay_producer_connected": true
       },
       "disposition": "runtime_mutation_route",
       "double_entry_evidence": {
@@ -50562,21 +50671,23 @@
           "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
         ],
         "legacy_domain_evidence": [
-          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+          "item_ownership_ledger remains the native custody ledger; the accounting proof is the separate typed operation and linked item references.",
+          "Eligible SQL and flat-file player transfers, corpse custody handoffs, sourced player/room creation, and item-action consumption/destruction use the typed schema-2 custody operation, source claim where applicable, exact economic_accounting_item_reference rows, and native custody result. Route-specific gameplay acceptance remains pending; these custody-only roots do not assign market value, and money-valued item creation/destruction remains unsupported until balanced coin postings are added."
         ],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "note": "The typed item-transfer owner persists exact SQL and flat-file custody references; complete writer coverage and route-specific gameplay acceptance are pending, so activation remains blocked.",
         "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "balanced economic_accounting_coin_posting rows where currency changes",
-          "linked item event references for custody-changing roots"
+          "economic_accounting_operation with frozen schema-2 intent",
+          "exact economic_accounting_item_reference for each item ownership event",
+          "matching item_current_owner and item_ownership_ledger rows",
+          "flat-file authority journal covering item_ownership catalog, accounting operation/source claim and item reference bucket",
+          "retained critical-command inbox/result for idempotent replay"
         ],
-        "status": "legacy_domain_ledger_only_not_double_entry",
+        "status": "typed_schema2_item_custody_reference_without_coin_effect",
         "unified_operation_postings_observed": false
       },
       "id": "item.craft_submit",
       "native_effects": {
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
@@ -50587,7 +50698,7 @@
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_create",
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
@@ -50598,7 +50709,7 @@
         "function": "item_movement_transaction_submit_craft",
         "original_draft_symbol": "item_movement_transaction_submit_craft"
       },
-      "source_classification": "Builds one legacy retained exact-input/output craft receipt. Active authority refuses before UID reservation; no active schema-2 craft owner is implemented.",
+      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -50642,7 +50753,7 @@
       },
       "id": "item.craft_publication",
       "native_effects": {
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission under the legacy craft receipt; no active accounting mutation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
@@ -50653,7 +50764,7 @@
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_create",
       "refusal_source_evidence": [
-        "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
+        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
@@ -50664,7 +50775,7 @@
         "function": "publish_craft",
         "original_draft_symbol": "publish_craft"
       },
-      "source_classification": "Projects the exact committed inactive craft result: retire selected live inputs once, reconstruct outputs with retained UIDs, and publish only to the committed player owner.",
+      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {

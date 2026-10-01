@@ -35,5 +35,8 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     "${MYSQL_CFLAGS[@]}" -ffunction-sections -fdata-sections tests/async/player_load_repository_mysql_harness.cpp \
     src/player/player_load_repository.c src/player/player_load_topology.c src/player/player_death_recovery_query.c src/player/player_death_conflict_repository.c src/persistence/critical_command.c src/player/player_snapshot_codec.c src/persistence/persistence_observability.c \
     src/persistence/player_death_restitution_command.c \
+    src/persistence/quest_reward_obligation_repository.c \
+    src/player/player_save_journal.c \
+    src/item/item_transfer_command.c src/economy/currency_command.c \
     -Wl,--gc-sections "${MYSQL_LIBS[@]}" -lcrypto -o "$ROOT/bin/tests/player_load_repository_mysql_harness"
 "$ROOT/bin/tests/player_load_repository_mysql_harness"

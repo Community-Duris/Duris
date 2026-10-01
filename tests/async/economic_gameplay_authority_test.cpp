@@ -549,6 +549,43 @@ int main()
 	assert(economic_gameplay_authority::prepare_item_transfer(&unauthorized_item_drop, 8) ==
 	       error::unauthorized);
 	assert(candidate_equal(unauthorized_item_drop, unauthorized_item_drop_before));
+	item_transfer_payload craft_payload = {};
+	assert(item_transfer_command_decode_payload(item_transfer(), &craft_payload));
+	craft_payload.to_owner = craft_payload.from_owner;
+	craft_payload.expected_to_revision = craft_payload.expected_from_revision;
+	craft_payload.reason = item_transfer_reason::craft;
+	craft_payload.reason_id = 551;
+	craft_payload.multi_root = true;
+	craft_payload.selected_item_uid = 600;
+	craft_payload.target_root_item_uid = 0;
+	player_item_snapshot craft_output = {};
+	craft_output.object_uid = 600;
+	craft_output.vnum = 9002;
+	craft_output.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	craft_output.equipment_slot = -1;
+	std::vector<uint8_t> craft_bytes;
+	assert(player_item_snapshot_list_encode({ craft_output }, &craft_bytes) ==
+	       player_snapshot_codec_result::ok);
+	craft_payload.item_blob_size = craft_bytes.size();
+	std::copy(craft_bytes.begin(), craft_bytes.end(), craft_payload.item_blob.begin());
+	critical_command craft;
+	assert(item_transfer_command_build(&craft, id(80), craft_payload,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	const auto unqualified_craft = craft;
+	assert(economic_gameplay_authority::prepare_item_transfer(&craft, 7) ==
+	       error::unauthorized);
+	assert(candidate_equal(craft, unqualified_craft));
+	assert(economic_gameplay_authority::prepare_item_transfer(
+		       &craft, 8, economic_source_kind::crafting) == error::unauthorized);
+	assert(candidate_equal(craft, unqualified_craft));
+	assert(economic_gameplay_authority::prepare_item_transfer(
+		       &craft, 7, economic_source_kind::crafting) == error::ok);
+	assert(supported_candidate(craft) && item_transfer_accounting_command_supported(craft));
+	economic_frozen_intent craft_intent;
+	assert(economic_intent_decode(craft.accounting_intent, &craft_intent) == error::ok);
+	assert(craft_intent.admission.metadata.reason == economic_reason::crafting_cost &&
+	       craft_intent.admission.metadata.source_event->sequence == 500);
 
 	// Failed cache replacement must not discard a usable verified projection.
 	assert(lifecycle_access::install(id(1), {}, id(3), wallets, banks) ==

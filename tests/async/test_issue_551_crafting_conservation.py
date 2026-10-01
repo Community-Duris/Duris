@@ -114,7 +114,7 @@ harness = r'''
 #include <vector>
 #include <unordered_set>
 #include <string>
-struct economic_gameplay_authority { static bool active() { return false; } };
+struct economic_gameplay_authority { static bool active() { return true; } };
 struct object { int vnum; const char *name; const char *short_description; object *next_content = nullptr; };
 using P_obj = object *;
 struct character { P_obj carrying = nullptr; int skill = 100; int level = 56; };

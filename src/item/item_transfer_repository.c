@@ -1692,7 +1692,7 @@ bool insert_craft_ledger(MYSQL *connection, const critical_command &command,
 			 uint16_t event_index_base, uint64_t item_revision, uint64_t from_revision,
 			 uint64_t to_revision, const item_owner_identity &from_owner,
 			 const item_owner_identity &to_owner, uint64_t root_item_uid,
-			 uint64_t parent_item_uid)
+			 uint64_t parent_item_uid, uint16_t from_equipment_slot = 0)
 {
 	item_transfer_payload leg = payload;
 	leg.from_owner = from_owner;
@@ -1704,13 +1704,14 @@ bool insert_craft_ledger(MYSQL *connection, const critical_command &command,
 	leg.items[index].root_item_uid = root_item_uid;
 	leg.items[index].parent_item_uid = parent_item_uid;
 	return insert_ledger(connection, command, leg, index, event_index_base, item_revision,
-			     from_revision, to_revision, 0);
+			     from_revision, to_revision, from_equipment_slot);
 }
 
 bool execute_craft(MYSQL *connection, const critical_command &command,
 		   const item_transfer_payload &payload, uint16_t event_index_base,
 		   uint64_t owner_revision, item_transfer_result *result, unsigned int *result_code,
-		   bool *mutation_applied, item_transfer_failure_stage *failure_stage)
+		   bool *mutation_applied, item_transfer_failure_stage *failure_stage,
+		   item_transfer_custody_delta *custody_delta)
 {
 	if (!connection || !result || !result_code || !mutation_applied ||
 	    payload.reason != item_transfer_reason::craft ||
@@ -1837,6 +1838,33 @@ bool execute_craft(MYSQL *connection, const critical_command &command,
 			*result_code = EEXIST;
 			return true;
 		}
+	item_transfer_custody_delta accounted_effects;
+	if (custody_delta)
+	{
+		std::vector<economic_item_snapshot> inputs;
+		try
+		{
+			inputs.reserve(selected.size());
+			for (const auto &item : selected)
+				inputs.push_back(accounting_snapshot(item));
+		}
+		catch (const std::bad_alloc &)
+		{
+			errno = ENOMEM;
+			return false;
+		}
+		economic_accounting_plan effects;
+		const auto resolved =
+			item_transfer_craft_accounting_effects(payload, inputs, &effects);
+		if (resolved != economic_accounting_error::ok)
+		{
+			errno = resolved == economic_accounting_error::capacity ? ENOMEM : EILSEQ;
+			return false;
+		}
+		accounted_effects = { std::move(effects.items_before),
+				      std::move(effects.items_after),
+				      std::move(effects.item_events) };
+	}
 	if (owner_revision == UINT64_MAX)
 	{
 		*result_code = ERANGE;
@@ -1853,7 +1881,8 @@ bool execute_craft(MYSQL *connection, const critical_command &command,
 		    !insert_craft_ledger(connection, command, payload, index, event_index_base,
 					 stored.item_revision + 1, owner_revision + 1,
 					 owner_revision + 1, payload.from_owner, destruction,
-					 stored.root_item_uid, stored.parent_item_uid))
+					 stored.root_item_uid, stored.parent_item_uid,
+					 stored.equipment_slot))
 			return false;
 		if (!run_sql(connection, "DELETE FROM player_items WHERE obj_uid=" +
 						 std::to_string(entry.item_uid) + " AND pid=" +
@@ -1897,6 +1926,8 @@ bool execute_craft(MYSQL *connection, const critical_command &command,
 		return false;
 	result->from_owner_revision = owner_revision + 1;
 	result->to_owner_revision = owner_revision + 1;
+	if (custody_delta)
+		*custody_delta = std::move(accounted_effects);
 	*mutation_applied = true;
 	return true;
 }
@@ -2260,7 +2291,8 @@ bool item_transfer_repository_execute_at_offset(
 	}
 	if (payload.reason == item_transfer_reason::craft)
 		return execute_craft(connection, command, payload, event_index_base, from_revision,
-				     result, result_code, mutation_applied, failure_stage);
+				     result, result_code, mutation_applied, failure_stage,
+				     custody_delta);
 	std::vector<current_item> current;
 	const bool creation = payload.from_owner.type == item_owner_type::system;
 	if (creation)

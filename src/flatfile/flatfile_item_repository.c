@@ -747,7 +747,7 @@ bool generic_transfer_supported(const item_transfer_payload &payload, uint16_t p
 		payload.to_owner.type == item_owner_type::destruction &&
 		payload.reason == item_transfer_reason::quest_turnin && payload.multi_root &&
 		payload.continuation.kind == item_transfer_continuation_kind::quest_offering;
-	const bool craft = !accounted && payload.reason == item_transfer_reason::craft;
+	const bool craft = payload.reason == item_transfer_reason::craft;
 	return craft ||
 	       (generic_materialization_owner(payload.from_owner.type) &&
 		generic_materialization_owner(payload.to_owner.type)) ||
@@ -1136,6 +1136,32 @@ try
 	if (economic_intent_plan_metadata(command, intent, &plan.metadata) !=
 	    economic_accounting_error::ok)
 		return false;
+	if (payload.reason == item_transfer_reason::craft)
+	{
+		std::vector<economic_item_snapshot> inputs;
+		inputs.reserve(payload.item_count);
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const auto *item = catalog_item(before, payload.items[index].item_uid);
+			if (!item)
+				return false;
+			inputs.push_back({ item->item_uid, accounting_position(*item) });
+		}
+		if (item_transfer_craft_accounting_effects(payload, inputs, &plan) !=
+		    economic_accounting_error::ok)
+			return false;
+		for (const auto &effect : plan.items_after)
+		{
+			const auto *item = catalog_item(after, effect.uid);
+			if (!item || !economic_item_position_equal(effect.position,
+								   accounting_position(*item)))
+				return false;
+		}
+		if (economic_plan_normalize(&plan) != economic_accounting_error::ok ||
+		    !build_item_accounting_references(command, plan, references))
+			return false;
+		return economic_plan_encode(plan, &record->plan) == economic_accounting_error::ok;
+	}
 	const bool creation = payload.reason == item_transfer_reason::creation;
 	if (creation)
 	{
@@ -1282,8 +1308,9 @@ bool verify_accounted_item_record(const critical_command &command,
 	if (economic_plan_decode(record.plan, &plan) != economic_accounting_error::ok ||
 	    economic_plan_validate_structure(plan) != economic_accounting_error::ok ||
 	    !plan.accounts.empty() || !plan.postings.empty() || !plan.children.empty() ||
-	    plan.item_events.size() != payload.item_count ||
-	    plan.item_events.size() != result.item_count ||
+	    (payload.reason != item_transfer_reason::craft &&
+	     (plan.item_events.size() != payload.item_count ||
+	      plan.item_events.size() != result.item_count)) ||
 	    economic_item_effects_validate(plan.items_before, plan.items_after, plan.item_events,
 					   0) != economic_accounting_error::ok)
 		return false;
@@ -1292,6 +1319,31 @@ bool verify_accounted_item_record(const critical_command &command,
 		    economic_accounting_error::ok ||
 	    !plan_metadata_matches(plan.metadata, expected_metadata))
 		return false;
+	if (payload.reason == item_transfer_reason::craft)
+	{
+		std::vector<economic_item_snapshot> inputs;
+		inputs.reserve(payload.item_count);
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const auto uid = payload.items[index].item_uid;
+			const auto prior =
+				std::find_if(plan.items_before.begin(), plan.items_before.end(),
+					     [uid](const auto &item) { return item.uid == uid; });
+			if (prior == plan.items_before.end())
+				return false;
+			inputs.push_back(*prior);
+		}
+		economic_accounting_plan expected;
+		expected.metadata = expected_metadata;
+		std::vector<uint8_t> encoded;
+		if (item_transfer_craft_accounting_effects(payload, inputs, &expected) !=
+			    economic_accounting_error::ok ||
+		    economic_plan_normalize(&expected) != economic_accounting_error::ok ||
+		    economic_plan_encode(expected, &encoded) != economic_accounting_error::ok ||
+		    encoded != record.plan || result.item_count != payload.item_count)
+			return false;
+		return build_item_accounting_references(command, expected, references);
+	}
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
 		const auto &entry = payload.items[index];
@@ -1426,6 +1478,7 @@ unsigned int apply_craft(ownership_catalog *catalog, const item_transfer_payload
 		++entry->item_revision;
 		entry->owner = { item_owner_type::destruction, 0, 0 };
 		entry->state = item_custody_state::destroyed;
+		entry->equipment_slot = 0;
 		result->max_item_revision =
 			std::max(result->max_item_revision, entry->item_revision);
 	}

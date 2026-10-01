@@ -1876,6 +1876,138 @@ void check_quest_reward_obligation(MYSQL *&connection)
 	puts("PASS: committed SQL quest offering retains exact reward obligation and replays once");
 }
 
+void check_accounted_craft_conservation(MYSQL *connection)
+{
+	const item_owner_identity owner = { item_owner_type::player, 552, 0 };
+	const auto lineage = operation(67);
+	const auto epoch = operation(68);
+	execute(connection,
+		"INSERT INTO player_data(pid,name,account_name) VALUES(552,'AccountedCraft','CraftFixture')");
+	execute(connection,
+		"INSERT INTO item_owner_revision(owner_type,owner_id,owner_context_id,revision) VALUES(1,552,0,1)");
+	execute(connection,
+		"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,item_revision,vnum,state,equipment_slot) VALUES(55201,55201,NULL,1,552,0,1,102,1,7),(55202,55201,55201,1,552,0,1,103,1,0)");
+	execute(connection,
+		"INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,command_type,schema_version,payload_version,status,result_payload) VALUES(UNHEX('" +
+			operation_hex(66) +
+			"'),REPEAT(CHAR(1),32),REPEAT(CHAR(2),32),1,1,1,1,X'')");
+	execute(connection,
+		"INSERT INTO economic_epoch(lineage,epoch,ordinal,predecessor,transition_kind,transition_digest,creating_operation_id) VALUES(UNHEX('" +
+			operation_hex(lineage) + "'),UNHEX('" + operation_hex(epoch) +
+			"'),1,NULL,1,REPEAT(CHAR(0),32),UNHEX('" + operation_hex(66) + "'))");
+	execute(connection,
+		"INSERT INTO economic_lineage_state(lineage,active_epoch,revision) VALUES(UNHEX('" +
+			operation_hex(lineage) + "'),UNHEX('" + operation_hex(epoch) + "'),0)");
+	player_item_snapshot output = runtime_item(55203, 771, 1900001234);
+	output.craftsmanship = 4;
+	output.dynamic_affects.push_back({ 1, 2, 3 });
+	player_item_snapshot child = runtime_item(55204, 772, 1900001235);
+	child.parent_index = 0;
+	std::vector<uint8_t> encoded;
+	assert(player_item_snapshot_list_encode({ output, child }, &encoded) ==
+	       player_snapshot_codec_result::ok);
+	item_transfer_payload craft = {};
+	craft.from_owner = craft.to_owner = owner;
+	craft.expected_from_revision = craft.expected_to_revision = 1;
+	craft.reason = item_transfer_reason::craft;
+	craft.reason_id = 552;
+	craft.multi_root = true;
+	craft.selected_item_uid = output.object_uid;
+	craft.item_count = 2;
+	craft.items[0] = { 55201, 55201, 0, 1, 102, item_custody_state::active };
+	craft.items[1] = { 55202, 55201, 55201, 1, 103, item_custody_state::active };
+	craft.item_blob_size = encoded.size();
+	std::copy(encoded.begin(), encoded.end(), craft.item_blob.begin());
+	const auto success = accounted_item_transfer(operation(69), craft, lineage, epoch, 552,
+						     economic_source_kind::crafting);
+	auto applied = critical_command_repository_apply(connection, success);
+	if (applied.outcome != critical_apply_outcome::applied)
+		fprintf(stderr, "accounted craft outcome=%u error=%u stage=%u sql=%s\n",
+			(unsigned)applied.outcome, applied.error_code,
+			(unsigned)applied.failure_stage, mysql_error(connection));
+	assert(applied.outcome == critical_apply_outcome::applied && applied.error_code == 0);
+	assert(owner_revision(connection, owner) == 2);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM item_current_owner WHERE item_uid IN(55201,55202) AND owner_type=8 AND state=2 AND item_revision=2 AND equipment_slot=0") ==
+	       2);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM item_current_owner WHERE item_uid=55204 AND root_item_uid=55203 AND parent_item_uid=55203 AND state=1") ==
+	       1);
+	const auto canonical = read_blob(
+		connection,
+		("SELECT canonical_plan FROM economic_accounting_operation WHERE operation_id=UNHEX('" +
+		 operation_hex(success.operation_id) + "')")
+			.c_str());
+	economic_accounting_plan plan;
+	assert(economic_plan_decode(canonical, &plan) == economic_accounting_error::ok);
+	assert(plan.item_events.size() == 4 && plan.item_events[0].before.equipment_slot == 7 &&
+	       plan.item_events[0].after.equipment_slot == 0 &&
+	       plan.item_events[1].after.parent_uid == 55201);
+	for (uint16_t index = 0; index < 4; ++index)
+	{
+		economic_accounting_item_reference ref = {};
+		assert(economic_accounting_item_reference_find_by_legacy(
+			connection, success.operation_id, index, &ref));
+		assert(ref.event_index == index && ref.item_uid == 55201u + index &&
+		       ref.before_revision == (index < 2 ? 1u : 0u) &&
+		       ref.after_revision == (index < 2 ? 2u : 1u));
+	}
+	MYSQL *reopened = open_pool_test_connection();
+	assert(reopened);
+	assert(critical_command_repository_reconcile(reopened, success).outcome ==
+	       critical_apply_outcome::already_applied);
+	assert(critical_command_repository_apply(reopened, success).outcome ==
+	       critical_apply_outcome::already_applied);
+	player_load_request request = {};
+	request.request_id = 552;
+	request.pid = 552;
+	request.account_name = "CraftFixture";
+	request.deadline_usec = persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+	const auto loaded = player_load_repository_execute(reopened, request);
+	assert(loaded.outcome == player_load_outcome::applied && loaded.snapshot.items.size() == 2);
+	assert(loaded.snapshot.items[0].object_uid == output.object_uid &&
+	       loaded.snapshot.items[0].timers == output.timers &&
+	       loaded.snapshot.items[0].craftsmanship == output.craftsmanship &&
+	       loaded.snapshot.items[0].dynamic_affects.size() == output.dynamic_affects.size() &&
+	       loaded.snapshot.items[1].object_uid == child.object_uid &&
+	       loaded.snapshot.items[1].parent_index == 0);
+	execute(reopened,
+		"INSERT INTO player_spell_effect_receipt(pid,operation_id,effect_id) VALUES(552,UNHEX('" +
+			operation_hex(success.operation_id) + "'),1)");
+	request.pid = 0;
+	request.account_name.clear();
+	request.player_name = "AccountedCraft";
+	request.pending_spell_effect_operations = { success.operation_id };
+	request.deadline_usec = persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+	const auto pending_load = player_load_repository_execute(reopened, request);
+	assert(pending_load.outcome == player_load_outcome::applied &&
+	       pending_load.metrics.query_count == PLAYER_LOAD_QUERY_MAX &&
+	       pending_load.spell_effect_receipts.size() == 1 &&
+	       pending_load.spell_effect_receipts[0].effect_id ==
+		       static_cast<uint32_t>(item_spell_component_effect::faerie_sight));
+	// A rebuilt command cannot issue another result for consumed inputs.
+	const auto duplicate = accounted_item_transfer(operation(70), craft, lineage, epoch, 552,
+						       economic_source_kind::crafting);
+	assert(critical_command_repository_apply(reopened, duplicate).outcome ==
+	       critical_apply_outcome::terminal_failure);
+	assert(owner_revision(reopened, owner) == 2);
+	craft.expected_from_revision = craft.expected_to_revision = 2;
+	craft.selected_item_uid = 55203;
+	craft.items[0] = { 55203, 55203, 0, 1, output.vnum, item_custody_state::active };
+	craft.items[1] = { 55204, 55203, 55203, 1, child.vnum, item_custody_state::active };
+	craft.item_blob_size = 0;
+	const auto failure = accounted_item_transfer(operation(71), craft, lineage, epoch, 552,
+						     economic_source_kind::crafting);
+	assert(critical_command_repository_apply(reopened, failure).outcome ==
+	       critical_apply_outcome::applied);
+	assert(owner_revision(reopened, owner) == 3);
+	assert(scalar(reopened, "SELECT COUNT(*) FROM player_items WHERE pid=552") == 0);
+	assert(critical_command_repository_reconcile(reopened, failure).outcome ==
+	       critical_apply_outcome::already_applied);
+	mysql_close(reopened);
+	puts("PASS: accounted SQL craft preserves exact consumed/output witnesses, rich nested state, fresh-session replay, duplicate refusal and intended failure");
+}
+
 void check_craft_conservation(MYSQL *connection)
 {
 	const item_owner_identity owner = { item_owner_type::player, 551, 0 };
@@ -1960,7 +2092,8 @@ void check_craft_conservation(MYSQL *connection)
 	by_name.deadline_usec = persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
 	const auto named = player_load_repository_execute(connection, by_name);
 	assert(named.outcome == player_load_outcome::applied && named.pid == 551 &&
-	       named.metrics.query_count == PLAYER_LOAD_QUERY_MAX);
+	       named.metrics.query_count == reloaded.metrics.query_count + 1 &&
+	       named.metrics.query_count == PLAYER_LOAD_NAME_QUERY_MAX);
 	const auto &loaded = reloaded.snapshot.items[0];
 	assert(loaded.object_uid == output.object_uid &&
 	       loaded.craftsmanship == output.craftsmanship);
@@ -2429,6 +2562,7 @@ int main()
 				.c_str());
 	}
 	check_craft_conservation(connection);
+	check_accounted_craft_conservation(connection);
 	mysql_close(connection);
 	return 0;
 }

@@ -22,19 +22,23 @@ constexpr size_t PLAYER_LOAD_BASE_QUERY_MAX = 24;
 constexpr size_t PLAYER_LOAD_RESTITUTION_QUERY_MAX = 2;
 constexpr size_t PLAYER_LOAD_PET_CUSTODY_QUERY_MAX = 1;
 constexpr size_t PLAYER_LOAD_DEATH_GATE_QUERY_MAX = 1;
-// The XP entitlement SELECT is included in the base. Obligation recovery adds
-// its SELECT and two fixed, set-based native economic witness reads.
-constexpr size_t PLAYER_LOAD_QUEST_REWARD_QUERY_MAX = QUEST_REWARD_PENDING_QUERY_MAX;
+// Obligation recovery has its SELECT and two fixed, set-based economic witness
+// reads. Retained XP entitlements use one additional SELECT.
+constexpr size_t PLAYER_LOAD_QUEST_REWARD_QUERY_MAX = QUEST_REWARD_PENDING_QUERY_MAX + 1;
 // The primary-key lock precedes the consistent view. Name-based requests also
 // resolve the PID before starting that transaction, then revalidate under lock.
 constexpr size_t PLAYER_LOAD_IDENTITY_LOCK_QUERY_MAX = 1;
 constexpr size_t PLAYER_LOAD_NAME_LOOKUP_QUERY_MAX = 1;
+// Optional pending spell operations share one bounded receipt SELECT.
+constexpr size_t PLAYER_LOAD_SPELL_EFFECT_QUERY_MAX = 1;
 constexpr size_t PLAYER_LOAD_PID_QUERY_MAX =
 	PLAYER_LOAD_BASE_QUERY_MAX + PLAYER_LOAD_RESTITUTION_QUERY_MAX +
 	PLAYER_LOAD_PET_CUSTODY_QUERY_MAX + PLAYER_LOAD_DEATH_GATE_QUERY_MAX +
 	PLAYER_LOAD_IDENTITY_LOCK_QUERY_MAX + PLAYER_LOAD_QUEST_REWARD_QUERY_MAX;
-constexpr size_t PLAYER_LOAD_QUERY_MAX =
+constexpr size_t PLAYER_LOAD_NAME_QUERY_MAX =
 	PLAYER_LOAD_PID_QUERY_MAX + PLAYER_LOAD_NAME_LOOKUP_QUERY_MAX;
+constexpr size_t PLAYER_LOAD_QUERY_MAX =
+	PLAYER_LOAD_NAME_QUERY_MAX + PLAYER_LOAD_SPELL_EFFECT_QUERY_MAX;
 constexpr uint64_t PLAYER_LOAD_TIMEOUT_USEC = UINT64_C(3000000);
 constexpr size_t PLAYER_LOAD_ITEM_MAX = PLAYER_SNAPSHOT_MAX_OBJECTS;
 // A payload row the ownership ledger no longer backs is skipped rather than refusing the

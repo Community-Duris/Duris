@@ -84,12 +84,19 @@ def run(binary, mode='file'):
         if mode == 'redis':
             host = os.environ['TEST_DB_HOST']
             assert host in ('127.0.0.1', 'localhost')
-            database = 'alchemist_journey_' + uuid.uuid4().hex[:12]
-            env.update(DB_HOST=host, DB_PORT='3306', DB_NAME=database,
+            assert os.environ.get('TEST_DB_DISPOSABLE') == '1', 'disposable database opt-in required'
+            database_port = int(os.environ.get('TEST_DB_PORT', '3306'))
+            redis_port = int(os.environ.get('TEST_REDIS_PORT', '6379'))
+            assert 1 <= database_port <= 65535 and 1 <= redis_port <= 65535
+            # Keep the server's database-qualified advisory lock below MySQL's
+            # 64-byte lock-name limit, including its fixed prefix.
+            database = 'alchemy_test_' + uuid.uuid4().hex[:12]
+            env.update(DB_HOST=host, DB_PORT=str(database_port), DB_NAME=database,
                 DB_USER=os.environ['TEST_DB_USER'], DB_PASSWD=os.environ['TEST_DB_PASSWORD'],
                 MYSQL_PWD=os.environ['TEST_DB_PASSWORD'], DB_TLS='FALSE',
                 DB_ALLOWED_TARGETS=host + '/' + database, PERSISTENCE_MODE='mariadb-primary')
-            mysql = ['mysql', '--protocol=tcp', '-h', host, '-u', env['DB_USER'], '-N', '-B']
+            mysql = ['mysql', '--protocol=tcp', '-h', host, '-P', str(database_port),
+                     '-u', env['DB_USER'], '-N', '-B']
             def sql(statement, selected=True):
                 return subprocess.check_output(mysql + ([database] if selected else []),
                     input=statement, text=True, env=env).strip()
@@ -186,8 +193,13 @@ def run(binary, mode='file'):
                 subprocess.run([str(fixture), str(state)], check=True)
             else:
                 sql("UPDATE player_data SET level=62,highest_level=62,base_hit=200000 WHERE name='Taverek'")
-                env.update(REDIS='TRUE', REDIS_HOST='127.0.0.1', REDIS_PORT='6379',
-                    REDIS_NAMESPACE='duris:local:alchemist-journey', REDIS_WORLD_STATE='TRUE',
+                for skill_id in (1308, 1148):
+                    sql("INSERT INTO player_skills(pid,skill_id,learned,taught) "
+                        f"SELECT pid,{skill_id},100,100 FROM player_data WHERE name='Taverek' "
+                        "ON DUPLICATE KEY UPDATE learned=100,taught=100")
+                env.update(REDIS='TRUE', REDIS_HOST='127.0.0.1', REDIS_PORT=str(redis_port),
+                    REDIS_NAMESPACE='duris:local:alchemist-' + database.split('_')[-1],
+                    REDIS_WORLD_STATE='TRUE',
                     REDIS_WORLD_STATE_INTERVAL='5',
                     REDIS_WORLD_STATE_SECRET='local-alchemist-fixture-secret-123456789')
             boot()
