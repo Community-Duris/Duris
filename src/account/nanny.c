@@ -8,6 +8,7 @@
  *****************************************************************************/
 
 #include "core/prototypes.h"
+#include "world/rested.h"
 #include "telemetry/telemetry_runtime.h"
 #include "account/newbie_kit_plan.h"
 #include "world/object_template.h"
@@ -747,12 +748,9 @@ static void load_chaos_new_character_kit(P_char ch)
 		return;
 	}
 
-	if (!item_creation_grant_submit_batch_to_player_before_entry(ch, kit.roots.data(),
-								     kit.count, ch,
-								     economic_source_kind::starter_grant,
-								     starter_grant_source_id(
-									     ch,
-									     CHAOS_KIT_SOURCE_TAG)))
+	if (!item_creation_grant_submit_batch_to_player_before_entry(
+		    ch, kit.roots.data(), kit.count, ch, economic_source_kind::starter_grant,
+		    starter_grant_source_id(ch, CHAOS_KIT_SOURCE_TAG)))
 	{
 		statuslog(56, "&+RALERT&n: CHAOS starter kit grant could not be queued");
 		send_to_char(
@@ -930,8 +928,9 @@ void load_obj_to_newbies(P_char ch)
 				    return item_creation_prepare_result::failed;
 			    return ++index == plan.size() ? item_creation_prepare_result::ready :
 							    item_creation_prepare_result::more;
-			    }, economic_source_kind::starter_grant,
-			    starter_grant_source_id(ch, NEWBIE_GRANT_SOURCE_TAG)))
+		    },
+		    economic_source_kind::starter_grant,
+		    starter_grant_source_id(ch, NEWBIE_GRANT_SOURCE_TAG)))
 		send_to_char("Your starter kit is being prepared...\r\n", ch);
 	else
 		send_to_char(
@@ -1300,7 +1299,7 @@ static int resolve_entry_room(P_char ch, int rent_type, time_t now)
 		room = GET_HOME(ch) ? real_room(GET_HOME(ch)) : real_room(GET_BIRTHPLACE(ch));
 		if (room == NOWHERE)
 			room = IS_TRUSTED(ch) ? real_room0(1200) :
-						   real_room(GET_ORIG_BIRTHPLACE(ch));
+						real_room(GET_ORIG_BIRTHPLACE(ch));
 		if (room == NOWHERE)
 			room = real_room0(11);
 	}
@@ -1311,8 +1310,7 @@ static int resolve_entry_room(P_char ch, int rent_type, time_t now)
 
 	// A ship or closed zone can send the candidate back through a missing
 	// birthplace. Validate it before indexing world or zone_table.
-	if (room >= 0 && room <= top_of_world &&
-	    (zone_table[world[room].zone].flags & ZONE_CLOSED))
+	if (room >= 0 && room <= top_of_world && (zone_table[world[room].zone].flags & ZONE_CLOSED))
 		room = real_room(GET_BIRTHPLACE(ch));
 	if (room > top_of_world)
 		room = real_room(11);
@@ -1733,7 +1731,7 @@ void enter_game(P_desc d)
 	}
 
 	// Add well-rested or rested bonus, if applicable.
-	if (nobonus)
+	if (nobonus || !rested_bonus_enabled())
 	{
 	}
 	// 20 hrs (almost a day) -> 2.5h well-rested bonus.
