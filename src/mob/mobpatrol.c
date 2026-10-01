@@ -34,7 +34,6 @@ extern const int rev_dir[NUM_EXITS];
 extern struct str_app_type str_app[];
 extern struct zone_data *zone_table;
 extern const char *undead_type[];
-extern struct potion potion_data[];
 
 struct PatrolData
 {
