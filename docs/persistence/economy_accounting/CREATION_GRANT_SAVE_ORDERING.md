@@ -282,3 +282,159 @@ Each domain should be delivered in its own focused accounting PR with an active
 epoch journey. Keep the existing guards until that owner's acceptance criteria
 pass. Full release remains owned by #490; production activation and historical
 instance restitution are separate operations.
+
+## Recovery evidence audit and concrete design review
+
+Audit baseline: accounting merge `33fe44dc0c85fab9b20dcf49f8856b508b9ec697`.
+This section records source inspection and synthetic archive checks. It does not
+deliver a recovery mutation or establish a historical instance as recoverable.
+
+### What the retained owners actually preserve
+
+| Owner | Retained evidence | Limit for historical recovery |
+| --- | --- | --- |
+| Player quarantine archive | Original frame bytes, per-record SHA-256, PID table and archive reason | Runtime-terminal reason does not identify error10001 or prove a creation grant caused the rejection. No prepared replacement or resolved-PID state exists. |
+| Critical command journal | Complete original command while its record remains retained | `critical_command_coordinator_acknowledge_publication` checkpoints the operation after publication; `critical_command_journal_checkpoint` removes that command's frames. Successful publication need not leave the original command here. |
+| SQL inbox | Full encoded-command hash, keys hash, type/schema, result and revision | Neither the original command envelope nor its item payload is stored in the inbox schema. A hash can verify supplied bytes; it cannot reconstruct missing bytes. |
+| SQL item outbox | Encoded item-transfer result, including root/count and revisions | The item branch encodes the 48-byte domain result, not the command's frozen item blob. |
+| Accounting operation | Canonical intent/plan, source claim and domain digest | This item adapter freezes metadata and a digest of the domain payload. It does not put the original item blob into its admission facts. |
+| SQL player item/runtime rows | Current physical item projection and runtime payload | Creation materializes them atomically, but subsequent saves/transfers can change them. A current payload does not establish the original grant payload or the entire rejected save's obligations. |
+| Flat-file ownership operations | Command digest, result, creation source/recipient metadata and current custody | The ordinary creation operation record does not retain a complete historical item blob. Current player files and custody are separate evidence. |
+
+Relevant owners are `src/persistence/critical_command_repository.c`
+(`command_hashes`, the item-command result branch and `insert_outbox`),
+`migrations/critical_command_inbox_outbox.sql`,
+`src/persistence/critical_command_coordinator.c`,
+`src/persistence/critical_command_journal.c`,
+`src/economy/item_transfer_accounting.c`,
+`src/economy/economic_accounting_intent.c`,
+`src/item/item_transfer_repository.c`, and
+`src/flatfile/flatfile_item_repository.c`. These are source findings; this audit
+has not queried an existing quarantined player's database or private history.
+
+### Classification and refusal rules
+
+1. **Candidate requiring backend proof:** a verified original command survives
+   in the critical journal or a coherent retained backup, together with every
+   original archived player frame. Verify its encoded-command hash, successful
+   receipt, source identity, exact UID set, recipient and complete owner/revision
+   history against the selected backend. Retained bytes are necessary evidence,
+   not automatic authorization to release the player.
+2. **Unresolved missing command:** only inbox/outbox hashes/results, a current
+   owner row, a higher player save revision or the custody diagnosis survive.
+   Refuse recovery. Recreating an item from its prototype/current mutable payload
+   or manufacturing a command with guessed envelope fields cannot satisfy the
+   original command hash. An independently retained original command or separately
+   authorized restitution would be needed.
+3. **Unresolved component or receipt obligation:** any frame is corrupt,
+   unsupported, receipt-bearing/death, or cannot be incorporated without losing
+   a retained component update. Refuse the first recovery slice. A newer skill,
+   status or effect frame must not disappear when an older item graph is repaired.
+4. **Unresolved authority conflict:** missing item payload, conflicting later
+   transfer, changed source claim, ambiguous owner/topology or native economic
+   revision change. Refuse and preserve the original archive and PID fence.
+
+The extended `test_player_quarantine_restore.py` creates two native frames with
+different component obligations and checks that the archive preserves their
+original bytes. It also checks that a higher revision/checkpoint and removal of
+the synthetic PID-policy file cannot release the archive-owned fence, that the
+fence survives reinitialization, and that a healthy unrelated PID remains usable.
+This is executable preservation/refusal evidence, not a positive SQL recovery or
+an injected process crash at a replacement-commit boundary.
+
+### Proposed bounded transition — review required before implementation
+
+The existing archive owner is the smallest place to retain the transition. The
+proposal extends its versioned format rather than adding a second recovery store
+or a general quarantine override. This changes persistent format and introduces
+recovery-owner interfaces, so the prepared plan and scopeguard skill require a
+concrete design review before implementation.
+
+- **Operation environment:** one listener-free recovery operation on an isolated,
+  coherent restore with the server and other writers stopped. Require selected
+  backend/lineage identity and native ownership checks. The initial interface
+  offers inspect/prepare/resume for one PID; it does not offer force-release.
+- **Preparation:** validate every frame for the PID and the original grant
+  command/receipt/history. Exclude death and quest/spell receipt frames in the
+  first slice. Overlay retained component updates in revision order onto the
+  verified durable player image; build the complete authoritative item/pet graph
+  and preserve current native wallet, bank, epic and other domain authority.
+  Freeze the replacement revision, payload and all expected domain/owner
+  revisions. A tied/conflicting revision or missing component proof refuses.
+- **Durable prepared record:** extend the quarantine archive with a versioned
+  recovery record containing a generated recovery identity, PID/backend/lineage,
+  original frame identities/digests, verified encoded command and grant identity,
+  expected native revisions, complete encoded replacement and its digest.
+  Bound the record by existing snapshot/archive limits. Publish it with the
+  existing temporary-file, fdatasync, rename and directory-fsync protocol before
+  any backend write. Keep the original frame bytes and PID fence.
+- **Apply/resume:** a narrow recovery-owner capability is available only for the
+  exact durable prepared record. Keep ordinary load/save admission fenced. Recheck
+  all expected authority under the selected backend's native locks before applying
+  the replacement through its existing transaction owner. After an interrupted or
+  ambiguous commit, read back and compare the exact replacement revision and
+  complete component/UID/topology result; a revision counter alone is insufficient.
+  Never resubmit the creation grant to generate replacement items.
+- **Resolution:** persist an exact-result resolution in the same archive owner
+  before reopening this PID. A failed write or uncertain directory sync keeps it
+  fenced. Loader/replay must distinguish original evidence from a durably resolved
+  fence. A new failure for that PID must supersede the old resolution and fence
+  it again. Other PIDs and their unresolved frames remain independent.
+- **Compatibility:** continue reading archive version 1. A version-2 archive must
+  make older binaries fail closed; rollback requires a compatible reader. Extend
+  the existing restore/backup/lifecycle registration and limits in the same PR.
+  Mixed-generation backend/journal restores must refuse resolution. Do not rewrite
+  immutable SQL migrations or claim a schema change is unnecessary until exact
+  backend result verification has been implemented and reviewed.
+- **Qualification:** positive retained-command recovery on flat-file, MySQL 8.0
+  and MariaDB 10.11, plus every refusal above and interruption before preparation,
+  after preparation, after backend commit and during resolution persistence.
+  Include repeat/resume, rollback compatibility, new quarantine after resolution,
+  saturation/disk-full and healthy-PID progress. Actual historical instances with
+  missing original command bytes remain unresolved even after this is delivered.
+
+No format change, recovery capability, SQL migration, authority mutation or PID
+release is part of the evidence cleanup PR. #664 remains open for this reviewed
+transition and its supported-backend qualification.
+
+## Qualification cleanup results
+
+The evidence cleanup refreshes the inventory against accounting merge `33fe44dc0`:
+one `nanny.c` call-wrap excerpt replacement and 317 existing mapped-site line
+references. Existing source classification, coverage and backend readiness are
+preserved. The generated matrix contains 2,816 occurrences / 2,758 unique sites,
+all mapped, across 864 registry rows. The ordinary validator passes; the release
+validator still refuses missing executable evidence.
+
+The attack contract now follows `invoke_object_special` at both the `pv_common`
+and `single_stab` boundaries, retaining the participant revalidation assertions.
+The existing attack harness passes AddressSanitizer/UndefinedBehaviorSanitizer.
+The writer coverage test's nine stale source-line expectations are also refreshed;
+its 52 checks pass. No server C/C++ implementation changed in this cleanup, so
+the #668 server builds/journeys above remain the application evidence and were
+not rerun as if they qualified the proposed recovery transition.
+
+Existing successful single-grant publication/save journeys are linked to the
+three exercised creation submission/publication/completion rows. Each backend
+remains unverified for full route qualification, because caller/failure/crash
+coverage is incomplete. This reduces empty executable-evidence fields from
+742 to 739 without changing any release decision.
+
+| Remaining empty-evidence entries | Integration owner |
+| ---: | --- |
+| 215 | #480 |
+| 88 | #481 |
+| 346 | #482 |
+| 16 | #483 |
+| 8 | #484 |
+| 11 | #485 |
+| 42 | #486 |
+| 1 | #487 |
+| 1 | #488 |
+| 11 | #489 |
+
+These are metadata counts, not counts of broken gameplay features. Each owner
+must connect existing applicable proof or document a genuine implementation gap;
+the integrated #490 matrix, independent reconciliation and predeclared numeric
+performance/storage budgets remain open. The census/attack cleanup does not
+qualify enforcement or remove the #551/#661 guards.
