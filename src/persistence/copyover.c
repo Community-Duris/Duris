@@ -121,6 +121,7 @@ bool copyover_training_dummy_is(P_char ch)
 struct copyover_worker_resume_guard
 {
 	bool armed = true;
+	bool redis_released = false;
 	~copyover_worker_resume_guard()
 	{
 		if (!armed)
@@ -129,6 +130,8 @@ struct copyover_worker_resume_guard
 		critical_command_coordinator_resume();
 		critical_outbox_resume();
 		player_save_pipeline_resume();
+		if (redis_released)
+			redis_world_recovery_resume_after_copyover();
 	}
 };
 
@@ -799,8 +802,9 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 			for (P_desc pending_desc = descriptor_list; pending_desc;
 			     pending_desc = pending_desc->next)
 				if (copyover_descriptor_is_eligible(pending_desc) &&
-				    pending_desc->character == pending_character && retry_state_valid &&
-				    retry_delay > 0 && GET_NAME(pending_character))
+				    pending_desc->character == pending_character &&
+				    retry_state_valid && retry_delay > 0 &&
+				    GET_NAME(pending_character))
 				{
 					serialized = true;
 					break;
@@ -1104,6 +1108,12 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 
 	logit(LOG_STATUS, "copyover: saved %d descs, %d mobs, %d objs, %d doors", num_descs,
 	      num_mobs, num_objs, num_rooms);
+	if (!redis_world_recovery_prepare_copyover())
+	{
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
+	}
+	resume_workers.redis_released = true;
 
 	// All prerequisite saves and the complete copyover file are durable. Only
 	// now may non-preservable transports be disconnected.
@@ -1381,7 +1391,8 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		     (!desc_entry.death_retry_pending &&
 		      (desc_entry.death_retry_delay || desc_entry.death_retry_corpse_uid))))
 		{
-			logit(LOG_STATUS, "copyover_recover: invalid death retry state in desc %d", i);
+			logit(LOG_STATUS, "copyover_recover: invalid death retry state in desc %d",
+			      i);
 			goto copyover_recover_fail;
 		}
 
@@ -1461,10 +1472,12 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 				char_to_room(ch, save_room, FALSE);
 				player_load_pets_place(ch);
 				if (desc_entry.death_retry_pending &&
-				    !death_extract_retry_restore(ch, desc_entry.death_retry_corpse_uid,
+				    !death_extract_retry_restore(ch,
+								 desc_entry.death_retry_corpse_uid,
 								 desc_entry.death_retry_delay))
 				{
-					logit(LOG_STATUS, "copyover: failed restoring death retry for %s",
+					logit(LOG_STATUS,
+					      "copyover: failed restoring death retry for %s",
 					      desc_entry.player_name);
 					goto copyover_recover_fail;
 				}

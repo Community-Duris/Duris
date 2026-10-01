@@ -678,6 +678,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "46779e7b1cf8a12af6828f263a4842ddfed21303719f693224ac130a76371f5b",
       "verify_checksum": "ff9b0757b6534750d40c26d04212ff4856bee3b835061d1d7a5803e74e590c3a"
+    },
+    {
+      "id": "0051_player_item_runtime_state",
+      "sequence": 51,
+      "description": "Preserve complete runtime state for carried player items",
+      "apply": "immutable/0051_player_item_runtime_state.sql",
+      "verify": "immutable/0051_player_item_runtime_state.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "ab0e11959207cca0579dcc5635f9c124c655d07635a14c62334a8a2d02c3c7d8",
+      "verify_checksum": "c523d56f74862735f6aef0c831cbe662bed49c64fa6cbdf05bac82f81c1225e5"
     }
   ]
 }
