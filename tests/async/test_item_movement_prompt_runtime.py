@@ -59,6 +59,8 @@ economic_accounting_error economic_gameplay_authority::prepare_item_transfer(
 }
 bool currency_transaction_coin_item_busy(uint64_t uid) { return uid && uid == busy_coin_uid; }
 bool currency_transaction_player_busy(P_char) { return currency_busy; }
+bool player_save_pipeline_sealed_save_pending(int) { return false; }
+bool spell_component_retirement_waiting_for_effect(const critical_operation_id &) { return false; }
 bool collector_transaction_player_busy(P_char) { return false; }
 bool collector_transaction_item_busy(uint64_t) { return false; }
 bool collector_service_player_busy(P_char) { return false; }

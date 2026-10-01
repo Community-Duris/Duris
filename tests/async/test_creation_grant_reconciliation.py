@@ -2,7 +2,10 @@
 """Regression contracts for starter-grant retries and reconciliation safety."""
 
 import re
+import subprocess
+import tempfile
 from pathlib import Path
+from _paths import extract_function
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -121,3 +124,114 @@ check("creation materializer rejects non-positive VNUMs",
       "entry->vnum <= 0" in MATERIALIZE)
 
 print("[PASS] creation grant retry/reconciliation safety contracts")
+
+# Compile the production admission predicates with real revision state. Control
+# the async boundaries explicitly so both save-first and grant-first ordering
+# are deterministic, including inbound grants and dirty-but-unsealed changes.
+PIPELINE = (ROOT / "src/player/player_save_pipeline.c").read_text()
+CONFLICTS = function_body(MOVEMENT, "bool creation_grant_conflicts(")
+CAPTURE = function_body(PIPELINE, "static player_save_pipeline_result checkpoint_dirty_with_quest_xp(")
+check("grant admission fences sealed recipient saves before movement admission",
+      CONFLICTS.index("player_save_pipeline_sealed_save_pending") < CONFLICTS.index("movement_conflicts"))
+check("capture waits before queueing or sealing an unpublished grant",
+      CAPTURE.index("item_creation_grant_player_publication_pending") < CAPTURE.index("player_revision_queue("))
+harness = r'''
+#include "player/player_save_pipeline.h"
+#include "item/item_ownership_runtime.h"
+#include <cassert>
+#include <deque>
+#include <mutex>
+#include <unordered_map>
+struct char_data { int pid; bool npc = false; };
+#define GET_PID(ch) ((ch)->pid)
+#define IS_NPC(ch) ((ch)->npc)
+std::mutex pipeline_mutex;
+player_save_pipeline_health health = {};
+bool stop_requested = false, accepting = true;
+int append_inflight_pid = 0;
+bool quarantined = false, retained = false, worker_pending = false;
+bool login_fenced = false, terminal_fenced = false;
+bool player_save_journal_pid_quarantined(int) { return quarantined; }
+void *find_target_save_login_fence_locked(int) { return login_fenced ? &health : nullptr; }
+void *find_terminal_fence_locked(int) { return terminal_fenced ? &health : nullptr; }
+bool any_snapshot_is_retained_locked(int) { return retained; }
+bool player_save_worker_pid_pending(int) { return worker_pending; }
+struct pending_creation_grant { uint64_t item_uid; uint32_t recipient_pid; bool to_room; };
+struct creation_grant_queue { bool active; std::deque<pending_creation_grant> requests; };
+std::unordered_map<uint32_t, creation_grant_queue> creation_grants;
+const item_owner_identity system_owner_identity = {};
+bool player_movement_conflict = false;
+bool movement_conflicts(const item_owner_identity &, const item_owner_identity &) { return player_movement_conflict; }
+bool item_ownership_runtime_lookup(uint64_t, item_ownership_runtime_entry *) { return false; }
+item_owner_identity creation_grant_owner(const pending_creation_grant &request) {
+    return {request.to_room ? item_owner_type::room : item_owner_type::player, request.recipient_pid, 0};
+}
+''' + extract_function("player_save_pipeline.c", "bool player_save_pipeline_sealed_save_pending(") + '\n' + CONFLICTS + '\n' + extract_function("item_movement_transaction.c", "bool item_creation_grant_player_publication_pending(") + r'''
+int main() {
+    char_data recipient{41}, other{42};
+    pending_creation_grant grant{1001,41,false};
+    health.initialized = true;
+    assert(player_revision_hydrate(41, 7));
+    player_revision_t revision;
+    player_component_mask_t components;
+    assert(player_revision_mark(41, PLAYER_COMPONENT_INVENTORY, &revision));
+    assert(!creation_grant_conflicts(grant)); // Dirty marks do not seal old bytes.
+    assert(player_revision_queue(41, &revision, &components));
+    assert(creation_grant_conflicts(grant));
+    creation_grants[99] = {false,{grant}};
+    assert(!item_creation_grant_player_publication_pending(&recipient)); // Let old save drain.
+    retained = true;
+    assert(player_revision_begin_inflight(41, revision, components));
+    worker_pending = true;
+    assert(creation_grant_conflicts(grant));
+    retained = false;
+    assert(creation_grant_conflicts(grant)); // Worker result still awaits game-thread ACK.
+    assert(player_revision_acknowledge(41, revision, components));
+    assert(creation_grant_conflicts(grant)); // Worker slot must also drain.
+    worker_pending = false;
+    assert(!creation_grant_conflicts(grant));
+    creation_grants[99].active = true; // Grant-first: fence capture until publication.
+    assert(item_creation_grant_player_publication_pending(&recipient));
+    assert(!item_creation_grant_player_publication_pending(&other));
+    assert(player_revision_mark(41, PLAYER_COMPONENT_STATUS, nullptr));
+    assert(!player_save_pipeline_sealed_save_pending(41)); // New dirty state does not deadlock grant.
+    creation_grants[99].active = false;
+    assert(!item_creation_grant_player_publication_pending(&recipient));
+    assert(player_revision_queue(41, &revision, &components));
+    assert(components == PLAYER_COMPONENT_STATUS);
+    assert(player_revision_begin_inflight(41, revision, components));
+    assert(player_revision_acknowledge(41, revision, components));
+    for (bool *boundary : {&retained, &worker_pending, &login_fenced, &terminal_fenced, &quarantined, &stop_requested}) {
+        *boundary = true;
+        assert(creation_grant_conflicts(grant));
+        *boundary = false;
+    }
+    append_inflight_pid = 41;
+    assert(creation_grant_conflicts(grant));
+    append_inflight_pid = 0;
+    health.initialized = false;
+    assert(creation_grant_conflicts(grant));
+    health.initialized = true;
+    accepting = false;
+    assert(creation_grant_conflicts(grant));
+    accepting = true;
+    player_movement_conflict = true;
+    assert(creation_grant_conflicts(grant)); // Genuine conflict stays refused.
+    player_movement_conflict = false;
+    grant.to_room = true;
+    quarantined = true;
+    assert(!creation_grant_conflicts(grant)); // Room grant has no player graph.
+    creation_grants[99] = {true,{grant}};
+    assert(!item_creation_grant_player_publication_pending(&recipient));
+    assert(!item_creation_grant_player_publication_pending(nullptr));
+}
+'''
+with tempfile.TemporaryDirectory(prefix="duris-grant-save-order-") as directory:
+    program = Path(directory) / "ordering.cpp"
+    binary = Path(directory) / "ordering"
+    program.write_text(harness)
+    subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+                    "-Isrc", str(program), "src/player/player_revision_state.c",
+                    "-pthread", "-o", str(binary)], cwd=ROOT, check=True)
+    subprocess.run([str(binary)], check=True)
+print("[PASS] deterministic save/grant ordering, inbound recipient, dirty progress, retained/worker/login/quarantine fences")
