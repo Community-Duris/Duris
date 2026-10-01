@@ -321,8 +321,7 @@ void normalization(MYSQL *c)
 	assert(!limited.next_uid &&
 	       limited.issue_counts[static_cast<size_t>(issue::allocator_missing_or_invalid)] == 1);
 	assert(std::any_of(limited.diagnostics.begin(), limited.diagnostics.end(),
-			   [](const auto &d)
-			   {
+			   [](const auto &d) {
 				   return d.issue == issue::allocator_missing_or_invalid &&
 					  d.source.row == SIZE_MAX;
 			   }));

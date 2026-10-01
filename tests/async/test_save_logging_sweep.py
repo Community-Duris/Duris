@@ -41,7 +41,7 @@ checks = [
         1,
     ),
     (
-        rel("magic.c"),
+        rel("spell_item_lifecycle.c"),
         'Failed to save %s after soulbind.',
         'if (!do_save_silent(victim, 1))',
         1,

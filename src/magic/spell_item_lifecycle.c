@@ -347,7 +347,7 @@ static bool publish_nonplayer_soulbind(P_char source, P_char victim, P_obj objec
 }
 
 static bool soulbind_transfer_publication(const critical_operation_id & /*operation_id*/,
-						  P_char /*callback_actor*/, bool committed,
+					  P_char /*callback_actor*/, bool committed,
 					  const item_transfer_result &result,
 					  unsigned int error_code, const uint8_t *encoded,
 					  size_t encoded_size)
@@ -483,8 +483,7 @@ static bool soulbind_transfer_publication(const critical_operation_id & /*operat
 
 bool spell_item_lifecycle_restore_replayed_command(const critical_command &command)
 {
-	if (command.type != critical_command_type::item_transfer ||
-	    !command.publication_required)
+	if (command.type != critical_command_type::item_transfer || !command.publication_required)
 		return true;
 	item_transfer_payload payload = {};
 	if (!item_transfer_command_decode_payload(command, &payload))
@@ -496,14 +495,12 @@ bool spell_item_lifecycle_restore_replayed_command(const critical_command &comma
 	    !payload.selected_item_uid || payload.from_owner.id > UINT32_MAX ||
 	    payload.to_owner.id > UINT32_MAX)
 		return false;
-	const soulbind_movement_context context = {
-		payload.selected_item_uid,
-		static_cast<uint32_t>(payload.from_owner.id),
-		static_cast<uint32_t>(payload.to_owner.id),
-		-1,
-		-1,
-		payload.continuation.data[0]
-	};
+	const soulbind_movement_context context = { payload.selected_item_uid,
+						    static_cast<uint32_t>(payload.from_owner.id),
+						    static_cast<uint32_t>(payload.to_owner.id),
+						    -1,
+						    -1,
+						    payload.continuation.data[0] };
 	return item_movement_transaction_restore_replayed_publication(
 		command, soulbind_transfer_publication, &context, sizeof(context));
 }
@@ -753,8 +750,8 @@ void do_soulbind(P_char ch, char *argument, int /*cmd*/)
 			if (!item_movement_transaction_submit(
 				    ch, obj, NULL, source, destination,
 				    item_transfer_reason::soulbind, GET_PID(ch), NULL, &context,
-				    sizeof(context), NULL, &reject, soulbind_transfer_publication, {}, 0,
-				    continuation))
+				    sizeof(context), NULL, &reject, soulbind_transfer_publication,
+				    {}, 0, continuation))
 			{
 				send_to_char(
 					"The soulbind transfer could not start; the item and recipient were unchanged.\r\n",

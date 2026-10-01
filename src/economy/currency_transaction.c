@@ -86,13 +86,13 @@ bool retain_unresolved_publication(pending_currency &entry, const char *reason, 
 		char operation[33];
 		critical_operation_id_to_hex(entry.completed.operation_id, operation,
 					     sizeof(operation));
-		const unsigned int reason_code =
-			!strcmp(reason, "unresolved_outcome") ? 1 :
-			!strcmp(reason, "invalid_result") ? 2 :
-			!strcmp(reason, "invalid_live_balances") ? 3 :
-			!strcmp(reason, "invalid_coin_result") ? 4 :
-			!strcmp(reason, "invalid_coin_endpoint") ? 5 :
-			!strcmp(reason, "invalid_coin_live_balances") ? 6 : 0;
+		const unsigned int reason_code = !strcmp(reason, "unresolved_outcome")	       ? 1 :
+						 !strcmp(reason, "invalid_result")	       ? 2 :
+						 !strcmp(reason, "invalid_live_balances")      ? 3 :
+						 !strcmp(reason, "invalid_coin_result")	       ? 4 :
+						 !strcmp(reason, "invalid_coin_endpoint")      ? 5 :
+						 !strcmp(reason, "invalid_coin_live_balances") ? 6 :
+												 0;
 		persistence_alert(AVATAR, "currency", "publication", operation, "none",
 				  "publication_blocked", "outcome=%u error=%u reason_code=%u",
 				  static_cast<unsigned int>(entry.completed.outcome),
@@ -478,8 +478,7 @@ bool currency_transaction_player_busy(P_char character)
 	const uint32_t pid = static_cast<uint32_t>(GET_PID(character));
 	const uint8_t racewar = static_cast<uint8_t>(GET_RACEWAR(character));
 	return std::any_of(pending.begin(), pending.end(),
-			   [pid, racewar, account_known, account_name](const auto &item)
-			   {
+			   [pid, racewar, account_known, account_name](const auto &item) {
 				   return pending_affects_character(item.second, pid, racewar,
 								    account_known, account_name);
 			   });
@@ -686,13 +685,12 @@ bool currency_transaction_submit_identified(
 	if (critical_operation_id_is_zero(operation_id))
 		return false;
 	critical_command command = {};
-	const uint64_t expected_wallet_revision = rebasable_reward ? UINT64_MAX :
-							    character->only.pc->wallet_revision;
-	const uint64_t expected_bank_revision = rebasable_reward ? UINT64_MAX :
-							  character->only.pc->bank_revision;
-	if (!currency_command_build(&command, operation_id, payload,
-				    expected_wallet_revision, expected_bank_revision,
-				    source_site, deadline_class))
+	const uint64_t expected_wallet_revision =
+		rebasable_reward ? UINT64_MAX : character->only.pc->wallet_revision;
+	const uint64_t expected_bank_revision =
+		rebasable_reward ? UINT64_MAX : character->only.pc->bank_revision;
+	if (!currency_command_build(&command, operation_id, payload, expected_wallet_revision,
+				    expected_bank_revision, source_site, deadline_class))
 		return false;
 	// Freeze the lifecycle-issued lifetime/epoch before durable admission. This
 	// is not a lookup from the game thread and never rewrites a retained command.
@@ -821,9 +819,10 @@ bool currency_transaction_submit_wallet_value_identified(
 {
 	if (value_delta <= 0)
 		return false;
-	return currency_transaction_submit_identified(
-		character, operation_id, canonical_value(value_delta), {}, reason, reason_id,
-		source_site, deadline_class, completion, context, context_size);
+	return currency_transaction_submit_identified(character, operation_id,
+						      canonical_value(value_delta), {}, reason,
+						      reason_id, source_site, deadline_class,
+						      completion, context, context_size);
 }
 
 bool currency_transaction_submit_bank_reward(P_char character, int64_t value,

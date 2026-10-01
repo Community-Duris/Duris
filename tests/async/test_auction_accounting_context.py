@@ -28,7 +28,7 @@ class AuctionAccountingContextContract(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="duris-auction-acc-test-") as directory:
             binary = Path(directory) / "auction_acc_test"
             subprocess.run([
-                "g++-12", "-std=c++20", "-O1", "-g", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+                os.environ.get("CXX", "g++"), "-std=c++20", "-O1", "-g", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
                 "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
                 "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
                 "-D__NO_MYSQL__", "-Isrc/no_mysql", "-Isrc",

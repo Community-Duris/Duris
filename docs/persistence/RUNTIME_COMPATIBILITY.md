@@ -17,7 +17,11 @@ python3 scripts/migration_runner.py run
 ```
 
 The migration manifest, compiled compatibility head, and runtime manifest now end
-at `0050_item_extra_description_fulltext_unique`, with 223 expected runtime tables.
+at `0051_quest_item_witness_lookup`, with 223 expected runtime tables.
+Migration 0051 adds the nonunique `(reason_type, reason_id)` item-ledger index
+used by bounded quest reward recovery. It preserves duplicate evidence and
+refuses an existing index with a different shape. Both manifests append this
+step without modifying older receipts or migration files.
 Migration 0050 replaces the description-prefix unique indexes with indexes over
 the complete description SHA-256. It preserves distinct long, case, and accent
 variants and refuses duplicate complete values before permanent DDL; it never
@@ -93,12 +97,31 @@ python3 scripts/migration_runner.py \
 | 48 | `0047_quest_xp_receipt` |
 | 49 | `0048_quest_xp_entitlement` |
 | 50 | `0049_player_spell_effect_receipt` |
+| 51 | `0051_quest_item_witness_lookup` |
 
 The canonical manifest continues to reject this fork before any migration runs.
-The explicit manifest appends the five missing steps and produces a different
-history checksum from the canonical 50-step history. Both completed checksums
+The explicit manifest appends six steps and produces a different
+history checksum from the canonical 51-step history. Both completed checksums
 are compiled into the boot gate; every historical row is recomputed and matched
 to its stored state. Partial histories and mixed head/state identities fail.
+
+The maintained staging qualification supports Docker by default and an explicit
+native mode for a caller-owned disposable MySQL 8.0 or MariaDB 10.11 server:
+
+```sh
+# Supply explicit DB_USER, DB_PASSWD, and DB_PORT for the isolated test server.
+TEST_DB_DISPOSABLE=1 STAGING_FORK_DISPOSABLE_SERVER=1 DB_HOST=127.0.0.1 \
+  python3 tests/async/test_staging_migration_fork_mysql.py \
+  --disposable-loopback mysql8
+# Repeat with --disposable-loopback mariadb10_11 on that engine's test server.
+```
+
+This mode creates uniquely named `duris_268_*test` databases and private
+temporary verifier files. The caller owns stopping and discarding the server.
+Socket connections and unguarded targets are refused. On 2026-10-01, both
+native engines preserved all first 45 staging receipts, appended six receipts,
+converged on the canonical schema, and passed shell/compiled boot checks plus
+history, state, expression, advisory-lock, and connection-loss fault checks.
 
 These commands are clone preparation instructions. A production-role staging
 environment still requires the runner's target allow-list, fresh verified backup,

@@ -215,10 +215,9 @@ static bool submit_summoned_replacement(P_char actor, P_obj object, summoned_rep
 		static_cast<uint32_t>(GET_PID(actor)),
 		static_cast<uint8_t>(kind),
 	};
-	if (item_creation_grant_submit_to_player_with_completion(actor, object, actor,
-								 summoned_replacement_completed,
-								 &context, sizeof(context), NULL,
-								 economic_source_kind::world_generation))
+	if (item_creation_grant_submit_to_player_with_completion(
+		    actor, object, actor, summoned_replacement_completed, &context, sizeof(context),
+		    NULL, economic_source_kind::world_generation))
 		return true;
 
 	extract_obj(object, FALSE);

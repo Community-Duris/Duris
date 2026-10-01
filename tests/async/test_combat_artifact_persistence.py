@@ -14,8 +14,12 @@ artifact_text = (SRC / "artifact.c").read_text()
 def function(text: str, signature: str, next_signature: str) -> str:
     start = text.rfind(signature)
     assert start >= 0, signature
-    end = text.find(next_signature, start)
-    assert end >= 0, next_signature
+    opening = text.index("{", start)
+    depth = 1
+    end = opening + 1
+    while depth:
+        depth += (text[end] == "{") - (text[end] == "}")
+        end += 1
     return text[start:end]
 
 

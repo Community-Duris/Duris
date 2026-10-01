@@ -461,15 +461,14 @@ void sourced_room_creation_and_item_retirement_are_bound_to_lifecycle_events()
 	const auto lineage = id(1);
 	const auto epoch = id(2);
 	std::vector<uint8_t> encoded;
-	auto room_creation = move(item_transfer_reason::creation,
-				  { item_owner_type::system, 0, 0 },
+	auto room_creation = move(item_transfer_reason::creation, { item_owner_type::system, 0, 0 },
 				  { item_owner_type::player, 10, 0 });
 	item_transfer_payload creation_payload = {};
 	assert(item_transfer_command_decode_payload(room_creation, &creation_payload));
 	creation_payload.to_owner = { item_owner_type::room, 50, 0 };
 	assert(item_transfer_command_build(&room_creation, room_creation.operation_id,
-					    creation_payload, critical_source_site::command,
-					    critical_deadline_class::interactive));
+					   creation_payload, critical_source_site::command,
+					   critical_deadline_class::interactive));
 	assert(item_transfer_accounting_intent(room_creation, lineage, epoch, 10, &encoded,
 					       economic_source_kind::administrator) == error::ok);
 	assert(item_transfer_accounting_intent(room_creation, lineage, epoch, 10, &encoded,
@@ -490,7 +489,8 @@ void sourced_room_creation_and_item_retirement_are_bound_to_lifecycle_events()
 		    { item_owner_type::room, 50, 0 }) })
 	{
 		assert(item_transfer_accounting_intent(retirement, lineage, epoch, 10, &encoded,
-					       economic_source_kind::item_action) == error::ok);
+						       economic_source_kind::item_action) ==
+		       error::ok);
 		assert(economic_intent_decode(encoded, &decoded) == error::ok);
 		assert(decoded.admission.metadata.reason == economic_reason::item_destroy);
 		assert(decoded.admission.metadata.source_event->kind ==
@@ -528,7 +528,8 @@ void sourced_room_creation_and_item_retirement_are_bound_to_lifecycle_events()
 				 { item_owner_type::player, 10, 0 },
 				 { item_owner_type::room, 50, 0 });
 	assert(item_transfer_accounting_intent(wrong_source, lineage, epoch, 10, &encoded,
-					       economic_source_kind::lifecycle) == error::unauthorized);
+					       economic_source_kind::lifecycle) ==
+	       error::unauthorized);
 	auto inactive_item = move(item_transfer_reason::destruction,
 				  { item_owner_type::player, 10, 0 },
 				  { item_owner_type::room, 50, 0 });
@@ -537,18 +538,17 @@ void sourced_room_creation_and_item_retirement_are_bound_to_lifecycle_events()
 	inactive_payload.items[0].expected_state = item_custody_state::absent;
 	inactive_payload.items[0].expected_item_revision = ITEM_TRANSFER_ABSENT_REVISION;
 	assert(!item_transfer_command_build(&inactive_item, inactive_item.operation_id,
-					     inactive_payload, critical_source_site::command,
-					     critical_deadline_class::interactive));
+					    inactive_payload, critical_source_site::command,
+					    critical_deadline_class::interactive));
 
-	auto coin_creation = move(item_transfer_reason::creation,
-				  { item_owner_type::system, 0, 0 },
+	auto coin_creation = move(item_transfer_reason::creation, { item_owner_type::system, 0, 0 },
 				  { item_owner_type::player, 10, 0 });
 	item_transfer_payload coin_creation_payload = {};
 	assert(item_transfer_command_decode_payload(coin_creation, &coin_creation_payload));
 	coin_creation_payload.items[0].vnum = VOBJ_COINS;
 	assert(item_transfer_command_build(&coin_creation, coin_creation.operation_id,
-					    coin_creation_payload, critical_source_site::command,
-					    critical_deadline_class::interactive));
+					   coin_creation_payload, critical_source_site::command,
+					   critical_deadline_class::interactive));
 	assert(item_transfer_accounting_intent(coin_creation, lineage, epoch, 10, &encoded,
 					       economic_source_kind::starter_grant) ==
 	       error::unauthorized);
@@ -559,8 +559,8 @@ void sourced_room_creation_and_item_retirement_are_bound_to_lifecycle_events()
 	assert(item_transfer_command_decode_payload(coin_retirement, &coin_retirement_payload));
 	coin_retirement_payload.items[0].vnum = VOBJ_COINS;
 	assert(item_transfer_command_build(&coin_retirement, coin_retirement.operation_id,
-					    coin_retirement_payload, critical_source_site::command,
-					    critical_deadline_class::interactive));
+					   coin_retirement_payload, critical_source_site::command,
+					   critical_deadline_class::interactive));
 	assert(item_transfer_accounting_intent(coin_retirement, lineage, epoch, 10, &encoded,
 					       economic_source_kind::item_action) ==
 	       error::unauthorized);

@@ -55,6 +55,7 @@ DOUBLES = r'''
 bool native_artifact_owns(int) { return false; }
 #include "item/artifact_mana_model.c"
 #include "combat/damage.h"
+#include "combat/attack_continuation.h"
 #include <deque>
 Skill skills[MAX_SKILLS] = {};
 random_spells spells_data[61] = {};
@@ -380,6 +381,7 @@ with tempfile.TemporaryDirectory(prefix="duris-weapon-actions-") as directory:
         "g++", "-std=c++20", "-O1", "-g", "-ffunction-sections", "-fdata-sections",
         "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-pthread",
         "-I" + str(ROOT / "src"), str(source), str(ROOT / "src/persistence/latency_trace.c"),
+        str(ROOT / "src/combat/attack_continuation.c"),
         "-Wl,--gc-sections", "-o", str(binary),
     ], check=True)
     env = dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",

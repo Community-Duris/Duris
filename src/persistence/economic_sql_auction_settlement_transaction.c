@@ -422,8 +422,7 @@ bool locked_before(MYSQL *connection, const auction_command_payload &payload, ui
 	std::array<size_t, AUCTION_COMMAND_MAX_ITEMS> order = {};
 	for (size_t index = 0; index < listing.item_count; ++index)
 		order[index] = index;
-	std::sort(order.begin(), order.begin() + listing.item_count,
-		  [&](size_t left, size_t right)
+	std::sort(order.begin(), order.begin() + listing.item_count, [&](size_t left, size_t right)
 		  { return listing.items[left].uid < listing.items[right].uid; });
 	for (size_t position = 0; position < listing.item_count; ++position)
 	{

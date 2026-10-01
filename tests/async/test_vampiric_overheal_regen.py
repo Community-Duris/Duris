@@ -20,7 +20,7 @@ limits_body = function_body(limits_source, r"\bint\s+hit_regen\s*\(")
 assert limits_body is not None, "hit_regen definition is missing"
 assert "return MIN(-1, gain);" in limits_body
 
-fight_source = (SRC / "fight.c").read_text(encoding="utf-8", errors="replace")
+fight_source = (SRC / "damage_support.c").read_text(encoding="utf-8", errors="replace")
 vamp_body = function_body(fight_source, r"\bint\s+vamp\s*\(")
 assert vamp_body is not None, "vamp definition is missing"
 assert "hits = MAX(0, MIN(hits, cap - GET_HIT(ch)));" in vamp_body

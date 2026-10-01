@@ -678,6 +678,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "63fe76a88f9b4f95b5b14caeaca00188bb82d3ab4516ee19d47fb9f3db7191b8",
       "verify_checksum": "d97c1b1b46e1d2ec0875e34664296ae34048e6bb24e140b1d241c81f40209d78"
+    },
+    {
+      "id": "0051_quest_item_witness_lookup",
+      "sequence": 51,
+      "description": "Index immutable item creation witnesses by quest source identity",
+      "apply": "immutable/0051_quest_item_witness_lookup.sql",
+      "verify": "immutable/0051_quest_item_witness_lookup.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "e2de795797aeaf2ad2a268dffc65e1fb9195fb5e8fa1c6720a39608e153ebe0a",
+      "verify_checksum": "ae28a2787322dc5cf7e7b76d635289fed03e93fc3d59c5983c4e75e8c931327f"
     }
   ]
 }

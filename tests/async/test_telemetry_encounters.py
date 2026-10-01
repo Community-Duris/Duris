@@ -36,7 +36,7 @@ def source_contract() -> None:
         assert name in runtime
     assert "telemetry_transport_enqueue" in runtime
 
-    fight = (SRC / "combat" / "fight.c").read_text()
+    fight = (SRC / "combat" / "fight.c").read_text() + (SRC / "combat" / "fight_state.c").read_text()
     assert "telemetry_runtime_game_encounter_begin" in fight
     assert "telemetry_encounter_outcome::death" in fight
     group = (SRC / "guild" / "group.c").read_text()

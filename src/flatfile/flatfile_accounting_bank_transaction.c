@@ -113,10 +113,10 @@ bank_identity decode(const critical_command &command)
 	std::vector<uint8_t> expected;
 	if (value.payload.reason == currency_reason_type::chaos_starter_reward)
 		checked(economic_chaos_starter_bank_intent(admission, meta.epoch, value.wallet,
-								   value.bank, &expected));
+							   value.bank, &expected));
 	else if (value.payload.reason == currency_reason_type::wallet_reward)
 		checked(economic_quest_wallet_reward_intent(admission, meta.epoch, value.wallet,
-								   value.bank, &expected));
+							    value.bank, &expected));
 	else
 		checked(economic_bank_transfer_intent(admission, meta.epoch, value.wallet,
 						      value.bank, &expected));
@@ -330,7 +330,7 @@ critical_apply_result flatfile_accounting_bank_transaction::apply(const std::str
 		const bool starter = identity.payload.reason ==
 				     currency_reason_type::chaos_starter_reward;
 		const bool quest_reward = identity.payload.reason ==
-				  currency_reason_type::wallet_reward;
+					  currency_reason_type::wallet_reward;
 		if (starter)
 		{
 			// Snapshot replacement is atomic; no player lock is taken beneath
@@ -356,12 +356,13 @@ critical_apply_result flatfile_accounting_bank_transaction::apply(const std::str
 			starter ? economic_chaos_starter_bank_prepare(
 					  command, identity.intent, authority,
 					  currency_revision_policy::flatfile_legacy, &prepared) :
-			quest_reward ? economic_quest_wallet_reward_prepare(
-					       command, identity.intent, authority,
-					       currency_revision_policy::flatfile_legacy, &prepared) :
+			quest_reward ?
+				  economic_quest_wallet_reward_prepare(
+					  command, identity.intent, authority,
+					  currency_revision_policy::flatfile_legacy, &prepared) :
 				  economic_bank_transfer_prepare(
 					  command, identity.intent, authority,
-				  currency_revision_policy::flatfile_legacy, &prepared);
+					  currency_revision_policy::flatfile_legacy, &prepared);
 		currency_command_result result = authority.state;
 		flatfile_accounting_record record;
 		record.command = command;

@@ -23,7 +23,7 @@ class ShopTradeAccountingContextContract(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="duris-shop-acc-test-") as directory:
             binary = Path(directory) / "shop_acc_test"
             subprocess.run([
-                "g++-12", "-std=c++20", "-O1", "-g", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+                os.environ.get("CXX", "g++"), "-std=c++20", "-O1", "-g", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
                 "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
                 "-D__NO_MYSQL__", "-Isrc/no_mysql", "-Isrc",
                 "tests/async/shop_trade_accounting_context_test.cpp",

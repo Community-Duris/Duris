@@ -54,7 +54,8 @@ struct spell_component_context_writer
 struct spell_component_context_reader
 {
 	spell_component_context_reader(const uint8_t *encoded, size_t encoded_size)
-		: data(encoded), size(encoded_size)
+		: data(encoded)
+		, size(encoded_size)
 	{
 	}
 	bool get_u8(uint8_t *value)
@@ -113,33 +114,38 @@ struct spell_component_context_reader
 // continuation runs only after committed items are removed.
 bool spell_consume_components(P_char actor, int vnum, size_t max_components, uint32_t reason_id,
 			      item_spell_component_effect effect,
-			      spell_component_effect_completion_fn continuation, const void *context,
-			      size_t context_size, bool require_exact_count = false);
+			      spell_component_effect_completion_fn continuation,
+			      const void *context, size_t context_size,
+			      bool require_exact_count = false);
 
-spell_component_effect_status spell_faerie_sight_component_completed(
-	const critical_operation_id &operation_id, P_char actor, bool committed,
-	const item_transfer_result &result, unsigned int error_code, const uint8_t *context,
-	size_t context_size);
+spell_component_effect_status
+spell_faerie_sight_component_completed(const critical_operation_id &operation_id, P_char actor,
+				       bool committed, const item_transfer_result &result,
+				       unsigned int error_code, const uint8_t *context,
+				       size_t context_size);
 spell_component_effect_status spell_spore_burst_initial_components_completed(
 	const critical_operation_id &operation_id, P_char actor, bool committed,
-	const item_transfer_result &result, unsigned int error_code,
-	const uint8_t *context, size_t context_size);
+	const item_transfer_result &result, unsigned int error_code, const uint8_t *context,
+	size_t context_size);
 spell_component_effect_status spell_spore_burst_repeat_components_completed(
 	const critical_operation_id &operation_id, P_char actor, bool committed,
-	const item_transfer_result &result, unsigned int error_code,
-	const uint8_t *context, size_t context_size);
-spell_component_effect_status spell_summon_insects_component_completed(
-	const critical_operation_id &operation_id, P_char actor, bool committed,
 	const item_transfer_result &result, unsigned int error_code, const uint8_t *context,
 	size_t context_size);
-spell_component_effect_status spell_wall_of_bones_scales_completed(
-	const critical_operation_id &operation_id, P_char actor, bool committed,
-	const item_transfer_result &result, unsigned int error_code, const uint8_t *context,
-	size_t context_size);
-spell_component_effect_status spell_vines_component_retirement_completed(
-	const critical_operation_id &operation_id, P_char actor, bool committed,
-	const item_transfer_result &result, unsigned int error_code, const uint8_t *context,
-	size_t context_size);
+spell_component_effect_status
+spell_summon_insects_component_completed(const critical_operation_id &operation_id, P_char actor,
+					 bool committed, const item_transfer_result &result,
+					 unsigned int error_code, const uint8_t *context,
+					 size_t context_size);
+spell_component_effect_status
+spell_wall_of_bones_scales_completed(const critical_operation_id &operation_id, P_char actor,
+				     bool committed, const item_transfer_result &result,
+				     unsigned int error_code, const uint8_t *context,
+				     size_t context_size);
+spell_component_effect_status
+spell_vines_component_retirement_completed(const critical_operation_id &operation_id, P_char actor,
+					   bool committed, const item_transfer_result &result,
+					   unsigned int error_code, const uint8_t *context,
+					   size_t context_size);
 
 // Rebuild the bounded live callback context from a retained command. Failed
 // commands can publish their failure callback; committed effects remain held
@@ -148,10 +154,11 @@ bool spell_component_retirement_restore_context(
 	const item_transfer_payload &payload,
 	std::array<uint8_t, ITEM_MOVEMENT_CONTEXT_MAX_BYTES> *context, size_t *context_size,
 	uint32_t *effect_id = nullptr, uint32_t *receipt_owner_pid = nullptr);
-bool spell_component_retirement_replayed_publication(
-	const critical_operation_id &operation_id, P_char actor, bool committed,
-	const item_transfer_result &result, unsigned int error_code, const uint8_t *context,
-	size_t context_size);
+bool spell_component_retirement_replayed_publication(const critical_operation_id &operation_id,
+						     P_char actor, bool committed,
+						     const item_transfer_result &result,
+						     unsigned int error_code,
+						     const uint8_t *context, size_t context_size);
 bool spell_component_retirement_waiting_for_effect(const critical_operation_id &operation_id);
 struct player_load_spell_effect_receipt;
 struct player_spell_effect_receipt_snapshot;

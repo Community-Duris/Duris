@@ -727,8 +727,7 @@ bool consume_whole_claim_sources(auction_claim_source_catalog *catalog,
 				 uint32_t beneficiary_pid, int64_t claim_balance, int64_t amount)
 {
 	if (!catalog || amount <= 0 || catalog->revision == UINT64_MAX ||
-	    !claim_source_balance_matches(*catalog, claim_account, beneficiary_pid,
-					  claim_balance))
+	    !claim_source_balance_matches(*catalog, claim_account, beneficiary_pid, claim_balance))
 		return false;
 	uint64_t remaining = static_cast<uint64_t>(amount);
 	std::vector<size_t> selected;
@@ -948,10 +947,9 @@ bool claim_state(const auction_catalog &catalog, const auction_command_payload &
 	}
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
-		const auto found =
-			std::find_if(listing->items.begin(), listing->items.end(),
-				     [&](const auction_item &item)
-				     { return item.uid == payload.items[index].item_uid; });
+		const auto found = std::find_if(
+			listing->items.begin(), listing->items.end(), [&](const auction_item &item)
+			{ return item.uid == payload.items[index].item_uid; });
 		if (found == listing->items.end())
 			return false;
 		value.rows[index] = { found->uid,
@@ -1142,10 +1140,9 @@ flatfile_auction_find_pickup(const std::string &root, uint32_t pid,
 	}
 	for (const auto &listing : catalog.listings)
 	{
-		const bool pending =
-			std::any_of(listing.items.begin(), listing.items.end(),
-				    [&](const auction_item &item)
-				    { return item.claim_pid == pid && !item.claimed; });
+		const bool pending = std::any_of(
+			listing.items.begin(), listing.items.end(), [&](const auction_item &item)
+			{ return item.claim_pid == pid && !item.claimed; });
 		if (!pending)
 			continue;
 		if (!project_listing(listing, pid, &projected.item_claim))
@@ -1523,8 +1520,8 @@ try
 		if (bid_accounted)
 		{
 			requests.push_back({ bid_accounts.escrow, { 4, payload.auction_id, {} } });
-			requests.push_back({ bid_accounts.bidder_claim,
-					     { 5, payload.actor_pid, {} } });
+			requests.push_back(
+				{ bid_accounts.bidder_claim, { 5, payload.actor_pid, {} } });
 			if (bid_accounts.previous_claim.authority_id)
 				requests.push_back({ bid_accounts.previous_claim,
 						     { 5, frozen_bid.winning_bidder_pid, {} } });
@@ -1567,10 +1564,11 @@ try
 					 ESTALE };
 			bid_before.bidder_claim_before = {};
 			if (const auto *pickup = find_money(&catalog, payload.actor_pid))
-				bid_before.bidder_claim_before = { pickup->amount, pickup->revision };
+				bid_before.bidder_claim_before = { pickup->amount,
+								   pickup->revision };
 			if (!claim_source_balance_matches(sources, bid_accounts.bidder_claim,
-						  payload.actor_pid,
-						  bid_before.bidder_claim_before.money))
+							  payload.actor_pid,
+							  bid_before.bidder_claim_before.money))
 				return { critical_apply_outcome::terminal_failure, catalog.revision,
 					 ESTALE };
 			critical_command projected = command;
@@ -1647,7 +1645,7 @@ try
 					if (money_before.claim.sources.size() >=
 					    ECONOMIC_AUCTION_CLAIM_MAX_SOURCES)
 						return { critical_apply_outcome::terminal_failure,
-								 catalog.revision, EILSEQ };
+							 catalog.revision, EILSEQ };
 					money_before.claim.sources.push_back(
 						{ row.operation, row.slot, row.beneficiary_pid,
 						  row.claim_mapping_id, row.amount });
@@ -1944,9 +1942,10 @@ try
 				{
 					const uint32_t previous = listing->winner_pid;
 					if (previous && previous != payload.actor_pid &&
-					    !stage_money(&catalog, previous, listing->current_price))
-						return { critical_apply_outcome::retryable_failure, 0,
-							 ENOMEM };
+					    !stage_money(&catalog, previous,
+							 listing->current_price))
+						return { critical_apply_outcome::retryable_failure,
+							 0, ENOMEM };
 					listing->winner_pid = payload.actor_pid;
 					listing->winner_name = payload.actor_name.data();
 					listing->current_price = bid;
@@ -1957,18 +1956,21 @@ try
 					{
 						listing->status = auction_status_closed;
 						int64_t proceeds = 0;
-						if (!sale_proceeds(bid, payload.closing_fee_basis_points,
+						if (!sale_proceeds(bid,
+								   payload.closing_fee_basis_points,
 								   &proceeds))
 							result_code = EINVAL;
 						else if (!stage_money(&catalog, listing->seller_pid,
-								     proceeds))
+								      proceeds))
 							return { critical_apply_outcome::
-									  retryable_failure,
-								  0, ENOMEM };
+									 retryable_failure,
+								 0, ENOMEM };
 						if (!result_code)
 							for (auto &item : listing->items)
-								if (!item.claimed && !item.claim_pid)
-									item.claim_pid = payload.actor_pid;
+								if (!item.claimed &&
+								    !item.claim_pid)
+									item.claim_pid =
+										payload.actor_pid;
 					}
 					else if (previous != payload.actor_pid &&
 						 payload.bid_extension_seconds)
@@ -1977,7 +1979,8 @@ try
 						    UINT64_MAX - payload.bid_extension_seconds)
 							result_code = ERANGE;
 						else
-							listing->end_time += payload.bid_extension_seconds;
+							listing->end_time +=
+								payload.bid_extension_seconds;
 					}
 					wallet_delta = -wallet_to_pay;
 					mutate_wallet = true;
@@ -2247,13 +2250,14 @@ try
 			     !money_accounted &&
 			     (!plan.accounts.empty() || !plan.postings.empty())) ||
 			    !plan.children.empty() || plan.item_events.size() != payload.item_count)
-					return { planned == economic_accounting_error::capacity ?
-							 critical_apply_outcome::retryable_failure :
-							 critical_apply_outcome::terminal_failure,
-						 catalog.revision,
-						 static_cast<unsigned int>(
-							 planned == economic_accounting_error::capacity ? ENOMEM :
-											 EBADMSG) };
+				return { planned == economic_accounting_error::capacity ?
+						 critical_apply_outcome::retryable_failure :
+						 critical_apply_outcome::terminal_failure,
+					 catalog.revision,
+					 static_cast<unsigned int>(
+						 planned == economic_accounting_error::capacity ?
+							 ENOMEM :
+							 EBADMSG) };
 			if (bid_accounted)
 			{
 				const auto &listing = bid_before.listing;
@@ -2267,8 +2271,8 @@ try
 					    !consume_whole_claim_sources(
 						    &sources, command, bid_accounts.bidder_claim,
 						    payload.actor_pid,
-					    bid_before.bidder_claim_before.money,
-					    result.claim_credit_used))
+						    bid_before.bidder_claim_before.money,
+						    result.claim_credit_used))
 						return { critical_apply_outcome::terminal_failure,
 							 catalog.revision, ENOSPC };
 					sources_changed = true;

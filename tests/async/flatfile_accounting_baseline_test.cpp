@@ -420,14 +420,16 @@ void capacity_and_orphans(const fs::path &root)
 	// A caller bundle that would exceed the shared limit cannot be partially
 	// changed. Duplicate target files also refuse before any commit.
 	ops full;
-	for (size_t n = 0; n < 13; ++n)
+	const size_t existing_images =
+		flatfile_authority_transaction_maximum_operations - changes.size() + 1;
+	for (size_t n = 0; n < existing_images; ++n)
 		full.push_back({ flatfile_authority_store::domains,
 				 flatfile_authority_operation_kind::write,
 				 "extra-" + std::to_string(n),
 				 { 1 } });
 	assert(access_store::stage(f.root, f.lock, cmd, *prepared, &full, nullptr) ==
 		       status::capacity &&
-	       full.size() == 13);
+	       full.size() == existing_images);
 	ops duplicate{ changes.front() };
 	auto original = duplicate.front().bytes;
 	assert(access_store::stage(f.root, f.lock, cmd, *prepared, &duplicate, nullptr) ==

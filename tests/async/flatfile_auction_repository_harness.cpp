@@ -1229,8 +1229,8 @@ int main(int argc, char **argv)
 			result_of(applied).claim_credit_used == 3000 &&
 			result_of(applied).wallet_value_delta == 0,
 		"could not stage accounted timed-sale bid outcome=" +
-			std::to_string(static_cast<unsigned int>(applied.outcome)) + " error=" +
-			std::to_string(applied.error_code));
+			std::to_string(static_cast<unsigned int>(applied.outcome)) +
+			" error=" + std::to_string(applied.error_code));
 	expect_event(typed_path, auction_event_type::bid_placed, sale_auction_id, &error);
 	auction_settlement_listing sale_state;
 	sale_state.auction_id = sale_auction_id;
@@ -1554,8 +1554,7 @@ int main(int argc, char **argv)
 			fs::exists(typed_domains / ".critical-authority-transaction"),
 		"accounted auction collection did not retain its interrupted journal");
 	const auto seller_claim_plan = recorded_plan(typed_path, seller_claim_command, &error);
-	require(seller_claim_plan.accounts.size() == 2 &&
-			seller_claim_plan.postings.size() == 2 &&
+	require(seller_claim_plan.accounts.size() == 2 && seller_claim_plan.postings.size() == 2 &&
 			seller_claim_plan.postings[0].copper == 7200 &&
 			seller_claim_plan.postings[1].copper == -7200 &&
 			seller_claim_plan.metadata.original_operation_id.bytes ==

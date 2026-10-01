@@ -46,7 +46,7 @@ int main()
 #ifdef __NO_MYSQL__
 	errno = 0;
 	bool ok = artifact_guild_repository_execute(nullptr, command, &result, &result_code,
-						   &mutation_applied);
+						    &mutation_applied);
 	assert(!ok);
 	assert(errno == ENOTSUP);
 	assert(!mutation_applied);

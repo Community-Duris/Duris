@@ -84,12 +84,13 @@ bool valid_accounts(const auction_bid_accounting_accounts &accounts,
 		 accounts.previous_claim.authority_id != accounts.bank.authority_id &&
 		 accounts.previous_claim.authority_id != accounts.escrow.authority_id &&
 		 accounts.previous_claim.authority_id != accounts.bidder_claim.authority_id)) &&
-	       (!sold || (accounts.seller_claim.authority_id != accounts.wallet.authority_id &&
-			  accounts.seller_claim.authority_id != accounts.bank.authority_id &&
-			  accounts.seller_claim.authority_id != accounts.escrow.authority_id &&
-			  accounts.seller_claim.authority_id != accounts.bidder_claim.authority_id &&
-			  (!outbid || accounts.seller_claim.authority_id !=
-					      accounts.previous_claim.authority_id)));
+	       (!sold ||
+		(accounts.seller_claim.authority_id != accounts.wallet.authority_id &&
+		 accounts.seller_claim.authority_id != accounts.bank.authority_id &&
+		 accounts.seller_claim.authority_id != accounts.escrow.authority_id &&
+		 accounts.seller_claim.authority_id != accounts.bidder_claim.authority_id &&
+		 (!outbid ||
+		  accounts.seller_claim.authority_id != accounts.previous_claim.authority_id)));
 }
 
 bool bid_value(const auction_command_payload &payload,
@@ -111,9 +112,9 @@ std::vector<uint8_t> frozen_facts(const auction_bid_accounting_listing &listing,
 {
 	std::vector<uint8_t> facts;
 	facts.reserve(124);
-	for (const auto &account : { accounts.wallet, accounts.bank, accounts.escrow,
-				     accounts.bidder_claim, accounts.previous_claim,
-				     accounts.seller_claim })
+	for (const auto &account :
+	     { accounts.wallet, accounts.bank, accounts.escrow, accounts.bidder_claim,
+	       accounts.previous_claim, accounts.seller_claim })
 		append_u64(&facts, account.authority_id);
 	append_u32(&facts, listing.auction_id);
 	append_u32(&facts, listing.seller_pid);

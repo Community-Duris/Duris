@@ -53,7 +53,7 @@ assert not contains(save_chars, '"NULL"')
 
 
 # --- a missing ban file is a normal state, not a failure ---------------------
-actwiz = (SRC / "actwiz.c").read_text()
+actwiz = (SRC / "staff_access.c").read_text()
 read_ban = actwiz.split("void read_ban_file(void)", 1)[1].split("\nvoid ", 1)[0]
 assert contains(read_ban, "errno != ENOENT")
 assert contains(actwiz, "#include <errno.h>")

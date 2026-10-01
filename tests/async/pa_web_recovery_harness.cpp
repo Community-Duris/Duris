@@ -18,11 +18,20 @@
 #include <type_traits>
 #include <vector>
 
-MYSQL *sql_pool_acquire(void) { return nullptr; }
+MYSQL *sql_pool_acquire(void)
+{
+	return nullptr;
+}
 void sql_pool_release(MYSQL *) {}
 void sql_pool_discard_connection(MYSQL *) {}
-MYSQL *sql_pool_replace_connection(MYSQL *) { return nullptr; }
-char *sql_escape_string(const char *) { std::abort(); }
+MYSQL *sql_pool_replace_connection(MYSQL *)
+{
+	return nullptr;
+}
+char *sql_escape_string(const char *)
+{
+	std::abort();
+}
 
 namespace
 {
@@ -66,11 +75,10 @@ MYSQL *connect_db()
 	const std::string db_name = env("DB_NAME");
 	require(std::string(env("TEST_DB_DISPOSABLE")) == "1" &&
 			std::string(env("DURIS_TEST_SQL_DEATH_CONFLICT_RECOVERY")) == "1" &&
-			std::string(env("DB_HOST")) == "127.0.0.1" &&
-			db_name.size() == 32 && db_name.starts_with("corpse_journey_test_") &&
-			std::all_of(db_name.begin() + 20, db_name.end(), [](unsigned char c) {
-				return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
-			}),
+			std::string(env("DB_HOST")) == "127.0.0.1" && db_name.size() == 32 &&
+			db_name.starts_with("corpse_journey_test_") &&
+			std::all_of(db_name.begin() + 20, db_name.end(), [](unsigned char c)
+				    { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); }),
 		"non-disposable death-recovery selector refused");
 	MYSQL *db = mysql_init(nullptr);
 	require(db, "mysql_init failed");
@@ -94,11 +102,11 @@ player_snapshot retained_request()
 	request.room_vnum = 1201;
 	request.encoded_size_bound = 8192;
 	request.recipes_are_external = true;
-	request.status_strings.push_back({player_status_string_field::name, RECOVERY_NAME});
-	request.status_integers.push_back({player_status_field::level, 50, 0, false});
-	for (auto field : {player_status_field::copper, player_status_field::silver,
-			   player_status_field::gold, player_status_field::platinum})
-		request.status_integers.push_back({field, 0, 0, false});
+	request.status_strings.push_back({ player_status_string_field::name, RECOVERY_NAME });
+	request.status_integers.push_back({ player_status_field::level, 50, 0, false });
+	for (auto field : { player_status_field::copper, player_status_field::silver,
+			    player_status_field::gold, player_status_field::platinum })
+		request.status_integers.push_back({ field, 0, 0, false });
 	request.death.emplace();
 	auto &death = *request.death;
 	death.operation_id.bytes[0] = 0xad;
@@ -121,35 +129,34 @@ player_snapshot retained_request()
 	item.vnum = 501;
 	item.name = "a retained blade";
 	death.corpse.push_back(item);
-	death.custody.push_back({{201, 201, 0, 3, 501, item_custody_state::active},
-				  {item_owner_type::player, RECOVERY_PID, 0}, 5});
+	death.custody.push_back({ { 201, 201, 0, 3, 501, item_custody_state::active },
+				  { item_owner_type::player, RECOVERY_PID, 0 },
+				  5 });
 	return request;
 }
 void seed(MYSQL *db)
 {
 	require(scalar(db, "SELECT COUNT(*) FROM player_data") == "0", "fresh fixture required");
-	require(scalar(db, "SELECT COUNT(*) FROM accounts") == "0", "fresh account fixture required");
+	require(scalar(db, "SELECT COUNT(*) FROM accounts") == "0",
+		"fresh account fixture required");
 	sql(db, "INSERT INTO accounts(account_name) VALUES ('S10Test')");
 	sql(db,
 	    "INSERT INTO player_data(pid,name,account_name,active,level,save_revision,wallet_revision,epic_revision,frag_revision) "
 	    "VALUES (74001,'S10Recovery','S10Test',1,50,5,7,1,1),(74002,'S10Clean','S10Test',1,50,5,7,1,1)");
-	sql(db,
-	    "INSERT INTO account_characters(account_name,char_name,pid) "
-	    "VALUES ('S10Test','S10Recovery',74001),('S10Test','S10Clean',74002)");
+	sql(db, "INSERT INTO account_characters(account_name,char_name,pid) "
+		"VALUES ('S10Test','S10Recovery',74001),('S10Test','S10Clean',74002)");
 	sql(db, "INSERT INTO epic_balance_baseline(pid,opening_balance,opening_revision) "
-		   "VALUES (74001,0,1),(74002,0,1)");
+		"VALUES (74001,0,1),(74002,0,1)");
 	sql(db, "INSERT INTO currency_wallet_baseline(pid,opening_copper,opening_silver,"
-		   "opening_gold,opening_platinum,opening_revision) "
-		   "VALUES (74001,0,0,0,0,7),(74002,0,0,0,0,7)");
+		"opening_gold,opening_platinum,opening_revision) "
+		"VALUES (74001,0,0,0,0,7),(74002,0,0,0,0,7)");
 	sql(db, "INSERT INTO combat_frag_baseline(pid,opening_frags,opening_revision) "
-		   "VALUES (74001,0,1),(74002,0,1)");
-	sql(db,
-	    "INSERT INTO player_items(id,pid,vnum,obj_uid,name) "
-	    "VALUES (7101,74001,501,201,'recovery blade'),(7102,74002,501,202,'clean blade')");
+		"VALUES (74001,0,1),(74002,0,1)");
+	sql(db, "INSERT INTO player_items(id,pid,vnum,obj_uid,name) "
+		"VALUES (7101,74001,501,201,'recovery blade'),(7102,74002,501,202,'clean blade')");
 	sql(db, "INSERT INTO player_item_affects(item_id,location,modifier) VALUES (7101,7,-40)");
-	sql(db,
-	    "INSERT INTO player_item_extra_descr(item_id,keyword,description) "
-	    "VALUES (7101,'fixture-note','retained test detail')");
+	sql(db, "INSERT INTO player_item_extra_descr(item_id,keyword,description) "
+		"VALUES (7101,'fixture-note','retained test detail')");
 	sql(db,
 	    "INSERT INTO item_owner_revision(owner_type,owner_id,revision) VALUES (1,74001,5),(1,74002,2)");
 	sql(db,
@@ -159,9 +166,12 @@ void seed(MYSQL *db)
 	require(result.outcome == player_death_conflict_outcome::retained,
 		"real retained-case repository rejected fixture; error=" +
 			std::to_string(result.error_code));
-	require(scalar(db, "SELECT COUNT(*) FROM player_death_conflict_evidence WHERE pid=74001") == "1",
+	require(scalar(db, "SELECT COUNT(*) FROM player_death_conflict_evidence WHERE pid=74001") ==
+			"1",
 		"retained case is not present in SQL");
-	require(scalar(db, "SELECT COUNT(*) FROM item_current_owner WHERE item_uid=201 AND owner_type=1 AND owner_id=74001 AND item_revision=3") == "1",
+	require(scalar(db,
+		       "SELECT COUNT(*) FROM item_current_owner WHERE item_uid=201 AND owner_type=1 AND owner_id=74001 AND item_revision=3") ==
+			"1",
 		"retained fixture custody missing");
 	require(scalar(db, "SELECT COUNT(*) FROM player_death_disposition WHERE pid=74001") == "0",
 		"retained case unexpectedly advanced to terminal disposition");
@@ -169,20 +179,20 @@ void seed(MYSQL *db)
 std::string state_bytes(MYSQL *db)
 {
 	std::string state;
-	for (const char *statement : {
-		     "SELECT * FROM accounts WHERE account_name='S10Test'",
-		     "SELECT * FROM account_characters WHERE account_name='S10Test' ORDER BY id",
-		     "SELECT * FROM player_data WHERE pid IN (74001,74002) ORDER BY pid",
-		     "SELECT * FROM epic_balance_baseline WHERE pid IN (74001,74002) ORDER BY pid",
-		     "SELECT * FROM currency_wallet_baseline WHERE pid IN (74001,74002) ORDER BY pid",
-		     "SELECT * FROM combat_frag_baseline WHERE pid IN (74001,74002) ORDER BY pid",
-		     "SELECT * FROM player_items WHERE pid IN (74001,74002) ORDER BY id",
-		     "SELECT * FROM player_item_affects WHERE item_id IN (7101,7102) ORDER BY id",
-		     "SELECT * FROM player_item_extra_descr WHERE item_id IN (7101,7102) ORDER BY id",
-		     "SELECT * FROM item_current_owner WHERE item_uid IN (201,202) ORDER BY item_uid",
-		     "SELECT * FROM item_owner_revision WHERE owner_type=1 AND owner_id IN (74001,74002) ORDER BY owner_id",
-		     "SELECT * FROM player_death_conflict_evidence WHERE pid=74001 ORDER BY save_revision",
-		     "SELECT * FROM player_death_disposition WHERE pid=74001 ORDER BY save_revision"})
+	for (const char *statement :
+	     { "SELECT * FROM accounts WHERE account_name='S10Test'",
+	       "SELECT * FROM account_characters WHERE account_name='S10Test' ORDER BY id",
+	       "SELECT * FROM player_data WHERE pid IN (74001,74002) ORDER BY pid",
+	       "SELECT * FROM epic_balance_baseline WHERE pid IN (74001,74002) ORDER BY pid",
+	       "SELECT * FROM currency_wallet_baseline WHERE pid IN (74001,74002) ORDER BY pid",
+	       "SELECT * FROM combat_frag_baseline WHERE pid IN (74001,74002) ORDER BY pid",
+	       "SELECT * FROM player_items WHERE pid IN (74001,74002) ORDER BY id",
+	       "SELECT * FROM player_item_affects WHERE item_id IN (7101,7102) ORDER BY id",
+	       "SELECT * FROM player_item_extra_descr WHERE item_id IN (7101,7102) ORDER BY id",
+	       "SELECT * FROM item_current_owner WHERE item_uid IN (201,202) ORDER BY item_uid",
+	       "SELECT * FROM item_owner_revision WHERE owner_type=1 AND owner_id IN (74001,74002) ORDER BY owner_id",
+	       "SELECT * FROM player_death_conflict_evidence WHERE pid=74001 ORDER BY save_revision",
+	       "SELECT * FROM player_death_disposition WHERE pid=74001 ORDER BY save_revision" })
 	{
 		sql(db, statement);
 		rows_ptr rows(mysql_store_result(db), mysql_free_result);
@@ -221,13 +231,15 @@ void print_hash(MYSQL *db)
 int main(int argc, char **argv)
 {
 	require(argc == 2 && (std::string_view(argv[1]) == "--seed" ||
-			      std::string_view(argv[1]) == "--snapshot"), "explicit mode required");
+			      std::string_view(argv[1]) == "--snapshot"),
+		"explicit mode required");
 	require(mysql_library_init(0, nullptr, nullptr) == 0, "mysql client init");
 	MYSQL *db = connect_db();
 	if (std::string_view(argv[1]) == "--seed")
 	{
 		seed(db);
-		std::cout << "PASS: seeded an account, two players, exact item custody, and one real retained SQL case\n";
+		std::cout
+			<< "PASS: seeded an account, two players, exact item custody, and one real retained SQL case\n";
 	}
 	else
 		print_hash(db);

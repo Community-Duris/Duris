@@ -245,6 +245,37 @@ static P_char quest_reward_character_present(uint32_t pid)
 	return NULL;
 }
 
+static void request_quest_reward_recovery_save(const std::string &key, P_char player = NULL)
+{
+	const auto found = quest_reward_recoveries.find(key);
+	if (found == quest_reward_recoveries.end())
+		return;
+	auto &attempt = found->second;
+	if (!attempt.wait_for_player_save || attempt.required_save_revision ||
+	    attempt.pending_items || !attempt.dispatch_complete)
+		return;
+	if (!player)
+		player = quest_reward_character_present(attempt.player_pid);
+	if (!player)
+		return;
+	const int room_vnum = player->in_room >= 0 && world ? world[player->in_room].number :
+							      NOWHERE;
+	const auto saved = attempt.expected_receipts.empty() ?
+				   player_save_pipeline_request(player,
+								attempt.pending_save_components,
+								RENT_CRASH, room_vnum) :
+				   player_save_pipeline_request_quest_xp(
+					   player, attempt.pending_save_components,
+					   attempt.expected_receipts.data(),
+					   attempt.expected_receipts.size(), room_vnum);
+	player_revision_snapshot revision = {};
+	if ((saved == player_save_pipeline_result::queued ||
+	     saved == player_save_pipeline_result::coalesced) &&
+	    player_revision_snapshot_copy(attempt.player_pid, &revision) &&
+	    revision.current_revision)
+		attempt.required_save_revision = revision.current_revision;
+}
+
 void finish_quest_reward_recovery(const std::string &key)
 {
 	const auto found = quest_reward_recoveries.find(key);
@@ -330,7 +361,10 @@ void quest_reward_recovery_pulse(void)
 		auto entry = current++;
 		auto &key = entry->first;
 		auto &attempt = entry->second;
+		request_quest_reward_recovery_save(key);
 		if (!attempt.wait_for_player_save)
+			continue;
+		if (!attempt.required_save_revision)
 			continue;
 		// Applied XP survives admission failure and player revision release. Only
 		// an exact receipt completion may remove its live replay fence.
@@ -351,7 +385,8 @@ void quest_reward_recovery_pulse(void)
 	}
 }
 
-void quest_reward_recovery_item_complete(P_char, uint64_t item_uid, bool committed, unsigned int)
+void quest_reward_recovery_item_complete(P_char player, uint64_t item_uid, bool committed,
+					 unsigned int)
 {
 	const auto item = quest_reward_recovery_items.find(item_uid);
 	if (item == quest_reward_recovery_items.end())
@@ -365,10 +400,11 @@ void quest_reward_recovery_item_complete(P_char, uint64_t item_uid, bool committ
 		attempt->second.failed = true;
 	if (attempt->second.pending_items)
 		--attempt->second.pending_items;
+	request_quest_reward_recovery_save(key, player);
 	finish_quest_reward_recovery(key);
 }
 
-void quest_reward_recovery_currency_complete(P_char, bool committed,
+void quest_reward_recovery_currency_complete(P_char player, bool committed,
 					     const currency_command_result &, unsigned int,
 					     const uint8_t *context, size_t context_size)
 {
@@ -384,6 +420,7 @@ void quest_reward_recovery_currency_complete(P_char, bool committed,
 		attempt->second.failed = true;
 	if (attempt->second.pending_items)
 		--attempt->second.pending_items;
+	request_quest_reward_recovery_save(key, player);
 	finish_quest_reward_recovery(key);
 }
 
@@ -622,8 +659,8 @@ static bool capture_quest_credit_context(P_char actor, quest_durable_context *co
 				return false;
 			if (!member->ch || !IS_PC(member->ch) || IS_TRUSTED(member->ch) ||
 			    member->ch->in_room != actor->in_room || GET_PID(member->ch) <= 0 ||
-			    quest_reward_character_present(static_cast<uint32_t>(GET_PID(member->ch))) !=
-				    member->ch)
+			    quest_reward_character_present(
+				    static_cast<uint32_t>(GET_PID(member->ch))) != member->ch)
 				continue;
 			const uint32_t pid = static_cast<uint32_t>(GET_PID(member->ch));
 			bool duplicate = false;
@@ -637,8 +674,7 @@ static bool capture_quest_credit_context(P_char actor, quest_durable_context *co
 			context->credited_levels[context->credited_count - 1] =
 				GET_LEVEL(member->ch);
 			context->strongest_party_level =
-				std::max(context->strongest_party_level,
-					 GET_LEVEL(member->ch));
+				std::max(context->strongest_party_level, GET_LEVEL(member->ch));
 		}
 	}
 	context->party_size = context->credited_count;
@@ -659,8 +695,7 @@ static bool capture_quest_offering_continuation(P_char mob, P_char actor, int qu
 		return false;
 	const std::string *definition_id =
 		zone_story_quest_production::definition_id_for(completion);
-	const int zone_number =
-		zone_story_quest_production::zone_for_giver_vnum(GET_VNUM(mob));
+	const int zone_number = zone_story_quest_production::zone_for_giver_vnum(GET_VNUM(mob));
 	if (!definition_id || definition_id->empty() ||
 	    definition_id->size() > QUEST_REWARD_MAX_DEFINITION_ID_BYTES || zone_number <= 0 ||
 	    !context.credited_count ||
@@ -738,8 +773,7 @@ static bool capture_quest_offering_continuation(P_char mob, P_char actor, int qu
 		put32(offset + sizeof(uint32_t), static_cast<uint32_t>(reward->number));
 		uint32_t flags = 0;
 		if (reward->goal_type == QUEST_GOAL_SKILL && reward->number >= 0 &&
-		    reward->number < MAX_SKILLS &&
-		    actor->player.spec <= MAX_SPEC &&
+		    reward->number < MAX_SKILLS && actor->player.spec <= MAX_SPEC &&
 		    SKILL_DATA_ALL(actor, reward->number).rlevel[actor->player.spec] <=
 			    context.player_level)
 		{
@@ -964,10 +998,11 @@ static void complete_quest_offering(P_char actor, bool committed,
 		continuation.completion_index = static_cast<uint32_t>(context.completion_index);
 		const int giver_vnum =
 			mob ? GET_VNUM(mob) :
-			(context.quester_id >= 0 && context.quester_id < number_of_quests &&
-			 quest_index[context.quester_id].quester >= 0 ?
-				 mob_index[quest_index[context.quester_id].quester].virtual_number :
-				 0);
+			      (context.quester_id >= 0 && context.quester_id < number_of_quests &&
+					       quest_index[context.quester_id].quester >= 0 ?
+				       mob_index[quest_index[context.quester_id].quester]
+					       .virtual_number :
+				       0);
 		if (giver_vnum <= 0)
 		{
 			send_to_char("Your committed quest reward is still pending recovery.\r\n",
@@ -977,8 +1012,8 @@ static void complete_quest_offering(P_char actor, bool committed,
 		continuation.mobile_vnum = static_cast<uint32_t>(giver_vnum);
 		continuation.room_vnum = static_cast<uint32_t>(world[context.room].number);
 		continuation.completed_at = context.completed_at;
-		continuation.zone_number = static_cast<uint32_t>(
-			zone_story_quest_production::zone_for_giver_vnum(
+		continuation.zone_number =
+			static_cast<uint32_t>(zone_story_quest_production::zone_for_giver_vnum(
 				static_cast<int>(continuation.mobile_vnum)));
 		continuation.player_level = context.player_level;
 		continuation.player_racewar = context.player_racewar;
@@ -1055,9 +1090,8 @@ static void complete_quest_offering(P_char actor, bool committed,
 	}
 	if (!mob)
 	{
-			send_to_char("Your committed quest reward is still pending recovery.\r\n",
-				     actor);
-			return;
+		send_to_char("Your committed quest reward is still pending recovery.\r\n", actor);
+		return;
 	}
 	finish_quest_reward(completion, mob, actor, context.roots[0], context.completed_at,
 			    world[context.room].number);
@@ -1128,17 +1162,20 @@ void quest_reward_recover_pending(P_char player, const critical_operation_id &of
 			tracking_error = "unable to allocate frozen quest-credit recipients";
 		}
 		if (!credited_pids.empty())
-			tracking_complete = zone_story_quest_runtime::record_authoritative_completion(
-				continuation.definition_id,
-				static_cast<int32_t>(continuation.zone_number),
-				continuation.player_pid, credited_pids,
-				static_cast<int32_t>(continuation.room_vnum),
-				static_cast<int64_t>(continuation.completed_at),
-				continuation.character_name, continuation.player_level,
-				continuation.player_racewar, true, continuation.party_size,
-				continuation.strongest_party_level, &tracking_error, tracking_id);
+			tracking_complete =
+				zone_story_quest_runtime::record_authoritative_completion(
+					continuation.definition_id,
+					static_cast<int32_t>(continuation.zone_number),
+					continuation.player_pid, credited_pids,
+					static_cast<int32_t>(continuation.room_vnum),
+					static_cast<int64_t>(continuation.completed_at),
+					continuation.character_name, continuation.player_level,
+					continuation.player_racewar, true, continuation.party_size,
+					continuation.strongest_party_level, &tracking_error,
+					tracking_id);
 		if (!tracking_complete)
-			logit(LOG_DEBUG, "pending zone-story quest completion could not be recovered: %s",
+			logit(LOG_DEBUG,
+			      "pending zone-story quest completion could not be recovered: %s",
 			      tracking_error.c_str());
 	}
 	else if (continuation.version == 1 && completion)
@@ -1270,28 +1307,8 @@ void quest_reward_recover_pending(P_char player, const critical_operation_id &of
 			components |= PLAYER_COMPONENT_SKILLS;
 		if (!xp_receipts.empty())
 			components |= PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_TROPHIES;
-		if (!xp_receipts.empty())
-			quest_reward_recoveries[key].pending_save_components = components;
-		const int room_vnum = player->in_room >= 0 && world ?
-				      world[player->in_room].number : NOWHERE;
-		const auto saved = xp_receipts.empty() ?
-				   player_save_pipeline_request(player, components, RENT_CRASH,
-						       room_vnum) :
-				   player_save_pipeline_request_quest_xp(
-					   player, components, xp_receipts.data(), xp_receipts.size(),
-					   room_vnum);
-		player_revision_snapshot revision = {};
-		if ((saved == player_save_pipeline_result::queued ||
-		     saved == player_save_pipeline_result::coalesced) &&
-		    player_revision_snapshot_copy(GET_PID(player), &revision) &&
-		    revision.current_revision)
-		{
-			quest_reward_recoveries[key].wait_for_player_save = true;
-			quest_reward_recoveries[key].required_save_revision =
-				revision.current_revision;
-		}
-		else if (xp_receipts.empty())
-			quest_reward_recoveries[key].failed = true;
+		quest_reward_recoveries[key].pending_save_components = components;
+		quest_reward_recoveries[key].wait_for_player_save = true;
 	}
 	for (size_t index = 0; index < continuation.reward_count; ++index)
 	{
@@ -1370,6 +1387,7 @@ void quest_reward_recover_pending(P_char player, const critical_operation_id &of
 		}
 	}
 	quest_reward_recoveries[key].dispatch_complete = true;
+	request_quest_reward_recovery_save(key, player);
 	if (continuation.reward_count)
 		send_to_char(
 			all_effects_supported && tracking_complete ?
@@ -1402,8 +1420,8 @@ void quest_reward_recover_xp_entitlement(P_char player,
 				continuation.xp_awards[index].amount == amount);
 	if (!frozen_award)
 		return;
-	const std::string key = quest_reward_entitlement_key(
-		offering_operation, recipient_pid, reward_index);
+	const std::string key =
+		quest_reward_entitlement_key(offering_operation, recipient_pid, reward_index);
 	if (quest_reward_recoveries.find(key) != quest_reward_recoveries.end() ||
 	    quest_reward_recoveries.size() >= 1024)
 		return;
@@ -1512,8 +1530,9 @@ static bool submit_durable_quest_offering(P_char mob, P_char actor, int quester_
 		context.count = static_cast<uint32_t>(count);
 		if (!capture_quest_credit_context(actor, &context))
 		{
-			send_to_char("Quest completion credit cannot be captured safely. Please try again.\r\n",
-				     actor);
+			send_to_char(
+				"Quest completion credit cannot be captured safely. Please try again.\r\n",
+				actor);
 			return true;
 		}
 		if (economic_gameplay_authority::active())

@@ -595,8 +595,7 @@ unsigned int economic_sql_collector_verify_retained(MYSQL *connection,
 		const std::string operation_where =
 			where + " AND lineage=" + id(meta.lineage) +
 			" AND epoch=" + id(meta.epoch) + " AND " + original +
-			" AND source_event IS NULL" +
-			" AND realized_price_copper " +
+			" AND source_event IS NULL" + " AND realized_price_copper " +
 			(realized_price_sql == "NULL" ? "IS NULL" : "=" + realized_price_sql) +
 			" AND canonical_intent=" + hex(command.accounting_intent) +
 			" AND intent_digest=" + hex(intent_digest) +

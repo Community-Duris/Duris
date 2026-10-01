@@ -618,10 +618,9 @@ static long long cooldown_remaining(unsigned long long grant_id, int pid)
 	return remaining;
 }
 
-static bool submit_accounted_reward_retirement(P_char ch, const RewardGrant &grant,
-						      P_obj instance, bool notify);
-static bool submit_accounted_reward_promotion(P_char ch, const RewardGrant &grant,
-						     P_obj duplicate);
+static bool submit_accounted_reward_retirement(P_char ch, const RewardGrant &grant, P_obj instance,
+					       bool notify);
+static bool submit_accounted_reward_promotion(P_char ch, const RewardGrant &grant, P_obj duplicate);
 static bool reward_item_in_character_corpse(P_char ch, P_obj obj)
 {
 	if (!ch || !IS_PC(ch) || GET_PID(ch) <= 0 || !obj)
@@ -664,9 +663,10 @@ static P_obj existing_character_instance(P_char ch, const RewardGrant &grant,
 		}
 		else if (retire_empty_duplicates && character_owned)
 		{
-			const bool submitted = obj->contains ?
-					       submit_accounted_reward_promotion(ch, grant, obj) :
-					       submit_accounted_reward_retirement(ch, grant, obj, false);
+			const bool submitted =
+				obj->contains ?
+					submit_accounted_reward_promotion(ch, grant, obj) :
+					submit_accounted_reward_retirement(ch, grant, obj, false);
 			if (!submitted)
 				logit(LOG_WIZ,
 				      obj->contains ?
@@ -685,8 +685,7 @@ static P_obj existing_character_instance(P_char ch, const RewardGrant &grant,
 static uint32_t reward_retirement_u32(const uint8_t *data)
 {
 	return static_cast<uint32_t>(data[0]) | (static_cast<uint32_t>(data[1]) << 8) |
-	       (static_cast<uint32_t>(data[2]) << 16) |
-	       (static_cast<uint32_t>(data[3]) << 24);
+	       (static_cast<uint32_t>(data[2]) << 16) | (static_cast<uint32_t>(data[3]) << 24);
 }
 
 static uint64_t reward_retirement_u64(const uint8_t *data)
@@ -697,17 +696,15 @@ static uint64_t reward_retirement_u64(const uint8_t *data)
 	return value;
 }
 
-static bool decode_reward_retirement(const uint8_t *data, size_t size,
-				     unsigned long long *grant_id, bool *legacy,
-				     bool *notify, int *vnum, uint64_t *instance_uid)
+static bool decode_reward_retirement(const uint8_t *data, size_t size, unsigned long long *grant_id,
+				     bool *legacy, bool *notify, int *vnum, uint64_t *instance_uid)
 {
 	if (!data || !grant_id || !legacy || !notify || !vnum || !instance_uid ||
 	    (size != 20 && size != 28))
 		return false;
 	const uint32_t version = reward_retirement_u32(data);
 	if ((version != 1 && version != 2) || (version == 1 && size != 20) ||
-	    (version == 2 && size != 28) ||
-	    (reward_retirement_u32(data + 4) & ~UINT32_C(3)))
+	    (version == 2 && size != 28) || (reward_retirement_u32(data + 4) & ~UINT32_C(3)))
 		return false;
 	const uint64_t decoded_id = reward_retirement_u64(data + 8);
 	const uint32_t decoded_vnum = reward_retirement_u32(data + 16);
@@ -752,10 +749,9 @@ static P_obj reward_item_by_uid(uint64_t uid)
 }
 
 bool account_reward_retirement_publication(const critical_operation_id &, P_char actor,
-						   bool committed,
-						   const item_transfer_result &result,
-						   unsigned int, const uint8_t *context,
-						   size_t context_size)
+					   bool committed, const item_transfer_result &result,
+					   unsigned int, const uint8_t *context,
+					   size_t context_size)
 {
 	unsigned long long grant_id = 0;
 	bool legacy = false;
@@ -763,7 +759,7 @@ bool account_reward_retirement_publication(const critical_operation_id &, P_char
 	int vnum = 0;
 	uint64_t expected_uid = 0;
 	if (!actor || !decode_reward_retirement(context, context_size, &grant_id, &legacy, &notify,
-						  &vnum, &expected_uid))
+						&vnum, &expected_uid))
 		return false;
 	(void)notify;
 	if (!committed)
@@ -787,8 +783,8 @@ bool account_reward_retirement_publication(const critical_operation_id &, P_char
 
 void account_reward_retirement_completion(P_char actor, bool committed,
 					  const item_transfer_result &result,
-					  unsigned int error_code,
-					  const uint8_t *context, size_t context_size)
+					  unsigned int error_code, const uint8_t *context,
+					  size_t context_size)
 {
 	unsigned long long grant_id = 0;
 	bool legacy = false;
@@ -796,7 +792,7 @@ void account_reward_retirement_completion(P_char actor, bool committed,
 	int vnum = 0;
 	uint64_t expected_uid = 0;
 	if (!actor || !decode_reward_retirement(context, context_size, &grant_id, &legacy, &notify,
-						  &vnum, &expected_uid))
+						&vnum, &expected_uid))
 		return;
 	if (!committed || (!expected_uid && !result.root_item_uid))
 	{
@@ -824,11 +820,11 @@ void account_reward_retirement_completion(P_char actor, bool committed,
 		send_to_char("Its recovery countdown is temporarily unavailable.\r\n", actor);
 }
 
-static bool submit_accounted_reward_retirement(P_char ch, const RewardGrant &grant,
-					      P_obj instance, bool notify)
+static bool submit_accounted_reward_retirement(P_char ch, const RewardGrant &grant, P_obj instance,
+					       bool notify)
 {
-	if (!ch || !instance || !instance->obj_uid || OBJ_VNUM(instance) <= 0 ||
-	    GET_PID(ch) <= 0 || !grant.id)
+	if (!ch || !instance || !instance->obj_uid || OBJ_VNUM(instance) <= 0 || GET_PID(ch) <= 0 ||
+	    !grant.id)
 		return false;
 	item_transfer_continuation continuation = {};
 	continuation.kind = item_transfer_continuation_kind::account_reward_retirement;
@@ -846,7 +842,7 @@ static bool submit_accounted_reward_retirement(P_char ch, const RewardGrant &gra
 		continuation.data[20 + byte] =
 			static_cast<uint8_t>(instance->obj_uid >> (byte * 8));
 	const item_owner_identity from_owner = { item_owner_type::player,
-							 static_cast<uint64_t>(GET_PID(ch)), 0 };
+						 static_cast<uint64_t>(GET_PID(ch)), 0 };
 	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
 	item_movement_reject reject = item_movement_reject::none;
 	return item_movement_transaction_submit(
@@ -900,8 +896,7 @@ static bool decode_reward_promotion(const uint8_t *encoded, size_t encoded_size,
 }
 
 bool account_reward_duplicate_promotion_publication(const critical_operation_id &, P_char actor,
-						    bool committed,
-						    const item_transfer_result &,
+						    bool committed, const item_transfer_result &,
 						    unsigned int, const uint8_t *encoded,
 						    size_t encoded_size)
 {
@@ -912,9 +907,8 @@ bool account_reward_duplicate_promotion_publication(const critical_operation_id 
 		return true;
 	P_obj duplicate = reward_item_by_uid(terms.duplicate_uid);
 	const char *account = reward_account(actor);
-	P_obj target_parent = terms.target_parent_uid ?
-			      reward_item_by_uid(terms.target_parent_uid) :
-			      NULL;
+	P_obj target_parent =
+		terms.target_parent_uid ? reward_item_by_uid(terms.target_parent_uid) : NULL;
 	RewardMarker marker = {};
 	if (!duplicate || !account || reward_item_owner(duplicate) != actor ||
 	    OBJ_VNUM(duplicate) != static_cast<int>(terms.reward_vnum) ||
@@ -940,11 +934,10 @@ bool account_reward_duplicate_promotion_publication(const critical_operation_id 
 			return false;
 		const bool still_inside_duplicate = OBJ_INSIDE(child) &&
 						    child->loc.inside == duplicate;
-		const bool already_published = terms.target_parent_uid ?
-					       OBJ_INSIDE(child) &&
-					       child->loc.inside == target_parent :
-					       OBJ_CARRIED(child) &&
-					       child->loc.carrying == actor;
+		const bool already_published =
+			terms.target_parent_uid ?
+				OBJ_INSIDE(child) && child->loc.inside == target_parent :
+				OBJ_CARRIED(child) && child->loc.carrying == actor;
 		if (!still_inside_duplicate && !already_published)
 			return false;
 	}
@@ -958,9 +951,9 @@ bool account_reward_duplicate_promotion_publication(const critical_operation_id 
 			obj_to_obj_at_end(child, target_parent);
 		else
 			obj_to_char(child, actor);
-		const bool placed = target_parent ?
-				    OBJ_INSIDE(child) && child->loc.inside == target_parent :
-				    OBJ_CARRIED(child) && child->loc.carrying == actor;
+		const bool placed =
+			target_parent ? OBJ_INSIDE(child) && child->loc.inside == target_parent :
+					OBJ_CARRIED(child) && child->loc.carrying == actor;
 		if (placed)
 			continue;
 		if (OBJ_INSIDE(child))
@@ -973,9 +966,11 @@ bool account_reward_duplicate_promotion_publication(const critical_operation_id 
 	return duplicate->contains == NULL;
 }
 
-static void account_reward_duplicate_promotion_completion(
-	P_char actor, bool committed, const item_transfer_result &, unsigned int error_code,
-	const uint8_t *encoded, size_t encoded_size)
+static void account_reward_duplicate_promotion_completion(P_char actor, bool committed,
+							  const item_transfer_result &,
+							  unsigned int error_code,
+							  const uint8_t *encoded,
+							  size_t encoded_size)
 {
 	reward_promotion_terms terms = {};
 	if (!actor || !decode_reward_promotion(encoded, encoded_size, &terms))
@@ -984,7 +979,8 @@ static void account_reward_duplicate_promotion_completion(
 	{
 		logit(LOG_WIZ,
 		      "divineclaim: typed child promotion failed for duplicate UID %llu on %s (error=%u)",
-		      static_cast<unsigned long long>(terms.duplicate_uid), GET_NAME(actor), error_code);
+		      static_cast<unsigned long long>(terms.duplicate_uid), GET_NAME(actor),
+		      error_code);
 		return;
 	}
 	P_obj duplicate = reward_item_by_uid(terms.duplicate_uid);
@@ -1018,12 +1014,11 @@ static void account_reward_duplicate_promotion_completion(
 		      static_cast<unsigned long long>(terms.duplicate_uid), GET_NAME(actor));
 }
 
-static bool submit_accounted_reward_promotion(P_char ch, const RewardGrant &grant,
-					     P_obj duplicate)
+static bool submit_accounted_reward_promotion(P_char ch, const RewardGrant &grant, P_obj duplicate)
 {
-	if (!ch || !duplicate || !duplicate->obj_uid || !grant.id ||
-	    GET_PID(ch) <= 0 || reward_item_owner(duplicate) != ch ||
-	    !duplicate->contains || !reward_contents_can_promote(duplicate))
+	if (!ch || !duplicate || !duplicate->obj_uid || !grant.id || GET_PID(ch) <= 0 ||
+	    reward_item_owner(duplicate) != ch || !duplicate->contains ||
+	    !reward_contents_can_promote(duplicate))
 		return false;
 	std::vector<P_obj> children;
 	try
@@ -1040,12 +1035,12 @@ static bool submit_accounted_reward_promotion(P_char ch, const RewardGrant &gran
 	if (children.size() > 90)
 		return false;
 	const item_owner_identity owner = { item_owner_type::player,
-						    static_cast<uint64_t>(GET_PID(ch)), 0 };
+					    static_cast<uint64_t>(GET_PID(ch)), 0 };
 	P_obj target_parent = OBJ_INSIDE(duplicate) ? duplicate->loc.inside : NULL;
 	const item_transfer_reason reason = target_parent ? item_transfer_reason::player_put :
-								 item_transfer_reason::player_get;
+							    item_transfer_reason::player_get;
 	const int64_t reason_id = target_parent ? static_cast<int64_t>(target_parent->obj_uid) :
-							  static_cast<int64_t>(children.front()->obj_uid);
+						  static_cast<int64_t>(children.front()->obj_uid);
 	item_transfer_continuation continuation = {};
 	continuation.kind = item_transfer_continuation_kind::account_reward_duplicate_promotion;
 	continuation.data.resize(40 + children.size() * sizeof(uint64_t));
@@ -1072,8 +1067,8 @@ static bool submit_accounted_reward_promotion(P_char ch, const RewardGrant &gran
 		put_u64(40 + index * sizeof(uint64_t), children[index]->obj_uid);
 	item_movement_reject reject = item_movement_reject::none;
 	return item_movement_transaction_submit_batch(
-		ch, children.data(), children.size(), target_parent, owner, owner, reason, reason_id,
-		account_reward_duplicate_promotion_completion, continuation.data.data(),
+		ch, children.data(), children.size(), target_parent, owner, owner, reason,
+		reason_id, account_reward_duplicate_promotion_completion, continuation.data.data(),
 		continuation.data.size(), NULL, &reject,
 		account_reward_duplicate_promotion_publication, {}, 0, continuation);
 }
@@ -1081,28 +1076,30 @@ static bool submit_accounted_reward_promotion(P_char ch, const RewardGrant &gran
 static bool summon_one(P_char ch, const RewardGrant &grant, bool explain)
 {
 	const bool accounting_active = economic_gameplay_authority::active();
-	P_obj existing = existing_character_instance(ch, grant, !accounting_active,
-						     accounting_active);
+	P_obj existing =
+		existing_character_instance(ch, grant, !accounting_active, accounting_active);
 	const char *name = grant.display_name.empty() ? "a divine reward" :
 							grant.display_name.c_str();
 	if (existing)
 	{
-		if (!accounting_active && beautify_reward_item(existing) &&
-		    !do_save_silent(ch, 1))
+		if (!accounting_active && beautify_reward_item(existing) && !do_save_silent(ch, 1))
 			logit(LOG_WIZ,
 			      "divineclaim: failed to save updated binding label for reward #%llu on %s",
 			      grant.id, GET_NAME(ch));
 		if (explain)
 		{
 			if (reward_item_in_character_corpse(ch, existing))
-				send_to_char_f(ch,
-					       "Your divine account reward is in your corpse and cannot be summoned again: %s.&n\r\n",
-					       existing->short_description ? existing->short_description : name);
+				send_to_char_f(
+					ch,
+					"Your divine account reward is in your corpse and cannot be summoned again: %s.&n\r\n",
+					existing->short_description ? existing->short_description :
+								      name);
 			else
 				send_to_char_f(
 					ch,
 					"Your divine account reward is already with this character: %s.&n\r\n",
-					existing->short_description ? existing->short_description : name);
+					existing->short_description ? existing->short_description :
+								      name);
 		}
 		return false;
 	}
@@ -1154,8 +1151,7 @@ static bool summon_one(P_char ch, const RewardGrant &grant, bool explain)
 		      GET_NAME(ch));
 		return false;
 	}
-	if (!item_creation_grant_submit_to_player(ch, obj, ch, NULL,
-						   economic_source_kind::boon))
+	if (!item_creation_grant_submit_to_player(ch, obj, ch, NULL, economic_source_kind::boon))
 	{
 		(void)qry(
 			"UPDATE account_bound_reward_summons SET recovery_ready=1 WHERE grant_id=%llu AND pid=%d",
@@ -1698,22 +1694,21 @@ static int remove_grants(const std::vector<RewardGrant> &grants)
 
 #ifdef __NO_MYSQL__
 bool account_reward_retirement_publication(const critical_operation_id &, P_char, bool,
-						   const item_transfer_result &, unsigned int,
-						   const uint8_t *, size_t)
+					   const item_transfer_result &, unsigned int,
+					   const uint8_t *, size_t)
 {
 	return false;
 }
 
 bool account_reward_duplicate_promotion_publication(const critical_operation_id &, P_char, bool,
-							    const item_transfer_result &,
-							    unsigned int, const uint8_t *,
-							    size_t)
+						    const item_transfer_result &, unsigned int,
+						    const uint8_t *, size_t)
 {
 	return false;
 }
 
-void account_reward_retirement_completion(P_char, bool, const item_transfer_result &,
-						  unsigned int, const uint8_t *, size_t)
+void account_reward_retirement_completion(P_char, bool, const item_transfer_result &, unsigned int,
+					  const uint8_t *, size_t)
 {
 }
 #endif

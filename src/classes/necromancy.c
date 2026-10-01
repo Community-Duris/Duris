@@ -3267,18 +3267,18 @@ struct wall_of_bones_scales_context
 static bool create_wall_of_bones_from_scales(P_char ch, int level, int exit_dir, int scales)
 {
 	if (!create_walls(ch->in_room, exit_dir, ch, level, WALL_OF_BONES, scales, 1000,
-			   "&+La thin wall of &+gscales&n",
-			   "&+LA thin wall of &+gscales&+L is here to the %s.&n", 0))
+			  "&+La thin wall of &+gscales&n",
+			  "&+LA thin wall of &+gscales&+L is here to the %s.&n", 0))
 		return false;
 	SET_BIT(EXIT(ch, exit_dir)->exit_info, EX_BREAKABLE);
-	SET_BIT(VIRTUAL_EXIT((world[ch->in_room].dir_option[exit_dir])->to_room,
-			     rev_dir[exit_dir])
+	SET_BIT(VIRTUAL_EXIT((world[ch->in_room].dir_option[exit_dir])->to_room, rev_dir[exit_dir])
 			->exit_info,
 		EX_BREAKABLE);
 	char message[MAX_STRING_LENGTH];
-	snprintf(message, sizeof(message),
-		 "&+LInfused by powerful sorcery, some &+gdragonscales &+Lmagically transform into a delicate yet solid curtain, blocking exit to the %s!&n\r\n",
-		 dirs[exit_dir]);
+	snprintf(
+		message, sizeof(message),
+		"&+LInfused by powerful sorcery, some &+gdragonscales &+Lmagically transform into a delicate yet solid curtain, blocking exit to the %s!&n\r\n",
+		dirs[exit_dir]);
 	send_to_room(message, ch->in_room);
 	snprintf(message, sizeof(message),
 		 "&+LA thin &+gdragonscale&+L curtain magically assembles to the %s!&n\r\n",
@@ -3287,10 +3287,11 @@ static bool create_wall_of_bones_from_scales(P_char ch, int level, int exit_dir,
 	return true;
 }
 
-spell_component_effect_status spell_wall_of_bones_scales_completed(
-	const critical_operation_id & /*operation_id*/, P_char ch, bool committed,
-	const item_transfer_result &result, unsigned int /*error_code*/,
-	const uint8_t *encoded, size_t encoded_size)
+spell_component_effect_status
+spell_wall_of_bones_scales_completed(const critical_operation_id & /*operation_id*/, P_char ch,
+				     bool committed, const item_transfer_result &result,
+				     unsigned int /*error_code*/, const uint8_t *encoded,
+				     size_t encoded_size)
 {
 	spell_component_context_reader reader(encoded, encoded_size);
 	wall_of_bones_scales_context context = {};
@@ -3303,9 +3304,9 @@ spell_component_effect_status spell_wall_of_bones_scales_completed(
 		send_to_char("The dragon scales remain intact as your spell fizzles.\r\n", ch);
 		return spell_component_effect_status::complete;
 	}
-	if (!create_wall_of_bones_from_scales(
-		    ch, context.level, context.exit_dir,
-		    static_cast<int>(result.item_count) * context.multiplier))
+	if (!create_wall_of_bones_from_scales(ch, context.level, context.exit_dir,
+					      static_cast<int>(result.item_count) *
+						      context.multiplier))
 		send_to_char("Something prevents you from making a wall there.\n", ch);
 	return spell_component_effect_status::complete;
 }
@@ -3406,20 +3407,26 @@ void spell_wall_of_bones(int level, P_char ch, char *arg, [[maybe_unused]] int t
 		{
 			if (economic_gameplay_authority::active() && IS_PC(ch))
 			{
-				const wall_of_bones_scales_context values = {
-					level, exit_dir, ch->in_room, number(1, 2) };
+				const wall_of_bones_scales_context values = { level, exit_dir,
+									      ch->in_room,
+									      number(1, 2) };
 				spell_component_context_writer context;
-				if (!context.put_i32(values.level) || !context.put_i32(values.exit_dir) ||
-				    !context.put_i32(values.room) || !context.put_i32(values.multiplier))
+				if (!context.put_i32(values.level) ||
+				    !context.put_i32(values.exit_dir) ||
+				    !context.put_i32(values.room) ||
+				    !context.put_i32(values.multiplier))
 					return;
 				if (spell_consume_components(
-					    ch, VOBJ_DRAGON_SCALE, 4, SPELL_WALL_OF_BONES, item_spell_component_effect::wall_of_bones,
-					    spell_wall_of_bones_scales_completed, context.data(), context.size))
+					    ch, VOBJ_DRAGON_SCALE, 4, SPELL_WALL_OF_BONES,
+					    item_spell_component_effect::wall_of_bones,
+					    spell_wall_of_bones_scales_completed, context.data(),
+					    context.size))
 					return;
 				scales = 0;
 			}
 			else
-				scales = get_spell_component(ch, VOBJ_DRAGON_SCALE, 4) * number(1, 2);
+				scales = get_spell_component(ch, VOBJ_DRAGON_SCALE, 4) *
+					 number(1, 2);
 		}
 		else
 		{

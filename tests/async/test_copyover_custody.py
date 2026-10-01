@@ -107,6 +107,7 @@ int compress_end(P_desc, int) { std::abort(); }
 void write_to_q(const char *, txt_q *, int) { std::abort(); }
 uint64_t persistence_observability_now_usec() { std::abort(); }
 uint64_t player_load_pipeline_next_request_id() { std::abort(); }
+bool player_save_journal_pid_quarantined(int) { return false; }
 bool player_load_pipeline_wait(player_load_request, player_load_result *, uint64_t) { std::abort(); }
 bool player_load_pipeline_execute_sync(player_load_request, player_load_result *) { std::abort(); }
 bool player_load_materialize(P_char, const player_load_result &) { std::abort(); }

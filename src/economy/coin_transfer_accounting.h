@@ -34,10 +34,10 @@ bool coin_transfer_accounting_command_supported(const critical_command &root) no
 // Stable identity for coin-pile creation/retirement, derived from the debit
 // account and its expected revision so a retry may use a new root ID and a new
 // destination UID without becoming a second source event.
-bool coin_transfer_accounting_source_event(economic_account_kind source_kind,
-					  uint64_t source_id, uint64_t source_revision,
-					  bool source_retired, bool destination_created,
-					  economic_source_event *event) noexcept;
+bool coin_transfer_accounting_source_event(economic_account_kind source_kind, uint64_t source_id,
+					   uint64_t source_revision, bool source_retired,
+					   bool destination_created,
+					   economic_source_event *event) noexcept;
 
 // Called only after the parent root inbox is inserted and while its transaction
 // is active. It locks existing lineage/lifetime mappings; it never creates them.

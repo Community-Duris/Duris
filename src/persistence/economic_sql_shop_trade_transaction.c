@@ -161,8 +161,7 @@ void produced_items(const shop_trade_payload &payload)
 		const auto &snapshot = snapshots[index];
 		const auto found = std::lower_bound(
 			payload.items.begin(), payload.items.begin() + payload.item_count,
-			snapshot.object_uid,
-			[](const shop_trade_item_entry &entry, uint64_t uid)
+			snapshot.object_uid, [](const shop_trade_item_entry &entry, uint64_t uid)
 			{ return entry.item_uid < uid; });
 		const uint64_t parent_uid =
 			snapshot.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
@@ -438,8 +437,9 @@ void insert_operation(MYSQL *connection, const critical_command &command,
 		std::to_string(static_cast<uint16_t>(meta.reason)) + "," + source_event_sql + "," +
 		(applied && (meta.reason == economic_reason::shop_buy ||
 			     meta.reason == economic_reason::shop_sell) ?
-			 std::to_string(payload.price) : "NULL") + "," +
-		hex(intent_digest) + "," + hex(intent.domain_digest) + "," +
+			 std::to_string(payload.price) :
+			 "NULL") +
+		"," + hex(intent_digest) + "," + hex(intent.domain_digest) + "," +
 		(applied ? hex(plan_digest) : "NULL") + "," + hex(command.accounting_intent) + "," +
 		(applied ? hex(encoded_plan) : "NULL") + "," +
 		(applied ? "1,0," : "2," + std::to_string(result_code) + ",") +
@@ -726,8 +726,7 @@ void move_existing_tree(MYSQL *connection, const shop_trade_payload &payload, ui
 					    ",keyword,description FROM " + source_descriptions +
 					    " WHERE item_id=" + std::to_string(source_row));
 	}
-	const auto root = std::find_if(old_rows.begin(), old_rows.end(),
-				       [&](const auto &entry)
+	const auto root = std::find_if(old_rows.begin(), old_rows.end(), [&](const auto &entry)
 				       { return entry.uid == payload.selected_item_uid; });
 	require(root != old_rows.end(), ESTALE);
 	execute(connection, "DELETE FROM " + std::string(source.table) + " WHERE " +

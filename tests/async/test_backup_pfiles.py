@@ -30,6 +30,17 @@ class BackupWrapperTests(unittest.TestCase):
                     schema_path = base / "synthetic-schema.json"
                     schema_path.write_text(json.dumps(schema, indent=2))
                     schema_path.chmod(0o600)
+                    manifest = json.loads((ROOT / "migrations/migration_manifest.json").read_text())
+                    history = []
+                    for migration in manifest["migrations"]:
+                        values = (migration["id"], str(migration["sequence"]),
+                                  migration["description"], migration["apply_checksum"],
+                                  migration["verify_checksum"], migration["compatibility"], "1")
+                        record = b"".join(len(value.encode()).to_bytes(8, "big") + value.encode()
+                                          for value in values)
+                        history.append(record.hex().upper())
+                    history_path = base / "synthetic-history.txt"
+                    history_path.write_text("\n".join(history) + "\n")
                     dump = "".join(f"CREATE TABLE `{name}` (synthetic INT);\n" for name in tables)
                     program = '''#!/usr/bin/env python3
 import os, sys
@@ -55,7 +66,11 @@ if '--help' in sys.argv:
     raise SystemExit(0)
 query = sys.argv[sys.argv.index('-e') + 1]
 schema = json.loads(Path(os.environ['SYNTHETIC_SCHEMA']).read_text())
-if query.startswith("SELECT CONCAT('T'"):
+if query == schema['migration_history_sql']:
+    print(Path(os.environ['SYNTHETIC_HISTORY']).read_text(), end='')
+elif query == schema['extra_description_generation_sql']:
+    print(2)
+elif query.startswith("SELECT CONCAT('T'"):
     print('mismatched-metadata' if os.environ['DUMP_MODE'] == 'schema_mismatch' else 'synthetic-metadata')
 elif 'SELECT VERSION()' in query:
     print('10.11-MariaDB')
@@ -80,6 +95,7 @@ else:
                                DB_ALLOWED_TARGETS="localhost/synthetic", DB_PORT="3306", DB_SOCKET="",
                                DUMP_MODE=mode, ADVERTISE="1" if advertised else "0", SYNTHETIC_DUMP=str(payload),
                                SYNTHETIC_SCHEMA=str(schema_path), RUNTIME_COMPATIBILITY_MANIFEST=str(schema_path),
+                               SYNTHETIC_HISTORY=str(history_path),
                                PLAYER_SAVE_JOURNAL_DIR=str(base / "journals/players"),
                                CRITICAL_COMMAND_JOURNAL_DIR=str(base / "journals/critical"))
                     result = subprocess.run(["bash", str(ROOT / "scripts/backup_pfiles.sh")], env=env,

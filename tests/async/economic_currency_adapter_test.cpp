@@ -227,7 +227,7 @@ void quest_wallet_reward()
 	auto state = authority(command);
 	std::vector<uint8_t> encoded;
 	assert(economic_quest_wallet_reward_intent(command, state.epoch, state.wallet_account,
-						  state.bank_account, &encoded) == error::ok);
+						   state.bank_account, &encoded) == error::ok);
 	command.accounting_intent = encoded;
 	command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
 	economic_frozen_intent intent;
@@ -238,8 +238,8 @@ void quest_wallet_reward()
 	       intent.admission.metadata.source_event->source.bytes == command.operation_id.bytes);
 	std::optional<economic_prepared_currency> prepared;
 	assert(economic_quest_wallet_reward_prepare(command, intent, state,
-						   currency_revision_policy::sql_legacy,
-						   &prepared) == error::ok);
+						    currency_revision_policy::sql_legacy,
+						    &prepared) == error::ok);
 	assert(prepared->plan().accounts.size() == 3 && prepared->plan().postings.size() == 2 &&
 	       prepared->plan().metadata.source_event &&
 	       prepared->plan().accounts[0].key.kind == economic_account_kind::wallet &&
@@ -247,12 +247,13 @@ void quest_wallet_reward()
 	assert(prepared->agrees_with(prepared->plan()) == error::ok);
 	std::optional<economic_prepared_currency> flatfile;
 	assert(economic_quest_wallet_reward_prepare(command, intent, state,
-						   currency_revision_policy::flatfile_legacy,
-						   &flatfile) == error::ok);
+						    currency_revision_policy::flatfile_legacy,
+						    &flatfile) == error::ok);
 	assert(prepared->agrees_with(flatfile->plan()) == error::ok);
 	command.source_site = critical_source_site::command;
 	assert(economic_quest_wallet_reward_intent(command, state.epoch, state.wallet_account,
-						  state.bank_account, &encoded) == error::unauthorized);
+						   state.bank_account,
+						   &encoded) == error::unauthorized);
 }
 void mutation_policy()
 {

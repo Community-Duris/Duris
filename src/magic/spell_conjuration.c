@@ -113,8 +113,8 @@ static void announce_spell_player_item(P_char actor, P_obj object)
 		    TRUE, actor, object, 0, TO_ROOM);
 		break;
 	case 352:
-		act("$n &+wplunges $s clenched fist into the &+yground&+w and draws forth $p!&n", TRUE,
-		    actor, object, 0, TO_ROOM);
+		act("$n &+wplunges $s clenched fist into the &+yground&+w and draws forth $p!&n",
+		    TRUE, actor, object, 0, TO_ROOM);
 		act("&+wYou plunge your fist into the &+yground&+w and rip out $p!&n", TRUE, actor,
 		    object, 0, TO_CHAR);
 		break;
@@ -2062,8 +2062,8 @@ void spell_create_food(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P
 static void finish_summon_insects(P_char ch, int room)
 {
 	send_to_char("&+yYou summon the &+minsects&+y of the area.&n\n", ch);
-	act("&+y$n sprinkles some food around to summon the &+minsects&+y of the area.&n\n", 0,
-	    ch, 0, 0, TO_ROOM);
+	act("&+y$n sprinkles some food around to summon the &+minsects&+y of the area.&n\n", 0, ch,
+	    0, 0, TO_ROOM);
 	struct room_affect af = {};
 	af.type = SPELL_SUMMON_INSECTS;
 	af.duration = 250;
@@ -2071,10 +2071,11 @@ static void finish_summon_insects(P_char ch, int room)
 	affect_to_room(room, &af);
 }
 
-spell_component_effect_status spell_summon_insects_component_completed(
-	const critical_operation_id & /*operation_id*/, P_char ch, bool committed,
-	const item_transfer_result &, unsigned int /*error_code*/, const uint8_t *encoded,
-	size_t encoded_size)
+spell_component_effect_status
+spell_summon_insects_component_completed(const critical_operation_id & /*operation_id*/, P_char ch,
+					 bool committed, const item_transfer_result &,
+					 unsigned int /*error_code*/, const uint8_t *encoded,
+					 size_t encoded_size)
 {
 	spell_component_context_reader reader(encoded, encoded_size);
 	int32_t room = 0;
@@ -2123,11 +2124,13 @@ void spell_summon_insects(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unus
 		spell_component_context_writer context;
 		if (!context.put_i32(ch->in_room))
 			return;
-		if (!spell_consume_components(ch, VOBJ_FORAGE_MANDRAKE, 1, SPELL_SUMMON_INSECTS, item_spell_component_effect::summon_insects,
-					      spell_summon_insects_component_completed, context.data(),
-					      context.size))
-			send_to_char("Your mandrake cannot be consumed right now; please try again.\r\n",
-				     ch);
+		if (!spell_consume_components(ch, VOBJ_FORAGE_MANDRAKE, 1, SPELL_SUMMON_INSECTS,
+					      item_spell_component_effect::summon_insects,
+					      spell_summon_insects_component_completed,
+					      context.data(), context.size))
+			send_to_char(
+				"Your mandrake cannot be consumed right now; please try again.\r\n",
+				ch);
 		return;
 	}
 
@@ -2152,7 +2155,6 @@ void spell_doom_blade(int /*level*/, P_char ch, char * /*arg*/, int type, P_char
 			logit(LOG_DEBUG, "spell_doom_blade(): obj 426 not loadable");
 			return;
 		}
-
 	}
 	else
 	{
@@ -2233,8 +2235,7 @@ static P_char spell_character_by_runtime_id(uint64_t runtime_id)
 static void sticks_to_snakes_retirement_completed(P_char caster, bool committed,
 						  const item_transfer_result &,
 						  unsigned int /*error_code*/,
-						  const uint8_t *encoded,
-						  size_t encoded_size)
+						  const uint8_t *encoded, size_t encoded_size)
 {
 	if (!encoded || encoded_size != sizeof(sticks_to_snakes_context))
 		return;
@@ -2243,7 +2244,8 @@ static void sticks_to_snakes_retirement_completed(P_char caster, bool committed,
 	if (!committed)
 	{
 		if (caster)
-			send_to_char("Your spell fails and the arrows remain unchanged.\r\n", caster);
+			send_to_char("Your spell fails and the arrows remain unchanged.\r\n",
+				     caster);
 		return;
 	}
 
@@ -2271,9 +2273,8 @@ static void sticks_to_snakes_retirement_completed(P_char caster, bool committed,
 		{
 			arrow_messages.obj = arrow;
 			const int damage_type = find_dam_type(OBJ_SHORT(arrow));
-			spell_damage(caster, victim,
-				     5 * dice(arrow->value[1], arrow->value[2]), damage_type,
-				     SPLDAM_ALLGLOBES, &arrow_messages);
+			spell_damage(caster, victim, 5 * dice(arrow->value[1], arrow->value[2]),
+				     damage_type, SPLDAM_ALLGLOBES, &arrow_messages);
 		}
 		if (arrow)
 			extract_obj(arrow);
@@ -2427,8 +2428,9 @@ void spell_sticks_to_snakes(int level, P_char ch, char * /*arg*/, [[maybe_unused
 		context.arrow_count = static_cast<uint8_t>(selected_arrow_count);
 		for (size_t index = 0; index < selected_arrow_count; ++index)
 			context.arrow_uids[index] = selected_arrows[index]->obj_uid;
-		const item_owner_identity player_owner = {
-			item_owner_type::player, static_cast<uint64_t>(GET_PID(victim)), 0 };
+		const item_owner_identity player_owner = { item_owner_type::player,
+							   static_cast<uint64_t>(GET_PID(victim)),
+							   0 };
 		const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
 		item_movement_reject reject = item_movement_reject::none;
 		if (!item_movement_transaction_submit_batch(
@@ -2438,7 +2440,8 @@ void spell_sticks_to_snakes(int level, P_char ch, char * /*arg*/, [[maybe_unused
 			    &reject, nullptr, economic_source_kind::spell_consumption))
 		{
 			send_to_char("Your spell fails and the arrows remain unchanged.\r\n", ch);
-			logit(LOG_FILE, "sticks-to-snakes item retirement refused (pid=%d reason=%s)",
+			logit(LOG_FILE,
+			      "sticks-to-snakes item retirement refused (pid=%d reason=%s)",
 			      GET_PID(ch), item_movement_reject_name(reject));
 		}
 		return;
