@@ -600,10 +600,36 @@ class GenerationTests(Fixture):
         self.assertIn("published_generation_rpo_exceeded", error)
         previous = backup.read_json(self.p["root"] / "status.json")
         self.assertEqual(previous["result"], "ok")
+        with mock.patch.object(backup, "verify", wraps=backup.verify) as verify:
+            result, unused_out, error = self.scheduled()
+            self.assertEqual(result, 1)
+            self.assertIn("published_generation_rpo_exceeded", error)
+            verify.assert_not_called()
         result, unused_out, error = self.finalized()
         self.assertEqual(result, 1)
         self.assertIn("published_generation_rpo_exceeded", error)
         self.assertEqual(backup.read_json(self.p["root"] / "status.json"), previous)
+
+    def test_malformed_completion_replica_is_a_protected_refusal(self):
+        self.p["root"] = self.base / "malformed-completion"
+        self.p["resume_published"] = True
+        self.p["schedule_seconds"] = 0
+        self.baseline("flatfile-primary")
+        def interrupt(stage):
+            if stage == "after_publish":
+                raise OSError("synthetic publication interruption")
+        with mock.patch.object(backup, "checkpoint", interrupt):
+            self.assertEqual(self.scheduled()[0], 1)
+        receipt = backup.read_json(self.p["root"] / "status.json")
+        receipt["replica"] = []
+        backup.write_json(self.p["root"] / "status.json", receipt)
+        result, unused_out, error = self.scheduled()
+        self.assertEqual(result, 1)
+        self.assertIn("published_generation_requires_finalize_command", error)
+        with mock.patch.object(backup, "verify", wraps=backup.verify) as verify:
+            self.assertEqual(self.scheduled()[0], 1)
+            verify.assert_not_called()
+        self.assertEqual(backup.read_json(self.p["root"] / "status.json"), receipt)
 
     def test_scheduled_resume_keeps_job_lock_exclusive(self):
         self.p["root"] = self.base / "scheduled-lock"
