@@ -2554,7 +2554,7 @@ bool item_movement_transaction_submit_craft(
 	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context))
 		return reject_with(reject, item_movement_reject::invalid_request);
 	if (recipe &&
-	    (!craft_progression_hooks.publish || output_count != 1 ||
+	    (!craft_progression_hooks.publish || output_count != 1 || !outputs[0] ||
 	     recipe->player_pid != static_cast<uint32_t>(GET_PID(actor)) ||
 	     recipe->recipe_vnum != recipe_id || recipe->output_uid != outputs[0]->obj_uid ||
 	     !recipe->pouch_mutation.empty()))

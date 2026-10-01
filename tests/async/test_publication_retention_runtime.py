@@ -86,6 +86,7 @@ void logit(const char *, const char *, ...) {}
 void statuslog(int, const char *, ...) {}
 int panic_corruption_int(const char *, const char *, ...) { return 0; }
 void mark_player_dirty_components(int, uint64_t) {}
+bool player_save_pipeline_sealed_save_pending(int) { return false; }
 void collector_catalog_cache_invalidate() {}
 void collector_death_enrollment_note_committed(P_obj, const item_transfer_payload &) {}
 bool player_load_item_graph_materialize_creation(const item_transfer_payload &payload, const item_transfer_result &, std::vector<P_obj> *roots) {
@@ -416,6 +417,13 @@ int main(int argc, char **argv)
     craft_progression_hooks.acknowledged = recipe_acknowledged;
     craft_recipe_continuation recipe;
     recipe.player_pid=1001; recipe.experience=7000; recipe.recipe_vnum=42; recipe.output_uid=5030;
+    P_obj missing_output[] = {nullptr};
+    assert(!item_movement_transaction_submit_craft(&actor, inputs, 1, missing_output, 1,
+        42, craft_callback, nullptr, 0, &reject, nullptr, nullptr, 0,
+        chaos_pouch_usage_mode::generated, &recipe));
+    assert(reject == item_movement_reject::invalid_request);
+    assert(extractions == 2 && recipe_publications == 0 && recipe_acknowledgements == 0);
+    assert(item_movement_transaction_health_copy().pending == 0);
     P_obj recipe_outputs[] = {&recipe_output};
     assert(item_movement_transaction_submit_craft(&actor, inputs, 1, recipe_outputs, 1,
         42, craft_callback, nullptr, 0, &reject, nullptr, nullptr, 0,
