@@ -143,6 +143,37 @@ transport proximity qualification. Region topology is reconstructed at boot
 and recovery; live topology mutation needs qualification before broad rollout.
 No production configuration or persistence authority is changed.
 
+### Recorded sparse capture (2026-10-01)
+
+One sequential disabled/enabled run used 1,000 ordinary roaming NPCs far from
+one staff player within a single large zone. Each phase had 80 seconds of
+warm-up followed by approximately 180 measured seconds and 144 `look` requests.
+The legacy occupied-zone predicate activates the whole zone; the candidate
+keeps distant regions cold. This is a sparse large-zone comparison, rather
+than an empty-zone benchmark of the 22.5-to-60-second formula.
+
+| Recorded measure | Disabled | Enabled |
+| --- | ---: | ---: |
+| Process CPU seconds | 0.95 | 0.22 |
+| Game-thread CPU seconds | 0.93 | 0.20 |
+| Complete-window loop mean (microseconds) | 1,177 | 289.5 |
+| Complete-window loop maximum (microseconds) | 2,701 | 3,856 |
+| Command round-trip p95 (milliseconds) | 170.069 | 170.048 |
+| Command round-trip p99 (milliseconds) | 170.290 | 171.550 |
+| Mundane callbacks per second | 134.074 | 20.341 |
+| Mundane callback deferrals | 0 | 0 |
+
+Callback rate fell about 84.8%, and game-thread CPU fell about 78.5% in this
+synthetic run. The largest recorded loop sample increased, and command p99
+increased about 1.26 ms; do not describe every latency metric as improved.
+Baseline had one complete 74.75-second callback window, candidate two totaling
+149.5 seconds; rates normalize the different window lengths. Loop means/maxima
+use one baseline and two candidate complete instrumentation windows. CPU
+resolution is 10 ms, host load is shared, and this is a single run. These data
+do not establish production savings or replace the remaining #299 scenarios.
+The final copyover plus repeated disable/enable retained 1,003 indexed NPCs
+and one player; no callback debt replay or vial issuance was added.
+
 ## Consolidated follow-up performance fixes
 
 The same implementation branch also carries two bounded follow-ups discovered

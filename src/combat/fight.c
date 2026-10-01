@@ -51,7 +51,6 @@
 #include "classes/dreadlord.h"
 #include "world/epic.h"
 #include "world/events.h"
-#include "world/world_activity.h"
 #include "net/gmcp.h"
 #include "world/hardcore_config.h"
 #include "combat/grapple.h"
