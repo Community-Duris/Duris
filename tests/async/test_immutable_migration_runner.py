@@ -22,10 +22,11 @@ import qualify_database_restore as restore_qualifier  # noqa: E402
 
 
 class FakeExecutor:
-    def __init__(self, applied=None, fail_apply=False, fail_verify=False):
+    def __init__(self, applied=None, fail_apply=False, fail_verify=False, fail_record=False):
         self.rows = list(applied or [])
         self.fail_apply = fail_apply
         self.fail_verify = fail_verify
+        self.fail_record = fail_record
         self.events = []
 
     def acquire_lock(self): self.events.append("lock")
@@ -43,6 +44,7 @@ class FakeExecutor:
     def record(self, migration, version):
         """Record one applied migration, tracing the call for order assertions."""
         self.events.append(f"record:{migration.migration_id}")
+        if self.fail_record: raise runner.MigrationContractError("synthetic record failure")
         self.rows.append(runner.AppliedMigration(
             migration.migration_id, migration.sequence, migration.description,
             migration.apply_checksum, migration.verify_checksum,
@@ -264,6 +266,19 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
             replay = FakeExecutor(resumed.rows)
             self.assertEqual(runner.run_pending(manifest, replay), [])
             self.assertFalse(any(event.startswith("apply:") for event in replay.events))
+
+    def test_stage_failures_identify_migration_and_never_record_success(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            manifest = runner.load_manifest(self.make_manifest(Path(temporary)))
+            for flag, stage in (("fail_apply", "apply"), ("fail_verify", "verify"),
+                                ("fail_record", "history record")):
+                with self.subTest(stage=stage):
+                    executor = FakeExecutor(**{flag: True})
+                    with self.assertRaisesRegex(runner.MigrationContractError,
+                                                f"migration 0001_synthetic_step {stage} failed"):
+                        runner.run_pending(manifest, executor)
+                    self.assertEqual(executor.rows, [])
+                    self.assertEqual(executor.events[-1], "unlock")
 
     def test_applied_history_edit_and_reorder_fail_before_apply(self):
         with tempfile.TemporaryDirectory() as temporary:

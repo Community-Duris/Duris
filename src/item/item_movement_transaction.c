@@ -14,6 +14,7 @@
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_load_items.h"
+#include "player/player_save_pipeline.h"
 #include "core/prototypes.h"
 #include "core/utils.h"
 #include "account/account_reward.h"
@@ -775,6 +776,8 @@ item_owner_identity creation_grant_owner(const pending_creation_grant &request)
 
 bool creation_grant_conflicts(const pending_creation_grant &request)
 {
+	if (!request.to_room && player_save_pipeline_sealed_save_pending(request.recipient_pid))
+		return true;
 	item_ownership_runtime_entry runtime = {};
 	const item_owner_identity source =
 		item_ownership_runtime_lookup(request.item_uid, &runtime) ? runtime.owner :
@@ -3479,6 +3482,23 @@ void item_movement_transaction_player_ready(P_char actor)
 			break;
 	}
 	pump_creation_grants();
+}
+
+bool item_creation_grant_player_publication_pending(P_char player)
+{
+	if (!player || IS_NPC(player) || GET_PID(player) <= 0)
+		return false;
+	const uint32_t pid = static_cast<uint32_t>(GET_PID(player));
+	for (const auto &[actor_pid, queue] : creation_grants)
+	{
+		(void)actor_pid;
+		if (!queue.active || queue.requests.empty())
+			continue;
+		const auto &request = queue.requests.front();
+		if (!request.to_room && request.recipient_pid == pid)
+			return true;
+	}
+	return false;
 }
 
 // A creation commit can establish custody before its live publication. Ordinary
