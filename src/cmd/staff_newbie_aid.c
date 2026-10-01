@@ -7,6 +7,7 @@
 #include "core/files.h"
 #include "magic/spells.h"
 #include "net/comm.h"
+#include "world/rested.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -36,7 +37,7 @@ void newb_spellup(P_char ch, P_char victim)
 	spell_agility(61, ch, 0, SPELL_TYPE_SPELL, victim, 0);
 	spell_dexterity(61, ch, 0, SPELL_TYPE_SPELL, victim, 0);
 	spell_accel_healing(61, ch, 0, SPELL_TYPE_SPELL, victim, 0);
-	spell_rest(61, ch, 0, SPELL_TYPE_SPELL, victim, 0);
+	grant_staff_rested_bonus(ch, victim);
 
 	send_to_char("\nEnjoy your blessings.\n", victim);
 }
