@@ -19,6 +19,23 @@ The example values approved for this PR are:
 | Local budget | 20 GiB, including publication headroom |
 | Required free space | 1 GiB |
 | Restore drill | Every week |
+| Published-generation recovery | Disabled unless explicitly approved |
+| Unchanged blocked-state retry | One hour |
+
+Existing version-1 policies remain valid. The optional `resume_published` field
+defaults to `false`; only set it to `true` after the custodian approves scheduled
+continuation. With it enabled, a scheduled call continues a published generation
+only when every generation verifies, the newest is within the capture-age RPO,
+there are no staging/trash remnants, and the previous `status.json` is a valid
+`ok` receipt for the immediately preceding generation. It then uses the normal
+replication, capacity, retention, and completion path under the existing job
+lock. Any uncertainty remains a refusal. `blocked_retry_seconds` defaults to
+3600 and accepts 60–604800 seconds; it limits repeated full content verification
+for an unchanged protected refusal. Its metadata fingerprint can only defer the
+same refusal: it never establishes integrity or authorizes capture, rotation,
+replication, or a healthy status. A metadata change or expiry triggers a fresh
+full verification. Manual `finalize` always bypasses this throttle and verifies
+the generations again.
 
 The newest generation in each UTC epoch-aligned bucket is retained. Overlapping
 tiers share a generation. Always preserve the two newest valid generations.
@@ -97,6 +114,21 @@ busy condition is reported as a fixed error. The systemd backup, health, and dri
 units declare mutual conflicts, and the pre-cycle launcher retries a busy backup
 before refusing to boot.
 
+The systemd backup timer's one-minute activity is not proof that a backup is due,
+completed, or healthy: `schedule_seconds` independently controls capture cadence,
+and failed runs do not advance `schedule.json`. The health command checks the
+verified generation age, capacity, completion/replication receipt, and (with
+`--require-drill`) drill qualification, but it does not inspect whether either
+timer is enabled or running. On the host, separately check
+`systemctl is-enabled duris-backup-backup.timer duris-backup-health.timer`,
+`systemctl is-active duris-backup-backup.timer duris-backup-health.timer`, and
+`systemctl list-timers --all 'duris-backup-*'`; also monitor each oneshot's exit
+status and alert path. The pre-cycle gate is separate again: inspect the
+actual `cycle_mud.sh` environment for `SKIP_PREBOOT_BACKUP=1`, which is printed
+explicitly when active. That opt-out does not disable the scheduled timer, and a
+scheduled timer does not compensate for the skipped pre-cycle check. Do not infer
+or change a host's opt-out setting from this repository policy.
+
 Sample inactive systemd units are in deploy/systemd/duris-backup-*. Copy them,
 adapt User, WorkingDirectory, ReadWritePaths, paths, and permissions, and connect
 OnFailure to the custodian's existing alerting service before enabling the
@@ -114,13 +146,39 @@ receipts. Monitor timer/unit availability too: a stopped scheduler cannot
 report its own failure.
 
 A failed post-publication step leaves a complete generation and preserves prior
-ones. Resolve the cause and explicitly retry verification/replication/rotation:
+ones. With `resume_published=true`, the next scheduled call may safely continue
+the narrow verified state above. Otherwise a mismatch is reported as
+`published_generation_requires_finalize_command`; this is protected refusal,
+not a healthy backup. Unchanged integrity/inspection refusals are re-reported
+without repeating full checksum reads until the configured retry window expires.
+Changed metadata invalidates that throttle and forces verification; corruption
+is never accepted from a cached result.
 
+For manual recovery, first preserve and inspect the backup root's generation
+directories, `status.json`, and `schedule.json`. Compare the receipt's generation
+to the verified generation timestamps. Run `finalize` only when the newest
+generation is fully verifiable and there are no `.staging-*` or `.trash-*`
+remnants. If any remnant, checksum failure, uncertain replica, or capacity issue
+exists, stop and investigate; do not delete or rename evidence to clear the gate.
+Then run `status` (and `status --require-drill` for the health gate) and check the
+capture age. Finalization never changes the manifest's capture-start time and
+refuses a generation already outside its RPO; a successful receipt therefore
+cannot make an old capture appear fresh.
+
+    BACKUP_ENV_FILE=/etc/duris/backup.env scripts/backup_pfiles.sh status
     BACKUP_ENV_FILE=/etc/duris/backup.env scripts/backup_pfiles.sh finalize
+    BACKUP_ENV_FILE=/etc/duris/backup.env scripts/backup_pfiles.sh status --require-drill
 
-Never delete an unexplained staging/trash directory automatically. Inspect
-ownership and boundaries, preserve incident evidence, and reconcile it under
-the custodian's control. finalize does not overwrite generations.
+The manual command preserves every generation unless the normal, approved
+retention rotation applies; preserve any snapshots that rotation may remove
+before invoking it. It refuses with `interrupted_job_requires_inspection` when
+staging/trash remnants remain, and does not overwrite their evidence.
+
+If a scheduled post-publication continuation returns `replication_pending`,
+replication is still retryable; the schedule deadline is not advanced. Keep the
+replica mount and capacity gates intact and let the next due invocation retry,
+or use the documented `finalize` command after inspection. Do not treat the
+local generation alone as a successful off-host backup.
 
 ## Separate/off-host storage
 
