@@ -36,7 +36,9 @@ assert menu and load_display and check_rested and rested_ws and capabilities
 
 # Telnet keeps the numeric slot stable but hides the feature when disabled. A
 # direct typed 8 remains a compatibility path with an explicit explanation.
-assert "selection > 8" in menu
+assert "selection > 9" in menu
+assert "case 9:" in menu
+assert "Review death-recovery records (read-only)" in menu
 assert "case 8:" in menu
 assert "if (rested_bonus_enabled())" in menu
 assert menu.index("if (rested_bonus_enabled())") < menu.index(

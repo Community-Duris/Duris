@@ -95,6 +95,10 @@ struct skill { const char *wear_off_char[2]; const char *wear_off_room[2]; };
 skill skills[10]{};
 std::string output;
 int transactions=0, other_buffs=0, xp_gain=0;
+namespace economic_gameplay_authority {
+bool enabled = false;
+bool active() { return enabled; }
+}
 #define GET_LEVEL(ch) ((ch)->level)
 #define GET_PLATINUM(ch) ((ch)->platinum)
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -233,6 +237,14 @@ int main() {
         char ordinary[]="1";
         witch_doctor(&witch,&ch,CMD_BUY,ordinary);
         assert(transactions==1 && ch.effects.size()==1);
+        // Accounting's merchant ownership fence takes precedence for every elixir.
+        economic_gameplay_authority::enabled=true;
+        ch.effects.clear(); transactions=0; output.clear();
+        const int before=ch.platinum;
+        witch_doctor(&witch,&ch,CMD_BUY,ordinary);
+        assert(transactions==0 && ch.effects.empty() && ch.platinum==before);
+        assert(output.find("active accounting")!=std::string::npos);
+        economic_gameplay_authority::enabled=false;
         for(int tag : {TAG_RESTED,TAG_WELLRESTED,SPELL_BLINDNESS}) {
             skills[tag]={{"Expired",nullptr},{"Room expired",nullptr}};
             affected_type af{.type=tag}; output.clear();

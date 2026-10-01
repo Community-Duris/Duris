@@ -2,9 +2,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-IMAGE="${TELEMETRY_REPOSITORY_DB_IMAGE:-mariadb:11.4}"
+IMAGE="${TELEMETRY_REPOSITORY_DB_IMAGE:-mariadb:10.11.14}"
 case "$IMAGE" in
-    mysql:8.4|mariadb:11.4) ;;
+    mysql:8.0.46|mariadb:10.11.14) ;;
     *) printf 'unsupported telemetry SQL fixture image: %s\n' "$IMAGE" >&2; exit 2 ;;
 esac
 
