@@ -8,7 +8,7 @@ Unsupported player potion mixing has been removed from the interpreter and its e
 
 ## Persistence and recovery
 
-On this branch craft is reason 34; existing soulbind 27 and slip 28 remain stable. Decoder compatibility recognizes the unpublished draft's same-player craft shape at reason 27 while normal cross-player soulbind retains its meaning.
+On this branch craft is reason 34; existing soulbind 27, slip 28, wear 29, remove 30, fumble 31, disarm 32 and quest turn-in 33 remain stable. Decoder compatibility recognizes version 7 same-player craft shapes at draft reason 27 or master reason 29. Version 9 wear 29 and normal cross-player soulbind retain their meanings.
 
 SQL commits custody, ledger events, physical output rows and runtime state together, and deletes consumed physical input rows. Migration 0051 adds `player_item_runtime_state`, an item-row child with cascading deletion. Canonical columns remain authoritative for placement and existing properties; the snapshot preserves craftsmanship, generated keys, anti/extra2 flags, all timers and dynamic affects. Both asynchronous and legacy synchronous save/load adapters maintain this state. Runtime and lifecycle manifests include the table. Metadata fingerprints were measured on fresh MySQL 8.0.46 and MariaDB 10.11.14 schemas after applying and reapplying the migration.
 
