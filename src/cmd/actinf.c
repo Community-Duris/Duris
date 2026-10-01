@@ -4489,7 +4489,7 @@ static void show_world_persistence(P_char ch)
 		 item_movements.pending || item_movements.publication_retrying ||
 				 item_movements.publication_owner_waiting ?
 			 "pending" :
-							 "ready",
+			 "ready",
 		 (unsigned long long)item_movements.pending,
 		 (unsigned long long)item_movements.retained_offline,
 		 (unsigned long long)item_movements.publication_retrying,
