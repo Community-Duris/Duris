@@ -4829,8 +4829,9 @@ int witch_doctor(P_char witch, P_char customer, int cmd, char *arg)
 				{
 					if (!rested_bonus_enabled())
 					{
-						send_to_char("The rested bonus feature is currently disabled.\r\n",
-							     customer);
+						send_to_char(
+							"The rested bonus feature is currently disabled.\r\n",
+							customer);
 						return TRUE;
 					}
 					if (affected_by_spell(customer, TAG_RESTED) ||

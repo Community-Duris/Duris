@@ -2080,10 +2080,12 @@ void cast_vines(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 			if (!context.put_i32(values.level) || !context.put_i32(values.count))
 				return;
 			if (!spell_consume_components(ch, VOBJ_FORAGE_GREEN_HERB,
-						      static_cast<size_t>(count), SPELL_VINES, item_spell_component_effect::vines,
+						      static_cast<size_t>(count), SPELL_VINES,
+						      item_spell_component_effect::vines,
 						      spell_vines_component_retirement_completed,
 						      context.data(), context.size))
-				send_to_char("Your green herbs cannot be consumed right now.\r\n", ch);
+				send_to_char("Your green herbs cannot be consumed right now.\r\n",
+					     ch);
 			return;
 		}
 		for (i = 0; i < count; i++)

@@ -399,6 +399,14 @@ static void nevent_detach_character(P_nevent event)
 
 	if (!ch)
 		return;
+	// Drop derived wake references before the scheduler releases or reuses
+	// this event. A successor scheduled by the callback has a different handle.
+	if (ch->world_activity_mundane_event == event &&
+	    ch->world_activity_mundane_event_sequence == event->sequence)
+	{
+		ch->world_activity_mundane_event = NULL;
+		ch->world_activity_mundane_event_sequence = 0;
+	}
 	if (event->prev_char_nev)
 	{
 		if (event->prev_char_nev->next_char_nev != event)
