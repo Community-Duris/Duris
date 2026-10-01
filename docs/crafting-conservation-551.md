@@ -42,3 +42,7 @@ Local commands:
 - `./scripts/format.sh --rev origin/master --check` and `git diff --check`.
 
 The database/native tests and builds are local qualification. They do not claim staff-character gameplay for all three writers or an `experimental-accounting` source/recovery port. PR573 stays a draft pending that gameplay review. Apply migration 0031 through the normal migration workflow before booting the revised SQL server; no operational migration was run here.
+
+The unsupported player mixing retirement also removes its exclusive ingredient
+lookup/selection/extraction and bottle-selection helpers. This keeps the later
+NPC stock cleanup compatible without retaining unreachable player code.

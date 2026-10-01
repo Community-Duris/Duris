@@ -61,7 +61,6 @@ extern float fake_sqrt_table[];
 extern int pulse;
 extern int arena_hometown_location[];
 bool is_neg_good(sbyte location);
-int get_id_for(P_obj t_obj);
 
 namespace
 {
@@ -530,100 +529,6 @@ void set_long_description(P_obj t_obj, const char *newDescription)
 	t_obj->description = str_dup(newDescription);
 }
 
-int get_id_for(P_obj t_obj)
-{
-	int i;
-
-	for (i = 0; i < LAST_BASIC_INGREDIENT; i++)
-	{
-		if (basic_ingredients[i] == obj_index[t_obj->R_num].virtual_number)
-		{
-			return i + 1;
-		}
-	}
-	if (obj_index[t_obj->R_num].virtual_number != 8)
-	{
-		return WRONG_INGREDIENT;
-	}
-
-	if (strstr(t_obj->name, "bowels"))
-	{
-		return BOWELS;
-	}
-	else if (strstr(t_obj->name, "face"))
-	{
-		return FACE;
-	}
-	else if (strstr(t_obj->name, "eyes"))
-	{
-		return EYES;
-	}
-	else if (strstr(t_obj->name, "legs"))
-	{
-		return LEGS;
-	}
-	else if (strstr(t_obj->name, "arms"))
-	{
-		return ARMS;
-	}
-	else if (strstr(t_obj->name, "tongue"))
-	{
-		return TONGUE;
-	}
-	else if (strstr(t_obj->name, "scalp"))
-	{
-		return SCALP;
-	}
-	else if (strstr(t_obj->name, "skull"))
-	{
-		return SKULL;
-	}
-	else if (strstr(t_obj->name, "ears"))
-	{
-		return EARS;
-	}
-
-	return WRONG_INGREDIENT;
-}
-
-int got_all_ingredients(P_char ch, int required[])
-{
-	int found[MAX_INGREDIENTS + 1];
-	int i;
-	P_obj t_obj, next_obj;
-	int object_id;
-
-	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-	{
-		found[i] = required[i];
-	}
-
-	for (t_obj = ch->carrying; t_obj; t_obj = next_obj)
-	{
-		next_obj = t_obj->next_content;
-		object_id = get_id_for(t_obj);
-
-		for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-		{
-			if (found[i] == object_id)
-			{
-				found[i] = 0;
-				break;
-			}
-		}
-	}
-
-	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-	{
-		if (found[i])
-		{
-			return 0;
-		}
-	}
-
-	return 1;
-}
-
 int got_all_poison_ingredients(P_char ch, int required[])
 {
 	int found[MAX_INGREDIENTS + 1];
@@ -700,62 +605,6 @@ void extract_used_poison_ingredients(P_char ch, int ingredients[])
 			extract_obj(used_objs[i]);
 		}
 	}
-}
-
-void extract_used_ingredients(P_char ch, int ingredients[])
-{
-	int found[MAX_INGREDIENTS + 1];
-	P_obj used_objs[MAX_INGREDIENTS + 1];
-	P_obj t_obj, next_obj;
-	int object_id;
-	int i;
-
-	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-	{
-		found[i] = ingredients[i];
-		used_objs[i] = NULL;
-	}
-
-	for (t_obj = ch->carrying; t_obj; t_obj = next_obj)
-	{
-		next_obj = t_obj->next_content;
-
-		object_id = get_id_for(t_obj);
-
-		for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-		{
-			if (found[i] == object_id)
-			{
-				found[i] = 0;
-				used_objs[i] = t_obj;
-				break;
-			}
-		}
-	}
-
-	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-	{
-		if (used_objs[i])
-		{
-			extract_obj(used_objs[i]);
-		}
-	}
-}
-
-P_obj get_bottle(P_char ch)
-{
-	P_obj t_obj, next_obj;
-
-	for (t_obj = ch->carrying; t_obj; t_obj = next_obj)
-	{
-		next_obj = t_obj->next_content;
-		if (OBJ_VNUM(t_obj) == VOBJ_POTION_BOTTLES && strstr(t_obj->name, "bottle"))
-		{
-			return t_obj;
-		}
-	}
-
-	return NULL;
 }
 
 P_obj get_vial(P_char ch)
