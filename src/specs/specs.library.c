@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -316,6 +317,8 @@ void proclib_obj_event(P_char, P_char, P_obj obj, void *)
 // for all objects
 int proclib_obj_proc(P_obj obj, P_char ch, int cmd, char *argument)
 {
+	if (item_restricted_for_player_pet(ch, obj))
+		return FALSE;
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
 

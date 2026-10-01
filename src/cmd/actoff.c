@@ -6322,7 +6322,7 @@ bool single_stab(P_char ch, P_char victim, P_obj weapon)
 	{
 		const attack_continuation continuation =
 			begin_attack_continuation(ch, victim, weapon);
-		(*obj_index[weapon->R_num].func.obj)(weapon, ch, CMD_MELEE_HIT, (char *)victim);
+		invoke_object_special(weapon, ch, CMD_MELEE_HIT, (char *)victim);
 		if (!refresh_stab_participants(continuation))
 			return TRUE;
 	}
