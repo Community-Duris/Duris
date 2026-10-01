@@ -185,6 +185,7 @@ PROJECTION_ROUTES = {
     "death.resurrection_committed_corpse_cleanup": "Publishes the already committed corpse content return, spent coin-pile cleanup and corpse retirement.",
     "item.pet_teardown_unload": "Unloads live pet objects whose durable owner row remains the pet or player; no destruction event is authorized.",
     "item.ascension_equipment_relink": "After committed ascension, worn items are moved to the same player's carrying list; no new owner event is authorized.",
+    "item.pet_hidden_equipment_relink": "Moves hidden NPC helper gear from worn to carried on the same player-owned pet, retaining its UID and child graph; no player grant or retirement is authorized. Selected-backend custody and save/publication proof remain unqualified.",
     "recovery.sql_player_item_hydration": "Restores player_items only after validating a strict positive decimal saved UID and matching the player owner before prototype allocation; unknown templates can still leave a partial inventory.",
     "recovery.sql_locker_item_hydration": "Restores locker_items only after validating a strict positive decimal saved UID and matching its locker/chest owner before prototype allocation; invalid rows are retained and skipped.",
     "recovery.sql_private_chest_hydration": "Restores a private-chest item only after validating a strict positive decimal saved UID and matching its locker/chest owner before prototype allocation, then publishes it into the chest.",
