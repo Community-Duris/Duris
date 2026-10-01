@@ -58,8 +58,8 @@ class SplitEconomyActivationContract(unittest.TestCase):
             ("src/cmd/actobj.c", 1339): "item.legacy_get",
             ("src/cmd/actobj.c", 6281): "item.legacy_give",
             ("src/cmd/actobj.c", 7845): "item.equipment_remove",
-            ("src/world/handler.c", 1852): "item.obj_to_char_admission",
-            ("src/world/handler.c", 2024): "item.obj_to_char_admission",
+            ("src/world/handler.c", 1853): "item.obj_to_char_admission",
+            ("src/world/handler.c", 2025): "item.obj_to_char_admission",
             ("src/world/handler.h", 15): "macro.checked_item_publication_declaration",
         }
         for row in checked:
@@ -375,7 +375,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         sites = {row["id"]: row["sites"] for row in registry["writers"]}
         expected = {
             "world.mobile_scaling": ("src/mob/mobconv.c", {247, 248, 249, 250, 257, 262, 276, 284}),
-            "pet.no_cash": ("src/classes/necromancy.c", {252, 253, 254, 255}),
+            "pet.no_cash": ("src/classes/necromancy.c", {256, 257, 258, 259}),
             "world.generated_npc_hydration": ("src/world/generated_npc_runtime.c", {106, 107, 108, 109}),
         }
         current = {(row["path"], row["line"], row["family"])
@@ -494,9 +494,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
                          {"auction.money_claim_compensation"})
         self.assertEqual(owners[("src/economy/auction_houses.c", 2966, "sql_economy")],
                          {"auction.money_claim_legacy"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 9457, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 9478, "sql_economy")],
                          {"recovery.saved_sql_delete"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 10878, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10899, "sql_economy")],
                          {"recovery.saved_sql"})
         shop_path = "src/persistence/economic_sql_shop_trade_transaction.c"
         for line in (888, 908, 941):
@@ -746,11 +746,11 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new handler item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/world/handler.c", 3365, "item_lifecycle")],
+        self.assertEqual(owners[("src/world/handler.c", 3372, "item_lifecycle")],
                          {"item.extraction"})
-        self.assertEqual(owners[("src/world/handler.c", 3981, "item_publication")],
+        self.assertEqual(owners[("src/world/handler.c", 3988, "item_publication")],
                          {"death.corpse_compaction_bone_grant"})
-        self.assertEqual(owners[("src/world/handler.c", 4350, "item_lifecycle")],
+        self.assertEqual(owners[("src/world/handler.c", 4357, "item_lifecycle")],
                          {"death.resurrection_money_pile"})
         for route_id in ("item.prototype_weight_probe", "item.creation_candidate_reject",
                          "coin.wallet_pile_stage_cleanup", "death.corpse_compaction_stage_cleanup"):
@@ -816,9 +816,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new SQL item load sites")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/sql/sql_player.c", 10120, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10141, "item_publication")],
                          {"recovery.sql_shopkeeper_catalog"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 11261, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 11282, "item_publication")],
                          {"recovery.sql_saved_item_hydration"})
         for route_id in ("recovery.sql_diff_proto_probe", "recovery.sql_temp_char_cleanup",
                          "recovery.sql_corpse_stage_cleanup",
@@ -1343,9 +1343,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
                     owners.setdefault(tuple(site), set()).add(route["id"])
         self.assertEqual(current, owners.keys(), "review new necromancy item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[(path, 1290, "item_publication")],
+        self.assertEqual(owners[(path, 1294, "item_publication")],
                          {"death.saved_corpse_clone"})
-        self.assertEqual(owners[(path, 1497, "item_lifecycle")],
+        self.assertEqual(owners[(path, 1501, "item_lifecycle")],
                          {"death.raise_committed_publication"})
         self.assertEqual(self.routes["death.corpseform_disabled"]["disposition"],
                          "non_writer_candidate")

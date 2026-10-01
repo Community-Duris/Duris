@@ -9,16 +9,16 @@
   ],
   "counts": {
     "dormant_writer_candidates": 14,
-    "draft_registry_rows": 862,
-    "function_definition_anchors_verified": 854,
-    "matrix_rows": 862,
+    "draft_registry_rows": 863,
+    "function_definition_anchors_verified": 855,
+    "matrix_rows": 863,
     "non_function_candidate_anchors": 8,
     "non_writer_or_out_of_scope_candidates": 94,
     "offline_operational_writer_routes": 3,
     "routes_with_current_schema_1_path": 77,
     "routes_with_schema_2_gameplay_producer": 9,
     "routes_with_unified_double_entry_evidence": 2,
-    "runtime_mutation_and_projection_routes": 751,
+    "runtime_mutation_and_projection_routes": 752,
     "supplemental_candidates_found": 0
   },
   "coverage_complete": false,
@@ -27,7 +27,7 @@
     "non_writer_candidate": 94,
     "offline_operational_writer": 3,
     "runtime_mutation_route": 688,
-    "runtime_projection_route": 63
+    "runtime_projection_route": 64
   },
   "global_schema_and_accounting_evidence": {
     "critical_command_accounting_schema_2": "src/persistence/critical_command.h:10",
@@ -39,33 +39,33 @@
     "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified."
   },
   "known_unknowns": [
-    "The matrix reconciles 862 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
+    "The matrix reconciles 863 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
     "The lexical census is fully mapped; this does not establish that every reachable economic mutation has passed executable review.",
     "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2812,
-    "current_unique_path_line_family_sites": 2754,
+    "current_occurrences": 2815,
+    "current_unique_path_line_family_sites": 2757,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "62a680deab9da0b9e0912f09397b78277f5de88e",
+    "draft_source_commit": "4ac592b2f46156d2bd19c1c3c304ad5b703fd263",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2754,
+    "draft_unique_sites": 2757,
     "family_occurrences": {
       "coin_assignment": 160,
       "coin_bulk_mutation": 16,
       "direct_cash_assignment": 12,
       "economic_submit": 179,
       "item_lifecycle": 1150,
-      "item_publication": 1069,
+      "item_publication": 1072,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
       "sql_economy": 54
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 862-row registry maps 2754 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
-    "mapped_sites_still_present": 2754,
-    "mapped_unique_sites_from_draft_rows": 2754,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 863-row registry maps 2757 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2757,
+    "mapped_unique_sites_from_draft_rows": 2757,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "62a680deab9da0b9e0912f09397b78277f5de88e",
+  "repository_head": "4ac592b2f46156d2bd19c1c3c304ad5b703fd263",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -3677,7 +3677,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          561
+          711
         ],
         "file": "scripts/persistence_backup.py",
         "function": "backup",
@@ -3723,7 +3723,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          473
+          493
         ],
         "file": "scripts/persistence_backup.py",
         "function": "prune_unretained",
@@ -6351,7 +6351,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2085
+          2086
         ],
         "file": "src/world/handler.c",
         "function": "money_inventory_completion",
@@ -6398,7 +6398,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2085
+          2086
         ],
         "file": "src/world/handler.c",
         "function": "money_inventory_completion",
@@ -9951,7 +9951,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6406
+          6412
         ],
         "file": "src/world/handler.c",
         "function": "add_coins",
@@ -10012,7 +10012,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6552
+          6558
         ],
         "file": "src/world/handler.c",
         "function": "create_money",
@@ -10073,7 +10073,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2766
+          2773
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_room",
@@ -10519,7 +10519,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2139
+          2140
         ],
         "file": "src/world/handler.c",
         "function": "money_to_inventory",
@@ -10706,7 +10706,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3466
+          3470
         ],
         "file": "src/classes/necromancy.c",
         "function": "spell_compact_corpse",
@@ -10768,7 +10768,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4445
+          4452
         ],
         "file": "src/world/handler.c",
         "function": "discard_corpse_release_money",
@@ -10829,7 +10829,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3823
+          3830
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_release",
@@ -10876,7 +10876,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5122
+          5129
         ],
         "file": "src/world/handler.c",
         "function": "persistence_defer_corpse_compaction",
@@ -11020,7 +11020,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4606
+          4613
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_destruction",
@@ -11265,7 +11265,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4461
+          4468
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_nested_release",
@@ -11390,7 +11390,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4076
+          4083
         ],
         "file": "src/world/handler.c",
         "function": "recover_corpse_raise_items",
@@ -11451,7 +11451,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4736
+          4743
         ],
         "file": "src/world/handler.c",
         "function": "persistence_defer_corpse_raise",
@@ -11513,7 +11513,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3823
+          3830
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_release",
@@ -11575,7 +11575,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4242
+          4249
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_resurrection_item",
@@ -11701,7 +11701,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3760
+          3767
         ],
         "file": "src/world/handler.c",
         "function": "discard_corpse_transient_items",
@@ -11748,7 +11748,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2787
+          2791
         ],
         "file": "src/classes/necromancy.c",
         "function": "spell_corpseform",
@@ -11871,7 +11871,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2576
+          2580
         ],
         "file": "src/classes/necromancy.c",
         "function": "do_exhume",
@@ -12120,7 +12120,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2093
+          2097
         ],
         "file": "src/classes/necromancy.c",
         "function": "spell_call_avatar",
@@ -12182,7 +12182,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1595
+          1599
         ],
         "file": "src/classes/necromancy.c",
         "function": "spell_create_dracolich",
@@ -12244,7 +12244,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1894
+          1898
         ],
         "file": "src/classes/necromancy.c",
         "function": "create_golem",
@@ -12306,7 +12306,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2326
+          2330
         ],
         "file": "src/classes/necromancy.c",
         "function": "spell_create_greater_dracolich",
@@ -12368,7 +12368,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          46
+          47
         ],
         "file": "src/classes/necromancy.c",
         "function": "place_raised_item",
@@ -12430,7 +12430,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          849
+          853
         ],
         "file": "src/classes/necromancy.c",
         "function": "spawn_raise_undead",
@@ -12492,7 +12492,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          401
+          405
         ],
         "file": "src/classes/necromancy.c",
         "function": "raise_undead",
@@ -12742,7 +12742,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1383
+          1387
         ],
         "file": "src/classes/necromancy.c",
         "function": "complete_corpse_raise_after_commit",
@@ -12805,7 +12805,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1300
+          1304
         ],
         "file": "src/classes/necromancy.c",
         "function": "discard_nested_raise_exclusions",
@@ -13057,7 +13057,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4310
+          4317
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_resurrection",
@@ -13138,7 +13138,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4310
+          4317
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_resurrection",
@@ -13200,7 +13200,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1276
+          1280
         ],
         "file": "src/classes/necromancy.c",
         "function": "create_saved_corpse",
@@ -13261,7 +13261,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1248
+          1252
         ],
         "file": "src/classes/necromancy.c",
         "function": "check_saved_corpse",
@@ -13322,7 +13322,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2682
+          2686
         ],
         "file": "src/classes/necromancy.c",
         "function": "do_summon_host",
@@ -13447,7 +13447,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3313
+          3317
         ],
         "file": "src/classes/necromancy.c",
         "function": "spell_wall_of_bones",
@@ -14049,7 +14049,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1676
+          1677
         ],
         "file": "src/cmd/interp.c",
         "function": "do_confirm",
@@ -16442,7 +16442,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5546
+          5552
         ],
         "file": "src/world/handler.c",
         "function": "extract_char",
@@ -16989,7 +16989,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1852
+          1853
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_char_checked",
@@ -17255,7 +17255,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1852
+          1853
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_char_checked",
@@ -17624,7 +17624,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10113
+          10120
         ],
         "file": "src/cmd/actobj.c",
         "function": "publish_empty_objects",
@@ -18557,7 +18557,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3365
+          3372
         ],
         "file": "src/world/handler.c",
         "function": "extract_obj",
@@ -19079,7 +19079,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3200
+          3207
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_char_at_end",
@@ -19140,7 +19140,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2031
+          2032
         ],
         "file": "src/world/handler.c",
         "function": "obj_from_char",
@@ -19201,7 +19201,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3054
+          3061
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_obj",
@@ -19262,7 +19262,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3261
+          3268
         ],
         "file": "src/world/handler.c",
         "function": "obj_from_obj",
@@ -19323,7 +19323,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2216
+          2217
         ],
         "file": "src/world/handler.c",
         "function": "equip_char",
@@ -19384,7 +19384,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2766
+          2773
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_room",
@@ -19445,7 +19445,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2914
+          2921
         ],
         "file": "src/world/handler.c",
         "function": "obj_from_room",
@@ -19816,7 +19816,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5197
+          5204
         ],
         "file": "src/world/handler.c",
         "function": "Decay",
@@ -20242,7 +20242,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9833
+          9840
         ],
         "file": "src/cmd/actobj.c",
         "function": "list_foods",
@@ -20800,7 +20800,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1852
+          1853
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_char_checked",
@@ -20984,7 +20984,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5511
+          5517
         ],
         "file": "src/world/handler.c",
         "function": "hold_durable_pet_items",
@@ -21045,7 +21045,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9737
+          9744
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_apply_poison",
@@ -21383,7 +21383,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          126
+          127
         ],
         "file": "src/world/handler.c",
         "function": "obj_prototype_weight",
@@ -22059,7 +22059,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1226
+          1227
         ],
         "file": "src/world/handler.c",
         "function": "char_to_room",
@@ -23008,7 +23008,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1852
+          1853
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_char_checked",
@@ -23069,7 +23069,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2345
+          2352
         ],
         "file": "src/world/handler.c",
         "function": "transfer_inventory",
@@ -28708,7 +28708,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8514
+          8515
         ],
         "file": "src/mob/mobact.c",
         "function": "MobHuntCheck",
@@ -30303,7 +30303,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          210
+          211
         ],
         "file": "src/classes/necromancy.c",
         "function": "setup_pet",
@@ -33032,7 +33032,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          366
+          370
         ],
         "file": "src/player/player_load_items.c",
         "function": "materialize_item_graph",
@@ -33094,7 +33094,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          891
+          895
         ],
         "file": "src/player/player_load_items.c",
         "function": "player_load_items_discard",
@@ -38242,7 +38242,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          51
+          52
         ],
         "file": "src/specs/specs.bahamut.c",
         "function": "bahamut",
@@ -38299,7 +38299,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          489
+          490
         ],
         "file": "src/specs/specs.bahamut.c",
         "function": "dragonlord_plate_old",
@@ -38356,7 +38356,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          391
+          392
         ],
         "file": "src/specs/specs.bahamut.c",
         "function": "event_dragonlord_check",
@@ -38470,7 +38470,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          17
+          18
         ],
         "file": "src/specs/specs.cerebusp.c",
         "function": "event_revenant_crown",
@@ -38527,7 +38527,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          76
+          77
         ],
         "file": "src/specs/specs.cerebusp.c",
         "function": "revenant_helm",
@@ -40720,7 +40720,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1190
+          1191
         ],
         "file": "src/specs/specs.object.c",
         "function": "llyms_altar",
@@ -41941,7 +41941,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          812
+          813
         ],
         "file": "src/specs/specs.shabo.c",
         "function": "event_shabo_racechange",
@@ -41998,7 +41998,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1062
+          1063
         ],
         "file": "src/specs/specs.shabo.c",
         "function": "shabo_butler",
@@ -42055,7 +42055,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1428
+          1429
         ],
         "file": "src/specs/specs.shabo.c",
         "function": "shabo_palle",
@@ -42112,7 +42112,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1328
+          1329
         ],
         "file": "src/specs/specs.shabo.c",
         "function": "shabo_petre",
@@ -42169,7 +42169,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          950
+          951
         ],
         "file": "src/specs/specs.shabo.c",
         "function": "shaboath_necromancy_tower",
@@ -42286,7 +42286,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          418
+          419
         ],
         "file": "src/specs/specs.snogres.c",
         "function": "skull_leggings",
@@ -50694,6 +50694,69 @@
         "original_draft_symbol": "obj_to_char_checked"
       },
       "source_classification": "Checked object-to-character placement declaration only; the implementation and callers are separate reviewed routes.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "allow_projection_only_with_committed_identity",
+        "must_block_on_activation": false,
+        "required_policy": "Moves hidden NPC helper gear from worn to carried on the same player-owned pet, retaining its UID and child graph; no player grant or retirement is authorized. Selected-backend custody and save/publication proof remain unqualified. Preserve existing UID/root/parent and receipt; emit no new issuance posting. Refuse mismatched/missing identity instead of minting or silently changing owner."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root.",
+        "route_mode": "native_result_or_recovery_projection_without_new_accounting_root",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_projection_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "projection_only_no_new_postings",
+        "unified_operation_postings_observed": false
+      },
+      "id": "item.pet_hidden_equipment_relink",
+      "native_effects": {
+        "custody_effect": "Same-pet equipment-to-inventory relink; UID and contained child graph remain on the pet. Backend custody evidence is not qualified by this source review.",
+        "holding_effect": "No coin balance changes.",
+        "native_state_targets": [
+          "pet equipment slots",
+          "pet carrying list",
+          "object physical placement and owner snapshot dirtiness"
+        ]
+      },
+      "projection_rule": "Moves hidden NPC helper gear from worn to carried on the same player-owned pet, retaining its UID and child graph; no player grant or retirement is authorized. Selected-backend custody and save/publication proof remain unqualified.",
+      "reachability_evidence": "setup_pet invokes normalization after linking LNK_PET; add_follower invokes the shared helper. The helper unequips matching hidden gear and carries it on the same pet without extraction or player publication.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          242
+        ],
+        "file": "src/item/objmisc.c",
+        "function": "item_restrict_player_pet_equipment",
+        "original_draft_symbol": "item_restrict_player_pet_equipment"
+      },
+      "source_classification": "Relinks hidden NPC helper gear from worn to carried on the same player-owned pet, preserving the UID and child graph; no player grant or item retirement is authorized.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     }
   ],
