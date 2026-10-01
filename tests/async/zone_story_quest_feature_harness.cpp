@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <tuple>
 
 namespace
 {
@@ -225,9 +226,87 @@ int main()
 		"achievement renderer did not honor color preference");
 	const std::string summary_output = tracker.render_summary(7, 42, "Alice", false);
 	require(summary_output.find("The Ember Coast") != std::string::npos &&
-			summary_output.find("The Dusk Archive") != std::string::npos &&
+			summary_output.find("The Dusk Archive") == std::string::npos &&
 			summary_output.find("Zone 900") == std::string::npos,
-		"personal achievement summary did not use proper area names");
+		"personal achievement summary did not filter zero-progress zones");
+
+	const personal_summary empty_summary = empty_tracker.summary_for(7, 42);
+	const std::string empty_summary_output =
+		empty_tracker.render_summary(7, 42, "Alice", false);
+	require(empty_summary.completed == 0 && empty_summary.total == 4 &&
+			empty_summary.full_zones == 0 && empty_summary.zones.empty() &&
+			empty_summary_output.find("Overall: 0 unique quests (0.00%)") !=
+				std::string::npos &&
+			empty_summary_output.find("The Ember Coast:") == std::string::npos &&
+			empty_summary_output.find("The Dusk Archive:") == std::string::npos &&
+			empty_tracker.render_zone(7, 42, 901, "Alice", false)
+					.find("Completed: 0 unique quests (0.00%)") !=
+				std::string::npos,
+		"empty achievement list changed overall totals or per-zone zero progress");
+
+	zone_story_quest_catalog::catalog list_catalog = catalog;
+	zone_story_quest_tracking::quest_definition unnamed_empty_zone =
+		definition("zone-story:902:001", 902);
+	unnamed_empty_zone.zone_name.clear();
+	list_catalog.definitions.push_back(unnamed_empty_zone);
+	service list_tracker(list_catalog);
+	for (const auto &[transaction_id, quest_id, zone_number, completed_at] :
+	     std::vector<std::tuple<const char *, const char *, int, int64_t>>{
+		     { "tx-list-900-1", "zone-story:900:001", 900, 172801000 },
+		     { "tx-list-900-2", "zone-story:900:002", 900, 172801100 },
+		     { "tx-list-901-1", "zone-story:901:001", 901, 172801200 } })
+	{
+		const completion_event event =
+			completion(transaction_id, quest_id, zone_number, 42, completed_at, { 42 });
+		require(list_tracker.record_completion(event, &error) == result::applied,
+			"zone-list completion fixture was not applied");
+	}
+	list_tracker.remember_character(7, 42, "Alice");
+	const personal_summary list_summary = list_tracker.summary_for(7, 42);
+	const std::string list_output = list_tracker.render_summary(7, 42, "Alice", false);
+	const auto ember_position = list_output.find("The Ember Coast: 2 unique quests");
+	const auto dusk_position = list_output.find("The Dusk Archive: 1 unique quests");
+	require(list_summary.zones.size() == 2 && list_summary.zones[0].zone_number == 900 &&
+			list_summary.zones[0].completed == 2 &&
+			list_summary.zones[1].zone_number == 901 &&
+			list_summary.zones[1].completed == 1 &&
+			list_output.find("This area") == std::string::npos &&
+			ember_position != std::string::npos && dusk_position != std::string::npos &&
+			ember_position < dusk_position,
+		"zone achievement list was not filtered and sorted by completed quests");
+
+	zone_story_quest_catalog::catalog tie_catalog;
+	tie_catalog.content_revision = 7;
+	for (int zone = 940; zone < 972; ++zone)
+	{
+		const std::string quest_id = "zone-story:" + std::to_string(zone) + ":001";
+		auto tied_definition = definition(quest_id.c_str(), zone);
+		tied_definition.zone_name = zone == 940 ? "Z last" : "A shared name";
+		tie_catalog.definitions.push_back(std::move(tied_definition));
+	}
+	service tie_tracker(tie_catalog);
+	for (const auto &tied_definition : tie_catalog.definitions)
+	{
+		const std::string transaction_id = "tx-tie-" + tied_definition.definition_id;
+		const completion_event event =
+			completion(transaction_id.c_str(), tied_definition.definition_id.c_str(),
+				   tied_definition.zone_number, 42, 172802000, { 42 });
+		require(tie_tracker.record_completion(event, &error) == result::applied,
+			"tied zone completion fixture was not applied");
+	}
+	const personal_summary tie_summary = tie_tracker.summary_for(7, 42);
+	require(tie_summary.zones.size() == tie_catalog.definitions.size() &&
+			tie_summary.completed == tie_summary.total &&
+			tie_summary.full_zones == tie_catalog.definitions.size(),
+		"tied zone ordering changed exact totals or completed-zone counts");
+	for (size_t index = 0; index < tie_summary.zones.size(); ++index)
+	{
+		const int expected_zone =
+			index + 1 == tie_summary.zones.size() ? 940 : 941 + static_cast<int>(index);
+		require(tie_summary.zones[index].completed == 1 &&
+				tie_summary.zones[index].zone_number == expected_zone,
+			"equal completion counts did not use name then zone-number tie-breakers");
+	}
 
 	daily_policy policy;
 	policy.enabled = true;
