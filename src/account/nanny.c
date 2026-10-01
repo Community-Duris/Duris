@@ -8,6 +8,7 @@
  *****************************************************************************/
 
 #include "core/prototypes.h"
+#include "world/rested.h"
 #include "telemetry/telemetry_runtime.h"
 #include "account/newbie_kit_plan.h"
 #include "world/object_template.h"
@@ -1733,7 +1734,7 @@ void enter_game(P_desc d)
 	}
 
 	// Add well-rested or rested bonus, if applicable.
-	if (nobonus)
+	if (nobonus || !rested_bonus_enabled())
 	{
 	}
 	// 20 hrs (almost a day) -> 2.5h well-rested bonus.
