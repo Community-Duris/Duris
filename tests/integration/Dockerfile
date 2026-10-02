@@ -5,6 +5,7 @@ FROM ubuntu:24.04@sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae
 COPY packaging/duris-build-deps.equivs /tmp/duris-build-deps.equivs
 RUN apt-get update \
     && apt-get install --no-install-recommends --yes equivs docker.io iproute2 \
+         mariadb-server mariadb-client libmariadb-dev-compat \
     && cd /tmp && equivs-build duris-build-deps.equivs \
     && apt-get install --yes /tmp/duris-build-deps_1.0_all.deb \
     && rm -rf /var/lib/apt/lists/* /tmp/duris-build-deps*

@@ -21,7 +21,9 @@
       "find": "value.wallet.amount[part] = record.domains.wallet[part];",
       "replace": "value.wallet.amount[part] = record.domains.wallet[(part + 1) % 4];",
       "owner": "test_flatfile_accounting_bank.py",
-      "environment": {"DURIS_BANK_GENERATED_ONLY": "1"},
+      "environment": {
+        "DURIS_BANK_GENERATED_ONLY": "1"
+      },
       "compiled_marker": "BANK-NATIVE compiled",
       "positive_marker": "PASS: CURRENCY-REPLAY generated",
       "failure_marker": "Assertion"
@@ -53,12 +55,53 @@
       "failure_marker": "LOAD-QUERY actual statements differ from metrics"
     },
     {
-      "id": "pool-premature-retirement",
+      "id": "pool-premature-reuse",
       "requirement": "POOL-LEASE",
       "family": "sql",
       "source": "src/sql/sql_pool.c",
       "find": "pool[i].discard_on_release = 1;",
-      "replace": "pool[i].discard_on_release = 1; mysql_close(pool[i].conn); pool[i].conn = NULL;",
+      "replace": "pool[i].discard_on_release = 1; pool[i].in_use = 0; pthread_cond_signal(&pool_cond);",
+      "owner": "test_sql_pool_discard_mysql.py",
+      "schema_prefix": "death_read_pool_test_",
+      "migrated": false,
+      "compiled_marker": "POOL-NATIVE compiled",
+      "positive_marker": "PASS: real SQL pool retires",
+      "failure_marker": "FAIL:"
+    },
+    {
+      "id": "currency-replay-ack",
+      "requirement": "CURRENCY-REPLAY",
+      "family": "offline",
+      "source": "src/flatfile/flatfile_accounting_bank_transaction.c",
+      "find": "return completion(retained, true);",
+      "replace": "return completion(retained, false);",
+      "owner": "test_flatfile_accounting_bank.py",
+      "environment": {
+        "DURIS_BANK_GENERATED_ONLY": "1"
+      },
+      "compiled_marker": "BANK-NATIVE compiled",
+      "positive_marker": "PASS: CURRENCY-REPLAY generated",
+      "failure_marker": "Assertion"
+    },
+    {
+      "id": "quarantine-admission",
+      "requirement": "CUSTODY-ADMISSION",
+      "family": "offline",
+      "source": "src/player/player_save_journal.c",
+      "find": "return quarantine_state_failed || (quarantine_state_ready && quarantined_pids.count(pid));",
+      "replace": "return quarantine_state_failed || (quarantine_state_ready && quarantined_pids.count(pid) && false);",
+      "owner": "test_player_save_journal_quarantine.py",
+      "compiled_marker": "JOURNAL-NATIVE compiled",
+      "positive_marker": "[PASS] copied capture:",
+      "failure_marker": "SIGABRT"
+    },
+    {
+      "id": "pool-missed-wake",
+      "requirement": "POOL-LEASE",
+      "family": "sql",
+      "source": "src/sql/sql_pool.c",
+      "find": "else\n\t\t\t\tpthread_cond_signal(&pool_cond);\n\t\t\tbreak;",
+      "replace": "else\n\t\t\t\t(void)pool_cond;\n\t\t\tbreak;",
       "owner": "test_sql_pool_discard_mysql.py",
       "schema_prefix": "death_read_pool_test_",
       "migrated": false,

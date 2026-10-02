@@ -315,10 +315,10 @@ void generated_load_combinations(MYSQL *db)
 	for (unsigned mask = 0; mask < 8; ++mask)
 	{
 		const bool items = mask & 1, pets = mask & 2, retained = mask & 4;
+		sql(db,
+		    "INSERT INTO item_owner_revision(owner_type,owner_id,revision) VALUES(1,3,1)");
 		if (items)
 		{
-			sql(db,
-			    "INSERT INTO item_owner_revision(owner_type,owner_id,revision) VALUES(1,3,1)");
 			sql(db,
 			    "INSERT INTO player_items(id,pid,vnum,obj_uid,name) VALUES(7703,3,501,7703,'generated item')");
 			sql(db,

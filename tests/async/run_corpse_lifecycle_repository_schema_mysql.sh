@@ -14,9 +14,11 @@ if [[ "$IMAGE" == mariadb:* ]]; then
 else
 	PASSWORD_ENV=MYSQL_ROOT_PASSWORD
 fi
-docker run -d --name "$NAME" -p 127.0.0.1::3306 \
-	-e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" >/dev/null
-mapping="$(docker port "$NAME" 3306/tcp)"
+source "$ROOT/tests/async/_sql_fixture_network.sh"
+sql_fixture_network
+docker run -d --name "$NAME" "${SQL_FIXTURE_NETWORK[@]}" \
+	-e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}" >/dev/null
+mapping="$(sql_fixture_mapping "$NAME")"
 export ENVIRONMENT=test DB_HOST="${CORPSE_LIFECYCLE_REPOSITORY_DB_HOST:-127.0.0.1}" \
 	DB_PORT="${mapping##*:}"
 export DB_USER=root DB_PASSWD="$PASSWORD" MYSQL_PWD="$PASSWORD"

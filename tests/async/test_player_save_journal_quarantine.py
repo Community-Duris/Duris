@@ -603,6 +603,7 @@ def run_capture(args, *, expected_digest=EXPECTED_CAPTURE_SHA256, expected_count
         )
         if compiled.returncode:
             fail("quarantine C++ harness did not compile: " + compiled.stderr)
+        print("JOURNAL-NATIVE compiled", flush=True)
 
         # Archive-sync failure must leave the copied journal byte-identical and
         # keep all login/save/replay paths fenced.
