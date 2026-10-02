@@ -1080,8 +1080,20 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 		send_to_char("Your enhancement was a failure.  Too much magic.\n", ch);
 		return;
 	}
+	P_obj tempobj = NULL;
+	if (!IS_ENCRUSTED(source))
+	{
+		tempobj = read_object(OBJ_VNUM(source), VIRTUAL);
+		if (!tempobj)
+		{
+			send_to_char("The enhancement template is unavailable.\r\n", ch);
+			return;
+		}
+	}
 	if (SUB_MONEY(ch, cost, 0) != 0)
 	{
+		if (tempobj)
+			extract_obj(tempobj);
 		send_to_char("The enhancement payment could not be accepted.\r\n", ch);
 		return;
 	}
@@ -1103,7 +1115,6 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 	if (IS_ENCRUSTED(source))
 		return describe_encrusted_enhanced(source);
 
-	P_obj tempobj = read_object(OBJ_VNUM(source), VIRTUAL);
 	char tempdesc[MAX_STRING_LENGTH], short_desc[MAX_STRING_LENGTH],
 		keywords[MAX_STRING_LENGTH];
 

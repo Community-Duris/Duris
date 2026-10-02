@@ -21,13 +21,14 @@ struct object { struct { unsigned char location=0; signed char modifier=0; } aff
  const char* name="fixture"; const char* short_description="fixture"; };
 using P_char=character*;using P_obj=object*;using sbyte=signed char;
 int enhance_mod_max_steps=3,debits,attempts,consumed,descriptions,reads,templates_retired,chosen_loc=1;
-bool reject_debit=false;
+bool reject_debit=false,prototype_present=true,encrusted=false;
+int encrusted_descriptions=0;
 object prototype;
 const char* modenhance_names[5]={nullptr,"test","test","test","test"};
 #define GET_MONEY(ch) ((ch)->money)
 #define OBJ_VNUM(obj) ((obj)->vnum)
 #define SET_BIT(flags,bit) ((flags)|=(bit))
-#define IS_ENCRUSTED(obj) false
+#define IS_ENCRUSTED(obj) encrusted
 int itemvalue(P_obj o){return o->value;}
 bool is_enhance_banned(P_obj){return false;}
 int essence_loc(int){return chosen_loc;}
@@ -39,8 +40,8 @@ void send_to_char(const char*,P_char){}
 void act(const char*,int,P_char,P_obj,void*,int){}
 void obj_from_char(P_obj){}
 void extract_obj(P_obj o){if(o==&prototype)++templates_retired;else ++consumed;}
-P_obj read_object(int,int){++reads;return &prototype;}
-void describe_encrusted_enhanced(P_obj){}
+P_obj read_object(int,int){++reads;return prototype_present ? &prototype : nullptr;}
+void describe_encrusted_enhanced(P_obj){++encrusted_descriptions;}
 void set_keywords(P_obj,const char*){++descriptions;}
 void set_short_description(P_obj,const char*){++descriptions;}
 int checked_snprintf(char* buf,size_t size,const char* format,...){
@@ -50,15 +51,25 @@ int checked_snprintf(char* buf,size_t size,const char* format,...){
 void reset(){debits=attempts=consumed=descriptions=reads=templates_retired=0;enhance_mod_max_steps=3;}
 void assert_unchanged(const character& actor,const object& item,int location,int modifier){
  assert(actor.money==200000 && item.affected[2].location==location && item.affected[2].modifier==modifier);
- assert(!item.extra2_flags && !debits && !consumed && !descriptions && !reads && !templates_retired);
+ assert(!item.extra2_flags && !debits && !consumed && !descriptions);
 }
 int main(){
+ prototype_present=false;
+ for(int value:{10,21,31}) for(bool same:{false,true}) {
+  reset();chosen_loc=1;reject_debit=false;encrusted=false;
+  character actor{200000};object item,material;material.value=value;
+  item.affected[2].location=same ? 1 : 4;item.affected[2].modifier=1;
+  modenhance(&actor,&item,&material);
+  assert_unchanged(actor,item,same ? 1 : 4,1);
+  assert(reads==1 && !templates_retired && !attempts);
+ }
+ prototype_present=true;
  for(int value:{10,21,31}) for(bool same:{false,true}){
   reset();chosen_loc=1;reject_debit=true;
   character actor{200000};object item,material;material.value=value;
   item.affected[2].location=same ? 1 : 4;item.affected[2].modifier=1;
   modenhance(&actor,&item,&material);
-  assert_unchanged(actor,item,same ? 1 : 4,1);assert(attempts==1);
+  assert_unchanged(actor,item,same ? 1 : 4,1);assert(attempts==1 && reads==1 && templates_retired==1);
  }
  reject_debit=false;
  for(int loc:{1,APPLY_HIT,APPLY_HIT_REG,APPLY_MOVE_REG}) for(int value:{10,21,31}){
@@ -73,14 +84,23 @@ int main(){
   }
   reset();chosen_loc=loc;character actor{200000};object item,material;
   item.affected[2].location=loc;item.affected[2].modifier=3*step;
-  modenhance(&actor,&item,&material);assert_unchanged(actor,item,loc,3*step);assert(!attempts);
+  modenhance(&actor,&item,&material);assert_unchanged(actor,item,loc,3*step);assert(!attempts && !reads && !templates_retired);
   reset();enhance_mod_max_steps=INT_MAX;
   item.affected[2].modifier=127;
-  modenhance(&actor,&item,&material);assert_unchanged(actor,item,loc,127);assert(!attempts);
+  modenhance(&actor,&item,&material);assert_unchanged(actor,item,loc,127);assert(!attempts && !reads && !templates_retired);
   reset();enhance_mod_max_steps=INT_MAX;
   item.affected[2].modifier=127-step;
   modenhance(&actor,&item,&material);
   assert(item.affected[2].modifier==127 && attempts==1 && debits==1 && consumed==1);
+ }
+ for(bool reject:{false,true}) {
+  reset();chosen_loc=1;reject_debit=reject;encrusted=true;prototype_present=false;
+  encrusted_descriptions=0;character actor{200000};object item,material;
+  item.affected[2].location=4;item.affected[2].modifier=1;
+  modenhance(&actor,&item,&material);
+  assert(!reads && !templates_retired && !descriptions && attempts==1);
+  if(reject) {assert_unchanged(actor,item,4,1);assert(!encrusted_descriptions);}
+  else {assert(actor.money==199000 && debits==1 && consumed==1 && encrusted_descriptions==1);}
  }
 }
 '''
@@ -91,4 +111,4 @@ with tempfile.TemporaryDirectory(prefix='duris-essence-payment-') as temporary:
                     '-O1','-g','-fsanitize=address,undefined','-fno-sanitize-recover=all',
                     '-fno-pie','-no-pie',str(cpp),'-o',str(binary)],cwd=ROOT,check=True)
     subprocess.run([str(binary)],check=True,timeout=30)
-print('Essence enhancement: rejected payment/capped modifiers preserve inputs; all tiers and exact signed-byte boundary pass')
+print('Essence enhancement: missing prototype and payment refusal preserve inputs; probe cleanup, encrusted descriptions and modifier bounds pass')
