@@ -6,7 +6,7 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 IMAGE=${DURIS_TEST_TOOLS_IMAGE:-duris-issue331-journey-tools:local}
 DB_IMAGE=${DURIS_TEST_DB_IMAGE:-mariadb:10.11}
 SUFFIX="issue331-staff-${BASHPID}-${RANDOM}"
-NETWORK="${SUFFIX}-net"
+NETWORK=bridge
 DB_CONTAINER="${SUFFIX}-db"
 RUNTIME_CONTAINER="${SUFFIX}-game"
 DB_NAME="duris_issue331_staff_${BASHPID}_${RANDOM}"
@@ -29,7 +29,8 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-NETWORK_ID=$(docker network create "$NETWORK")
+# Task-owned IDs and generated DB selectors isolate these fixtures. Reusing the
+# existing bridge avoids consuming a host subnet for every short-lived journey.
 DB_ID=$(docker create --name "$DB_CONTAINER" --restart=no --network "$NETWORK" \
   -e "${DB_PREFIX}_ROOT_PASSWORD=$DB_PASSWORD" -e "${DB_PREFIX}_DATABASE=$DB_NAME" \
   "$DB_IMAGE" --event-scheduler=OFF --innodb-use-native-aio=OFF)
