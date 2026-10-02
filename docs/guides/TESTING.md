@@ -8,19 +8,19 @@ developer and CI gate while retaining fast commands for focused work.
 
 ```
 tests/
-├── async/                       # focused regression + source-contract tests
-│   ├── test_*.py, *_test.py      # standalone scripts and unittest regressions
-│   ├── run_*.sh                 # special-purpose and legacy thin wrappers
-│   └── run_*_mysql.sh           # MySQL-backed schema-contract tests (need a live DB)
-├── run_regression_tests.py      # discovery, deadlines, outcomes and timing reports
-├── compare_bootstrap_mud_schema.sh   # diff live schema vs bootstrap baseline
-├── test_migration_replay_safety.sh   # migration re-run safety
-└── test_run_migration_persistence_schema.sh
+â”œâ”€â”€ async/                       # focused regression + source-contract tests
+â”‚   â”œâ”€â”€ test_*.py, *_test.py      # standalone scripts and unittest regressions
+â”‚   â”œâ”€â”€ run_*.sh                 # special-purpose and legacy thin wrappers
+â”‚   â””â”€â”€ run_*_mysql.sh           # MySQL-backed schema-contract tests (need a live DB)
+â”œâ”€â”€ run_regression_tests.py      # discovery, deadlines, outcomes and timing reports
+â”œâ”€â”€ compare_bootstrap_mud_schema.sh   # diff live schema vs bootstrap baseline
+â”œâ”€â”€ test_migration_replay_safety.sh   # migration re-run safety
+â””â”€â”€ test_run_migration_persistence_schema.sh
 ```
 
 ## Test styles
 
-**Source-contract tests** — read the C sources as text and assert structural
+**Source-contract tests** â€” read the C sources as text and assert structural
 invariants (a registration exists, a call site was not reintroduced, an ordering
 holds). These need no database and no build. Their evidence is structural:
 text presence cannot prove runtime reachability, a branch's effect, or transaction
@@ -34,7 +34,7 @@ keywords. Slice complete lexical regions; starting in the middle of a quoted
 message changes how the remainder parses. `_source_contract` and `_paths`
 extract definitions using braces in code, skipping prototypes and quoted braces.
 
-**Behavioral tests** — exercise linked or extracted production functions, Python
+**Behavioral tests** â€” exercise linked or extracted production functions, Python
 tools, or complete server journeys with private fixtures. For example,
 `tests/async/test_sql_pool_discard_recovery.py` exercises the real pool's acquisition
 deadline, waiting borrower wake-up, lease ownership during shutdown, replenishment
@@ -79,31 +79,45 @@ tests/async/run_runtime_compatibility_mysql.sh
 RUNTIME_DB_IMAGE=mariadb:10.11 tests/async/run_runtime_compatibility_mysql.sh
 ```
 
-`TEST_JOBS=0` is the default and selects up to eight workers based on available
-CPUs. The runner discovers both `test_*.py` and `*_test.py`, deduplicates paths,
-and excludes its explicit manual-only list. Each script runs in a separate
-interpreter. Failure diagnostics print as soon as that script finishes; a
-30-second heartbeat names active tests when none finishes. Tests that build a complete isolated
-flat-file server or a large sanitizer harness run serially after the parallel
-phase so their inner compiler workers cannot starve one another and exhaust
-per-build timeouts.
+The default core profile discovers both test naming conventions and retains every
+automatic entry. Every discovered file must have an explicit entry in
+`tests/regression_manifest.json`; unclassified additions and missing registered
+files fail before execution. Manual prerequisites remain explicit. Use
+`make test-fast` for the short offline profile, or `TEST_PROFILE=native`, `journey`,
+`database`, or `recovery` with `make test-python` or `make test-list`.
+Database/recovery profiles reject required skips and currently refuse manual
+entries whose disposable fixtures/arguments have not been provisioned.
 
-Each ordinary script has a 900-second outer deadline; serialized resource tests
-have 1,800 seconds. `TEST_TIMEOUT` (or the runner's `--timeout`) overrides both.
-Timeouts terminate the test's process group on POSIX, then kill resistant members;
-Windows uses `taskkill /T /F`. Ctrl+C cancels running and queued work and exits 130.
-Processes that deliberately detach into a different session are outside the
-POSIX group; the deadline still bounds draining inherited output pipes.
+`TEST_JOBS=0` selects workers from the available CPU budget (cgroup-aware, capped
+at eight). The runner starts expensive tests early and schedules overlap using
+explicit CPU, memory and exclusive-resource reservations. Set `TEST_CPU_BUDGET`
+and `TEST_MEMORY_MB` to match the machine; these reservations are estimates,
+not OS resource limits. `TEST_DURATIONS` selects a previous JSON report for
+longest-first ordering. Native fixture compilation is capped at two workers.
 
-The gate exits nonzero for failures, signals, execution errors and timeouts.
-Explicit whole-script skips and unittest skips are reported separately. Some
-SQL scripts compile successfully and then skip their runtime check unless a
-disposable DB is supplied; a passing core gate therefore does not establish SQL
-integration coverage. The default `bin/test-results.json` records each script's
-status, exit code, elapsed seconds and skipped-check count, plus total elapsed
-time and interruption state. It omits captured output and environment values.
-The footer lists the ten slowest scripts. `TEST_REPORT` or `--report` selects a
-different report path. Build/world generation time precedes the Python report.
+Each entry runs in a separate interpreter. The adapter observes named unittest
+cases, rejects a successful zero-case suite, verifies declared function/main
+invocation, and preserves failure/skip outcomes. Native drivers remain explicit
+entry-level cases; their internal assertions are not counted as observed Python
+cases. Failure diagnostics print immediately and a 30-second heartbeat names
+active tests. Existing 900/1800-second deadlines remain in metadata; `TEST_TIMEOUT`
+overrides them. Timeout/interrupt cleanup terminates process groups on POSIX and
+uses `taskkill /T /F` on Windows. Ctrl+C cancels queued work and returns 130.
+Deliberately detached POSIX sessions remain outside the group.
+
+`TEST_REPORT` selects the atomic JSON timing/case report, updated after each
+completed entry with remaining work listed. `TEST_JUNIT` selects the case-level XML
+report (default `bin/test-results.xml`). JSON records statuses, exit codes,
+skipped-check counts and build/lookup/remainder phases without captured output or
+environment values. Skip reasons are test-supplied. Explicit whole and partial skips
+remain visible; successful compilation followed by a SQL skip is not SQL evidence.
+Build/world generation precedes the Python timings.
+
+The native accounting and player-inspector fixtures reuse immutable, verified
+build artifacts with content/flag/toolchain invalidation. Runtime state remains
+private. See [test suite streamlining](../testing/TEST_SUITE_STREAMLINING.md) for
+profile boundaries, cache/scheduling proofs, and the prepared behavioral and
+integration-matrix follow-ups.
 
 Do not invoke a discovered sibling test from another test merely to run it again.
 Import helpers without executing their test body, and give a unique fixture a
@@ -370,7 +384,7 @@ support the claim.
 - Keep them fast and deterministic; prefer source contracts over full boots
   when the invariant is structural.
 - When you change behavior, add or update the focused regression test next to
-  it — this is a stated repo convention (see `AGENTS.md`).
+  it â€” this is a stated repo convention (see `AGENTS.md`).
 - Schema-related changes should extend or add a `_schema_mysql` variant so the
   contract is checked against a real database on a clone.
 
@@ -390,7 +404,7 @@ support the claim.
 | Untrusted input | `test_unicode_runtime.py`, `test_ansi_runtime.py`, `test_json_utils_runtime.py`, `test_ttype_runtime.py` |
 
 The four untrusted-input suites are behavioral rather than contract-style: they
-exercise the live decoders that handle network and player-visible text — UTF-8
+exercise the live decoders that handle network and player-visible text â€” UTF-8
 widths and malformed/overlong/surrogate encodings, ANSI colour parsing and
 gradients, JSON and GMCP escaping, and RFC 1091 terminal-type negotiation
 including MTTS capability parsing. That is the shape to copy when the code under

@@ -15,7 +15,7 @@ import tempfile
 import time
 
 from test_flatfile_combat_journey import (
-    ROOT, INSPECTOR, MudClient, available_ports, build_flatfile_server,
+    ROOT, INSPECTOR, MudClient, available_ports, build_flatfile_server, build_inspector,
     create_character, generate_certificate, inspect_authority, make_fixture,
     require, runtime_logs,
 )
@@ -143,8 +143,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--server", type=Path)
     args = parser.parse_args()
-    subprocess.run(["python3", "tests/async/test_flatfile_player_repository.py",
-                    "--build-inspector", str(INSPECTOR)], cwd=ROOT, check=True, timeout=180)
+    INSPECTOR = build_inspector()
     with tempfile.TemporaryDirectory(prefix="area-coin-build-", dir=ROOT / "bin/tests") as build:
         binary = args.server.resolve() if args.server else build_flatfile_server(Path(build))
         for command in ("get coins statue", "get all.coins statue", "take all statue"):
