@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "c5ea78c9518df74d5d22a545e28b283c98489765",
+  "source_commit": "d4af6fac3d5946fafe2ee60caf2429671d2e01a1",
   "census_complete": true,
   "writers": [
     {
@@ -19279,22 +19279,18 @@
       "test_candidates": [
         "tests/async/test_economy_writer_coverage_contract.py",
         "tests/async/test_pa_item_admission.py",
-        "tests/async/test_salvage_prototype_preflight.py"
+        "tests/async/test_salvage_prototype_preflight.py",
+        "tests/async/test_salvage_numeric_bounds.py"
       ],
       "sites": [
         [
           "src/item/salvage.c",
-          497,
+          518,
           "item_lifecycle"
         ],
         [
           "src/item/salvage.c",
-          506,
-          "item_lifecycle"
-        ],
-        [
-          "src/item/salvage.c",
-          544,
+          527,
           "item_lifecycle"
         ],
         [
@@ -19304,12 +19300,17 @@
         ],
         [
           "src/item/salvage.c",
-          585,
+          586,
           "item_lifecycle"
         ],
         [
           "src/item/salvage.c",
-          666,
+          606,
+          "item_lifecycle"
+        ],
+        [
+          "src/item/salvage.c",
+          695,
           "item_lifecycle"
         ]
       ],
@@ -19353,7 +19354,7 @@
       "sites": [
         [
           "src/item/salvage.c",
-          28,
+          30,
           "economic_submit"
         ]
       ],
@@ -19403,7 +19404,7 @@
       "sites": [
         [
           "src/item/salvage.c",
-          32,
+          34,
           "item_lifecycle"
         ]
       ],
@@ -19447,17 +19448,17 @@
       "sites": [
         [
           "src/item/salvage.c",
-          274,
+          297,
           "item_lifecycle"
         ],
         [
           "src/item/salvage.c",
-          291,
+          314,
           "item_lifecycle"
         ],
         [
           "src/item/salvage.c",
-          706,
+          735,
           "item_lifecycle"
         ]
       ],
@@ -45795,17 +45796,17 @@
       "sites": [
         [
           "src/item/salvage.c",
-          55,
+          57,
           "item_lifecycle"
         ],
         [
           "src/item/salvage.c",
-          59,
+          61,
           "economic_submit"
         ],
         [
           "src/item/salvage.c",
-          68,
+          70,
           "item_lifecycle"
         ]
       ],
@@ -54300,69 +54301,63 @@
     },
     {
       "path": "src/item/salvage.c",
-      "line": 28,
+      "line": 30,
       "family": "economic_submit",
       "excerpt": "if (object && item_creation_grant_submit_to_player(ch, object, ch, NULL,"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 59,
+      "line": 61,
       "family": "economic_submit",
       "excerpt": "item_movement_transaction_submit_craft(ch, inputs, 1, outputs, 2, OBJ_VNUM(item),"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 32,
+      "line": 34,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 55,
+      "line": 57,
       "family": "item_lifecycle",
       "excerpt": "P_obj outputs[] = { read_object(output_vnum, VIRTUAL), read_object(output_vnum, VIRTUAL) };"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 55,
+      "line": 57,
       "family": "item_lifecycle",
       "excerpt": "P_obj outputs[] = { read_object(output_vnum, VIRTUAL), read_object(output_vnum, VIRTUAL) };"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 68,
+      "line": 70,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(output, FALSE);"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 274,
+      "line": 297,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item);"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 291,
+      "line": 314,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item);"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 497,
+      "line": 518,
       "family": "item_lifecycle",
       "excerpt": "grant_salvage_item(ch, read_object(MAG_ESSENCE_VNUM, VIRTUAL));"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 506,
+      "line": 527,
       "family": "item_lifecycle",
       "excerpt": "grant_salvage_item(ch, read_object(MAG_ESSENCE_VNUM, VIRTUAL));"
-    },
-    {
-      "path": "src/item/salvage.c",
-      "line": 544,
-      "family": "item_lifecycle",
-      "excerpt": "salvaged = read_object(matvnum, VIRTUAL);"
     },
     {
       "path": "src/item/salvage.c",
@@ -54372,19 +54367,25 @@
     },
     {
       "path": "src/item/salvage.c",
-      "line": 585,
+      "line": 586,
       "family": "item_lifecycle",
       "excerpt": "salvaged = read_object(matvnum, VIRTUAL);"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 666,
+      "line": 606,
+      "family": "item_lifecycle",
+      "excerpt": "salvaged = read_object(matvnum, VIRTUAL);"
+    },
+    {
+      "path": "src/item/salvage.c",
+      "line": 695,
       "family": "item_lifecycle",
       "excerpt": "recipe = read_object(SALVAGE_RECIPE_VNUM, VIRTUAL);"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 706,
+      "line": 735,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item);"
     },
