@@ -8,6 +8,9 @@
 #include "persistence/persistence_observability.h"
 #include "economy/coin_transfer_command.h"
 #include "player/player_snapshot_codec.h"
+#include "player/player_quarantine_recovery.h"
+#include "flatfile/flatfile_accounting_authority.h"
+#include "economy/item_transfer_accounting.h"
 #include "classes/necromancy.h"
 #include "core/defines.h"
 #include "world/vnum.obj.h"
@@ -17,6 +20,7 @@
 #include <cstring>
 #include <ctime>
 #include <fcntl.h>
+#include <csignal>
 
 #include <cstdlib>
 #include <filesystem>
@@ -1221,8 +1225,337 @@ static void quest_xp_matrix(const fs::path &path, uint32_t version, bool group =
 		<< ": atomic save, recipient validation, process recovery, exact replay, restore refusal\n";
 }
 
+class flatfile_accounting_test_access
+{
+    public:
+	static constexpr auto bootstrap = &flatfile_accounting_authority_storage::bootstrap;
+	static constexpr auto append_epoch = &flatfile_accounting_authority_storage::append_epoch;
+	static constexpr auto select_epoch = &flatfile_accounting_authority_storage::select_epoch;
+	static constexpr auto initialize_evidence =
+		&flatfile_accounting_authority_storage::initialize_evidence_bucket;
+	static constexpr auto commit = &flatfile_accounting_storage::commit;
+};
+
+static void recovery_accounting(const std::string &root, critical_command *command,
+				std::string *error)
+{
+	fs::create_directories(root + "/economic-evidence");
+	fs::permissions(root + "/economic-evidence", fs::perms::owner_all);
+	critical_operation_id lineage{}, epoch_id{}, control_id{};
+	lineage.bytes[0] = 70;
+	epoch_id.bytes[0] = 71;
+	control_id.bytes[0] = 72;
+	flatfile_authority_lock lock;
+	require(lock.acquire(root, error), "recovery accounting lock");
+	std::vector<flatfile_authority_operation> operations;
+	const auto commit = [&]
+	{
+		require(flatfile_accounting_test_access::commit(root, lock, operations, error) ==
+				flatfile_authority_transaction_result::ok,
+			"accounting commit: " + *error);
+		operations.clear();
+	};
+	const auto revision = [&]
+	{
+		flatfile_economic_control control;
+		require(flatfile_economic_control_read(root, lock, &control, error) == 0,
+			"accounting read");
+		return control.revision;
+	};
+	require(flatfile_accounting_test_access::bootstrap(root, lock, lineage, control_id,
+							   &operations, error) == 0,
+		"accounting bootstrap");
+	commit();
+	flatfile_economic_epoch epoch;
+	epoch.epoch = epoch_id;
+	epoch.creating_operation = control_id;
+	epoch.ordinal = 1;
+	epoch.transition_kind = 1;
+	epoch.transition_digest[0] = 42;
+	require(flatfile_accounting_test_access::append_epoch(root, lock, revision(), epoch,
+							      &operations, error) == 0,
+		"accounting epoch");
+	commit();
+	require(flatfile_accounting_test_access::select_epoch(root, lock, revision(), true,
+							      control_id, &operations, error) == 0,
+		"accounting activation");
+	commit();
+	require(flatfile_accounting_test_access::initialize_evidence(
+			root, lock, revision(), command->operation_id.bytes[0], control_id,
+			&operations, error) == 0,
+		"accounting bucket");
+	commit();
+	std::vector<uint8_t> intent;
+	require(item_transfer_accounting_intent(*command, lineage, epoch_id, 42, &intent,
+						economic_source_kind::starter_grant) ==
+			economic_accounting_error::ok,
+		"accounting intent");
+	command->schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	command->accounting_intent = std::move(intent);
+}
+
+static void check_quarantine_recovery(const std::string &base)
+{
+	for (int boundary = 0; boundary <= 4; ++boundary)
+	{
+		const std::string root = base + "/case-" + std::to_string(boundary);
+		const std::string journal = root + "/journal";
+		for (const auto &directory :
+		     { root, journal, root + "/players", root + "/domains", root + "/metadata",
+		       root + "/identities", root + "/identities/names" })
+		{
+			fs::create_directories(directory);
+			fs::permissions(directory, fs::perms::owner_all, fs::perm_options::replace);
+		}
+		std::string error;
+		int32_t pid;
+		require(player_save_journal_init(journal.c_str()), "recovery journal");
+		for (int index = 1; index <= 42; ++index)
+			require(flatfile_identity_allocate_pid(root, &pid, &error) ==
+					flatfile_identity_result::ok,
+				"recovery allocate");
+		require(flatfile_identity_claim(root, 42, "Player", "Account-One", &error) ==
+				flatfile_identity_result::ok,
+			"recovery claim");
+		auto baseline = make_full(1);
+		baseline.pets.clear();
+		require(flatfile_player_snapshot_apply(root, baseline, &error).outcome ==
+				player_save_apply_outcome::applied,
+			"recovery baseline: " + error);
+		item_transfer_payload grant{};
+		grant.from_owner = { item_owner_type::system, 0, 0 };
+		grant.to_owner = { item_owner_type::player, 42, 0 };
+		std::vector<flatfile_item_ownership_record> owned;
+		const auto system_loaded = flatfile_item_repository_load_owner(
+			root, grant.from_owner, &grant.expected_from_revision, &owned, &error);
+		require(system_loaded == flatfile_item_repository_result::ok ||
+				system_loaded == flatfile_item_repository_result::not_found,
+			"system revision");
+		require(flatfile_item_repository_load_owner(
+				root, grant.to_owner, &grant.expected_to_revision, &owned,
+				&error) == flatfile_item_repository_result::ok,
+			"player revision");
+		player_item_snapshot item{};
+		item.object_uid = 200;
+		item.vnum = 806;
+		item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		item.string_mask = 1;
+		item.name = "retained grant";
+		grant.reason = item_transfer_reason::creation;
+		grant.reason_id = 664;
+		grant.selected_item_uid = grant.target_root_item_uid = 200;
+		grant.item_count = 1;
+		grant.items[0] = { 200, 200,
+				   0,	ITEM_TRANSFER_ABSENT_REVISION,
+				   806, item_custody_state::absent };
+		std::vector<uint8_t> blob;
+		require(player_item_snapshot_list_encode({ item }, &blob) ==
+				player_snapshot_codec_result::ok,
+			"grant blob");
+		grant.item_blob_size = blob.size();
+		std::copy(blob.begin(), blob.end(), grant.item_blob.begin());
+		critical_operation_id operation;
+		critical_command command;
+		require(critical_operation_id_generate(&operation) &&
+				item_transfer_command_build(&command, operation, grant,
+							    critical_source_site::operator_repair,
+							    critical_deadline_class::interactive),
+			"grant command");
+		command.accepted_at_usec = 1;
+		if (boundary == 4)
+			recovery_accounting(root, &command, &error);
+		const auto granted = flatfile_item_repository_apply(root, command);
+		require(granted.outcome == critical_apply_outcome::applied, "native grant commit");
+		auto stale = baseline;
+		stale.revision = 2;
+		for (auto &field : stale.status_integers)
+			if (field.field == player_status_field::copper)
+				field.signed_value = 9999;
+		player_snapshot skills{};
+		skills.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+		skills.pid = 42;
+		skills.revision = 3;
+		skills.components = PLAYER_COMPONENT_SKILLS;
+		skills.encoded_size_bound = 8192;
+		skills.skills.push_back({ 9, 88, 1 });
+		require(player_save_journal_append(stale) == player_save_journal_result::ok &&
+				player_save_journal_append(skills) ==
+					player_save_journal_result::ok,
+			"retained component frames");
+		player_save_journal_worker_terminal(stale, nullptr);
+		require(player_save_journal_pid_quarantined(42), "initial fence");
+		player_save_recovery_record record;
+		auto wrong = command;
+		++wrong.accepted_at_usec;
+		require(!player_quarantine_recovery_prepare_flatfile(root, 42, { wrong }, "",
+								     &record, &error),
+			"changed command accepted");
+		require(!player_quarantine_recovery_prepare_flatfile(root, 42, {}, "", &record,
+								     &error),
+			"missing command accepted");
+		require(player_quarantine_recovery_prepare_flatfile(root, 42, { command }, "",
+								    &record, &error),
+			"native prepare: " + error);
+		item_transfer_result receipt{};
+		require(item_transfer_command_decode_result(granted.result_payload.data(),
+							    granted.result_size, &receipt),
+			"grant receipt");
+		const auto native = flatfile_player_quarantine_inspect(
+			root, player_quarantine_recovery_request(record));
+		for (int refusal = 0; refusal < 7; ++refusal)
+		{
+			auto current = native;
+			auto frames = std::vector<player_snapshot>{ stale, skills };
+			if (refusal == 0)
+				current.item_identities[0].item_revision = 2;
+			if (refusal == 1)
+				current.missing_payload_rows = 1;
+			if (refusal == 2)
+				frames[1].revision = frames[0].revision;
+			if (refusal == 3)
+				frames[0].schema_version =
+					PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
+			if (refusal == 4)
+				frames[0].items.back().parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+			if (refusal == 5)
+				current.snapshot.items.back().vnum += 1;
+			if (refusal == 6)
+				current.item_identities.back().root_item_uid += 1;
+			player_save_recovery_record rejected;
+			require(!player_quarantine_recovery_build(current, frames,
+								  { { command, receipt } },
+								  &rejected, &error),
+				"conflicting native/frame evidence accepted");
+		}
+		auto changed = record;
+		++changed.replacement.skills[0].learned;
+		require(flatfile_player_quarantine_apply(root, changed, &error).error_code == EPERM,
+			"nonprepared replacement accepted");
+		require(!player_quarantine_recovery_resume_flatfile(
+				root, 42, "flatfile:wrong-generation", &error),
+			"wrong backend accepted");
+		require(flatfile_player_snapshot_apply(root, record.replacement, &error)
+					.error_code == EPERM,
+			"ordinary save bypassed fence");
+		if (boundary)
+		{
+			player_save_journal_shutdown();
+			const pid_t child = fork();
+			require(child >= 0, "recovery fork");
+			if (!child)
+			{
+				require(player_save_journal_init(journal.c_str()), "child journal");
+				if (boundary == 4)
+					require(flatfile_player_quarantine_apply(root, record,
+										 &error)
+								.outcome ==
+							player_save_apply_outcome::applied,
+						"child native commit");
+				else
+				{
+					const char *fault =
+						boundary == 1 ?
+							"DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT" :
+						boundary == 2 ?
+							"DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_JOURNAL" :
+							"DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION";
+					setenv(fault, "1", 1);
+					require(!player_quarantine_recovery_resume_flatfile(
+							root, 42, "", &error),
+						"fault did not interrupt recovery");
+				}
+				kill(getpid(), SIGKILL);
+				_exit(2);
+			}
+			int status;
+			require(waitpid(child, &status, 0) == child && WIFSIGNALED(status) &&
+					WTERMSIG(status) == SIGKILL,
+				"native process boundary");
+			require(player_save_journal_init(journal.c_str()) &&
+					player_save_journal_pid_quarantined(42),
+				"interruption lost fence");
+		}
+		require(player_quarantine_recovery_resume_flatfile(root, 42, "", &error),
+			"native resume: " + error);
+		require(!player_save_journal_pid_quarantined(42), "resolution fence");
+		player_load_request request = player_quarantine_recovery_request(record);
+		auto recovered = flatfile_player_load_repository_execute(root, request);
+		require(recovered.outcome == player_load_outcome::applied &&
+				recovered.snapshot.items.size() == 3 &&
+				recovered.snapshot.skills[0].learned == 88 &&
+				recovered.domains.wallet[0] == 11,
+			"recovery lost items/components/native wallet");
+		require(player_quarantine_recovery_resume_flatfile(root, 42, "", &error),
+			"duplicate resume");
+		if (boundary == 0)
+		{
+			currency_command_payload reward{};
+			reward.pid = 42;
+			reward.racewar = 0;
+			reward.reason = currency_reason_type::wallet_reward;
+			std::strcpy(reward.account_name.data(), "Account-One");
+			reward.wallet_delta.amount[0] = 1;
+			critical_operation_id reward_id{};
+			critical_command reward_command;
+			require(critical_operation_id_generate(&reward_id) &&
+					currency_command_build(
+						&reward_command, reward_id, reward,
+						recovered.domains.wallet_revision,
+						recovered.domains.bank_revision,
+						critical_source_site::operator_repair,
+						critical_deadline_class::interactive),
+				"native reward command");
+			reward_command.accepted_at_usec = 1;
+			require(flatfile_player_domain_apply(root, reward_command).outcome ==
+					critical_apply_outcome::applied,
+				"native post-resolution reward");
+			player_save_journal_shutdown();
+			require(player_save_journal_init(journal.c_str()), "native reward restart");
+			require(player_quarantine_recovery_resume_flatfile(root, 42, "", &error),
+				"committed native domain evolution invalidated recovery");
+			request.deadline_usec =
+				persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+			recovered = flatfile_player_load_repository_execute(root, request);
+			require(recovered.domains.wallet[0] == 12 &&
+					recovered.snapshot.revision == record.replacement.revision,
+				"native reward proof lost authority");
+		}
+		auto later = recovered.snapshot;
+		++later.revision;
+		later.skills[0].learned = 89;
+		require(flatfile_player_snapshot_apply(root, later, &error).outcome ==
+				player_save_apply_outcome::applied,
+			"later normal save");
+		player_save_journal_shutdown();
+		require(player_save_journal_init(journal.c_str()) &&
+				player_save_journal_pid_quarantined(42),
+			"restart trusted archive without backend");
+		require(player_quarantine_recovery_resume_flatfile(root, 42, "", &error) &&
+				!player_save_journal_pid_quarantined(42),
+			"later save restart proof");
+		if (boundary == 4)
+		{
+			player_save_journal_shutdown();
+			fs::remove(fs::path(root) / "metadata" /
+				   player_quarantine_recovery_receipt_filename(record));
+			require(player_save_journal_init(journal.c_str()), "missing proof journal");
+			require(!player_quarantine_recovery_resume_flatfile(root, 42, "", &error) &&
+					player_save_journal_pid_quarantined(42),
+				"higher revision without proof released PID");
+		}
+		player_save_journal_shutdown();
+	}
+	std::cout
+		<< "[PASS] native flatfile quarantine recovery: original legacy/accounting commands, component preservation, wallet authority, conflict refusals, commit interruptions, repeat and later-save restart, missing proof refusal\n";
+}
+
 int main(int argc, char **argv)
 {
+	if (argc == 3 && std::string(argv[2]) == "quarantine-recovery")
+	{
+		check_quarantine_recovery(argv[1]);
+		return 0;
+	}
 	if (argc == 3 && std::string(argv[2]) == "seed-creation-bank")
 	{
 		std::string error;

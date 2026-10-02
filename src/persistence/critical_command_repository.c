@@ -3132,6 +3132,97 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 			     stored);
 }
 
+critical_apply_result
+critical_command_repository_verify_creation_in_transaction(MYSQL *connection,
+							   const critical_command &command)
+{
+	last_statement_error = 0;
+	item_transfer_payload payload{};
+	const bool accounted = item_transfer_accounting_command_supported(command);
+	if (!connection || command.type != critical_command_type::item_transfer ||
+	    (!accounted && !critical_command_valid(command)) ||
+	    !item_transfer_command_decode_payload(command, &payload) ||
+	    payload.reason != item_transfer_reason::creation ||
+	    payload.from_owner.type != item_owner_type::system ||
+	    payload.to_owner.type != item_owner_type::player || payload.to_owner.context_id ||
+	    !payload.item_blob_size ||
+	    payload.continuation.kind != item_transfer_continuation_kind::none)
+		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+#ifndef __NO_MYSQL__
+	if (!(connection->server_status & SERVER_STATUS_IN_TRANS))
+		return { critical_apply_outcome::terminal_failure, 0, EBUSY };
+#endif
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash{}, keys_hash{};
+	stored_operation stored{};
+	bool found = false;
+	if (!command_hashes(command, &command_hash, &keys_hash) ||
+	    !read_operation(connection, command.operation_id, true, &stored, &found))
+		return { critical_apply_outcome::retryable_failure, 0,
+			 database_error(connection) ? database_error(connection) : ENOMEM };
+	if (!found || stored.status != INBOX_COMMITTED || stored.result_code ||
+	    !identity_matches(stored, command, command_hash, keys_hash))
+		return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+	item_transfer_result receipt{};
+	if (!item_transfer_command_decode_result(stored.result_payload.data(),
+						 stored.result_payload.size(), &receipt) ||
+	    receipt.item_count != payload.item_count || receipt.max_item_revision != 1)
+		return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+	if (accounted)
+	{
+		const auto error = economic_sql_item_transfer_verify_retained(
+			connection, command, 0, stored.result_payload.data(),
+			stored.result_payload.size());
+		if (error)
+			return { critical_apply_outcome::terminal_failure, 0, error };
+	}
+	const auto outbox = verify_accounted_root_outbox(
+		connection, command, 0, stored.result_payload.data(), stored.result_payload.size());
+	if (outbox)
+		return { critical_apply_outcome::terminal_failure, 0, outbox };
+	char operation[CRITICAL_COMMAND_ID_HEX_SIZE]{};
+	if (!critical_operation_id_to_hex(command.operation_id, operation, sizeof(operation)))
+		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+	const std::string query =
+		"SELECT event_index,item_uid,root_item_uid,COALESCE(parent_item_uid,0),"
+		"from_owner_type,from_owner_id,from_owner_context_id,to_owner_type,to_owner_id,"
+		"to_owner_context_id,item_revision,from_owner_revision,to_owner_revision,reason_type,"
+		"reason_id,source_site FROM item_ownership_ledger WHERE operation_id=UNHEX('" +
+		std::string(operation) + "') ORDER BY event_index FOR UPDATE";
+	if (!execute(connection, query.c_str()))
+		return { critical_apply_outcome::retryable_failure, 0, database_error(connection) };
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+		mysql_store_result(connection), mysql_free_result);
+	if (!rows || mysql_num_rows(rows.get()) != payload.item_count)
+		return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		MYSQL_ROW row = mysql_fetch_row(rows.get());
+		const auto &item = payload.items[index];
+		const std::array<std::string, 16> expected = {
+			std::to_string(index),
+			std::to_string(item.item_uid),
+			std::to_string(item.root_item_uid),
+			std::to_string(item.parent_item_uid),
+			std::to_string(static_cast<unsigned>(payload.from_owner.type)),
+			std::to_string(payload.from_owner.id),
+			std::to_string(payload.from_owner.context_id),
+			std::to_string(static_cast<unsigned>(payload.to_owner.type)),
+			std::to_string(payload.to_owner.id),
+			std::to_string(payload.to_owner.context_id),
+			"1",
+			std::to_string(receipt.from_owner_revision),
+			std::to_string(receipt.to_owner_revision),
+			std::to_string(static_cast<unsigned>(payload.reason)),
+			std::to_string(payload.reason_id),
+			std::to_string(static_cast<unsigned>(command.source_site))
+		};
+		for (size_t field = 0; field < expected.size(); ++field)
+			if (!row || !row[field] || expected[field] != row[field])
+				return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+	}
+	return stored_result(critical_apply_outcome::already_applied, stored);
+}
+
 // Public narrow wrappers used by command-specific repositories while the
 // critical repository owns the transaction and inbox lifecycle.
 bool critical_command_repository_insert_outbox_event(MYSQL *connection,

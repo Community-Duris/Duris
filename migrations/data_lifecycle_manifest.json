@@ -2077,7 +2077,7 @@
       "locator": "critical_operation_inbox",
       "data_category": "reconciliation_or_replay_record",
       "data_subject_key": "operation_id_with_domain_subject",
-      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness; includes private discriminator 65000 recovery commit proof bound to prepared archive records",
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
@@ -6430,7 +6430,7 @@
       "locator": "PLAYER_SAVE_JOURNAL_DIR/player-save.journal.quarantine.archive",
       "data_category": "personal_or_mixed_durable_store",
       "data_subject_key": "player_id",
-      "technical_purpose": "hashed original player-save evidence and persistent admission fences",
+      "technical_purpose": "hashed original player-save evidence, persistent admission fences, and prepared/resolved/revoked recovery records bound to native backend commit receipts",
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
@@ -6452,7 +6452,41 @@
       "exception": "protected_recovery_replay_or_restore_horizon",
       "protected_record": true,
       "dependencies": [
-        "file:player_save_journal"
+        "file:player_save_journal",
+        "database:critical_operation_inbox"
+      ]
+    },
+    {
+      "id": "file:player-quarantine-recovery-receipts",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/metadata/player-recovery-*.receipt",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "player_id_and_recovery_identity",
+      "technical_purpose": "immutable native recovery commit proof, coupled atomically to the player snapshot, preserved across later ordinary saves and cold restore",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:player_save_quarantine_archive",
+        "file:flatfile-player-snapshots",
+        "file:flatfile-authority-journal"
       ]
     },
     {

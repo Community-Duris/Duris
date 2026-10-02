@@ -31,6 +31,14 @@ flatfile_player_load_result flatfile_player_snapshot_load(const std::string &roo
 							  std::string *error);
 player_load_result flatfile_player_load_repository_execute(const std::string &root,
 							   const player_load_request &request);
+struct player_save_recovery_record;
+player_load_result flatfile_player_quarantine_inspect(const std::string &root,
+						      const player_load_request &request);
+player_save_apply_result flatfile_player_quarantine_apply(const std::string &root,
+							  const player_save_recovery_record &,
+							  std::string *error);
+bool flatfile_player_quarantine_verify(const std::string &root, const player_save_recovery_record &,
+				       bool continuation, std::string *error);
 player_load_result
 flatfile_player_load_repository_execute_selected(const player_load_request &request, void *context);
 player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
