@@ -25,6 +25,7 @@ affects = '\n'.join(function(ROOT/'src/magic/affects.c', signature) for signatur
 
 HARNESS = r'''
 #include "item/weapon_actions.h"
+#include "combat/attack_continuation.h"
 static int attacks=0, hits=0, damage_amount=0, healed_amount=0, packed=0, dirty=0, call_mutation=0;
 static bool skin=true;
 static P_char sword_master=nullptr;
@@ -314,7 +315,8 @@ with tempfile.TemporaryDirectory(prefix='duris-swords-') as directory:
         native_boundary.replace('// INSERT_AFFECTS',affects)+HARNESS.replace('// INSERT_CALLBACKS',callbacks))
     subprocess.run(['g++','-std=c++20','-O1','-g','-ffunction-sections','-fdata-sections',
         '-fsanitize=address,undefined','-fno-omit-frame-pointer','-pthread','-I'+str(ROOT/'src'),
-        str(source),str(ROOT/'src/persistence/latency_trace.c'),'-Wl,--gc-sections','-o',str(binary)],check=True)
+        str(source),str(ROOT/'src/persistence/latency_trace.c'),
+        str(ROOT/'src/combat/attack_continuation.c'),'-Wl,--gc-sections','-o',str(binary)],check=True)
     subprocess.run([str(binary)],check=True,env=dict(os.environ,
         ASAN_OPTIONS='detect_leaks=1:halt_on_error=1',UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1',
         DURIS_NEVENT_ANALYTICS='0',DURIS_NEVENT_BUDGET_USEC='0',DURIS_NEVENT_MAX_CALLBACKS='0',

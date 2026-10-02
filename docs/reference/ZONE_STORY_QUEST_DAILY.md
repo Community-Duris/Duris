@@ -100,7 +100,7 @@ new activity creates no assignments and there is no retroactive claim command.
 
 ## State compatibility and operations
 
-SQL installations need immutable migration **0051_discovered_zone_daily_state**
+SQL installations need immutable migration **0054_discovered_zone_daily_state**
 after the accounting migration history. It preserves v1 data and allows v2
 records in the existing table. It changes CHECK constraints without changing
 columns or historical migration files. Its verifier and manifest checksums are

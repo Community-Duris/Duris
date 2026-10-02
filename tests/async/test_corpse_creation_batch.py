@@ -146,7 +146,7 @@ with tempfile.TemporaryDirectory(prefix='corpse-batch-', dir=ROOT/'bin/tests') a
     subprocess.run(['g++','-std=c++20','-g','-O1','-ffunction-sections','-fdata-sections',
         '-fsanitize=address,undefined','-Isrc',str(source),
         *[str(SRC/name) for name in ['item_movement_transaction.c','item_ownership_runtime.c',
-        'item_transfer_command.c','critical_command.c','player_snapshot_capture.c','player_snapshot_codec.c']],
+        'item_transfer_command.c', "craft_pouch_mutation.c", "chaos_pouch_ledger.c",'critical_command.c','player_snapshot_capture.c','player_snapshot_codec.c']],
         '-Wl,--gc-sections','-lcrypto','-o',str(binary)],cwd=ROOT,check=True,timeout=180)
     subprocess.run([str(binary)],check=True,timeout=30)
 

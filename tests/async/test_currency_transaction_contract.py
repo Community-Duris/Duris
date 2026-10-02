@@ -102,7 +102,8 @@ class CurrencyTransactionContractTests(unittest.TestCase):
         self.assertIn("currency_command_is_rebasable_wallet_reward", command)
         self.assertIn("currency_command_is_rebasable_bank_reward", command)
         self.assertIn("currency_command_is_rebasable_reward", transaction)
-        self.assertIn("currency_command_is_rebasable_bank_reward", transaction)
+        self.assertIn("currency_command_is_rebasable_wallet_reward(payload) ||", command)
+        self.assertIn("currency_command_is_rebasable_bank_reward(payload)", command)
         self.assertIn("!rebase &&", command)
         self.assertIn("currency_prepare_mutation", repository)
         self.assertIn("currency_revision_policy::sql_legacy", repository)
@@ -166,6 +167,18 @@ class CurrencyTransactionContractTests(unittest.TestCase):
         # exceptions to their exact statements rather than exempting the new
         # area files (which may also contain player-facing procedures).
         moved_npc_resets = {
+            "economy/shop.c": {
+                "GET_PLATINUM(keeper) = remaining / 1000;",
+                "GET_GOLD(keeper) = remaining / 100;",
+                "GET_SILVER(keeper) = remaining / 10;",
+                "GET_COPPER(keeper) = remaining % 10;",
+            },
+            "flatfile/flatfile_shopkeeper_materialize.c": {
+                "GET_PLATINUM(character) = remaining / 1000;",
+                "GET_GOLD(character) = remaining / 100;",
+                "GET_SILVER(character) = remaining / 10;",
+                "GET_COPPER(character) = remaining % 10;",
+            },
             "specs/specs.clfhaven.c": {
                 "GET_PLATINUM(ch) = 0;", "GET_GOLD(ch) = 0;",
                 "GET_SILVER(ch) = 0;", "GET_COPPER(ch) = 0;",

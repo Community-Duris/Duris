@@ -313,8 +313,7 @@ coin_transfer_endpoint room_pile(const std::string &root, uint64_t uid,
 	uint64_t item_revision = ITEM_TRANSFER_ABSENT_REVISION;
 	if (!created)
 	{
-		const auto found = std::find_if(owned.begin(), owned.end(),
-						[uid](const auto &item)
+		const auto found = std::find_if(owned.begin(), owned.end(), [uid](const auto &item)
 						{ return item.item_uid == uid; });
 		assert(found != owned.end());
 		item_revision = found->item_revision;

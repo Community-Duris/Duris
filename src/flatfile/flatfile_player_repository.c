@@ -8,6 +8,8 @@
 #include "persistence/persistence_observability.h"
 #include "persistence/persistence_mode.h"
 #include "player/player_snapshot_codec.h"
+#include "player/player_quarantine_recovery.h"
+#include "flatfile/flatfile_craft_progression.h"
 
 #include <algorithm>
 #include <array>
@@ -56,7 +58,8 @@ bool valid_snapshot(const player_snapshot &snapshot)
 {
 	return (snapshot.death ?
 			player_snapshot_is_death_request_schema(snapshot.schema_version) :
-			(snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ||
+			(snapshot.schema_version == PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION ||
+			 snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ||
 			 snapshot.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
 			 snapshot.schema_version ==
 				 PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION)) &&
@@ -265,7 +268,8 @@ bool build_item_identities(std::vector<player_item_snapshot> *items,
 						   &result->repaired_item_rows);
 }
 
-bool reconcile_item_ownership(const std::string &root, player_load_result *result)
+bool reconcile_item_ownership(const std::string &root, player_load_result *result,
+			      const flatfile_authority_lock *borrowed = nullptr)
 {
 	if (!result || result->pid <= 0)
 		return false;
@@ -274,8 +278,9 @@ bool reconcile_item_ownership(const std::string &root, player_load_result *resul
 	uint64_t owner_revision = 0;
 	std::vector<flatfile_item_ownership_record> records;
 	std::string error;
-	flatfile_authority_lock authority;
-	if (!authority.acquire(root, &error))
+	flatfile_authority_lock owned_authority;
+	const auto &authority = borrowed ? *borrowed : owned_authority;
+	if (borrowed ? !borrowed->matches(root) : !owned_authority.acquire(root, &error))
 	{
 		result->outcome = player_load_outcome::retryable_failure;
 		result->error_code = EIO;
@@ -528,19 +533,56 @@ flatfile_player_load_result verify_death_receipt(const std::string &root,
 		       flatfile_player_load_result::invalid;
 }
 
+flatfile_player_load_result verify_craft_receipts(const std::string &root,
+						  const flatfile_authority_lock &authority,
+						  const player_snapshot &request,
+						  player_revision_t durable_revision,
+						  std::string *error)
+{
+	for (const auto &expected : request.craft_receipts)
+	{
+		const auto committed = flatfile_item_repository_craft_root_locked(
+			root, authority, expected.operation_id, error);
+		if (committed != flatfile_item_repository_result::ok)
+			return committed == flatfile_item_repository_result::io_error ?
+				       flatfile_player_load_result::io_error :
+				       flatfile_player_load_result::invalid;
+		player_snapshot obligation, stored;
+		auto read = flatfile_craft_receipt_read(root, request.pid, expected.operation_id,
+							true, &obligation, error);
+		if (read != flatfile_player_load_result::ok)
+			return read;
+		read = flatfile_craft_receipt_read(root, request.pid, expected.operation_id, false,
+						   &stored, error);
+		if (read != flatfile_player_load_result::ok)
+			return read;
+		if (!flatfile_craft_receipt_equal(expected, obligation.craft_receipts[0]) ||
+		    !flatfile_craft_receipt_equal(expected, stored.craft_receipts[0]) ||
+		    stored.revision > durable_revision)
+			return flatfile_player_load_result::invalid;
+	}
+	return flatfile_player_load_result::ok;
+}
+
 // Load the player and only requested receipt identities under the same recovered
 // authority cut. Historical receipts never consume the snapshot's row budget.
 flatfile_player_load_result load_snapshot_with_spell_receipts(
 	const std::string &root, int32_t pid, const std::vector<critical_operation_id> &operations,
 	player_snapshot *snapshot, std::vector<player_load_spell_effect_receipt> *receipts,
-	std::string *error)
+	std::string *error, const std::vector<critical_operation_id> &craft_operations = {},
+	std::vector<player_craft_receipt_snapshot> *craft_receipts = nullptr,
+	const flatfile_authority_lock *borrowed = nullptr)
 {
-	if (pid <= 0 || !snapshot || !receipts ||
+	if (craft_operations.size() > PLAYER_CRAFT_RECEIPT_MAX ||
+	    (!craft_operations.empty() && !craft_receipts) || pid <= 0 || !snapshot || !receipts ||
 	    operations.size() > PLAYER_SPELL_EFFECT_RECEIPT_MAX)
 		return flatfile_player_load_result::invalid;
 	flatfile_player_snapshot_lock snapshot_lock;
-	flatfile_authority_lock authority;
-	if (!snapshot_lock.acquire(root, pid, error) || !authority.acquire(root, error))
+	flatfile_authority_lock owned_authority;
+	const auto &authority = borrowed ? *borrowed : owned_authority;
+	if (borrowed ? !borrowed->matches(root) :
+		       (!snapshot_lock.acquire(root, pid, error) ||
+			!owned_authority.acquire(root, error)))
 		return flatfile_player_load_result::io_error;
 	const auto recovered = flatfile_authority_transaction_recover(root, authority, error);
 	if (recovered != flatfile_authority_transaction_result::ok)
@@ -568,6 +610,34 @@ flatfile_player_load_result load_snapshot_with_spell_receipts(
 				return flatfile_player_load_result::invalid;
 			receipts->push_back(
 				{ operation, stored.spell_effect_receipts.front().effect_id });
+		}
+		for (const auto &operation : craft_operations)
+		{
+			if (critical_operation_id_is_zero(operation) ||
+			    !seen.insert(flatfile_craft_receipt_filename(pid, operation)).second)
+				return flatfile_player_load_result::invalid;
+			player_snapshot stored, obligation;
+			auto read = flatfile_craft_receipt_read(root, pid, operation, false,
+								&stored, error);
+			if (read == flatfile_player_load_result::not_found)
+				continue;
+			if (read != flatfile_player_load_result::ok)
+				return read;
+			const auto committed = flatfile_item_repository_craft_root_locked(
+				root, authority, operation, error);
+			if (committed != flatfile_item_repository_result::ok)
+				return committed == flatfile_item_repository_result::io_error ?
+					       flatfile_player_load_result::io_error :
+					       flatfile_player_load_result::invalid;
+			read = flatfile_craft_receipt_read(root, pid, operation, true, &obligation,
+							   error);
+			if (read != flatfile_player_load_result::ok)
+				return read;
+			if (stored.revision > snapshot->revision ||
+			    !flatfile_craft_receipt_equal(stored.craft_receipts[0],
+							  obligation.craft_receipts[0]))
+				return flatfile_player_load_result::invalid;
+			craft_receipts->push_back(stored.craft_receipts[0]);
 		}
 	}
 	catch (const std::bad_alloc &)
@@ -818,8 +888,10 @@ flatfile_player_load_result flatfile_player_snapshot_load(const std::string &roo
 	return load_snapshot_with_spell_receipts(root, pid, {}, snapshot, &receipts, error);
 }
 
-player_load_result flatfile_player_load_repository_execute(const std::string &root,
-							   const player_load_request &request)
+static player_load_result execute_player_load(const std::string &root,
+					      const player_load_request &request,
+					      const flatfile_authority_lock *borrowed = nullptr,
+					      const flatfile_identity_lock *identity_lock = nullptr)
 {
 	const uint64_t started = persistence_observability_now_usec();
 	player_load_result result = {};
@@ -838,6 +910,9 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 	flatfile_identity_record identity = {};
 	std::string error;
 	const flatfile_identity_result identity_loaded =
+		borrowed && identity_lock ?
+			flatfile_identity_lookup_pid_locked(root, *identity_lock, *borrowed,
+							    request.pid, &identity, &error) :
 		request.pid > 0 ?
 			flatfile_identity_lookup_pid(root, request.pid, &identity, &error) :
 			flatfile_identity_lookup_name(root, request.player_name, &identity, &error);
@@ -864,7 +939,8 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 
 	const flatfile_player_load_result snapshot_loaded = load_snapshot_with_spell_receipts(
 		root, identity.pid, request.pending_spell_effect_operations, &result.snapshot,
-		&result.spell_effect_receipts, &error);
+		&result.spell_effect_receipts, &error, request.pending_craft_operations,
+		&result.craft_receipts, borrowed);
 	if (snapshot_loaded != flatfile_player_load_result::ok)
 	{
 		result.failed_component = "snapshot";
@@ -887,7 +963,7 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 		result.failed_component = "snapshot_identity";
 		return result;
 	}
-	if (request.include_items && !reconcile_item_ownership(root, &result))
+	if (request.include_items && !reconcile_item_ownership(root, &result, borrowed))
 	{
 		clear_items_and_pets(&result);
 		mark_degraded(&result, PLAYER_LOAD_DEGRADED_ITEMS, "item_ownership");
@@ -904,8 +980,12 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 		return result;
 	}
 	flatfile_player_domain_record domains;
-	const flatfile_player_domain_result domains_loaded = flatfile_player_domain_load(
-		root, identity.pid, identity.account, identity.racewar, &domains, &error);
+	const flatfile_player_domain_result domains_loaded =
+		borrowed ? flatfile_player_domain_load_locked(root, *borrowed, identity.pid,
+							      identity.account, identity.racewar,
+							      &domains, &error) :
+			   flatfile_player_domain_load(root, identity.pid, identity.account,
+						       identity.racewar, &domains, &error);
 	if (domains_loaded != flatfile_player_domain_result::ok)
 	{
 		result.error_code =
@@ -929,9 +1009,14 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 	{
 		std::vector<flatfile_quest_reward_obligation> obligations;
 		std::vector<flatfile_quest_xp_entitlement> entitlements;
-		const auto loaded = flatfile_item_repository_pending_quest_rewards(
-			root, static_cast<uint32_t>(identity.pid), &obligations, &error,
-			&entitlements, result.snapshot.revision);
+		const auto loaded =
+			borrowed ? flatfile_item_repository_pending_quest_rewards_locked(
+					   root, *borrowed, static_cast<uint32_t>(identity.pid),
+					   &obligations, &error, &entitlements,
+					   result.snapshot.revision) :
+				   flatfile_item_repository_pending_quest_rewards(
+					   root, static_cast<uint32_t>(identity.pid), &obligations,
+					   &error, &entitlements, result.snapshot.revision);
 		if (loaded == flatfile_item_repository_result::ok)
 		{
 			bool malformed = false;
@@ -1011,6 +1096,185 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 	return result;
 }
 
+player_load_result flatfile_player_load_repository_execute(const std::string &root,
+							   const player_load_request &request)
+{
+	if (request.pid > 0 && player_save_journal_pid_quarantined(request.pid))
+	{
+		player_load_result result;
+		result.pid = request.pid;
+		result.request_id = request.request_id;
+		result.outcome = player_load_outcome::cancelled;
+		result.error_code = EPERM;
+		return result;
+	}
+	auto result = execute_player_load(root, request);
+	if (result.pid > 0 && player_save_journal_pid_quarantined(result.pid))
+	{
+		result.snapshot = {};
+		result.domains = {};
+		result.outcome = player_load_outcome::cancelled;
+		result.error_code = EPERM;
+	}
+	return result;
+}
+
+player_load_result flatfile_player_quarantine_inspect(const std::string &root,
+						      const player_load_request &request)
+{
+	std::vector<player_snapshot> frames;
+	std::array<uint8_t, 32> digest;
+	if (!request.include_items || !request.include_pets ||
+	    !request.pending_spell_effect_operations.empty() ||
+	    !request.pending_craft_operations.empty() ||
+	    request.death_recovery_query.kind != player_death_recovery_query_kind::none ||
+	    player_save_journal_recovery_inspect(request.pid, &frames, &digest) !=
+		    player_save_journal_result::ok)
+	{
+		player_load_result refused;
+		refused.outcome = player_load_outcome::cancelled;
+		refused.error_code = EPERM;
+		return refused;
+	}
+	return execute_player_load(root, request);
+}
+
+namespace
+{
+bool recovery_receipt(const std::string &root, const player_save_recovery_record &record,
+		      bool *present, std::vector<uint8_t> *expected, std::string *error)
+{
+	if (!present || !player_quarantine_recovery_receipt_bytes(record, expected))
+		return false;
+	std::vector<uint8_t> bytes;
+	const auto read = flatfile_read(root + "/metadata",
+					player_quarantine_recovery_receipt_filename(record),
+					expected->size(), &bytes, error);
+	*present = read == flatfile_read_result::ok;
+	return read == flatfile_read_result::not_found ||
+	       (read == flatfile_read_result::ok && bytes == *expected);
+}
+bool recovery_creation_proofs(const std::string &root, const flatfile_authority_lock &authority,
+			      const player_save_recovery_record &record, std::string *error)
+{
+	bool first = true;
+	for (const auto &bytes : record.creation_commands)
+	{
+		critical_command command;
+		if (critical_command_decode(bytes.data(), bytes.size(), &command) !=
+		    critical_command_codec_result::ok)
+			return false;
+		char identity[CRITICAL_COMMAND_ID_HEX_SIZE];
+		if (first && (!critical_operation_id_to_hex(command.operation_id, identity,
+							    sizeof(identity)) ||
+			      record.backend_identity != std::string("flatfile:") + identity))
+			return false;
+		first = false;
+		const auto proof = flatfile_item_repository_verify_creation_locked(root, authority,
+										   command, error);
+		if (proof.outcome != critical_apply_outcome::already_applied || proof.error_code)
+			return false;
+	}
+	return !first;
+}
+}
+
+player_save_apply_result flatfile_player_quarantine_apply(const std::string &root,
+							  const player_save_recovery_record &record,
+							  std::string *error)
+{
+	if (record.backend != 1 || !player_save_journal_recovery_matches(record))
+		return { player_save_apply_outcome::terminal_failure, 0, EPERM };
+	flatfile_identity_lock identity;
+	flatfile_player_snapshot_lock player;
+	flatfile_authority_lock authority;
+	if (!identity.acquire(root, error) ||
+	    !player.acquire(root, record.replacement.pid, error) || !authority.acquire(root, error))
+		return { player_save_apply_outcome::retryable_failure, 0, EIO };
+	if (flatfile_authority_transaction_recover(root, authority, error) !=
+	    flatfile_authority_transaction_result::ok)
+		return { player_save_apply_outcome::retryable_failure, 0, EIO };
+	const auto current = execute_player_load(root, player_quarantine_recovery_request(record),
+						 &authority, &identity);
+	bool present = false;
+	std::vector<uint8_t> receipt;
+	if (!recovery_receipt(root, record, &present, &receipt, error))
+		return { player_save_apply_outcome::terminal_failure, 0, EILSEQ };
+	if (present)
+		return { player_quarantine_recovery_state_matches(current, record, true) ?
+				 player_save_apply_outcome::already_applied :
+				 player_save_apply_outcome::terminal_failure,
+			 current.snapshot.revision,
+			 player_quarantine_recovery_state_matches(current, record, true) ?
+				 0u :
+				 static_cast<unsigned>(ESTALE) };
+	if (!player_quarantine_recovery_state_matches(current, record, false) ||
+	    !recovery_creation_proofs(root, authority, record, error))
+		return { player_save_apply_outcome::terminal_failure, current.snapshot.revision,
+			 ESTALE };
+	player_snapshot replacement = record.replacement;
+	std::vector<uint8_t> bytes;
+	if (!encode_file(&replacement, &bytes))
+		return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
+	const std::vector<flatfile_authority_operation> operations = {
+		{ flatfile_authority_store::players, flatfile_authority_operation_kind::write,
+		  player_filename(replacement.pid), std::move(bytes) },
+		{ flatfile_authority_store::metadata, flatfile_authority_operation_kind::write,
+		  player_quarantine_recovery_receipt_filename(record), std::move(receipt) }
+	};
+	const auto committed = flatfile_authority_transaction_commit_operations(root, authority,
+										operations, error);
+	if (committed != flatfile_authority_transaction_result::ok)
+		return { player_save_apply_outcome::retryable_failure, current.snapshot.revision,
+			 EIO };
+	const auto projected = execute_player_load(root, player_quarantine_recovery_request(record),
+						   &authority, &identity);
+	return { player_quarantine_recovery_state_matches(projected, record, true) ?
+			 player_save_apply_outcome::applied :
+			 player_save_apply_outcome::terminal_failure,
+		 replacement.revision,
+		 player_quarantine_recovery_state_matches(projected, record, true) ?
+			 0u :
+			 static_cast<unsigned>(EILSEQ) };
+}
+
+bool flatfile_player_quarantine_verify(const std::string &root,
+				       const player_save_recovery_record &record, bool continuation,
+				       std::string *error)
+{
+	if (record.backend != 1 || !player_save_journal_recovery_matches(record))
+		return false;
+	player_save_recovery_record retained;
+	bool resolved = false;
+	if (continuation &&
+	    (player_save_journal_recovery_read(record.replacement.pid, &retained, &resolved) !=
+		     player_save_journal_result::ok ||
+	     !resolved))
+		return false;
+	flatfile_identity_lock identity;
+	flatfile_player_snapshot_lock player;
+	flatfile_authority_lock authority;
+	if (!identity.acquire(root, error) ||
+	    !player.acquire(root, record.replacement.pid, error) || !authority.acquire(root, error))
+		return false;
+	if (flatfile_authority_transaction_recover(root, authority, error) !=
+	    flatfile_authority_transaction_result::ok)
+		return false;
+	const auto current = execute_player_load(root, player_quarantine_recovery_request(record),
+						 &authority, &identity);
+	bool present = false;
+	std::vector<uint8_t> expected;
+	if (!recovery_receipt(root, record, &present, &expected, error) || !present ||
+	    !recovery_creation_proofs(root, authority, record, error))
+		return false;
+	if (continuation && current.outcome == player_load_outcome::applied &&
+	    !current.degraded_components && !current.missing_payload_rows &&
+	    current.account_name == record.account_name &&
+	    current.snapshot.revision >= record.replacement.revision)
+		return true;
+	return player_quarantine_recovery_state_matches(current, record, true);
+}
+
 player_load_result
 flatfile_player_load_repository_execute_selected(const player_load_request &request, void *context)
 {
@@ -1055,6 +1319,8 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 							const player_snapshot &snapshot,
 							std::string *error)
 {
+	if (snapshot.pid > 0 && player_save_journal_pid_quarantined(snapshot.pid))
+		return { player_save_apply_outcome::terminal_failure, 0, EPERM };
 	if (!valid_snapshot(snapshot) || !replace_items_together(snapshot.components))
 		return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
 	if (!snapshot.quest_xp_receipts.empty() &&
@@ -1156,6 +1422,9 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 			if (verified == flatfile_player_load_result::ok)
 				verified = verify_spell_receipts(root, snapshot,
 								 materialized.revision, error);
+			if (verified == flatfile_player_load_result::ok)
+				verified = verify_craft_receipts(root, authority, snapshot,
+								 materialized.revision, error);
 			if (verified != flatfile_player_load_result::ok)
 				return { verified == flatfile_player_load_result::io_error ?
 						 player_save_apply_outcome::retryable_failure :
@@ -1191,7 +1460,8 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 					 player_save_apply_outcome::stale_revision,
 				 materialized.revision, 0, player_save_custody_diagnosis::none,
 				 !snapshot.death && (!snapshot.quest_xp_receipts.empty() ||
-						     !snapshot.spell_effect_receipts.empty()) };
+						     !snapshot.spell_effect_receipts.empty() ||
+						     !snapshot.craft_receipts.empty()) };
 		}
 		if (!merge_snapshot(snapshot, &materialized))
 			return { player_save_apply_outcome::terminal_failure, materialized.revision,
@@ -1250,9 +1520,58 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 				       spell_receipt_filename(snapshot.pid, receipt.operation_id),
 				       std::move(receipt_bytes) });
 	}
+	for (const auto &receipt : snapshot.craft_receipts)
+	{
+		const auto committed = flatfile_item_repository_craft_root_locked(
+			root, authority, receipt.operation_id, error);
+		if (committed != flatfile_item_repository_result::ok)
+			return { committed == flatfile_item_repository_result::io_error ?
+					 player_save_apply_outcome::retryable_failure :
+					 player_save_apply_outcome::terminal_failure,
+				 0, EILSEQ };
+		player_snapshot obligation, stored;
+		const auto entitlement = flatfile_craft_receipt_read(
+			root, snapshot.pid, receipt.operation_id, true, &obligation, error);
+		if (entitlement != flatfile_player_load_result::ok ||
+		    !flatfile_craft_receipt_equal(receipt, obligation.craft_receipts[0]))
+			return { entitlement == flatfile_player_load_result::io_error ?
+					 player_save_apply_outcome::retryable_failure :
+					 player_save_apply_outcome::terminal_failure,
+				 0, EILSEQ };
+		const auto read = flatfile_craft_receipt_read(
+			root, snapshot.pid, receipt.operation_id, false, &stored, error);
+		if (read == flatfile_player_load_result::ok)
+		{
+			if (stored.revision > prior_revision ||
+			    !flatfile_craft_receipt_equal(receipt, stored.craft_receipts[0]))
+				return { player_save_apply_outcome::terminal_failure, 0, EILSEQ };
+			continue;
+		}
+		if (read != flatfile_player_load_result::not_found)
+			return { read == flatfile_player_load_result::io_error ?
+					 player_save_apply_outcome::retryable_failure :
+					 player_save_apply_outcome::terminal_failure,
+				 0, EILSEQ };
+		stored = {};
+		stored.schema_version = PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
+		stored.pid = snapshot.pid;
+		stored.revision = snapshot.revision;
+		stored.components = PLAYER_CHECKPOINT_COMPONENT_ALL;
+		stored.craft_receipts.push_back(receipt);
+		std::vector<uint8_t> bytes;
+		if (!flatfile_player_snapshot_encode_file(stored, &bytes))
+			return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
+		operations.push_back(
+			{ flatfile_authority_store::players,
+			  flatfile_authority_operation_kind::write,
+			  flatfile_craft_receipt_filename(snapshot.pid, receipt.operation_id),
+			  std::move(bytes) });
+	}
+	materialized.craft_receipts.clear();
 	materialized.spell_effect_receipts.clear();
 	materialized.quest_xp_receipts.clear();
-	if (materialized.schema_version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION ||
+	if (materialized.schema_version == PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION ||
+	    materialized.schema_version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION ||
 	    materialized.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION)
 		materialized.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
 	std::vector<uint8_t> bytes;
@@ -1301,7 +1620,7 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 				 0, EIO };
 	}
 	if (snapshot.death || !snapshot.spell_effect_receipts.empty() ||
-	    !snapshot.quest_xp_receipts.empty())
+	    !snapshot.quest_xp_receipts.empty() || !snapshot.craft_receipts.empty())
 	{
 		operations.push_back({ flatfile_authority_store::players,
 				       flatfile_authority_operation_kind::write,

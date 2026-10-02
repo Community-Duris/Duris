@@ -1,0 +1,361 @@
+# Accounting review status - 2026-10-01
+
+This checkpoint publishes the completed review fixes directly to
+`Community-Duris/Duris:experimental-accounting`. It integrates upstream through
+`5c157f693dfb41a1160050fb52c6b80235e7c729`, preserving the canonical, staging
+0045, and master 0031 migration histories. The master upgrade now appends the
+0052 witness index and 0053 craft receipts without rewriting its existing prefix.
+
+## Completed fixes
+
+- Recipe Craft/Forge now use frozen item retirement, output publication, and
+  durable progression receipts across SQL and flatfile recovery. Migration 0053
+  supplies the SQL progression authority. See commit `bc4aeab0a` and its
+  preceding focused repair, crafting, and pouch commits.
+- Save admission integrates the upstream creation and sealed-save fences with
+  the broader item-creation publication fence (`eeac01351`).
+- The sanitizer prompt fixture now compiles without expensive optimization
+  within its existing bounded runtime test (`77f95ef9f`).
+- Null recipe output pointers are rejected before reading item identity, with
+  actual movement/publication regression coverage (`0464613a1`).
+- Recovery evidence updates are integrated, and recipe writer coverage is
+  refreshed while retaining upstream creation-backend evidence (`72b3a5ab6`).
+- Worker admission now handles an older save ACK that narrows the queued
+  component mask while a newer capture waits for journal append. The actual
+  worker regression fails before the fix and passes afterward; missing
+  components and mismatched revisions remain rejected, and the craft receipt
+  reaches its exact successful completion.
+- Progression publication now keeps an admitted Craft/Forge save pending until
+  its exact completion, instead of issuing a new revision every 500ms. A failed
+  completion rearms capture without granting XP or rerolling a skill notch.
+  The actual owner regression fails before the fix and passes under ASan/UBSan,
+  covering delayed queued and coalesced saves, failure retry, and exact ACK.
+- Mini-mode startup now installs progression callbacks before any player
+  materialization. Both strict production builds passed, and the actual
+  flatfile server completed mortal Craft and Forge with exact materials/tool
+  retirement, fresh output UIDs, and durable XP.
+- The real-server recipe fixture now supports a focused mortal journey. It
+  uses the launcher copyover signal after crafting, retaining mortal progression
+  semantics without granting a staff shutdown command. Physical and retained-
+  pouch Craft/Forge pass on flatfile, MySQL 8.0.46 and MariaDB 10.11.14, including
+  exact output UIDs, material/tool retirement, XP, counters, copyover, and two
+  cold restarts. This qualifies the fixture's frozen leather recipe; it does
+  not qualify every recipe variant or active accounting gameplay.
+- Upstream artifact lifetime repair and master migration verifier files are
+  integrated. Both production profiles rebuild successfully, and the native
+  canonical/staging/master history matrix passes again on both SQL engines.
+- Superior enhancement now computes its configured quote with checked 64-bit
+  arithmetic and refuses negative or unrepresentable prices before mutation.
+  The production payment function reproduces signed overflow before the fix
+  and passes under ASan/UBSan afterward, covering physical/pouch materials,
+  exact ordinary and boundary debits, free valid quotes, and insufficient funds.
+  Both strict production profiles pass. Compound enhancement accounting and
+  same-UID durable mutation remain outstanding.
+- Superior material planning now widens item-value arithmetic, rejects negative
+  values and non-finite or unrepresentable scaled quantities, and checks duplicate
+  material totals before addition. The production planning regression reproduces
+  signed overflow before the fix and passes with float-cast, undefined-behavior,
+  and address sanitizers afterward. Ordinary fractional scaling stays intact.
+- Superior stat caps now stop at the persisted signed-byte maximum and refuse
+  invalid multipliers. Native boundary tests cover ordinary tiers, large finite
+  multipliers, and non-finite inputs. Both production profiles pass for these
+  fixes; all 1,210 source files match committed tree `49f76401c`.
+
+- Flatfile `.craft` application receipts and `.craft-obligation` frozen terms
+  now have separate protected retention/export inventory entries. The lifecycle
+  validator requires both; removing either is rejected. SQL and flatfile recipe
+  recovery policies must also remain protected and retained; nine policy-edit
+  fault cases that previously passed are now refused. Twenty lifecycle,
+  seven erasure, and six export regressions pass. The inventory now counts 49
+  non-database stores, 225 SQL tables, and 42 Redis surfaces, with destructive
+  rules and shared disclosure still disabled pending controller decisions.
+
+- The administrator-property regression harness now supplies the unrelated
+  world-activity reload hook required by upstream property application. The real
+  initialize/set/revert/save/reload journey passes on SQL and flatfile again;
+  the full regression run remains in progress.
+
+- Four files identified by the full formatting check now match the repository
+  style with unchanged C++ tokens and comments. The whole-tree formatter, ten
+  runtime-compatibility contracts, and the native read-transaction cleanup fault
+  harness pass. Both strict production profiles rebuild successfully.
+
+- Native flatfile player snapshots, account records, identity allocation/name
+  catalog, and item-ownership catalog now have separate required lifecycle
+  entries, alongside legacy compatibility files. Twelve protection/reset edits
+  are refused, and account export rules must exclude both stored password hashes
+  and confirmation secrets. Controller retention and disclosure decisions remain
+  pending; this adds inventory guards without enabling erasure or disclosure.
+
+- The newborn-item grant lifecycle fixture now models the recipient's sealed
+  save fence. Its production movement/publication harness passes under ASan/UBSan,
+  including held grants to the actor and to another recipient, release after
+  the save clears, and exact once-only publication after duplicate completion.
+
+- Craft/Forge material planning now widens item-value arithmetic, checks finite
+  positive scaling and integer limits before conversion, and leaves the caller's
+  plan untouched on refusal. A shared wide required-level calculation also
+  removes overflow from recipe availability, both command gates, and level
+  messages. The production planner reproduces signed overflow before the fix
+  and passes under address, undefined-behavior and float-cast sanitizers afterward.
+  Both production builds pass for source tree `7360003fa`. Its real flatfile
+  mortal physical and pouch Craft/Forge journey preserves exact inputs, output
+  UIDs, XP and counters through copyover and two cold restarts.
+
+- The terminal-death entrypoint fixture now compiles the production craft-receipt
+  merge and component mask alongside quest XP. Controlled capture/ACK checks
+  prove that progression capture refusal releases pins and queue bytes, while
+  timeout/resume retains the original operation, discipline and XP even if live
+  recovery state changes. Only the exact database ACK releases the request.
+
+- Coupled death disposition/conflict, spell, quest-XP and save-quarantine recovery
+  records must also remain protected and retained in lifecycle policy. Thirty
+  edits that previously removed protection or selected reset/deactivation now
+  fail closed. Twenty lifecycle, seven erasure and six export checks pass;
+  destructive rules remain disabled.
+
+- Craft info and make now release the successfully loaded temporary material
+  probe when the other prototype is unavailable. The production error path
+  fails before the fix and passes afterward under ASan/UBSan for all eight
+  availability cases, with exactly one extraction per loaded object. Both
+  production builds pass for `9fd3b77b1`; all 1,210 native source files match
+  that committed tree. Its actual flatfile mortal physical and retained-pouch
+  recipe Craft/Forge journey also passes copyover and two cold restarts.
+
+- Native flatfile player wallet/progression records, account bank records, and
+  both current and legacy transaction journals now have separate required
+  lifecycle entries. All four omissions fail the inventory regression before
+  the fix. The validator requires their exact locators and rejects twelve
+  edits that remove protection or select reset/deactivation. Twenty lifecycle,
+  seven erasure and six export checks pass; disclosure/controller decisions
+  stay pending and destructive rules remain disabled. Other native domain
+  catalogs still require inventory review.
+
+- Ordinary and superior enhancement now share a wide configured level limit,
+  capped at the maximum representable item value. Both command comparisons
+  and messages use that limit. The production gates reproduce signed overflow
+  for a level-50 character and a large valid multiplier before the fix; native
+  ASan/UBSan checks pass afterward, preserving the ordinary 150/151 boundary
+  and refusing positive item values when the level or multiplier is invalid.
+  Both production builds pass for `cfb42c8ec`, with all 1,210 native source
+  files verified. Existing payment, material, stat-cap and configuration checks
+  also pass; compound enhancement durability is still outstanding.
+
+- Core accounting lineage, mappings, baseline/activation records, immutable
+  evidence, inbox/outbox dedupe and transaction journals must remain protected
+  and retained. The validator previously accepted all 99 protection/reset/
+  deactivation edits across 33 stores; it now rejects them. Twenty-one lifecycle,
+  seven erasure and six export checks pass. This preserves the current recovery
+  contract; disclosure and destructive policy decisions remain pending.
+
+- Missing native flatfile UID authority no longer silently starts reservations
+  again at UID 1. A permanent `metadata/item_uid_allocator.initialized` witness
+  is durably written after the allocator state and before releasing IDs. Missing
+  state with that witness, or surviving legacy custody, is refused; healthy older
+  allocator files preserve their high-water mark during upgrade. Native ASan/UBSan
+  checks cover four concurrent writers, missing/corrupt state, legacy upgrade,
+  and an injected marker-write failure that releases no IDs and burns the range
+  before retry. The actual flatfile server reaches healthy boot and clean shutdown,
+  then refuses missing initialized authority without recreating it or changing
+  the witness. Both production builds pass for `97ffd76d8`; all 1,210 source files
+  match the committed tree. The allocator and witness are separate required,
+  protected retained stores; SQL allocator protection is also mandatory. All
+  34 lifecycle/erasure/export checks pass. The current flatfile binary also
+  passes mortal physical and retained-pouch recipe Craft/Forge, preserving exact
+  inputs, output UIDs, XP and counters through copyover and two cold restarts.
+  Restore must preserve the allocator
+  and witness together; this does not qualify older-generation rollback or an
+  incomplete legacy root with all custody evidence missing.
+
+- Ordinary and superior enhancement now refuse a rejected wallet debit before
+  publishing an output, consuming material, or upgrading the retained item.
+  Ordinary enhancement releases its provisional output on refusal and rejects
+  negative configured fees; valid free quotes skip the debit API. Actual
+  production-function regressions fail before `508912dd2` and pass under
+  ASan/UBSan afterward for physical and pouch materials. All 15 affected
+  enhancement checks and both strict production builds pass; all 1,210 native
+  source files match that committed tree. Wallet admission is not a compound
+  durable enhancement receipt; that integration remains outstanding.
+
+- Essence modifier enhancement now validates its planned signed-byte modifier
+  and accepts payment before changing the source item or consuming its essence.
+  The production-function regression reproduces mutation after a refused debit
+  before `a2c560b9d`; afterward ASan/UBSan checks preserve all state on refusal,
+  exercise all three fee tiers, retain the ordinary three-step cap and reject
+  overflow at modifier 127 even with a large configured step limit. All 16
+  affected enhancement checks and both strict production builds pass; all 1,210
+  native source files match that tree. This does not supply a compound durable
+  wallet/item/material receipt.
+
+- Essence description rebuilding now requires its prototype before charging or
+  consuming the material. The prior production function dereferences a null
+  template under UBSan; `5017a0e9e` refuses instead, preserves the player/item/
+  material, and releases a valid probe if payment is refused. Encrusted items
+  retain their separate description path without a probe. All 16 affected
+  enhancement checks and both strict production builds pass; all 1,210 native
+  source files match that tree. The new temporary cleanup is explicitly mapped.
+
+- Native UID initialization evidence now retains sealed next-UID and allocator
+  revision bounds on every reservation. Before `bf6aac22f`, restoring an older
+  checksum-valid allocator reused previously issued UIDs. The updated native
+  ASan/UBSan fixture refuses that stale file, preserves outputs and authority,
+  upgrades the original eight-byte witness, detects damage to either sealed
+  bound, and burns ranges after witness-write failures both before and after
+  initialization. Four concurrent writers remain disjoint. The actual server
+  refuses missing and stale allocator authority without rewriting evidence,
+  then boots normally after exact restoration. Both strict production profiles
+  pass, with all 1,210 native source files matching that tree. The new
+  [UID recovery notes](../ITEM_UID_ALLOCATOR_RECOVERY.md) describe version-2
+  evidence and upgrade limits. This protects partial stale-file recovery when
+  the newer witness survives; restoring an entire older generation remains
+  unqualified. Version-1-only binaries refuse the larger witness. Mortal physical and retained-pouch
+  Craft/Forge also pass on that exact flatfile binary, with original inputs,
+  fresh output UIDs, XP and generated counters preserved through copyover and
+  two cold restarts.
+
+- Ordinary enhancement now computes material floors, configured value gains,
+  luck-scaled search budgets, cascade steps and bounds using checked-width
+  arithmetic. The production-function regression reproduces signed overflow
+  before `e8ca4e448`; afterward ASan/UBSan checks cover an INT_MIN material
+  delta, unrepresentable gains, an INT_MAX cap plus roll, a fourfold INT_MAX
+  search budget and cascade lookup next to INT_MAX. Out-of-range hash keys are
+  skipped before narrowing. All 17 affected enhancement and deferred-finding checks and both strict
+  production builds pass; all 1,210 native source files match that tree. Normal
+  free/paid quotes and refusal cleanup remain qualified; compound durability
+  remains outstanding.
+
+- NPC essence drops now widen elite-adjusted level thresholds. The production
+  function overflows at level 50 with an INT_MAX multiplier before `8f9f624f7`;
+  afterward ASan/UBSan checks preserve global and zone override scaling, the
+  normal two-roll thresholds, enable/level gates and missing-template handling.
+  All 19 affected enhancement, essence-drop and deferred-finding checks pass,
+  along with both strict production builds and all 1,210 source-file identities.
+  This numerical repair does not qualify durable NPC-death source attribution
+  or active-accounting item creation.
+
+## Verification and its limits
+
+Salvage's configurable rolls now reject non-finite or invalid settings before
+mutation (`d4af6fac3`). Luck and chance thresholds are bounded to their certain
+outcomes before integer conversion; recipe scores use wide arithmetic and
+bounds before comparison. The actual command reproduces an out-of-range
+floating-point conversion before the fix and passes afterward under address,
+undefined-behavior and float-cast sanitizers. Cases include huge finite factors,
+maximum integer Luck/tool factors, fractional Luck/chance boundaries, zero rare
+chance and invalid factors. The original item and tools survive invalid-setting
+refusal. Existing prototype, downgrade, configuration and all 29 item-admission
+checks pass. Both strict production profiles pass with all 1,212 source blobs
+matching that tree. SQL SHA-256:
+`e14d9693a545c694cf6d6bf37833ad62a207bde93ae48c7d077d8b2a8eb2edac`;
+flatfile: `f67105ff0a3f347e22c022368f05faa1652d7fa96ef4ac572438ee1625d2b320`.
+The earlier gameplay artifacts below retain their original source pins; this
+numeric repair adds focused command/build evidence without claiming a new
+three-backend journey or current-head broad regression pass.
+
+The completed frozen `63309643c` run isolates its single failure to native
+inspector compilation: the auction fixture's 180-second budget expired before
+server startup. Auction, combat and static quest entrypoints now share the
+600-second compilation budget already used by the server build; gameplay
+deadlines remain unchanged. The actual auction listing/immediate coin put,
+round-trip, save and full-reload journey passes with the current `c5ea78c95`
+flatfile artifact recorded below. Its fresh inspector compiled in 62.820 seconds.
+This focused pass does not turn the earlier frozen run into a current-head pass.
+
+Ordinary salvage now preflights the selected material and, for an eligible
+recipe target, its recipe-scroll template (`c5ea78c95`). The actual command
+reproduces a null dereference before the repair. Native ASan/UBSan checks now
+cover all five material rarities, missing eligible recipe templates, valid
+prototype index zero, successful salvage and items ineligible for recipe
+discovery. Missing required templates preserve the original and tools without
+granting rewards or notching skills. Both strict production profiles and all
+1,212 source comparisons pass. SQL binary SHA-256:
+`6e9efab152aa1fb4c561f94cfaa4e5d40455c07afd494c9b461827ee3d086de9`;
+flatfile: `8d8fa47120ea123304f84c93887abc68821b9822b35f1a952fb97ee13a1e058c`.
+The native downgrade regression and all 29 item-admission checks also pass.
+The three-backend gameplay evidence below remains pinned to `0cd04f40b`; it has
+not been rerun on this template-only repair. Ordinary salvage's independent
+grants, source/tool consumption and progression remain unqualified as a compound
+operation, and its active-accounting guard stays in place.
+
+Material downgrading now uses one native craft batch (`0cd04f40b`). Previously,
+refusing one separately submitted output still retired the original material.
+The production-branch regression reproduces that loss before the fix. Afterward,
+missing either prototype or refusing admission preserves the input and frees
+only detached candidates. Publication follows the committed two-output result.
+ASan/UBSan, admission/refusal checks, existing native craft conservation and both
+strict production profiles pass. All 1,212 native source files match that tree.
+The exact binaries are recorded in the build row below.
+
+The real mortal material-downgrade journey passes on flatfile, MariaDB 10.11.14
+and MySQL 8.0.46. It retires the original UID once, admits exactly two distinct
+lower-tier UIDs, refuses a repeated command without another mutation, and retains
+the output identities through copyover and two cold restarts. The SQL check also
+verifies the original UID's native tombstone. The extended recipe journey keeps
+its physical/pouch Craft/Forge, exact XP and counter assertions. Accounting is
+inactive in these journeys; ordinary salvage, active accounting and further
+material families remain unqualified. The inventory now separates downgrade
+admission from ordinary salvage, retaining all prior route classifications.
+
+The stopped-player quarantine recovery integration from upstream PR #676 is
+retained alongside these review fixes. Its native archive protocol, flatfile
+player authority and restore tests pass, as do the current save-pipeline check
+and 21 lifecycle, seven erasure and six export cases. The current lifecycle
+inventory protects 50 non-database stores, 225 SQL tables and 42 Redis surfaces;
+destructive rules remain disabled. The original private staging-capture test
+requires explicitly supplied custody artifacts and is not included in these
+synthetic passes.
+
+Disposable MariaDB 10.11.14 and MySQL 8.0.46 both pass the integrated native SQL
+recovery fixture: original retained commands, exact components and UIDs, native
+wallet authority, actual pre/post-COMMIT SIGKILL, repeat/resume, later-save
+restart and missing-proof refusal. Their accompanying item creation, source
+claims, transfer, destruction, ledger and outbox checks also pass. This does not
+establish that commands exist for historical production PIDs or authorize any
+production restoration. See the [recovery contract](../PLAYER_QUARANTINE_RECOVERY.md).
+
+All 1,464 tracked C/C++ files pass clang-format 18 checks on the merged tree,
+and all 1,212 native build source files match the merged index. These checks
+retain the incoming recovery implementation and the local enhancement, NPC
+essence and UID allocator repairs together.
+
+| Check | Current evidence |
+| --- | --- |
+| Strict SQL and flatfile production builds | Passed on the `0cd04f40b` native source; all 1,212 native source files match its tree. SQL binary SHA-256: `a16dde85ad5446fc27528643ebd37d076b428195ecf79cafbcaaa6c5767616e3`; flatfile: `f8ac4fdf34e19bc7aa7c86a03eae6e398e01a6bb639e5cae66f38ab934f68b27`. Recipe and material-downgrade gameplay also pass on these exact artifacts. Recipe gameplay does not execute the enhancement payment repair. |
+| Recipe SQL receipts and fault recovery | Passed on disposable MySQL 8.0 and MariaDB 10.11 before the latest upstream integration. |
+| Integrated focused runtime checks | All 16 selected checks passed after the first upstream integration, including the ASan/UBSan prompt fixture. |
+| Frozen broad regression | The `8be8b55c0` snapshot completed 822 scripts in 7,221.31 seconds with 818 runner successes and four failures; all four have separately passing focused repairs. The later frozen `63309643c` snapshot completed 828 scripts in 6,549.69 seconds with 827 runner successes and one failure. Its auction/coin-put journey timed out after 180 seconds while compiling the native player inspector, before starting the server. The same actual journey passes on the integrated `5c157f693` artifact. These success totals include optional checks: the MariaDB combat journey skipped without `TEST_DB_HOST`. Both snapshots predate subsequent source repairs and neither qualifies current-head integrated accounting. |
+| Null-output publication regression | Passed using the actual native movement module after `0464613a1`. |
+| Combat continuation and quarantine restore | Native stopped quarantine protocol, flatfile repository and restore checks pass after integrating upstream #676; the current save pipeline and 21 lifecycle, seven erasure and six export checks also pass. Native SQL recovery passes on both disposable engines, including actual pre/post-COMMIT SIGKILL and later-save restart. Flatfile server preflight refuses missing/stale UID allocator authority, retains evidence, boots after exact restoration and shuts down normally. Quarantine archives retain both original component frames and keep recovery fenced on conflicting evidence. |
+| Writer census | Refreshed for `d4af6fac3`: 2,811 lexical occurrences, 2,752 unique sites, 864 routes, zero unmapped sites. The new atomic downgrade is classified separately from ordinary salvage, with its detached-candidate allocation and refusal cleanup explicit; the provisional enhancement-output cleanup is explicitly classified; both moved wallet call sites retain their existing route ownership. The four temporary material-probe cleanup sites are explicitly classified in the recipe route. All 52 writer coverage checks pass on the salvage numeric repair source in 103.308 seconds, along with 14 accounting fixtures and matrix freshness; the essence fix reanchors the same route set and passes its 14-fixture validation, matrix freshness and corrected focused enhancement check; enhancement assertions now resolve their unique current source calls. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
+| Recipe flatfile restore | Passed through the actual native restore decoder: complete recovery, checksum damage, missing obligation/root, future revision, and invalid receipt filename. |
+| Mortal recipe gameplay | Physical and retained-pouch Craft/Forge passed on the `0cd04f40b` flatfile binary with exact XP, output UIDs and counters through copyover and two cold restarts. Both disposable SQL engines now pass the same physical and retained-pouch journey on the verified `0cd04f40b` SQL binary, preserving inputs, output UIDs, XP and counters through copyover and two cold restarts. This remains one frozen leather recipe with accounting inactive. |
+| Death/resurrection accounting acceptance | **RED** on disposable MariaDB 10.11.14 and MySQL 8.0.46 using the verified `49f76401c` SQL binary. Real combat/death and resurrection returned all 12 original fixture item UIDs, restored the exact wallet, and retired the new death coin pile. The inactive-accounting journey still reports 27 uncovered item events and two currency operations missing accounting roots/postings. It does not qualify active accounting or subsequent restart. |
+| Latest migration integration | Runtime manifest validator and all 34 native boot/migration contract tests passed with head 0053 and 225 tables. All three histories converge on the pinned schema on disposable MySQL 8.0.46 and MariaDB 10.11.14, including preserved master receipts/runtime payloads, append/replay, shell/compiled boot, restore selection, and tamper refusal. The fixture uses the current sealed baseline with the master prefix; a captured production clone remains outside this proof. |
+
+Prior build and component passes do not establish an all-green result at this
+publication commit. Detailed synthetic fixtures remain in `tests/async/`; local
+logs and disposable binaries are not published as production artifacts.
+
+## Remaining work
+
+The accounting release validator remains **blocked**: 751 runtime/projection
+writer routes still lack the required qualification. The generated coverage
+matrix describes that gap; a complete census alone cannot close it.
+
+Recipe flatfile restore and mortal Craft/Forge restart qualification are
+published, along with mini-mode startup and save-admission fixes. Broader recipe
+variants and active accounting journeys still need qualification. Current
+strict builds pass. The frozen 822- and 828-script regression runs are complete, with their failures
+and optional-check limits recorded above. The later auction failure is a native
+inspector compilation timeout before gameplay, not an observed auction refusal. Subsequent enhancement
+and recipe bounds, probe cleanup and lifecycle protections have separate native
+sanitizer, production-build or policy-fault evidence. A complete current-head
+regression and integrated accounting qualification remain outstanding. The
+current runner discovers 835 scripts; the completed 828-script run used an
+earlier frozen source snapshot.
+
+Paid same-UID superior enhancement, remaining pouch writers, day-one quest and
+loot paths, audit completeness, activation/recovery/backup/retention gates, and
+operator policy decisions remain open under [the completion plan](FINISH_ACCOUNTING_PLAN.md).
+The branch is **not yet ready to merge or activate**. This push records current
+implementation and review status; it performs no deployment or production action.

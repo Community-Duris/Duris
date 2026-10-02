@@ -1352,6 +1352,8 @@ struct npc_only_data
 
 	int idnum; /* Given only to pets, used for crashsave */
 	uint32_t summon_kind; // stable summoned_pet_kind; zero for ordinary area mobs
+	bool alchemist_vial_roll_done; // one decision for a finalized fresh world spawn
+	unsigned long long alchemist_action_until_pulse; // both NPC AI entry points
 	bool summoned_instance; // survives loss of charm/ownership until extraction
 	bool transport_recovery_pending;
 	char recovered_transport_rider[50];
@@ -1509,6 +1511,10 @@ struct char_data
 
 	P_nevent nevents;
 	P_nevent nevents_tail;
+	/* Runtime-only fast path for the ordinary mobile event.  The sequence
+	 * makes the pointer safe to validate after scheduler-pool reuse. */
+	P_nevent world_activity_mundane_event;
+	unsigned long long world_activity_mundane_event_sequence;
 
 	struct char_player_data player; /* Normal data               */
 	struct player_disguise_data disguise;

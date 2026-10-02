@@ -1,5 +1,7 @@
 #ifndef ITEM_MOVEMENT_TRANSACTION_H
 #define ITEM_MOVEMENT_TRANSACTION_H
+#include "combat/chaos_pouch_types.h"
+#include "item/craft_recipe_continuation.h"
 
 #include "persistence/critical_command_coordinator.h"
 #include "item/item_transfer_command.h"
@@ -121,6 +123,16 @@ bool item_movement_transaction_submit_batch(
 	item_movement_reject *reject, item_movement_publication_fn publication,
 	economic_source_kind lifecycle_source, uint64_t logical_source_id,
 	const item_transfer_continuation &continuation);
+// Atomically retire captured input trees and publish one or more detached output
+// trees through the existing critical-command coordinator.
+bool item_movement_transaction_submit_craft(
+	P_char actor, P_obj const *inputs, size_t input_count, P_obj const *outputs,
+	size_t output_count, int64_t recipe_id, item_movement_completion_fn completion,
+	const void *context, size_t context_size, item_movement_reject *reject = NULL,
+	P_obj retained_pouch = nullptr, const chaos_material_pouch_usage *pouch_usage = nullptr,
+	size_t pouch_usage_count = 0,
+	chaos_pouch_usage_mode pouch_mode = chaos_pouch_usage_mode::generated,
+	const craft_recipe_continuation *recipe = nullptr);
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
 					  P_obj target_container = NULL,
 					  economic_source_kind source = {}, uint64_t source_id = 0);
@@ -157,6 +169,10 @@ bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room,
 					uint64_t source_id = 0);
 bool item_creation_grant_mark_blocking(P_char actor);
 bool item_creation_grant_blocks_commands(P_char actor);
+// Only admitted grants block snapshot capture. Queued grants waiting for an
+// older save must allow that save to finish; unrelated publication owners may
+// themselves require a receipt-bearing save.
+bool item_creation_grant_player_publication_pending(P_char player);
 // Orderly maintenance must not quiesce between the roots of an accepted kit.
 bool item_creation_grant_batches_pending(void);
 // A disconnected pre-entry character cannot finish unsubmitted kit roots.
@@ -169,6 +185,8 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 bool item_movement_transaction_restore_replayed_command(const critical_command &command);
 // Copy outstanding spell publications for a player's load request. The loader
 // only needs receipts for commands whose publication is still fenced.
+bool item_movement_transaction_pending_craft_progression(
+	uint32_t actor_pid, std::vector<critical_operation_id> *operations);
 bool item_movement_transaction_pending_spell_effects(
 	uint32_t actor_pid, std::vector<critical_operation_id> *operations);
 bool item_movement_transaction_restore_replayed_publication(
@@ -176,6 +194,9 @@ bool item_movement_transaction_restore_replayed_publication(
 	const void *context, size_t context_size);
 void item_movement_transaction_player_ready(P_char actor);
 bool item_movement_transaction_player_busy(P_char actor);
+// A creation commit can advance custody before its item is published live.
+// Ordinary snapshots must wait until every inbound creation has published.
+bool item_movement_transaction_player_creation_busy(P_char actor);
 item_movement_health item_movement_transaction_health_copy(void);
 void item_movement_transaction_reset_for_tests(void);
 

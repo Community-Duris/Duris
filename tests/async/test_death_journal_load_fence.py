@@ -59,6 +59,7 @@ int item_materialize_count = 0;
 int pet_stage_count = 0;
 P_room world = nullptr;
 bool item_movement_transaction_pending_spell_effects(uint32_t, std::vector<critical_operation_id> *) { return true; }
+bool item_movement_transaction_pending_craft_progression(uint32_t, std::vector<critical_operation_id> *) { return true; }
 void spell_component_retirement_recover_receipts(uint32_t, const player_load_spell_effect_receipt *, size_t) {}
 void quest_reward_recover_pending(P_char, const critical_operation_id &, const quest_reward_continuation &, uint64_t, uint64_t, bool) {}
 void quest_reward_recover_xp_entitlement(P_char, const critical_operation_id &, const quest_reward_continuation &, uint32_t, uint32_t) {}

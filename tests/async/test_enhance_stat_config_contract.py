@@ -14,5 +14,7 @@ for key in (
 ):
     assert key in source, key
 assert "base_modifier * enhance_stat_cap_multiplier" in source
-assert "enhance_stat_platinum_base + itemvalue(source) * enhance_stat_platinum_per_ival" in source
+assert "static_cast<int64_t>(enhance_stat_platinum_base)" in source
+assert "static_cast<int64_t>(itemvalue(source))" in source
+assert "quoted_cost < 0 || quoted_cost > INT_MAX" in source
 print("superior stat config contract passed")

@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+from _object_special_fixture import object_special_functions
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -31,6 +32,7 @@ fixture = fixture.replace("int main() {", "void foundation_regression_main() {")
 fixture = fixture.replace("void send_to_char(const char *, P_char) {}", "")
 fixture = fixture.replace("void act(const char *, int, P_char, P_obj, void *, int) {}", "")
 fixture = fixture.replace("// INSERT_PRODUCTION_ABORT", function(ROOT / "src/net/sparser.c", "void do_abort(P_char ch,"))
+fixture += "\n" + object_special_functions()
 commands = "\n".join([
     function(ROOT / "src/core/utility.c", "void cast_as_area("),
     function(ROOT / "src/cmd/actoth.c", "void do_use("),

@@ -40,17 +40,31 @@ enum class quest_reward_obligation_result
 	not_found,
 };
 
+// Counts attempted SELECT executions and fetched native payloads, including
+// receipts and rows that subsequently fail validation. Callers aggregate these
+// into their load budget even when the read refuses publication.
+struct quest_reward_read_metrics
+{
+	uint32_t query_count = 0;
+	uint32_t row_count = 0;
+	uint64_t byte_count = 0;
+};
+
+constexpr size_t QUEST_REWARD_PENDING_MAX = 64;
+constexpr size_t QUEST_REWARD_PENDING_QUERY_MAX = 3;
+
 // Read pending obligations for one player from a worker-owned connection.
 // An inconsistent or oversized row fails the whole read without changing output.
 quest_reward_obligation_result
 quest_reward_obligation_repository_pending(MYSQL *connection, uint32_t player_pid,
 					   std::vector<quest_reward_obligation_record> *obligations,
-					   unsigned int *database_error_code);
+					   unsigned int *database_error_code,
+					   quest_reward_read_metrics *metrics = nullptr);
 
 quest_reward_obligation_result quest_reward_xp_entitlement_repository_pending(
 	MYSQL *connection, uint32_t recipient_pid,
 	std::vector<quest_reward_xp_entitlement_record> *entitlements,
-	unsigned int *database_error_code);
+	unsigned int *database_error_code, quest_reward_read_metrics *metrics = nullptr);
 
 // Acknowledge only the exact retained obligation after all of its reward
 // effects have durable receipts. Safe to retry from a repository worker.

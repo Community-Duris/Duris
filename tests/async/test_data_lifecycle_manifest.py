@@ -44,6 +44,8 @@ SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0047_quest_xp_receipt.sql",
     ROOT / "migrations" / "immutable" / "0048_quest_xp_entitlement.sql",
     ROOT / "migrations" / "immutable" / "0049_player_spell_effect_receipt.sql",
+    ROOT / "migrations" / "immutable" / "0051_player_item_runtime_state.sql",
+    ROOT / "migrations" / "immutable" / "0053_craft_progression.sql",
 )
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("validate_data_lifecycle", VALIDATOR)
 VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)
@@ -105,8 +107,8 @@ class LifecycleManifestTest(unittest.TestCase):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["database_tables"], 223)
-        self.assertEqual(report["non_database_stores"], 37)
+        self.assertEqual(report["database_tables"], 225)
+        self.assertEqual(report["non_database_stores"], 50)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
 
@@ -117,6 +119,144 @@ class LifecycleManifestTest(unittest.TestCase):
         self.assertEqual(entry["season_action"], "retain")
         self.assertEqual(entry["terminal_action"], "retain")
         self.assertEqual(entry["kind"], "recovery_state")
+
+    def test_native_flatfile_authorities_are_registered_and_required(self) -> None:
+        stores = (
+            ("file:flatfile-player-snapshots", "FLATFILE_ROOT/players/*.snapshot"),
+            ("file:flatfile-accounts", "FLATFILE_ROOT/identities/accounts/*.acct"),
+            ("file:flatfile-identity-catalog", "FLATFILE_ROOT/identities/names/catalog.identity"),
+            ("file:flatfile-item-ownership", "FLATFILE_ROOT/domains/item_ownership"),
+            ("file:flatfile-player-domains", "FLATFILE_ROOT/domains/player-*.domain"),
+            ("file:flatfile-bank-domains", "FLATFILE_ROOT/domains/bank-*.domain"),
+            ("file:flatfile-player-domain-journal", "FLATFILE_ROOT/domains/.player-domain-transaction"),
+            ("file:flatfile-legacy-currency-journal", "FLATFILE_ROOT/domains/.currency-transaction"),
+            ("file:flatfile-item-uid-allocator", "FLATFILE_ROOT/metadata/item_uid_allocator"),
+            ("file:flatfile-item-uid-initialization", "FLATFILE_ROOT/metadata/item_uid_allocator.initialized"),
+        )
+        for entry_id, locator in stores:
+            with self.subTest(store=entry_id):
+                entry = self.entry(entry_id)
+                self.assertEqual(entry["locator"], locator)
+                self.assertEqual(entry["kind"], "recovery_state")
+                self.assertTrue(entry["protected_record"])
+                self.assertEqual(entry["season_action"], "retain")
+                self.assertEqual(entry["terminal_action"], "retain")
+                self.assertEqual(entry["export_rule"]["disposition"], "pending")
+                missing = json.loads(json.dumps(self.manifest))
+                missing["entries"] = [row for row in missing["entries"] if row["id"] != entry_id]
+                with tempfile.TemporaryDirectory() as temporary:
+                    self.assert_rejected(
+                        self.run_validator(self.write_manifest(Path(temporary), missing)),
+                        "non-database coverage mismatch",
+                    )
+
+    def test_native_flatfile_authority_protection_cannot_be_removed(self) -> None:
+        for entry_id in sorted(VALIDATOR_MODULE.NATIVE_FLATFILE_AUTHORITY_STORES):
+            for field, value in (("protected_record", False), ("season_action", "reset_delete"),
+                                 ("terminal_action", "deactivate")):
+                with self.subTest(store=entry_id, field=field):
+                    changed = json.loads(json.dumps(self.manifest))
+                    target = next(row for row in changed["entries"] if row["id"] == entry_id)
+                    target[field] = value
+                    with tempfile.TemporaryDirectory() as temporary:
+                        self.assert_rejected(
+                            self.run_validator(self.write_manifest(Path(temporary), changed)),
+                            "native flatfile authority must remain protected and retained",
+                        )
+
+    def test_native_flatfile_account_export_requires_secret_exclusions(self) -> None:
+        for field in ("password_hash", "confirmation"):
+            with self.subTest(secret=field):
+                changed = json.loads(json.dumps(self.manifest))
+                target = next(row for row in changed["entries"]
+                              if row["id"] == "file:flatfile-accounts")
+                target["export_rule"]["excluded_fields"].remove(field)
+                with tempfile.TemporaryDirectory() as temporary:
+                    self.assert_rejected(
+                        self.run_validator(self.write_manifest(Path(temporary), changed)),
+                        "omits secret exclusions",
+                    )
+
+    def test_recipe_progression_files_are_protected_and_required(self) -> None:
+        for entry_id, suffix in (("file:player-craft-receipts", ".craft"),
+                                 ("file:player-craft-obligations", ".craft-obligation")):
+            with self.subTest(store=entry_id):
+                entry = self.entry(entry_id)
+                self.assertEqual(entry["locator"], "FLATFILE_ROOT/players/*" + suffix)
+                self.assertEqual(entry["kind"], "recovery_state")
+                self.assertTrue(entry["protected_record"])
+                self.assertEqual(entry["season_action"], "retain")
+                self.assertEqual(entry["terminal_action"], "retain")
+                self.assertEqual(entry["export_rule"]["disposition"], "pending")
+                missing = json.loads(json.dumps(self.manifest))
+                missing["entries"] = [row for row in missing["entries"] if row["id"] != entry_id]
+                with tempfile.TemporaryDirectory() as temporary:
+                    self.assert_rejected(
+                        self.run_validator(self.write_manifest(Path(temporary), missing)),
+                        "non-database coverage mismatch",
+                    )
+
+    def test_recipe_recovery_protection_cannot_be_removed_by_policy_edits(self) -> None:
+        stores = ("database:player_craft_progression", "file:player-craft-receipts",
+                  "file:player-craft-obligations")
+        for entry_id in stores:
+            for field, value in (("protected_record", False), ("season_action", "reset_delete"),
+                                 ("terminal_action", "deactivate")):
+                with self.subTest(store=entry_id, field=field):
+                    changed = json.loads(json.dumps(self.manifest))
+                    target = next(row for row in changed["entries"] if row["id"] == entry_id)
+                    target[field] = value
+                    with tempfile.TemporaryDirectory() as temporary:
+                        self.assert_rejected(
+                            self.run_validator(self.write_manifest(Path(temporary), changed)),
+                            "recipe progression recovery must remain protected and retained",
+                        )
+
+    def test_coupled_player_recovery_protection_cannot_be_removed(self) -> None:
+        stores = (
+            "file:player-quarantine-recovery-receipts",
+            "database:player_death_disposition", "database:player_death_conflict_evidence",
+            "database:player_spell_effect_receipt", "database:quest_reward_obligation",
+            "database:quest_reward_xp_entitlement", "file:player-deaths",
+            "file:player-spell-receipts", "file:player_save_quarantine",
+            "file:player_save_quarantine_archive", "file:player_save_quarantine_policy",
+        )
+        for entry_id in stores:
+            for field, value in (("protected_record", False), ("season_action", "reset_delete"),
+                                 ("terminal_action", "deactivate")):
+                with self.subTest(store=entry_id, field=field):
+                    changed = json.loads(json.dumps(self.manifest))
+                    target = next(row for row in changed["entries"] if row["id"] == entry_id)
+                    target[field] = value
+                    with tempfile.TemporaryDirectory() as temporary:
+                        self.assert_rejected(
+                            self.run_validator(self.write_manifest(Path(temporary), changed)),
+                            "coupled player recovery must remain protected and retained",
+                        )
+
+    def test_core_transaction_recovery_protection_cannot_be_removed(self) -> None:
+        shared = {
+            "database:critical_operation_inbox", "database:critical_outbox",
+            "database:critical_outbox_delivery_dedupe", "file:player_save_journal",
+            "database:item_uid_allocator",
+            "file:critical_command_journal", "file:persistence_fallback",
+            "file:persistence_fallback_quarantine", "file:flatfile-authority-journal",
+        }
+        stores = {row["id"] for row in self.manifest["entries"]
+                  if row["id"].startswith(("database:economic_", "file:economic-"))} | shared
+        self.assertEqual(len(stores), 34)
+        for entry_id in sorted(stores):
+            for field, value in (("protected_record", False), ("season_action", "reset_delete"),
+                                 ("terminal_action", "deactivate")):
+                with self.subTest(store=entry_id, field=field):
+                    changed = json.loads(json.dumps(self.manifest))
+                    target = next(row for row in changed["entries"] if row["id"] == entry_id)
+                    target[field] = value
+                    with tempfile.TemporaryDirectory() as temporary:
+                        self.assert_rejected(
+                            self.run_validator(self.write_manifest(Path(temporary), changed)),
+                            "core transaction recovery must remain protected and retained",
+                        )
 
     def test_journal_archive_and_fences_are_protected_recovery_evidence(self) -> None:
         for name in ("file:player_save_quarantine_archive", "file:player_save_quarantine_policy"):

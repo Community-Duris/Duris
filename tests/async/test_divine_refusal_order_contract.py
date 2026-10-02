@@ -13,8 +13,13 @@ interp_h = source("interp.h").read_text(encoding="utf-8")
 structs = source("structs.h").read_text(encoding="utf-8")
 makefile = (ROOT / "src" / "Makefile").read_text(encoding="utf-8")
 properties = (ROOT / "lib" / "duris.properties").read_text(encoding="utf-8")
+properties_source = source("world/properties.c").read_text(encoding="utf-8")
+content_header = source("divine_refusal_content.h").read_text(encoding="utf-8")
+content = source("divine_refusal_content.c").read_text(encoding="utf-8")
+content_file = (ROOT / "lib" / "misc" / "divine_refusal.json").read_text(encoding="utf-8")
 
 assert "cmd/divine_refusal_policy.o" in makefile
+assert "cmd/divine_refusal_content.o" in makefile
 assert "unsigned long long divine_refusal_until_pulse;" in structs
 assert "int ordered_command_number(const char *input);" in interp_h
 assert "static int input_command_number(const char *input)" in interp
@@ -59,7 +64,6 @@ assert contains(decision, "&pet->specials.divine_refusal_until_pulse")
 assert contains(decision, "number")
 
 display = extract_function("actoff.c", "static void show_new_divine_refusal(")
-assert "My deity has warned me against completing that action." in display
 assert "refuses your order with a solemn shake" in display
 for forbidden in ("do_say(", "mobsay(", "do_emote("):
     assert forbidden not in display
@@ -67,6 +71,8 @@ assert "ACT_SILENCEABLE" in display
 assert "is_silent(pet, false)" in display
 assert "CAN_SPEAK(pet)" in display
 assert contains(display, "master->specials.z_cord == pet->specials.z_cord")
+assert "divine_refusal_content_render" in display
+assert "escape_act_dollars" in display
 
 order = extract_function("actoff.c", "void do_order(")
 assert count(order, "divine_refusal_blocks_order(") == 2
@@ -95,6 +101,18 @@ assert before(followers, "divine_refusal_blocks_order(", "AFF5_ORDERING")
 assert contains(followers, "if (new_refusal) l_delay = TRUE;")
 assert contains(followers, 'if (!acknowledged && !refused) send_to_char("Ok.\\n", ch);')
 assert "CharWait(k," not in followers
+
+assert "divine_refusal_content_registry().snapshot()" in order
+assert "refusal_content_snapshot" in order
+assert "GET_VNUM(pet)" in decision
+assert "effective_config" in decision
+assert "reload_file(DIVINE_REFUSAL_CONTENT_FILE)" in properties_source
+assert "std::atomic_load_explicit" in content
+assert "MAX_MESSAGE" in content_header
+assert "My deity has warned me against completing that action." in content_header
+assert "{patron}" in content
+assert '"66026"' in content_file and '"66031"' in content_file
+assert '"Garl"' in content_file
 
 docs = ROOT / "docs" / "reference" / "DIVINE_REFUSAL.md"
 assert docs.exists()

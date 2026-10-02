@@ -70,7 +70,7 @@ player_save_apply_result replay_apply(const player_snapshot &snapshot, void *raw
         if (state.newer_death)
             return {player_save_apply_outcome::already_applied, snapshot.revision + 1, 0};
     }
-    if (!snapshot.quest_xp_receipts.empty() || !snapshot.spell_effect_receipts.empty()) {
+    if (!snapshot.quest_xp_receipts.empty() || !snapshot.spell_effect_receipts.empty() || !snapshot.craft_receipts.empty()) {
         if (state.verified_receipt)
             return {player_save_apply_outcome::stale_revision, snapshot.revision + 1, 0,
                     player_save_custody_diagnosis::none, true};
@@ -630,7 +630,17 @@ int main(int argc, char **argv)
             player_save_journal_shutdown();
         }
     }
-    for (const player_snapshot &receipt_save : {spell, quest_xp}) {
+    auto craft = spell;
+    craft.schema_version = PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
+    craft.components = PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_SKILLS | PLAYER_COMPONENT_AFFECTS | PLAYER_COMPONENT_TROPHIES;
+    craft.spell_effect_receipts.clear();
+    player_craft_receipt_snapshot craft_receipt = {};
+    craft_receipt.operation_id.bytes[0] = 99;
+    craft_receipt.discipline = 2;
+    craft_receipt.experience = 7000;
+    craft.craft_receipts.push_back(craft_receipt);
+    craft.encoded_size_bound += 1024;
+    for (const player_snapshot &receipt_save : {spell, quest_xp, craft}) {
         for (int outcome : {0, 1, 2, 3, 4}) {
             const std::string isolated = directory + "-receipt-operation-" + std::to_string(++case_number);
             assert(player_save_journal_init(isolated.c_str()));

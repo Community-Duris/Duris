@@ -37,6 +37,8 @@ struct pc_data {
     bool death_custody_disputed = false;
     uint64_t death_custody_wait_since_usec = 0;
     int death_custody_wait_alerts = 0, death_custody_wait_polls = 0;
+    uint64_t death_retry_corpse_uid = 0, death_retry_due_usec = 0;
+    int death_retry_delay = 0;
 };
 struct object {};
 using P_obj = object *;

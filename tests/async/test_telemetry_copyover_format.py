@@ -27,7 +27,7 @@ def function(source, signature):
 def main():
     source = (ROOT / 'src/persistence/copyover.c').read_text()
     header = (ROOT / 'src/persistence/copyover.h').read_text()
-    assert '#define COPYOVER_VERSION 16' in header
+    assert '#define COPYOVER_VERSION 17' in header
     recover = source[source.index('int copyover_recover('):]
     assert 'copyover_version_supported(header.version)' in recover
     assert 'version >= 12 && version <= COPYOVER_VERSION' in source

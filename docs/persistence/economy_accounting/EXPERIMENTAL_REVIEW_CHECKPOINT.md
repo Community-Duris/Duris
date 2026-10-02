@@ -37,9 +37,10 @@ must not be read as qualification of every current route.
 ## Known blockers
 
 - The release validator still refuses missing executable writer evidence.
-- Quest recovery load metrics undercount per-reward SQL reads and omit XP
-  continuation bytes. The budget fix and native workload qualification remain
-  unfinished.
+- SQL quest recovery now has fixed-cost native witness reads and complete load
+  metrics, qualified on disposable MySQL/MariaDB workloads in the
+  [review continuation](REVIEW_CONTINUATION_2026-09-30.md). Integrated concurrent
+  publication/save recovery and full gameplay workload qualification remain open.
 - Full-world clone login/save and integrated disconnect, database interruption,
   copyover, death/corpse, and compound economic journeys remain open.
 - Native monetary/origin/UID audit coverage, flatfile parity, and lifecycle

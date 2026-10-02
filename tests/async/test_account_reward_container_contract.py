@@ -29,7 +29,7 @@ summon = reward[summon_start:summon_end]
 assert contains(summon, "obj->type==ITEM_CONTAINER")
 assert contains(summon, "REMOVE_BIT(obj->value[1],CONT_CLOSED)")
 assert index(summon, "REMOVE_BIT(obj->value[1],CONT_CLOSED)") < index(
-    summon, "item_creation_grant_submit_to_player(ch,obj,ch)"
+    summon, "item_creation_grant_submit_to_player(ch,obj,ch,NULL,"
 )
 
 # Account rewards use explicit lifecycle rules and must not also opt into the
@@ -53,13 +53,16 @@ assert index(make_corpse, hook) < index(make_corpse, "writeCorpse(corpse);")
 assert "item_transfer_reason::corpse_create" in fight
 assert index(make_corpse, "if (IS_NPC(ch))") < index(make_corpse, "corpse->contains = ch->carrying;")
 
-# Forced disappearance promotes direct children to the same parent, traverses
-# nested containers first, and extracts only after the reward container is empty.
+# Forced disappearance promotes direct children to the same parent after its
+# safety preflight and extracts only after the reward container is empty.
 assert contains(reward, "promote_reward_contents")
 promote_start = index(reward, "static bool promote_reward_contents")
 promote_end = index(reward, "static std::string human_duration", promote_start)
 promote = reward[promote_start:promote_end]
-assert contains(promote, "ITEM2_CRUMBLELOOT")
+assert index(promote, "reward_contents_can_promote(container)") < index(promote, "obj_from_obj(child)")
+preflight_start = index(reward, "static bool reward_contents_can_promote(P_obj container)\n{")
+preflight_end = index(reward, "static P_obj reward_item_by_uid", preflight_start)
+assert contains(reward[preflight_start:preflight_end], "ITEM2_CRUMBLELOOT")
 assert contains(promote, "VOBJ_COINS")
 assert contains(promote, "room_coin_merge")
 assert contains(reward, "dissolve_reward_containers")

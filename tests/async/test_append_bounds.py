@@ -119,7 +119,7 @@ check("nowhere collection trims only a separator that was actually stored",
 
 # Two functions take a caller-owned char* whose size only the caller knows.
 # They must keep saying so, or a future reader will "fix" them wrongly.
-for path, fn in ((rel("actwiz.c"), "concat_which_flagsde"),
+for path, fn in ((rel("flag_formatting.c"), "concat_which_flagsde"),
                  (rel("actinf.c"), "get_equipment_list")):
     text = (root / path).read_text()
     idx = text.index(fn + "(")

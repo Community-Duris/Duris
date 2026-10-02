@@ -40,7 +40,12 @@ def main() -> None:
     owner_at = player.index("sql_persistence_item_owner_matches(")
     allocation_at = player.index("read_object(vnum, VIRTUAL)")
     assert parse_at < owner_at < allocation_at
-    assert "extract_obj(obj, FALSE)" not in player
+    # UID ownership is checked before allocation. A malformed optional runtime
+    # payload must still discard the newly allocated object and refuse the load.
+    runtime_at = player.index("player_item_snapshot_list_decode(", allocation_at)
+    discard_at = player.index("extract_obj(obj, FALSE)", runtime_at)
+    assert allocation_at < runtime_at < discard_at
+    assert "return false;" in player[discard_at:player.index("player_load_item_runtime_state_apply", discard_at)]
 
     program = r'''
 #include <cassert>

@@ -424,7 +424,8 @@ void spell_faerie_sight(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 		    !context.put_i32(IS_PC(victim) ? GET_PID(victim) : 0))
 			return;
 		if (!spell_consume_components(ch, VOBJ_FORAGE_FAERIE_DUST, dust_count,
-					      SPELL_FAERIE_SIGHT, item_spell_component_effect::faerie_sight,
+					      SPELL_FAERIE_SIGHT,
+					      item_spell_component_effect::faerie_sight,
 					      spell_faerie_sight_component_completed,
 					      context.data(), context.size, true))
 			send_to_char("Your faerie dust cannot be recorded right now.\r\n", ch);

@@ -10,15 +10,15 @@
 unsigned int economic_sql_pending_claim_source_stage(MYSQL *connection,
 						     const critical_operation_id &source_operation,
 						     uint16_t source_slot,
-			     const economic_account_key &claim_account,
-			     uint32_t beneficiary_pid, uint64_t amount);
+						     const economic_account_key &claim_account,
+						     uint32_t beneficiary_pid, uint64_t amount);
 
 // Link whole source allocations consumed by a claim debit in the caller's
 // transaction. If the requested debit would split one source allocation, the
 // caller must roll back and refuse until partial-allocation support is active.
 unsigned int economic_sql_pending_claim_source_consume(
 	MYSQL *connection, const critical_operation_id &spending_operation,
-	const economic_account_key &claim_account, uint32_t beneficiary_pid,
-	uint64_t claim_balance, uint64_t amount);
+	const economic_account_key &claim_account, uint32_t beneficiary_pid, uint64_t claim_balance,
+	uint64_t amount);
 
 #endif

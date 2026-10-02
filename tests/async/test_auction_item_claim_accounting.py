@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Executable auction item claim accounting and custody regressions."""
 
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -12,7 +13,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="auction-item-claim-accounting-") as directory:
         binary = Path(directory) / "auction-item-claim-accounting"
         subprocess.run([
-            "g++-12", "-std=c++20", "-O1", "-g", "-Wall", "-Wextra", "-Wpedantic",
+            os.environ.get("CXX", "g++"), "-std=c++20", "-O1", "-g", "-Wall", "-Wextra", "-Wpedantic",
             "-Werror", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
             "-D__NO_MYSQL__", "-Isrc/no_mysql", "-Isrc",
             "tests/async/auction_item_claim_accounting_test.cpp",
@@ -22,7 +23,7 @@ def main():
             "src/economy/economic_accounting_types.c",
             "src/economy/economic_accounting_plan.c",
             "src/economy/economic_accounting_intent.c",
-            "src/item/item_transfer_command.c",
+            "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c",
             "src/persistence/critical_command.c",
             "-lcrypto", "-o", str(binary),
         ], cwd=ROOT, check=True)

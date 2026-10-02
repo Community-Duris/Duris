@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 223;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 225;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons',"
 	"'account_bound_rewards','account_characters','account_erasure_evidence',"
@@ -50,11 +50,11 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'offline_messages','outposts','pages','persistence_item_events','persistence_scalar_events',"
 	"'personal_data_export_audit','personal_data_export_requests',"
 	"'personal_data_export_sections','ping','pkill_event','pkill_info','player_affects',"
-	"'player_data','player_death_conflict_evidence','player_death_custody',"
+	"'player_craft_progression','player_data','player_death_conflict_evidence','player_death_custody',"
 	"'player_death_disposition','player_death_restitution_delivery',"
 	"'player_death_restitution_item','player_death_restitution_receipt',"
 	"'player_death_restitution_runtime','player_forged_items','player_granted_cmds',"
-	"'player_intros','player_item_affects','player_item_extra_descr','player_items',"
+	"'player_intros','player_item_affects','player_item_extra_descr','player_item_runtime_state','player_items',"
 	"'player_languages','player_pet_item_affects','player_pet_item_extra_descr',"
 	"'player_pet_items','player_pets','player_recipes','player_shapechanges','player_skills',"
 	"'player_spell_effect_receipt','player_spellbooks','player_timers',"
@@ -72,9 +72,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'telemetry_session','timers','towns','world_quest_accomplished','zone_story_quest_state',"
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy','zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"3fb1ba07114cefca9d5f3c75d1e81ca34b417d517800a8e5c1e0554e73e4fc7e";
+	"68515bb1d7aa78d2f05928aa218ffdc369fbcb6f4c58eedf0b0e94ef967c5e8d";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"d617f29895e70446566b3a57a5912accd6f299be687d060225f8431fa029ec3c";
+	"25e566f69a1ac54ab4f4b78f0f2c990d9c394de5f543c1303fba0d88c8b5aec3";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced by
@@ -100,23 +100,34 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * adds one runtime table. Migration 0046 adds realized copper prices to
  * economic operation roots without adding a runtime table; migration 0047 adds
  * a durable quest XP receipt mask and migration 0048 adds per-recipient XP
- * entitlements. Migration 0049 adds player spell-effect receipts. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0051_discovered_zone_daily_state";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 51;
+ * entitlements. Migration 0049 adds player spell-effect receipts, 0051 adds
+ * player item runtime state, and 0052 indexes quest item witness reads. Migration
+ * 0053 adds craft progression and 0054 permits discovered-zone daily state. */
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0054_discovered_zone_daily_state";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 54;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
 	"e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
 	"c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"82d38227ba5b286cc2474826465d6b9ac06f1c6049125a6bf80fbae7953bbb43";
-constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID = "0051_discovered_zone_daily_state";
-constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 51;
+	"7d9446512b52e068170f0d9bbce2fcb362a32e2960cfc5369073374a2bf8a853";
+constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID = "0054_discovered_zone_daily_state";
+constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 54;
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_APPLY_CHECKSUM =
 	"e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM =
 	"c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM =
-	"eaa0b0f305c96d73376454d8d74d971df77c4cb27e5f89b50f585e446c247731";
+	"61892b12124d1c6aeeb24f5c32ea0c81867188f0f649742623b0b1d7d92e383b";
+/* Master recorded runtime state at 0031; its accounting upgrade retains that prefix. */
+constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID = "0054_discovered_zone_daily_state";
+constexpr unsigned RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 54;
+constexpr const char *RUNTIME_MASTER_0031_MIGRATION_APPLY_CHECKSUM =
+	"e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e";
+constexpr const char *RUNTIME_MASTER_0031_MIGRATION_VERIFY_CHECKSUM =
+	"c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe";
+constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HISTORY_CHECKSUM =
+	"17433a81cd69e9fd9b48407b9d2f829a7f357e0f1ab74893ae7c2a826ca3f5ac";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_SQL =
 	"SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING "
 	"utf8mb4))),16,'0')),CONVERT(migration_id USING "
@@ -132,7 +143,7 @@ constexpr const char *RUNTIME_MIGRATION_HISTORY_SQL =
 	"utf8mb4))),16,'0')),CONVERT(compatibility USING "
 	"utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING "
 	"utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history "
-	"ORDER BY sequence_number LIMIT 52";
+	"ORDER BY sequence_number LIMIT 55";
 constexpr const char *RUNTIME_EXTRA_DESCRIPTION_GENERATION_SQL =
 	"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN "
 	"('player_item_extra_descr','player_pet_item_extra_descr') AND column_name='description_sha256' AND "

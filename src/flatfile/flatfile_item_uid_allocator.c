@@ -9,6 +9,7 @@
 #include <mutex>
 #include <openssl/crypto.h>
 #include <openssl/sha.h>
+#include <sys/stat.h>
 #include <type_traits>
 #include <vector>
 
@@ -19,6 +20,11 @@ constexpr std::array<uint8_t, 8> allocator_magic = { 'D', 'U', 'R', 'U', 'I', 'D
 constexpr size_t allocator_file_size =
 	allocator_magic.size() + sizeof(uint32_t) * 2 + sizeof(uint64_t) * 2 + SHA256_DIGEST_LENGTH;
 constexpr const char *allocator_filename = "item_uid_allocator";
+constexpr const char *initialized_filename = "item_uid_allocator.initialized";
+constexpr std::array<uint8_t, 8> initialized_magic = { 'D', 'U', 'R', 'U', 'I', 'D', 1, 0 };
+constexpr std::array<uint8_t, 8> fenced_initialized_magic = { 'D', 'U', 'R', 'U', 'I', 'D', 2, 0 };
+constexpr size_t initialized_file_size =
+	fenced_initialized_magic.size() + sizeof(uint64_t) * 2 + SHA256_DIGEST_LENGTH;
 constexpr const char *allocator_lock_filename = ".item-uid-allocator.lock";
 std::mutex allocator_mutex;
 
@@ -68,16 +74,71 @@ std::string metadata_directory(const std::string &root)
 	return root + "/metadata";
 }
 
+bool initialization_bounds(const std::vector<uint8_t> &marker, uint64_t *next_uid,
+			   uint64_t *revision)
+{
+	*next_uid = 0;
+	*revision = 0;
+	// The original witness proves initialization but has no high-water fields.
+	// A healthy legacy root upgrades this witness before releasing another UID.
+	if (marker == std::vector<uint8_t>(initialized_magic.begin(), initialized_magic.end()))
+		return true;
+	if (marker.size() != initialized_file_size ||
+	    memcmp(marker.data(), fenced_initialized_magic.data(), fenced_initialized_magic.size()))
+		return false;
+	const size_t sealed_size = marker.size() - SHA256_DIGEST_LENGTH;
+	unsigned char digest[SHA256_DIGEST_LENGTH];
+	SHA256(marker.data(), sealed_size, digest);
+	if (CRYPTO_memcmp(marker.data() + sealed_size, digest, sizeof(digest)))
+		return false;
+	decoder fields{ marker.data() + fenced_initialized_magic.size(), sizeof(uint64_t) * 2 };
+	return fields.number(next_uid) && fields.number(revision) && *next_uid > 1 && *revision &&
+	       fields.offset == fields.size;
+}
+
 flatfile_item_uid_result load_allocator(const std::string &root, uint64_t *next_uid,
 					uint64_t *revision, std::string *error)
 {
 	if (!next_uid || !revision)
 		return flatfile_item_uid_result::invalid;
+	std::vector<uint8_t> marker;
+	const flatfile_read_result marker_read =
+		flatfile_read(metadata_directory(root), initialized_filename, initialized_file_size,
+			      &marker, error);
+	uint64_t witnessed_next = 0, witnessed_revision = 0;
+	if (marker_read == flatfile_read_result::invalid ||
+	    (marker_read == flatfile_read_result::ok &&
+	     !initialization_bounds(marker, &witnessed_next, &witnessed_revision)))
+	{
+		if (error)
+			*error = "invalid item UID initialization evidence";
+		return flatfile_item_uid_result::invalid;
+	}
+	if (marker_read == flatfile_read_result::io_error)
+		return flatfile_item_uid_result::io_error;
+	const bool has_marker = marker_read == flatfile_read_result::ok;
 	std::vector<uint8_t> bytes;
 	const flatfile_read_result read = flatfile_read(
 		metadata_directory(root), allocator_filename, allocator_file_size, &bytes, error);
 	if (read == flatfile_read_result::not_found)
 	{
+		// New roots start at one. An initialized root must recover its exact
+		// allocator; scanning live items cannot reconstruct previously issued IDs.
+		struct stat custody_info;
+		const int custody_stat =
+			lstat((root + "/domains/item_ownership").c_str(), &custody_info);
+		if (has_marker || custody_stat == 0)
+		{
+			if (error)
+				*error = "missing item UID allocator for initialized custody";
+			return flatfile_item_uid_result::invalid;
+		}
+		if (errno != ENOENT)
+		{
+			if (error)
+				*error = "cannot verify fresh item UID custody";
+			return flatfile_item_uid_result::io_error;
+		}
 		*next_uid = 1;
 		*revision = 0;
 		return flatfile_item_uid_result::ok;
@@ -108,6 +169,12 @@ flatfile_item_uid_result load_allocator(const std::string &root, uint64_t *next_
 	uint64_t stored_next = 0;
 	if (!value.number(&stored_next) || !stored_next || value.offset != value.size)
 		return flatfile_item_uid_result::invalid;
+	if (stored_next < witnessed_next || stored_revision < witnessed_revision)
+	{
+		if (error)
+			*error = "item UID allocator predates initialization high-water witness";
+		return flatfile_item_uid_result::invalid;
+	}
 	*next_uid = stored_next;
 	*revision = stored_revision;
 	return flatfile_item_uid_result::ok;
@@ -131,6 +198,21 @@ bool publish_allocator(const std::string &root, uint64_t next_uid, uint64_t revi
 	       flatfile_atomic_write(metadata_directory(root), allocator_filename, file.bytes,
 				     error);
 }
+bool publish_initialization(const std::string &root, uint64_t next_uid, uint64_t revision,
+			    std::string *error)
+{
+	encoder file;
+	file.bytes.insert(file.bytes.end(), fenced_initialized_magic.begin(),
+			  fenced_initialized_magic.end());
+	file.number(next_uid);
+	file.number(revision);
+	unsigned char digest[SHA256_DIGEST_LENGTH];
+	SHA256(file.bytes.data(), file.bytes.size(), digest);
+	file.bytes.insert(file.bytes.end(), digest, digest + sizeof(digest));
+	return file.bytes.size() == initialized_file_size &&
+	       flatfile_atomic_write(metadata_directory(root), initialized_filename, file.bytes,
+				     error);
+}
 } // namespace
 
 flatfile_item_uid_result flatfile_item_uid_reserve(const std::string &root, uint64_t count,
@@ -152,6 +234,10 @@ flatfile_item_uid_result flatfile_item_uid_reserve(const std::string &root, uint
 		return flatfile_item_uid_result::exhausted;
 	const uint64_t end = next_uid + count;
 	if (!publish_allocator(root, end, revision + 1, error))
+		return flatfile_item_uid_result::io_error;
+	// Advance authority first, then its sealed high-water witness before issuing
+	// any ID. Witness failure burns the range; retry may use only a later range.
+	if (!publish_initialization(root, end, revision + 1, error))
 		return flatfile_item_uid_result::io_error;
 	*first = next_uid;
 	return flatfile_item_uid_result::ok;

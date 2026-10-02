@@ -14,10 +14,11 @@ TABLES = (
     'economic_accounting_coin_posting', 'economic_accounting_child',
     'economic_accounting_item_reference', 'economic_accounting_source_claim',
 )
-# Measured from the reviewed schema on disposable engines; not input-controlled.
+# Current accounting metadata, including the realized trade price from 0046.
+# Measured on disposable engines; immutable 0031 retains its historical contract.
 EXPECTED = {
-    'mysql8': 'f79cff9303ff365c38e419636a09d7f02e85f84ca948ba61dfbcc14c3dabbc2c',
-    'mariadb10_11': '53a2a5a828352ea57072329086b013c38731b85e799a2f7dc083f6850a19da7d',
+    'mysql8': 'e8e1813fb915aa01d092dff76e9876a3c35ff2f2e71e1e9fe08b8450076bbb88',
+    'mariadb10_11': '872e182dd5bc035f1db645f8b1f0194cb320f6fd61154d4dc7148c6525fa13aa',
 }
 
 class VerificationError(Exception):

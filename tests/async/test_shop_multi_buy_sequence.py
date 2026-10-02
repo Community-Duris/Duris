@@ -73,9 +73,9 @@ assert "shop_trade_container_accepts(ch, selected, destination)" in SUBMIT
 assert "++sequence.completed" in COMPLETE and "--sequence.remaining" in COMPLETE
 assert "the remaining %d were not charged" in SHOP
 
-# Starter/pre-entry grants remain callback-free; the callback API is limited to
-# ordinary player grants whose actor is in normal command processing.
+# Shop purchases use the ordinary player API. Starter grant admission is
+# independently qualified through the pre-entry lifecycle tests.
 assert "item_creation_grant_submit_to_player_with_completion" in MOVEMENT_H
-assert "before_entry_with_completion" not in MOVEMENT_H
+assert "before_entry_with_completion" not in SUBMIT
 
 print("completion-driven multi-buy contracts passed")

@@ -96,6 +96,8 @@ void player_save_pipeline_quiesce() {}
 void player_save_pipeline_resume() {}
 bool player_save_pipeline_drain(uint64_t) { return true; }
 bool redis_world_recovery_drain(uint64_t) { return true; }
+bool redis_world_recovery_prepare_copyover() { return true; }
+void redis_world_recovery_resume_after_copyover() {}
 bool persistence_flush_all_character_saves() { return true; }
 bool persistence_log_drain(unsigned timeout_ms) { assert(timeout_ms == 3000); return true; }
 
@@ -107,6 +109,7 @@ int compress_end(P_desc, int) { std::abort(); }
 void write_to_q(const char *, txt_q *, int) { std::abort(); }
 uint64_t persistence_observability_now_usec() { std::abort(); }
 uint64_t player_load_pipeline_next_request_id() { std::abort(); }
+bool player_save_journal_pid_quarantined(int) { return false; }
 bool player_load_pipeline_wait(player_load_request, player_load_result *, uint64_t) { std::abort(); }
 bool player_load_pipeline_execute_sync(player_load_request, player_load_result *) { std::abort(); }
 bool player_load_materialize(P_char, const player_load_result &) { std::abort(); }
@@ -265,7 +268,7 @@ with tempfile.TemporaryDirectory(prefix="duris-copyover-custody-") as temp:
     subprocess.run(common + [str(source), str(temp / "copyover.o"),
                    "src/world/world_recovery_pipeline.c", "src/world/world_recovery_codec.c", "src/world/generated_npc_state.c", "src/world/generated_npc_runtime.c",
                    "src/player/pet_restore_state.c",
-                            "src/item/item_ownership_runtime.c", "src/item/item_transfer_command.c",
+                            "src/item/item_ownership_runtime.c", "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c",
                             "src/redis/redis_command_observability.c", "-Wl,--gc-sections",
                             "-lz", "-pthread", "-lgnutls", "-lbsd", "-o", str(temp / "fixture")],
                    cwd=ROOT, check=True)

@@ -1,6 +1,7 @@
 #include "player/player_death_recovery_query.h"
 #include "player/player_load_pipeline.h"
 #include "player/player_save_pipeline.h"
+#include "item/item_movement_transaction.h"
 #include "persistence/persistence_observability.h"
 #include "sql/sql_pool.h"
 
@@ -17,6 +18,23 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+bool player_save_journal_pid_quarantined(int)
+{
+	return false;
+}
+bool item_movement_transaction_pending_craft_progression(
+	uint32_t, std::vector<critical_operation_id> *operations)
+{
+	operations->clear();
+	return true;
+}
+bool item_movement_transaction_pending_spell_effects(uint32_t,
+						     std::vector<critical_operation_id> *operations)
+{
+	operations->clear();
+	return true;
+}
 
 namespace
 {

@@ -206,7 +206,7 @@ assert "nevent_periodic_policy::fixed_delay, true" in event_init
 print("[PASS] autosave durability is local and the Redis dirty-save fork is retired")
 
 assert 'getenv("PLAYER_SAVE_JOURNAL_DIR")' in COMM
-assert "player_save_pipeline_init(journal_directory)" in COMM
+assert "player_save_pipeline_init(journal_directory,player_quarantine_recovery_revalidate_selected)" in "".join(COMM.split())
 assert "player_save_pipeline_pulse();" in COMM
 assert "player_save_pipeline_shutdown();" in COMM
 assert "PLAYER_SAVE_JOURNAL_DIR" in (ROOT / ".env.example").read_text()
@@ -476,8 +476,17 @@ bool player_save_pipeline_mark(int pid, player_component_mask_t components) {
     return player_revision_mark(pid, components, nullptr);
 }
 bool capture_fails = false;
+bool creation_pending = false;
+bool item_movement_transaction_player_creation_busy(P_char) { return creation_pending; }
 bool refuse_enqueue = false;
+bool grant_publication_pending = false;
+bool item_creation_grant_player_publication_pending(P_char) { return grant_publication_pending; }
 player_snapshot pending, captured;
+constexpr auto CRAFT_PROGRESSION_COMPONENTS = PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_SKILLS | PLAYER_COMPONENT_AFFECTS | PLAYER_COMPONENT_TROPHIES;
+struct { bool (*pending)(uint32_t, std::vector<player_craft_receipt_snapshot> *) = nullptr; } craft_progression_hooks;
+bool craft_progression_pending_save_receipts(uint32_t pid, std::vector<player_craft_receipt_snapshot> *receipts) {
+    return craft_progression_hooks.pending ? craft_progression_hooks.pending(pid, receipts) : true;
+}
 bool quest_reward_recovery_pending_save_receipts(
     int, std::vector<player_quest_xp_receipt_snapshot> *receipts,
     player_component_mask_t *components) {
@@ -507,7 +516,7 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot) {
     captured = std::move(snapshot);
     return refuse_enqueue ? player_save_pipeline_result::overloaded : player_save_pipeline_result::queued;
 }
-''' + extract_function("player_save_pipeline.c", "bool merge_quest_xp_receipts(") + "\n" + extract_function("player_save_pipeline.c", "bool merge_spell_effect_receipts(") + "\n" + extract_function(
+''' + extract_function("player_save_pipeline.c", "bool merge_quest_xp_receipts(") + "\n" + extract_function("player_save_pipeline.c", "bool merge_spell_effect_receipts(") + "\n" + extract_function("player_save_pipeline.c", "bool merge_craft_receipts(") + "\n" + extract_function(
     "player_save_pipeline.c", "static player_save_pipeline_result checkpoint_dirty_with_quest_xp("
 ) + r'''
 void verify() {
@@ -527,6 +536,19 @@ int main() {
     receipt.operation_id.bytes[0] = 77;
     receipt.effect_id = 6;
     pending.spell_effect_receipts.push_back(receipt);
+    creation_pending = true;
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0, &receipt) == player_save_pipeline_result::unavailable);
+    assert(pending.spell_effect_receipts.size() == 1 && !captured.pid);
+    creation_pending = false;
+    assert(player_save_pipeline_mark(41, PLAYER_COMPONENT_INVENTORY));
+    player_revision_snapshot before_grant, after_grant;
+    assert(player_revision_snapshot_copy(41, &before_grant));
+    grant_publication_pending = true;
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0, &receipt) == player_save_pipeline_result::unavailable);
+    assert(player_revision_snapshot_copy(41, &after_grant));
+    assert(after_grant.dirty_components == before_grant.dirty_components);
+    assert(after_grant.queued_components == 0 && captured.pid == 0);
+    grant_publication_pending = false;
     capture_fails = true;
     assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0, &receipt) == player_save_pipeline_result::capture_failed);
     capture_fails = false;
@@ -597,6 +619,33 @@ int main() {
     assert(xp_death.encoded_size_bound == xp_bound + 32);
     assert(merge_spell_effect_receipts(&death, pending) && death.spell_effect_receipts.size() == 1);
     assert(death.encoded_size_bound == bound + 24);
+    player_craft_receipt_snapshot craft = {};
+    craft.operation_id.bytes[0] = 99;
+    craft.discipline = 2;
+    craft.experience = 7000;
+    pending.craft_receipts.push_back(craft);
+    craft_progression_hooks.pending = [](uint32_t, std::vector<player_craft_receipt_snapshot> *out) {
+        *out = pending.craft_receipts;
+        return true;
+    };
+    assert(player_save_pipeline_mark(41, PLAYER_COMPONENT_LANGUAGES));
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0) == player_save_pipeline_result::queued);
+    verify();
+    assert(captured.schema_version == PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION);
+    assert(captured.craft_receipts.size() == 1 && captured.quest_xp_receipts.size() == 1);
+    assert((captured.components & CRAFT_PROGRESSION_COMPONENTS) == CRAFT_PROGRESSION_COMPONENTS);
+    auto craft_death = mixed_death;
+    const auto craft_bound = craft_death.encoded_size_bound;
+    assert(merge_craft_receipts(&craft_death, pending));
+    assert(craft_death.schema_version == PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION);
+    assert(craft_death.encoded_size_bound == craft_bound + 28);
+    assert(merge_craft_receipts(&craft_death, pending));
+    assert(craft_death.encoded_size_bound == craft_bound + 28 && craft_death.craft_receipts.size() == 1);
+    auto conflict = pending;
+    ++conflict.craft_receipts[0].experience;
+    assert(!merge_craft_receipts(&craft_death, conflict));
+    craft_death.components &= ~PLAYER_COMPONENT_SKILLS;
+    assert(!merge_craft_receipts(&craft_death, pending));
 }
 '''
 with tempfile.TemporaryDirectory(prefix="duris-pending-spell-save-") as directory:

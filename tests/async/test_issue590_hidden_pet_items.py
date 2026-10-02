@@ -74,6 +74,9 @@ void logit(const char *, const char *, ...) {}
 int panic_corruption_int(const char *, const char *, ...) { std::abort(); }
 void balance_affects(P_char) {}
 void artifact_update_location_sql(P_obj) {}
+void world_activity_object_enter(P_obj object) {
+    assert(OBJ_WORN(object) && object->loc.wearing);
+}
 int char_light(P_char) { return 0; }
 int room_light(int, int) { return 0; }
 void mark_char_or_owner_dirty(P_char) {}

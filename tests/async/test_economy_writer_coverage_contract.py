@@ -52,14 +52,14 @@ class SplitEconomyActivationContract(unittest.TestCase):
                    "obj_to_char_checked(" in row["excerpt"]]
         self.assertEqual(len({(row["path"], row["line"]) for row in checked}), 9)
         expected = {
-            ("src/cmd/actobj.c", 482): "item.command_publication",
-            ("src/cmd/actobj.c", 710): "item.command_publication",
-            ("src/cmd/actobj.c", 769): "item.pet_give_publication",
-            ("src/cmd/actobj.c", 1339): "item.legacy_get",
-            ("src/cmd/actobj.c", 6281): "item.legacy_give",
-            ("src/cmd/actobj.c", 7845): "item.equipment_remove",
-            ("src/world/handler.c", 1853): "item.obj_to_char_admission",
-            ("src/world/handler.c", 2025): "item.obj_to_char_admission",
+            ("src/cmd/actobj.c", 481): "item.command_publication",
+            ("src/cmd/actobj.c", 709): "item.command_publication",
+            ("src/cmd/actobj.c", 768): "item.pet_give_publication",
+            ("src/cmd/actobj.c", 1336): "item.legacy_get",
+            ("src/cmd/actobj.c", 6278): "item.legacy_give",
+            ("src/cmd/actobj.c", 7842): "item.equipment_remove",
+            ("src/world/handler.c", 1856): "item.obj_to_char_admission",
+            ("src/world/handler.c", 2029): "item.obj_to_char_admission",
             ("src/world/handler.h", 15): "macro.checked_item_publication_declaration",
         }
         for row in checked:
@@ -399,14 +399,11 @@ class SplitEconomyActivationContract(unittest.TestCase):
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         sites = {row["id"]: row["sites"] for row in registry["writers"]}
         expected = {
-            "world.mobile_template": ("src/world/db.c", {2277, 2278, 2279, 2280,
-                                                     2668, 2669, 2670, 2671}),
-            "player.flatfile_baseline_projection": ("src/core/files.c", {1872, 1873, 1874, 1875,
-                                                                           1877, 1878, 1879, 1880}),
+            "world.mobile_template": ("src/world/db.c", {2281, 2282, 2283, 2284, 2672, 2673, 2674, 2675}),
+            "player.flatfile_baseline_projection": ("src/core/files.c", {1872, 1873, 1874, 1875, 1877, 1878, 1879, 1880}),
             "player.legacy_flatfile_load": ("src/core/files.c", {2426, 2427, 2428, 2429}),
-            "recovery.pet_cash_discard": ("src/core/files.c", {4691, 4692, 4693, 4694,
-                                                                4696, 4697, 4698, 4699}),
-            "recovery.copyover_npc_gold_projection": ("src/persistence/copyover.c", {1620, 2131}),
+            "recovery.pet_cash_discard": ("src/core/files.c", {4691, 4692, 4693, 4694, 4696, 4697, 4698, 4699}),
+            "recovery.copyover_npc_gold_projection": ("src/persistence/copyover.c", {1633, 2144}),
         }
         current = {(row["path"], row["line"], row["family"])
                    for row in coverage.load_validator().scan_sources(ROOT)}
@@ -460,7 +457,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertIn("legacy NULL cash", sql_shop_restore["blocking_policy_after_activation"]
                       ["required_policy"])
         clear_calls = {
-            ("src/mob/mobpatrol.c", 90, "money_helper"),
+            ("src/mob/mobpatrol.c", 89, "money_helper"),
             ("src/combat/justice.c", 258, "money_helper"),
             ("src/specs/specs.venthix.c", 918, "money_helper"),
         }
@@ -492,17 +489,17 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertFalse(current - owners.keys(), "review newly detected native SQL writes")
         self.assertEqual(owners[("src/economy/auction_houses.c", 935, "sql_economy")],
                          {"auction.money_claim_compensation"})
-        self.assertEqual(owners[("src/economy/auction_houses.c", 2966, "sql_economy")],
+        self.assertEqual(owners[("src/economy/auction_houses.c", 2967, "sql_economy")],
                          {"auction.money_claim_legacy"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 9478, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 9561, "sql_economy")],
                          {"recovery.saved_sql_delete"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 10899, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10982, "sql_economy")],
                          {"recovery.saved_sql"})
         shop_path = "src/persistence/economic_sql_shop_trade_transaction.c"
-        for line in (888, 908, 941):
+        for line in (887, 907, 940):
             self.assertEqual(owners[(shop_path, line, "sql_economy")],
                              {"shop.sql_native_item_events"})
-        self.assertEqual(owners[(shop_path, 1075, "sql_economy")],
+        self.assertEqual(owners[(shop_path, 1074, "sql_economy")],
                          {"shop.sql_native_balances"})
         for route_id in ("shop.sql_native_item_events", "shop.sql_native_balances"):
             route = self.routes[route_id]
@@ -520,13 +517,13 @@ class SplitEconomyActivationContract(unittest.TestCase):
             for site in writer.get("sites", []):
                 if site[0] == path:
                     owners.setdefault(tuple(site), set()).add(writer["id"])
-        self.assertEqual(owners[(path, 1554, "economic_submit")],
+        self.assertEqual(owners[(path, 1573, "economic_submit")],
                          {"quest.durable_offering_submission"})
-        self.assertEqual(owners[(path, 917, "item_lifecycle")],
+        self.assertEqual(owners[(path, 951, "item_lifecycle")],
                          {"quest.durable_offering_publication"})
-        for line, family in ((876, "item_lifecycle"), (876, "item_publication"),
-                             (878, "item_lifecycle"), (1050, "item_lifecycle"),
-                             (1050, "item_publication"), (1052, "item_lifecycle")):
+        for line, family in ((910, "item_lifecycle"), (910, "item_publication"),
+                             (912, "item_lifecycle"), (1085, "item_lifecycle"),
+                             (1085, "item_publication"), (1087, "item_lifecycle")):
             self.assertEqual(owners[(path, line, family)],
                              {"quest.disappearing_npc_cleanup"})
         self.assertTrue(self.routes["quest.durable_offering_submission"]
@@ -621,14 +618,22 @@ class SplitEconomyActivationContract(unittest.TestCase):
                 if site[0] == path:
                     owners.setdefault(tuple(site), set()).add(route["id"])
         self.assertEqual(current, owners.keys(), "review new salvage custody sites")
-        self.assertEqual(owners[(path, 32, "item_lifecycle")],
-                         {"item.salvage_grant_reject_cleanup"})
-        self.assertEqual(owners[(path, 215, "item_publication")],
-                         {"item.salvage_input_retirement"})
+        cleanup = next(row for row in registry["writers"]
+                       if row["id"] == "item.salvage_grant_reject_cleanup")
+        self.assertEqual(len(cleanup["sites"]), 1)
+        self.assertEqual(owners[tuple(cleanup["sites"][0])], {cleanup["id"]})
+        retirement = next(row for row in registry["writers"]
+                          if row["id"] == "item.salvage_input_retirement")
+        source_lines = (ROOT / path).read_text().splitlines()
+        self.assertEqual(len(retirement["sites"]), 3)
+        for site in retirement["sites"]:
+            self.assertEqual(owners[tuple(site)], {retirement["id"]})
+            self.assertIn("extract_obj(item)", source_lines[site[1] - 1])
         for route_id in ("item.salvage_candidate_allocation",
                          "item.salvage_grant_reject_cleanup"):
             self.assertEqual(self.routes[route_id]["disposition"], "non_writer_candidate")
         for route_id in ("item.salvage_grant", "item.salvage_input_retirement",
+                         "item.salvage_material_downgrade",
                          "item.salvage_scientific_tools_consumption"):
             route = self.routes[route_id]
             self.assertEqual(route["disposition"], "runtime_mutation_route")
@@ -636,6 +641,8 @@ class SplitEconomyActivationContract(unittest.TestCase):
                             ["must_block_on_activation"])
             self.assertFalse(route["double_entry_evidence"]
                              ["unified_operation_postings_observed"])
+        downgrade = self.routes["item.salvage_material_downgrade"]
+        self.assertEqual(downgrade["current_critical_command_schema"]["current_schema"], 1)
         tool = next(row for row in registry["writers"]
                     if row["id"] == "item.salvage_scientific_tools_consumption")
         self.assertEqual(tool["sites"], [])  # Semantic helper call is outside the scanner.
@@ -746,11 +753,11 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new handler item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/world/handler.c", 3372, "item_lifecycle")],
+        self.assertEqual(owners[("src/world/handler.c", 3385, "item_lifecycle")],
                          {"item.extraction"})
-        self.assertEqual(owners[("src/world/handler.c", 3988, "item_publication")],
+        self.assertEqual(owners[("src/world/handler.c", 4001, "item_publication")],
                          {"death.corpse_compaction_bone_grant"})
-        self.assertEqual(owners[("src/world/handler.c", 4357, "item_lifecycle")],
+        self.assertEqual(owners[("src/world/handler.c", 4370, "item_lifecycle")],
                          {"death.resurrection_money_pile"})
         for route_id in ("item.prototype_weight_probe", "item.creation_candidate_reject",
                          "coin.wallet_pile_stage_cleanup", "death.corpse_compaction_stage_cleanup"):
@@ -816,9 +823,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new SQL item load sites")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/sql/sql_player.c", 10141, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10224, "item_publication")],
                          {"recovery.sql_shopkeeper_catalog"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 11282, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 11364, "item_publication")],
                          {"recovery.sql_saved_item_hydration"})
         for route_id in ("recovery.sql_diff_proto_probe", "recovery.sql_temp_char_cleanup",
                          "recovery.sql_corpse_stage_cleanup",
@@ -885,17 +892,29 @@ class SplitEconomyActivationContract(unittest.TestCase):
         for route_id in ("item.poison_recipe_probe", "item.encrust_virtual_jewel_stage",
                          "item.fix_material_probe"):
             self.assertEqual(self.routes[route_id]["disposition"], "non_writer_candidate")
-        for route_id in ("item.poison_mix", "item.potion_mix",
+        for route_id in ("item.poison_mix",
                          "item.encrust_failure_destroy", "item.encrust_transform",
-                         "item.encrust_generated_counter_orphan",
                          "item.fix_material_consumption", "item.smelt_single",
-                         "item.smelt_double", "item.npc_alchemist_potion_grant",
+                         "item.smelt_double", "item.npc_alchemist_vial_grant",
                          "item.thrusted_aura_decay", "item.enchant_failure_destroy"):
             self.assertEqual(self.routes[route_id]["disposition"], "runtime_mutation_route")
             self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]
                             ["must_block_on_activation"])
-        self.assertIn("no completed output item",
-                      self.routes["item.encrust_generated_counter_orphan"]["source_classification"])
+        retired = {row["id"] for row in registry["retired_routes_551_661"]}
+        self.assertTrue({"item.potion_mix", "item.potion_ingredients_sink",
+                         "item.npc_alchemist_potion_grant", "item.poison_ingredients_sink",
+                         "item.encrust_generated_counter_orphan"} <= retired)
+        self.assertTrue(retired.isdisjoint(self.routes))
+        for route_id in coverage.SCHEMA2_CRAFT_IDS:
+            self.assertTrue(self.routes[route_id]["current_critical_command_schema"]
+                            ["schema_2_gameplay_producer_connected"])
+            self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]
+                            ["must_block_on_activation"])
+            self.assertEqual(self.routes[route_id]["blocking_policy_after_activation"]["decision"],
+                             "block_until_active_craft_journeys")
+        self.assertEqual(self.routes["item.npc_alchemist_vial_grant"]
+                         ["blocking_policy_after_activation"]["decision"],
+                         "refuse_before_allocation_until_native_source_and_root_exist")
 
     def test_artifact_item_sites_separate_display_boot_restore_and_live_replacement(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
@@ -927,7 +946,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
             self.assertEqual(self.routes[route_id]["disposition"], "runtime_mutation_route")
             self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]
                             ["must_block_on_activation"])
-        self.assertIn("double-extract", self.routes["artifact.fixit_template_probe"]
+        self.assertIn("once", self.routes["artifact.fixit_template_probe"]
                       ["source_classification"])
 
     def test_mob_behavior_item_sites_separate_world_creation_from_equipment_relink(self) -> None:
@@ -944,7 +963,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new NPC behavior item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/mob/mobact.c", 1166, "item_publication")],
+        self.assertEqual(owners[("src/mob/mobact.c", 1165, "item_publication")],
                          {"mob.corpse_dig_creation"})
         self.assertEqual(self.routes["mob.corpse_dig_creation"]["disposition"],
                          "runtime_mutation_route")
@@ -1061,10 +1080,10 @@ class SplitEconomyActivationContract(unittest.TestCase):
 
     def test_enhancement_item_sites_link_fees_to_transforms_and_materials(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
-        current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
-                   if row["path"] == "src/item/enhance.c" and
-                   row["family"] in ("item_lifecycle", "item_publication")}
+        current_rows = [row for row in coverage.load_validator().scan_sources(ROOT)
+                        if row["path"] == "src/item/enhance.c" and
+                        row["family"] in ("item_lifecycle", "item_publication")]
+        current = {(row["path"], row["line"], row["family"]) for row in current_rows}
         owners = {}
         for route in registry["writers"]:
             for site in route.get("sites", []):
@@ -1073,10 +1092,14 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new enhancement item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/item/enhance.c", 283, "item_lifecycle")],
-                         {"item.enhance_transform"})
-        self.assertEqual(owners[("src/item/enhance.c", 1099, "item_publication")],
-                         {"item.thanksgiving_turkey_grant"})
+        for excerpt, family, route_id in (("extract_obj(source);", "item_lifecycle",
+                                          "item.enhance_transform"),
+                                         ("obj_to_char(read_object(400232, VIRTUAL), mob);",
+                                          "item_publication", "item.thanksgiving_turkey_grant")):
+            sites = [(row["path"], row["line"], row["family"]) for row in current_rows
+                     if row["excerpt"] == excerpt and row["family"] == family]
+            self.assertEqual(len(sites), 1, "the production call must have one current anchor")
+            self.assertEqual(owners[sites[0]], {route_id})
         for route_id in ("item.enhance_base_probe", "item.enhance_material_name_probe",
                          "item.superior_target_probe", "item.mod_enhance_description_probe",
                          "item.enhance_index_probe"):
@@ -1089,7 +1112,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
                             ["must_block_on_activation"])
         self.assertIn("generated-use record failure", self.routes["item.superior_enhance_fee"]
                       ["source_classification"])
-        self.assertIn("changes source affected fields before debiting",
+        self.assertIn("accepts the wallet fee before changing the source item",
                       self.routes["item.mod_enhance_fee"]["source_classification"])
 
     def test_legacy_file_item_sites_separate_save_unload_restore_and_dead_code(self) -> None:
@@ -1255,7 +1278,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
                     owners.setdefault(tuple(site), set()).add(route["id"])
         self.assertEqual(current, owners.keys(), "review new conjuration item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[(path, 2279, "item_lifecycle")],
+        self.assertEqual(owners[(path, 2280, "item_lifecycle")],
                          {"spell.snakes_committed_arrow_cleanup"})
         for route_id in ("spell.room_creation_rejected_stage",
                          "spell.player_creation_rejected_stage"):
@@ -1379,9 +1402,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
                     owners.setdefault(tuple(site), set()).add(route["id"])
         self.assertEqual(current, owners.keys(), "review new Heavens special item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[(path, 5829, "item_publication")],
+        self.assertEqual(owners[(path, 5840, "item_publication")],
                          {"special.treasure_chest_detach"})
-        self.assertEqual(owners[(path, 5716, "item_lifecycle")],
+        self.assertEqual(owners[(path, 5727, "item_lifecycle")],
                          {"gambling.slot_coupon_grant"})
         self.assertEqual(self.routes["special.flying_citadel_unreachable_move"]["disposition"],
                          "non_writer_candidate")

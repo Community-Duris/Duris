@@ -25,7 +25,6 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-admission-") as temporary:
                "src/economy/coin_transfer_command.c",
                "src/economy/coin_transfer_accounting.c",
                "src/economy/item_transfer_accounting.c",
-               "src/player/player_snapshot_codec.c",
                "src/persistence/critical_command_coordinator.c",
                "src/persistence/critical_command_journal.c", *SOURCES[1:]]
     binary = work / "native"
@@ -33,7 +32,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-admission-") as temporary:
                     "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
                     "-O1", "-g", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
                     "-fno-pie", "-no-pie", "-D__NO_MYSQL__", "-DDURIS_FLATFILE_ACCOUNTING_TEST",
-                    "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST", "-Isrc", "-Isrc/no_mysql", "-I" + str(work),
+                    "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST", "-DDURIS_ECONOMIC_GAMEPLAY_AUTHORITY_TEST",
+                    "-Isrc", "-Isrc/no_mysql", "-I" + str(work),
                     *sources, "-Wl,--wrap=_Znwm,--wrap=_Znam", "-lcrypto", "-lz", "-pthread", "-o", str(binary)],
                    cwd=ROOT, check=True)
     subprocess.run([str(binary), str(work / "state")], check=True, timeout=90,

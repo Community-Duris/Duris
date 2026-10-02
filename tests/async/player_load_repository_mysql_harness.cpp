@@ -68,7 +68,8 @@ uint64_t session_rows_sent(MYSQL *connection)
 			    "WHERE NAME='statement/sql/select' AND ENABLED='YES'),"
 			    "(SELECT SUM(SUM_ROWS_SENT) FROM "
 			    "performance_schema.events_statements_summary_by_thread_by_event_name "
-			    "WHERE THREAD_ID=PS_CURRENT_THREAD_ID()),NULL)");
+			    "WHERE THREAD_ID=(SELECT THREAD_ID FROM performance_schema.threads "
+			    "WHERE PROCESSLIST_ID=CONNECTION_ID())),NULL)");
 		rows = mysql_store_result(connection);
 		value_column = 0;
 	}
@@ -192,10 +193,12 @@ int main()
 	mysql_free_result(rows);
 
 	const uint64_t now = persistence_observability_now_usec();
-	player_load_request request = {
-		PLAYER_LOAD_SCHEMA_VERSION,	77, pid, required_env("GAME_ACCOUNT_NAME"),
-		now + PLAYER_LOAD_TIMEOUT_USEC, {}
-	};
+	player_load_request request = {};
+	request.schema_version = PLAYER_LOAD_SCHEMA_VERSION;
+	request.request_id = 77;
+	request.pid = pid;
+	request.account_name = required_env("GAME_ACCOUNT_NAME");
+	request.deadline_usec = now + PLAYER_LOAD_TIMEOUT_USEC;
 	assert(player_load_request_valid(request, now));
 	player_load_result result = player_load_repository_execute(connection, request);
 	if (result.outcome != player_load_outcome::applied)
@@ -248,7 +251,7 @@ int main()
 	player_load_result name_result = player_load_repository_execute(connection, by_name);
 	assert(name_result.outcome == player_load_outcome::applied);
 	assert(name_result.pid == pid && name_result.request_id == by_name.request_id);
-	assert(name_result.metrics.query_count == PLAYER_LOAD_QUERY_MAX);
+	assert(name_result.metrics.query_count == PLAYER_LOAD_NAME_QUERY_MAX);
 
 	player_load_request wrong_account = request;
 	wrong_account.request_id = 79;
@@ -475,8 +478,10 @@ int main()
 	player_load_result promoted = execute_load(connection, request, 92);
 	assert(promoted.outcome == player_load_outcome::applied);
 	assert(promoted.snapshot.items.size() == 2 && promoted.authoritative_item_count == 2);
+	// Custody normalization already clears the nested item's stale worn slot;
+	// topology reconciliation only promotes the surviving child.
 	assert(promoted.stale_item_rows == 1 && promoted.promoted_item_rows == 1 &&
-	       promoted.repaired_item_rows == 1);
+	       promoted.repaired_item_rows == 0);
 	for (size_t index = 0; index < promoted.item_identities.size(); ++index)
 	{
 		assert(promoted.snapshot.items[index].parent_index == PLAYER_SNAPSHOT_NO_PARENT);

@@ -90,7 +90,8 @@ class player_save_pipeline_replay_gate
 	std::atomic<bool> replay_complete_{ false };
 };
 
-bool player_save_pipeline_init(const char *journal_directory);
+bool player_save_pipeline_init(const char *journal_directory,
+			       void (*verify_resolved_recovery)() = nullptr);
 void player_save_pipeline_shutdown(void);
 bool player_save_pipeline_mark(int pid, player_component_mask_t components);
 player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int save_intent,
@@ -100,12 +101,14 @@ player_save_pipeline_result player_save_pipeline_request(P_char ch,
 							 int save_intent, int room_vnum);
 // Capture progression and its quest reward identities in one save-journal frame.
 // SQL applies the experience snapshot and receipt mask in the same transaction.
-player_save_pipeline_result player_save_pipeline_request_quest_xp(
-	P_char ch, player_component_mask_t components,
-	const player_quest_xp_receipt_snapshot *receipts, size_t receipt_count, int room_vnum);
-player_save_pipeline_result player_save_pipeline_request_spell_effect(
-	P_char ch, player_component_mask_t components,
-	const player_spell_effect_receipt_snapshot *receipt, int room_vnum);
+player_save_pipeline_result
+player_save_pipeline_request_quest_xp(P_char ch, player_component_mask_t components,
+				      const player_quest_xp_receipt_snapshot *receipts,
+				      size_t receipt_count, int room_vnum);
+player_save_pipeline_result
+player_save_pipeline_request_spell_effect(P_char ch, player_component_mask_t components,
+					  const player_spell_effect_receipt_snapshot *receipt,
+					  int room_vnum);
 player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_intent, int room_vnum,
 							  uint64_t timeout_msec,
 							  bool allow_journal_handoff);
@@ -135,6 +138,9 @@ bool player_save_pipeline_is_nonterminal_type(int save_intent);
 // Exact-PID save/login barrier used by offline critical commands.  A target
 // fence rejects new saves for that PID without quiescing unrelated players.
 bool player_save_pipeline_target_save_pending(int pid);
+// Game-thread creation admission waits for sealed saves, while dirty components
+// remain eligible for capture after the grant is published.
+bool player_save_pipeline_sealed_save_pending(int pid);
 bool player_save_pipeline_acquire_target_save_login_fence(int pid,
 							  player_revision_t expected_revision);
 void player_save_pipeline_release_target_save_login_fence(int pid,

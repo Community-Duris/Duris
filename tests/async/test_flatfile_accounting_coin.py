@@ -37,7 +37,7 @@ def main():
             "src/economy/economic_baseline_command.c",
             "src/item/economic_accounting_item_reference.c",
             "src/economy/item_transfer_accounting.c",
-            "src/player/player_snapshot_codec.c", *SOURCES[1:],
+            *SOURCES[1:],
         ]
         binary = work / "coin"
         subprocess.run([

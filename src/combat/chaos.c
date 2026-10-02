@@ -147,8 +147,8 @@ static void chaos_pouch_test_seed(P_char ch)
 		P_obj object = read_object(vnum, VIRTUAL);
 		if (!object)
 			continue;
-		if (item_creation_grant_submit_to_player(
-			    ch, object, ch, NULL, economic_source_kind::world_generation))
+		if (item_creation_grant_submit_to_player(ch, object, ch, NULL,
+							 economic_source_kind::world_generation))
 			queued = true;
 		else
 			extract_obj(object, FALSE);

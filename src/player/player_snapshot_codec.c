@@ -156,8 +156,7 @@ void encode_index_rows(encoder &out, const std::vector<player_index_value_snapsh
 bool decode_index_rows(decoder &in, std::vector<player_index_value_snapshot> &rows)
 {
 	return in.vector(rows,
-			 [&](auto &row)
-			 {
+			 [&](auto &row) {
 				 return in.number(row.index) && in.number(row.value) &&
 					in.number(row.auxiliary);
 			 });
@@ -251,8 +250,7 @@ bool decode_items(decoder &in, std::vector<player_item_snapshot> &items)
 					if (!in.number(value))
 						return false;
 			if (!in.vector(row.dynamic_affects,
-				       [&](auto &affect)
-				       {
+				       [&](auto &affect) {
 					       return in.number(affect.type) &&
 						      in.number(affect.data) &&
 						      in.number(affect.extra2);
@@ -274,7 +272,8 @@ bool decode_items(decoder &in, std::vector<player_item_snapshot> &items)
 
 bool valid_metadata(const player_snapshot &snapshot)
 {
-	return (snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ||
+	return (snapshot.schema_version == PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION ||
+		snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ||
 		snapshot.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
 		snapshot.schema_version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION ||
 		player_snapshot_is_death_request_schema(snapshot.schema_version) ||
@@ -311,7 +310,8 @@ bool nonzero_operation(const critical_operation_id &id)
 
 bool valid_death(const player_snapshot &snapshot)
 {
-	if (snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ||
+	if (snapshot.schema_version == PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION ||
+	    snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ||
 	    snapshot.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
 	    snapshot.schema_version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION)
 		return !snapshot.death;
@@ -400,7 +400,8 @@ bool valid_death(const player_snapshot &snapshot)
 
 bool valid_quest_xp_receipts(const player_snapshot &snapshot)
 {
-	if (snapshot.schema_version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION &&
+	if ((snapshot.schema_version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION ||
+	     player_snapshot_has_craft_receipt_schema(snapshot.schema_version)) &&
 	    snapshot.quest_xp_receipts.empty())
 		return true;
 	if (!player_snapshot_has_quest_receipt_schema(snapshot.schema_version))
@@ -426,7 +427,8 @@ bool valid_spell_effect_receipts(const player_snapshot &snapshot)
 {
 	if (!player_snapshot_has_spell_receipt_schema(snapshot.schema_version))
 		return snapshot.spell_effect_receipts.empty();
-	if ((snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION ||
+	if ((player_snapshot_has_craft_receipt_schema(snapshot.schema_version) ||
+	     snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION ||
 	     snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION) &&
 	    snapshot.spell_effect_receipts.empty())
 		return true;
@@ -442,6 +444,31 @@ bool valid_spell_effect_receipts(const player_snapshot &snapshot)
 			return false;
 		for (size_t prior = 0; prior < index; ++prior)
 			if (snapshot.spell_effect_receipts[prior].operation_id.bytes ==
+			    receipt.operation_id.bytes)
+				return false;
+	}
+	return true;
+}
+
+bool valid_craft_receipts(const player_snapshot &snapshot)
+{
+	if (!player_snapshot_has_craft_receipt_schema(snapshot.schema_version))
+		return snapshot.craft_receipts.empty();
+	constexpr auto required = PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_SKILLS |
+				  PLAYER_COMPONENT_AFFECTS | PLAYER_COMPONENT_TROPHIES;
+	if (snapshot.craft_receipts.empty() ||
+	    snapshot.craft_receipts.size() > PLAYER_CRAFT_RECEIPT_MAX ||
+	    (snapshot.components & required) != required)
+		return false;
+	for (size_t index = 0; index < snapshot.craft_receipts.size(); ++index)
+	{
+		const auto &receipt = snapshot.craft_receipts[index];
+		if (!nonzero_operation(receipt.operation_id) ||
+		    (receipt.discipline != 1 && receipt.discipline != 2) ||
+		    receipt.experience > INT32_MAX)
+			return false;
+		for (size_t prior = 0; prior < index; ++prior)
+			if (snapshot.craft_receipts[prior].operation_id.bytes ==
 			    receipt.operation_id.bytes)
 				return false;
 	}
@@ -571,8 +598,7 @@ player_snapshot_codec_result validate_evidence(const player_death_conflict_evide
 	const auto has_columns = [](const auto &table, std::initializer_list<const char *> required)
 	{
 		return std::all_of(required.begin(), required.end(),
-				   [&](const char *name)
-				   {
+				   [&](const char *name) {
 					   return std::find(table.columns.begin(),
 							    table.columns.end(),
 							    name) != table.columns.end();
@@ -808,8 +834,7 @@ player_item_properties_decode(const std::string &encoded_hex, uint32_t *extra2_f
 		if (version != 1)
 			return player_snapshot_codec_result::unsupported_version;
 		if (!in.vector(dynamic_affects,
-			       [&](auto &affect)
-			       {
+			       [&](auto &affect) {
 				       return in.number(affect.type) && in.number(affect.data) &&
 					      in.number(affect.extra2);
 			       }))
@@ -1019,8 +1044,9 @@ player_item_snapshot_extract_forest(const std::vector<player_item_snapshot> &ite
 player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snapshot,
 						    std::vector<uint8_t> *encoded_out)
 {
-	if (!encoded_out || !valid_metadata(snapshot) || !valid_item_relationships(snapshot.items) ||
-	    !valid_quest_xp_receipts(snapshot) || !valid_spell_effect_receipts(snapshot))
+	if (!encoded_out || !valid_metadata(snapshot) ||
+	    !valid_item_relationships(snapshot.items) || !valid_quest_xp_receipts(snapshot) ||
+	    !valid_spell_effect_receipts(snapshot) || !valid_craft_receipts(snapshot))
 		return player_snapshot_codec_result::invalid_value;
 	for (const player_pet_snapshot &pet : snapshot.pets)
 		if (!valid_item_relationships(pet.items))
@@ -1129,9 +1155,10 @@ player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snaps
 			out.vector(snapshot.quest_xp_receipts,
 				   [&](const auto &receipt)
 				   {
-					   out.bytes.insert(out.bytes.end(),
-							   receipt.offering_operation.bytes.begin(),
-							   receipt.offering_operation.bytes.end());
+					   out.bytes.insert(
+						   out.bytes.end(),
+						   receipt.offering_operation.bytes.begin(),
+						   receipt.offering_operation.bytes.end());
 					   out.number<uint32_t>(receipt.reward_index);
 					   out.number<uint32_t>(receipt.amount);
 				   });
@@ -1142,6 +1169,15 @@ player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snaps
 					   for (uint8_t byte : receipt.operation_id.bytes)
 						   out.number<uint8_t>(byte);
 					   out.number<uint32_t>(receipt.effect_id);
+				   });
+		if (player_snapshot_has_craft_receipt_schema(snapshot.schema_version))
+			out.vector(snapshot.craft_receipts,
+				   [&](const auto &receipt)
+				   {
+					   for (uint8_t byte : receipt.operation_id.bytes)
+						   out.number<uint8_t>(byte);
+					   out.number<uint32_t>(receipt.discipline);
+					   out.number<uint32_t>(receipt.experience);
 				   });
 		if (snapshot.death)
 		{
@@ -1185,6 +1221,7 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		if (wire_version == 2 || wire_version == 4 || wire_version == 6)
 			snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
 		if (snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
+		    snapshot.schema_version != PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION &&
 		    snapshot.schema_version != PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION &&
 		    snapshot.schema_version !=
 			    PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION &&
@@ -1239,8 +1276,7 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		    !in.vector(snapshot.granted_commands,
 			       [&](int32_t &command) { return in.number(command); }) ||
 		    !in.vector(snapshot.skills,
-			       [&](auto &row)
-			       {
+			       [&](auto &row) {
 				       return in.number(row.skill_id) && in.number(row.learned) &&
 					      in.number(row.taught);
 			       }) ||
@@ -1302,16 +1338,18 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		    !in.vector(snapshot.quest_xp_receipts,
 			       [&](auto &receipt)
 			       {
-				       if (in.size - in.offset < receipt.offering_operation.bytes.size())
+				       if (in.size - in.offset <
+					   receipt.offering_operation.bytes.size())
 				       {
 					       in.result = player_snapshot_codec_result::truncated;
 					       return false;
 				       }
 				       std::copy_n(in.data + in.offset,
-					   receipt.offering_operation.bytes.size(),
-					   receipt.offering_operation.bytes.begin());
+						   receipt.offering_operation.bytes.size(),
+						   receipt.offering_operation.bytes.begin());
 				       in.offset += receipt.offering_operation.bytes.size();
-				       return in.number(receipt.reward_index) && in.number(receipt.amount);
+				       return in.number(receipt.reward_index) &&
+					      in.number(receipt.amount);
 			       }))
 			return in.result;
 		if (player_snapshot_has_spell_receipt_schema(wire_version) &&
@@ -1324,10 +1362,27 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 					       return false;
 				       }
 				       std::copy_n(in.data + in.offset,
-					   receipt.operation_id.bytes.size(),
-					   receipt.operation_id.bytes.begin());
+						   receipt.operation_id.bytes.size(),
+						   receipt.operation_id.bytes.begin());
 				       in.offset += receipt.operation_id.bytes.size();
 				       return in.number(receipt.effect_id);
+			       }))
+			return in.result;
+		if (player_snapshot_has_craft_receipt_schema(wire_version) &&
+		    !in.vector(snapshot.craft_receipts,
+			       [&](auto &receipt)
+			       {
+				       if (in.size - in.offset < receipt.operation_id.bytes.size())
+				       {
+					       in.result = player_snapshot_codec_result::truncated;
+					       return false;
+				       }
+				       std::copy_n(in.data + in.offset,
+						   receipt.operation_id.bytes.size(),
+						   receipt.operation_id.bytes.begin());
+				       in.offset += receipt.operation_id.bytes.size();
+				       return in.number(receipt.discipline) &&
+					      in.number(receipt.experience);
 			       }))
 			return in.result;
 		if (player_snapshot_is_death_request_schema(snapshot.schema_version) ||
@@ -1344,7 +1399,7 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 			}
 		}
 		if (!valid_death(snapshot) || !valid_quest_xp_receipts(snapshot) ||
-		    !valid_spell_effect_receipts(snapshot))
+		    !valid_spell_effect_receipts(snapshot) || !valid_craft_receipts(snapshot))
 			return player_snapshot_codec_result::invalid_value;
 		if (in.offset != in.size)
 			return player_snapshot_codec_result::invalid_value;

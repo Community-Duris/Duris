@@ -178,6 +178,7 @@ void verify_death_acknowledgements()
         {false, player_save_apply_outcome::already_applied, 1, true, true},
     };
     for (bool with_xp : {false, true})
+        for (bool with_craft : {false, true})
         for (const auto &test : cases) {
             player_save_worker_reset_for_tests();
             player_revision_reset_for_tests();
@@ -198,6 +199,14 @@ void verify_death_acknowledgements()
                     snapshot.quest_xp_receipts.push_back(xp);
                 }
                 snapshot.death->operation_id.bytes[0] = 1;
+                if (with_craft) {
+                    snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION;
+                    player_craft_receipt_snapshot receipt = {};
+                    receipt.operation_id.bytes[0] = 99;
+                    receipt.discipline = 2;
+                    receipt.experience = 7000;
+                    snapshot.craft_receipts.push_back(receipt);
+                }
                 snapshot.death->corpse.emplace_back();
                 snapshot.death->corpse[0].object_uid = 90000;
                 assert(player_revision_pin_terminal_death(71, snapshot.revision));
@@ -212,6 +221,8 @@ void verify_death_acknowledgements()
             player_save_worker_shutdown();
             assert(hooks.acknowledgements == static_cast<unsigned>(test.journal_ack));
             assert(completion.quest_xp_receipts.size() == static_cast<size_t>(test.death && with_xp && test.completed));
+            assert(completion.craft_receipts.size() == static_cast<size_t>(test.death && with_craft && test.completed));
+            assert(completion.failed_craft_receipts.size() == static_cast<size_t>(test.death && with_craft && !test.completed));
             if (!completion.quest_xp_receipts.empty())
                 assert(completion.quest_xp_receipts[0].amount == 75 &&
                        completion.quest_xp_receipts[0].offering_operation.bytes[0] == 88);
@@ -259,14 +270,24 @@ void verify_receipt_acknowledgements()
         {player_save_apply_outcome::applied, 0, true},
         {player_save_apply_outcome::already_applied, 0, true},
     };
-    for (bool spell : {false, true})
+    for (int receipt_kind : {0, 1, 2})
         for (const auto &test : cases) {
+            const bool spell = receipt_kind == 1;
+            const bool craft = receipt_kind == 2;
             player_save_worker_reset_for_tests();
             player_revision_reset_for_tests();
             assert(player_revision_hydrate(72, 20));
-            auto snapshot = next_snapshot(72, spell ? PLAYER_COMPONENT_AFFECTS :
-                                                     PLAYER_COMPONENT_STATUS);
-            if (spell) {
+            auto snapshot = next_snapshot(72, craft ? PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_SKILLS |
+                                                     PLAYER_COMPONENT_AFFECTS | PLAYER_COMPONENT_TROPHIES :
+                                                     spell ? PLAYER_COMPONENT_AFFECTS : PLAYER_COMPONENT_STATUS);
+            if (craft) {
+                snapshot.schema_version = PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
+                player_craft_receipt_snapshot receipt = {};
+                receipt.operation_id.bytes[0] = 0xc5;
+                receipt.discipline = 2;
+                receipt.experience = 7000;
+                snapshot.craft_receipts.push_back(receipt);
+            } else if (spell) {
                 snapshot.schema_version = PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION;
                 player_spell_effect_receipt_snapshot receipt = {};
                 receipt.operation_id.bytes[0] = 0xa5;
@@ -294,11 +315,16 @@ void verify_receipt_acknowledgements()
             assert(completion.failed_spell_effect_receipts.size() ==
                    static_cast<size_t>(!test.acknowledged && spell));
             assert(completion.quest_xp_receipts.size() ==
-                   static_cast<size_t>(test.acknowledged && !spell));
+                   static_cast<size_t>(test.acknowledged && !spell && !craft));
+            assert(completion.craft_receipts.size() == static_cast<size_t>(test.acknowledged && craft));
+            assert(completion.failed_craft_receipts.size() == static_cast<size_t>(!test.acknowledged && craft));
             if (test.acknowledged && spell)
                 assert(completion.spell_effect_receipts[0].operation_id.bytes[0] == 0xa5);
-            if (test.acknowledged && !spell)
+            if (test.acknowledged && !spell && !craft)
                 assert(completion.quest_xp_receipts[0].offering_operation.bytes[0] == 0x42);
+            if (test.acknowledged && craft)
+                assert(completion.craft_receipts[0].operation_id.bytes[0] == 0xc5 &&
+                       completion.craft_receipts[0].experience == 7000);
             player_revision_snapshot state = {};
             assert(player_revision_snapshot_copy(72, &state));
             assert(state.acknowledged_revision ==
@@ -336,8 +362,64 @@ void verify_spell_receipt_worker_admission()
     player_revision_reset_for_tests();
 }
 
+void verify_ack_before_retained_submission()
+{
+    player_revision_reset_for_tests();
+    player_save_worker_reset_for_tests();
+    assert(player_revision_hydrate(74, 0));
+    capacity_state held;
+    assert(player_save_worker_init(hold_snapshot, &held, 1));
+    auto first = next_snapshot(74, PLAYER_COMPONENT_INVENTORY);
+    assert(player_save_worker_submit(first) == player_save_submit_result::accepted);
+    {
+        std::unique_lock<std::mutex> lock(held.mutex);
+        held.changed.wait(lock, [&] { return held.started; });
+    }
+    constexpr auto progression = PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_SKILLS |
+                                 PLAYER_COMPONENT_AFFECTS | PLAYER_COMPONENT_TROPHIES;
+    auto retained = next_snapshot(74, progression);
+    assert(retained.components == (progression | PLAYER_COMPONENT_INVENTORY));
+    retained.schema_version = PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
+    player_craft_receipt_snapshot receipt = {};
+    receipt.operation_id.bytes[0] = 0xc6;
+    receipt.discipline = 1;
+    receipt.experience = 7000;
+    retained.craft_receipts.push_back(receipt);
+    {
+        std::lock_guard<std::mutex> lock(held.mutex);
+        held.release = true;
+        held.changed.notify_all();
+    }
+    player_save_completion completion = {};
+    wait_until([&] { return player_save_worker_pulse(&completion, 1) == 1; });
+    player_revision_snapshot state = {};
+    assert(player_revision_snapshot_copy(74, &state));
+    assert(state.queued_revision == retained.revision && state.queued_components == progression);
+    // Reject missing value rows and a different revision without changing ownership.
+    auto incomplete = retained;
+    incomplete.components &= ~PLAYER_COMPONENT_SKILLS;
+    assert(player_save_worker_submit_retained(&incomplete) ==
+           player_save_submit_result::revision_state_mismatch);
+    auto wrong_revision = retained;
+    ++wrong_revision.revision;
+    assert(player_save_worker_submit_retained(&wrong_revision) ==
+           player_save_submit_result::revision_state_mismatch);
+    assert(player_save_worker_submit_retained(&retained) == player_save_submit_result::accepted);
+    wait_until([&] { return player_save_worker_pulse(&completion, 1) == 1; });
+    assert(completion.components == progression);
+    assert(completion.craft_receipts.size() == 1 &&
+           completion.craft_receipts[0].operation_id.bytes[0] == 0xc6);
+    assert(player_revision_snapshot_copy(74, &state));
+    assert(state.acknowledged_revision == completion.revision &&
+           !state.unacknowledged_components && !state.inflight_components);
+    player_save_worker_shutdown();
+    player_save_worker_reset_for_tests();
+    player_revision_reset_for_tests();
+}
+
 int main()
 {
+    verify_ack_before_retained_submission();
     verify_receipt_acknowledgements();
     verify_spell_receipt_worker_admission();
     verify_death_acknowledgements();

@@ -80,7 +80,8 @@ bool valid_snapshot(const player_snapshot &snapshot)
 		(snapshot.death &&
 		 player_snapshot_is_death_request_schema(snapshot.schema_version)) ||
 		(!snapshot.death &&
-		 (snapshot.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
+		 (snapshot.schema_version == PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION ||
+		  snapshot.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
 		  snapshot.schema_version ==
 			  PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION))) &&
 	       snapshot.pid > 0 && snapshot.revision && snapshot.components &&
@@ -250,8 +251,7 @@ void worker_main()
 		{
 			std::unique_lock<std::mutex> lock(worker_mutex);
 			result_available.wait(lock,
-					      []
-					      {
+					      [] {
 						      return stop_requested ||
 							     results.size() <
 								     PLAYER_SAVE_WORKER_MAX_RESULTS;
@@ -413,9 +413,19 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 		    snapshot.encoded_size_bound > PLAYER_SAVE_WORKER_MAX_BYTES - retained_bytes)
 			return durably_journaled ? player_save_submit_result::durably_spilled :
 						   player_save_submit_result::capacity_exceeded;
-		if (!player_revision_begin_inflight(snapshot.pid, snapshot.revision,
-						    snapshot.components))
+		player_revision_snapshot revision_state = {};
+		if (!player_revision_snapshot_copy(snapshot.pid, &revision_state) ||
+		    revision_state.queued_revision != snapshot.revision ||
+		    !revision_state.queued_components ||
+		    (snapshot.components & revision_state.queued_components) !=
+			    revision_state.queued_components ||
+		    !player_revision_begin_inflight(snapshot.pid, snapshot.revision,
+						    revision_state.queued_components))
 			return player_save_submit_result::revision_state_mismatch;
+		// An earlier worker ACK can narrow the queued mask while this sealed
+		// capture waits for its journal append. Apply the remaining components,
+		// just as promote_pending_locked does for a capture retained by the worker.
+		snapshot.components = revision_state.queued_components;
 		const int pid = snapshot.pid;
 		const player_revision_t revision = snapshot.revision;
 		const player_component_mask_t components = snapshot.components;
@@ -584,10 +594,16 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 					std::move(slot.active->snapshot.quest_xp_receipts);
 				completion.spell_effect_receipts =
 					std::move(slot.active->snapshot.spell_effect_receipts);
+				completion.craft_receipts =
+					std::move(slot.active->snapshot.craft_receipts);
 			}
 			else
+			{
 				completion.failed_spell_effect_receipts =
 					std::move(slot.active->snapshot.spell_effect_receipts);
+				completion.failed_craft_receipts =
+					std::move(slot.active->snapshot.craft_receipts);
+			}
 			remove_active_bytes_locked(slot);
 			slot.active.reset();
 			slot.dispatched = false;

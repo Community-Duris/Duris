@@ -338,7 +338,8 @@ bool read_load_identity(MYSQL *connection, const std::string &sql, player_load_r
 	return true;
 }
 
-bool load_status(MYSQL *connection, const player_load_request &request, player_load_result *result)
+bool load_status(MYSQL *connection, const player_load_request &request, player_load_result *result,
+		 bool recovery_inspection)
 {
 	std::ostringstream sql;
 	sql << "SELECT pid,COALESCE(account_name,(SELECT ac.account_name FROM account_characters ac "
@@ -392,7 +393,8 @@ bool load_status(MYSQL *connection, const player_load_request &request, player_l
 	result->pid = static_cast<int32_t>(signed_value(row[column++]));
 	// Name-based requests have no PID at admission; check the resolved identity
 	// before copying any player payload or loading optional components.
-	if (result->pid > 0 && player_save_journal_pid_quarantined(result->pid))
+	if (!recovery_inspection && result->pid > 0 &&
+	    player_save_journal_pid_quarantined(result->pid))
 	{
 		mysql_free_result(rows);
 		result->outcome = player_load_outcome::cancelled;
@@ -1125,7 +1127,8 @@ bool load_restitution_runtime_state(MYSQL *connection, player_load_result *resul
 	MYSQL_ROW availability_row;
 	while ((availability_row = mysql_fetch_row(availability)) != nullptr)
 	{
-		if (!availability_row[0])
+		if (!add_result_budget(availability, availability_row, result) ||
+		    !availability_row[0])
 		{
 			mysql_free_result(availability);
 			return false;
@@ -1243,8 +1246,9 @@ bool load_items(MYSQL *connection, player_load_result *result)
 		"pi.item_properties,OCTET_LENGTH(pi.item_properties),own.equipment_slot,"
 		"EXISTS(SELECT 1 FROM economic_accounting_item_reference reference "
 		"WHERE reference.item_uid=own.item_uid AND "
-		"reference.after_revision=own.item_revision) "
+		"reference.after_revision=own.item_revision),HEX(runtime.payload) "
 		"FROM player_items pi "
+		"LEFT JOIN player_item_runtime_state runtime ON runtime.item_id=pi.id "
 		"LEFT JOIN item_current_owner own ON own.item_uid=pi.obj_uid LEFT JOIN "
 		"item_owner_revision owner_revision ON owner_revision.owner_type=own.owner_type "
 		"AND owner_revision.owner_id=own.owner_id AND "
@@ -1291,6 +1295,30 @@ bool load_items(MYSQL *connection, player_load_result *result)
 					    return false;
 				    }
 				    return true;
+			    }
+			    if (row[46])
+			    {
+				    std::vector<uint8_t> encoded;
+				    std::vector<player_item_snapshot> state;
+				    if (!decode_hex_payload(row[46], &encoded) ||
+					player_item_snapshot_list_decode(encoded.data(),
+									 encoded.size(), &state) !=
+						player_snapshot_codec_result::ok ||
+					state.size() != 1 ||
+					state[0].object_uid != item.object_uid ||
+					state[0].vnum != item.vnum)
+					    return false;
+				    // Canonical columns and custody still own placement and mutable base
+				    // fields. The extension supplies only state absent from those columns.
+				    item.generated_key = state[0].generated_key;
+				    item.anti_flags = state[0].anti_flags;
+				    item.anti2_flags = state[0].anti2_flags;
+				    item.extra2_flags = state[0].extra2_flags;
+				    item.craftsmanship = state[0].craftsmanship;
+				    for (size_t timer = 1; timer < item.timers.size(); ++timer)
+					    item.timers[timer] = state[0].timers[timer];
+				    item.dynamic_affects = std::move(state[0].dynamic_affects);
+				    identity.override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME;
 			    }
 			    uint64_t custody_slot = 0, slot_evidence = 0;
 			    if (!parse_unsigned(row[44], MAX_WEAR, &custody_slot) ||
@@ -1955,6 +1983,18 @@ bool player_load_request_valid(const player_load_request &request, uint64_t now_
 			if (request.pending_spell_effect_operations[prior].bytes == operation.bytes)
 				return false;
 	}
+	if (request.pending_craft_operations.size() > PLAYER_CRAFT_RECEIPT_MAX ||
+	    (!request.include_items && !request.pending_craft_operations.empty()))
+		return false;
+	for (size_t index = 0; index < request.pending_craft_operations.size(); ++index)
+	{
+		if (critical_operation_id_is_zero(request.pending_craft_operations[index]))
+			return false;
+		for (size_t prior = 0; prior < index; ++prior)
+			if (request.pending_craft_operations[prior].bytes ==
+			    request.pending_craft_operations[index].bytes)
+				return false;
+	}
 	if (request.death_recovery_query.kind != player_death_recovery_query_kind::none)
 		return pid_identity && !request.include_items && !request.include_pets &&
 		       player_death_recovery_query_request_valid(request.death_recovery_query,
@@ -1963,8 +2003,9 @@ bool player_load_request_valid(const player_load_request &request, uint64_t now_
 	return (pid_identity || name_identity) && (!request.include_pets || request.include_items);
 }
 
-player_load_result player_load_repository_execute(MYSQL *connection,
-						  const player_load_request &request)
+static player_load_result execute_player_load(MYSQL *connection, const player_load_request &request,
+					      bool caller_transaction,
+					      bool recovery_inspection = false)
 {
 	player_load_result result = {};
 	result.request_id = request.request_id;
@@ -1972,13 +2013,6 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	result.request_account_name = request.account_name;
 	result.request_player_name = request.player_name;
 	result.death_recovery_query.kind = request.death_recovery_query.kind;
-	if (request.pid > 0 && player_save_journal_pid_quarantined(request.pid))
-	{
-		result.outcome = player_load_outcome::cancelled;
-		result.error_code = EPERM;
-		result.failed_component = "durable player-save quarantine";
-		return result;
-	}
 	const uint64_t started = persistence_observability_now_usec();
 	if (!connection || !player_load_request_valid(request, started))
 	{
@@ -2000,8 +2034,9 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	}
 	// Own the read transaction: never commit a caller's work or reuse its view.
 #ifndef __NO_MYSQL__
-	if (!(connection->server_status & SERVER_STATUS_AUTOCOMMIT) ||
-	    (connection->server_status & SERVER_STATUS_IN_TRANS))
+	if (caller_transaction ? !(connection->server_status & SERVER_STATUS_IN_TRANS) :
+				 (!(connection->server_status & SERVER_STATUS_AUTOCOMMIT) ||
+				  (connection->server_status & SERVER_STATUS_IN_TRANS)))
 	{
 		result.error_code = EBUSY;
 		result.failed_component = "snapshot_transaction";
@@ -2021,8 +2056,9 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	}
 	// Resolve names without locks, then lock only the primary key. A locking
 	// LOWER(name) scan could lock unrelated players. Revalidate this PID below.
-	if (!execute(connection, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ", &result) ||
-	    !execute(connection, "START TRANSACTION", &result))
+	if (!caller_transaction &&
+	    (!execute(connection, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ", &result) ||
+	     !execute(connection, "START TRANSACTION", &result)))
 	{
 		result.error_code = mysql_errno(connection);
 		result.outcome = failure_outcome(result.error_code);
@@ -2047,7 +2083,7 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	result.snapshot.components = request.include_pets  ? PLAYER_LOAD_SESSION03_COMPONENTS :
 				     request.include_items ? PLAYER_LOAD_SESSION02_COMPONENTS :
 							     PLAYER_LOAD_SESSION01_COMPONENTS;
-	if (!load_status(connection, request, &result))
+	if (!load_status(connection, request, &result, recovery_inspection))
 	{
 		result.failed_component = "status";
 		if (result.outcome == player_load_outcome::component_failure &&
@@ -2141,10 +2177,13 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	{
 		std::vector<quest_reward_obligation_record> obligations;
 		unsigned int database_error = 0;
+		quest_reward_read_metrics metrics;
 		const auto loaded = quest_reward_obligation_repository_pending(
 			connection, static_cast<uint32_t>(result.pid), &obligations,
-			&database_error);
-		++result.metrics.query_count;
+			&database_error, &metrics);
+		result.metrics.query_count += metrics.query_count;
+		result.metrics.row_count += metrics.row_count;
+		result.metrics.byte_count += metrics.byte_count;
 		if (loaded == quest_reward_obligation_result::ok)
 		{
 			try
@@ -2156,10 +2195,6 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 						  std::move(obligation.continuation),
 						  obligation.terms, obligation.xp_applied_mask,
 						  obligation.economic_applied_mask });
-				result.metrics.row_count +=
-					static_cast<uint32_t>(result.pending_quest_rewards.size());
-				for (const auto &obligation : result.pending_quest_rewards)
-					result.metrics.byte_count += obligation.continuation.size();
 			}
 			catch (const std::bad_alloc &)
 			{
@@ -2180,10 +2215,13 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	{
 		std::vector<quest_reward_xp_entitlement_record> entitlements;
 		unsigned int database_error = 0;
+		quest_reward_read_metrics metrics;
 		const auto loaded = quest_reward_xp_entitlement_repository_pending(
 			connection, static_cast<uint32_t>(result.pid), &entitlements,
-			&database_error);
-		++result.metrics.query_count;
+			&database_error, &metrics);
+		result.metrics.query_count += metrics.query_count;
+		result.metrics.row_count += metrics.row_count;
+		result.metrics.byte_count += metrics.byte_count;
 		if (loaded == quest_reward_obligation_result::ok)
 		{
 			try
@@ -2193,8 +2231,6 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 					result.pending_quest_xp_entitlements.push_back(
 						{ entitlement.offering_operation, entitlement.terms,
 						  entitlement.reward_index, entitlement.amount });
-				result.metrics.row_count += static_cast<uint32_t>(
-					result.pending_quest_xp_entitlements.size());
 			}
 			catch (const std::bad_alloc &)
 			{
@@ -2267,7 +2303,8 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 					if (!add_result_budget(rows, row, &result))
 					{
 						result.error_code = EOVERFLOW;
-						mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+						mark_degraded(&result,
+							      PLAYER_LOAD_DEGRADED_RECOVERY,
 							      "spell_effect_receipts");
 						break;
 					}
@@ -2279,7 +2316,8 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 						    request.pending_spell_effect_operations.size())
 					{
 						result.error_code = EINVAL;
-						mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+						mark_degraded(&result,
+							      PLAYER_LOAD_DEGRADED_RECOVERY,
 							      "spell_effect_receipts");
 						break;
 					}
@@ -2300,6 +2338,115 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 			mysql_free_result(rows);
 		}
 	}
+	if (!request.pending_craft_operations.empty())
+	{
+		MYSQL_RES *rows = nullptr;
+		bool query_oom = false;
+		try
+		{
+			std::string statement =
+				"SELECT c.operation_id,c.discipline,c.experience,c.applied_revision FROM player_craft_progression c "
+				"JOIN critical_operation_inbox i ON i.operation_id=c.operation_id "
+				"WHERE i.status=1 AND i.result_code=0 AND c.applied_revision>0 AND c.pid=" +
+				std::to_string(result.pid) + " AND c.operation_id IN (";
+			constexpr char hex[] = "0123456789abcdef";
+			for (size_t index = 0; index < request.pending_craft_operations.size();
+			     ++index)
+			{
+				if (index)
+					statement += ',';
+				statement += "UNHEX('";
+				for (uint8_t byte : request.pending_craft_operations[index].bytes)
+				{
+					statement += hex[byte >> 4];
+					statement += hex[byte & 15];
+				}
+				statement += "')";
+			}
+			statement += ") LIMIT " +
+				     std::to_string(request.pending_craft_operations.size() + 1);
+			rows = query(connection, statement, &result);
+		}
+		catch (const std::bad_alloc &)
+		{
+			query_oom = true;
+			result.error_code = ENOMEM;
+			mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY, "craft_receipts");
+		}
+		if (!rows)
+		{
+			if (!query_oom)
+				result.error_code = mysql_errno(connection);
+			mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY, "craft_receipts");
+		}
+		else
+		{
+			try
+			{
+				result.craft_receipts.reserve(
+					request.pending_craft_operations.size());
+				MYSQL_ROW row = nullptr;
+				while ((row = mysql_fetch_row(rows)))
+				{
+					if (!add_result_budget(rows, row, &result))
+					{
+						result.error_code = EOVERFLOW;
+						mark_degraded(&result,
+							      PLAYER_LOAD_DEGRADED_RECOVERY,
+							      "craft_receipts");
+						break;
+					}
+					const unsigned long *lengths = mysql_fetch_lengths(rows);
+					uint64_t discipline = 0, experience = 0,
+						 applied_revision = 0;
+					if (!lengths || !row[0] || lengths[0] != 16 ||
+					    !parse_unsigned(row[1], 2, &discipline) ||
+					    !discipline ||
+					    !parse_unsigned(row[2], INT32_MAX, &experience) ||
+					    !parse_unsigned(row[3], result.snapshot.revision,
+							    &applied_revision) ||
+					    !applied_revision ||
+					    result.craft_receipts.size() >=
+						    request.pending_craft_operations.size())
+					{
+						result.error_code = EINVAL;
+						mark_degraded(&result,
+							      PLAYER_LOAD_DEGRADED_RECOVERY,
+							      "craft_receipts");
+						break;
+					}
+					player_craft_receipt_snapshot receipt = {};
+					std::copy_n(reinterpret_cast<const uint8_t *>(row[0]), 16,
+						    receipt.operation_id.bytes.begin());
+					receipt.discipline = static_cast<uint32_t>(discipline);
+					receipt.experience = static_cast<uint32_t>(experience);
+					if (std::find_if(
+						    result.craft_receipts.begin(),
+						    result.craft_receipts.end(),
+						    [&](const auto &existing) {
+							    return existing.operation_id.bytes ==
+								   receipt.operation_id.bytes;
+						    }) != result.craft_receipts.end())
+					{
+						mark_degraded(&result,
+							      PLAYER_LOAD_DEGRADED_RECOVERY,
+							      "craft_receipts");
+						result.error_code = EILSEQ;
+						break;
+					}
+					result.craft_receipts.push_back(receipt);
+				}
+			}
+			catch (const std::bad_alloc &)
+			{
+				result.craft_receipts.clear();
+				result.error_code = ENOMEM;
+				mark_degraded(&result, PLAYER_LOAD_DEGRADED_RECOVERY,
+					      "craft_receipts");
+			}
+			mysql_free_result(rows);
+		}
+	}
 	if (!load_bank(connection, request, &result))
 	{
 		clear_bank(&result);
@@ -2316,7 +2463,7 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	{
 		execute(connection, "ROLLBACK", &result);
 	}
-	else if (!execute(connection, "COMMIT", &result))
+	else if (!caller_transaction && !execute(connection, "COMMIT", &result))
 	{
 		result.error_code = mysql_errno(connection);
 		mark_degraded(&result, PLAYER_LOAD_DEGRADED_PIPELINE, "commit");
@@ -2326,4 +2473,50 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 		result.outcome = player_load_outcome::applied;
 	result.metrics.transaction_usec = persistence_observability_now_usec() - started;
 	return result;
+}
+
+player_load_result player_load_repository_execute(MYSQL *connection,
+						  const player_load_request &request)
+{
+	player_load_result result = {};
+	result.request_id = request.request_id;
+	result.pid = request.pid;
+	result.request_account_name = request.account_name;
+	result.request_player_name = request.player_name;
+	result.death_recovery_query.kind = request.death_recovery_query.kind;
+	if (request.pid > 0 && player_save_journal_pid_quarantined(request.pid))
+	{
+		result.outcome = player_load_outcome::cancelled;
+		result.error_code = EPERM;
+		result.failed_component = "durable player-save quarantine";
+		return result;
+	}
+
+	return execute_player_load(connection, request, false);
+}
+
+player_load_result
+player_load_repository_quarantine_inspect(MYSQL *connection, const player_load_request &request,
+					  const player_save_recovery_record *owner)
+{
+	std::vector<player_snapshot> frames;
+	std::array<uint8_t, 32> digest;
+	const bool prepared = owner && owner->replacement.pid == request.pid &&
+			      player_save_journal_recovery_matches(*owner);
+	if (request.pid <= 0 || !request.include_items || !request.include_pets ||
+	    !request.pending_spell_effect_operations.empty() ||
+	    !request.pending_craft_operations.empty() ||
+	    request.death_recovery_query.kind != player_death_recovery_query_kind::none ||
+	    (owner ? !prepared :
+		     player_save_journal_recovery_inspect(request.pid, &frames, &digest) !=
+			     player_save_journal_result::ok))
+	{
+		player_load_result refused = {};
+		refused.pid = request.pid;
+		refused.outcome = player_load_outcome::cancelled;
+		refused.error_code = EPERM;
+		refused.failed_component = "quarantine recovery inspection";
+		return refused;
+	}
+	return execute_player_load(connection, request, prepared, true);
 }

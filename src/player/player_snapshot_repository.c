@@ -5,6 +5,7 @@
 #include "persistence/persistence_observability.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_save_journal.h"
+#include "player/player_quarantine_recovery.h"
 #include "sql/item_extra_descr_codec.h"
 #include "sql/sql_pool.h"
 
@@ -328,12 +329,10 @@ query_result apply_replacement_rows(MYSQL *connection, const player_snapshot &sn
 						  << ",0))";
 				      });
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_TIMERS))
-		result = replace_rows(connection, snapshot.pid, "player_timers",
-				      "timer_id,timer_value", snapshot.timers,
-				      [](auto &sql, const auto &row) {
-					      sql << row.index << ",FROM_UNIXTIME(NULLIF("
-						  << row.value << ",0))";
-				      });
+		result = replace_rows(
+			connection, snapshot.pid, "player_timers", "timer_id,timer_value",
+			snapshot.timers, [](auto &sql, const auto &row)
+			{ sql << row.index << ",FROM_UNIXTIME(NULLIF(" << row.value << ",0))"; });
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_UNDEAD_SLOTS))
 		result = replace_rows(connection, snapshot.pid, "player_undead_slots",
 				      "circle,slots", snapshot.undead_slots,
@@ -469,6 +468,26 @@ query_result insert_item_rows(MYSQL *connection, const std::vector<player_item_s
 		if (!item_id)
 			return { false, EIO };
 		ids.push_back(item_id);
+		if (!pet_items)
+		{
+			player_item_snapshot standalone = row;
+			standalone.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+			std::vector<uint8_t> runtime;
+			if (player_item_snapshot_list_encode({ standalone }, &runtime) !=
+			    player_snapshot_codec_result::ok)
+				return { false, EINVAL };
+			result = execute(
+				connection,
+				"INSERT INTO player_item_runtime_state(item_id,payload) VALUES(" +
+					std::to_string(item_id) + "," +
+					quote(connection,
+					      std::string(reinterpret_cast<const char *>(
+								  runtime.data()),
+							  runtime.size())) +
+					")");
+			if (!result.ok)
+				return result;
+		}
 
 		std::unordered_set<uint64_t> affect_keys;
 		std::unordered_set<std::string> description_keys;
@@ -1533,8 +1552,8 @@ query_result apply_quest_xp_receipts(MYSQL *connection, const player_snapshot &s
 			return { false, EINVAL };
 		const std::string update_sql =
 			"UPDATE quest_reward_obligation SET xp_applied_mask=xp_applied_mask | " +
-			std::to_string(bit) + " WHERE offering_operation_id=UNHEX('" + operation_hex +
-			"') AND player_pid=" + std::to_string(snapshot.pid) +
+			std::to_string(bit) + " WHERE offering_operation_id=UNHEX('" +
+			operation_hex + "') AND player_pid=" + std::to_string(snapshot.pid) +
 			" AND acknowledged_at IS NULL";
 		query = execute(connection, update_sql);
 		if (!query.ok || mysql_affected_rows(connection) != 1)
@@ -1615,18 +1634,19 @@ query_result apply_spell_effect_receipts(MYSQL *connection, const player_snapsho
 {
 	for (const auto &receipt : snapshot.spell_effect_receipts)
 	{
-		if (!receipt.effect_id || receipt.effect_id > PLAYER_SPELL_EFFECT_RECEIPT_EFFECT_MAX)
+		if (!receipt.effect_id ||
+		    receipt.effect_id > PLAYER_SPELL_EFFECT_RECEIPT_EFFECT_MAX)
 			return { false, EINVAL };
 		const std::string operation_hex = hex_operation(receipt.operation_id);
-		query_result query = execute(
-			connection,
-			"SELECT effect_id FROM player_spell_effect_receipt WHERE pid=" +
-				std::to_string(snapshot.pid) + " AND operation_id=UNHEX('" + operation_hex +
-				"') FOR UPDATE");
+		query_result query =
+			execute(connection,
+				"SELECT effect_id FROM player_spell_effect_receipt WHERE pid=" +
+					std::to_string(snapshot.pid) + " AND operation_id=UNHEX('" +
+					operation_hex + "') FOR UPDATE");
 		if (!query.ok)
 			return query;
-		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> result(mysql_store_result(connection),
-										      mysql_free_result);
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> result(
+			mysql_store_result(connection), mysql_free_result);
 		if (!result)
 			return { false, mysql_errno(connection) ? mysql_errno(connection) : EIO };
 		MYSQL_ROW row = mysql_fetch_row(result.get());
@@ -1634,7 +1654,8 @@ query_result apply_spell_effect_receipts(MYSQL *connection, const player_snapsho
 		{
 			char *end = nullptr;
 			errno = 0;
-			const unsigned long stored_effect = std::strtoul(row[0] ? row[0] : "", &end, 10);
+			const unsigned long stored_effect =
+				std::strtoul(row[0] ? row[0] : "", &end, 10);
 			if (errno || !end || *end || stored_effect != receipt.effect_id)
 				return { false, EINVAL };
 			continue;
@@ -1673,6 +1694,51 @@ query_result verify_spell_effect_receipts(MYSQL *connection, const player_snapsh
 		const unsigned long stored_effect = std::strtoul(row[0], &end, 10);
 		if (errno || !end || *end || stored_effect != receipt.effect_id)
 			return { false, EILSEQ };
+	}
+	return { true, 0 };
+}
+
+query_result craft_receipts(MYSQL *connection, const player_snapshot &snapshot, bool apply)
+{
+	for (const auto &receipt : snapshot.craft_receipts)
+	{
+		const std::string operation_hex = hex_operation(receipt.operation_id);
+		auto query = execute(
+			connection,
+			"SELECT c.discipline,c.experience,c.applied_revision,i.status,i.result_code "
+			"FROM player_craft_progression c JOIN critical_operation_inbox i "
+			"ON i.operation_id=c.operation_id WHERE c.pid=" +
+				std::to_string(snapshot.pid) + " AND c.operation_id=UNHEX('" +
+				operation_hex + "') FOR UPDATE");
+		if (!query.ok)
+			return query;
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+			mysql_store_result(connection), mysql_free_result);
+		if (!rows || mysql_num_rows(rows.get()) != 1 || mysql_num_fields(rows.get()) != 5)
+			return { false,
+				 rows ? ENOENT :
+					(mysql_errno(connection) ? mysql_errno(connection) : EIO) };
+		MYSQL_ROW row = mysql_fetch_row(rows.get());
+		std::array<uint64_t, 5> values = {};
+		for (size_t index = 0; index < values.size(); ++index)
+			if (!row || !parse_custody_uint64(row[index], &values[index]))
+				return { false, EILSEQ };
+		rows.reset();
+		if (values[0] != receipt.discipline || values[1] != receipt.experience ||
+		    values[2] > snapshot.revision || values[3] != 1 || values[4] != 0)
+			return { false, EILSEQ };
+		if (values[2])
+			continue;
+		if (!apply)
+			return { false, ENOENT };
+		query = execute(connection,
+				"UPDATE player_craft_progression SET applied_revision=" +
+					std::to_string(snapshot.revision) +
+					" WHERE operation_id=UNHEX('" + operation_hex +
+					"') AND pid=" + std::to_string(snapshot.pid) +
+					" AND applied_revision=0");
+		if (!query.ok || mysql_affected_rows(connection) != 1)
+			return { false, query.ok ? EAGAIN : query.error_code };
 	}
 	return { true, 0 };
 }
@@ -1905,6 +1971,12 @@ player_save_apply_result read_durable_revision(MYSQL *connection, const player_s
 		if (!receipt.ok)
 			return failure(receipt.error_code);
 	}
+	if (revision == snapshot.revision && !snapshot.craft_receipts.empty())
+	{
+		const auto receipt = craft_receipts(connection, snapshot, false);
+		if (!receipt.ok)
+			return failure(receipt.error_code);
+	}
 	if (revision == snapshot.revision && !snapshot.quest_xp_receipts.empty())
 	{
 		const auto receipt = verify_quest_xp_receipts(connection, snapshot);
@@ -1926,9 +1998,8 @@ player_snapshot_repository_write_retained_death(MYSQL *connection, const player_
 						player_revision_t source_revision)
 {
 	using outcome = player_death_terminal_write_outcome;
-	const auto failed = [](unsigned int code) {
-		return player_death_terminal_write_result{ outcome::failed, code ? code : EIO };
-	};
+	const auto failed = [](unsigned int code)
+	{ return player_death_terminal_write_result{ outcome::failed, code ? code : EIO }; };
 	if (!connection)
 		return failed(EINVAL);
 #ifndef __NO_MYSQL__
@@ -1989,6 +2060,8 @@ player_snapshot_repository_write_retained_death(MYSQL *connection, const player_
 			query = verify_quest_xp_receipts(connection, request);
 		if (query.ok)
 			query = verify_spell_effect_receipts(connection, request);
+		if (query.ok)
+			query = craft_receipts(connection, request, false);
 		return query.ok ?
 			       player_death_terminal_write_result{ outcome::already_written, 0 } :
 			       failed(query.error_code);
@@ -2004,6 +2077,8 @@ player_snapshot_repository_write_retained_death(MYSQL *connection, const player_
 	if (query.ok)
 		query = apply_spell_effect_receipts(connection, request);
 	if (query.ok)
+		query = craft_receipts(connection, request, true);
+	if (query.ok)
 		query = record_death(connection, retained, true);
 	if (!query.ok)
 		return failed(query.error_code);
@@ -2018,6 +2093,8 @@ player_snapshot_repository_write_retained_death(MYSQL *connection, const player_
 		query = verify_quest_xp_receipts(connection, request);
 	if (query.ok)
 		query = verify_spell_effect_receipts(connection, request);
+	if (query.ok)
+		query = craft_receipts(connection, request, false);
 	return query.ok ? player_death_terminal_write_result{ outcome::written, 0 } :
 			  failed(query.error_code);
 }
@@ -2038,6 +2115,7 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 			    snapshot.components != PLAYER_CHECKPOINT_COMPONENT_ALL ||
 			    !snapshot.items.empty() :
 		    (snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
+		     snapshot.schema_version != PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION &&
 		     snapshot.schema_version != PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION &&
 		     snapshot.schema_version !=
 			     PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION))
@@ -2085,6 +2163,9 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 		const auto quest_receipt = spell_receipt.ok ?
 						   verify_quest_xp_receipts(connection, snapshot) :
 						   spell_receipt;
+		const auto craft_receipt = quest_receipt.ok ?
+						   craft_receipts(connection, snapshot, false) :
+						   quest_receipt;
 		execute(connection, "ROLLBACK");
 		if (!receipt.ok)
 			return failure(receipt.error_code, receipt.custody_diagnosis);
@@ -2092,11 +2173,14 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 			return failure(spell_receipt.error_code);
 		if (!quest_receipt.ok)
 			return failure(quest_receipt.error_code);
+		if (!craft_receipt.ok)
+			return failure(craft_receipt.error_code);
 		return { durable == snapshot.revision ? player_save_apply_outcome::already_applied :
 							player_save_apply_outcome::stale_revision,
 			 durable, 0, player_save_custody_diagnosis::none,
 			 !snapshot.death && (!snapshot.quest_xp_receipts.empty() ||
-					     !snapshot.spell_effect_receipts.empty()) };
+					     !snapshot.spell_effect_receipts.empty() ||
+					     !snapshot.craft_receipts.empty()) };
 	}
 
 	// An unresolved case also fences later checkpoints, not just cold loads.
@@ -2124,6 +2208,8 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 		query = apply_quest_xp_receipts(connection, snapshot);
 	if (query.ok && !snapshot.spell_effect_receipts.empty())
 		query = apply_spell_effect_receipts(connection, snapshot);
+	if (query.ok && !snapshot.craft_receipts.empty())
+		query = craft_receipts(connection, snapshot, true);
 	if (query.ok)
 		query = apply_death(connection, snapshot);
 	if (!query.ok)
@@ -2155,6 +2241,110 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 			 durable, query.error_code };
 	}
 	return { player_save_apply_outcome::applied, snapshot.revision, 0 };
+}
+
+player_save_apply_result
+player_snapshot_repository_recovery_apply(MYSQL *connection,
+					  const player_save_recovery_record &record)
+try
+{
+	if (!connection || record.backend != 2 || !player_save_journal_recovery_matches(record))
+		return { player_save_apply_outcome::terminal_failure, 0, EPERM };
+#ifndef __NO_MYSQL__
+	if (!(connection->server_status & SERVER_STATUS_AUTOCOMMIT) ||
+	    (connection->server_status & SERVER_STATUS_IN_TRANS))
+		return { player_save_apply_outcome::terminal_failure, 0, EBUSY };
+#endif
+	const auto &snapshot = record.replacement;
+	auto query = execute(connection, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+	if (query.ok)
+		query = execute(connection, "START TRANSACTION");
+	if (!query.ok)
+		return failure(query.error_code);
+	const auto rollback_transaction = [](MYSQL *owner)
+	{
+#ifndef __NO_MYSQL__
+		if (!(owner->server_status & SERVER_STATUS_IN_TRANS))
+			return;
+#endif
+		mysql_real_query(owner, "ROLLBACK", 8);
+	};
+	std::unique_ptr<MYSQL, decltype(rollback_transaction)> rollback_guard(connection,
+									      rollback_transaction);
+	query = execute(connection, "SELECT pid FROM player_data WHERE pid=" +
+					    std::to_string(snapshot.pid) + " FOR UPDATE");
+	if (!query.ok)
+	{
+		execute(connection, "ROLLBACK");
+		return failure(query.error_code);
+	}
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+		mysql_store_result(connection), mysql_free_result);
+	if (!rows || mysql_num_rows(rows.get()) != 1)
+	{
+		rows.reset();
+		execute(connection, "ROLLBACK");
+		return { player_save_apply_outcome::terminal_failure, 0, ENOENT };
+	}
+	rows.reset();
+	bool present = false;
+	const bool receipt =
+		player_quarantine_recovery_sql_receipt(connection, record, false, &present);
+	const auto current =
+		receipt ? player_load_repository_quarantine_inspect(
+				  connection, player_quarantine_recovery_request(record), &record) :
+			  player_load_result{};
+	if (receipt && present && player_quarantine_recovery_state_matches(current, record, true))
+	{
+		execute(connection, "ROLLBACK");
+		return { player_save_apply_outcome::already_applied, snapshot.revision, 0 };
+	}
+	if (!receipt || present ||
+	    !player_quarantine_recovery_state_matches(current, record, false) ||
+	    !player_quarantine_recovery_creation_proofs_sql(connection, record))
+	{
+		execute(connection, "ROLLBACK");
+		return { player_save_apply_outcome::terminal_failure, current.snapshot.revision,
+			 ESTALE };
+	}
+	// Reuse the native component/custody writers. Recovery never applies a grant,
+	// economic mutation, death disposition, or operation-bearing save receipt.
+	query = apply_components(connection, snapshot);
+	if (query.ok)
+		query = execute(connection, "UPDATE player_data SET save_revision=" +
+						    std::to_string(snapshot.revision) +
+						    " WHERE pid=" + std::to_string(snapshot.pid) +
+						    " AND save_revision=" +
+						    std::to_string(record.baseline.revision));
+	if (!query.ok || mysql_affected_rows(connection) != 1)
+	{
+		execute(connection, "ROLLBACK");
+		return failure(query.ok ? EAGAIN : query.error_code, query.custody_diagnosis);
+	}
+	const auto projected = player_load_repository_quarantine_inspect(
+		connection, player_quarantine_recovery_request(record), &record);
+	if (!player_quarantine_recovery_state_matches(projected, record, true) ||
+	    !player_quarantine_recovery_sql_receipt(connection, record, true, &present) || !present)
+	{
+		execute(connection, "ROLLBACK");
+		return { player_save_apply_outcome::terminal_failure, record.baseline.revision,
+			 EILSEQ };
+	}
+	query = execute(connection, "COMMIT");
+	if (!query.ok)
+	{
+		if (!connection_error(query.error_code))
+			execute(connection, "ROLLBACK");
+		return { connection_error(query.error_code) ?
+				 player_save_apply_outcome::ambiguous_commit :
+				 failure(query.error_code).outcome,
+			 record.baseline.revision, query.error_code };
+	}
+	return { player_save_apply_outcome::applied, snapshot.revision, 0 };
+}
+catch (...)
+{
+	return { player_save_apply_outcome::retryable_failure, 0, ENOMEM };
 }
 
 player_save_apply_result player_snapshot_repository_apply_from_pool(const player_snapshot &snapshot,

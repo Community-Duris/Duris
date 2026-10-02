@@ -97,7 +97,7 @@ or accounting history to keep the benchmark small.
 
 Merge accounting first, then update this feature branch to the accepted accounting
 base and repeat focused build/gameplay/recovery validation. Migration
-`0051_discovered_zone_daily_state` is required by both the canonical and supported
+`0054_discovered_zone_daily_state` is required by both the canonical and supported
 staging histories. It is additive, re-runnable, preserves v1 state, and allows v2
 records without rewriting player facts during migration.
 

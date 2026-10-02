@@ -105,6 +105,7 @@ PRELUDE = r'''
 #include "core/utils.h"
 #include "account/account.h"
 #include "economy/currency_transaction.h"
+#include "economy/account_bank_balances.h"
 #include "sql/sql_player.h"
 #include "item/item_ownership_runtime.h"
 #include "item/item_movement_transaction.h"
@@ -176,6 +177,17 @@ static const char *command[] = {
 };
 
 P_char character_list = NULL;
+int IS_MORPH(P_char character)
+{
+	return character && IS_NPC(character) && character->only.npc->orig_char;
+}
+P_char find_character_by_runtime_id(uint64_t runtime_id)
+{
+	for (P_char character = character_list; character; character = character->next)
+		if (character->runtime_id == runtime_id)
+			return character;
+	return nullptr;
+}
 P_desc descriptor_list = NULL;
 static room_data test_rooms[2] = {};
 P_room world = test_rooms;
@@ -438,7 +450,8 @@ bool item_movement_transaction_submit(P_char, P_obj, P_obj parent,
     const item_owner_identity &from, const item_owner_identity &to,
     item_transfer_reason reason, int64_t, item_movement_completion_fn callback,
     const void *context, size_t size, P_obj, item_movement_reject *,
-    item_movement_publication_fn)
+    item_movement_publication_fn, economic_source_kind, uint64_t,
+    const item_transfer_continuation &)
 {
     assert(item_owner_identity_equal(from, to));
     assert(reason == item_transfer_reason::player_get && size == sizeof(admission_context));
@@ -611,6 +624,7 @@ int main()
 	player.wallet_revision = 1;
 	player.bank_revision = 1;
 	char_data actor = {};
+	actor.runtime_id = 42;
 	actor.only.pc = &player;
 	actor.player.racewar = 1;
 	char account_name[] = "queue_account";
@@ -650,6 +664,7 @@ int main()
 	pc_only_data sibling_player = {};
 	sibling_player.pid = 43;
 	char_data sibling = {};
+	sibling.runtime_id = 43;
 	sibling.only.pc = &sibling_player;
 	sibling.player.racewar = actor.player.racewar;
 	assert(currency_transaction_player_busy(&sibling));
@@ -823,6 +838,7 @@ int main()
 	completion.operation_id = submitted_command.operation_id;
 	std::copy(encoded.begin(), encoded.end(), completion.result_payload.begin());
 	character_list = nullptr;
+	descriptor.character = nullptr;
 	coordinator_fenced = false;
 	currency_transaction_handle_completions(&completion, 1);
 	assert(currency_transaction_health_copy().retained_offline == 1);
@@ -832,6 +848,7 @@ int main()
 	GET_BALANCE_GOLD(&actor) = 5;
 	player.bank_revision = 4;
 	character_list = &actor;
+	descriptor.character = &actor;
 	currency_transaction_player_ready(&actor);
 	assert(GET_COPPER(&actor) == 7 && GET_PLATINUM(&actor) == 2);
 	assert(player.wallet_revision == 4);
@@ -843,6 +860,7 @@ int main()
 	pc_only_data recipient_player = {};
 	recipient_player.pid = 45;
 	char_data recipient = {};
+	recipient.runtime_id = 45;
 	recipient.only.pc = &recipient_player;
 	recipient.player.racewar = 1;
 	for (int scenario = 0; scenario < 4; ++scenario)
@@ -883,7 +901,12 @@ int main()
 		ack.result_size = scenario == 0 ? 0 : coin_bytes.size();
 		std::copy(coin_bytes.begin(), coin_bytes.end(), ack.result_payload.begin());
 		if (scenario == 1)
+		{
 			character_list = &recipient; // Sender detached before acknowledgement.
+			descriptor.character = nullptr;
+		}
+		else
+			descriptor.character = &actor;
 		if (scenario == 2)
 			actor.next = nullptr; // Recipient detached before acknowledgement.
 		if (scenario == 3)
@@ -903,7 +926,7 @@ int main()
 		assert(coin_callbacks == callbacks_before + 1);
 		assert(submission_count == submitted_before + 1); // No second credit or refund.
 	}
-	// The actual gameplay helper shares admission and preserves existing change-making.
+	// The actual gameplay helper shares admission and preserves exact denominations.
 	currency_transaction_reset_for_tests();
 	coordinator_fenced = false;
 	actor.next = &recipient;
@@ -924,8 +947,8 @@ int main()
 	assert(GET_COPPER(&actor) == 100 && GET_COPPER(&recipient) == 10);
 	coin_transfer_payload give_payload;
 	assert(coin_transfer_command_decode_payload(submitted_command, &give_payload));
-	assert((give_payload.source.after == std::array<int32_t, 4>{0, 6, 0, 0}));
-	assert((give_payload.destination.after == std::array<int32_t, 4>{10, 4, 0, 0}));
+	assert((give_payload.source.after == std::array<int32_t, 4>{60, 0, 0, 0}));
+	assert((give_payload.destination.after == std::array<int32_t, 4>{50, 0, 0, 0}));
 	coin_transfer_result give_result;
 	for (size_t i = 0; i < 4; ++i)
 	{
@@ -944,8 +967,8 @@ int main()
 	coordinator_fenced = false;
 	currency_transaction_handle_completions(&give_ack, 1);
 	assert(coin_announcements == 1 && coin_errors == 0);
-	assert(GET_SILVER(&actor) == 6 && GET_COPPER(&actor) == 0);
-	assert(GET_SILVER(&recipient) == 4 && GET_COPPER(&recipient) == 10);
+	assert(GET_SILVER(&actor) == 0 && GET_COPPER(&actor) == 60);
+	assert(GET_SILVER(&recipient) == 0 && GET_COPPER(&recipient) == 50);
 	assert(submission_count == admitted_before + 1);
 	actor.next = nullptr;
 	character_list = &actor;
@@ -1454,7 +1477,9 @@ def main(flatfile: bool = False) -> int:
                 rel("economic_gameplay_authority.c"), rel("economic_command_admission.c"),
                 rel("economic_currency_adapter.c"), rel("economic_accounting_intent.c"),
                 rel("economic_accounting_plan.c"), rel("economic_accounting_types.c"),
-                rel("coin_transfer_command.c"), rel("item_transfer_command.c"),
+                rel("coin_transfer_command.c"), rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
+                rel("coin_transfer_accounting.c"), rel("item_transfer_accounting.c"),
+                rel("economic_accounting_item_reference.c"),
                 rel("player_snapshot_codec.c"), rel("item_ownership_runtime.c"),
                 "-Wl,--gc-sections", "-lcrypto", "-o", str(binary),
             ],

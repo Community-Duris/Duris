@@ -179,6 +179,7 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/actobj.o \
 				 cmd/actoff.o \
 				 cmd/divine_refusal_policy.o \
+				 cmd/divine_refusal_content.o \
 				 cmd/actoth.o cmd/color_command.o \
 				 cmd/actset.o \
 				 cmd/actwiz.o \
@@ -260,6 +261,8 @@ OBJS =  $(SHIP_OBJS) \
          economy/cardgames.o \
          combat/chaos.o \
 				combat/chaos_materials.o \
+				combat/chaos_pouch_ledger.o \
+				combat/chaos_pouch_publication.o \
 				combat/chaos_config.o \
 				net/command_latency.o \
 				 net/comm.o \
@@ -279,6 +282,7 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/drannak.o \
 				 item/enhance.o \
 				 economy/crafting.o \
+				 economy/craft_progression.o \
 				 economy/mining.o \
 				 economy/mining_config.o \
 				 item/random_equipment_config.o \
@@ -296,6 +300,7 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/epic_skills.o \
 				 classes/ethermancer.o \
 				 world/events.o \
+				 world/world_activity.o \
 				 world/event_names.o \
 				 world/new_events.o \
 				 world/nevent_periodic.o \
@@ -435,6 +440,7 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/player_death_restitution_repository.o \
 				 persistence/corpse_lifecycle_command.o \
 				 item/item_transfer_command.o \
+				 item/craft_pouch_mutation.o \
 				 item/item_ownership_runtime.o \
 				 item/item_get_policy.o \
 				 item/item_command_policy.o \
@@ -538,6 +544,7 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_revision_state.o \
 				 player/player_save_worker.o \
 				 player/player_save_journal.o \
+				 player/player_quarantine_recovery.o \
 				 player/player_save_pipeline.o \
 				 player/player_death_restitution_runtime.o \
 				 player/player_death_restitution_adapter.o \
@@ -573,6 +580,7 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/skills.o \
 				 magic/smagic.o \
 				 classes/salchemist.o \
+				 classes/npc_alchemist.o \
 				 classes/sillusionist.o \
 				 net/sparser.o \
 				 mob/specials.o \

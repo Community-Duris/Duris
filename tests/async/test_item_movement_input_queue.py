@@ -264,6 +264,8 @@ bool player_load_item_graph_materialize_creation(const item_transfer_payload &,
     roots->push_back(&recovered_grant_second);
     return true;
 }
+struct craft_pouch_mutation;
+bool chaos_pouch_publish_committed(P_obj, const craft_pouch_mutation &) { assert(false); return false; }
 void __free(void *memory, const char *, int) { free(memory); }
 void send_to_char(const char *text, P_char) { grant_messages += text; }
 void send_to_char(const char *, P_char, int) {}
@@ -323,6 +325,8 @@ void process_with_paging(P_char character, char *input);
 static bool bulk_get_pending = false;
 bool bulk_get_player_busy(P_char) { return bulk_get_pending; }
 bool currency_transaction_player_busy(P_char) { return false; }
+bool player_save_pipeline_sealed_save_pending(int) { return false; }
+bool spell_component_retirement_waiting_for_effect(const critical_operation_id &) { return false; }
 bool input_allowed_while_item_moving(const char *input);
 bool input_allowed_while_currency_pending(const char *) { return true; }
 bool input_allowed_while_item_and_currency_pending(const char *input)
@@ -1601,7 +1605,7 @@ def main() -> int:
                 "-fsanitize=address,undefined", "-Isrc", str(source),
                 rel("item_movement_transaction.c"),
                 rel("item_ownership_runtime.c"),
-                rel("item_transfer_command.c"),
+                rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
                 rel("critical_command.c"),
                 rel("player_snapshot_capture.c"),
                 rel("player_snapshot_codec.c"),

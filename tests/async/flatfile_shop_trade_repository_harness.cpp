@@ -333,6 +333,64 @@ int main(int argc, char **argv)
 				&error) == flatfile_shop_trade_materialization_result::ok &&
 				stale_snapshot.items[0].cost == 777,
 			"reconciliation overwrote a newer materialized object snapshot");
+		stale_snapshot.items[0].equipment_slot = 7;
+		require(flatfile_shop_trade_materialization_reconcile(
+				root.string(), reconciliation_lock, 42, player_items,
+				&stale_snapshot,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				stale_snapshot.items[0].equipment_slot == 0,
+			"current accounted custody did not clear a stale worn slot");
+	}
+	{
+		// A pre-accounting inbound catalog can outlive later ordinary wear.
+		// Keep the same immutable catalog, but give it no accounting receipts.
+		const fs::path legacy_root = root / "legacy-kit";
+		fs::create_directories(legacy_root / "domains");
+		fs::create_directories(legacy_root / "accounting/item_references");
+		fs::permissions(legacy_root, fs::perms::owner_all, fs::perm_options::replace);
+		fs::permissions(legacy_root / "domains", fs::perms::owner_all,
+				fs::perm_options::replace);
+		fs::permissions(legacy_root / "accounting", fs::perms::owner_all,
+				fs::perm_options::replace);
+		fs::permissions(legacy_root / "accounting/item_references", fs::perms::owner_all,
+				fs::perm_options::replace);
+		fs::copy_file(domains / "shop_trade_materializations",
+			      legacy_root / "domains/shop_trade_materializations");
+		flatfile_authority_lock legacy_lock;
+		require(legacy_lock.acquire(legacy_root.string(), &error),
+			"could not lock legacy placement test: " + error);
+		player_snapshot worn = stale_snapshot;
+		worn.items[0].equipment_slot = 7;
+		const auto legacy_result = flatfile_shop_trade_materialization_reconcile(
+			legacy_root.string(), legacy_lock, 42, player_items, &worn, &error);
+		require(legacy_result == flatfile_shop_trade_materialization_result::ok &&
+				worn.items[0].equipment_slot == 7,
+			"pre-accounting inbound custody erased a saved worn slot: result=" +
+				std::to_string(static_cast<int>(legacy_result)) + " slot=" +
+				std::to_string(worn.items[0].equipment_slot) + " " + error);
+		auto created_items = player_items;
+		created_items[0].item_revision = 1;
+		economic_accounting_item_reference creation_reference = {};
+		creation_reference.operation_id = operation(90);
+		creation_reference.legacy_operation_id = operation(91);
+		creation_reference.item_uid = created_items[0].item_uid;
+		creation_reference.after_revision = 1;
+		require(flatfile_item_accounting_reference_append(legacy_root.string(),
+								  creation_reference, &error) ==
+				flatfile_item_accounting_status::ok,
+			"could not retain initial creation receipt: " + error);
+		require(flatfile_shop_trade_materialization_reconcile(
+				legacy_root.string(), legacy_lock, 42, created_items, &worn,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				worn.items[0].equipment_slot == 7,
+			"initial creation receipt erased a later saved worn slot");
+		auto positioned_items = player_items;
+		positioned_items[0].equipment_slot = 4;
+		require(flatfile_shop_trade_materialization_reconcile(
+				legacy_root.string(), legacy_lock, 42, positioned_items, &worn,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				worn.items[0].equipment_slot == 4,
+			"explicit native equipment placement did not override the snapshot");
 	}
 
 	shop_trade_payload conflicting_payload = payload;

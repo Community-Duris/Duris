@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import shlex
 from pathlib import Path
+from contract_text import contains
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -56,7 +57,7 @@ reconcile = REPOSITORY[REPOSITORY.index("critical_apply_result critical_command_
 assert "const bool accounted_bank = accounted_bank_envelope(command);" in reconcile
 assert "coin_transfer_accounting_command_supported(command)" in reconcile
 assert "item_transfer_accounting_command_supported(command)" in reconcile
-assert "const bool accounted_root = accounted_bank || accounted_coin || accounted_item;" in reconcile
+assert contains(reconcile, "const bool accounted_root = accounted_bank || accounted_coin || accounted_item || accounted_collector || accounted_shop;")
 locked_lookup = "read_operation(connection, command.operation_id, accounted_root"
 assert locked_lookup in reconcile
 assert reconcile.index('execute(connection, "START TRANSACTION")') < reconcile.index(locked_lookup)
@@ -142,7 +143,7 @@ with tempfile.TemporaryDirectory(prefix="duris-critical-outbox-") as temporary:
         [
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
             "-pthread", "-Isrc", str(source), rel("critical_outbox.c"),
-            rel("corpse_lifecycle_command.c"), rel("item_transfer_command.c"),
+            rel("corpse_lifecycle_command.c"), rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"), rel("player_snapshot_codec.c"),
             rel("critical_command.c"), "-lcrypto",
             "-o", str(binary),
         ] + mysql_flags,

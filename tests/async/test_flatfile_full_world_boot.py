@@ -524,6 +524,7 @@ with tempfile.TemporaryDirectory(prefix="full-world-build-", dir=ROOT / "bin") a
 
                 assert_mace_owner(state_root, mace_uid, "player_items")
                 expected_dirs = {
+                    "accounting", "accounting/item_references",
                     "metadata",
                     "identities",
                     "identities/accounts",

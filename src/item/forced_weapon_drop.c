@@ -103,9 +103,9 @@ bool player_owns_root(P_char actor, P_obj weapon, item_owner_identity *owner)
 	       runtime.root_item_uid == weapon->obj_uid && runtime.parent_item_uid == 0;
 }
 
-bool forced_weapon_drop_publication(const critical_operation_id & /*operation_id*/,
-				    P_char actor, bool committed, const item_transfer_result &,
-				    unsigned int, const uint8_t *encoded, size_t encoded_size)
+bool forced_weapon_drop_publication(const critical_operation_id & /*operation_id*/, P_char actor,
+				    bool committed, const item_transfer_result &, unsigned int,
+				    const uint8_t *encoded, size_t encoded_size)
 {
 	forced_weapon_drop_context context = {};
 	if (!actor || !encoded || encoded_size != sizeof(context))

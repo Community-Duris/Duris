@@ -37,6 +37,7 @@ status_save = body(mysql_source_text, "bool sql_save_player_status(P_char ch, in
 
 HARNESS = r'''
 #include <mysql/mysql.h>
+bool player_save_journal_pid_quarantined(int) { return false; }
 
 #include "core/prototypes.h"
 #include "core/structs.h"

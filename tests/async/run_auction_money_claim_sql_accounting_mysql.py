@@ -31,13 +31,14 @@ files = [
     "src/economy/economic_accounting_types.c",
     "src/economy/economic_accounting_plan.c",
     "src/economy/economic_accounting_intent.c",
-    "src/item/item_transfer_command.c",
+    "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c",
+    "src/player/player_snapshot_codec.c",
     "src/persistence/economic_accounting_repository.c",
     "src/persistence/economic_sql_pending_claim_source.c",
     "src/persistence/economic_sql_auction_money_claim_transaction.c",
     "src/persistence/critical_command.c",
 ]
-flags = ["g++-12", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+flags = [os.environ.get("CXX", "g++"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
          "-O1", "-g", "-Isrc"]
 flags += shlex.split(subprocess.check_output(["mysql_config", "--cflags"], text=True))
 flags += files + shlex.split(subprocess.check_output(["mysql_config", "--libs"], text=True))

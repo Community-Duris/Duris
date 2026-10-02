@@ -161,7 +161,11 @@ read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
     src/economy/economic_accounting_types.c \
     src/economy/economic_gameplay_authority.c \
     src/persistence/critical_command.c \
-    src/item/item_transfer_command.c \
+    src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c \
+    src/economy/coin_transfer_command.c \
+    src/economy/coin_transfer_accounting.c \
+    src/economy/item_transfer_accounting.c \
+    src/item/economic_accounting_item_reference.c \
     src/player/player_snapshot_codec.c \
     "${MYSQL_LIBS[@]}" -lcrypto -lz -o "$TEMP/lifecycle-owner"
 # The composed owner harness below also exercises faulted lease transfers.

@@ -238,16 +238,17 @@ bool read_reference_count(MYSQL *connection, const critical_operation_id &operat
 bool read_source_claim_count(MYSQL *connection, const critical_operation_id &operation_id,
 			     uint64_t *count)
 {
-	if (!count || !execute(connection,
-				"SELECT COUNT(*) FROM economic_accounting_source_claim WHERE "
-				"operation_id=" +
-					id(operation_id)))
+	if (!count ||
+	    !execute(connection, "SELECT COUNT(*) FROM economic_accounting_source_claim WHERE "
+				 "operation_id=" +
+					 id(operation_id)))
 		return false;
-	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(mysql_store_result(connection),
-											 mysql_free_result);
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+		mysql_store_result(connection), mysql_free_result);
 	if (!rows || mysql_num_rows(rows.get()) != 1)
 	{
-		errno = mysql_errno(connection) ? static_cast<int>(mysql_errno(connection)) : EILSEQ;
+		errno = mysql_errno(connection) ? static_cast<int>(mysql_errno(connection)) :
+						  EILSEQ;
 		return false;
 	}
 	MYSQL_ROW row = mysql_fetch_row(rows.get());
@@ -266,7 +267,8 @@ bool metadata_matches(const economic_plan_metadata &actual, const economic_plan_
 		(!actual.source_event ||
 		 (actual.source_event->kind == expected.source_event->kind &&
 		  actual.source_event->source.bytes == expected.source_event->source.bytes &&
-		  actual.source_event->generation.bytes == expected.source_event->generation.bytes &&
+		  actual.source_event->generation.bytes ==
+			  expected.source_event->generation.bytes &&
 		  actual.source_event->sequence == expected.source_event->sequence &&
 		  actual.source_event->slot == expected.source_event->slot));
 	return actual.version == expected.version &&
@@ -469,19 +471,25 @@ unsigned int economic_sql_item_transfer_verify_retained(MYSQL *connection,
 		if (result_code)
 			return !values[4] && !values[6] && !account_count && !posting_count &&
 					       !child_count && !event_count && !before_count &&
-					       !after_count && !reference_count && !source_claim_count ?
+					       !after_count && !reference_count &&
+					       !source_claim_count ?
 				       0 :
 				       EILSEQ;
 		if (!result_payload || result_size != ITEM_TRANSFER_RESULT_BYTES || !values[4] ||
 		    values[4]->size() != 32 || !values[6] || event_count == 0 || account_count ||
 		    posting_count || child_count || event_count != reference_count)
 			return EILSEQ;
-		if (source_claim_count != static_cast<uint64_t>(intent.admission.metadata.source_event.has_value()))
+		if (source_claim_count !=
+		    static_cast<uint64_t>(intent.admission.metadata.source_event.has_value()))
 			return EILSEQ;
 		item_transfer_result retained_result = {};
+		item_transfer_payload payload = {};
 		if (!item_transfer_command_decode_result(result_payload, result_size,
 							 &retained_result) ||
-		    retained_result.item_count != event_count)
+		    !item_transfer_command_decode_payload(command, &payload) ||
+		    retained_result.item_count != payload.item_count ||
+		    (payload.reason != item_transfer_reason::craft &&
+		     retained_result.item_count != event_count))
 			return EILSEQ;
 		economic_accounting_plan plan;
 		if (economic_plan_decode(std::span<const uint8_t>(reinterpret_cast<const uint8_t *>(
@@ -511,6 +519,20 @@ unsigned int economic_sql_item_transfer_verify_retained(MYSQL *connection,
 		    std::string(reinterpret_cast<const char *>(canonical_plan.data()),
 				canonical_plan.size()) != *values[6])
 			return EILSEQ;
+		if (payload.reason == item_transfer_reason::craft)
+		{
+			const auto &inputs = plan.items_before;
+			economic_accounting_plan expected;
+			expected.metadata = expected_metadata;
+			std::vector<uint8_t> encoded_expected;
+			if (item_transfer_craft_accounting_effects(payload, inputs, &expected) !=
+				    economic_accounting_error::ok ||
+			    economic_plan_normalize(&expected) != economic_accounting_error::ok ||
+			    economic_plan_encode(expected, &encoded_expected) !=
+				    economic_accounting_error::ok ||
+			    encoded_expected != canonical_plan)
+				return EILSEQ;
+		}
 		for (size_t index = 0; index < plan.item_events.size(); ++index)
 		{
 			const auto &event = plan.item_events[index];

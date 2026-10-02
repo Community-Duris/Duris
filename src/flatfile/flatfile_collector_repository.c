@@ -813,8 +813,7 @@ flatfile_collector_repository_result flatfile_collector_prepare_death_enrollment
 		{
 			auto expected = std::lower_bound(
 				payload.items.begin(), payload.items.begin() + payload.item_count,
-				uid,
-				[](const item_transfer_entry &entry, uint64_t candidate)
+				uid, [](const item_transfer_entry &entry, uint64_t candidate)
 				{ return entry.item_uid < candidate; });
 			if (expected == payload.items.begin() + payload.item_count ||
 			    expected->item_uid != uid ||
@@ -948,8 +947,7 @@ flatfile_collector_repository_result flatfile_collector_prepare_item_boundary(
 			continue;
 		const auto item = std::lower_bound(
 			payload.items.begin(), payload.items.begin() + payload.item_count,
-			listing.entry.uid,
-			[](const item_transfer_entry &entry, uint64_t uid)
+			listing.entry.uid, [](const item_transfer_entry &entry, uint64_t uid)
 			{ return entry.item_uid < uid; });
 		if (item == payload.items.begin() + payload.item_count ||
 		    item->item_uid != listing.entry.uid)
@@ -1024,8 +1022,7 @@ flatfile_collector_repository_result flatfile_collector_prepare_corpse_boundary(
 	std::string *error)
 {
 	if (root.empty() || !lock.matches(root) || !mutation || !result_code ||
-	    !std::is_sorted(items.begin(), items.end(),
-			    [](const auto &left, const auto &right)
+	    !std::is_sorted(items.begin(), items.end(), [](const auto &left, const auto &right)
 			    { return left.item_uid < right.item_uid; }))
 		return flatfile_collector_repository_result::invalid;
 	*mutation = {};
@@ -1550,8 +1547,7 @@ try
 						 EIO :
 						 EILSEQ) };
 		const auto selected =
-			std::find_if(from_items.begin(), from_items.end(),
-				     [&](const auto &item)
+			std::find_if(from_items.begin(), from_items.end(), [&](const auto &item)
 				     { return item.item_uid == payload.selected_item_uid; });
 		if (accounted_purchase)
 		{

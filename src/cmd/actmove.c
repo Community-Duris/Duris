@@ -79,8 +79,8 @@ static P_obj find_key_break_object(uint64_t item_uid)
 }
 
 static bool publish_key_break(const critical_operation_id & /*operation_id*/, P_char actor,
-				      bool committed, const item_transfer_result &,
-			      unsigned int, const uint8_t *encoded, size_t encoded_size)
+			      bool committed, const item_transfer_result &, unsigned int,
+			      const uint8_t *encoded, size_t encoded_size)
 {
 	key_break_context context = {};
 	if (encoded && encoded_size == sizeof(context))

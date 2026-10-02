@@ -49,6 +49,15 @@ bool safe_room_spell_target_allowed(P_char, int, P_char) { return true; }
 
 static room_data rooms[2]{};
 P_room world = rooms;
+// The production spell bodies re-resolve participants after callbacks. This
+// fixture owns a fixed room population and gives each participant a unique ID.
+P_char find_character_by_runtime_id(uint64_t id)
+{
+    if (!id) return nullptr;
+    for (P_char ch = world[0].people; ch; ch = ch->next_in_room)
+        if (ch->runtime_id == id) return ch;
+    return nullptr;
+}
 static index_data indexes[1]{};
 P_index mob_index = indexes, obj_index = indexes;
 Skill skills[MAX_AFFECT_TYPES + 1];
@@ -206,6 +215,7 @@ int main()
     skills[SPELL_DEATH_FIELD].spell_pointer = spell_death_field;
     skills[SPELL_DEATH_FIELD].targets = TAR_AREA;
     char_data caster{}, targets[8]{};
+    caster.runtime_id = 1;
     npc_only_data npc{};
     pc_only_data players[9]{};
     caster.only.npc = &npc;
@@ -216,6 +226,7 @@ int main()
     caster.points.hit = 10000;
     for (int i = 0; i < 8; ++i)
     {
+        targets[i].runtime_id = static_cast<uint64_t>(i + 2);
         targets[i].only.pc = &players[i];
         targets[i].specials.position = POS_STANDING | STAT_NORMAL;
         targets[i].specials.fighting = &caster;
@@ -344,6 +355,8 @@ def main():
     build = ROOT / 'bin/tests'
     build.mkdir(parents=True, exist_ok=True)
     functions = [
+        ('item/objmisc.c', 'bool item_restricted_for_player_pet('),
+        ('item/objmisc.c', 'int invoke_object_special('),
         ('utility.c', 'bool should_area_hit(P_char ch, P_char victim)'),
         ('utility.c', 'int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, P_char, P_obj),\n\t\t\tint level, P_char victim, float min_chance, float /*chance_step*/,\n\t\t\tbool (*select_func)(P_char, P_char))'),
         ('utility.c', 'int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, P_char, P_obj),\n\t\t\tint level, P_char victim, float min_chance, float chance_step)'),

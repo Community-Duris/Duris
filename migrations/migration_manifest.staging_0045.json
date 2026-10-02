@@ -680,11 +680,41 @@
       "verify_checksum": "ff9b0757b6534750d40c26d04212ff4856bee3b835061d1d7a5803e74e590c3a"
     },
     {
-      "id": "0051_discovered_zone_daily_state",
+      "id": "0051_player_item_runtime_state",
       "sequence": 51,
+      "description": "Preserve complete runtime state for carried player items",
+      "apply": "immutable/0051_player_item_runtime_state.sql",
+      "verify": "immutable/0051_player_item_runtime_state.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "ab0e11959207cca0579dcc5635f9c124c655d07635a14c62334a8a2d02c3c7d8",
+      "verify_checksum": "c523d56f74862735f6aef0c831cbe662bed49c64fa6cbdf05bac82f81c1225e5"
+    },
+    {
+      "id": "0052_quest_item_witness_lookup",
+      "sequence": 52,
+      "description": "Index immutable item creation witnesses by quest source identity",
+      "apply": "immutable/0052_quest_item_witness_lookup.sql",
+      "verify": "immutable/0052_quest_item_witness_lookup.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "e2de795797aeaf2ad2a268dffc65e1fb9195fb5e8fa1c6720a39608e153ebe0a",
+      "verify_checksum": "ae28a2787322dc5cf7e7b76d635289fed03e93fc3d59c5983c4e75e8c931327f"
+    },
+    {
+      "id": "0053_craft_progression",
+      "sequence": 53,
+      "description": "Commit frozen recipe progression and player application revisions",
+      "apply": "immutable/0053_craft_progression.sql",
+      "verify": "immutable/0053_craft_progression.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "4b17920b26cad6762637a1f3e0d7cb13d997e2f163b550c56b24363efa45aff1",
+      "verify_checksum": "aacc5516aed02ca8b8b3115a2e8c22ef3f113b299723ea249034971ceb50417a"
+    },
+    {
+      "id": "0054_discovered_zone_daily_state",
+      "sequence": 54,
       "description": "Retain legacy quest state and permit discovered-zone daily receipts",
-      "apply": "immutable/0051_discovered_zone_daily_state.sql",
-      "verify": "immutable/0051_discovered_zone_daily_state.sh",
+      "apply": "immutable/0054_discovered_zone_daily_state.sql",
+      "verify": "immutable/0054_discovered_zone_daily_state.sh",
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e",
       "verify_checksum": "c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe"

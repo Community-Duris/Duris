@@ -23,8 +23,10 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
             "-Wpedantic",
             "-Werror",
             "-D__NO_MYSQL__",
+            "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
             "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
             "-DDURIS_FLATFILE_PLAYER_READ_FAULT_TEST",
+            "-DDURIS_FLATFILE_ACCOUNTING_TEST",
             "-Isrc",
             "-Isrc/no_mysql",
             "tests/async/flatfile_player_repository_harness.cpp",
@@ -64,8 +66,10 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
             rel("economic_accounting_item_reference.c"),
             rel("item_transfer_accounting.c"),
             rel("player_snapshot_codec.c"),
+            rel("player_save_journal.c"),
+            rel("player_quarantine_recovery.c"),
             rel("flatfile_store.c"),
-            rel("item_transfer_command.c"),
+            rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
             rel("corpse_lifecycle_command.c"),
             rel("shop_trade_command.c"),
             rel("critical_command.c"),
@@ -112,6 +116,13 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
         )
         if run_result.returncode:
             raise SystemExit(run_result.stdout)
+
+    with tempfile.TemporaryDirectory(prefix="flat-recovery-state-") as recovery_temporary:
+        recovery_result = subprocess.run([str(binary), recovery_temporary, "quarantine-recovery"],
+                                         cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        if recovery_result.returncode:
+            raise SystemExit(recovery_result.stdout)
+        print(recovery_result.stdout.strip())
 
     domain_source = (SRC / "flatfile_player_domain_repository.c").read_text()
     player_source = (SRC / "flatfile_player_repository.c").read_text()

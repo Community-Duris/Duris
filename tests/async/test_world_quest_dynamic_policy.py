@@ -12,7 +12,7 @@ from _paths import ROOT, SRC, extract_function, source
 
 WORLD_QUEST = source("world_quest.c").read_text()
 COMM = source("comm.c").read_text()
-MOBILE = source("specs.mobile.c").read_text()
+MOBILE = source("specs.world_quest.c").read_text()
 POLICY = source("world/world_quest_policy.c").read_text()
 SQL = source("sql/sql.c").read_text()
 DB = source("world/db.c").read_text()

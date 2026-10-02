@@ -40,6 +40,8 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0048_quest_xp_entitlement.sql",
     ROOT / "migrations" / "immutable" / "0049_player_spell_effect_receipt.sql",
     ROOT / "migrations" / "economic_baseline.sql",
+    ROOT / "migrations" / "immutable" / "0051_player_item_runtime_state.sql",
+    ROOT / "migrations" / "immutable" / "0053_craft_progression.sql",
 )
 
 ROOT_FIELDS = {
@@ -97,13 +99,28 @@ REQUIRED_NON_DATABASE_STORES = {
     "file:player_save_quarantine_policy": (
         "recovery_state", "PLAYER_SAVE_JOURNAL_DIR/player-save.quarantine-pids",
     ),
+    "file:player-quarantine-recovery-receipts": (
+        "recovery_state", "FLATFILE_ROOT/metadata/player-recovery-*.receipt",
+    ),
     "file:critical_command_journal": ("journal", "CRITICAL_COMMAND_JOURNAL_DIR"),
     "file:persistence_fallback": ("fallback", "legacy persistence fallback file"),
     "file:persistence_fallback_quarantine": (
         "quarantine", "legacy persistence fallback quarantine",
     ),
+    "file:flatfile-player-snapshots": ("recovery_state", "FLATFILE_ROOT/players/*.snapshot"),
+    "file:flatfile-accounts": ("recovery_state", "FLATFILE_ROOT/identities/accounts/*.acct"),
+    "file:flatfile-identity-catalog": ("recovery_state", "FLATFILE_ROOT/identities/names/catalog.identity"),
+    "file:flatfile-item-ownership": ("recovery_state", "FLATFILE_ROOT/domains/item_ownership"),
+    "file:flatfile-player-domains": ("recovery_state", "FLATFILE_ROOT/domains/player-*.domain"),
+    "file:flatfile-bank-domains": ("recovery_state", "FLATFILE_ROOT/domains/bank-*.domain"),
+    "file:flatfile-player-domain-journal": ("recovery_state", "FLATFILE_ROOT/domains/.player-domain-transaction"),
+    "file:flatfile-legacy-currency-journal": ("recovery_state", "FLATFILE_ROOT/domains/.currency-transaction"),
+    "file:flatfile-item-uid-allocator": ("recovery_state", "FLATFILE_ROOT/metadata/item_uid_allocator"),
+    "file:flatfile-item-uid-initialization": ("recovery_state", "FLATFILE_ROOT/metadata/item_uid_allocator.initialized"),
     "file:player-deaths": ("recovery_state", "FLATFILE_ROOT/player-deaths/*.death"),
     "file:player-spell-receipts": ("recovery_state", "FLATFILE_ROOT/players/*.spell"),
+    "file:player-craft-receipts": ("recovery_state", "FLATFILE_ROOT/players/*.craft"),
+    "file:player-craft-obligations": ("recovery_state", "FLATFILE_ROOT/players/*.craft-obligation"),
     "file:zone-story-quests": (
         "recovery_state", "FLATFILE_ROOT/domains/zone-story-quests.state",
     ),
@@ -120,6 +137,47 @@ REQUIRED_NON_DATABASE_STORES = {
     "backup:pfiles": ("backup", "Players/Backup"),
     "backup:conversion": ("backup", "*.preconvert and *.backup conversion artifacts"),
 }
+RECIPE_PROGRESSION_RECOVERY_STORES = {
+    "database:player_craft_progression",
+    "file:player-craft-receipts",
+    "file:player-craft-obligations",
+}
+COUPLED_PLAYER_RECOVERY_STORES = {
+    "file:player-quarantine-recovery-receipts",
+    "database:player_death_disposition",
+    "database:player_death_conflict_evidence",
+    "database:player_spell_effect_receipt",
+    "database:quest_reward_obligation",
+    "database:quest_reward_xp_entitlement",
+    "file:player-deaths",
+    "file:player-spell-receipts",
+    "file:player_save_quarantine",
+    "file:player_save_quarantine_archive",
+    "file:player_save_quarantine_policy",
+}
+NATIVE_FLATFILE_AUTHORITY_STORES = {
+    "file:flatfile-player-snapshots",
+    "file:flatfile-accounts",
+    "file:flatfile-identity-catalog",
+    "file:flatfile-item-ownership",
+    "file:flatfile-player-domains",
+    "file:flatfile-bank-domains",
+    "file:flatfile-player-domain-journal",
+    "file:flatfile-legacy-currency-journal",
+    "file:flatfile-item-uid-allocator",
+    "file:flatfile-item-uid-initialization",
+}
+CORE_TRANSACTION_RECOVERY_STORES = {
+    "database:item_uid_allocator",
+    "database:critical_operation_inbox",
+    "database:critical_outbox",
+    "database:critical_outbox_delivery_dedupe",
+    "file:player_save_journal",
+    "file:critical_command_journal",
+    "file:persistence_fallback",
+    "file:persistence_fallback_quarantine",
+    "file:flatfile-authority-journal",
+}
 MAX_MANIFEST_BYTES = 2 * 1024 * 1024
 MAX_SCHEMA_BYTES = 8 * 1024 * 1024
 MAX_REDIS_REGISTRY_BYTES = 64 * 1024
@@ -134,6 +192,7 @@ REQUIRED_SECRET_EXCLUSIONS = {
     "database:critical_outbox": {"payload"},
     "database:personal_data_export_requests": {"delivery_token_hash"},
     "file:runtime_accounts": {"password", "confirmation_code"},
+    "file:flatfile-accounts": {"password_hash", "confirmation"},
     "file:server_logs": {"raw_security_events"},
     "file:player_logs": {"raw_security_events"},
     "file:critical_command_journal": {"command_payload"},
@@ -470,6 +529,31 @@ def validate_manifest(manifest: dict, expected_tables: set[str],
             raise ValidationError(f"{entry_id} dependencies must be a unique list")
         if not isinstance(entry["protected_record"], bool):
             raise ValidationError(f"{entry_id} protected_record must be boolean")
+        if (entry_id.startswith(("database:economic_", "file:economic-")) or
+                entry_id in CORE_TRANSACTION_RECOVERY_STORES) and (
+                not entry["protected_record"] or entry["season_action"] != "retain" or
+                entry["terminal_action"] != "retain"):
+            raise ValidationError(
+                f"protected store {entry_id}: core transaction recovery must remain protected and retained"
+            )
+        if entry_id in RECIPE_PROGRESSION_RECOVERY_STORES and (
+                not entry["protected_record"] or entry["season_action"] != "retain" or
+                entry["terminal_action"] != "retain"):
+            raise ValidationError(
+                f"{entry_id}: recipe progression recovery must remain protected and retained"
+            )
+        if entry_id in COUPLED_PLAYER_RECOVERY_STORES and (
+                not entry["protected_record"] or entry["season_action"] != "retain" or
+                entry["terminal_action"] != "retain"):
+            raise ValidationError(
+                f"{entry_id}: coupled player recovery must remain protected and retained"
+            )
+        if entry_id in NATIVE_FLATFILE_AUTHORITY_STORES and (
+                not entry["protected_record"] or entry["season_action"] != "retain" or
+                entry["terminal_action"] != "retain"):
+            raise ValidationError(
+                f"{entry_id}: native flatfile authority must remain protected and retained"
+            )
         if entry["protected_record"] and entry["exception"] not in PROTECTED_EXCEPTIONS:
             raise ValidationError(f"{entry_id} protected record lacks a recognized exception")
         if entry["terminal_action"] in destructive_actions:

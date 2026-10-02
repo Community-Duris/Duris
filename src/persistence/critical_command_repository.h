@@ -15,6 +15,11 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 							const critical_command &command);
 critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 							    const critical_command &command);
+// Read-only, exact creation evidence for the isolated player recovery owner.
+// Caller owns the transaction. Never executes a missing operation.
+critical_apply_result
+critical_command_repository_verify_creation_in_transaction(MYSQL *connection,
+							   const critical_command &command);
 critical_apply_result critical_command_repository_apply_from_pool(const critical_command &command,
 								  void *context);
 

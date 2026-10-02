@@ -4,7 +4,7 @@ from pathlib import Path
 import runpy
 import subprocess
 import tempfile
-from _paths import extract_function
+from _paths import SRC, extract_function
 
 # Reuse the production helper harness and its identity/ACK negative cases. It
 # runs first; the second executable adds the public APIs whose old coverage was
@@ -39,12 +39,18 @@ bool journal_ready = false;
 bool player_save_journal_pid_quarantined(int) { return false; }
 bool capture_component_mismatch = false;
 std::vector<player_quest_xp_receipt_snapshot> pending_xp;
+std::vector<player_craft_receipt_snapshot> pending_craft;
+bool craft_receipts_ready = true;
 bool merge_spell_effect_receipts(player_snapshot *, const player_snapshot &) { return true; }
 size_t capture_bytes = 256;
 player_snapshot_capture_result capture_result = player_snapshot_capture_result::ok;
 player_save_terminal_result await_terminal_fence(int, player_revision_t, uint64_t, bool);
 '''
 HARNESS += extract_function("player_save_pipeline.c", "bool merge_quest_xp_receipts(") + "\n"
+HARNESS += section((SRC / "craft_progression_hooks.h").read_text(),
+                   "constexpr player_component_mask_t CRAFT_PROGRESSION_COMPONENTS =",
+                   "inline bool")
+HARNESS += extract_function("player_save_pipeline.c", "bool merge_craft_receipts(") + "\n"
 HARNESS += r'''
 } // namespace
 bool quest_reward_recovery_pending_save_receipts(int,
@@ -54,6 +60,12 @@ bool quest_reward_recovery_pending_save_receipts(int,
     return true;
 }
 bool spell_component_retirement_pending_save_receipts(uint32_t, std::vector<player_spell_effect_receipt_snapshot> *) { return true; }
+bool craft_progression_pending_save_receipts(uint32_t,
+    std::vector<player_craft_receipt_snapshot> *receipts) {
+    if (!craft_receipts_ready) return false;
+    *receipts = pending_craft;
+    return true;
+}
 player_snapshot_codec_result player_snapshot_encode(const player_snapshot &, std::vector<uint8_t> *) { return player_snapshot_codec_result::ok; }
 namespace {
 '''
@@ -152,6 +164,12 @@ int main()
         assert(player_revision_mark(pid, PLAYER_COMPONENT_STATUS, nullptr));
     }
     capture_result = player_snapshot_capture_result::ok;
+    // A refused progression capture cannot leave a terminal pin or queued bytes.
+    craft_receipts_ready = false;
+    assert(saved(&player, &corpse) == player_save_terminal_result::unavailable);
+    assert(find_terminal_fence_locked(player.pid) == nullptr);
+    assert(pending_append.empty() && retained_bytes == 0 && pinned_death_count_locked() == 0);
+    craft_receipts_ready = true;
     capture_component_mismatch = true;
     assert(saved(&player, &corpse) == player_save_terminal_result::unavailable);
     assert(find_terminal_fence_locked(player.pid) == nullptr);
@@ -171,18 +189,29 @@ int main()
     xp.offering_operation.bytes[0] = 88;
     xp.amount = 75;
     pending_xp.push_back(xp);
+    player_craft_receipt_snapshot craft = {};
+    craft.operation_id.bytes[0] = 89;
+    craft.discipline = 2;
+    craft.experience = 7000;
+    pending_craft.push_back(craft);
     assert(saved(&player, &corpse) == player_save_terminal_result::timed_out);
     const int captures = capture_count;
     terminal_fence *pinned = find_terminal_fence_locked(player.pid);
     assert(pinned && pinned->death_pinned);
     const player_revision_t revision = pinned->revision;
-    const auto pinned_bytes = (capture_bytes + 32) * 2;
+    const auto pinned_bytes = (capture_bytes + 32 + 28) * 2;
     assert(pending_append.size() == 1 && retained_bytes == pinned_bytes);
-    assert(pinned->death_snapshot->schema_version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION);
+    assert(pinned->death_snapshot->schema_version == PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION);
     assert(pinned->death_snapshot->quest_xp_receipts.size() == 1 &&
            pinned->death_snapshot->quest_xp_receipts[0].amount == 75);
+    assert(pinned->death_snapshot->craft_receipts.size() == 1 &&
+           pinned->death_snapshot->craft_receipts[0].operation_id.bytes == craft.operation_id.bytes &&
+           pinned->death_snapshot->craft_receipts[0].discipline == 2 &&
+           pinned->death_snapshot->craft_receipts[0].experience == 7000);
     // Later recovery state changes must not recapture or alter this request.
     pending_xp[0].amount = 76;
+    pending_craft[0].experience = 7001;
+    pending_craft[0].discipline = 1;
     assert(player_save_pipeline_terminal_death_resume(&player, corpse.obj_uid + 1, 1) ==
            player_save_terminal_result::unavailable);
 
@@ -197,6 +226,10 @@ int main()
     assert(pinned->death_snapshot->quest_xp_receipts[0].amount == 75 &&
            pending_append.front().quest_xp_receipts[0].amount == 75);
 
+    assert(pinned->death_snapshot->craft_receipts[0].experience == 7000 &&
+           pinned->death_snapshot->craft_receipts[0].discipline == 2 &&
+           pending_append.front().craft_receipts[0].experience == 7000 &&
+           pending_append.front().craft_receipts[0].operation_id.bytes == craft.operation_id.bytes);
     database_ready = true;
     assert(player_save_pipeline_terminal_death_resume(&player, corpse.obj_uid, 20) ==
            player_save_terminal_result::database_acknowledged);
@@ -219,3 +252,4 @@ with tempfile.TemporaryDirectory(prefix='duris-death-entrypoints-') as temp:
 print('[PASS] real death entrypoints preserve missing-corpse, capture/queue refusal, and degraded-load guards')
 print('[PASS] repeated capture failures beyond fence capacity release every pin and retained byte')
 print('[PASS] real timeout/resume/wait retain identity and reject journal-only release until exact database ACK')
+print('[PASS] pending craft capture refusal clears pins; exact frozen craft identity/discipline/XP survive timeout and retry')

@@ -2077,7 +2077,7 @@
       "locator": "critical_operation_inbox",
       "data_category": "reconciliation_or_replay_record",
       "data_subject_key": "operation_id_with_domain_subject",
-      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness; includes private discriminator 65000 recovery commit proof bound to prepared archive records",
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
@@ -3506,6 +3506,37 @@
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
       "dependencies": []
+    },
+    {
+      "id": "database:player_item_runtime_state",
+      "kind": "database_table",
+      "locator": "player_item_runtime_state",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": [
+        "database:player_items"
+      ]
     },
     {
       "id": "database:multiplay_whitelist",
@@ -6399,7 +6430,7 @@
       "locator": "PLAYER_SAVE_JOURNAL_DIR/player-save.journal.quarantine.archive",
       "data_category": "personal_or_mixed_durable_store",
       "data_subject_key": "player_id",
-      "technical_purpose": "hashed original player-save evidence and persistent admission fences",
+      "technical_purpose": "hashed original player-save evidence, persistent admission fences, and prepared/resolved/revoked recovery records bound to native backend commit receipts",
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
@@ -6421,7 +6452,41 @@
       "exception": "protected_recovery_replay_or_restore_horizon",
       "protected_record": true,
       "dependencies": [
-        "file:player_save_journal"
+        "file:player_save_journal",
+        "database:critical_operation_inbox"
+      ]
+    },
+    {
+      "id": "file:player-quarantine-recovery-receipts",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/metadata/player-recovery-*.receipt",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "player_id_and_recovery_identity",
+      "technical_purpose": "immutable native recovery commit proof, coupled atomically to the player snapshot, preserved across later ordinary saves and cold restore",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:player_save_quarantine_archive",
+        "file:flatfile-player-snapshots",
+        "file:flatfile-authority-journal"
       ]
     },
     {
@@ -7902,6 +7967,392 @@
       "exception": "protected_recovery_replay_or_restore_horizon",
       "protected_record": true,
       "dependencies": []
+    },
+    {
+      "id": "database:player_craft_progression",
+      "kind": "database_table",
+      "locator": "player_craft_progression",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "player_pid_and_recipe_operation_id",
+      "technical_purpose": "Retain frozen recipe awards and application revisions with their item root and player progression save",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:critical_operation_inbox"
+      ]
+    },
+    {
+      "id": "file:player-craft-receipts",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/players/*.craft",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "player_pid_and_recipe_operation_id",
+      "technical_purpose": "immutable recipe progression application receipts committed with XP and skills; retain through publication replay and controller-approved recovery horizon",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:player-craft-obligations",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/players/*.craft-obligation",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "player_pid_and_recipe_operation_id",
+      "technical_purpose": "frozen recipe progression obligations committed with exact input retirement and output admission; retain through publication replay and controller-approved recovery horizon",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:flatfile-player-snapshots",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/players/*.snapshot",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "player_id",
+      "technical_purpose": "native flatfile player authority: durable component snapshots, player revision, and coupled recovery receipts",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:flatfile-accounts",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/identities/accounts/*.acct",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "account_name",
+      "technical_purpose": "native flatfile account authority: authentication metadata, account flags, and character membership",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [
+          "password_hash",
+          "confirmation"
+        ],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:flatfile-identity-catalog",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/identities/names/catalog.identity",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "player_id_and_account_name",
+      "technical_purpose": "native flatfile identity authority: monotonic PID allocation, character names, account ownership, and tombstones preventing identity reuse",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:flatfile-item-ownership",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/domains/item_ownership",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "item_uid_and_operation_id",
+      "technical_purpose": "native flatfile item authority: current custody, UID lifetimes, immutable operation receipts, and replay obligations",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:flatfile-player-domains",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/domains/player-*.domain",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "pid",
+      "technical_purpose": "native flatfile player wallet, progression and operation-receipt authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:flatfile-bank-domains",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/domains/bank-*.domain",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "account_name_and_racewar",
+      "technical_purpose": "native flatfile account bank balances and revision authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:flatfile-player-domain-journal",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/domains/.player-domain-transaction",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "pid_and_account_name",
+      "technical_purpose": "native flatfile interrupted player and bank after-images; replay before new mutations",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:flatfile-legacy-currency-journal",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/domains/.currency-transaction",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "pid_and_account_name",
+      "technical_purpose": "legacy native currency transaction after-images; supported recovery before player-domain replay",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:flatfile-item-uid-allocator",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/metadata/item_uid_allocator",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "not_subject_scoped",
+      "technical_purpose": "global never-reused item UID reservation high-water mark and revision; retain across restart and restore",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:flatfile-item-ownership"
+      ]
+    },
+    {
+      "id": "file:flatfile-item-uid-initialization",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/metadata/item_uid_allocator.initialized",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "not_subject_scoped",
+      "technical_purpose": "sealed permanent UID and revision high-water evidence; reject missing or older allocator authority and retain the witness with its allocator across restart and restore",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:flatfile-item-uid-allocator"
+      ]
     }
   ]
 }

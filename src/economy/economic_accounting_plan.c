@@ -610,8 +610,7 @@ economic_accounting_error economic_plan_normalize(economic_accounting_plan *plan
 		std::vector<size_t> order(plan->accounts.size()), remap(plan->accounts.size());
 		std::iota(order.begin(), order.end(), 0);
 		std::sort(order.begin(), order.end(),
-			  [&](size_t left, size_t right)
-			  {
+			  [&](size_t left, size_t right) {
 				  return economic_account_key_less(plan->accounts[left].key,
 								   plan->accounts[right].key);
 			  });

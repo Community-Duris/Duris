@@ -83,6 +83,9 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
             "DURIS_WEBSOCKET_LISTEN_ADDRESS": "127.0.0.1",
             "DURIS_WEBSOCKET_PORT": str(websocket_port), "REDIS": "FALSE",
             "CHAOS_MUD": "FALSE",
+            # Bound synthetic diagnostics identify the exact failed revision
+            # and native error without recording connection credentials.
+            "DURIS_NEVENT_TRACE_PLAYER": "1",
         }
         if daily:
             environment["ZONE_STORY_DAILY_ENABLED"] = "true"

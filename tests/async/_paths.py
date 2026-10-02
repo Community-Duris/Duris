@@ -16,7 +16,9 @@ Usage:
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
+from contract_text import index as code_index
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC_ROOT = ROOT / "src"
@@ -61,8 +63,36 @@ def source(name: str | os.PathLike[str]) -> Path:
 
 def extract_function(name: str | os.PathLike[str], signature: str) -> str:
     """Extract one C/C++ function body selected by its exact signature prefix."""
+    def definition_location(candidate: str) -> int:
+        offset = 0
+        while True:
+            location = code_index(candidate, signature, offset)
+            opening = candidate.find("{", location)
+            if opening >= 0 and ";" not in candidate[location:opening]:
+                return location
+            offset = location + len(signature)
+
     text = source(name).read_text(encoding="utf-8")
-    start = text.index(signature)
+    try:
+        start = definition_location(text)
+    except ValueError:
+        # Large legacy units have been split into focused implementation files.
+        # Locate the actual definition rather than keeping copied spell/combat
+        # bodies in fixtures. Ambiguous definitions must be resolved by the test.
+        definitions = []
+        identifier = re.search(r"([A-Za-z_][A-Za-z0-9_]*)\s*\(", signature)
+        for path in SRC_ROOT.rglob("*.c"):
+            candidate = path.read_text(encoding="utf-8")
+            if identifier and identifier.group(1) not in candidate:
+                continue
+            try:
+                location = definition_location(candidate)
+            except ValueError:
+                continue
+            definitions.append((candidate, location))
+        if len(definitions) != 1:
+            raise AssertionError(f"expected one production definition for {signature}: {len(definitions)}")
+        text, start = definitions[0]
     depth = 0
     for end in range(text.index("{", start), len(text)):
         if text[end] == "{":

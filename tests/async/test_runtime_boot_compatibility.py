@@ -70,7 +70,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         """
         report = runtime.validate()
         # Includes death evidence/recovery and SQL lifecycle tables.
-        self.assertEqual(report["current_table_count"], 223)
+        self.assertEqual(report["current_table_count"], 225)
         for table in ("player_death_disposition", "player_death_custody",
                       "player_death_conflict_evidence"):
             self.assertIn("'" + table + "'", self.header)
@@ -84,7 +84,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertIn("'economic_sql_activation_receipt'", self.header)
         self.assertIn("'economic_sql_global_activation'", self.header)
         self.assertEqual(report["migration_head"],
-                         "0051_discovered_zone_daily_state")
+                         "0054_discovered_zone_daily_state")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)
@@ -109,19 +109,25 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertLess(populate, allocator)
         self.assertLess(allocator, pool)
 
-    def test_completed_staging_history_is_pinned_and_queries_cannot_drift(self):
+    def test_completed_fork_histories_are_pinned_and_queries_cannot_drift(self):
         import tempfile
         from unittest import mock
         value = runtime.load()
-        self.assertEqual(value["migration_head"]["sequence"], 51)
-        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 51)
+        self.assertEqual(value["migration_head"]["sequence"], 54)
+        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 54)
         self.assertEqual(value["staging_0045_migration_head"]["id"],
-                         "0051_discovered_zone_daily_state")
+                         "0054_discovered_zone_daily_state")
         self.assertNotEqual(value["migration_head"]["history_checksum"],
                             value["staging_0045_migration_head"]["history_checksum"])
+        self.assertEqual(value["master_0031_migration_head"]["sequence"], 54)
+        self.assertEqual(value["master_0031_migration_head"]["id"],
+                         "0054_discovered_zone_daily_state")
+        self.assertEqual(len({value[field]["history_checksum"] for field in (
+            "migration_head", "staging_0045_migration_head", "master_0031_migration_head")}), 3)
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "runtime.json"
-            for field in ("staging_0045_migration_head", "migration_history_sql",
+            for field in ("staging_0045_migration_head", "master_0031_migration_head",
+                          "migration_history_sql",
                           "extra_description_generation_sql"):
                 damaged = json.loads(json.dumps(value))
                 if isinstance(damaged[field], dict):
@@ -133,11 +139,11 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
                     with self.assertRaises(runtime.migration_runner.MigrationContractError):
                         runtime.validate()
             header = Path(directory) / "runtime.h"
-            header.write_text(self.header.replace(
-                value["staging_0045_migration_head"]["history_checksum"], "0" * 64))
-            with mock.patch.object(runtime, "HEADER", header):
-                with self.assertRaises(runtime.migration_runner.MigrationContractError):
-                    runtime.validate()
+            for field in ("staging_0045_migration_head", "master_0031_migration_head"):
+                header.write_text(self.header.replace(value[field]["history_checksum"], "0" * 64))
+                with mock.patch.object(runtime, "HEADER", header):
+                    with self.assertRaises(runtime.migration_runner.MigrationContractError):
+                        runtime.validate()
 
     def test_mysql_boundary_precedes_hydration_workers_replay_and_gameplay(self):
         mysql_boundary = (

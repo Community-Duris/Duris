@@ -20,6 +20,13 @@
 
 Skill skills[MAX_SKILLS] = {};
 
+// Standalone connections are closed by the fixture; the production pool's
+// discard hook must never be needed by these successful read transactions.
+extern "C" void sql_pool_discard_connection(MYSQL *)
+{
+	std::abort();
+}
+
 int real_object(const int vnum)
 {
 	return vnum > 0 ? 0 : -1;
@@ -89,21 +96,6 @@ void __free(void *pointer, const char *, int)
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...)
 {
 	std::abort();
-}
-
-bool item_owner_identity_valid(const item_owner_identity &owner)
-{
-	return owner.type > item_owner_type::unknown && owner.type <= item_owner_type::shopkeeper &&
-	       ((owner.type == item_owner_type::system ||
-		 owner.type == item_owner_type::destruction) ?
-			owner.id == 0 && owner.context_id == 0 :
-			owner.id != 0);
-}
-
-bool item_owner_identity_equal(const item_owner_identity &left, const item_owner_identity &right)
-{
-	return left.type == right.type && left.id == right.id &&
-	       left.context_id == right.context_id;
 }
 
 bool item_ownership_runtime_hydrate_batch(const item_ownership_runtime_entry *, size_t)
@@ -444,7 +436,9 @@ void verify_rejects_incomplete_bitmap(MYSQL *connection)
 	const std::vector<uint8_t> malformed = encode_state({ 3, 1, 3 }, { 2 });
 	replace_runtime_payload(connection, malformed);
 	const player_load_result result = load_fixture(connection, 202);
-	require(result.outcome == player_load_outcome::component_failure &&
+	require(result.outcome == player_load_outcome::degraded &&
+			result.degraded_components == PLAYER_LOAD_DEGRADED_ITEMS &&
+			result.snapshot.items.empty() && result.item_identities.empty() &&
 			result.failed_component && std::string(result.failed_component) == "items",
 		"incomplete raw spellbook evidence was not rejected at the item loader");
 }
@@ -455,7 +449,9 @@ void verify_rejects_malformed_json(MYSQL *connection)
 		{ 'S', 'P', 'E', 'L', 'L', 'B', 'O', 'O', 'K' }, { '[', '1', ',', '1', ']' });
 	replace_runtime_payload(connection, malformed);
 	const player_load_result result = load_fixture(connection, 203);
-	require(result.outcome == player_load_outcome::component_failure &&
+	require(result.outcome == player_load_outcome::degraded &&
+			result.degraded_components == PLAYER_LOAD_DEGRADED_ITEMS &&
+			result.snapshot.items.empty() && result.item_identities.empty() &&
 			result.failed_component && std::string(result.failed_component) == "items",
 		"malformed JSON spellbook evidence was not rejected at the item loader");
 }

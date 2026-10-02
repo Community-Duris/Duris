@@ -245,6 +245,37 @@ static P_char quest_reward_character_present(uint32_t pid)
 	return NULL;
 }
 
+static void request_quest_reward_recovery_save(const std::string &key, P_char player = NULL)
+{
+	const auto found = quest_reward_recoveries.find(key);
+	if (found == quest_reward_recoveries.end())
+		return;
+	auto &attempt = found->second;
+	if (!attempt.wait_for_player_save || attempt.required_save_revision ||
+	    attempt.pending_items || !attempt.dispatch_complete)
+		return;
+	if (!player)
+		player = quest_reward_character_present(attempt.player_pid);
+	if (!player)
+		return;
+	const int room_vnum = player->in_room >= 0 && world ? world[player->in_room].number :
+							      NOWHERE;
+	const auto saved = attempt.expected_receipts.empty() ?
+				   player_save_pipeline_request(player,
+								attempt.pending_save_components,
+								RENT_CRASH, room_vnum) :
+				   player_save_pipeline_request_quest_xp(
+					   player, attempt.pending_save_components,
+					   attempt.expected_receipts.data(),
+					   attempt.expected_receipts.size(), room_vnum);
+	player_revision_snapshot revision = {};
+	if ((saved == player_save_pipeline_result::queued ||
+	     saved == player_save_pipeline_result::coalesced) &&
+	    player_revision_snapshot_copy(attempt.player_pid, &revision) &&
+	    revision.current_revision)
+		attempt.required_save_revision = revision.current_revision;
+}
+
 void finish_quest_reward_recovery(const std::string &key)
 {
 	const auto found = quest_reward_recoveries.find(key);
@@ -330,7 +361,10 @@ void quest_reward_recovery_pulse(void)
 		auto entry = current++;
 		auto &key = entry->first;
 		auto &attempt = entry->second;
+		request_quest_reward_recovery_save(key);
 		if (!attempt.wait_for_player_save)
+			continue;
+		if (!attempt.required_save_revision)
 			continue;
 		// Applied XP survives admission failure and player revision release. Only
 		// an exact receipt completion may remove its live replay fence.
@@ -351,7 +385,8 @@ void quest_reward_recovery_pulse(void)
 	}
 }
 
-void quest_reward_recovery_item_complete(P_char, uint64_t item_uid, bool committed, unsigned int)
+void quest_reward_recovery_item_complete(P_char player, uint64_t item_uid, bool committed,
+					 unsigned int)
 {
 	const auto item = quest_reward_recovery_items.find(item_uid);
 	if (item == quest_reward_recovery_items.end())
@@ -365,10 +400,11 @@ void quest_reward_recovery_item_complete(P_char, uint64_t item_uid, bool committ
 		attempt->second.failed = true;
 	if (attempt->second.pending_items)
 		--attempt->second.pending_items;
+	request_quest_reward_recovery_save(key, player);
 	finish_quest_reward_recovery(key);
 }
 
-void quest_reward_recovery_currency_complete(P_char, bool committed,
+void quest_reward_recovery_currency_complete(P_char player, bool committed,
 					     const currency_command_result &, unsigned int,
 					     const uint8_t *context, size_t context_size)
 {
@@ -384,6 +420,7 @@ void quest_reward_recovery_currency_complete(P_char, bool committed,
 		attempt->second.failed = true;
 	if (attempt->second.pending_items)
 		--attempt->second.pending_items;
+	request_quest_reward_recovery_save(key, player);
 	finish_quest_reward_recovery(key);
 }
 
@@ -1318,29 +1355,8 @@ void quest_reward_recover_pending(P_char player, const critical_operation_id &of
 			components |= PLAYER_COMPONENT_SKILLS;
 		if (!xp_receipts.empty())
 			components |= PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_TROPHIES;
-		if (!xp_receipts.empty())
-			quest_reward_recoveries[key].pending_save_components = components;
-		const int room_vnum =
-			player->in_room >= 0 && world ? world[player->in_room].number : NOWHERE;
-		const auto saved = xp_receipts.empty() ?
-					   player_save_pipeline_request(player, components,
-									RENT_CRASH, room_vnum) :
-					   player_save_pipeline_request_quest_xp(player, components,
-										 xp_receipts.data(),
-										 xp_receipts.size(),
-										 room_vnum);
-		player_revision_snapshot revision = {};
-		if ((saved == player_save_pipeline_result::queued ||
-		     saved == player_save_pipeline_result::coalesced) &&
-		    player_revision_snapshot_copy(GET_PID(player), &revision) &&
-		    revision.current_revision)
-		{
-			quest_reward_recoveries[key].wait_for_player_save = true;
-			quest_reward_recoveries[key].required_save_revision =
-				revision.current_revision;
-		}
-		else if (xp_receipts.empty())
-			quest_reward_recoveries[key].failed = true;
+		quest_reward_recoveries[key].pending_save_components = components;
+		quest_reward_recoveries[key].wait_for_player_save = true;
 	}
 	for (size_t index = 0; index < continuation.reward_count; ++index)
 	{
@@ -1419,6 +1435,7 @@ void quest_reward_recover_pending(P_char player, const critical_operation_id &of
 		}
 	}
 	quest_reward_recoveries[key].dispatch_complete = true;
+	request_quest_reward_recovery_save(key, player);
 	if (continuation.reward_count)
 		send_to_char(
 			all_effects_supported && tracking_complete ?

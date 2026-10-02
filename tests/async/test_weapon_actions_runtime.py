@@ -58,6 +58,7 @@ DOUBLES = r'''
 bool native_artifact_owns(int) { return false; }
 #include "item/artifact_mana_model.c"
 #include "combat/damage.h"
+#include "combat/attack_continuation.h"
 #include <deque>
 Skill skills[MAX_SKILLS] = {};
 random_spells spells_data[61] = {};

@@ -27,6 +27,7 @@
 #include "net/command_latency.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/world_activity.h"
 #include "cmd/interp.h"
 #include "core/utility.h"
 #include "core/utils.h"
@@ -85,6 +86,7 @@
 #include "magic/spell_item_lifecycle.h"
 #include "item/enhance.h"
 #include "economy/crafting.h"
+#include "player/craft_progression_hooks.h"
 #include "account/account_recovery.h"
 #include "item/locker_identify.h"
 #include "cmd/information_cache.h"
@@ -141,6 +143,7 @@
 #include "world/epic_transaction.h"
 #include "world/vnum.mob.h"
 #include "player/player_save_pipeline.h"
+#include "player/player_quarantine_recovery.h"
 #include "player/player_load_pipeline.h"
 #include "player/player_death_restitution_adapter.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
@@ -834,6 +837,9 @@ int run_the_game(int port, int sslport)
 	}
 	fprintf(stderr, "--  Done calculating mob level and world-quest catalog.\r\n");
 
+	// Recipe commands and receipt recovery also run in mini-mode worlds.
+	craft_progression_initialize();
+
 	if (!mini_mode)
 		initialize_tradeskills();
 	else
@@ -955,7 +961,8 @@ int run_the_game(int port, int sslport)
 	if (!mini_mode)
 		locker_async_init();
 	const char *journal_directory = getenv("PLAYER_SAVE_JOURNAL_DIR");
-	if (!player_save_pipeline_init(journal_directory))
+	if (!player_save_pipeline_init(journal_directory,
+				       player_quarantine_recovery_revalidate_selected))
 	{
 		logit(LOG_STATUS,
 		      "Player save pipeline unavailable; nonterminal saves fail closed.");
@@ -2487,6 +2494,10 @@ void game_loop(int port, int sslport)
 		reconcile_shopkeepers(copyover_boot != 0);
 		initialize_transport();
 	}
+
+	/* Rebuild once after boot/recovery so delayed work never depends on stale
+	 * room, corpse, or character indexes from a prior process. */
+	world_activity_rebuild();
 
 	PROFILES(RESET);
 #ifdef DO_PROFILE

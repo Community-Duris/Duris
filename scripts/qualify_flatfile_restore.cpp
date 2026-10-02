@@ -1,5 +1,6 @@
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "player/player_save_journal.h"
+#include "player/player_quarantine_recovery.h"
 #include "item/locker_receipt.h"
 #include "item/artifact_mana_store.h"
 #include "persistence/critical_command_journal.h"
@@ -19,6 +20,7 @@
 #include "flatfile/flatfile_shop_trade_repository.h"
 #include "flatfile/flatfile_boon_repository.h"
 #include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_craft_progression.h"
 #include "kingdom/kingdom_restore.h"
 
 // Native parsers may log diagnostics containing identities; this process reports
@@ -160,6 +162,20 @@ static void qualify_journals(const std::filesystem::path &candidate, bool draine
 		}
 	}
 	require(player_save_journal_init((candidate / "journals/players").c_str()));
+	if (drained && std::filesystem::is_directory(candidate / "state"))
+	{
+		// Preflight runs before the copied backend exists. After service replay,
+		// verify every resolved record against native commit proof and state.
+		std::vector<player_save_recovery_record> records;
+		require(player_save_journal_resolved_recoveries(&records));
+		for (const auto &record : records)
+		{
+			std::string error;
+			require(record.backend == 1 &&
+				flatfile_player_quarantine_verify((candidate / "state").string(),
+								  record, true, &error));
+		}
+	}
 	const auto player = player_save_journal_health_copy();
 	player_save_journal_shutdown();
 	for (const auto &[path, original] : protected_files)
@@ -289,6 +305,60 @@ int main(int argc, char **argv)
 		}
 		for (const auto &entry : std::filesystem::directory_iterator(root + "/players"))
 		{
+			if (entry.path().extension() == ".craft" ||
+			    entry.path().extension() == ".craft-obligation")
+			{
+				const auto stem = entry.path().stem().string();
+				const auto separator = stem.find('-');
+				require(separator != std::string::npos);
+				int32_t pid = 0;
+				const auto parsed =
+					std::from_chars(stem.data(), stem.data() + separator, pid);
+				require(parsed.ec == std::errc() &&
+					parsed.ptr == stem.data() + separator && pid > 0 &&
+					stem.substr(0, separator) == std::to_string(pid));
+				critical_operation_id operation = {};
+				require(critical_operation_id_from_hex(
+					stem.substr(separator + 1).c_str(), &operation));
+				const bool obligation = entry.path().extension() ==
+							".craft-obligation";
+				require(entry.path().filename() ==
+					flatfile_craft_receipt_filename(pid, operation,
+									obligation));
+				flatfile_identity_record identity;
+				require(flatfile_identity_lookup_pid(root, pid, &identity,
+								     &error) ==
+						flatfile_identity_result::ok &&
+					(!identity.active || known.count(pid) == 1));
+				flatfile_authority_lock authority;
+				require(authority.acquire(root, &error));
+				require(flatfile_item_repository_craft_root_locked(
+						root, authority, operation, &error) ==
+					flatfile_item_repository_result::ok);
+				player_snapshot receipt;
+				require(flatfile_craft_receipt_read(root, pid, operation,
+								    obligation, &receipt, &error) ==
+					flatfile_player_load_result::ok);
+				if (!obligation)
+				{
+					player_snapshot frozen, snapshot;
+					require(flatfile_craft_receipt_read(root, pid, operation,
+									    true, &frozen,
+									    &error) ==
+							flatfile_player_load_result::ok &&
+						flatfile_craft_receipt_equal(
+							receipt.craft_receipts[0],
+							frozen.craft_receipts[0]));
+					const auto read = flatfile_player_snapshot_read(
+						root, pid, &snapshot, &error);
+					require(read == flatfile_player_load_result::ok ?
+							receipt.revision <= snapshot.revision :
+							read == flatfile_player_load_result::
+										not_found &&
+								!identity.active);
+				}
+				continue;
+			}
 			if (entry.path().extension() == ".spell")
 			{
 				const auto stem = entry.path().stem().string();
