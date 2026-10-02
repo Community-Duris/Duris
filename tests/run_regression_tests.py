@@ -139,6 +139,10 @@ def run_test(path: Path, timeout: float = DEFAULT_TIMEOUT,
             if status == "skipped" and row["id"].endswith("::script"):
                 row["status"] = "skipped"
                 row["reason"] = "explicit entry-level prerequisite skip"
+        observed_skips = sum(row["status"] == "skipped" for row in cases)
+        skipped = max(skipped, observed_skips)
+        if not code and spec.mode == "unittest" and cases and observed_skips == len(cases):
+            status = "skipped"
         events.cleanup()
         elapsed = time.monotonic() - started
         phases = {name: 0.0 for name in ("native_compile", "native_link", "artifact_lookup", "server_build")}

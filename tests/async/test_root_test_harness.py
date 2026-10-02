@@ -426,6 +426,39 @@ class RunnerBehavior(unittest.TestCase):
             self.assertEqual(runner.main(), 1)
         self.assertEqual(json.loads(report.read_text())["results"][0]["status"], "skipped")
 
+    def test_unittest_skips_do_not_depend_on_console_summary(self):
+        body = ("import io, unittest\n"
+                "class Checks(unittest.TestCase):\n"
+                " def test_pass(self): self.assertTrue(True)\n"
+                " def test_skip(self): self.skipTest('owned fixture missing')\n"
+                "if __name__ == '__main__':\n"
+                " unittest.main(testRunner=unittest.TextTestRunner(stream=io.StringIO()))\n")
+        path = self.script("test_db_cases.py", body)
+        spec = runner.TestSpec(path, mode="unittest", minimum_cases=2)
+        with patch.object(runner, "ROOT", self.root):
+            result = runner.run_test(path, 2, spec=spec)
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.status, "passed")
+        self.assertEqual(result.skipped_checks, 1)
+        skipped = [case for case in result.cases if case["status"] == "skipped"]
+        self.assertEqual(skipped[0]["reason"], "owned fixture missing")
+
+        manifest = self.fixture_inventory()
+        rows = json.loads(manifest.read_text())
+        rows["tests"][path.name].update(profile="database", mode="unittest", minimum_cases=2)
+        manifest.write_text(json.dumps(rows))
+        report = self.root / "database-cases.json"
+        with (patch.object(runner, "ROOT", self.root), patch.object(runner, "TEST_DIRECTORY", self.root),
+              patch.object(runner, "MANIFEST", manifest), patch.object(sys, "argv", [
+                  "runner", "--profile", "database", "--report", str(report)])):
+            self.assertEqual(runner.main(), 1)
+
+        path.write_text(body.replace("self.assertTrue(True)", "self.skipTest('all unavailable')"))
+        with patch.object(runner, "ROOT", self.root):
+            result = runner.run_test(path, 2, spec=spec)
+        self.assertEqual(result.status, "skipped")
+        self.assertEqual(result.skipped_checks, 2)
+
 
 if __name__ == "__main__":
     unittest.main()
