@@ -510,6 +510,9 @@ void check_active_coin_item_accounting(uint32_t pid, const char *account,
 	execute("DELETE FROM economic_accounting_account_effect WHERE operation_id IN "
 		"(UNHEX('" +
 		root_id + "'),UNHEX('" + pickup_root_id + "'))");
+	execute("DELETE FROM economic_accounting_source_claim WHERE operation_id IN "
+		"(UNHEX('" +
+		root_id + "'),UNHEX('" + pickup_root_id + "'))");
 	execute("DELETE FROM economic_accounting_operation WHERE operation_id IN "
 		"(UNHEX('" +
 		root_id + "'),UNHEX('" + pickup_root_id + "'))");
@@ -555,6 +558,59 @@ void check_active_coin_change_accounting(uint32_t pid, const char *account,
 	command.accounting_intent = std::move(intent);
 	command.publication_required = true;
 	assert(critical_command_envelope_valid(command));
+	// A typed root must retain the same bounded recovery receipt as schema v1,
+	// with a no-posting refusal and no committed child or outbox side effects.
+	auto stale_command = coin_command(source, destination);
+	assert(coin_transfer_accounting_intent(stale_command, epoch, wallet, pile,
+					       &stale_command.accounting_intent) ==
+	       economic_accounting_error::ok);
+	stale_command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	stale_command.publication_required = true;
+	execute("UPDATE player_data SET copper=2,wallet_revision=wallet_revision+1 WHERE pid=" +
+		std::to_string(pid));
+	const auto refused = pooled_apply(stale_command);
+	coin_transfer_payload stale_payload;
+	assert(coin_transfer_command_decode_payload(stale_command, &stale_payload));
+	coin_transfer_stale_result repair;
+	assert(refused.outcome == critical_apply_outcome::terminal_failure &&
+	       refused.error_code == ESTALE &&
+	       refused.failure_stage == critical_failure_stage::coin_source_wallet_revision &&
+	       coin_transfer_command_decode_stale_result(stale_payload, refused.failure_stage,
+							 refused.result_payload.data(),
+							 refused.result_size, &repair));
+	assert(repair.current.wallet.amount[0] == 2 && repair.wallet_stale && !repair.bank_stale);
+	for (const auto &replay :
+	     { pooled_apply(stale_command),
+	       critical_command_repository_reconcile(connection, stale_command) })
+		assert(replay.outcome == refused.outcome && replay.error_code == ESTALE &&
+		       replay.failure_stage == refused.failure_stage &&
+		       replay.result_size == refused.result_size &&
+		       replay.result_payload == refused.result_payload);
+	assert(coin_transfer_accounting_verify_retained(
+		       connection, stale_command, ESTALE, refused.result_payload.data(),
+		       refused.result_size,
+		       critical_failure_stage::coin_source_bank_revision) == EILSEQ);
+	auto malformed = refused.result_payload;
+	malformed[0] = 0;
+	assert(coin_transfer_accounting_verify_retained(connection, stale_command, ESTALE,
+							malformed.data(), refused.result_size,
+							refused.failure_stage) == EILSEQ);
+	const std::string refused_id = "UNHEX('" + operation_hex(stale_command.operation_id) + "')";
+	assert(scalar("SELECT COUNT(*) FROM economic_accounting_operation WHERE operation_id=" +
+		      refused_id + " AND result_code=116 AND posting_count=0 AND child_count=0") ==
+	       1);
+	for (const char *table :
+	     { "economic_accounting_coin_posting", "economic_accounting_account_effect",
+	       "economic_accounting_child", "economic_accounting_source_claim", "critical_outbox" })
+		assert(scalar("SELECT COUNT(*) FROM " + std::string(table) +
+			      " WHERE operation_id=" + refused_id) == 0);
+	assert(scalar("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
+		      std::to_string(pile_uid)) == 0);
+	execute("DELETE FROM economic_accounting_operation WHERE operation_id=" + refused_id);
+	execute("DELETE FROM critical_operation_inbox WHERE operation_id=" + refused_id);
+	execute("UPDATE player_data SET copper=1,wallet_revision=" +
+		std::to_string(source.change.expected_revisions[0].revision) +
+		" WHERE pid=" + std::to_string(pid));
 	const auto applied = pooled_apply(command);
 	if (applied.outcome != critical_apply_outcome::applied || applied.error_code)
 		fprintf(stderr, "typed coin change failed outcome=%u error=%u mysql=%u %s\n",
@@ -643,6 +699,8 @@ void check_active_coin_change_accounting(uint32_t pid, const char *account,
 	execute("DELETE FROM economic_accounting_child WHERE operation_id=UNHEX('" + root_id +
 		"')");
 	execute("DELETE FROM economic_accounting_account_effect WHERE operation_id=UNHEX('" +
+		root_id + "')");
+	execute("DELETE FROM economic_accounting_source_claim WHERE operation_id=UNHEX('" +
 		root_id + "')");
 	execute("DELETE FROM economic_accounting_operation WHERE operation_id=UNHEX('" + root_id +
 		"')");
@@ -803,6 +861,8 @@ void check_active_pile_split_merge(uint64_t pile_uid, item_owner_identity room,
 	execute("DELETE FROM economic_accounting_child WHERE operation_id IN (" + roots_sql + ")");
 	execute("DELETE FROM economic_accounting_account_effect WHERE operation_id IN (" +
 		roots_sql + ")");
+	execute("DELETE FROM economic_accounting_source_claim WHERE operation_id IN (" + roots_sql +
+		")");
 	execute("DELETE FROM economic_accounting_operation WHERE operation_id IN (" + roots_sql +
 		")");
 	execute("DELETE FROM item_ownership_ledger WHERE operation_id IN (" + joined(child_ids) +

@@ -1560,7 +1560,6 @@ def main(flatfile: bool = False) -> int:
     """Compile and execute the held-currency queue regression."""
     harness = "\n".join([
         PRELUDE,
-        extract(SRC / "utility.c", "int IS_MORPH(P_char ch)"),
         BANK_PUBLICATION,
         COIN_GIVE,
         COIN_PILES,
