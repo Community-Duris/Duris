@@ -612,6 +612,69 @@ class ReconciliationTests(unittest.TestCase):
         orphan.audit_items({}, {}, {}, native, {81})
         self.assertEqual(orphan.counts["orphan_item_parent"], 1)
 
+    def test_native_topology_work_is_bounded_for_deep_custody(self):
+        class MeasuredNative(dict):
+            reads = 0
+
+            def get(self, identity, default=None):
+                self.reads += 1
+                return super().get(identity, default)
+
+            def __getitem__(self, identity):
+                self.reads += 1
+                return super().__getitem__(identity)
+
+            def __contains__(self, identity):
+                self.reads += 1
+                return super().__contains__(identity)
+
+        count = 1200
+        native = MeasuredNative({
+            (uid,): {"uid": uid, "revision": 1, "root": count,
+                     "parent": uid + 1 if uid < count else None,
+                     "owner": [1, 7, 0], "state": "live"}
+            for uid in range(1, count + 1)
+        })
+        origins = {identity: {**item, "origin": "baseline"}
+                   for identity, item in native.items()}
+        for shape, parent, expected in (
+                ("chain", None, {}), ("cycle", 1, {"cyclic_native_topology": count}),
+                ("orphan", count + 1, {"orphan_item_parent": 1})):
+            with self.subTest(shape=shape):
+                native[(count,)]["parent"] = parent
+                native.reads = 0
+                reconciler = Reconciler(0)
+                reconciler.audit_items({}, {}, origins, native, set(range(1, count + 1)))
+                self.assertEqual(dict(reconciler.counts), expected)
+                self.assertLessEqual(native.reads, 20 * count,
+                                     "a bounded native snapshot must not trigger quadratic ancestor work")
+
+    def test_native_topology_cycle_and_edge_diagnostics(self):
+        base = {
+            (uid,): {"uid": uid, "revision": 1, "root": 2, "parent": parent,
+                     "owner": [1, 7, 0], "state": "live"}
+            for uid, parent in ((1, 2), (2, None), (3, 1))
+        }
+        for name, changes, expected in (
+                ("valid", {}, {}),
+                ("cycle", {2: {"parent": 1}}, {"cyclic_native_topology": 3}),
+                ("self_cycle", {2: {"parent": 2}}, {"cyclic_native_topology": 3}),
+                ("root_identity", {uid: {"root": 99} for uid in (1, 2, 3)},
+                 {"inconsistent_native_topology": 3}),
+                ("edge", {3: {"root": 99}}, {"inconsistent_native_topology": 1}),
+                ("orphan", {2: {"parent": 99}}, {"orphan_item_parent": 1}),
+                ("mixed_cycle", {2: {"parent": 1, "state": "tombstone", "owner": [8, 0, 0]}},
+                 {"inconsistent_native_topology": 2, "cyclic_native_topology": 1})):
+            with self.subTest(name=name):
+                native = copy.deepcopy(base)
+                for uid, change in changes.items():
+                    native[(uid,)].update(change)
+                origins = {identity: {**item, "origin": "baseline"}
+                           for identity, item in native.items()}
+                reconciler = Reconciler()
+                reconciler.audit_items({}, {}, origins, native, {1, 2, 3})
+                self.assertEqual(dict(reconciler.counts), expected)
+
     def test_cli_bounded_exception_result(self):
         snapshot = clean_snapshot()
         snapshot["postings"].pop()

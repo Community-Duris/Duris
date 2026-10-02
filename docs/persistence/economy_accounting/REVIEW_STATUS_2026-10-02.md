@@ -146,3 +146,45 @@ consistent-cut, and SELECT-only-reader checks continue to pass.
 This strengthens R4/R7 audit diagnostics without changing native writers,
 inactive accounting, production data, or activation gates. SQL snapshots remain
 explicitly incomplete and do not qualify gameplay or crash recovery.
+
+## Bounded native topology reconciliation
+
+The native topology audit previously walked the full ancestry of every item,
+performing quadratic work on deep or corrupt cuts. A 1,200-node regression
+requires 721,799 native lookups before repair and fails a 24,000-lookup budget.
+The audit now resolves each direct edge, terminal root, missing ancestor and
+cycle once using an iterative memoized traversal, with linear graph work and
+no recursive stack growth. It retains live edge/root mismatch diagnostics,
+tombstone cycle checks, and one orphan diagnostic per missing direct edge.
+
+All 49 reconciler tests pass. The work budget passes for a 1,200-node valid
+chain, closed cycle and missing-ancestor chain; explicit small-graph cases
+cover self-cycles, shared ancestors, incorrect roots, conflicting edges and
+mixed live/tombstone cycles. The expanded SELECT-only SQL probe also passes
+on MySQL 8.0.46 and MariaDB 10.11.14 with 1,200 additional native nested rows:
+their unknown origins remain reported, and closing the chain into a cycle
+adds exactly 1,200 cycle exceptions. Removing these owned fixture rows restores
+the original exception set. Earlier lifetime/orphan/source/mapping checks pass.
+This bounds graph work in an R7 component; it does not establish full operator
+latency, storage budgets, workload qualification or accounting completion.
+
+## Integrated candidate qualification in progress
+
+The complete archived tree of candidate `fbd9f503581cd61369bf7100476ea66e1b3722d4`
+matches Git tree `6e0e63d777abc06d2e8350f784ae74247e15594c` in a separate disposable
+checkout. Its source tree is `c8804d6bc84b2f779c43030c5986fe92ceb0a245`, test tree
+`7fbff73ca6a8ca9edf49b9fe310fad63d8ef4a47`, and script tree
+`6904c98e6284fec4946576af11d33a72af6b4359`. The first archive was rejected before
+testing because Windows checkout conversion changed its bytes; archiving with
+that conversion disabled fixes the provenance check.
+
+The strict production SQL server builds successfully, with executable SHA-256
+`34f0302d01deefa1f953c841e15b7250857004988135f556b92a12997f7adf04`.
+The area editor and world generators also build. Missing ncurses development
+headers initially stopped the editor target; extracting the matching Ubuntu
+development package into the disposable qualification directory resolves it
+without modifying host packages. `make test-all` has resumed and is running
+834 automatic regressions with two workers; 25 manual probes are separate.
+No broad passing result is claimed while that run is unfinished. The bounded
+topology repair above occurred after this freeze and has separate focused
+evidence; this run must not be labeled an uninterrupted full run of later heads.

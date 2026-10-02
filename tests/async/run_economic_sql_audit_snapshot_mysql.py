@@ -525,6 +525,30 @@ try:
                 writer.execute("UPDATE item_current_owner SET item_revision=1 WHERE item_uid=84")
             assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
                 expected_exceptions
+            # A deep, unanchored native forest is still auditable. Its missing
+            # origins must remain explicit, and a corrupt cycle must terminate.
+            deep_first, deep_count = 1000, 1200
+            deep_last = deep_first + deep_count - 1
+            with setup.cursor() as writer:
+                writer.executemany("INSERT INTO item_current_owner VALUES "
+                                   "(%s,%s,%s,1,7,0,1,1,1,NULL)",
+                                   [(uid, deep_last, uid + 1 if uid < deep_last else None)
+                                    for uid in range(deep_first, deep_last + 1)])
+            deep_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert deep_report["exception_counts"] == {
+                **expected_exceptions, "unknown_legacy_origin": deep_count}, deep_report
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_current_owner SET parent_item_uid=%s WHERE item_uid=%s",
+                               (deep_first, deep_last))
+            cycle_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert cycle_report["exception_counts"] == {
+                **expected_exceptions, "unknown_legacy_origin": deep_count,
+                "cyclic_native_topology": deep_count}, cycle_report
+            with setup.cursor() as writer:
+                writer.execute("DELETE FROM item_current_owner WHERE item_uid BETWEEN %s AND %s",
+                               (deep_first, deep_last))
+            assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
+                expected_exceptions
             with setup.cursor() as writer:
                 writer.execute("INSERT INTO economic_accounting_operation VALUES "
                                "(%s,%s,%s,NULL,33,1,0,%s,0,0,0,1,NULL)",
