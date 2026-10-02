@@ -77,12 +77,12 @@ def account_key(value: object) -> tuple[str, int, int, int]:
     return raw[:16].hex(), kind, identity, context
 
 
-def item_revision(value: object) -> bool:
+def unsigned_revision(value: object) -> bool:
     return type(value) is int and 0 <= value < 2**64
 
 
 def item_revision_transition(before: object, after: object) -> bool:
-    return item_revision(before) and item_revision(after) and after == before + 1
+    return unsigned_revision(before) and unsigned_revision(after) and after == before + 1
 
 
 def require_id(value: object, label: str) -> str:
@@ -420,6 +420,9 @@ class Reconciler:
 
         by_account: dict[str, list[dict]] = defaultdict(list)
         for row in effects.values():
+            if (not unsigned_revision(row.get("before_revision")) or
+                    not unsigned_revision(row.get("after_revision"))):
+                raise SnapshotError("invalid account effect revision")
             key = row.get("account_key")
             account_key(key)
             by_account[key].append(row)
@@ -586,6 +589,9 @@ class Reconciler:
 
     def audit_accounts(self, lineage: str, operations: dict, by_account: dict, origins: dict, native: dict,
                        deltas: dict) -> None:
+        for holding in native.values():
+            if not unsigned_revision(holding.get("revision")):
+                raise SnapshotError("invalid native holding revision")
         for key in set(by_account) | {row[0] for row in origins} | {row[0] for row in native}:
             key_lineage, kind, _, _ = account_key(key)
             if key_lineage != lineage:
@@ -622,7 +628,7 @@ class Reconciler:
                 continue
             expected = vector(origin.get("balance"))
             revision = origin.get("revision")
-            if type(revision) is not int or revision < 0:
+            if not unsigned_revision(revision):
                 raise SnapshotError("invalid account origin revision")
             if origin["origin"] == "creation" and (expected != (0, 0, 0, 0) or revision != 0):
                 self.emit("invalid_account_creation_origin", account_key=key)
@@ -834,8 +840,8 @@ class Reconciler:
                 self.emit("unauthorized_mapping_creation", operation_id=creator_id,
                           account_key=key)
             effect = matching_effects[0]
-            if (type(effect.get("before_revision")) is not int or
-                    type(effect.get("after_revision")) is not int or
+            if (not unsigned_revision(effect.get("before_revision")) or
+                    not unsigned_revision(effect.get("after_revision")) or
                     effect["after_revision"] <= effect["before_revision"] or
                     ((origin is None or origin.get("origin") == "creation") and
                      (effect.get("before") != [0, 0, 0, 0] or
@@ -1051,9 +1057,9 @@ class Reconciler:
                 if (type(account_index) is not int or not 0 <= account_index < 3072 or
                         account_index in effects_by_index or key in effects_by_key or
                         (root_lineage is not None and key_lineage != root_lineage) or
-                        type(before_revision) is not int or not 0 <= before_revision < 2**63 or
-                        type(after_revision) is not int or after_revision <= before_revision or
-                        after_revision >= 2**63):
+                        not unsigned_revision(before_revision) or
+                        not unsigned_revision(after_revision) or
+                        after_revision <= before_revision):
                     raise SnapshotError("invalid retirement root effect")
                 effects_by_index[account_index] = effect
                 effects_by_key[key] = effect
@@ -1611,7 +1617,7 @@ class Reconciler:
             balance = vector(mapping.get("balance"))
             revision = mapping.get("revision")
             holding = holdings.get((key,))
-            if (type(revision) is not int or not 0 <= revision < 2**63 or
+            if (not unsigned_revision(revision) or
                     holding is None or holding.get("balance") != list(balance) or
                     holding.get("revision") != revision or pile is None or
                     pile.get("amounts") != list(balance) or pile.get("revision") != revision):
@@ -1818,12 +1824,12 @@ class Reconciler:
     def audit_items(self, ownership: dict, references: dict, origins: dict, native: dict,
                     lineage_history_uids: set[int] | None = None) -> None:
         for row in list(origins.values()) + list(native.values()):
-            if not item_revision(row.get("revision")):
+            if not unsigned_revision(row.get("revision")):
                 raise SnapshotError("invalid item origin or native revision")
         referenced = set()
         for ref in references.values():
-            if (not item_revision(ref.get("before_revision")) or
-                    not item_revision(ref.get("after_revision"))):
+            if (not unsigned_revision(ref.get("before_revision")) or
+                    not unsigned_revision(ref.get("after_revision"))):
                 raise SnapshotError("invalid item reference revision")
             legacy_key = (ref.get("legacy_operation_id"), ref.get("legacy_event_index"))
             event = ownership.get(legacy_key)
@@ -1838,8 +1844,8 @@ class Reconciler:
                 referenced.add(legacy_key)
         by_uid: dict[int, list[dict]] = defaultdict(list)
         for key, event in ownership.items():
-            if (not item_revision(event.get("before_revision")) or
-                    not item_revision(event.get("revision"))):
+            if (not unsigned_revision(event.get("before_revision")) or
+                    not unsigned_revision(event.get("revision"))):
                 raise SnapshotError("invalid ownership event revision")
             uid = event.get("uid")
             by_uid[uid].append(event)
@@ -1926,7 +1932,7 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
         rows = [{"account_key": row["account_key"], "kind": account_key(row["account_key"])[1],
                  "balance": vector(row["balance"]), "revision": row["revision"]}
                 for row in snapshot["native"]["holdings"]]
-        if any(type(row["revision"]) is not int or row["revision"] < 0 for row in rows):
+        if any(not unsigned_revision(row["revision"]) for row in rows):
             raise SnapshotError("invalid native holding revision")
     elif name == "provenance":
         if uid is None:

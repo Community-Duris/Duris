@@ -121,6 +121,42 @@ class ReconciliationTests(unittest.TestCase):
             self.assertNotIn("alias", json.dumps(data))
             self.assertLessEqual(len(data["rows"]), 3)
 
+    def money_revision_snapshot(self, before):
+        snapshot = clean_snapshot()
+        for origin in snapshot["account_origins"]:
+            origin["revision"] = before
+        for effect in snapshot["effects"]:
+            effect.update(before_revision=before, after_revision=before + 1)
+        for holding in snapshot["native"]["holdings"]:
+            holding["revision"] = before + 1
+        return snapshot
+
+    def test_money_revisions_use_native_unsigned_range(self):
+        for before in (0, 2**63, 2**64 - 2):
+            with self.subTest(before=before):
+                self.assertEqual(self.codes(self.money_revision_snapshot(before)), set())
+
+    def test_boolean_and_overflow_money_revisions_are_not_clean(self):
+        for before in (True, -1, 2**64 - 1, 2**64):
+            with self.subTest(before=before):
+                with self.assertRaises(SnapshotError):
+                    Reconciler().audit(self.money_revision_snapshot(before))
+        for invalid in (True, -1, 2**64):
+            with self.subTest(native_revision=invalid):
+                snapshot = self.money_revision_snapshot(0)
+                snapshot["native"]["holdings"][0]["revision"] = invalid
+                with self.assertRaises(SnapshotError):
+                    Reconciler().audit(snapshot)
+                with self.assertRaises(SnapshotError):
+                    view(snapshot, {}, "holdings", 3)
+        for field in ("before_revision", "after_revision"):
+            for invalid in (True, -1, 2**64):
+                with self.subTest(effect_field=field, value=invalid):
+                    snapshot = clean_snapshot()
+                    snapshot["effects"][0][field] = invalid
+                    with self.assertRaises(SnapshotError):
+                        Reconciler().audit(snapshot)
+
     def test_missing_posting(self):
         snapshot = clean_snapshot()
         snapshot["postings"].pop()
@@ -552,6 +588,16 @@ class ReconciliationTests(unittest.TestCase):
         snapshot["native"]["mapping_creation_coverage"] = {
             "rows": 1, "creator_rows": 0, "root_rows": 0, "missing_roots": 0}
         self.assertEqual(self.codes(snapshot), set())
+        for before_revision in (2**63, 2**64 - 2):
+            high = copy.deepcopy(snapshot)
+            for effect in high["native"]["retirement_roots"][0]["effects"]:
+                effect.update(before_revision=before_revision, after_revision=before_revision + 1)
+            self.assertEqual(self.codes(high), set())
+        for invalid in (True, -1, 2**64):
+            high = copy.deepcopy(snapshot)
+            high["native"]["retirement_roots"][0]["effects"][0]["before_revision"] = invalid
+            with self.assertRaises(SnapshotError):
+                Reconciler().audit(high)
         snapshot["native"]["retired_mappings"][0]["native_id"] = 78
         self.assertIn("mapping_retirement_identity_mismatch", self.codes(snapshot))
 
@@ -969,6 +1015,17 @@ class ReconciliationTests(unittest.TestCase):
             {(81,): {"owner": [1, 7, 0], "revision": 2, "state": "live"}},
             LINEAGE)
         self.assertEqual(reconciler.counts, {})
+        for revision in (2**63, 2**64 - 1):
+            high = copy.deepcopy(native)
+            high["coin_piles"][0]["revision"] = revision
+            high["coin_pile_mappings"][0]["revision"] = revision
+            check = Reconciler()
+            check.audit_coin_pile_mappings(
+                "sql_partial", high,
+                {(mapping_key,): {"balance": [4, 0, 0, 0], "revision": revision}},
+                {(81,): {"owner": [1, 7, 0], "revision": revision, "state": "live"}},
+                LINEAGE)
+            self.assertEqual(check.counts, {})
         native["coin_pile_mappings"][0]["balance"] = [3, 0, 0, 0]
         mismatched = Reconciler()
         mismatched.audit_coin_pile_mappings(
