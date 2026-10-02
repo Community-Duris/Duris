@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 39 authored journals, accounting-gated player surfaces, starter/town
+**Status: 40 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -9,7 +9,7 @@ The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
 source dossiers, shipped changes, newly found dependencies, and verification.
 Twin Towers, Plains of Life, Ailvio, Braddistock, Breale, Abandoned Elven
 Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus, Torg, Vast Hidden
-Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps and Bloodstone now have complete source story maps;
+Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone and Neverwinter Woods now have complete source story maps;
 their active-world journeys remain unqualified. Schema 3 adds
 optional preparation. Ailvio's 78 pair recipes project one family-feeding story;
 Braddistock's pet rescue is displayed as an intermediate service. Breale preserves
@@ -62,6 +62,15 @@ Exact same-named kinds, independently owned equal-reward recipes, random matchin
 scrolls and the unavailable nine-earring fee extend source, lineage, conditional
 recipe and service qualification. The source dossier records full access,
 orphan-content and fair availability/prose/assignment repair proposals.
+
+Neverwinter Woods adds one five-rune story across all five equal-offering
+bindings, seven contacts and optional bridge preparation. Native reverse loading
+and first-complete matching select the ruby eyepatch; there is no reward choice.
+Historical variants remain valid within the same achievement family. Full
+source review finds a use-versus-wave wand mismatch, an ordinarily open bridge,
+and mirror-maze topology/real-index/reciprocity gaps. Reward-selection terms,
+checked topology transitions, confirmed travel and orphan lore endpoints now
+have explicit builder decisions and deterministic qualification proposals.
 
 Maintain this plan as zones are reviewed. Keep static contract classification,
 historical objective coverage, economic support, and gameplay qualification
@@ -564,7 +573,12 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   unfinished Pellops endpoint, fifteen exact artifacts, eleven-item elixir,
   two-matching-scroll services and nine-earring fee. Record missing maker/
   material sources, full access, orphan gameplay and bounded repair proposals.
-- [ ] Complete comprehensive source dossiers for the other 204 roadmap areas.
+- [x] Complete Neverwinter Woods source dossier: all five equal-offering rune
+  exchanges, both addressed topic families, all 28 assigned routines, exact
+  cap-one sources, actual bridge/tower route and full mirror-maze topology.
+  Record fixed native reward, preserved historical variants, optional use-wand,
+  separate Wicks ownership and balanced maze/access/orphan repair proposals.
+- [ ] Complete comprehensive source dossiers for the other 203 roadmap areas.
 - [ ] Add district/family authoring and shared presentation for large zones.
   Winterhaven's 219 rows fit existing story/objective limits but need a bounded
   512 KiB source-sidecar allowance for detailed guidance. Preserve receipt IDs;
@@ -594,6 +608,7 @@ contract classification; it does not claim complete objective coverage.
 | Shairak and Smokeveil Forest | 1 | Complete: ten achievements plus one bottle service across eleven contracts | [Source-comprehensive dossier](zone-stories/SHAIRAK_AND_SMOKEVEIL_FOREST.md); nine contacts/all 32 topic families, simultaneous hearts, exact sources, optional helm producer and independent trophies | Active local/foreign reset and shop supply need durable generation; legacy smith/teacher purchases deliberately refuse | Native projection checks; active source/cap/recipient availability, owned foreign, teaching/forge and cure/reunion journeys pending |
 | Twin Keeps of Devastated Tharnadia | 1 | Complete: 29 achievements and one potion service across 30 exchanges | [Source-comprehensive dossier](zone-stories/TWIN_KEEPS_OF_DEVASTATED_THARNADIA.md); 24 contacts/all 37 addressable families, fifteen optional producer checks, distinct shards, physical receipt, full crystal/message and shared access guidance | Active local/foreign reset supply and mixed potion fee need qualification; mode-zero epic resets affect recipient/source availability | Native projection/receipt checks; confirmed access/recovery, actual NPC episodes, conditional sources and selected prose/combat repairs pending |
 | Bloodstone Keep | 1 | Complete: 31 achievements, 32 services and two exclusions across 65 exchanges | [Source-comprehensive dossier](zone-stories/BLOODSTONE_KEEP.md); twenty contacts/all 74 addressed families, 35 optional producer checks, exact same-named kinds, full access, artifact and alchemy routes | Active sources, five absent ordinary makers, missing components and nine-earring mixed fee remain unqualified | Native projection/receipt checks; actual source/access/transform/recipient episodes, unfinished content and selected prose/assignment repairs pending |
+| Neverwinter Woods | 1 | Complete: five Q bindings → one recovery achievement/daily family | [Source-comprehensive dossier](zone-stories/NEVERWINTER_WOODS.md); seven contacts/both topic families, five distinct live runes, optional bridge wand and actual fixed native reward | Active sources, current Malchor and cap-one replenishment remain unqualified | Native projection/receipt checks; selected-reward terms, checked maze topology, source/gift/arrival and orphan endpoint decisions pending |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
 
 ## Twin Towers evidence and decisions

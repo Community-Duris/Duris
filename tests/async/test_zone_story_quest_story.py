@@ -15,7 +15,7 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1930
+assert report["daily_unit_count"] == 1926
 assert mapping["schema_version"] == 3 and mapping["stories"][0]["steps"][0]["optional"]
 assert sum(s["category"] == "service" for s in mapping["stories"]) == 12
 assert len(mapping["exclusions"]) == 1 and len(mapping["exclusions"][0]["contracts"]) == 40
@@ -81,6 +81,15 @@ earrings = [s for s in bloodstone["stories"] if s["id"].startswith("hedvig-commi
 assert len(earrings) == 9 and all(s["category"] == "service" for s in earrings)
 assert [(s["steps"][1]["item_vnums"], s["steps"][1]["count"]) for s in earrings] == [([n], 2) for n in range(55352, 55361)]
 assert all(s["steps"][-1]["contracts"] == s["contracts"] for s in bloodstone["stories"])
+moria = next(m for m in catalog["story_mappings"] if m["source_area"] == "moria")
+assert moria["schema_version"] == 3 and moria["revision"] == 1
+assert report["eligible_by_zone"]["990"] == 1 and len(moria["stories"]) == 1
+runes = moria["stories"][0]
+assert runes["category"] == "story" and len(runes["contracts"]) == 5
+assert runes["steps"][0]["optional"] and runes["steps"][0]["item_vnums"] == [99072]
+assert [t["item_vnums"] for t in runes["steps"][1:-1]] == [[n] for n in range(99002, 99007)]
+assert all(t["count"] == 1 for t in runes["steps"][1:-1])
+assert runes["steps"][-1]["contracts"] == runes["contracts"] and not moria["exclusions"]
 new_mappings = {m["source_area"]: m for m in catalog["story_mappings"] if m["source_area"] in new_areas}
 assert set(new_mappings) == new_areas and all(m["coverage"] == "complete" for m in new_mappings.values())
 assert sum(d["source_area"] in new_areas for d in catalog["definitions"]) == 86

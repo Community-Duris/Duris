@@ -41,9 +41,10 @@ neither every branch nor every historical prerequisite.
 | 14 | Shairak and Smokeveil Forest | [Comprehensive source dossier](zone-stories/SHAIRAK_AND_SMOKEVEIL_FOREST.md): eleven Q/QA contracts, 32 M families, 100 rooms, 74 mobiles, 59 objects, one shop, 435 resets, table-driven support roles and bounded Tezcat/Alatorin/Raxthan continuations | Revision 1: ten achievements plus one service, nine contacts/all topics; exact simultaneous hearts, competing trophies, ordinary animal recovery and optional helm route | Active reset/shop supply; cap-one/recipient availability; committed source versus gift; owned foreign journeys; all-stage cure/reunion and supported forge/teaching |
 | 15 | Twin Keeps of Devastated Tharnadia | [Comprehensive source dossier](zone-stories/TWIN_KEEPS_OF_DEVASTATED_THARNADIA.md): 30 Q/QA exchanges, 86 M/MA blocks, 451 rooms, 123 mobiles, 121 objects, 1,614 resets, Zorana handler and bounded foreign continuations | Revision 1: 29 achievements plus one service, 24 contacts/all 37 addressable families, fifteen optional producer checks, distinct shards, physical receipt and complete crystal/message/access guidance | Active sources; mixed potion fee; confirmed switch/key/travel/retrieval; recipient/epic-reset episodes; conditional sources, personal versus supplied proof and selected prose repairs |
 | 16 | Bloodstone Keep | [Comprehensive source dossier](zone-stories/BLOODSTONE_KEEP.md): 65 Q/QA exchanges, 158 native blocks, 918 rooms, 255 mobiles, 300 objects, 34 shops, 1,624 resets, complete local special code and bounded foreign producers/consumers | Revision 1: 31 achievements, 32 services/two exclusions, twenty contacts/all 74 addressed families, 35 optional producer checks; complete local, artifact and alchemy guidance | Active supply; absent ordinary makers/missing components; exact source/access/transform episodes; mixed earring fee, unfinished Pellops/orphan gameplay and selected prose/assignment repair |
-| 17–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 17 | Neverwinter Woods | [Comprehensive source dossier](zone-stories/NEVERWINTER_WOODS.md): seven Q/M blocks, 335 rooms, 38 mobiles, 75 objects, three shops, 424 resets, all 28 assigned routines and complete mirror-maze topology | Revision 1: five native bindings → one story/achievement/daily unit; seven contacts/both topic families; optional bridge wand, exact runes and current ruby-eyepatch reward | Active sources, cap-one/current recipient, selected-reward terms, checked maze topology, confirmed passage, source/gift history and orphan endpoints |
+| 18–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Neverwinter Woods, followed by the Clawed Caverns.
+The next area is the Clawed Caverns, followed by the Defense of Longhollow.
 Their earlier native bindings do not establish comprehensive
 source review. Do not advance a zone's status
 merely because the map parses, the Q denominator matches, or a candidate item
@@ -53,6 +54,9 @@ graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-NW-REWARD | All five rune exchanges have identical offerings. Native prepending plus first-complete matching select the ruby eyepatch, without a reward-choice step. | Keep one recovery family and all historical bindings. Builder chooses fixed reward/retirement or explicit selection; freeze chosen binding/output and attempt before consuming exact owned runes, with retry/recovery and revision fixtures. |
+| ZSQ-NW-MAZE / TOPOLOGY | All 36 raw maze rooms lead internally; exterior entries have no inbound reverse. Boundary search examines the actor rather than each candidate; reset passes virtual identity as real index and assumes reciprocal exits. | Freeze intended 6×6/wrap/exterior topology with builder. Add validated old/new reciprocal transitions, alternate real-index and missing-edge fixtures, failed/repeated moves and confirmed player-passage events; preserve probability/difficulty. Source gaps do not prove a played crash. |
+| ZSQ-NW-ACCESS / ORPHANS | Wand inscription says wave but trigger is use; bridge resets open. Agatha debt/horseshoe, farm/logging/escort promises have no local outcomes; actual horseshoes have Wicks-owned foreign consumer. | Decide barrier versus reset and align command prose without imposing new cost. Qualify actual source/access/return episodes; author absent endpoints or keep as lore. Preserve owned foreign receipts and separate optional exploration from Malchor's finale. |
 | ZSQ-BS-SUPPLY / MISSING-MAKERS | Five advanced makers have no ordinary active placement; scalp and ten foreign component prototypes lack confirmed active producers. | Builder chooses placement/source restoration or retirement; qualify actual NPC/reset generations, cap/difficulty and recovered/computed stock. Do not infer absence solely from names or silently borrow Winterhaven ingredients. |
 | ZSQ-BS-IDENTITY / CONDITIONAL-RECIPES | Four same-named quarters and original/returned heads differ; fifteen artifact bindings, two cosmic dust, matching scrolls and Bloodstone's Storm/elixir recipes expose exact and competing prerequisites. | Preserve independent giver/binding ownership; add conditional producer/source alternatives, object allocation and committed source-versus-gift/transform lineage. Producer history does not replace spent stock or require a personal route. |
 | ZSQ-BS-UNFINISHED / SERVICES | Pellops and several room promises have no implemented finale. Nine-earring mixed payment and stat purchases are unavailable under active accounting; scroll recite extracts before publishing output. | Decide endpoints/gameplay with builder; qualify coordinated fee/effect/receipt and recoverable random transformation. Repair verified prose and ambient targets separately without inventing tracking completions. |
@@ -635,3 +639,54 @@ These are projection/source checks, not played fee/source/access qualification.
 Accounting remains required. No migration, activation, DB/server operation or
 merge occurred. Sixteen of 220 roadmap areas are source-comprehensive, with
 204 pending. Continue with Neverwinter Woods, then the Clawed Caverns.
+
+### Neverwinter Woods checkpoint — October 2, 2026
+
+Priority 17 (`moria`) is source-comprehensive at journal revision 1. Reviewed
+all seven native blocks (five Q/two M), 335 rooms, 38 mobiles, 75 objects,
+three shops, 424 resets/all 120 grouped families, all 28 assigned mobile
+routines and the complete 1,516-line local implementation. Exact rune sources,
+switch/loading/matching, movement and reciprocal maze topology were reviewed;
+the actual horseshoes' foreign Wicks consumer retains Divine Home ownership.
+
+Five equal-offering contracts project one five-rune story/achievement/potential
+daily unit. Native Q prepending and first-complete matching currently select the
+ruby eyepatch, without a reward-choice step. Every native binding is retained
+for historical receipts. Seven contacts cover both addressable topic families;
+five live rune checks distinguish the kinds. Supplied runes qualify, optional
+bridge-wand preparation cannot block `Next:`, and readiness does not record
+source, combat, learned lore or forest-restoration history.
+
+The bridge normally resets open; the advertised wave command differs from the
+wand's actual use trigger. All 36 mirror-maze rooms have internal raw targets,
+with exterior entries lacking inward reverse connections. The complete special
+review records incorrect boundary lookup, virtual/real room identity, unchecked
+reciprocal mutations and failed-move closure. Concrete builder decisions and
+deterministic topology/arrival fixtures are planned while preserving difficulty.
+Agatha debt/news/horseshoe, farming/logging and escort promises remain lore until
+deliberately authored. No live crash or completed played journey is claimed.
+
+Verification passed:
+
+- `test_zone_story_quest_production_catalog.py`: exact catalog/inventory and
+  seventeen evidence indices, contact/topic ownership and cap-one rune sources.
+- `test_zone_story_quest_story.py`: all forty native maps and schemas 1/2/3;
+  missing/spent kinds, supplied sets, optional bridge preparation, side-effect-free
+  reads, unseen-giver visibility and once-only historical-variant recovery.
+- `test_durable_quest_offering.py`: actual native durable matching selects the
+  first loaded equal-offering binding for each presented rune with accounting
+  active/inactive. The fixture was repaired for the existing V6 continuation,
+  shared fourteen-root limit and frozen daily interface; prior skill/XP/item/
+  currency publication and recovery cases pass. This fixture tests matching/
+  frozen terms, not a full world boot or active-stock journey.
+- `test_zone_story_quest_production.py`, harness formatting/check, whitespace,
+  reviewed local documentation links and cached SQL server build.
+
+The catalog has forty authored journals, 2,319 achievement units, 1,926 potential
+daily units and 2,503 rows including services/administrative content. All 2,668
+raw definitions, registry/revision/fingerprint and the other 39 journals remain
+unchanged. Accounting remains mandatory for player surfaces and new eligibility;
+no activation, migration, DB/server operation or merge occurred. Seventeen of
+220 roadmap areas are source-comprehensive, with 203 pending. Continue with the
+Clawed Caverns, then the Defense of Longhollow; active-world qualification remains
+open.

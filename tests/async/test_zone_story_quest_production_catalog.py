@@ -273,7 +273,35 @@ assert len(proof_sources[74262]) == 1 and proof_sources[74262][0][1:] == (74371,
 assert proof_sources[74295] == [(74207, 74719, 1)]
 assert not any(r["command"] in ("G", "E", "O", "P") and r["arguments"][1] == 74243 for r in bs["reset_commands"])
 assert any(r["command"] == "D" and r["arguments"][1:4] == [74007, 5, 1] for r in bs["reset_commands"])
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs"):
+moria = inventory_module.area_evidence(ROOT, "moria")
+assert len(moria["requests"]) == 5 and len(moria["dialogue"]) == 2
+assert len(moria["reset_commands"]) == 424 and len(moria["mobs"]) == 38 and len(moria["items"]) == 75
+assert moria["zone"]["reset_mode"] == 2 and len(moria["special_assignments"]) == 28
+moria_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "moria")
+moria_contacts = {c["mob_vnum"]: c for c in moria_mapping["contacts"]}
+assert len(moria_contacts) == 7
+for response in moria["dialogue"]:
+    assert set(response["body"][0].rstrip("~").split()) & set(moria_contacts[response["giver_vnum"]]["topics"])
+for vnum, contact in moria_contacts.items():
+    assert contact["keyword"] in moria["mobs"][vnum]["keywords"]
+# One story owns every equal-offering variant, preserving older reward receipts.
+bindings = [r["block"]["binding"] for r in moria["requests"]]
+assert moria_mapping["stories"][0]["contracts"] == sorted(bindings, key=lambda b: b["completion_key"])
+assert {b["completion_key"].split(";")[0] for b in bindings} == {"give=I:99002,I:99003,I:99004,I:99005,I:99006"}
+assert {b["giver_vnum"] for b in bindings} == {99028}
+parent = room = None
+rune_sources = {}
+for reset in moria["reset_commands"]:
+    command, values = reset["command"], reset["arguments"]
+    if command in ("M", "F"):
+        parent, room = values[1], values[3]
+    elif command == "G" and values[1] in range(99002, 99007):
+        rune_sources[values[1]] = (parent, room, values[2], values[4])
+assert rune_sources == {99002: (99003, 99017, 1, 100), 99003: (99004, 99043, 1, 100),
+                       99004: (99005, 99070, 1, 100), 99005: (99006, 99158, 1, 100),
+                       99006: (99007, 99185, 1, 100)}
+assert any(r["command"] == "D" and r["arguments"][1:4] == [99251, 1, 0] for r in moria["reset_commands"])
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

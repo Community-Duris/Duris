@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 39 &&
-				tracker.summary_for(7, 42).total == 2323,
+		require(catalog.story_mappings.size() == 40 &&
+				tracker.summary_for(7, 42).total == 2319,
 			"native story projection disagreed with the complete source audit");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -1104,6 +1104,50 @@ int main(int argc, char **argv)
 				restored_bs.progress_for_zone(7, 42, 740).completed == 31 &&
 				restored_bs.progress_for_zone(7, 42, 550).completed == 1,
 			"Bloodstone recovery changed independent receipts or invented foreign producers");
+		const auto &runes = story_for("moria", "malchors-five-runes");
+		service supplied_runes(catalog);
+		require(supplied_runes.discover_zone(7, 42, 990, 99001, 100, "arrival") ==
+				result::applied,
+			"Neverwinter discovery failed");
+		supplies.carried.clear();
+		journal = supplied_runes.render_journal(7, 42, 990, 10, 1, 102, false, false,
+							&supplies);
+		require(journal.find("] " + runes.title + "\r\n") == std::string::npos,
+			"Neverwinter discovery exposed an unmet Malchor's request");
+		require(supplied_runes.meet_npc(7, 42, 99028, 99266, 101) == result::applied,
+			"Malchor encounter failed");
+		const auto before_rune_read = supplied_runes.serialize_state();
+		supplies.carried[99002] = 5;
+		journal = supplied_runes.render_journal(7, 42, 990, 10, 1, 102, false, false,
+							&supplies);
+		require(journal.find("Next: " + runes.steps[2].text) != std::string::npos,
+			"five amethyst runes replaced the five distinct rune kinds");
+		for (int item = 99003; item <= 99006; ++item)
+			supplies.carried[item] = 1;
+		journal = supplied_runes.render_journal(7, 42, 990, 10, 1, 102, false, false,
+							&supplies);
+		require(journal.find("Next: " + runes.steps.back().text) != std::string::npos &&
+				journal.find("Next: " + runes.steps.front().text) ==
+					std::string::npos &&
+				supplied_runes.serialize_state() == before_rune_read &&
+				supplied_runes.progress_for_zone(7, 42, 990).completed == 0,
+			"supplied runes needed bridge history or a readiness read awarded credit");
+		supplies.carried.erase(99004);
+		journal = supplied_runes.render_journal(7, 42, 990, 10, 1, 103, false, false,
+							&supplies);
+		require(journal.find("Next: " + runes.steps[3].text) != std::string::npos,
+			"a spent diamond rune remained ready");
+		for (const auto &id : runes.contracts)
+			record(supplied_runes, id, id.c_str(), 990, 99266);
+		require(supplied_runes.progress_for_zone(7, 42, 990).completed == 1 &&
+				supplied_runes.progress_for_zone(7, 42, 990).total == 1,
+			"historical equal-offering reward variants added multiple achievements");
+		service restored_runes(catalog);
+		require(restored_runes.deserialize_state(supplied_runes.serialize_state(),
+							 &error) &&
+				restored_runes.progress_for_zone(7, 42, 990).completed == 1 &&
+				restored_runes.progress_for_zone(7, 42, 990).total == 1,
+			"Neverwinter reward-family recovery changed progress");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

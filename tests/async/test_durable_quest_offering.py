@@ -16,7 +16,7 @@ assert (
     "quest_reward_recover_pending(actor, transfer_result.operation_id, continuation)"
     in complete_quest
 )
-assert "continuation.version = 5" in complete_quest
+assert "continuation.version = 6" in complete_quest
 assert "context.skill_eligibility_mask" in complete_quest
 assert "frozen_xp" in complete_quest
 assert "quest_reward_character_present(award.recipient_pid)" in complete_quest
@@ -187,6 +187,9 @@ struct quest_reward_continuation {
     struct xp_award { uint32_t recipient_pid = 0, reward_index = 0, amount = 0; };
     uint32_t xp_award_count = 0;
     std::array<xp_award, 64> xp_awards = {};
+    uint32_t season_id = 0, catalog_revision = 0, daily_policy_revision = 0;
+    uint32_t daily_count = 0;
+    std::array<uint32_t, 64> daily_pids = {};
     std::string character_name, definition_id;
 };
 void quest_reward_recover_pending(P_char, const critical_operation_id &,
@@ -352,13 +355,21 @@ bool currency_transaction_submit_wallet_value_identified(
     return true;
 }
 namespace zone_story_quest_runtime {
+struct frozen_daily_context {
+    uint32_t season_id = 0, catalog_revision = 0, policy_revision = 0;
+    std::vector<uint32_t> eligible_pids;
+};
+uint32_t current_season_id() { return 1; }
+uint32_t content_revision() { return 2; }
+bool daily_eligible(P_char, std::string_view, int, int64_t) { return false; }
 bool record_legacy_completion(P_char, quest_complete_data *, int32_t, int64_t,
                               std::string *, std::string_view) { return true; }
 bool record_authoritative_completion(std::string_view, int32_t, uint32_t,
                                      const std::vector<uint32_t> &credited_pids, int32_t,
                                      int64_t, std::string_view character_name, int level, int,
                                      bool, uint32_t, int strongest_party_level,
-                                     std::string *, std::string_view) {
+                                     std::string *, std::string_view,
+                                     const frozen_daily_context * = nullptr) {
     last_credited_pids = credited_pids;
     last_tracking_name = character_name;
     last_tracking_level = level;
@@ -367,6 +378,7 @@ bool record_authoritative_completion(std::string_view, int32_t, uint32_t,
 }
 }
 namespace zone_story_quest_production {
+constexpr size_t ZONE_STORY_QUEST_MAX_DURABLE_OFFERINGS = 14;
 const std::string *definition_id_for(const quest_complete_data *) {
     static const std::string id = "zone-story:qst:77:abcd";
     return &id;
@@ -436,6 +448,52 @@ int main() {
         return value;
     };
 
+    // Equal complete offerings select the first native linked-list binding,
+    // regardless of the presented ingredient. Neverwinter's loader prepends
+    // its five source-file variants; this fixture uses that loaded order.
+    {
+        object runes[5]{};
+        goal_data gives[5]{};
+        goal_data receives[5]{};
+        quest_complete_data variants[5]{};
+        const int outputs[] = {99009, 99071, 99074, 99075, 99073};
+        for (unsigned i = 0; i < 5; ++i) {
+            runes[i] = {100 + i, 99002 + static_cast<int>(i), &actor};
+            gives[i] = {QUEST_GOAL_ITEM, 99002 + static_cast<int>(i)};
+            if (i + 1 < 5) {
+                runes[i].next = runes[i].next_content = &runes[i + 1];
+                gives[i].next = &gives[i + 1];
+            }
+            receives[i] = {QUEST_GOAL_ITEM, outputs[i]};
+            variants[i] = {gives, &receives[i]};
+            if (i + 1 < 5) variants[i].next = &variants[i + 1];
+        }
+        const int previous_messages = messages;
+        actor.carrying = object_list = runes;
+        quest_index[0].quest_complete = variants;
+        for (bool active : {false, true}) {
+            accounting_active = active;
+            for (auto &rune : runes) {
+                const auto previous_submissions = submissions;
+                assert(submit_durable_quest_offering(&mob, &actor, 0, &rune));
+                assert(submissions == previous_submissions + 1 && removed == 0);
+                quest_reward_continuation admitted;
+                assert(quest_reward_continuation_decode(saved_continuation.data.data(),
+                    saved_continuation.data.size(), &admitted));
+                assert(admitted.completion_index == 0 && admitted.root_count == 5);
+                assert(admitted.reward_count == 1 &&
+                    admitted.rewards[0].type == QUEST_GOAL_ITEM &&
+                    admitted.rewards[0].number == 99009);
+                assert(actor.carrying == runes);
+            }
+        }
+        actor.carrying = object_list = &a;
+        quest_index[0].quest_complete = &completion;
+        accounting_active = false;
+        submissions = 0;
+        messages = previous_messages;
+    }
+
     // A solo XP turn-in freezes the reward amount before consuming offerings.
     goal_data exp_only{QUEST_GOAL_EXP, 100};
     quest_complete_data exp_only_completion{&acorn, &exp_only};
@@ -443,7 +501,7 @@ int main() {
     accounting_active = true;
     assert(submit_durable_quest_offering(&mob, &actor, 0, &a));
     assert(submissions == 1 && removed == 0 && actor.carrying == &a);
-    assert(saved_continuation.data[0] == 5);
+    assert(saved_continuation.data[0] == 6);
     assert(read32(64, saved_continuation.data) == QUEST_GOAL_EXP);
     assert(read32(76, saved_continuation.data) == 100);
     goal_data skill_only{QUEST_GOAL_SKILL, 12};
@@ -456,8 +514,8 @@ int main() {
            36 + 3 * sizeof(uint64_t) + sizeof(uint32_t) + 16 +
                6 * sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) +
                std::strlen("tester") + sizeof(uint32_t) +
-               std::strlen("zone-story:qst:77:abcd") + sizeof(uint32_t));
-    assert(saved_continuation.data[0] == 5 && saved_continuation.data[1] == 0);
+               std::strlen("zone-story:qst:77:abcd") + sizeof(uint32_t) + 16);
+    assert(saved_continuation.data[0] == 6 && saved_continuation.data[1] == 0);
     assert(read32(64, saved_continuation.data) == QUEST_GOAL_SKILL);
     assert(read32(68, saved_continuation.data) == 12);
     assert(read32(72, saved_continuation.data) ==
@@ -482,7 +540,7 @@ int main() {
     accounting_active = true;
     assert(submit_durable_quest_offering(&mob, &actor, 0, &a));
     assert(submissions == 3 && removed == 0 && actor.carrying == &a);
-    assert(saved_continuation.data[0] == 5);
+    assert(saved_continuation.data[0] == 6);
     quest_index[0].quest_complete = &completion;
     actor.next = &teammate;
     teammate.next = &mob;
@@ -495,8 +553,8 @@ int main() {
            36 + 3 * sizeof(uint64_t) + sizeof(uint32_t) + 2 * 16 +
                6 * sizeof(uint32_t) + 2 * sizeof(uint32_t) + sizeof(uint32_t) +
                std::strlen("tester") + sizeof(uint32_t) +
-               std::strlen("zone-story:qst:77:abcd") + sizeof(uint32_t));
-    assert(read32(0, saved_continuation.data) == 5);
+               std::strlen("zone-story:qst:77:abcd") + sizeof(uint32_t) + 16);
+    assert(read32(0, saved_continuation.data) == 6);
     assert(read32(4, saved_continuation.data) == 7);
     assert(read32(16, saved_continuation.data) == 77);
     assert(read32(20, saved_continuation.data) == 4200);
@@ -674,7 +732,7 @@ int main() {
     quest_complete_data live_skill_completion{&acorn, &live_skill};
     quest_index[0].quest_complete = &live_skill_completion;
     assert(submit_durable_quest_offering(&mob, &actor, 0, actor.carrying));
-    assert(saved_continuation.data[0] == 5);
+    assert(saved_continuation.data[0] == 6);
     const auto *admitted_context =
         reinterpret_cast<const quest_durable_context *>(saved_context);
     assert(admitted_context->skill_eligibility_mask & UINT64_C(1));

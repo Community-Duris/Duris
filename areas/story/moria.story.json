@@ -1,0 +1,203 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "moria",
+  "coverage": "complete",
+  "introduction": "Five rune masters hold the pieces of Malchor's lost artifact. His museum request is one story: return all five distinct runes together. Suggested questions, current supplies and optional travel preparation do not themselves award achievements.",
+  "orientation": [
+    "The forest and River Moria connect Conyberry, Thundertree and the pond approach to the Tower of Twilight. The five masters hold five different rune kinds; the current delivery accepts supplied runes as well as personally recovered ones.",
+    "Ask the amethyst master about the rune, Malchor or artifact. Ask Malchor about the masters and the five rune names. These are guidance topics; each keyword is not an achievement or recorded proof of learning.",
+    "From the forest pond approach, the rock path leads to the invisible bridge and the Tower of Twilight. The guardian golem carries a wand of entry. Use, rather than its advertised wave command, is its trigger, but the ordinary reset opens the east passage already.",
+    "Follow the tower ramp to the museum. Malchor accepts one amethyst, sapphire, diamond, ruby and emerald rune together. Get them out of containers and remove any worn or held rune before offering.",
+    "The currently matched reward is a ruby-encrusted eyepatch. Other reward variants share the same complete offering and have no selection step. The journal counts this recovery once, including an older recorded variant, instead of treating it as five separate commissions.",
+    "The concealed tree-dome hole leads to a separate mirror maze with unresolved exit problems. Agatha and her horseshoe/payment lore are not prerequisites or implemented follow-on quests for Malchor. The real golden horseshoes lie elsewhere in the forest; Wicks in the Divine Home accepts them in a separate exchange.",
+    "Conyberry farming, Thundertree logging and museum projections are exploration and atmosphere. Their narrated work, healing and rescue suggestions do not implement new local completion receipts.",
+    "Quest tracking is available while economic accounting is active. Supply checks show what you carry now; a successful recorded delivery completes this story."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 99003,
+      "name": "the amethyst rune master",
+      "keyword": "amethyst",
+      "description": "This master is an ordinary source for the amethyst rune in the forest. The rune is carried stock; meeting or hearing a periodic statement does not count as recovering it.",
+      "topics": [
+        "rune",
+        "malchor",
+        "artifact",
+        "runes"
+      ]
+    },
+    {
+      "mob_vnum": 99004,
+      "name": "the sapphire rune master",
+      "keyword": "sapphire",
+      "description": "This master is an ordinary source for the sapphire rune in the forest. The rune is carried stock; meeting or hearing a periodic statement does not count as recovering it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99005,
+      "name": "the diamond rune master",
+      "keyword": "diamond",
+      "description": "This master is an ordinary source for the diamond rune in the forest. The rune is carried stock; meeting or hearing a periodic statement does not count as recovering it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99006,
+      "name": "the ruby rune master",
+      "keyword": "ruby",
+      "description": "This master is an ordinary source for the ruby rune in the forest. The rune is carried stock; meeting or hearing a periodic statement does not count as recovering it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99007,
+      "name": "the emerald rune master",
+      "keyword": "emerald",
+      "description": "This master is an ordinary source for the emerald rune in the forest. The rune is carried stock; meeting or hearing a periodic statement does not count as recovering it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99028,
+      "name": "Malchor",
+      "keyword": "malchor",
+      "description": "Seek his museum in the Tower of Twilight. Ask about the scattered runes, then bring one of each kind together. The current reward is the ruby-encrusted eyepatch; his other listed rewards have no selection step.",
+      "topics": [
+        "masters",
+        "rune",
+        "emerald",
+        "diamond",
+        "ruby",
+        "sapphire",
+        "amethyst"
+      ]
+    },
+    {
+      "mob_vnum": 99017,
+      "name": "Agatha",
+      "keyword": "agatha",
+      "topics": [],
+      "description": "Her lair lies beyond the separate mirror maze, which has unresolved exit problems. This is not a required route for Malchor. Her comments about news, payment and golden horseshoes have no implemented exchange or rescue endpoint."
+    }
+  ],
+  "stories": [
+    {
+      "id": "malchors-five-runes",
+      "title": "Malchor's Five Runes",
+      "category": "story",
+      "summary": "Return one of each of the five distinct rune kinds to Malchor in the Tower of Twilight museum. The current exchange awards a ruby-encrusted eyepatch and leaves him present. Supplied runes qualify. This records the artifact-piece delivery; it does not claim personal victories over the masters, every earlier journey or a new restored-world effect.",
+      "contracts": [
+        {
+          "giver_vnum": 99028,
+          "completion_key": "give=I:99002,I:99003,I:99004,I:99005,I:99006;receive=I:99009;disappear=0"
+        },
+        {
+          "giver_vnum": 99028,
+          "completion_key": "give=I:99002,I:99003,I:99004,I:99005,I:99006;receive=I:99071;disappear=0"
+        },
+        {
+          "giver_vnum": 99028,
+          "completion_key": "give=I:99002,I:99003,I:99004,I:99005,I:99006;receive=I:99073;disappear=0"
+        },
+        {
+          "giver_vnum": 99028,
+          "completion_key": "give=I:99002,I:99003,I:99004,I:99005,I:99006;receive=I:99074;disappear=0"
+        },
+        {
+          "giver_vnum": 99028,
+          "completion_key": "give=I:99002,I:99003,I:99004,I:99005,I:99006;receive=I:99075;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "bridge-wand",
+          "kind": "carried_item",
+          "optional": true,
+          "item_vnums": [
+            99072
+          ],
+          "count": 1,
+          "text": "Optional: keep the wand of entry available for the invisible bridge",
+          "hint": "The guardian golem carries the wand. Use it at the invisible bridge if the east passage is blocked; its inscription says wave, but use is the actual trigger. The reviewed reset already opens this passage, so the wand is preparation rather than a required personal history."
+        },
+        {
+          "id": "amethyst-rune",
+          "kind": "carried_item",
+          "item_vnums": [
+            99002
+          ],
+          "count": 1,
+          "text": "Carry the amethyst rune",
+          "hint": "The amethyst rune master carries this exact rune in the forest. Only one copy is ordinarily loaded at a time, and current availability can vary. Supplied copies qualify. A different rune or several copies of one kind do not replace the other kinds; the delivery does not establish a personal kill or first acquisition."
+        },
+        {
+          "id": "sapphire-rune",
+          "kind": "carried_item",
+          "item_vnums": [
+            99003
+          ],
+          "count": 1,
+          "text": "Carry the sapphire rune",
+          "hint": "The sapphire rune master carries this exact rune in the forest. Only one copy is ordinarily loaded at a time, and current availability can vary. Supplied copies qualify. A different rune or several copies of one kind do not replace the other kinds; the delivery does not establish a personal kill or first acquisition."
+        },
+        {
+          "id": "diamond-rune",
+          "kind": "carried_item",
+          "item_vnums": [
+            99004
+          ],
+          "count": 1,
+          "text": "Carry the diamond rune",
+          "hint": "The diamond rune master carries this exact rune in the forest. Only one copy is ordinarily loaded at a time, and current availability can vary. Supplied copies qualify. A different rune or several copies of one kind do not replace the other kinds; the delivery does not establish a personal kill or first acquisition."
+        },
+        {
+          "id": "ruby-rune",
+          "kind": "carried_item",
+          "item_vnums": [
+            99005
+          ],
+          "count": 1,
+          "text": "Carry the ruby rune",
+          "hint": "The ruby rune master carries this exact rune in the forest. Only one copy is ordinarily loaded at a time, and current availability can vary. Supplied copies qualify. A different rune or several copies of one kind do not replace the other kinds; the delivery does not establish a personal kill or first acquisition."
+        },
+        {
+          "id": "emerald-rune",
+          "kind": "carried_item",
+          "item_vnums": [
+            99006
+          ],
+          "count": 1,
+          "text": "Carry the emerald rune",
+          "hint": "The emerald rune master carries this exact rune in the forest. Only one copy is ordinarily loaded at a time, and current availability can vary. Supplied copies qualify. A different rune or several copies of one kind do not replace the other kinds; the delivery does not establish a personal kill or first acquisition."
+        },
+        {
+          "id": "return-five-runes",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 99028,
+              "completion_key": "give=I:99002,I:99003,I:99004,I:99005,I:99006;receive=I:99009;disappear=0"
+            },
+            {
+              "giver_vnum": 99028,
+              "completion_key": "give=I:99002,I:99003,I:99004,I:99005,I:99006;receive=I:99071;disappear=0"
+            },
+            {
+              "giver_vnum": 99028,
+              "completion_key": "give=I:99002,I:99003,I:99004,I:99005,I:99006;receive=I:99073;disappear=0"
+            },
+            {
+              "giver_vnum": 99028,
+              "completion_key": "give=I:99002,I:99003,I:99004,I:99005,I:99006;receive=I:99074;disappear=0"
+            },
+            {
+              "giver_vnum": 99028,
+              "completion_key": "give=I:99002,I:99003,I:99004,I:99005,I:99006;receive=I:99075;disappear=0"
+            }
+          ],
+          "text": "Bring all five distinct runes together to Malchor",
+          "hint": "Seek Malchor in the Tower of Twilight museum. Carry the runes directly rather than offering a container or worn equipment. The currently matched exchange awards a ruby-encrusted eyepatch; the other reward variants are not selectable through this offering. Malchor remains afterward. One recovered native variant records this story once, without proving every source or a restored forest effect."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
