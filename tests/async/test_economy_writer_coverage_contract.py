@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections import Counter
 from pathlib import Path
 import re
 import sys
@@ -402,20 +403,39 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_legacy_restore_cash_has_explicit_source_and_publication_gates(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         sites = {row["id"]: row["sites"] for row in registry["writers"]}
+        coins = ("COPPER", "SILVER", "GOLD", "PLATINUM")
+        # Match the actual assignments, including multiplicity, rather than
+        # their line numbers. Unrelated source insertions must not break this
+        # policy check; missing, additional, or altered writers still do.
         expected = {
-            "world.mobile_template": ("src/world/db.c", {2281, 2282, 2283, 2284, 2672, 2673, 2674, 2675}),
-            "player.flatfile_baseline_projection": ("src/core/files.c", {1872, 1873, 1874, 1875, 1877, 1878, 1879, 1880}),
-            "player.legacy_flatfile_load": ("src/core/files.c", {2426, 2427, 2428, 2429}),
-            "recovery.pet_cash_discard": ("src/core/files.c", {4691, 4692, 4693, 4694, 4696, 4697, 4698, 4699}),
-            "recovery.copyover_npc_gold_projection": ("src/persistence/copyover.c", {1633, 2144}),
+            "world.mobile_template": ("src/world/db.c", [
+                f"GET_{coin}(mob) = tmp{index};" for index, coin in enumerate(coins, 1)
+            ] * 2),
+            "player.flatfile_baseline_projection": ("src/core/files.c", [
+                f"GET_BALANCE_{coin}(ch) = balances.{coin.lower()};" for coin in coins
+            ] + [f"GET_{coin}(ch) = domains.domains.wallet[{index}];"
+                 for index, coin in enumerate(coins)]),
+            "player.legacy_flatfile_load": ("src/core/files.c", [
+                f"GET_{coin}(ch) = GET_INTE(buf);" for coin in coins
+            ]),
+            "recovery.pet_cash_discard": ("src/core/files.c", [
+                f"GET_{coin}(ch) = GET_INTE(buf);" for coin in coins
+            ] + [f"GET_{coin}(ch) = 0;" for coin in coins]),
+            "recovery.copyover_npc_gold_projection": ("src/persistence/copyover.c", [
+                "GET_GOLD(mob) = mob_entry.gold;"
+            ] * 2),
         }
         current = {(row["path"], row["line"], row["family"])
                    for row in self.census}
-        for route_id, (path, lines) in expected.items():
-            self.assertEqual({tuple(site) for site in sites[route_id]
-                              if site[2] == "coin_assignment"},
-                             {(path, line, "coin_assignment") for line in lines})
+        excerpts = {(row["path"], row["line"], row["family"]): row["excerpt"]
+                    for row in self.census}
+        for route_id, (path, assignments) in expected.items():
             self.assertTrue(all(tuple(site) in current for site in sites[route_id]))
+            coin_sites = [tuple(site) for site in sites[route_id] if site[2] == "coin_assignment"]
+            self.assertTrue(all(site[0] == path for site in coin_sites))
+            normalized = [re.sub(r"/\*.*?\*/", "", excerpts[site]).strip()
+                          for site in coin_sites]
+            self.assertEqual(Counter(normalized), Counter(assignments), route_id)
         for route_id in ("world.mobile_template", "recovery.pet_cash_discard"):
             route = self.routes[route_id]
             self.assertEqual(route["disposition"], "runtime_mutation_route")

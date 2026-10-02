@@ -339,7 +339,7 @@
       ],
       "required_markers": [],
       "schema_prefix": "duris_telemetry_",
-      "migrated": true
+      "migrated": false
     },
     {
       "id": "telemetry_connection",

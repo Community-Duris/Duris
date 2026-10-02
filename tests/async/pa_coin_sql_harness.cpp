@@ -9,10 +9,6 @@
 #include "currency_transaction_mysql_harness.cpp"
 #undef main
 
-// The fixture owns a direct MYSQL handle rather than borrowing from sql_pool;
-// discard is therefore a no-op, and mysql_close at exit owns the handle.
-extern "C" void sql_pool_discard_connection(MYSQL *) {}
-
 int main()
 {
 	const char *host = std::getenv("DB_HOST");
@@ -26,11 +22,10 @@ int main()
 	// positive accounting write needs the typed accounting root that this
 	// legacy coin fixture deliberately does not manufacture.
 	critical_command root_command = {};
-	coin_transfer_payload payload = {};
 	coin_transfer_result result = {};
-	errno = 0;
-	assert(!coin_transfer_accounting_record(nullptr, root_command, payload, result));
-	assert(errno == EINVAL);
+	coin_transfer_accounting_context context = {};
+	assert(coin_transfer_accounting_record(nullptr, root_command, result, 0, context) ==
+	       ENOTCONN);
 
 	connection = mysql_init(nullptr);
 	assert(connection);

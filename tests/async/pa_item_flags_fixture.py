@@ -404,9 +404,6 @@ def _sql(container: str, database: str, password: str, *, source: Path | None = 
          statement: str | None = None) -> str:
     env = os.environ.copy()
     env["MYSQL_PWD"] = password
-    prefix = "MARIADB" if IMAGE.startswith("mariadb") else "MYSQL"
-    env[prefix + "_ROOT_PASSWORD"] = password
-    env[prefix + "_DATABASE"] = database
     command = ["docker", "exec", "-i", "-e", "MYSQL_PWD", container,
                "mysql", "--protocol=tcp", "-h127.0.0.1", "-P3306", "-uroot",
                "--batch", "--skip-column-names", database]
@@ -433,8 +430,9 @@ def run_item_flags_fixture() -> str:
     database = f"s05_item_flags_test_{token}"
     password = secrets.token_hex(24)
     env = os.environ.copy()
-    env["MARIADB_ROOT_PASSWORD"] = password
-    env["MARIADB_DATABASE"] = database
+    prefix = "MARIADB" if IMAGE.startswith("mariadb") else "MYSQL"
+    env[prefix + "_ROOT_PASSWORD"] = password
+    env[prefix + "_DATABASE"] = database
     env["MYSQL_PWD"] = password
     container = ""
     tools_container = ""

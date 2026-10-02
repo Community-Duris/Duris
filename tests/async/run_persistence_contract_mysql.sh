@@ -28,19 +28,9 @@ docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -N -e 'SEL
 MYSQL=(docker exec -i -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -N -B)
 
 verify_contract() {
-    local columns indexes engines exact_columns item_index scalar_index
-    columns=$("${MYSQL[@]}" "$DB_NAME" -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND ((table_name='persistence_item_events' AND column_name IN ('id','ts_usec','event_type','item_uid','vnum','item','actor','actor_id','source','target','note','dedupe_key','created_at')) OR (table_name='persistence_scalar_events' AND column_name IN ('id','event_type','event_key','boot_time','touched_at','zone_number','toucher_pid','group_size','epic_value','alignment_delta','dedupe_key','created_at')));")
-    indexes=$("${MYSQL[@]}" "$DB_NAME" -e "SELECT COUNT(*) FROM (SELECT DISTINCT table_name,index_name FROM information_schema.statistics WHERE table_schema=DATABASE() AND ((table_name='persistence_item_events' AND index_name IN ('PRIMARY','idx_item_uid_ts','idx_event_type_created','uq_item_dedupe')) OR (table_name='persistence_scalar_events' AND index_name IN ('PRIMARY','idx_scalar_event_key','idx_scalar_zone_time','uq_scalar_dedupe')))) x;")
-    engines=$("${MYSQL[@]}" "$DB_NAME" -e "SELECT COUNT(DISTINCT table_name) FROM information_schema.tables WHERE table_schema=DATABASE() AND engine='InnoDB' AND table_name IN ('auction_bid_history','auction_item_pickups','auction_money_pickups','auctions');")
-    exact_columns=$("${MYSQL[@]}" "$DB_NAME" -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND ((table_name='persistence_item_events' AND column_name='event_type' AND column_type='varchar(64)' AND is_nullable='NO' AND column_default='') OR (table_name='persistence_item_events' AND column_name='item_uid' AND column_type='bigint unsigned' AND is_nullable='NO' AND column_default='0') OR (table_name='persistence_scalar_events' AND column_name='event_type' AND column_type='varchar(64)' AND is_nullable='NO' AND column_default=''));")
-    item_index=$("${MYSQL[@]}" "$DB_NAME" -e "SELECT GROUP_CONCAT(column_name ORDER BY seq_in_index SEPARATOR ',') FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='persistence_item_events' AND index_name='idx_item_uid_ts';")
-    scalar_index=$("${MYSQL[@]}" "$DB_NAME" -e "SELECT GROUP_CONCAT(column_name ORDER BY seq_in_index SEPARATOR ',') FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='persistence_scalar_events' AND index_name='idx_scalar_zone_time';")
-    [[ "$columns" == "25" ]]
-    [[ "$indexes" == "8" ]]
-    [[ "$engines" == "4" ]]
-    [[ "$exact_columns" == "3" ]]
-    [[ "$item_index" == "item_uid,ts_usec,id" ]]
-    [[ "$scalar_index" == "zone_number,touched_at" ]]
+    docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
+        -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" \
+        "$NAME" /tmp/persistence-contract/verify_persistence_contract.sh
 }
 
 "${MYSQL[@]}" <<SQL
@@ -115,6 +105,25 @@ apply_contract
 after_replay=$(schema_signature)
 [[ "$before_replay" == "$after_replay" ]]
 [[ $("${MYSQL[@]}" "$DB_NAME" -e "SELECT COUNT(*) FROM persistence_item_events WHERE event_type='replay_probe';") == "1" ]]
+
+# Equivalent MySQL/MariaDB metadata must pass, but signed item identities must
+# still fail the exact contract before guarded convergence repairs them.
+"${MYSQL[@]}" "$DB_NAME" -e "ALTER TABLE persistence_item_events MODIFY item_uid BIGINT NOT NULL DEFAULT 0;"
+if verify_contract; then
+    echo 'FAILED: verifier accepted a signed item UID' >&2
+    exit 1
+fi
+apply_contract
+[[ "$before_replay" == "$(schema_signature)" ]]
+
+# A literal string NULL is not a SQL NULL default on either engine.
+"${MYSQL[@]}" "$DB_NAME" -e "ALTER TABLE persistence_item_events MODIFY dedupe_key VARCHAR(64) NULL DEFAULT 'NULL';"
+if verify_contract; then
+    echo 'FAILED: verifier accepted a literal NULL string default' >&2
+    exit 1
+fi
+apply_contract
+[[ "$before_replay" == "$(schema_signature)" ]]
 
 "${MYSQL[@]}" "$DB_NAME" -e "
 ALTER TABLE persistence_item_events DROP COLUMN target;

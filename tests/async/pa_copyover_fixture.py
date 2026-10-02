@@ -289,9 +289,11 @@ class DisposableMariaDB:
                 self.forward.close()
         finally:
             if self.started:
-                subprocess.run([self.docker, "rm", "-f", self.container], text=True,
-                               capture_output=True, timeout=60)
-                result = subprocess.run([self.docker, "inspect", self.container], text=True,
+                removal = subprocess.run([self.docker, "rm", "-f", self.container], text=True,
+                                         capture_output=True, timeout=60)
+                require(removal.returncode == 0,
+                        f"disposable container removal failed: {removal.stderr}")
+                result = subprocess.run([self.docker, "container", "inspect", self.container], text=True,
                                         capture_output=True, timeout=30)
                 require(result.returncode != 0 and "No such" in result.stderr + result.stdout,
                         f"disposable container removal not verified: {self.container}")
