@@ -384,3 +384,23 @@ the account menu, original item evidence, self-scoped recovery list/detail,
 cold-entry refusal and restart without manual fixture repair. Remaining coin,
 boon and MySQL variants are in progress. The production selector and safety gates
 remain unchanged; these development results do not qualify production release.
+
+## Item supply-state audit consistency
+
+The independent reconciler previously accepted a destruction event whose
+custody state remained live when its revisions, reference and native row agreed.
+It also did not flag a creation event claiming tombstone custody. Five failing
+subcases reproduce these omissions across epoch-local and lineage history and
+show that a corrupt live destruction could mask later UID reuse.
+
+The shared lifetime audit now reports `invalid_item_supply_state` for those
+contradictions and treats an explicit destruction as irreversible retirement
+even if its state is corrupt. All 51 reconciler tests pass. The SELECT-only SQL
+export corruption/recovery probe passes on disposable MySQL 8.0.46 and MariaDB
+10.11.14: changing an existing live event's reason to destruction produces the
+new exception, and restoring a valid retirement returns to the exact previous
+exception set. No source rows are repaired by the exporter or reconciler.
+
+This is bounded R4/R7 audit evidence. The export remains `sql_partial` with
+`complete=false`; native origin/source completeness, runtime writer coverage,
+active-accounting journeys and full lifecycle/workload qualification remain open.
