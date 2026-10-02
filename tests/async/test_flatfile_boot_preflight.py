@@ -114,71 +114,75 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-build-") as build_tmp:
             }
             if runtime_library_path := os.environ.get("LD_LIBRARY_PATH"):
                 environment["LD_LIBRARY_PATH"] = runtime_library_path
-            with output_path.open("w", encoding="utf-8") as output:
-                process = subprocess.Popen(
-                    [str(binary), "--minimal", "-d", str(run_root), str(port)],
-                    cwd=run_root,
-                    env=environment,
-                    text=True,
-                    stdout=output,
-                    stderr=subprocess.STDOUT,
-                )
-                try:
-                    deadline = time.monotonic() + 30
-                    boot_output = ""
-                    while time.monotonic() < deadline:
+            def boot_and_shutdown(label):
+                output_path = run_root / (label + ".out")
+                with output_path.open("w", encoding="utf-8") as output:
+                    process = subprocess.Popen(
+                        [str(binary), "--minimal", "-d", str(run_root), str(port)],
+                        cwd=run_root,
+                        env=environment,
+                        text=True,
+                        stdout=output,
+                        stderr=subprocess.STDOUT,
+                    )
+                    try:
+                        deadline = time.monotonic() + 30
+                        boot_output = ""
+                        while time.monotonic() < deadline:
+                            output.flush()
+                            boot_output = output_path.read_text(errors="replace")
+                            if "Entering game loop." in boot_output:
+                                break
+                            if process.poll() is not None:
+                                break
+                            time.sleep(0.1)
+                        require(
+                            "Entering game loop." in boot_output,
+                            "client-free server did not reach the game loop:\n" + boot_output,
+                        )
+                        # The game-loop marker precedes listener initialization.
+                        # Wait for HTTP readiness instead of racing the socket bind.
+                        deadline = time.monotonic() + 30
+                        while True:
+                            try:
+                                with urllib.request.urlopen(
+                                    f"http://127.0.0.1:{websocket_port}/health", timeout=3
+                                ) as response:
+                                    health = json.load(response)
+                                break
+                            except urllib.error.URLError:
+                                if process.poll() is not None or time.monotonic() >= deadline:
+                                    raise
+                                time.sleep(0.1)
+                        require(
+                            response.status == 200
+                            and health == {"status": "healthy", "persistence": "ready"},
+                            f"client-free health endpoint was not ready: {health}",
+                        )
+                        process.send_signal(signal.SIGTERM)
+                        process.wait(timeout=30)
                         output.flush()
                         boot_output = output_path.read_text(errors="replace")
-                        if "Entering game loop." in boot_output:
-                            break
-                        if process.poll() is not None:
-                            break
-                        time.sleep(0.1)
-                    require(
-                        "Entering game loop." in boot_output,
-                        "client-free server did not reach the game loop:\n" + boot_output,
-                    )
-                    # The game-loop marker precedes listener initialization.
-                    # Wait for HTTP readiness instead of racing the socket bind.
-                    deadline = time.monotonic() + 30
-                    while True:
-                        try:
-                            with urllib.request.urlopen(
-                                f"http://127.0.0.1:{websocket_port}/health", timeout=3
-                            ) as response:
-                                health = json.load(response)
-                            break
-                        except urllib.error.URLError:
-                            if process.poll() is not None or time.monotonic() >= deadline:
-                                raise
-                            time.sleep(0.1)
-                    require(
-                        response.status == 200
-                        and health == {"status": "healthy", "persistence": "ready"},
-                        f"client-free health endpoint was not ready: {health}",
-                    )
-                    process.send_signal(signal.SIGTERM)
-                    process.wait(timeout=30)
-                    output.flush()
-                    boot_output = output_path.read_text(errors="replace")
-                    require(
-                        process.returncode == 0,
-                        f"client-free server did not shut down cleanly ({process.returncode}):\n"
-                        + boot_output,
-                    )
-                    require(
-                        "Normal termination of game." in boot_output,
-                        "client-free shutdown did not reach normal termination:\n"
-                        + boot_output,
-                    )
-                finally:
-                    if process.poll() is None:
-                        process.terminate()
-                        try:
-                            process.wait(timeout=5)
-                        except subprocess.TimeoutExpired:
-                            process.kill()
-                            process.wait(timeout=5)
+                        require(
+                            process.returncode == 0,
+                            f"client-free server did not shut down cleanly ({process.returncode}):\n"
+                            + boot_output,
+                        )
+                        require(
+                            "Normal termination of game." in boot_output,
+                            "client-free shutdown did not reach normal termination:\n"
+                            + boot_output,
+                        )
+                    finally:
+                        if process.poll() is None:
+                            process.terminate()
+                            try:
+                                process.wait(timeout=5)
+                            except subprocess.TimeoutExpired:
+                                process.kill()
+                                process.wait(timeout=5)
+
+            boot_and_shutdown("initial")
 
             allocator = state_root / "metadata/item_uid_allocator"
             marker = state_root / "metadata/item_uid_allocator.initialized"
@@ -201,6 +205,31 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-build-") as build_tmp:
                         "failed boot recreated allocator authority or changed initialization evidence")
             finally:
                 preserved_allocator.rename(allocator)
+
+            earlier_allocator = allocator.read_bytes()
+            boot_and_shutdown("next-generation")
+            current_allocator = allocator.read_bytes()
+            current_marker = marker.read_bytes()
+            require(current_allocator != earlier_allocator and len(current_marker) == 56 and
+                    current_marker[6] == 2,
+                    "second healthy boot did not advance sealed UID high-water evidence")
+            allocator.write_bytes(earlier_allocator)
+            try:
+                stale_allocator = subprocess.run(
+                    [str(binary), "--minimal", "-d", str(run_root), str(port)],
+                    cwd=run_root, env=environment, text=True,
+                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=30,
+                )
+                require(stale_allocator.returncode == 1 and
+                        "Could not reserve a collision-free flat item UID range" in stale_allocator.stdout,
+                        "older valid allocator did not fail at boot admission:\n" +
+                        stale_allocator.stdout)
+                require(allocator.read_bytes() == earlier_allocator and
+                        marker.read_bytes() == current_marker,
+                        "failed stale-state boot changed authority or its witness")
+            finally:
+                allocator.write_bytes(current_allocator)
+            boot_and_shutdown("restored-generation")
 
             # A normal install may be started before `make world` has generated
             # the full-world files.  That is a configuration error, but it must
@@ -258,4 +287,4 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-build-") as build_tmp:
                 mode = stat.S_IMODE(path.stat().st_mode)
                 require(mode == 0o700, f"insecure mode {mode:o} on {path}")
 
-print("client-free build, health, game-loop boot, and clean shutdown preflight passed")
+print("client-free build, health, missing/stale UID authority refusal, exact restoration, game-loop boot and clean shutdown preflight passed")
