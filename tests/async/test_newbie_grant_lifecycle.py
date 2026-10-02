@@ -20,6 +20,7 @@ PRELUDE = r'''
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
 #include "player/player_snapshot_capture.h"
+#include "player/player_save_pipeline.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_load_items.h"
 #include "world/handler.h"
@@ -52,6 +53,8 @@ static std::deque<critical_command> submitted;
 static critical_submit_result submit_result = critical_submit_result::accepted;
 static std::map<uint64_t, int> publications, extractions;
 static std::map<int, int> dirty, commands;
+static std::map<int, bool> sealed_saves;
+bool player_save_pipeline_sealed_save_pending(int pid) { return sealed_saves[pid]; }
 static std::string fixture_messages;
 static bool recover_creation = false;
 static obj_data recovered_creation = {};
@@ -215,6 +218,7 @@ struct fixture
         item_movement_transaction_reset_for_tests();
         item_ownership_runtime_reset();
         submitted.clear(); publications.clear(); extractions.clear(); dirty.clear(); commands.clear();
+        sealed_saves.clear();
         fixture_messages.clear(); submit_result = critical_submit_result::accepted;
         pc.pid = 42; other_pc.pid = 43;
         actor.only.pc = &pc; other.only.pc = &other_pc;
@@ -265,6 +269,27 @@ static void deliver(const critical_completion &completion)
 }
 int main()
 {
+    // A grant waits for the recipient's immutable save, then publishes once.
+    // A distinct actor must not make us consult the wrong player's seal.
+    for (bool other_recipient : {false, true})
+    {
+        fixture f;
+        P_char recipient = other_recipient ? &f.other : &f.actor;
+        const int recipient_pid = GET_PID(recipient);
+        sealed_saves[recipient_pid] = true;
+        assert(item_creation_grant_submit_to_player(&f.actor, &f.bag, recipient));
+        for (int pulse = 0; pulse < 5; ++pulse)
+            item_movement_transaction_handle_completions(nullptr, 0);
+        assert(submitted.empty() && publications.empty() && extractions.empty());
+        assert(OBJ_NOWHERE(&f.bag) && item_movement_transaction_player_busy(&f.actor));
+        sealed_saves[recipient_pid] = false;
+        item_movement_transaction_handle_completions(nullptr, 0);
+        assert(submitted.size() == 1);
+        const auto completed = next_completion(critical_apply_outcome::applied);
+        deliver(completed); deliver(completed);
+        assert(OBJ_CARRIED_BY(&f.bag, recipient) && publications[100] == 1);
+        assert(extractions.empty() && !item_movement_transaction_player_busy(&f.actor));
+    }
     // A final-publication callback runs exactly once and may safely enqueue the
     // next creation after the completed request releases its queue slot.
     {

@@ -206,6 +206,27 @@ class LifecycleManifestTest(unittest.TestCase):
                             "recipe progression recovery must remain protected and retained",
                         )
 
+    def test_coupled_player_recovery_protection_cannot_be_removed(self) -> None:
+        stores = (
+            "database:player_death_disposition", "database:player_death_conflict_evidence",
+            "database:player_spell_effect_receipt", "database:quest_reward_obligation",
+            "database:quest_reward_xp_entitlement", "file:player-deaths",
+            "file:player-spell-receipts", "file:player_save_quarantine",
+            "file:player_save_quarantine_archive", "file:player_save_quarantine_policy",
+        )
+        for entry_id in stores:
+            for field, value in (("protected_record", False), ("season_action", "reset_delete"),
+                                 ("terminal_action", "deactivate")):
+                with self.subTest(store=entry_id, field=field):
+                    changed = json.loads(json.dumps(self.manifest))
+                    target = next(row for row in changed["entries"] if row["id"] == entry_id)
+                    target[field] = value
+                    with tempfile.TemporaryDirectory() as temporary:
+                        self.assert_rejected(
+                            self.run_validator(self.write_manifest(Path(temporary), changed)),
+                            "coupled player recovery must remain protected and retained",
+                        )
+
     def test_journal_archive_and_fences_are_protected_recovery_evidence(self) -> None:
         for name in ("file:player_save_quarantine_archive", "file:player_save_quarantine_policy"):
             entry = self.entry(name)
