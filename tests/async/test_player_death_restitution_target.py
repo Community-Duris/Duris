@@ -325,7 +325,7 @@ class TargetTests(unittest.TestCase):
             database_env = ("MARIADB_DATABASE=" if maria else "MYSQL_DATABASE=") + db_name
             db_id = run(["docker", "create", "--name", "duris-331-target-db-" + suffix,
                          "--network", "none", "-e", auth, "-e", database_env,
-                         image, "--event-scheduler=OFF"]).stdout.strip()
+                         image, "--event-scheduler=OFF", "--innodb-use-native-aio=OFF"]).stdout.strip()
             created.append(db_id)
             run(["docker", "start", db_id])
             client = ["docker", "exec", "-i", db_id, "mysql", "--no-defaults",

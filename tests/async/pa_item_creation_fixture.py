@@ -207,7 +207,7 @@ class DisposableMariaDB:
             command += ["--publish", f"127.0.0.1:{self.port}:{self.port}"]
         for key in ("ROOT_PASSWORD", "ROOT_HOST", "DATABASE", "USER", "PASSWORD"):
             command += ["--env", prefix + "_" + key]
-        command += [MARIADB_IMAGE, f"--port={self.port}",
+        command += [MARIADB_IMAGE, "--innodb-use-native-aio=OFF", f"--port={self.port}",
                     "--bind-address=" + ("127.0.0.1" if network_mode else "0.0.0.0")]
         self.start_attempted = True
         _run(command, env=self.process_env, timeout=90)

@@ -173,7 +173,7 @@ class DisposableMariaDB:
     def start(self):
         from disposable_sql_fixture import private_network
         network = private_network()
-        server_arguments = []
+        server_arguments = ["--innodb-use-native-aio=OFF"]
         env = environment()
         variables = {self.prefix + "_ROOT_PASSWORD": self.root_password,
                      self.prefix + "_USER": self.user,
@@ -187,7 +187,7 @@ class DisposableMariaDB:
                 probe.bind(("127.0.0.1", 0))
                 self.port = probe.getsockname()[1]
             command += ["--network", network]
-            server_arguments = ["--port=" + str(self.port), "--bind-address=127.0.0.1"]
+            server_arguments += ["--port=" + str(self.port), "--bind-address=127.0.0.1"]
         else:
             command += ["-p", "127.0.0.1::3306"]
         for key in variables:

@@ -444,6 +444,7 @@ def run_item_flags_fixture() -> str:
             "docker", "run", "--pull=never", "--rm", "-d", "--name", name,
             "--cpus=2", "--memory=2g", "--memory-swap=2g",
             "-e", prefix + "_ROOT_PASSWORD", "-e", prefix + "_DATABASE", IMAGE,
+            "--innodb-use-native-aio=OFF",
         ], env=env), "start disposable MariaDB").strip()
 
         ready = False

@@ -15,11 +15,11 @@ PY
     )
     read -r network port <<< "$configuration"
     SQL_FIXTURE_NETWORK=(-p 127.0.0.1::3306)
-    SQL_FIXTURE_SERVER=()
+    SQL_FIXTURE_SERVER=(--innodb-use-native-aio=OFF)
     SQL_FIXTURE_PRIVATE_PORT=
     if [[ "$network" != native ]]; then
         SQL_FIXTURE_NETWORK=(--network "$network")
-        SQL_FIXTURE_SERVER=("--port=$port" --bind-address=127.0.0.1)
+        SQL_FIXTURE_SERVER+=("--port=$port" --bind-address=127.0.0.1)
         SQL_FIXTURE_PRIVATE_PORT=$port
     fi
 }
