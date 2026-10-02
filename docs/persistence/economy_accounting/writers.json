@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "0cd04f40b13bed77a2b49b2c1bd8a624ccf4c386",
+  "source_commit": "c5ea78c9518df74d5d22a545e28b283c98489765",
   "census_complete": true,
   "writers": [
     {
@@ -19278,37 +19278,38 @@
       },
       "test_candidates": [
         "tests/async/test_economy_writer_coverage_contract.py",
-        "tests/async/test_pa_item_admission.py"
+        "tests/async/test_pa_item_admission.py",
+        "tests/async/test_salvage_prototype_preflight.py"
       ],
       "sites": [
         [
           "src/item/salvage.c",
-          486,
+          497,
           "item_lifecycle"
         ],
         [
           "src/item/salvage.c",
-          495,
+          506,
           "item_lifecycle"
         ],
         [
           "src/item/salvage.c",
-          533,
+          544,
           "item_lifecycle"
         ],
         [
           "src/item/salvage.c",
-          554,
+          565,
           "item_lifecycle"
         ],
         [
           "src/item/salvage.c",
-          574,
+          585,
           "item_lifecycle"
         ],
         [
           "src/item/salvage.c",
-          655,
+          666,
           "item_lifecycle"
         ]
       ],
@@ -19456,7 +19457,7 @@
         ],
         [
           "src/item/salvage.c",
-          695,
+          706,
           "item_lifecycle"
         ]
       ],
@@ -54347,43 +54348,43 @@
     },
     {
       "path": "src/item/salvage.c",
-      "line": 486,
+      "line": 497,
       "family": "item_lifecycle",
       "excerpt": "grant_salvage_item(ch, read_object(MAG_ESSENCE_VNUM, VIRTUAL));"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 495,
+      "line": 506,
       "family": "item_lifecycle",
       "excerpt": "grant_salvage_item(ch, read_object(MAG_ESSENCE_VNUM, VIRTUAL));"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 533,
+      "line": 544,
       "family": "item_lifecycle",
       "excerpt": "salvaged = read_object(matvnum, VIRTUAL);"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 554,
+      "line": 565,
       "family": "item_lifecycle",
       "excerpt": "salvaged = read_object(matvnum, VIRTUAL);"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 574,
+      "line": 585,
       "family": "item_lifecycle",
       "excerpt": "salvaged = read_object(matvnum, VIRTUAL);"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 655,
+      "line": 666,
       "family": "item_lifecycle",
       "excerpt": "recipe = read_object(SALVAGE_RECIPE_VNUM, VIRTUAL);"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 695,
+      "line": 706,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item);"
     },
