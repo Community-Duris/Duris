@@ -122,6 +122,7 @@ OBJS =  $(SHIP_OBJS) \
 				 account/account_reward_config.o \
 				 world/hardcore_config.o \
 				 account/creation_availability_config.o \
+				 account/login_mode_banner.o \
 				 combat/frag_cap_config.o \
 				 cmd/actcomm.o \
 				 cmd/actinf.o \
@@ -130,6 +131,7 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/actobj.o \
 				 cmd/actoff.o \
 				 cmd/divine_refusal_policy.o \
+				 cmd/divine_refusal_content.o \
 				 cmd/actoth.o cmd/color_command.o \
 				 cmd/actset.o \
 				 cmd/actwiz.o \
@@ -224,6 +226,7 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/epic_skills.o \
 				 classes/ethermancer.o \
 				 world/events.o \
+				 world/world_activity.o \
 				 world/event_names.o \
 				 world/new_events.o \
 				 world/nevent_periodic.o \
@@ -441,6 +444,7 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/skills.o \
 				 magic/smagic.o \
 				 classes/salchemist.o \
+				 classes/npc_alchemist.o \
 				 classes/sillusionist.o \
 				 net/sparser.o \
 				 mob/specials.o \

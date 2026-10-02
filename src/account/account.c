@@ -10,6 +10,7 @@
 #include "world/db.h"
 #include "world/epic_transaction.h"
 #include "world/handler.h"
+#include "world/rested.h"
 #include "world/zone_touch_transaction.h"
 #include "cmd/interp.h"
 #include "economy/auction_transaction.h"
@@ -25,7 +26,10 @@
 #include "core/safe_format.h"
 #include "account/account.h"
 #include "account/account_recovery.h"
+#include "account/creation_availability_config.h"
+#include "account/login_mode_banner.h"
 #include "account/password_hash.h"
+#include "combat/chaos_config.h"
 #include <ctype.h>
 #include <math.h>
 #include <openssl/crypto.h>
@@ -477,6 +481,16 @@ void close_account_sessions_named(const char *acct_name, P_desc except, const ch
 	}
 }
 
+void send_account_name_prompt(P_desc d)
+{
+	const std::string banner = login_mode_banner(duris_staging_enabled(), chaos_mud_enabled(),
+						     creation_all_races_enabled(),
+						     creation_all_classes_enabled());
+	if (!banner.empty())
+		SEND_TO_Q(banner.c_str(), d);
+	SEND_TO_Q("Please enter your account name: ", d);
+}
+
 void send_account_password_prompt(P_desc d)
 {
 	SEND_TO_Q(account_recovery_enabled() ?
@@ -567,7 +581,7 @@ void select_accountname(P_desc d, char *arg)
 		return;
 	}
 
-	if (_parse_name(arg, tmp_name))
+	if (_parse_name(arg, tmp_name, false))
 	{
 		SEND_TO_Q("Illegal account name, please try another.\r\n", d);
 		SEND_TO_Q("Account Name: ", d);
@@ -784,7 +798,8 @@ void display_account_menu(P_desc d, char *arg)
 		SEND_TO_Q("&+Y5) Change registered email address&n\r\n", d);
 		SEND_TO_Q("&+Y6) Change account password&n\r\n", d);
 		SEND_TO_Q("&+R7) Delete this account&n\r\n", d);
-		SEND_TO_Q("&+C8) Check rested bonus&n\r\n", d);
+		if (rested_bonus_enabled())
+			SEND_TO_Q("&+C8) Check rested bonus&n\r\n", d);
 		SEND_TO_Q("\r\n", d);
 		SEND_TO_Q("&+L0) Disconnect from this account&n\r\n", d);
 		SEND_TO_Q("&+y------------------------------------------&n\r\n", d);
@@ -855,6 +870,12 @@ void display_account_menu(P_desc d, char *arg)
 		break;
 
 	case 8:
+		if (!rested_bonus_enabled())
+		{
+			SEND_TO_Q("\r\nThe rested bonus feature is currently disabled.\r\n", d);
+			display_account_menu(d, NULL);
+			break;
+		}
 		check_rested_bonus(d);
 		break;
 
@@ -1199,7 +1220,7 @@ void verify_new_account_information(P_desc d, char *arg)
 		SEND_TO_Q("Ok, starting over!\r\n", d);
 		d->account = free_account(d->account);
 		STATE(d) = CON_GET_ACCT_NAME;
-		SEND_TO_Q("Please enter your account name: ", d);
+		send_account_name_prompt(d);
 		return;
 	}
 	else
@@ -1673,34 +1694,38 @@ int load_char_display_data(char *charname, struct char_display_info *info)
 	info->m_class = temp_ch->player.m_class;
 	info->secondary_class = temp_ch->player.secondary_class;
 	info->hometown = GET_HOME(temp_ch);
+	info->rested_status = NULL;
 
-	// Calculate rested status based on offline time (same logic as nanny.c)
-	time_t current_time = time(0);
-	time_t offline_seconds = current_time - temp_ch->player.time.saved;
-	int offline_hours = offline_seconds / 3600;
-	char rested_buf[128];
+	if (rested_bonus_enabled())
+	{
+		// Calculate rested status based on offline time (same logic as nanny.c)
+		time_t current_time = time(0);
+		time_t offline_seconds = current_time - temp_ch->player.time.saved;
+		int offline_hours = offline_seconds / 3600;
+		char rested_buf[128];
 
-	if (offline_hours >= 20)
-	{
-		// Well-rested bonus
-		snprintf(rested_buf, 128, "&+Wwell-rested&n bonus (&+G%d&n hours offline)",
-			 offline_hours);
-		info->rested_status = str_dup(rested_buf);
-	}
-	else if (offline_hours >= 9)
-	{
-		// Rested bonus
-		snprintf(rested_buf, 128, "&+Grested&n bonus (&+Y%d&n hours offline)",
-			 offline_hours);
-		info->rested_status = str_dup(rested_buf);
-	}
-	else
-	{
-		// No bonus yet - show how many more hours needed
-		int hours_needed = 9 - offline_hours;
-		snprintf(rested_buf, 128, "&+LNone&n (&+R%d&n more hour%s needed)", hours_needed,
-			 hours_needed == 1 ? "" : "s");
-		info->rested_status = str_dup(rested_buf);
+		if (offline_hours >= 20)
+		{
+			// Well-rested bonus
+			snprintf(rested_buf, 128, "&+Wwell-rested&n bonus (&+G%d&n hours offline)",
+				 offline_hours);
+			info->rested_status = str_dup(rested_buf);
+		}
+		else if (offline_hours >= 9)
+		{
+			// Rested bonus
+			snprintf(rested_buf, 128, "&+Grested&n bonus (&+Y%d&n hours offline)",
+				 offline_hours);
+			info->rested_status = str_dup(rested_buf);
+		}
+		else
+		{
+			// No bonus yet - show how many more hours needed
+			int hours_needed = 9 - offline_hours;
+			snprintf(rested_buf, 128, "&+LNone&n (&+R%d&n more hour%s needed)",
+				 hours_needed, hours_needed == 1 ? "" : "s");
+			info->rested_status = str_dup(rested_buf);
+		}
 	}
 
 	cleanup_temp_char(temp_ch);
@@ -1725,6 +1750,13 @@ void get_race_name_from_info(struct char_display_info *info, char *race_str, int
 
 void check_rested_bonus(P_desc d)
 {
+	if (!rested_bonus_enabled())
+	{
+		SEND_TO_Q("\r\nThe rested bonus feature is currently disabled.\r\n", d);
+		display_account_menu(d, NULL);
+		return;
+	}
+
 	struct acct_chars *c = d->account->acct_character_list;
 	char buf[512];
 	int count = 0;
@@ -2579,7 +2611,7 @@ void account_new_char_name(P_desc d, char *arg)
 	for (; isspace(*arg); arg++)
 		;
 
-	if (_parse_name(arg, tmp_name))
+	if (_parse_name(arg, tmp_name, true))
 	{
 		SEND_TO_Q("Illegal character name, please try another.\r\n", d);
 		account_new_char(d, NULL);

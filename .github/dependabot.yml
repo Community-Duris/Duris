@@ -5,6 +5,12 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      # CodeQL init and analyze must run the same release; bumped in separate
+      # PRs, each one fails with a configuration version mismatch.
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
   - package-ecosystem: npm
     directory: /site
     schedule:

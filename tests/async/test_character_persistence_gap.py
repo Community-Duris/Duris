@@ -87,6 +87,20 @@ require(
     "REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE)" in complete_save,
     "the complete synchronous save must clear the baseline flag after success",
 )
+require(
+    "sql_save_player_pets(ch, type, room)" in complete_save,
+    "the pet component must receive the resolved save room for a pre-entry baseline",
+)
+pet_save = section(
+    SQL_PLAYER,
+    "// pet save - save all player's pets with equipment",
+    "\n// All runtime callers use player_load_pets_stage",
+)
+require(
+    "pet_room_vnum = save_room_vnum" in pet_save
+    and "ch->in_room >= 0 && ch->in_room <= top_of_world" in pet_save,
+    "a new character with no live room must save the empty pet set at its resolved save room",
+)
 
 pulse = section(SAVE_PIPELINE, "void player_save_pipeline_pulse(void)", "\n}\n")
 require(

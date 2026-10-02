@@ -45,6 +45,10 @@ for expected in (
     "actions/upload-artifact@",
 ):
     assert expected in security_workflow
+codeql = re.findall(r"github/codeql-action/(init|analyze)@([0-9a-f]{40})", security_workflow)
+assert sorted(step for step, _ in codeql) == ["analyze", "init"], codeql
+assert len({sha for _, sha in codeql}) == 1, f"CodeQL init and analyze pin different releases: {codeql}"
+assert '- "github/codeql-action*"' in dependabot
 assert "version: v0.70.0" in security_workflow
 assert "scan-type: rootfs" in security_workflow
 assert "scan-ref: bin/security/scanner-rootfs" in security_workflow

@@ -6,6 +6,7 @@ Run with an absolute flatfile server path; all state is disposable.
 import os
 from pathlib import Path
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -13,41 +14,6 @@ import tempfile
 import time
 import zlib
 import test_flatfile_combat_journey as journey
-
-FIXTURE = r'''
-#include "flatfile/flatfile_player_snapshot_file.h"
-#include "flatfile/flatfile_store.h"
-#include "player/player_snapshot_codec.h"
-#include <cassert>
-#include <openssl/sha.h>
-template<class T> void number(std::vector<uint8_t>& out, T value) {
-    for (size_t i=0; i<sizeof(T); ++i) out.push_back(static_cast<uint64_t>(value) >> (i*8));
-}
-int main(int argc, char **argv) {
-    assert(argc == 2);
-    const std::string root = argv[1];
-    for (uint32_t pid : {1}) {
-        player_snapshot snapshot; std::string error;
-        assert(flatfile_player_snapshot_read(root,pid,&snapshot,&error) == flatfile_player_load_result::ok);
-        for (auto &field : snapshot.status_integers) {
-            if (field.field == player_status_field::level || field.field == player_status_field::highest_level)
-                field.signed_value = field.unsigned_value = 62;
-            if (field.field == player_status_field::base_hit) field.signed_value = field.unsigned_value = 200000;
-            if (field.field == player_status_field::hit_difference) field.signed_value = field.unsigned_value = 0;
-        }
-        std::vector<uint8_t> payload, bytes;
-        snapshot.encoded_size_bound = PLAYER_SNAPSHOT_MAX_BYTES;
-        assert(player_snapshot_encode(snapshot,&payload) == player_snapshot_codec_result::ok);
-        using namespace flatfile_player_snapshot_file;
-        bytes.insert(bytes.end(),player_magic.begin(),player_magic.end());
-        number(bytes,player_file_version); number<uint32_t>(bytes,payload.size());
-        number(bytes,snapshot.pid); number(bytes,snapshot.revision); number(bytes,snapshot.components);
-        unsigned char digest[SHA256_DIGEST_LENGTH]; SHA256(payload.data(),payload.size(),digest);
-        bytes.insert(bytes.end(),digest,digest+sizeof(digest)); bytes.insert(bytes.end(),payload.begin(),payload.end());
-        assert(flatfile_atomic_write(player_directory(root),player_filename(pid),bytes,&error));
-    }
-}
-'''
 
 
 class Client(journey.MudClient):
@@ -114,11 +80,6 @@ def run(binary, compressed, nonroot=False):
                    DURIS_TLS_PORT=str(tls), DURIS_WEBSOCKET_LISTEN_ADDRESS='127.0.0.1',
                    DURIS_WEBSOCKET_PORT=str(websocket), REDIS='FALSE', CHAOS_MUD='FALSE')
         subprocess.run([str(journey.INSPECTOR), str(state), 'seed-combat'], check=True)
-        source = root / 'fixture.cpp'; source.write_text(FIXTURE)
-        fixture = root / 'fixture'
-        subprocess.run(['g++', '-std=c++20', '-Isrc', str(source),
-                        'src/player/player_snapshot_codec.c', 'src/flatfile/flatfile_player_snapshot_file.c',
-                        'src/flatfile/flatfile_store.c', '-lcrypto', '-o', str(fixture)], cwd=journey.ROOT, check=True)
         process = output = client = None
         fixture_user = None
 
@@ -144,7 +105,7 @@ def run(binary, compressed, nonroot=False):
             boot(); client = Client(port); journey.create_character(client)
             client.send('save'); client.expect(f'Save complete for {journey.CHARACTER}.')
             client.send('quit'); client.expect('ACCOUNT MENU', timeout=30)
-            stop(); subprocess.run([str(fixture), str(state)], check=True)
+            stop()
             if nonroot:
                 assert os.geteuid() == 0, '--nonroot fixture must start as root to drop to UID 10001'
                 root.chmod(0o755)
@@ -162,7 +123,7 @@ def run(binary, compressed, nonroot=False):
             try: client = journey.reconnect_character(port)
             finally: journey.MudClient = original
             if compressed: client.enable_compression()
-            client.send('shutdown copyover')
+            process.send_signal(signal.SIGUSR1)
             client.expect('Copyover FAILED', timeout=60)
             assert not path.exists() and process.poll() is None
             client.send('look'); client.expect('The Regression Arena')
@@ -171,7 +132,16 @@ def run(binary, compressed, nonroot=False):
             print(f'{compressed=}: failed open kept transport and save worker usable', flush=True)
             path.parent.mkdir()
             if nonroot: os.chown(path.parent, 10001, 10001)
-            client.send('shutdown copyover'); client.expect('Copyover complete!', timeout=90)
+            with socket.create_connection(('127.0.0.1', port), timeout=10) as idle:
+                idle.settimeout(10)
+                idle.recv(65536)
+                process.send_signal(signal.SIGUSR1)
+                client.expect('Copyover cancelled: a connection cannot survive this handoff', timeout=30)
+                assert process.poll() is None and not path.exists()
+                client.send('look'); client.expect('The Regression Arena')
+                idle.sendall(b'\n')
+                assert idle.recv(65536), 'copyover closed a non-preservable connection'
+            process.send_signal(signal.SIGUSR1); client.expect('Copyover complete!', timeout=90)
             client.send('look'); client.expect('The Regression Arena')
             client.send('save'); client.expect(f'Save complete for {journey.CHARACTER}.', timeout=30)
             assert not path.exists() and process.poll() is None
@@ -179,6 +149,7 @@ def run(binary, compressed, nonroot=False):
             print(f'{compressed=}, {nonroot=}: actual exec recovered the original socket, look and acknowledged save', flush=True)
         except Exception:
             print((runtime / 'server.out').read_text(errors='replace')[-7000:])
+            print(journey.runtime_logs(runtime))
             if client: print(client.transcript.decode(errors='replace')[-6000:])
             raise
         finally: stop()

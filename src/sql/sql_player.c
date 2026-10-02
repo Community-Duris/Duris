@@ -10,6 +10,8 @@
 #include "core/utils.h"
 #include "sql/sql_player.h"
 #include "player/player_playtime.h"
+#include "player/player_snapshot_codec.h"
+#include "player/player_load_items.h"
 #include "sql/item_extra_descr_codec.h"
 #include <errno.h>
 #include <limits.h>
@@ -237,7 +239,7 @@ bool sql_load_player_shapechanges(P_char ch)
 {
 	return false;
 }
-bool sql_save_player_pets(P_char ch, int save_type)
+bool sql_save_player_pets(P_char ch, int save_type, int save_room_vnum)
 {
 	return false;
 }
@@ -1263,7 +1265,7 @@ bool sql_save_player(P_char ch, int type, int room)
 		return false;
 	}
 
-	if (!sql_save_player_pets(ch, type))
+	if (!sql_save_player_pets(ch, type, room))
 	{
 		logit(LOG_DEBUG, "sql_save_player: component=pets outcome=failure");
 		sql_rollback();
@@ -3289,6 +3291,54 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 	return true;
 }
 
+// The legacy save adapter uses the same runtime snapshot as asynchronous saves.
+static bool sql_save_player_item_runtime_state(int pid, P_char ch)
+{
+	std::vector<player_item_snapshot> items;
+	auto capture_root = [&](P_obj root)
+	{
+		std::vector<player_item_snapshot> tree;
+		if (player_item_snapshot_tree_capture(root, &tree, nullptr) !=
+		    player_snapshot_capture_result::ok)
+			return false;
+		items.insert(items.end(), tree.begin(), tree.end());
+		return true;
+	};
+	for (int slot = 0; slot < MAX_WEAR; ++slot)
+	{
+		P_obj root = ch->equipment[slot] ? ch->equipment[slot] : save_equip[slot];
+		if (root && !capture_root(root))
+			return false;
+	}
+	for (P_obj root = ch->carrying; root; root = root->next_content)
+		if (!capture_root(root))
+			return false;
+	static const char digits[] = "0123456789abcdef";
+	for (auto item : items)
+	{
+		item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		std::vector<uint8_t> encoded;
+		if (player_item_snapshot_list_encode({ item }, &encoded) !=
+		    player_snapshot_codec_result::ok)
+			return false;
+		std::string hex;
+		hex.reserve(encoded.size() * 2);
+		for (uint8_t byte : encoded)
+		{
+			hex.push_back(digits[byte >> 4]);
+			hex.push_back(digits[byte & 15]);
+		}
+		const std::string query =
+			"INSERT INTO player_item_runtime_state(item_id,payload) SELECT id,UNHEX('" +
+			hex + "') FROM player_items WHERE pid=" + std::to_string(pid) +
+			" AND obj_uid=" + std::to_string(item.object_uid) +
+			" ON DUPLICATE KEY UPDATE payload=VALUES(payload)";
+		if (!sql_run_query(query.c_str()))
+			return false;
+	}
+	return true;
+}
+
 bool sql_save_player_items(P_char ch)
 {
 	if (!ch || !IS_PC(ch) || !DB)
@@ -3340,6 +3390,12 @@ bool sql_save_player_items(P_char ch)
 				return false;
 			}
 		}
+		if (!sql_save_player_item_runtime_state(pid, ch))
+		{
+			if (own_txn)
+				sql_rollback();
+			return false;
+		}
 		if (own_txn)
 		{
 			if (!sql_commit())
@@ -3373,6 +3429,8 @@ bool sql_save_player_items(P_char ch)
 	}
 
 	bool success = sql_save_player_items_batch_all(pid, ch, save_equipment, save_inventory);
+	if (success)
+		success = sql_save_player_item_runtime_state(pid, ch);
 	if (!success)
 		logit(LOG_DEBUG, "sql_save_player_items: component=batch outcome=failure");
 
@@ -3598,13 +3656,21 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 }
 
 // pet save - save all player's pets with equipment
-bool sql_save_player_pets(P_char ch, int save_type)
+bool sql_save_player_pets(P_char ch, int save_type, int save_room_vnum)
 {
-	if (!ch || !IS_PC(ch) || !DB || ch->in_room < 0)
+	if (!ch || !IS_PC(ch) || !DB)
+		return false;
+	// New-character baseline saves run before enter_game places the character in
+	// the world. writeCharacter has already resolved a durable birthplace/home
+	// vnum for that save, so use it when no live room is available. Without this
+	// fallback, even an empty pet set rejects every new-character baseline.
+	int pet_room_vnum = save_room_vnum;
+	if (ch->in_room >= 0 && ch->in_room <= top_of_world)
+		pet_room_vnum = world[ch->in_room].number;
+	if (pet_room_vnum == NOWHERE)
 		return false;
 	player_snapshot snapshot = {};
-	if (player_snapshot_capture(ch, 1, PLAYER_COMPONENT_PETS, save_type,
-				    world[ch->in_room].number,
+	if (player_snapshot_capture(ch, 1, PLAYER_COMPONENT_PETS, save_type, pet_room_vnum,
 				    &snapshot) != player_snapshot_capture_result::ok)
 		return false;
 	const bool own_transaction = !sql_in_transaction();
@@ -4364,15 +4430,16 @@ bool sql_load_player_items(P_char ch)
 	// then resolve container relationships
 
 	char query[1024];
-	snprintf(query, sizeof(query),
-		 "SELECT id, vnum, equip_slot, container_id, "
-		 "weight, cost, timer, extra_flags, wear_flags, item_type, "
-		 "value0, value1, value2, value3, value4, value5, value6, value7, "
-		 "name, short_descr, description, action_descr, "
-		 "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-		 "item_material, obj_uid, item_condition "
-		 "FROM player_items WHERE pid=%d ORDER BY id",
-		 pid);
+	snprintf(
+		query, sizeof(query),
+		"SELECT pi.id, vnum, equip_slot, container_id, "
+		"weight, cost, timer, extra_flags, wear_flags, item_type, "
+		"value0, value1, value2, value3, value4, value5, value6, value7, "
+		"name, short_descr, description, action_descr, "
+		"bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+		"item_material, obj_uid, item_condition, runtime.payload "
+		"FROM player_items pi LEFT JOIN player_item_runtime_state runtime ON runtime.item_id=pi.id WHERE pid=%d ORDER BY pi.id",
+		pid);
 
 	MYSQL_RES *result = db_query("%s", query);
 	if (!result)
@@ -4482,6 +4549,30 @@ bool sql_load_player_items(P_char ch)
 		}
 		REMOVE_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE);
 		obj->condition = sql_row_int(row, col++, obj->condition);
+
+		if (row[col])
+		{
+			const unsigned long *lengths = mysql_fetch_lengths(result);
+			std::vector<player_item_snapshot> runtime;
+			if (!lengths ||
+			    player_item_snapshot_list_decode(
+				    reinterpret_cast<const uint8_t *>(row[col]), lengths[col],
+				    &runtime) != player_snapshot_codec_result::ok ||
+			    runtime.size() != 1 || runtime[0].object_uid != saved_uid ||
+			    runtime[0].vnum != vnum)
+			{
+				extract_obj(obj, FALSE);
+				for (int loaded = 0; loaded < idx; ++loaded)
+					extract_obj(items[loaded], FALSE);
+				mysql_free_result(result);
+				free(items);
+				free(item_ids);
+				free(container_ids);
+				free(equip_slots);
+				return false;
+			}
+			player_load_item_runtime_state_apply(obj, runtime[0]);
+		}
 
 		// store db id for incremental saves
 		obj->db_item_id = db_id;

@@ -116,6 +116,7 @@ with tempfile.TemporaryDirectory(prefix="duris-critical-outbox-") as temporary:
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
             "-pthread", "-Isrc", str(source), rel("critical_outbox.c"),
             rel("corpse_lifecycle_command.c"), rel("item_transfer_command.c"),
+            rel("player_snapshot_codec.c"),
             rel("critical_command.c"), "-lcrypto",
             "-o", str(binary),
         ] + mysql_flags,

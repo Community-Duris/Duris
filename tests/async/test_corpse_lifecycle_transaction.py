@@ -579,6 +579,7 @@ with tempfile.TemporaryDirectory(prefix="duris-corpse-lifecycle-transaction-") a
             rel("corpse_lifecycle_transaction.c"),
             rel("corpse_lifecycle_command.c"),
             rel("item_transfer_command.c"),
+            rel("player_snapshot_codec.c"),
             rel("critical_command.c"),
             "-lcrypto",
             "-o",

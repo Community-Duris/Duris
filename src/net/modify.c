@@ -1570,7 +1570,7 @@ bool rename_character(P_char ch, char *old_name, char *new_name)
 	P_char doofus;
 
 	// Validate new name (sets new_name to all lowercase)
-	if (_parse_name(new_name, new_name))
+	if (_parse_name(new_name, new_name, true))
 	{
 		send_to_char("Illegal name, please try again.\r\n", ch);
 		return FALSE;

@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/rested.h"
 #include "telemetry/telemetry_runtime.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
@@ -1218,12 +1219,12 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 	{
 		;
 	}
-	else if (affected_by_spell(ch, TAG_WELLRESTED))
+	else if (has_active_rested_bonus(ch, TAG_WELLRESTED))
 	{
 		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_WELLRESTED;
 		XP *= 2;
 	}
-	else if (affected_by_spell(ch, TAG_RESTED))
+	else if (has_active_rested_bonus(ch, TAG_RESTED))
 	{
 		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_RESTED;
 		XP *= 1.5;
@@ -1746,6 +1747,11 @@ void point_update(void)
 	{
 		i_next = i->next;
 		if (IS_NPC(i))
+			continue;
+		// A failed death save deliberately retains the character in memory until
+		// its durable retry succeeds. It is not an idle/linkdead player and must
+		// not enter the competing RENT_LINKDEAD void loop.
+		if (GET_STAT(i) == STAT_DEAD)
 			continue;
 
 		if (i->desc && (i->desc->connected != CON_PLAYING))

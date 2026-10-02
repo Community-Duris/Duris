@@ -340,7 +340,7 @@ int number(int low, int)
 void apply_zone_modifier(P_char) {}
 void reset_mobile(int force_item_repop, bool expect_skip)
 {
-	int zone = 0, last_cmd = 1, last_mob_load = 1, replicated_shop = -1;
+	int zone = 0, last_cmd = 1, last_mob_load = 1, configured_shop = -1, replicated_shop = -1;
 	P_char mob = character_list, last_mob = mob, tmp_mob = mob, last_mob_followable = mob;
 	(void)zone;
 	(void)last_cmd;
@@ -425,6 +425,24 @@ int main(int argc, char **argv)
 		world[1].people->shopkeeper = false;
 		reset_mobile(1, false); // Non-shop NPC population behavior is unchanged.
 		assert(births == 4);
+
+		// Reconciliation can preserve a fixed keeper that walked away from its
+		// configured room. The initial zone reset must not create a second identity.
+		shop_index[3].keeper = 1;
+		shop_index[3].in_room = 202;
+		command.arg1 = 1;
+		command.arg2 = 10;
+		command.arg3 = 2;
+		P_char moved = spawn(2, 1);
+		GET_BIRTHPLACE(moved) = 202;
+		bind_shopkeeper(moved, 3);
+		unlink_room(moved);
+		char_to_room(moved, 1, 0);
+		const int births_before_moved_reset = births;
+		reset_mobile(2, true);
+		assert(births == births_before_moved_reset && !world[2].people &&
+		       world[1].people == moved);
+
 		command.arg3 = NOWHERE;
 		reset_mobile(1, false); // Existing invalid-room handling still rejects placement.
 	}

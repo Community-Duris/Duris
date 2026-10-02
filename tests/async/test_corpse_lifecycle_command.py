@@ -431,6 +431,7 @@ with tempfile.TemporaryDirectory(prefix="duris-corpse-lifecycle-command-") as te
             str(source),
             rel("corpse_lifecycle_command.c"),
             rel("item_transfer_command.c"),
+            rel("player_snapshot_codec.c"),
             rel("critical_command.c"),
             "-lcrypto",
             "-o",

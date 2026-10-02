@@ -158,7 +158,7 @@ for area_name in active_area_names:
 
 # --- boot must not activate retired raw SQL queues ----------------------------
 comm = (SRC / "comm.c").read_text()
-run_game = comm.split("void run_the_game(int port, int sslport)\n{", 1)[1]
+run_game = comm.split("int run_the_game(int port, int sslport)\n{", 1)[1]
 run_game = run_game.split("\nstatic int drain_new_connections", 1)[0]
 for retired in (
     "persistence_replay_fallback_events();",

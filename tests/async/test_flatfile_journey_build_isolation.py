@@ -8,6 +8,7 @@ SOURCES = (
     ("tests/async/test_flatfile_combat_journey.py", "flatfile-combat"),
     ("tests/async/test_flatfile_chaos_new_character_kit.py", "flatfile-combat"),
     ("tests/async/test_account_recovery_journey.py", "flatfile-recovery"),
+    ("tests/async/test_flatfile_auction_coin_put_journey.py", "auction-coin-put"),
 )
 
 # The prefix is matched WITHOUT its closing bracket: a journey may pass further

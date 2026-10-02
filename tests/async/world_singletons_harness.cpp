@@ -55,6 +55,8 @@ persistence_mode persistence_mode_get()
 bool sql_save_shopkeeper(P_char ch, int shop)
 {
 	++shops_saved;
+	if (!ch->only.npc || ch->only.npc->shopkeeper_shop_id != shop)
+		return false;
 	saved_shop_rooms[shop] = shop_index[shop].shop_is_roaming ? world[ch->in_room].number :
 								    shop_index[shop].in_room;
 	return shop_save_succeeds;
@@ -432,6 +434,9 @@ int main()
 	assert(singleton_shop_id(other) < 0); // unbound fixed shop away from home
 	bind_shopkeeper(other, 1);
 	assert(singleton_shop_id(other) == 1); // explicit binding survives off-home room
+	other->only.npc->shopkeeper_shop_id = -1;
+	GET_BIRTHPLACE(other) = shops[1].in_room;
+	assert(singleton_shop_id(other) == 1); // fixed identity is recoverable before copyover
 	P_char controlled = mob_at(2, 5);
 	masters[controlled] = keeper;
 	assert(singleton_shop_id(controlled) < 0);

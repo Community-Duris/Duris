@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/rested.h"
 #include "account/creation_availability_config.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -4391,6 +4392,21 @@ void do_wizmsg(P_char ch, char *arg, int /*cmd*/)
 
 TimedShutdownData shutdownData = { 0, -1, TimedShutdownData::NONE, "", "" };
 
+static const char *scheduled_shutdown_type_name(int shutdown_type, bool uppercase)
+{
+	switch (shutdown_type)
+	{
+	case TimedShutdownData::OK:
+	case TimedShutdownData::PWIPE:
+		return uppercase ? "SHUTDOWN" : "shutdown";
+	case TimedShutdownData::COPYOVER:
+	case TimedShutdownData::AUTOREBOOT_COPYOVER:
+		return uppercase ? "COPYOVER" : "copyover";
+	default:
+		return uppercase ? "REBOOT" : "reboot";
+	}
+}
+
 /** Execute an immediate shutdown or schedule the next countdown warning for an active request. */
 void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 {
@@ -4430,7 +4446,8 @@ void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 			break;
 
 		case TimedShutdownData::COPYOVER:
-			snprintf(buf, 500, "\r\n%s destroys the world as you know it.\r\n",
+			snprintf(buf, 500,
+				 "\r\n%s begins a copyover; your connection will be preserved.\r\n",
 				 shutdownData.IssuedBy);
 			send_to_all(buf);
 			logit(LOG_STATUS, "%s", buf);
@@ -4581,12 +4598,8 @@ void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 		// okay, see if a warning should be displayed...
 		if (secs <= shutdownData.next_warning)
 		{
-			const char *type = "REBOOT";
-			if (shutdownData.eShutdownType == TimedShutdownData::OK ||
-			    shutdownData.eShutdownType == TimedShutdownData::PWIPE)
-			{
-				type = "SHUTDOWN";
-			}
+			const char *type =
+				scheduled_shutdown_type_name(shutdownData.eShutdownType, true);
 			if (secs > 60)
 				snprintf(buf, sizeof buf,
 					 "&+R*** Scheduled %s in %ld minutes ***&n\n", type,
@@ -4634,12 +4647,7 @@ void displayShutdownMsg(P_char ch)
 	time_t secs = shutdownData.reboot_time ? shutdownData.reboot_time - time(0) : 0;
 	if (secs < 0)
 		secs = 0;
-	const char *type = "REBOOT";
-	if (shutdownData.eShutdownType == TimedShutdownData::OK ||
-	    shutdownData.eShutdownType == TimedShutdownData::PWIPE)
-	{
-		type = "SHUTDOWN";
-	}
+	const char *type = scheduled_shutdown_type_name(shutdownData.eShutdownType, true);
 
 	if (secs > 60)
 		snprintf(buf, sizeof buf, "&+R*** Scheduled %s in %ld minute%s***&n\n", type,
@@ -4664,11 +4672,7 @@ void do_shutdown(P_char ch, char *argument, int /*cmd*/)
 	char reason[MAX_STRING_LENGTH];
 	strcpy(reason, "No reason given"); // Default reason
 
-	if (shutdownData.eShutdownType == TimedShutdownData::OK ||
-	    shutdownData.eShutdownType == TimedShutdownData::PWIPE)
-	{
-		type = "shutdown";
-	}
+	type = scheduled_shutdown_type_name(shutdownData.eShutdownType, false);
 
 	// Parse: shutdown <type> [minutes] [reason...]
 	char temp_arg[MAX_INPUT_LENGTH];
@@ -4818,11 +4822,7 @@ void do_shutdown(P_char ch, char *argument, int /*cmd*/)
 		send_to_char("Go shut down someone your own size.\n", ch);
 		return;
 	}
-	if (shutdownData.eShutdownType == TimedShutdownData::OK ||
-	    shutdownData.eShutdownType == TimedShutdownData::PWIPE)
-	{
-		type = "shutdown";
-	}
+	type = scheduled_shutdown_type_name(shutdownData.eShutdownType, false);
 	strcpy(shutdownData.IssuedBy, GET_NAME(ch));
 	strlcpy(shutdownData.Reason, reason, sizeof shutdownData.Reason);
 	shutdownData.next_warning = -1;
@@ -10694,7 +10694,7 @@ void newb_spellup(P_char ch, P_char victim)
 	spell_agility(61, ch, 0, SPELL_TYPE_SPELL, victim, 0);
 	spell_dexterity(61, ch, 0, SPELL_TYPE_SPELL, victim, 0);
 	spell_accel_healing(61, ch, 0, SPELL_TYPE_SPELL, victim, 0);
-	spell_rest(61, ch, 0, SPELL_TYPE_SPELL, victim, 0);
+	grant_staff_rested_bonus(ch, victim);
 
 	send_to_char("\nEnjoy your blessings.\n", victim);
 }

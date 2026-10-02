@@ -15,10 +15,12 @@
 #include "item/native_artifact_actions.h"
 #include "economy/collector_config.h"
 #include "world/difficulty.h"
+#include "world/world_activity.h"
 #include "telemetry/telemetry_config_reload.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "net/ws_handlers.h"
+#include "cmd/divine_refusal_content.h"
 #include "core/utils.h"
 #include <fnmatch.h>
 #include <stdio.h>
@@ -167,6 +169,7 @@ void apply_properties()
 	hitroll_cap = get_property("damage.hitrollCap", 75);
 	errand_notch = get_property("epic.errandStep", 500);
 	update_misfire_properties();
+	world_activity_reload();
 	// Observe effective values only after all cached property consumers update.
 	telemetry_config_reload_notify();
 }
@@ -390,6 +393,12 @@ void initialize_properties()
 	properties_count = load_properties(duris_properties);
 	qsort(duris_properties, properties_count, sizeof(struct property), property_comp);
 	apply_properties();
+	auto content = divine_refusal_content_registry().reload_file(DIVINE_REFUSAL_CONTENT_FILE);
+	if (content.ok)
+		logit(LOG_STATUS, "Loaded divine refusal content revision %u.", content.revision);
+	else
+		logit(LOG_STATUS, "Divine refusal content unavailable: %s; retaining revision %u.",
+		      content.diagnostic.c_str(), content.revision);
 }
 
 void do_properties(P_char ch, char *args, int /*cmd*/)

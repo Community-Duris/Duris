@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/rested.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -3088,10 +3089,15 @@ void spell_curse_of_yzar(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unuse
 	send_to_char("Your spell has taken hold of poor Yzar.\n", ch);
 }
 
-void spell_rest(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
-		P_obj /*obj*/)
+static void apply_rested_bonus(P_char ch, P_char victim, bool staff_override)
 {
 	struct affected_type af, *afp;
+
+	if (!staff_override && !rested_bonus_enabled())
+	{
+		send_to_char("Rested and well-rested experience bonuses are disabled.\n", ch);
+		return;
+	}
 
 	if (!IS_ALIVE(victim))
 	{
@@ -3101,6 +3107,8 @@ void spell_rest(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int t
 
 	if ((afp = get_spell_from_char(victim, TAG_WELLRESTED)) != NULL)
 	{
+		if (staff_override)
+			afp->flags |= AFFTYPE_CUSTOM1;
 		afp->duration = 150;
 		act("You refresh $N's well-rested bonus.", FALSE, ch, NULL, victim, TO_CHAR);
 		debug("%s refreshed %s's well-rested bonus!", J_NAME(ch), J_NAME(victim));
@@ -3109,6 +3117,8 @@ void spell_rest(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int t
 
 	if ((afp = get_spell_from_char(victim, TAG_RESTED)) != NULL)
 	{
+		if (staff_override)
+			afp->flags |= AFFTYPE_CUSTOM1;
 		afp->duration = 150;
 
 		afp->type = TAG_WELLRESTED;
@@ -3124,8 +3134,21 @@ void spell_rest(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int t
 	af.type = TAG_RESTED;
 	af.duration = 150;
 	af.flags = AFFTYPE_PERM | AFFTYPE_NODISPEL | AFFTYPE_OFFLINE;
+	if (staff_override)
+		af.flags |= AFFTYPE_CUSTOM1;
 	affect_to_char(victim, &af);
 
 	act("You give $N a rested bonus.", FALSE, ch, NULL, victim, TO_CHAR);
 	debug("%s gives %s a rested bonus!", J_NAME(ch), J_NAME(victim));
+}
+
+void grant_staff_rested_bonus(P_char ch, P_char victim)
+{
+	apply_rested_bonus(ch, victim, true);
+}
+
+void spell_rest(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		P_obj /*obj*/)
+{
+	apply_rested_bonus(ch, victim, false);
 }

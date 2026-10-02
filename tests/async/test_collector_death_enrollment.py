@@ -54,6 +54,7 @@ def main() -> None:
                 str(ROOT / "src"),
                 str(ROOT / "src/persistence/critical_command.c"),
                 str(ROOT / "src/item/item_transfer_command.c"),
+                str(ROOT / "src/player/player_snapshot_codec.c"),
                 str(ROOT / "src/economy/collector_policy.c"),
                 str(ROOT / "src/economy/collector_death_enrollment.c"),
                 str(ROOT / "tests/async/collector_death_enrollment_harness.cpp"),
