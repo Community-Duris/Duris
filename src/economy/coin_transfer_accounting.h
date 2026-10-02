@@ -54,10 +54,9 @@ unsigned int coin_transfer_accounting_record(MYSQL *connection, const critical_c
 
 // Validate retained exact-ID evidence, without consulting the current active
 // epoch. The repository has already matched the exact root command hash.
-unsigned int coin_transfer_accounting_verify_retained(MYSQL *connection,
-						      const critical_command &root,
-						      unsigned int result_code,
-						      const uint8_t *result_payload,
-						      size_t result_size);
+unsigned int coin_transfer_accounting_verify_retained(
+	MYSQL *connection, const critical_command &root, unsigned int result_code,
+	const uint8_t *result_payload, size_t result_size,
+	critical_failure_stage failure_stage = critical_failure_stage::none);
 
 #endif

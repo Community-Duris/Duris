@@ -192,7 +192,8 @@ uint64_t revision(const coin_transfer_result &result)
 			  result.wallets[1].wallet_revision, result.wallets[1].bank_revision,
 			  result.piles[0].max_item_revision, result.piles[1].max_item_revision });
 }
-unsigned int rejection(const identity &value, const coin_transfer_result &before)
+unsigned int rejection(const identity &value, const coin_transfer_result &before,
+		       critical_failure_stage *failure_stage = nullptr)
 {
 	const bool shared_bank = value.accounts[0].kind == economic_account_kind::wallet &&
 				 value.accounts[1].kind == economic_account_kind::wallet &&
@@ -209,14 +210,38 @@ unsigned int rejection(const identity &value, const coin_transfer_result &before
 		need(fences.size() == 2);
 		if (fences[0].revision != wallet.wallet_revision ||
 		    fences[1].revision != wallet.bank_revision)
+		{
+			if (failure_stage)
+			{
+				const auto wallet_stage =
+					index ? critical_failure_stage::
+							coin_destination_wallet_revision :
+						critical_failure_stage::coin_source_wallet_revision;
+				const auto bank_stage =
+					index ? critical_failure_stage::
+							coin_destination_bank_revision :
+						critical_failure_stage::coin_source_bank_revision;
+				*failure_stage = static_cast<critical_failure_stage>(
+					(fences[0].revision != wallet.wallet_revision ?
+						 static_cast<uint16_t>(wallet_stage) :
+						 0) |
+					(fences[1].revision != wallet.bank_revision ?
+						 static_cast<uint16_t>(bank_stage) :
+						 0));
+			}
 			return ESTALE;
+		}
 		const auto bank_revision = shared_bank && index ?
 						   before.wallets[0].bank_revision + 1 :
 						   wallet.bank_revision;
 		if (wallet.wallet_revision == UINT64_MAX || bank_revision == UINT64_MAX)
 			return ERANGE;
 		if (wallet.wallet.amount != vector(endpoints[index]->before))
+		{
+			if (failure_stage)
+				*failure_stage = critical_failure_stage::coin_revision_unknown;
 			return ESTALE;
+		}
 	}
 	return 0;
 }
@@ -441,6 +466,36 @@ critical_apply_result completion(const flatfile_accounting_record &record, bool 
 					 replay ? critical_apply_outcome::already_applied :
 						  critical_apply_outcome::applied,
 					 record.durable_revision, record.result_code };
+	if (record.result_code)
+	{
+		// Keep the existing full authority record for exact replay verification,
+		// but expose only the classified stale currency domain to publication.
+		if (record.result_code == ESTALE)
+		{
+			const auto value = decode(record.command);
+			coin_transfer_result authority;
+			need(coin_transfer_command_decode_result(value.payload,
+								 record.result.data(),
+								 record.result.size(), &authority));
+			std::array<uint8_t, COIN_TRANSFER_STALE_RESULT_BYTES> bytes;
+			coin_transfer_stale_result stale;
+			if (rejection(value, authority, &result.failure_stage) == ESTALE &&
+			    coin_transfer_command_encode_stale_result(
+				    value.payload, authority, result.failure_stage, &bytes) &&
+			    coin_transfer_command_decode_stale_result(
+				    value.payload, result.failure_stage, bytes.data(), bytes.size(),
+				    &stale))
+			{
+				result.result_size = bytes.size();
+				std::copy(bytes.begin(), bytes.end(),
+					  result.result_payload.begin());
+			}
+			if (result.failure_stage == critical_failure_stage::none)
+				result.failure_stage =
+					critical_failure_stage::coin_revision_unknown;
+		}
+		return result;
+	}
 	result.result_size = record.result.size();
 	std::copy(record.result.begin(), record.result.end(), result.result_payload.begin());
 	return result;

@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Source and runtime contracts for batched pet graph hydration."""
+"""Source contracts for pet hydration; shared item behavior runs in test_player_load_items."""
 
 from _paths import SRC
-import subprocess
 from pathlib import Path
 
 
@@ -13,13 +12,6 @@ PETS = (SRC / "player_load_pets.c").read_text()
 NANNY = (SRC / "nanny.c").read_text()
 COPYOVER = (SRC / "copyover.c").read_text()
 SQL_PLAYER = (SRC / "sql_player.c").read_text()
-
-subprocess.run(
-    ["python3", "tests/async/test_player_load_items.py"],
-    cwd=ROOT,
-    check=True,
-    timeout=30,
-)
 
 for contract in (
     "FROM player_pets pp LEFT JOIN item_owner_revision rev",

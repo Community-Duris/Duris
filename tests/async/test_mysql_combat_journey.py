@@ -785,7 +785,7 @@ if __name__=='__main__':
     parser.add_argument('--evidence-dir',type=Path,help='retain full runtime logs and synthetic custody evidence')
     args=parser.parse_args()
     if not os.getenv('TEST_DB_HOST'):
-        print('MariaDB live combat skipped: TEST_DB_HOST is not set')
+        print('SKIP: MariaDB live combat requires TEST_DB_HOST for a disposable fixture')
     else:
         (ROOT/'bin/tests').mkdir(parents=True,exist_ok=True)
         if not args.server:

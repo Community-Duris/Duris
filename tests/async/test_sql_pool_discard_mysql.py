@@ -45,8 +45,10 @@ MYSQL *connect_fixture() {
     return connection;
 }
 void query(MYSQL *connection, const std::string &text) {
-    require(mysql_real_query(connection, text.data(), text.size()) == 0,
-            "query failed: " + text + " error=" + std::to_string(mysql_errno(connection)));
+    const int result = mysql_real_query(connection, text.data(), text.size());
+    require(result == 0,
+            "query failed: " + text + " error=" + std::to_string(mysql_errno(connection)) +
+            " " + mysql_error(connection));
     MYSQL_RES *rows = mysql_store_result(connection);
     if (rows) mysql_free_result(rows);
     else require(mysql_field_count(connection) == 0, "missing query result");
@@ -116,7 +118,7 @@ def compile_sql(binary):
     source.write_text(HARNESS)
     flags = shlex.split(subprocess.check_output(["mysql_config", "--cflags"], text=True))
     libs = shlex.split(subprocess.check_output(["mysql_config", "--libs"], text=True))
-    subprocess.run([os.environ.get("CXX", "g++-14"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+    subprocess.run([os.environ.get("CXX", "g++"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
                     "-pthread", "-Isrc", *flags, str(source), "src/sql/sql_pool.c", *libs, "-o", str(binary)], cwd=ROOT, check=True)
 
 
