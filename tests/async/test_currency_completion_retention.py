@@ -30,6 +30,7 @@ HARNESS = r'''
 #include <utility>
 
 static P_char online = nullptr, online_other = nullptr;
+P_char character_list = nullptr;
 static critical_command submitted;
 static int submissions = 0, callbacks = 0, alerts = 0, bank_publications = 0;
 static bool callback_committed = false, chain_after_callback = false, rehash_in_callback = false;
@@ -37,6 +38,10 @@ static unsigned int callback_error = 0;
 static std::string last_alert_operation;
 
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...) { abort(); }
+int IS_MORPH(P_char ch)
+{
+    return ch && IS_NPC(ch) && ch->only.npc && ch->only.npc->orig_char;
+}
 
 const char *get_account_name_safe(P_char ch)
 {
@@ -142,6 +147,117 @@ int main(int argc, char **argv)
     GET_COPPER(&actor) = 5;
     online = &actor;
     currency_transaction_reset_for_tests();
+    if (scenario.rfind("coin_retained_", 0) == 0)
+    {
+        pc_only_data recipient_player = {};
+        recipient_player.pid = 45;
+        recipient_player.wallet_revision = recipient_player.bank_revision = 1;
+        char_data recipient = {};
+        recipient.only.pc = &recipient_player;
+        recipient.player.racewar = actor.player.racewar;
+        online_other = &recipient;
+        actor.next = &recipient;
+        character_list = &actor;
+        coin_transfer_payload transfer;
+        assert(currency_transaction_coin_wallet(&actor, -1, &transfer.source));
+        assert(currency_transaction_coin_wallet(&recipient, 1, &transfer.destination));
+        assert(currency_transaction_submit_coin(&actor, transfer, coin_completed, nullptr, 0));
+        coin_transfer_payload admitted;
+        assert(coin_transfer_command_decode_payload(submitted, &admitted));
+        const bool destination = scenario.find("destination") != std::string::npos;
+        const bool stale = scenario.find("stale") != std::string::npos;
+        const bool bank_only = scenario.find("bank_stale") != std::string::npos;
+        const bool newer = scenario.find("newer") != std::string::npos;
+        const bool unloaded = scenario.find("unloaded") != std::string::npos;
+        const bool morph = scenario.find("morph") != std::string::npos;
+        P_char retained = destination ? &recipient : &actor;
+        if (destination) online_other = nullptr;
+        else online = nullptr;
+        if (unloaded) character_list = &recipient;
+        // The PC original owns the wallet while a morphed body is visible.
+        npc_only_data mob_player = {};
+        char_data mob = {};
+        if (morph)
+        {
+            SET_BIT(mob.specials.act, ACT_ISNPC);
+            mob.only.npc = &mob_player;
+            mob_player.orig_char = &actor;
+            mob.next = &recipient;
+            character_list = &mob;
+        }
+        if (newer)
+        {
+            GET_COPPER(retained) = 6;
+            GET_BALANCE_COPPER(retained) = 3;
+            retained->only.pc->wallet_revision = retained->only.pc->bank_revision = 4;
+        }
+        coin_transfer_result result = {};
+        result.wallets[0].wallet.amount[0] = 4;
+        result.wallets[1].wallet.amount[0] = 1;
+        for (auto &wallet : result.wallets)
+            wallet.wallet_revision = wallet.bank_revision = 2;
+        critical_completion receipt = {};
+        receipt.operation_id = submitted.operation_id;
+        if (stale)
+        {
+            auto &current = result.wallets[destination ? 1 : 0];
+            current.wallet.amount[0] = 7;
+            current.bank.amount[0] = 9;
+            current.wallet_revision = current.bank_revision = 3;
+            const auto wallet_stage = destination ?
+                critical_failure_stage::coin_destination_wallet_revision :
+                critical_failure_stage::coin_source_wallet_revision;
+            const auto bank_stage = destination ?
+                critical_failure_stage::coin_destination_bank_revision :
+                critical_failure_stage::coin_source_bank_revision;
+            receipt.failure_stage = bank_only ? bank_stage :
+                static_cast<critical_failure_stage>(static_cast<uint16_t>(wallet_stage) |
+                                                    static_cast<uint16_t>(bank_stage));
+            receipt.outcome = critical_apply_outcome::terminal_failure;
+            receipt.error_code = ESTALE;
+            std::array<uint8_t, COIN_TRANSFER_STALE_RESULT_BYTES> bytes;
+            assert(coin_transfer_command_encode_stale_result(
+                admitted, result, receipt.failure_stage, &bytes));
+            receipt.result_size = bytes.size();
+            std::copy(bytes.begin(), bytes.end(), receipt.result_payload.begin());
+        }
+        else
+        {
+            receipt.outcome = critical_apply_outcome::applied;
+            std::array<uint8_t, COIN_TRANSFER_RESULT_BYTES> bytes;
+            assert(coin_transfer_command_encode_result(admitted, result, &bytes));
+            receipt.result_size = bytes.size();
+            std::copy(bytes.begin(), bytes.end(), receipt.result_payload.begin());
+        }
+        currency_transaction_handle_completions(&receipt, 1);
+        assert(callbacks == 1 && callback_committed == !stale &&
+               callback_error == static_cast<unsigned int>(stale ? ESTALE : 0));
+        assert(submissions == 1 && currency_transaction_health_copy().pending == 0);
+        const int expected = newer ? 6 : unloaded ? 5 :
+            stale ? (bank_only ? (destination ? 0 : 5) : 7) : (destination ? 1 : 4);
+        const uint64_t expected_wallet_revision = newer ? 4 : unloaded || bank_only ? 1 :
+            stale ? 3 : 2;
+        assert(GET_COPPER(retained) == expected &&
+               retained->only.pc->wallet_revision == expected_wallet_revision);
+        assert(GET_BALANCE_COPPER(retained) == (newer ? 3 : stale ? 9 : 0) &&
+               retained->only.pc->bank_revision == (newer ? 4 : unloaded ? 1 : stale ? 3 : 2));
+        P_char other = destination ? &actor : &recipient;
+        assert(GET_COPPER(other) == (stale ? (destination ? 5 : 0) : (destination ? 4 : 1)));
+        assert(other->only.pc->wallet_revision == (stale ? 1u : 2u));
+        assert(bank_publications == (stale ? 1 : 2));
+        currency_transaction_handle_completions(&receipt, 1);
+        // Reconnect reuses the body; readiness must not debit or credit it again.
+        online = &actor;
+        online_other = &recipient;
+        currency_transaction_player_ready(retained);
+        assert(callbacks == 1 && submissions == 1 && GET_COPPER(retained) == expected);
+        coin_transfer_endpoint next;
+        assert(currency_transaction_coin_wallet(retained, 1, &next));
+        assert(next.before[0] == expected &&
+               next.change.expected_revisions[0].revision == expected_wallet_revision &&
+               next.change.expected_revisions[1].revision == retained->only.pc->bank_revision);
+        return 0;
+    }
     assert(submit_reward(&actor, completed));
     const critical_command original = submitted;
     critical_completion receipt = {};
@@ -406,6 +522,11 @@ def main():
         "coin_stale_wallet_negative", "coin_stale_wallet_range",
         "coin_stale_bank_negative", "coin_stale_bank_range",
         "coin_stale_equal_revision", "coin_stale_max_revision",
+        "coin_retained_source_commit", "coin_retained_destination_commit",
+        "coin_retained_source_stale", "coin_retained_destination_stale",
+        "coin_retained_source_bank_stale", "coin_retained_destination_bank_stale",
+        "coin_retained_source_newer", "coin_retained_morph_commit",
+        "coin_retained_morph_stale", "coin_retained_unloaded_commit",
     )
     with tempfile.TemporaryDirectory(prefix="currency-retention-") as directory:
         source = Path(directory) / "retention.cpp"

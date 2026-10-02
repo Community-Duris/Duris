@@ -3180,6 +3180,8 @@ void publish_account_bank_balances_revision(const char *account_name, int racewa
 	for (P_desc desc = descriptor_list; desc; desc = desc->next)
 	{
 		P_char target = desc->original ? desc->original : desc->character;
+		if (target && IS_MORPH(target))
+			target = MORPH_ORIG(target);
 		if (desc->connected != CON_PLAYING || !target || IS_NPC(target) || !desc->account ||
 		    !desc->account->acct_name ||
 		    strcasecmp(desc->account->acct_name, account_name) ||
