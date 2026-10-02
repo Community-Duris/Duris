@@ -48,7 +48,7 @@
     "current_occurrences": 2805,
     "current_unique_path_line_family_sites": 2747,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "ffb73e6518a2dc39f3d243d3384ea851b4c3b8a4",
+    "draft_source_commit": "2e5852e415c22f921ef381e68a27591a58b4fc6e",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
     "draft_unique_sites": 2747,
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "ffb73e6518a2dc39f3d243d3384ea851b4c3b8a4",
+  "repository_head": "2e5852e415c22f921ef381e68a27591a58b4fc6e",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -17947,7 +17947,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          336
+          338
         ],
         "file": "src/item/enhance.c",
         "function": "enhance_base_modifier",
@@ -18011,7 +18011,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          67
+          69
         ],
         "file": "src/item/enhance.c",
         "function": "enhance",
@@ -18058,7 +18058,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1884
+          1894
         ],
         "file": "src/item/enhance.c",
         "function": "load_enhance_index",
@@ -18105,7 +18105,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          362
+          364
         ],
         "file": "src/item/enhance.c",
         "function": "enhance_material_name",
@@ -18167,7 +18167,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          67
+          69
         ],
         "file": "src/item/enhance.c",
         "function": "enhance",
@@ -18353,7 +18353,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1105
+          1115
         ],
         "file": "src/item/enhance.c",
         "function": "enhance_load_essence_drop",
@@ -20395,7 +20395,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          925
+          935
         ],
         "file": "src/item/enhance.c",
         "function": "modenhance",
@@ -20456,7 +20456,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          925
+          935
         ],
         "file": "src/item/enhance.c",
         "function": "modenhance",
@@ -20518,7 +20518,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          925
+          935
         ],
         "file": "src/item/enhance.c",
         "function": "modenhance",
@@ -20660,7 +20660,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2013
+          2023
         ],
         "file": "src/item/enhance.c",
         "function": "enhance_on_npc_item_reset_skipped",
@@ -22481,7 +22481,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          580
+          582
         ],
         "file": "src/item/enhance.c",
         "function": "perform_superior_enhancement",
@@ -22528,7 +22528,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          488
+          490
         ],
         "file": "src/item/enhance.c",
         "function": "build_superior_enhancement_plan",
@@ -22651,7 +22651,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1084
+          1094
         ],
         "file": "src/item/enhance.c",
         "function": "thanksgiving_proc",
