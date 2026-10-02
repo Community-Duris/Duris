@@ -41,14 +41,17 @@ expected=(
 )
 [[ ${#expected[@]} == 10 ]]
 # Scope alternate fields to their object; the unqualified extractor selects
-# the canonical head. Both histories are pinned by the offline validator.
-extract_staging() {
-    sed -n '/"staging_0045_migration_head": {/,/}/p' "$MANIFEST" |
-        sed -n "s/.*\"$1\": \([^,]*\).*/\1/p" | tr -d '"\r'
+# the canonical head. All histories are pinned by the offline validator.
+extract_head() {
+    sed -n "/\"$1\": {/,/}/p" "$MANIFEST" |
+        sed -n "s/.*\"$2\": \([^,]*\).*/\1/p" | tr -d '"\r'
 }
-staging=("$(extract_staging id)" "$(extract_staging sequence)"
-         "$(extract_staging apply_checksum)" "$(extract_staging verify_checksum)"
-         "$(extract_staging history_checksum)")
+staging=("$(extract_head staging_0045_migration_head id)" "$(extract_head staging_0045_migration_head sequence)"
+         "$(extract_head staging_0045_migration_head apply_checksum)" "$(extract_head staging_0045_migration_head verify_checksum)"
+         "$(extract_head staging_0045_migration_head history_checksum)")
+master=("$(extract_head master_0031_migration_head id)" "$(extract_head master_0031_migration_head sequence)"
+        "$(extract_head master_0031_migration_head apply_checksum)" "$(extract_head master_0031_migration_head verify_checksum)"
+        "$(extract_head master_0031_migration_head history_checksum)")
 history_query=$(extract_string migration_history_sql)
 [[ -n "$history_query" ]]
 # Decode directly into the pipe: shell variables cannot preserve NUL bytes in
@@ -64,7 +67,7 @@ history_digest=$("${MYSQL[@]}" -e "$history_query" |
         done
         [[ "$rows" == "${expected[6]}" ]]
     ) | sha256sum | cut -d' ' -f1)
-if [[ "$history_digest" != "${expected[9]}" && "$history_digest" != "${staging[4]}" ]]; then
+if [[ "$history_digest" != "${expected[9]}" && "$history_digest" != "${staging[4]}" && "$history_digest" != "${master[4]}" ]]; then
     echo "FAILED: full immutable migration history mismatch" >&2
     exit 1
 fi
@@ -94,7 +97,7 @@ if [[ "$server_version" == *MariaDB* ]]; then metadata_fingerprint="${expected[2
 tables=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE' AND table_name IN ($runtime_tables);")
 transactional=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE' AND table_name IN ($runtime_tables) AND engine='InnoDB' AND table_collation='utf8mb4_unicode_ci';")
 baseline=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM mud_schema_baselines WHERE baseline_id='${expected[3]}' AND LOWER(HEX(schema_fingerprint))='${expected[4]}' AND manifest_version=1 AND runner_version=1;")
-head=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM mud_schema_history WHERE migration_id='${expected[5]}' AND sequence_number=${expected[6]} AND LOWER(HEX(apply_checksum))='${expected[7]}' AND LOWER(HEX(verify_checksum))='${expected[8]}' AND runner_version=1 OR migration_id='${staging[0]}' AND sequence_number=${staging[1]} AND LOWER(HEX(apply_checksum))='${staging[2]}' AND LOWER(HEX(verify_checksum))='${staging[3]}' AND runner_version=1;")
+head=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM mud_schema_history WHERE migration_id='${expected[5]}' AND sequence_number=${expected[6]} AND LOWER(HEX(apply_checksum))='${expected[7]}' AND LOWER(HEX(verify_checksum))='${expected[8]}' AND runner_version=1 OR migration_id='${staging[0]}' AND sequence_number=${staging[1]} AND LOWER(HEX(apply_checksum))='${staging[2]}' AND LOWER(HEX(verify_checksum))='${staging[3]}' AND runner_version=1 OR migration_id='${master[0]}' AND sequence_number=${master[1]} AND LOWER(HEX(apply_checksum))='${master[2]}' AND LOWER(HEX(verify_checksum))='${master[3]}' AND runner_version=1;")
 state=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM mud_schema_migration_state WHERE state_id=1 AND applied_count=${expected[6]} AND LOWER(HEX(history_checksum))='$history_digest';")
 description_columns=$("${MYSQL[@]}" -e "$(extract_string extra_description_generation_sql)")
 level_cap=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM level_cap WHERE id=1 AND most_frags>=0 AND racewar_leader BETWEEN 0 AND 4 AND level BETWEEN 1 AND 56 AND next_update IS NOT NULL AND (SELECT COUNT(*) FROM level_cap)=1;")
