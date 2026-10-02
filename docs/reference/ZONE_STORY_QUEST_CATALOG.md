@@ -11,11 +11,12 @@ the end-of-world sentinel has no playable room and earns no discovery.
 Optional `areas/story/<area>.story.json` mappings project raw contracts into
 named stories without changing native receipt IDs. Twin Towers replaces 84
 contracts with 10 achievement units and 3 daily groups, excluding 40 returned
-offerings and 24 supporting services/trades. The global projection now has
+offerings and displaying 24 supporting contracts as 12 non-achievement services.
+The global projection now has
 2,436 achievement units and 2,039 daily candidate units after adding all 27
 starter/town mappings and eight further journals, equipment/crafting services,
 intermediate outcomes, and explicit missing-item exclusions. There are 36
-area sidecars and 2,573 projected units including services and administrative
+area sidecars and 2,585 projected units including services and administrative
 content. Other areas
 retain native-contract fallback; these counts do not claim full semantic review.
 The [priority roadmap](../design/ZONE_STORY_ZONE_PRIORITIES.md) and

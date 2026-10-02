@@ -5,6 +5,11 @@ coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
 
+The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
+source dossiers, shipped changes, newly found dependencies, and verification.
+Twin Towers and Plains of Life now have complete source story maps; their
+active-world journeys remain unqualified. Schema 3 adds optional preparation.
+
 Maintain this plan as zones are reviewed. Keep static contract classification,
 historical objective coverage, economic support, and gameplay qualification
 distinct. Complete static bindings do not prove that every special is integrated.
@@ -38,6 +43,13 @@ current activation state must not rewrite its terms or cause reward duplication.
 
 Implement and qualify the remaining additions in this order:
 
+0. **Active-world source admission.** Legacy reset item commands deliberately
+   stop under active accounting because they lack durable generation identity.
+   Qualify committed O/P/G/E and other item-producing resets, including scenery,
+   portals, container dependencies, and NPC equipment before a fresh-world pilot.
+   Custom grants and transformations need equally explicit publication results.
+   Plains of Life currently clears its lesson tag before confirming its sword:
+   fix recoverable tag/grant ordering before claiming a completed tutorial.
 1. **Shared journal projection and flower pilot.** Render the same canonical
    zone/story/objective state in ANSI/plain text and a versioned GMCP extension.
    Use the selected Client journal design: known contacts, stage/checklist,
@@ -70,9 +82,11 @@ Future source hints and subrecipes must respect encountered-contact and stage
 visibility. An undiscovered area or an unseen NPC must not be revealed by a
 client payload that the terminal hides. Plain clients remain fully usable.
 
-No new persistence schema, event kinds, client wire format, or quest admission
-conditions are introduced by the current mapping pass. Those additions remain
-separate implementations with the proof requirements below.
+Schema 3 adds an optional boolean on checklist steps. It preserves native
+admission and receipt identity, labels optional preparation, and keeps it out
+of mandatory `Next:` selection. No new persistence schema, historical event,
+or client wire format is introduced by this change. Conditional recipes,
+all-stage families, and scripted terminals still require separate implementation.
 
 ## Model and discovery policy
 
@@ -305,6 +319,12 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   provenance, economic support, and gameplay qualification.
 - [ ] Qualify each mapping revision with a focused player journey. Preserve
   historical native receipts while reprojecting reviewed story families.
+- [x] Detect literal chained special assignments and omit commented-out ones;
+  export per-area Q/M, prototype, reset, and special evidence. Computed aliases
+  and dynamic code still need manual review.
+- [x] Complete source story dossiers for Twin Towers and Plains of Life,
+  including all support/rejection/lore interactions and custom dependencies.
+- [ ] Complete comprehensive source dossiers for the other 218 roadmap areas.
 
 ## Per-zone integration register
 
@@ -313,7 +333,8 @@ contract classification; it does not claim complete objective coverage.
 
 | Area | Mapping revision | Native classification | Journey/event coverage | Economics | Qualification |
 | --- | ---: | --- | --- | --- | --- |
-| Twin Towers Forest | 2 | Complete: 84 contracts → 10 stories; 40 rejections and 24 supporting services/trades excluded | Encountered contacts, conversation guidance, live belt/plant/material checks, existing receipts; dialogue/provenance pending | Supported flowers/arrows/sprite; clothing/tanning mixed offerings unavailable with active accounting | Focused mapping/projection/native adapter/build checks; complete journey pending deeper adapters |
+| Twin Towers Forest | 3 | Complete: 84 contracts → 10 story/request units plus 12 service units; 40 rejections excluded | Source-comprehensive dossier; all addressable topics, optional live belt check, materials, receipts; dialogue/provenance pending | Fresh reset sources need durable generation; clothing/tanning mixed offerings unavailable | Source/native checks; full active journey remains pending |
+| Plains of Life | 2 | Q-free scripted tutorial; no invented native terminal | Source-comprehensive dossier: optional sign aids, accepted topic/tag/sword and stream travel; scripted history pending | Active reset scenery and confirmed sword grant remain blockers | Source/alias checks; active journey remains pending |
 | All 27 starter/town areas | 1 | Complete static Q classification; detailed counts and evidence in starter/town register | Orientation, encountered people, concrete delivery counts and native receipt checklists; selected multi-step routes | Existing offering limits; reviewed crafting and equipment services do not create story/daily units | All maps pass source/native validation; isolated native guided journey; individual full-world routes pending |
 | Eight additional quest areas | 1 | Complete: 86 contracts → 80 named story/request/service entries | Verified Q/M guidance, distinct material counts, optional preparation hints and receipts; deeper dialogue/lineage/branches pending | Mixed item-and-coin grove recipes remain unavailable; preparation services do not earn story/daily units | Source/native parser and encounter visibility checks; each full-world journey remains pending in the priority roadmap |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |

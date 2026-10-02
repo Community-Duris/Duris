@@ -35,6 +35,7 @@ struct story_step
 	uint32_t count = 1;
 	int32_t slot = -1;
 	std::vector<std::string> contracts = {};
+	bool optional = false;
 };
 
 struct story_definition

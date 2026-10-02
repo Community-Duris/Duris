@@ -1498,6 +1498,8 @@ service::render_journal(uint32_t season, uint32_t pid, int32_t number, int level
 			for (const auto &step : story->steps)
 			{
 				bool satisfied = false;
+				if (step.optional)
+					out << "    Optional preparation:\r\n";
 				if (step.kind == "completion")
 				{
 					satisfied = contains_any(step.contracts, completed);
@@ -1514,7 +1516,7 @@ service::render_journal(uint32_t season, uint32_t pid, int32_t number, int level
 				}
 				else
 					out << "    [Check inventory] " << step.text << "\r\n";
-				if (!satisfied && !next_shown)
+				if (!satisfied && !step.optional && !next_shown)
 				{
 					out << "    Next: " << step.text << "\r\n";
 					next_shown = true;

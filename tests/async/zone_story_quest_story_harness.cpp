@@ -133,10 +133,9 @@ int main(int argc, char **argv)
 		service tracker(catalog);
 		for (const auto &mapping : catalog.story_mappings)
 		{
-			const auto &zone =
-				*std::find_if(catalog.zones.begin(), catalog.zones.end(),
-					      [&](const auto &z)
-					      { return z.source_area == mapping.source_area; });
+			const auto &zone = *std::find_if(
+				catalog.zones.begin(), catalog.zones.end(), [&](const auto &z)
+				{ return z.source_area == mapping.source_area; });
 			require(tracker.discover_zone(7, 42, zone.zone_number,
 						      std::max(1, zone.first_vnum), 100,
 						      "arrival") == result::applied,
@@ -213,6 +212,13 @@ int main(int argc, char **argv)
 	require(journal.find("[Missing now] " + flowers.steps[0].text) != std::string::npos &&
 			journal.find("[Ready now] " + flowers.steps[1].text) != std::string::npos,
 		"carrying the belt falsely opened the garden");
+	if (flowers.steps[0].optional)
+		require(journal.find("Optional preparation:") != std::string::npos &&
+				journal.find("Next: " + flowers.steps[0].text) ==
+					std::string::npos &&
+				journal.find("Next: " + flowers.steps.back().text) !=
+					std::string::npos,
+			"a supplied plant incorrectly required the garden access route");
 	inventory.equipped[0] = 13521;
 	require(tracker.render_journal(7, 42, 135, 10, 1, now, false, false, &inventory)
 				.find("[Missing now] " + flowers.steps[0].text) !=

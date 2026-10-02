@@ -56,7 +56,7 @@ make zone story bootstrap fail closed; they are never silently ignored.
 
 ## Schema version 1
 
-Version 1 remains supported. Use version 2 for new starter and hometown
+Version 1 remains supported. Use version 2 or 3 for new starter and hometown
 integrations; it adds the required `introduction`, `orientation`, and `contacts`
 fields below. Story bindings and step kinds retain the same meanings.
 
@@ -200,6 +200,34 @@ Both versions reject dialogue milestones, personal recovery, kills, arbitrary sc
 coin objectives, and new reward fields. Do not deploy placeholders claiming those
 events are tracked. The integration plan specifies the durable adapters and
 credit policies needed before those kinds can enter a versioned schema.
+
+## Schema version 3: optional preparation
+
+Version 3 contains the same area/story fields as version 2. Each step can also
+contain `"optional": true` or `false`; omission means false. Only a JSON boolean
+is accepted. Versions 1 and 2 reject this field and retain their original behavior.
+The journal labels optional preparation, still shows its live/recorded status,
+and skips it when selecting the first required `Next:` action. Optional steps
+never add gameplay prerequisites or change a terminal native receipt.
+
+Twin Towers uses this for the garden belt: wearing it is necessary for guarded
+garden movement, but delivering a supplied valid plant does not require it.
+Use optional steps for a supported route, not to claim personal sourcing or
+learned history. Conditional recipes, branch/reveal rules, all-stage campaign
+completion, and scripted event terminals remain planned capabilities. All
+native terminal arrays still mean any-of.
+
+Deploy a schema-3 file with the matching server binary. Older binaries reject
+schema 3 rather than silently guessing its semantics; rollback requires a
+compatible sidecar revision as well. Existing stored receipts need no migration.
+
+The [execution register](../design/ZONE_STORY_ROADMAP_EXECUTION.md) links full
+source story dossiers, including unresolved reset/grant dependencies. Export
+the evidence for a zone with:
+
+```bash
+python3 scripts/zone_story_quest_zone_inventory.py --area-evidence twin_towers_forest
+```
 
 ## Schema version 2: orientation and encountered people
 

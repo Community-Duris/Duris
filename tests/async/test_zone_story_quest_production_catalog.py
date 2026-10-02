@@ -50,6 +50,29 @@ assert len(rows) == 350 and sum(bool(r["requests"]) for r in rows) == 221
 assert sum(len(r["requests"]) for r in rows) == 2668
 assert {q["definition"]["definition_id"] for r in rows for q in r["requests"]} == {d["definition_id"] for d in catalog["definitions"]}
 assert inventory_module.markdown(ROOT) == (ROOT / "docs/reference/ZONE_STORY_ZONE_INVENTORY.md").read_text(encoding="utf-8")
+assignments = inventory_module.special_assignments('''
+// mob_index[real_mobile0(99)].func.mob = commented;
+/* world[real_room0(98)].funct = commented; */
+mob_index[real_mobile0(10)].func.mob =
+    mob_index[real_mobile0(11)].func.mob = shared;
+obj_index[real_object0(12)].func.obj = NULL;
+world[real_room0(13)].funct = gate;
+const char *example = "mob_index[real_mobile0(97)].func.mob = quoted;";
+''')
+assert [(a["kind"], a["vnum"], a["function"], a["line"]) for a in assignments] == [
+    ("mob", 10, "shared", 4), ("mob", 11, "shared", 5), ("room", 13, "gate", 7)]
+twin = inventory_module.area_evidence(ROOT, "twin_towers_forest")
+assert len(twin["requests"]) == 84 and len(twin["dialogue"]) == 58
+assert len(twin["reset_commands"]) == 345
+assert {a["vnum"] for a in twin["special_assignments"] if a["function"] == "forest_animals"} == {13505, 13508, 13511, 13513, 13515, 13516, 13517, 13518, 13519}
+assert len([a for a in twin["special_assignments"] if a["function"] == "forest_corpse"]) == 9
+assert len([a for a in twin["special_assignments"] if a["function"] == "gardener_block"]) == 12
+plains = inventory_module.area_evidence(ROOT, "newbie2")
+assert not plains["requests"] and len(plains["reset_commands"]) == 21
+assert set(plains["specials"]) == {"newbie_paladin", "newbie_sign1", "newbie_sign2", "stream_of_life"}
+assert 22809 in plains["items"]  # Prototype membership can exceed the zone room range.
+for area in ("twin_towers_forest", "newbie2"):
+    assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:
     output = pathlib.Path(temporary) / "catalog.json"

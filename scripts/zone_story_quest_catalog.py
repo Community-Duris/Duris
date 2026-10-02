@@ -284,9 +284,9 @@ def story_units(catalog, item_vnums=None, mob_keywords=None):
     for mapping in array(catalog.get("story_mappings", []), 0, 350):
         if not isinstance(mapping, dict):
             raise ValueError("story mapping: expected object")
-        schema = number(mapping.get("schema_version"), 1, 2)
+        schema = number(mapping.get("schema_version"), 1, 3)
         keys = {"schema_version", "revision", "source_area", "coverage", "stories", "exclusions"}
-        if schema == 2:
+        if schema >= 2:
             keys |= {"introduction", "orientation", "contacts"}
         fields(mapping, keys)
         number(mapping["revision"], 1, 2**31 - 1)
@@ -297,7 +297,7 @@ def story_units(catalog, item_vnums=None, mob_keywords=None):
         zone = areas[area]["zone_number"]
         if text(mapping, "coverage") not in {"partial", "complete"}:
             raise ValueError("story mapping: coverage must be partial or complete")
-        if schema == 2:
+        if schema >= 2:
             text(mapping, "introduction")
             for action in array(mapping["orientation"], 0, 16):
                 text({"action": action}, "action")
@@ -344,6 +344,10 @@ def story_units(catalog, item_vnums=None, mob_keywords=None):
                         keys.add("slot")
                 else:
                     raise ValueError("story mapping: unsupported step kind")
+                if schema >= 3 and "optional" in step:
+                    keys.add("optional")
+                    if not isinstance(step["optional"], bool):
+                        raise ValueError("story mapping: optional must be boolean")
                 fields(step, keys)
                 step_id = text(step, "id")
                 if not re.fullmatch(r"[a-z0-9_-]{1,64}", step_id) or step_id in steps:

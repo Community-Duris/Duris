@@ -12,6 +12,11 @@ size of a qualifying player journey, and unresolved accounting/world dependencie
 Raw contract count alone is not a priority score. The [complete active inventory](../reference/ZONE_STORY_ZONE_INVENTORY.md)
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
+Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
+source dossiers and precise blockers. Priorities 1 and 2 now have comprehensive
+source maps; the other entries retain their earlier rough/provisional status.
+Active reset-generation qualification is a shared prerequisite for the pilots.
+
 ## Reviewed first integrations
 
 | Order | Zone / source | Rough progression stories | Current state and next qualification |
@@ -59,7 +64,8 @@ are classified. Preparation services remain visible after their giver is encount
 without adding story/daily achievements. Native receipts and rewards remain unchanged.
 
 Preparation is described as one valid route, never a required personal acquisition.
-The current schema cannot express optional historical steps, conditional subrecipes,
+Schema 3 supports optional checks against live supplies and existing receipts.
+It does not yet express new historical event kinds, conditional subrecipes,
 all-stage campaign completion, mutually exclusive choices, or stage-by-stage spoiler
 reveal. Consequently, independent Bastine promotions and Triad exchanges stay distinct.
 An any-of `contracts` array is used only for actual alternatives, such as Quietus

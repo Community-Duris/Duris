@@ -16,7 +16,7 @@ namespace
 constexpr size_t max_file_bytes = 256 * 1024;
 
 void fields(const cJSON *object, std::initializer_list<std::string_view> expected,
-	    const std::string &path)
+	    const std::string &path, bool allow_optional = false)
 {
 	if (!cJSON_IsObject(object))
 		throw std::runtime_error(path + ": expected object");
@@ -24,7 +24,7 @@ void fields(const cJSON *object, std::initializer_list<std::string_view> expecte
 	for (const auto *field = object->child; field; field = field->next)
 	{
 		const std::string_view name = field->string ? field->string : "";
-		bool known = false;
+		bool known = allow_optional && name == "optional";
 		for (const auto key : expected)
 			known = known || key == name;
 		if (!known || !found.insert(name).second)
@@ -138,7 +138,7 @@ bool apply(const std::string &json, std::string_view source_area,
 			cJSON_Delete);
 		const int schema =
 			integer(cJSON_GetObjectItemCaseSensitive(root.get(), "schema_version"), 1,
-				2, "schema_version");
+				3, "schema_version");
 		if (schema == 1)
 			fields(root.get(),
 			       { "schema_version", "revision", "source_area", "coverage", "stories",
@@ -167,7 +167,7 @@ bool apply(const std::string &json, std::string_view source_area,
 		if (zone <= 0)
 			throw std::runtime_error(
 				"story mapping: area is not a playable catalog area");
-		if (schema == 2)
+		if (schema >= 2)
 		{
 			mapping.introduction = text(root.get(), "introduction", "story mapping");
 			for (auto *action =
@@ -236,17 +236,17 @@ bool apply(const std::string &json, std::string_view source_area,
 				parsed.kind = text(step, "kind", id);
 				if (parsed.kind == "completion")
 					fields(step, { "id", "text", "kind", "hint", "contracts" },
-					       id);
+					       id, schema >= 3);
 				else if (parsed.kind == "carried_item")
 					fields(step,
 					       { "id", "text", "kind", "hint", "item_vnums",
 						 "count" },
-					       id);
+					       id, schema >= 3);
 				else if (parsed.kind == "equipped_item")
 					fields(step,
 					       { "id", "text", "kind", "hint", "item_vnums",
 						 "count", "slot" },
-					       id);
+					       id, schema >= 3);
 				else
 					throw std::runtime_error(id + ": unsupported step kind " +
 								 parsed.kind);
@@ -256,6 +256,14 @@ bool apply(const std::string &json, std::string_view source_area,
 								 ": invalid or duplicate step id");
 				parsed.text = text(step, "text", id);
 				parsed.hint = text(step, "hint", id, true);
+				if (const auto *optional =
+					    cJSON_GetObjectItemCaseSensitive(step, "optional"))
+				{
+					if (!cJSON_IsBool(optional))
+						throw std::runtime_error(
+							id + ": optional must be boolean");
+					parsed.optional = cJSON_IsTrue(optional);
+				}
 				if (parsed.kind == "completion")
 					parsed.contracts =
 						references(step, "contracts", *catalog, id);

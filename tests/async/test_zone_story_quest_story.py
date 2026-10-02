@@ -16,6 +16,13 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 2039
+assert mapping["schema_version"] == 3 and mapping["stories"][0]["steps"][0]["optional"]
+assert sum(s["category"] == "service" for s in mapping["stories"]) == 12
+assert len(mapping["exclusions"]) == 1 and len(mapping["exclusions"][0]["contracts"]) == 40
+assert sum(len(s["contracts"]) for s in mapping["stories"]) == 44
+assert all(s["category"] == "service" for s in mapping["stories"] if s["id"].startswith(("prepare-animal-", "archer-trade-")))
+assert "arrows" in next(c for c in mapping["contacts"] if c["mob_vnum"] == 13501)["topics"]
+assert "backpack" in next(c for c in mapping["contacts"] if c["mob_vnum"] == 13503)["topics"]
 
 new_areas = {"breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar"}
 new_mappings = {m["source_area"]: m for m in catalog["story_mappings"] if m["source_area"] in new_areas}
@@ -56,13 +63,18 @@ with tempfile.TemporaryDirectory(prefix="duris-authored-story-") as temporary:
     native = ROOT / "docs/reference/ZONE_STORY_QUEST_PRODUCTION_CATALOG.json"
     subprocess.run([str(binary), str(native), str(ROOT / "areas/story/twin_towers_forest.story.json")], cwd=ROOT, check=True)
     subprocess.run([str(binary), str(native), str(ROOT / "areas/story/twin_towers_forest.story.json"), "all"], cwd=ROOT, check=True)
-    legacy_mapping = copy.deepcopy(mapping)
-    legacy_mapping["schema_version"] = 1
-    for key in ("introduction", "orientation", "contacts"):
-        legacy_mapping.pop(key)
-    legacy_path = pathlib.Path(temporary) / "schema-one.json"
-    legacy_path.write_text(json.dumps(legacy_mapping), encoding="utf-8")
-    subprocess.run([str(binary), str(native), str(legacy_path)], cwd=ROOT, check=True)
+    for version in (1, 2):
+        legacy_mapping = copy.deepcopy(mapping)
+        legacy_mapping["schema_version"] = version
+        for story in legacy_mapping["stories"]:
+            for step in story["steps"]:
+                step.pop("optional", None)
+        if version == 1:
+            for key in ("introduction", "orientation", "contacts"):
+                legacy_mapping.pop(key)
+        legacy_path = pathlib.Path(temporary) / f"schema-{version}.json"
+        legacy_path.write_text(json.dumps(legacy_mapping), encoding="utf-8")
+        subprocess.run([str(binary), str(native), str(legacy_path)], cwd=ROOT, check=True)
 
     partial = copy.deepcopy(mapping)
     partial["coverage"] = "partial"
@@ -103,6 +115,8 @@ with tempfile.TemporaryDirectory(prefix="duris-authored-story-") as temporary:
     invalid("invalid-keyword", lambda m: m["contacts"][0].update(keyword="alvinar hello"))
     invalid("duplicate-topic", lambda m: m["contacts"][0]["topics"].append(m["contacts"][0]["topics"][0]))
     invalid("invalid-orientation", lambda m: m["orientation"].append("bad\ncommand"))
+    invalid("invalid-optional", lambda m: m["stories"][0]["steps"][0].update(optional=1))
+    invalid("old-schema-optional", lambda m: m.update(schema_version=2))
     unknown_item = copy.deepcopy(catalog)
     unknown_item["story_mappings"] = [copy.deepcopy(mapping)]
     unknown_item["story_mappings"][0]["stories"][0]["steps"][0]["item_vnums"] = [999999]
@@ -113,7 +127,7 @@ with tempfile.TemporaryDirectory(prefix="duris-authored-story-") as temporary:
     else:
         raise AssertionError("unknown object prototype was accepted")
     duplicate = pathlib.Path(temporary) / "duplicate-field.json"
-    duplicate.write_text(json.dumps(mapping).replace('"schema_version": 2', '"schema_version": 2, "schema_version": 2'), encoding="utf-8")
+    duplicate.write_text(json.dumps(mapping).replace('"schema_version": 3', '"schema_version": 3, "schema_version": 3'), encoding="utf-8")
     subprocess.run([str(binary), str(native), str(duplicate), "invalid"], cwd=ROOT, check=True)
 
 print("builder-authored zone story schema and projection regression passed")
