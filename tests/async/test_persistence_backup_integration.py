@@ -322,7 +322,7 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
         self.assertEqual(backup.inventory(live, exclude_locks=True), before)
         self.assertEqual(backup.inventory(journals), journal_before)
         self.assertEqual(backup.inventory(generation), captured)
-    def test_corrupt_or_unreplayable_nonempty_wal_never_qualifies(self):
+    def test_corrupt_wal_is_refused_and_unreplayable_player_is_quarantined(self):
         self.build_native_fixture()
         actual_service = restore.service_load
         for case, relative in (("player-corrupt", "players/player-save.journal"),
@@ -334,6 +334,7 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
                 live = case_root / "live"
                 backup.run([str(self.fixture), "seed", str(live)])
                 journals = self.seed_wal(live, blocked=relative is None)
+                player_wal = (journals / "players/player-save.journal").read_bytes()
                 # Prove both native records are structurally valid first. The
                 # blocked record is a partial update for a missing player PID.
                 proof = case_root / "preflight-proof"
@@ -355,13 +356,20 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
                 captured = backup.inventory(generation)
                 backup.verify(generation)
                 with mock.patch.object(restore, "service_load", wraps=actual_service) as service:
-                    with self.assertRaises(backup.BackupError):
-                        restore.restore(self.p, result["generation"], self.ledger())
                     if relative is None:
+                        receipt = restore.restore(self.p, result["generation"], self.ledger())
+                        self.assertEqual(receipt["result"], "qualified")
                         service.assert_called_once()
+                        candidate = self.p["restore_root"] / receipt["candidate"]
+                        archive = candidate / "journals/players/player-save.journal.quarantine.archive"
+                        self.assertIn(player_wal, archive.read_bytes())
+                        self.assertEqual((candidate / "journals/players/player-save.journal").stat().st_size, 0)
+                        backup.run([str(self.fixture), "verify-quarantined-wal", str(candidate / "state")])
                     else:
+                        with self.assertRaises(backup.BackupError):
+                            restore.restore(self.p, result["generation"], self.ledger())
                         service.assert_not_called()
-                self.assertFalse(list(self.p["restore_root"].glob("candidate-*/QUALIFIED.json")))
+                        self.assertFalse(list(self.p["restore_root"].glob("candidate-*/QUALIFIED.json")))
                 self.assertEqual(backup.inventory(live, exclude_locks=True), live_before)
                 self.assertEqual(backup.inventory(journals), journal_before)
                 self.assertEqual(backup.inventory(generation), captured)
