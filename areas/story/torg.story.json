@@ -1,0 +1,721 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "torg",
+  "coverage": "complete",
+  "stories": [
+    {
+      "id": "cure-dracolich-hide-28917",
+      "title": "Cure Dracolich Hide",
+      "category": "service",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 28917,
+          "completion_key": "give=I:28923;receive=I:28924;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28923",
+          "text": "Carry 1 x a strip of dracolich hide",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28923
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 28917,
+              "completion_key": "give=I:28923;receive=I:28924;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a-token-of-favor-28922",
+      "title": "A Token of Favor",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 28922,
+          "completion_key": "give=I:28906;receive=I:28917;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28906",
+          "text": "Carry 1 x a long severed tentacle",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28906
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 28922,
+              "completion_key": "give=I:28906;receive=I:28917;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-colosseum-medallion-28929",
+      "title": "The Colosseum Medallion",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 28929,
+          "completion_key": "give=I:28930;receive=I:28932;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28930",
+          "text": "Carry 1 x the laurel medallion",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28930
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 28929,
+              "completion_key": "give=I:28930;receive=I:28932;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "evidence-of-a-secret-affair-28932",
+      "title": "Evidence of a Secret Affair",
+      "category": "story",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 28932,
+          "completion_key": "give=I:28916,I:28938;receive=I:28936;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28916",
+          "text": "Carry 1 x a secret promise ring",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28916
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-28938",
+          "text": "Carry 1 x a secret promise ring",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28938
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 28932,
+              "completion_key": "give=I:28916,I:28938;receive=I:28936;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a-dracolich-hide-bracelet-28936",
+      "title": "A Dracolich Hide Bracelet",
+      "category": "story",
+      "summary": "Bring cured dracolich hide for the prototype bracelet. A local curing exchange prepares the material; the journal does not prove personal recovery or transformation lineage.",
+      "contracts": [
+        {
+          "giver_vnum": 28936,
+          "completion_key": "give=I:28924;receive=I:28911;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28924",
+          "text": "Carry 1 x some cured dracolich hide",
+          "kind": "carried_item",
+          "hint": "The local smith can cure raw dracolich hide. Other valid cured hide also works.",
+          "item_vnums": [
+            28924
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 28936,
+              "completion_key": "give=I:28924;receive=I:28911;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a-secret-rose-delivery-28937",
+      "title": "A Secret Rose Delivery",
+      "category": "story",
+      "summary": "Deliver the perfect magic rose discreetly. A favor-token exchange can supply it, but another valid rose also satisfies the native request.",
+      "contracts": [
+        {
+          "giver_vnum": 28937,
+          "completion_key": "give=I:28955;receive=I:28956;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28955",
+          "text": "Carry 1 x a perfect magic rose",
+          "kind": "carried_item",
+          "hint": "A local favor-token exchange supplies the rose. Another valid rose also works.",
+          "item_vnums": [
+            28955
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 28937,
+              "completion_key": "give=I:28955;receive=I:28956;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "relics-of-the-eight-legends-28964",
+      "title": "Relics of the Eight Legends",
+      "category": "story",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 28964,
+          "completion_key": "give=I:28944,I:28945,I:28946,I:28947,I:28948,I:28949,I:28950,I:28951;receive=I:28954,I:55363;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28944",
+          "text": "Carry 1 x Llznixor's cleaned skull symbol",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28944
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-28945",
+          "text": "Carry 1 x Dorn's steel forehead plate",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28945
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-28946",
+          "text": "Carry 1 x Tibor's tankard",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28946
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-28947",
+          "text": "Carry 1 x Elirandel's ball of flame",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28947
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-28948",
+          "text": "Carry 1 x Jonxin's magic cards",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28948
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-28949",
+          "text": "Carry 1 x Smurp's boot knife",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28949
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-28950",
+          "text": "Carry 1 x Kulnon's brass knuckles",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28950
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-28951",
+          "text": "Carry 1 x Lanom's medallion of purity",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28951
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 28964,
+              "completion_key": "give=I:28944,I:28945,I:28946,I:28947,I:28948,I:28949,I:28950,I:28951;receive=I:28954,I:55363;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lore-keeper-relic-28983",
+      "title": "Deliver a piece of cloth from Vecna's robe",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 28964,
+          "completion_key": "give=I:28983;receive=I:28986;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28983",
+          "text": "Carry 1 x a piece of cloth from Vecna's robe",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28983
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 28964,
+              "completion_key": "give=I:28983;receive=I:28986;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lore-keeper-relic-28984",
+      "title": "Deliver a shaving of one of Bahamut's scales",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 28964,
+          "completion_key": "give=I:28984;receive=I:28987;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28984",
+          "text": "Carry 1 x a shaving of one of Bahamut's scales",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28984
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 28964,
+              "completion_key": "give=I:28984;receive=I:28987;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lore-keeper-relic-28985",
+      "title": "Deliver the hand of an elven prodigy",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 28964,
+          "completion_key": "give=I:28985;receive=I:28988;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28985",
+          "text": "Carry 1 x the hand of an elven prodigy",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28985
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 28964,
+              "completion_key": "give=I:28985;receive=I:28988;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "prepare-a-secret-rose-28965",
+      "title": "Prepare a Secret Rose",
+      "category": "service",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 28965,
+          "completion_key": "give=I:28917;receive=I:28955;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28917",
+          "text": "Carry 1 x a token of favor",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28917
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 28965,
+              "completion_key": "give=I:28917;receive=I:28955;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "return-the-wedding-locket-28974",
+      "title": "Return the Wedding Locket",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 28974,
+          "completion_key": "give=I:28940;receive=I:28962;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28940",
+          "text": "Carry 1 x a tiny gold locket",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28940
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 28974,
+              "completion_key": "give=I:28940;receive=I:28962;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a-fine-chisel-for-the-craftsman",
+      "title": "A Fine Chisel for the Craftsman",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 29023,
+          "completion_key": "give=I:28959;receive=I:28981;disappear=0"
+        },
+        {
+          "giver_vnum": 29024,
+          "completion_key": "give=I:28959;receive=I:28981;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28959",
+          "text": "Carry 1 x an intricate jeweler's chisel",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28959
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 29023,
+              "completion_key": "give=I:28959;receive=I:28981;disappear=0"
+            },
+            {
+              "giver_vnum": 29024,
+              "completion_key": "give=I:28959;receive=I:28981;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "an-obsidian-buckle-29024",
+      "title": "An Obsidian Buckle",
+      "category": "story",
+      "summary": "Bring the obsidian block and divine shaping tool for a buckle. Returning the wedding locket is one route to the block; it is not an extra native turn-in requirement.",
+      "contracts": [
+        {
+          "giver_vnum": 29024,
+          "completion_key": "give=I:28962,I:28982;receive=I:28973;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28962",
+          "text": "Carry 1 x a block doused in Torg's blood",
+          "kind": "carried_item",
+          "hint": "Returning the wedding locket supplies an obsidian block. Other valid blocks also work.",
+          "item_vnums": [
+            28962
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-28982",
+          "text": "Carry 1 x the unholy chisel of shaping",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            28982
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 29024,
+              "completion_key": "give=I:28962,I:28982;receive=I:28973;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": [],
+  "introduction": "Explore the kingdom for requests involving favors, relics, craftsmanship, and intrigue.",
+  "orientation": [
+    "Use look and exits to explore. Meet visible people to reveal their requests.",
+    "Talk to the people you meet to learn about local requests. The checklist shows your current supplies and completed exchanges."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 28917,
+      "name": "Kordor, the smith",
+      "keyword": "kordor",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "dracolich",
+        "rare"
+      ]
+    },
+    {
+      "mob_vnum": 28922,
+      "name": "The Keeper",
+      "keyword": "troll",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "crime",
+        "tentacle"
+      ]
+    },
+    {
+      "mob_vnum": 28929,
+      "name": "Councilor Zillra",
+      "keyword": "zillra",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "ring",
+        "forgotten"
+      ]
+    },
+    {
+      "mob_vnum": 28932,
+      "name": "Councilor Zojt",
+      "keyword": "zojt",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "ring"
+      ]
+    },
+    {
+      "mob_vnum": 28936,
+      "name": "a hobgoblin jeweler",
+      "keyword": "jeweler",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "looking"
+      ]
+    },
+    {
+      "mob_vnum": 28937,
+      "name": "Councilor Zuzon",
+      "keyword": "zuzon",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "lover"
+      ]
+    },
+    {
+      "mob_vnum": 28964,
+      "name": "The Lore Keeper",
+      "keyword": "lore",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "legends",
+        "tranug"
+      ]
+    },
+    {
+      "mob_vnum": 28965,
+      "name": "a pacing preoccupied woman",
+      "keyword": "preoccupied",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "story"
+      ]
+    },
+    {
+      "mob_vnum": 28974,
+      "name": "Dranar",
+      "keyword": "dranar",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "note"
+      ]
+    },
+    {
+      "mob_vnum": 29023,
+      "name": "the dwarven equipment master",
+      "keyword": "master",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "create"
+      ]
+    },
+    {
+      "mob_vnum": 29024,
+      "name": "the dwarven equipment master",
+      "keyword": "master",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "create"
+      ]
+    }
+  ]
+}

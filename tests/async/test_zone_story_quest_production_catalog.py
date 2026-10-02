@@ -41,6 +41,16 @@ checked_in = json.loads((ROOT / "docs/reference/ZONE_STORY_QUEST_PRODUCTION_CATA
 assert checked_in == catalog
 assert len({item["definition_id"] for item in catalog["definitions"]}) == len(catalog["definitions"])
 
+inventory_spec = importlib.util.spec_from_file_location("zone_inventory", ROOT / "scripts/zone_story_quest_zone_inventory.py")
+inventory_module = importlib.util.module_from_spec(inventory_spec)
+sys.path.insert(0, str(ROOT / "scripts"))
+inventory_spec.loader.exec_module(inventory_module)
+rows, _, _ = inventory_module.inventory(ROOT)
+assert len(rows) == 350 and sum(bool(r["requests"]) for r in rows) == 221
+assert sum(len(r["requests"]) for r in rows) == 2668
+assert {q["definition"]["definition_id"] for r in rows for q in r["requests"]} == {d["definition_id"] for d in catalog["definitions"]}
+assert inventory_module.markdown(ROOT) == (ROOT / "docs/reference/ZONE_STORY_ZONE_INVENTORY.md").read_text(encoding="utf-8")
+
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:
     output = pathlib.Path(temporary) / "catalog.json"
     subprocess.run(

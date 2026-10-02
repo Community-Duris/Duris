@@ -34,6 +34,8 @@ void encountered(struct char_data *player, struct char_data *npc);
 bool daily_eligible(struct char_data *player, std::string_view definition_id,
 		    int strongest_party_level, int64_t completed_at);
 bool bootstrap(std::string *error = nullptr);
+/* Loaded receipt/cleanup authority. Player surfaces and journey admission also
+ * require active economic accounting; service() returns nullptr while inactive. */
 bool ready();
 uint32_t current_season_id();
 uint32_t content_revision();

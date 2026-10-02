@@ -3,6 +3,7 @@
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include "net/comm.h"
 #include "ships/ships.h"
 #include "flatfile/flatfile_zone_story_quest_state.h"
@@ -123,6 +124,8 @@ std::string new_transaction_id(uint32_t season_id, uint32_t pid, std::string_vie
 
 std::string render_daily_surface(P_char player, bool colors, bool score, std::string *error)
 {
+	if (!economic_gameplay_authority::active())
+		return {};
 	if (!ready() || !player || IS_NPC(player))
 	{
 		if (error)
@@ -154,13 +157,16 @@ temporary_placement::~temporary_placement()
 
 bool daily_eligible(P_char player, std::string_view id, int strongest, int64_t now)
 {
-	return ready() && player && IS_PC(player) && !IS_TRUSTED(player) &&
+	return economic_gameplay_authority::active() && ready() && player && IS_PC(player) &&
+	       !IS_TRUSTED(player) &&
 	       tracker.daily_eligible_for(current_season_id(), GET_PID(player), id,
 					  GET_LEVEL(player), GET_RACEWAR(player), strongest, now);
 }
 
 std::string render_journal(P_char player, int32_t zone_number, bool daily_only, bool colors)
 {
+	if (!economic_gameplay_authority::active())
+		return "Zone journals require active economic accounting.\r\n";
 	if (!ready() || !player || !IS_PC(player))
 		return "The quest journal is unavailable.\r\n";
 	zone_story_quest_catalog::journal_inventory inventory;
@@ -179,11 +185,11 @@ namespace
 {
 bool physical_player(P_char player)
 {
-	return ready() && !temporary_placement_depth && player && IS_ALIVE(player) &&
-	       IS_PC(player) && !IS_TRUSTED(player) && GET_PID(player) > 0 && player->desc &&
-	       player->desc->connected == CON_PLAYING && player->desc->character == player &&
-	       player->in_room >= 0 && !IS_SHIP_ROOM(player->in_room) &&
-	       !IS_ROOM(player->in_room, ROOM_ARENA);
+	return economic_gameplay_authority::active() && ready() && !temporary_placement_depth &&
+	       player && IS_ALIVE(player) && IS_PC(player) && !IS_TRUSTED(player) &&
+	       GET_PID(player) > 0 && player->desc && player->desc->connected == CON_PLAYING &&
+	       player->desc->character == player && player->in_room >= 0 &&
+	       !IS_SHIP_ROOM(player->in_room) && !IS_ROOM(player->in_room, ROOM_ARENA);
 }
 
 bool can_meet(P_char player, P_char npc)
@@ -333,7 +339,9 @@ bool ready()
 
 zone_story_quest_feature::service *service()
 {
-	return ready() ? &tracker : nullptr;
+	/* Native receipt recovery and deletion still use the loaded authority while
+	 * accounting is inactive. Player journals and new journey events do not. */
+	return economic_gameplay_authority::active() && ready() ? &tracker : nullptr;
 }
 
 bool persist(std::string *error)
@@ -425,7 +433,8 @@ bool record_authoritative_completion(std::string_view definition_id, int32_t zon
 			return true;
 		}
 	}
-	const auto *definition = tracker.catalog().definitions.empty() ? nullptr : [&]()
+	const auto *definition = tracker.catalog().definitions.empty() ? nullptr :
+									 [&]()
 	{
 		for (const auto &candidate : tracker.catalog().definitions)
 			if (candidate.definition_id == definition_id)

@@ -7,10 +7,18 @@ quest denominator or public ranking. Walking, following, login, and legitimate
 travel count; temporary map inspection, staff remote commands, staff characters,
 arena rooms, and ship interiors do not grant discovery.
 
-Daily quests remain disabled by default. Set `ZONE_STORY_DAILY_ENABLED=true` on
-an isolated server to enable daily eligibility and player surfaces. Discovery
-and ordinary story tracking work with that switch off. No production setting
-or database is changed by this feature branch.
+**Active economic accounting is required** for zone journals, discovery/encounter
+events, zone-story achievement surfaces, and new daily eligibility. The verified
+native accounting authority supplies this gate; setting an environment flag
+cannot substitute for lifecycle activation. Exact native receipt recovery and
+deleted-character cleanup remain available while inactive.
+
+Daily quests remain disabled by default. After accounting is active, set
+`ZONE_STORY_DAILY_ENABLED=true` on an isolated server to enable daily eligibility
+and player surfaces. Discovery and the private journal are independent of this
+additional daily switch, but still require active accounting. While inactive,
+ordinary quest/score omit daily output and explicit zone/daily journal commands
+explain the accounting requirement. No production setting or database is changed.
 
 ## Player commands
 

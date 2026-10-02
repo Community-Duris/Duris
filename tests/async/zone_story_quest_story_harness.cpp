@@ -133,9 +133,10 @@ int main(int argc, char **argv)
 		service tracker(catalog);
 		for (const auto &mapping : catalog.story_mappings)
 		{
-			const auto &zone = *std::find_if(
-				catalog.zones.begin(), catalog.zones.end(), [&](const auto &z)
-				{ return z.source_area == mapping.source_area; });
+			const auto &zone =
+				*std::find_if(catalog.zones.begin(), catalog.zones.end(),
+					      [&](const auto &z)
+					      { return z.source_area == mapping.source_area; });
 			require(tracker.discover_zone(7, 42, zone.zone_number,
 						      std::max(1, zone.first_vnum), 100,
 						      "arrival") == result::applied,
@@ -157,8 +158,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 28 &&
-				tracker.summary_for(7, 42).total == 2464,
+		require(catalog.story_mappings.size() == 36 &&
+				tracker.summary_for(7, 42).total == 2436,
 			"native story projection disagreed with the complete source audit");
 		std::cout
 			<< "All starter/town mappings and encounter visibility passed native projection.\n";

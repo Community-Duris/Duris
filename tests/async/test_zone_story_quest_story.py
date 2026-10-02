@@ -15,7 +15,26 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 2055
+assert report["daily_unit_count"] == 2039
+
+new_areas = {"breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar"}
+new_mappings = {m["source_area"]: m for m in catalog["story_mappings"] if m["source_area"] in new_areas}
+assert set(new_mappings) == new_areas and all(m["coverage"] == "complete" for m in new_mappings.values())
+assert sum(d["source_area"] in new_areas for d in catalog["definitions"]) == 86
+assert sum(len(m["stories"]) for m in new_mappings.values()) == 80
+drider = next(s for s in new_mappings["elvish"]["stories"] if s["title"] == "Release the Cursed Drider")
+assert len(drider["contracts"]) == 1 and drider["steps"][0]["item_vnums"] == [35813]
+assert len(drider["steps"]) == 2  # A gifted terminal material must not require replaying preparation.
+promotions = [s for s in new_mappings["bastine"]["stories"] if s["title"].startswith("The Bastine Road:")]
+assert len(promotions) == 12 and all(len(s["contracts"]) == 1 for s in promotions)
+assert all(s["category"] == "service" for s in new_mappings["quietus"]["stories"] if "Credentials" in s["title"] or s["title"].startswith("Hear ") or s["title"].startswith("Obtain "))
+credentials = [s for s in new_mappings["quietus"]["stories"] if s["steps"][0].get("item_vnums") == [1701, 80808]]
+assert len(credentials) == 5 and all("badge" in s["steps"][0]["text"] and "longsword" in s["steps"][0]["text"] for s in credentials)
+chisel = next(s for s in new_mappings["torg"]["stories"] if s["id"] == "a-fine-chisel-for-the-craftsman")
+assert {c["giver_vnum"] for c in chisel["contracts"]} == {29023, 29024}
+assert len(chisel["steps"]) == 2 and chisel["steps"][0]["count"] == 1
+family = next(s for s in new_mappings["krimman"]["stories"] if s["title"] == "Release the Haunted Family")
+assert len(family["contracts"]) == 1 and len(family["steps"]) == 4
 
 coverage_spec = importlib.util.spec_from_file_location("home_coverage", ROOT / "scripts/zone_story_quest_home_coverage.py")
 coverage = importlib.util.module_from_spec(coverage_spec)

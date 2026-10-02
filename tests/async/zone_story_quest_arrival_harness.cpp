@@ -13,12 +13,17 @@ struct zone_data *zone_table = nullptr;
 namespace
 {
 bool save_ok = true;
+bool accounting_active = true;
 bool npc_visible = true;
 int vision = 1;
 int writes = 0;
 std::string published;
 std::string durable;
 zone_story_quest_state::records durable_records;
+}
+bool economic_gameplay_authority::active()
+{
+	return accounting_active;
 }
 namespace zone_story_quest_production
 {
@@ -103,6 +108,15 @@ int main()
 	descriptor.character = &player;
 	player.desc = &descriptor;
 	player.in_room = 0;
+	accounting_active = false;
+	assert(ready() && service() == nullptr);
+	arrived(&player);
+	assert(writes == 0 && published.empty() && !tracker.has_discovered(7, 42, 831));
+	assert(render_journal(&player, 831, false, false)
+		       .find("require active economic accounting") != std::string::npos);
+	assert(render_daily(&player, false).empty() && render_daily_score(&player, false).empty());
+	accounting_active = true;
+	assert(service() != nullptr);
 	{
 		temporary_placement remote;
 		arrived(&player);
@@ -223,6 +237,16 @@ int main()
 	       published.find("quest zone Alatorin") != std::string::npos);
 	assert(render_journal(&player, 831, false, false).find("ask gardener plants") !=
 	       std::string::npos);
+	accounting_active = false;
+	const int writes_before_disabled = writes;
+	const auto state_before_disabled = tracker.serialize_state();
+	arrived(&player);
+	encountered(&player, &npc);
+	assert(!daily_eligible(&player, definition.definition_id, 10, 864001));
+	assert(service() == nullptr && render_daily(&player, false).empty() &&
+	       writes == writes_before_disabled &&
+	       tracker.serialize_state() == state_before_disabled);
+	accounting_active = true;
 	assert(restored.deserialize_state(durable) && restored.has_met_npc(7, 42, 83101));
 	index_data indices[2] = {};
 	indices[0].virtual_number = 13521;
@@ -268,6 +292,14 @@ int main()
 	assert(!record_authoritative_completion(definition.definition_id, 831, 42, { 42 }, 83450,
 						864001, "Alice", 10, 1, true, 1, 10, &error,
 						"offering:101", &frozen));
+	accounting_active = false;
+	assert(record_authoritative_completion(definition.definition_id, 831, 42, { 42, 77 }, 83450,
+					       864001, "Alice", 10, 1, true, 2, 10, &error,
+					       "offering:101", &frozen) &&
+	       writes == completed_writes);
+	assert(erase_character(77, &error));
+	assert(restored.deserialize_state(durable) && restored.summary_for(7, 77).completed == 0);
+	assert(service() == nullptr);
 	std::cout
 		<< "native arrival suppression, failure rollback, empty area, and restart passed\n";
 }

@@ -1,0 +1,509 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "quietus",
+  "coverage": "complete",
+  "stories": [
+    {
+      "id": "show-membership-credentials-1728",
+      "title": "Show Membership Credentials",
+      "category": "service",
+      "summary": "Present either accepted credential to hear this briefing. The credential is returned; this is guidance for the mission rather than a completed mission.",
+      "contracts": [
+        {
+          "giver_vnum": 1728,
+          "completion_key": "give=I:1701;receive=I:1701;disappear=0"
+        },
+        {
+          "giver_vnum": 1728,
+          "completion_key": "give=I:80808;receive=I:80808;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-1701",
+          "text": "Carry a badge of the Darvanu or a blackened steel longsword",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            1701,
+            80808
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 1728,
+              "completion_key": "give=I:1701;receive=I:1701;disappear=0"
+            },
+            {
+              "giver_vnum": 1728,
+              "completion_key": "give=I:80808;receive=I:80808;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "obtain-the-drow-mission-note-1734",
+      "title": "Obtain the Drow Mission Note",
+      "category": "service",
+      "summary": "Present either accepted credential to hear this briefing. The credential is returned; this is guidance for the mission rather than a completed mission.",
+      "contracts": [
+        {
+          "giver_vnum": 1734,
+          "completion_key": "give=I:1701;receive=I:1701,I:1732;disappear=0"
+        },
+        {
+          "giver_vnum": 1734,
+          "completion_key": "give=I:80808;receive=I:1732,I:80808;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-1701",
+          "text": "Carry a badge of the Darvanu or a blackened steel longsword",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            1701,
+            80808
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 1734,
+              "completion_key": "give=I:1701;receive=I:1701,I:1732;disappear=0"
+            },
+            {
+              "giver_vnum": 1734,
+              "completion_key": "give=I:80808;receive=I:1732,I:80808;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-drow-lieutenant-s-contract-1734",
+      "title": "The Drow Lieutenant's Contract",
+      "category": "story",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 1734,
+          "completion_key": "give=I:1732,I:1746;receive=I:1747;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-1732",
+          "text": "Carry 1 x a short note",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            1732
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-1746",
+          "text": "Carry 1 x the bloody head of Aresliean",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            1746
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 1734,
+              "completion_key": "give=I:1732,I:1746;receive=I:1747;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hear-the-orcish-mission-1735",
+      "title": "Hear the Orcish Mission",
+      "category": "service",
+      "summary": "Present either accepted credential to hear this briefing. The credential is returned; this is guidance for the mission rather than a completed mission.",
+      "contracts": [
+        {
+          "giver_vnum": 1735,
+          "completion_key": "give=I:1701;receive=I:1701;disappear=0"
+        },
+        {
+          "giver_vnum": 1735,
+          "completion_key": "give=I:80808;receive=I:80808;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-1701",
+          "text": "Carry a badge of the Darvanu or a blackened steel longsword",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            1701,
+            80808
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 1735,
+              "completion_key": "give=I:1701;receive=I:1701;disappear=0"
+            },
+            {
+              "giver_vnum": 1735,
+              "completion_key": "give=I:80808;receive=I:80808;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-orcish-lieutenant-s-contract-1735",
+      "title": "The Orcish Lieutenant's Contract",
+      "category": "story",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 1735,
+          "completion_key": "give=I:9436;receive=I:1748,I:1749,I:1750;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-9436",
+          "text": "Carry 1 x the doubling sword of Chaos",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            9436
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 1735,
+              "completion_key": "give=I:9436;receive=I:1748,I:1749,I:1750;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-angry-lieutenant-s-contract-1736",
+      "title": "The Angry Lieutenant's Contract",
+      "category": "story",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 1736,
+          "completion_key": "give=I:16450;receive=I:1751;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16450",
+          "text": "Carry 1 x Eckraldu's staff",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16450
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 1736,
+              "completion_key": "give=I:16450;receive=I:1751;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hear-the-angry-lieutenant-s-mission-1736",
+      "title": "Hear the Angry Lieutenant's Mission",
+      "category": "service",
+      "summary": "Present either accepted credential to hear this briefing. The credential is returned; this is guidance for the mission rather than a completed mission.",
+      "contracts": [
+        {
+          "giver_vnum": 1736,
+          "completion_key": "give=I:1701;receive=I:1701;disappear=0"
+        },
+        {
+          "giver_vnum": 1736,
+          "completion_key": "give=I:80808;receive=I:80808;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-1701",
+          "text": "Carry a badge of the Darvanu or a blackened steel longsword",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            1701,
+            80808
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 1736,
+              "completion_key": "give=I:1701;receive=I:1701;disappear=0"
+            },
+            {
+              "giver_vnum": 1736,
+              "completion_key": "give=I:80808;receive=I:80808;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "show-the-captain-a-seal-1749",
+      "title": "Show the Captain a Seal",
+      "category": "service",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 1749,
+          "completion_key": "give=I:16429;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16429",
+          "text": "Carry 1 x Lord Krimeneha's Seal",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16429
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 1749,
+              "completion_key": "give=I:16429;receive=;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hear-the-captain-s-mission-1749",
+      "title": "Hear the Captain's Mission",
+      "category": "service",
+      "summary": "Present either accepted credential to hear this briefing. The credential is returned; this is guidance for the mission rather than a completed mission.",
+      "contracts": [
+        {
+          "giver_vnum": 1749,
+          "completion_key": "give=I:1701;receive=I:1701;disappear=0"
+        },
+        {
+          "giver_vnum": 1749,
+          "completion_key": "give=I:80808;receive=I:80808;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-1701",
+          "text": "Carry a badge of the Darvanu or a blackened steel longsword",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            1701,
+            80808
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 1749,
+              "completion_key": "give=I:1701;receive=I:1701;disappear=0"
+            },
+            {
+              "giver_vnum": 1749,
+              "completion_key": "give=I:80808;receive=I:80808;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "proof-against-quietus-1749",
+      "title": "Proof Against Quietus",
+      "category": "story",
+      "summary": "Deliver the bloodstone requested as proof against Quietus. This records the native exchange; it does not prove a personal kill or require earlier membership dialogue.",
+      "contracts": [
+        {
+          "giver_vnum": 1749,
+          "completion_key": "give=I:1730;receive=I:1752,I:1753,I:1754;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-1730",
+          "text": "Carry 1 x Quietus' bloodstone",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            1730
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 1749,
+              "completion_key": "give=I:1730;receive=I:1752,I:1753,I:1754;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "show-the-captain-a-mission-reward-1749",
+      "title": "Show the Captain a Mission Reward",
+      "category": "service",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 1749,
+          "completion_key": "give=I:1747;receive=I:1747;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-1747",
+          "text": "Carry 1 x a sleek mithril dagger",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            1747
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 1749,
+              "completion_key": "give=I:1747;receive=I:1747;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": [],
+  "introduction": "Explore the docks and meet the people offering local missions.",
+  "orientation": [
+    "Use look and exits to explore. Meet visible people to reveal their requests.",
+    "Talk to the people you meet to learn about local requests. The checklist shows your current supplies and completed exchanges."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 1728,
+      "name": "a thin duergar",
+      "keyword": "darvanu",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "darvanu"
+      ]
+    },
+    {
+      "mob_vnum": 1734,
+      "name": "a drow lieutenant",
+      "keyword": "drow",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "duty",
+        "aresliean"
+      ]
+    },
+    {
+      "mob_vnum": 1735,
+      "name": "an orcish lieutenant",
+      "keyword": "orc",
+      "description": "Review the local requests below.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 1736,
+      "name": "an angry lieutenant",
+      "keyword": "angry",
+      "description": "Review the local requests below.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 1749,
+      "name": "a mercenary captain",
+      "keyword": "captain",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "krimeneha"
+      ]
+    }
+  ]
+}

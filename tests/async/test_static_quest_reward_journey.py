@@ -180,7 +180,8 @@ def player_item_rows(state_root: Path) -> list[dict]:
     return state["player_items"]
 
 
-def run(binary: Path, *, daily: bool = False) -> None:
+def run(binary: Path, *, daily: bool = False, inactive_accounting: bool = False) -> None:
+    guided = daily and not inactive_accounting
     with tempfile.TemporaryDirectory(prefix="duris-quest-state-") as state_tmp, \
          tempfile.TemporaryDirectory(prefix="duris-quest-run-") as run_tmp:
         state_root, run_root = Path(state_tmp), Path(run_tmp)
@@ -224,7 +225,14 @@ def run(binary: Path, *, daily: bool = False) -> None:
                                              hometown="p")
                     client.send("look")
                     client.expect("The Regression Arena", timeout=15)
-                    if daily:
+                    if inactive_accounting:
+                        transcript = bytes(client.transcript).decode(errors="replace")
+                        assert "You just discovered a new zone" not in transcript
+                        client.send("quest zone Minimal World")
+                        client.expect("Zone journals require active economic accounting.", timeout=15)
+                        client.send("quest daily")
+                        client.expect("Zone journals require active economic accounting.", timeout=15)
+                    if guided:
                         transcript = bytes(client.transcript).decode(errors="replace")
                         assert "You just discovered a new zone called Minimal World" in transcript
                         assert "Type 'quest zone Minimal World'" in transcript
@@ -259,14 +267,23 @@ def run(binary: Path, *, daily: bool = False) -> None:
                     client.expect(f"Save complete for {journey.CHARACTER}.", timeout=30)
                 else:
                     client = journey.reconnect_character(port, expected_room="The Garden Path" if daily else "The Regression Arena")
-                    if daily:
+                    if guided:
                         transcript = bytes(client.transcript).decode(errors="replace")
                         assert "You just discovered a new zone" not in transcript
                         assert "Your journal now includes Lapney" not in transcript
                         client.send("quest zone Minimal World")
                         client.expect("[Met] Lapney", timeout=15)
                         finish_journal(client)
-                if daily:
+                if inactive_accounting:
+                    transcript = bytes(client.transcript).decode(errors="replace")
+                    assert "You just discovered a new zone" not in transcript
+                    assert "Your journal now includes Lapney" not in transcript
+                    client.send("quest daily Minimal World")
+                    client.expect("Zone journals require active economic accounting.", timeout=15)
+                    client.send("score")
+                    client.expect("Pos: standing", timeout=15)
+                    assert "renown 1" not in bytes(client.transcript).decode(errors="replace")
+                if guided:
                     client.send("score")
                     client.expect("renown 1", timeout=15)
                     client.send("quest daily Minimal World")

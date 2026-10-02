@@ -34,7 +34,7 @@ void do_achievements(P_char ch, char *arg, int /*cmd*/)
 		if (!tracker)
 		{
 			send_to_char(
-				"Zone-story achievements are unavailable until the production catalog and persistence state are ready.\r\n",
+				"Zone-story achievements require active economic accounting and ready catalog/persistence state.\r\n",
 				ch);
 			return;
 		}

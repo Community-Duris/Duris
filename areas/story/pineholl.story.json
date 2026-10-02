@@ -1,0 +1,352 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "pineholl",
+  "coverage": "complete",
+  "stories": [
+    {
+      "id": "the-cruel-warrior-s-dragon-trophies-16005",
+      "title": "The Cruel Warrior's Dragon Trophies",
+      "category": "story",
+      "summary": "Deliver the three distinct dragon scales and broken lance requested by the warrior. Delivery does not prove personal kills, and this is separate from helping the wounded dragon.",
+      "contracts": [
+        {
+          "giver_vnum": 16005,
+          "completion_key": "give=I:16015,I:16016,I:16076,I:16077;receive=I:16015,I:16081,I:16082,I:16084,I:16085;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16015",
+          "text": "Carry 1 x a gold dragon scale",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16015
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-16016",
+          "text": "Carry 1 x a broken mithral lance",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16016
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-16076",
+          "text": "Carry 1 x a green-hued gold dragon scale",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16076
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-16077",
+          "text": "Carry 1 x the brown-hued scale of an elder gold dragon",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16077
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 16005,
+              "completion_key": "give=I:16015,I:16016,I:16076,I:16077;receive=I:16015,I:16081,I:16082,I:16084,I:16085;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "help-the-wounded-gold-dragon-16006",
+      "title": "Help the Wounded Gold Dragon",
+      "category": "story",
+      "summary": "Deliver the black sword, black platemail, and dark-spirit totem to help the wounded dragon. The journal records the exchange, not personal kills or a locked faction choice.",
+      "contracts": [
+        {
+          "giver_vnum": 16006,
+          "completion_key": "give=I:16013,I:16014,I:16080;receive=I:16015,I:16075;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16013",
+          "text": "Carry 1 x a black sword",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16013
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-16014",
+          "text": "Carry 1 x a full suit of black platemail",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16014
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-16080",
+          "text": "Carry 1 x the totem of dark spirits",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16080
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 16006,
+              "completion_key": "give=I:16013,I:16014,I:16080;receive=I:16015,I:16075;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a-brown-bear-jacket-16080",
+      "title": "A Brown Bear Jacket",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 16080,
+          "completion_key": "give=I:16019,I:16019,I:16019;receive=I:16048;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16019",
+          "text": "Carry 3 x a brown bear skin",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16019
+          ],
+          "count": 3
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 16080,
+              "completion_key": "give=I:16019,I:16019,I:16019;receive=I:16048;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "black-bear-leggings-16080",
+      "title": "Black Bear Leggings",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 16080,
+          "completion_key": "give=I:16020,I:16020,I:16020;receive=I:16049;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16020",
+          "text": "Carry 3 x a black bear skin",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16020
+          ],
+          "count": 3
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 16080,
+              "completion_key": "give=I:16020,I:16020,I:16020;receive=I:16049;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a-heavy-bear-coat-16080",
+      "title": "A Heavy Bear Coat",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 16080,
+          "completion_key": "give=I:16021,I:16021;receive=I:16050;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16021",
+          "text": "Carry 2 x a huge bear skin",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16021
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 16080,
+              "completion_key": "give=I:16021,I:16021;receive=I:16050;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "badgerskin-boots-16080",
+      "title": "Badgerskin Boots",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 16080,
+          "completion_key": "give=I:16024,I:16024,I:16024;receive=I:16051;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16024",
+          "text": "Carry 3 x a badger pelt",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16024
+          ],
+          "count": 3
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 16080,
+              "completion_key": "give=I:16024,I:16024,I:16024;receive=I:16051;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a-red-fox-stole-16080",
+      "title": "A Red Fox Stole",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 16080,
+          "completion_key": "give=I:16025,I:16025,I:16025;receive=I:16052;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16025",
+          "text": "Carry 3 x a red fox pelt",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16025
+          ],
+          "count": 3
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 16080,
+              "completion_key": "give=I:16025,I:16025,I:16025;receive=I:16052;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": [],
+  "introduction": "Explore the hollow for woodland requests and competing accounts of the dragon conflict.",
+  "orientation": [
+    "Use look and exits to explore. Meet visible people to reveal their requests.",
+    "Talk to the people you meet to learn about local requests. The checklist shows your current supplies and completed exchanges."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 16005,
+      "name": "a cruel warrior",
+      "keyword": "anti-paladin",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "search",
+        "lance",
+        "auriam",
+        "children"
+      ]
+    },
+    {
+      "mob_vnum": 16006,
+      "name": "Auriam",
+      "keyword": "auriam",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "scar"
+      ]
+    },
+    {
+      "mob_vnum": 16080,
+      "name": "Darlene",
+      "keyword": "darlene",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "jacket",
+        "leggings",
+        "coat",
+        "boots",
+        "stole"
+      ]
+    }
+  ]
+}

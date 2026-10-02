@@ -632,7 +632,11 @@ void do_quest(P_char ch, char *args, int /*cmd*/)
 		auto *tracker = zone_story_quest_runtime::service();
 		if (!tracker)
 		{
-			send_to_char("The quest journal is unavailable.\r\n", ch);
+			send_to_char(
+				economic_gameplay_authority::active() ?
+					"The quest journal is unavailable.\r\n" :
+					"Zone journals require active economic accounting.\r\n",
+				ch);
 			return;
 		}
 		const bool colors = ch->desc && ch->desc->term_type != TERM_GENERIC &&

@@ -1,0 +1,540 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "bastine",
+  "coverage": "complete",
+  "stories": [
+    {
+      "id": "the-bastine-road-adept-warrior-7600",
+      "title": "The Bastine Road: Adept Warrior",
+      "category": "request",
+      "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:12802;receive=C:5000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-12802",
+          "text": "Carry 1 x a blessed shield of defense",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            12802
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:12802;receive=C:5000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-lieutenant-7600",
+      "title": "The Bastine Road: Lieutenant",
+      "category": "request",
+      "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:2607;receive=C:75000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-2607",
+          "text": "Carry 1 x the broom of air",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            2607
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:2607;receive=C:75000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-veteran-7600",
+      "title": "The Bastine Road: Veteran",
+      "category": "request",
+      "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41327;receive=C:15000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41327",
+          "text": "Carry 1 x an anti-orc scimitar",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            41327
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41327;receive=C:15000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-captain-7600",
+      "title": "The Bastine Road: Captain",
+      "category": "request",
+      "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41375;receive=C:100000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41375",
+          "text": "Carry 1 x an ankh of the black sword",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            41375
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41375;receive=C:100000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-young-warrior-7600",
+      "title": "The Bastine Road: Young Warrior",
+      "category": "request",
+      "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41388;receive=C:2000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41388",
+          "text": "Carry 1 x a dirk called 'intimidator'",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            41388
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41388;receive=C:2000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-warrior-7600",
+      "title": "The Bastine Road: Warrior",
+      "category": "request",
+      "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41407;receive=C:10000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41407",
+          "text": "Carry 1 x an iron crown of King Vinzor",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            41407
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41407;receive=C:10000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-third-ranked-captain-7600",
+      "title": "The Bastine Road: Third Ranked Captain",
+      "category": "request",
+      "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41408;receive=C:100000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41408",
+          "text": "Carry 1 x a cloth mask",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            41408
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41408;receive=C:100000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-general-7600",
+      "title": "The Bastine Road: General",
+      "category": "request",
+      "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41411;receive=C:200000,I:41304;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41411",
+          "text": "Carry 1 x the spotted hide of the kearonor beast",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            41411
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41411;receive=C:200000,I:41304;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-first-ranked-captain-7600",
+      "title": "The Bastine Road: First Ranked Captain",
+      "category": "request",
+      "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41920;receive=C:50000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41920",
+          "text": "Carry 1 x a strip of hide of Xort beast",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            41920
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41920;receive=C:50000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-second-ranked-captain-7600",
+      "title": "The Bastine Road: Second Ranked Captain",
+      "category": "request",
+      "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41922;receive=C:100000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41922",
+          "text": "Carry 1 x the face of Mythra",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            41922
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41922;receive=C:100000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-soldier-7600",
+      "title": "The Bastine Road: Soldier",
+      "category": "request",
+      "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:41924;receive=C:50000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41924",
+          "text": "Carry 1 x an ebony staff",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            41924
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:41924;receive=C:50000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bastine-road-knight-of-the-bastine-order-7600",
+      "title": "The Bastine Road: Knight of the Bastine Order",
+      "category": "request",
+      "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:70970;receive=C:1000000,I:7616,I:7617;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-70970",
+          "text": "Carry 1 x the wand of Life",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            70970
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:70970;receive=C:1000000,I:7616,I:7617;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-werewolf-prince-7600",
+      "title": "The Werewolf Prince",
+      "category": "story",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7600,
+          "completion_key": "give=I:7673;receive=I:7674;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-7673",
+          "text": "Carry 1 x the bloody head of a werewolf",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            7673
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 7600,
+              "completion_key": "give=I:7673;receive=I:7674;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-apprentice-s-trust-7603",
+      "title": "The Apprentice's Trust",
+      "category": "story",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 7603,
+          "completion_key": "give=I:41397;receive=I:41394,I:41398;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-41397",
+          "text": "Carry 1 x a shiny signet ring",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            41397
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 7603,
+              "completion_key": "give=I:41397;receive=I:41394,I:41398;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": [],
+  "introduction": "Explore the castle for requests that send adventurers into the wider world.",
+  "orientation": [
+    "Use look and exits to explore. Meet visible people to reveal their requests.",
+    "Talk to the people you meet to learn about local requests. The checklist shows your current supplies and completed exchanges."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 7600,
+      "name": "King Mrotha",
+      "keyword": "mrotha",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "knight",
+        "no",
+        "yes"
+      ]
+    },
+    {
+      "mob_vnum": 7603,
+      "name": "Victor the Apprentice",
+      "keyword": "victor",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "morlanthra"
+      ]
+    }
+  ]
+}

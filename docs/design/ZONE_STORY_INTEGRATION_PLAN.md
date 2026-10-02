@@ -1,7 +1,8 @@
 # Universal zone story integration plan
 
-**Status: builder mappings, starter/town coverage, encountered-NPC visibility,
-and first-journey guidance implemented on `codex/discovered-zone-dailies`.
+**Status: 36 authored journals, accounting-gated player surfaces, starter/town
+coverage, encountered-NPC visibility, and first-journey guidance implemented
+on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
 
 Maintain this plan as zones are reviewed. Keep static contract classification,
@@ -12,6 +13,66 @@ The [builder guide](../guides/ZONE_STORY_BUILDING.md) specifies the shipped
 sidecar. The [daily contract](../reference/ZONE_STORY_QUEST_DAILY.md) and
 [catalog audit](../reference/ZONE_STORY_QUEST_CATALOG.md) describe its use with
 native completion receipts and discovery.
+
+The [zone priority roadmap](ZONE_STORY_ZONE_PRIORITIES.md) now orders 220
+integration candidates, including the scripted Plains of Life tutorial. Its
+first 34 entries have reviewed rough progression stories; the remaining queue
+is explicitly provisional static triage. The [active inventory](../reference/ZONE_STORY_ZONE_INVENTORY.md)
+covers all 350 catalog zones, 221 native-Q areas, and Q-free script/dialogue leads.
+
+## Accounting requirement and delivery sequence
+
+Active economic accounting is a prerequisite for player zone journals,
+discovery/encounter events, zone-story achievement surfaces, and new daily
+eligibility. Use the verified native `economic_gameplay_authority::active()`
+projection, not an environment flag or the mere presence of accounting tables.
+`ZONE_STORY_DAILY_ENABLED` is an additional daily switch; it cannot bypass this
+requirement. Offline source audits and builder validation remain available.
+
+Catalog/state bootstrap, exact native completion receipt recovery, persistence,
+and deleted-character cleanup remain available while accounting is inactive.
+They maintain existing authoritative history without publishing journal prompts,
+inventing encounters, or admitting new daily credit. A frozen already-committed
+receipt retains its original recipients and eligibility through recovery; the
+current activation state must not rewrite its terms or cause reward duplication.
+
+Implement and qualify the remaining additions in this order:
+
+1. **Shared journal projection and flower pilot.** Render the same canonical
+   zone/story/objective state in ANSI/plain text and a versioned GMCP extension.
+   Use the selected Client journal design: known contacts, stage/checklist,
+   live materials, next action, blocked reason, history, daily status. Qualify
+   the actual Twin Towers flower journey, belt at waist, valid alternatives,
+   gifts, failed access, consumption, and cold reconnect under active accounting.
+2. **Accepted dialogue and durable stages.** Add stable objective events and
+   alias-aware learned topics. Use the Plains of Life tutorial and a small
+   local exchange chain as the first adapters. Reads and repeated greetings
+   create no history. Keep conversational knowledge separate from admission.
+3. **Optional preparation and complete story families.** Add conditional
+   subrecipes, optional historical steps, explicit all-stage versus any-terminal
+   completion, authored branch/reveal rules, and story attempts. A terminal
+   `contracts` array currently means any-of; it cannot express a campaign where
+   every independent exchange must succeed. Do not force gifted materials to
+   replay a local recipe or treat the first promotion as completing knighthood.
+4. **Source and transformation evidence.** Build on committed accounting
+   lifecycle/custody evidence for personal recovery, distinct sources, tanning,
+   freshness, and lineage. Never infer these from possession or text.
+5. **Mixed offerings and larger pilot.** Commit materials/payment/rewards and
+   stage evidence together, then qualify Twin Towers clothing and grove recipes.
+6. **Expand through the priority roadmap.** Review one story family at a time,
+   qualify an actual player journey, and update semantic coverage independently
+   from static contract classification.
+
+Client updates should follow committed events and live inventory/equipment
+changes; reconnect sends a fresh projection. Unsupported facts must be marked
+untracked or omitted, rather than rendered as an earned/missing achievement.
+Future source hints and subrecipes must respect encountered-contact and stage
+visibility. An undiscovered area or an unseen NPC must not be revealed by a
+client payload that the terminal hides. Plain clients remain fully usable.
+
+No new persistence schema, event kinds, client wire format, or quest admission
+conditions are introduced by the current mapping pass. Those additions remain
+separate implementations with the proof requirements below.
 
 ## Model and discovery policy
 
@@ -47,6 +108,12 @@ Candidate links need source review and appropriate gameplay qualification.
 - [x] All 27 native starter/town areas have sidecars; creation-room and town-flag
   audit, full Q classification, explicit services and missing-item exclusions,
   mansion rescue grouping, and known Ailvio ingredient routes.
+- [x] Active accounting gates player journals, discovery/encounter events,
+  zone-story surfaces, and new daily eligibility, independently of the daily switch.
+- [x] Eight additional journals classify 86 native contracts across Breale,
+  Abandoned Elven Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus,
+  Torg, and Vast Hidden Grove. Source inventory and ordered story roadmap are
+  checked in; no deeper unsupported objective kinds are claimed.
 
 Live inventory remains separate from earned accomplishments. NPC encounter
 history uses domain header `ZSQF|3` and existing SQL/flat-file buckets; old
@@ -113,6 +180,44 @@ remain tracked in the area register.
 
 ## Implementation backlog
 
+### Accounting gate and expanded journal verification — October 2, 2026
+
+Both maintained C++20 server builds passed after this batch, including the
+normal warnings-as-errors profile. This host's existing hiredis TLS directory
+was supplied through `LIBRARY_PATH` for linking and `LD_LIBRARY_PATH` for the
+native fixture; no dependency was installed and no production operation ran.
+
+The isolated flat-file gameplay command passed:
+
+```bash
+python3 tests/async/test_discovered_zone_daily_journey.py \
+  bin/server/dms_zone_story_builder_flatfile
+```
+
+The fixture now deliberately keeps accounting inactive while setting the daily
+flag. It verifies journal refusal, no discovery/meeting/daily prompts, an ordinary
+native quest reward, saved item identity, and cold reconnect. The earlier positive
+legacy-mode guided journey above is historical qualification; a full journey
+under genuinely active accounting remains the first pilot acceptance requirement.
+
+Focused regressions passed: authored story/native projection (all 36 sidecars),
+production catalog and generated inventory, native production/bootstrap, arrival
+adapter, feature domain, tracking contract, daily evidence report, and all 27
+starter/town source coverage. The arrival adapter tests active/inactive admission,
+unchanged state on blocked views/arrivals, replay of an already-frozen receipt,
+and deletion cleanup while inactive. Mapping regressions protect distinct Bastine
+promotions, gifted drider terminal material, Quietus credential alternatives,
+Torg's two equivalent chisel makers, and the family's distinct keepsakes.
+
+The complete priority queue was checked against all 219 non-deferred native-Q
+areas plus the Plains of Life, with each included exactly once. All new document
+source links resolve. Native definitions, source fingerprint, zone registry, and
+the original 28 sidecars are unchanged as parsed objects. Format checks for
+changed lines and complete touched C/C++ files, plus whitespace checks, passed.
+
+These results qualify the accounting gate and deployable mapping schema, not
+every individual world journey or the future dialogue/provenance/client adapters.
+
 ### Dialogue and durable journey objectives
 
 - [ ] Version an event/objective contract with character, season, story,
@@ -174,6 +279,9 @@ with unchanged input/reward identities.
 - [ ] Add compact tracking, current stage/next action, concrete blocked reasons,
   source-aware hints, branches, and updates after inventory/equipment/decay,
   dialogue, and confirmed outcomes.
+- [ ] Version optional preparation, conditional subrecipes, explicit all-stage
+  campaign completion, story attempts, and branch/reveal policy. Preserve the
+  current any-of terminal semantics for existing mappings.
 
 Delivered portion: plain/ANSI journals now show the first outstanding step,
 encountered contacts and conversation commands, live material counts, receipt
@@ -207,6 +315,7 @@ contract classification; it does not claim complete objective coverage.
 | --- | ---: | --- | --- | --- | --- |
 | Twin Towers Forest | 2 | Complete: 84 contracts → 10 stories; 40 rejections and 24 supporting services/trades excluded | Encountered contacts, conversation guidance, live belt/plant/material checks, existing receipts; dialogue/provenance pending | Supported flowers/arrows/sprite; clothing/tanning mixed offerings unavailable with active accounting | Focused mapping/projection/native adapter/build checks; complete journey pending deeper adapters |
 | All 27 starter/town areas | 1 | Complete static Q classification; detailed counts and evidence in starter/town register | Orientation, encountered people, concrete delivery counts and native receipt checklists; selected multi-step routes | Existing offering limits; reviewed crafting and equipment services do not create story/daily units | All maps pass source/native validation; isolated native guided journey; individual full-world routes pending |
+| Eight additional quest areas | 1 | Complete: 86 contracts → 80 named story/request/service entries | Verified Q/M guidance, distinct material counts, optional preparation hints and receipts; deeper dialogue/lineage/branches pending | Mixed item-and-coin grove recipes remain unavailable; preparation services do not earn story/daily units | Source/native parser and encounter visibility checks; each full-world journey remains pending in the priority roadmap |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
 
 ## Twin Towers evidence and decisions

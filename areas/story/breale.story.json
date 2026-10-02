@@ -1,0 +1,310 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "breale",
+  "coverage": "complete",
+  "stories": [
+    {
+      "id": "dirt-for-the-triad-2600",
+      "title": "Dirt for the Triad",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 2600,
+          "completion_key": "give=I:2673;receive=I:2681;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-2673",
+          "text": "Carry 1 x some dirt",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            2673
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 2600,
+              "completion_key": "give=I:2673;receive=I:2681;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "begin-the-triad-reagents-2600",
+      "title": "Begin the Triad Reagents",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 2600,
+          "completion_key": "give=I:2674;receive=I:2682;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-2674",
+          "text": "Carry 1 x a fennel root",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            2674
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 2600,
+              "completion_key": "give=I:2674;receive=I:2682;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-first-triad-mixture-2601",
+      "title": "The First Triad Mixture",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 2601,
+          "completion_key": "give=I:2671,I:2674,I:2674;receive=I:2683;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-2671",
+          "text": "Carry 1 x a peppercorn",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            2671
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-2674",
+          "text": "Carry 2 x a fennel root",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            2674
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 2601,
+              "completion_key": "give=I:2671,I:2674,I:2674;receive=I:2683;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-second-triad-mixture-2601",
+      "title": "The Second Triad Mixture",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 2601,
+          "completion_key": "give=I:2672,I:2672,I:2673;receive=I:2684;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-2672",
+          "text": "Carry 2 x a tiny pile of wood",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            2672
+          ],
+          "count": 2
+        },
+        {
+          "id": "material-2673",
+          "text": "Carry 1 x some dirt",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            2673
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 2601,
+              "completion_key": "give=I:2672,I:2672,I:2673;receive=I:2684;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "finish-the-triad-mixture-2602",
+      "title": "Finish the Triad Mixture",
+      "category": "story",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 2602,
+          "completion_key": "give=I:2670,I:2672,I:2672,I:2675,I:2675;receive=I:2602;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-2670",
+          "text": "Carry 1 x some ash",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            2670
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-2672",
+          "text": "Carry 2 x a tiny pile of wood",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            2672
+          ],
+          "count": 2
+        },
+        {
+          "id": "material-2675",
+          "text": "Carry 2 x a red mushroom",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            2675
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 2602,
+              "completion_key": "give=I:2670,I:2672,I:2672,I:2675,I:2675;receive=I:2602;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "aid-the-dying-witch-2617",
+      "title": "Aid the Dying Witch",
+      "category": "story",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 2617,
+          "completion_key": "give=I:2679;receive=I:2645;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-2679",
+          "text": "Carry 1 x a small potion of healing",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            2679
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 2617,
+              "completion_key": "give=I:2679;receive=I:2645;disappear=1"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": [],
+  "introduction": "Explore the town and its hidden passages for local requests and unusual mixtures.",
+  "orientation": [
+    "Use look and exits to explore. Meet visible people to reveal their requests.",
+    "Talk to the people you meet to learn about local requests. The checklist shows your current supplies and completed exchanges."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 2600,
+      "name": "Esmerelda",
+      "keyword": "esmerelda",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 2601,
+      "name": "Abigail",
+      "keyword": "abigail",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "hi",
+        "brontella"
+      ]
+    },
+    {
+      "mob_vnum": 2602,
+      "name": "Pontif",
+      "keyword": "pontif",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "hi",
+        "montra"
+      ]
+    },
+    {
+      "mob_vnum": 2617,
+      "name": "the dying witch",
+      "keyword": "dying",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "wrist"
+      ]
+    }
+  ]
+}

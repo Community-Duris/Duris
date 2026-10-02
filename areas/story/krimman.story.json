@@ -1,0 +1,429 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "krimman",
+  "coverage": "complete",
+  "stories": [
+    {
+      "id": "release-the-lady-16419",
+      "title": "Release the Lady",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 16419,
+          "completion_key": "give=I:16451;receive=I:16451,I:16454;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16451",
+          "text": "Carry 1 x a piece of a staff",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16451
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 16419,
+              "completion_key": "give=I:16451;receive=I:16451,I:16454;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "release-the-serving-girl-16420",
+      "title": "Release the Serving Girl",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 16420,
+          "completion_key": "give=I:16451;receive=I:16451;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16451",
+          "text": "Carry 1 x a piece of a staff",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16451
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 16420,
+              "completion_key": "give=I:16451;receive=I:16451;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "release-the-crying-ghost-16421",
+      "title": "Release the Crying Ghost",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 16421,
+          "completion_key": "give=I:16451;receive=I:16436,I:16451;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16451",
+          "text": "Carry 1 x a piece of a staff",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16451
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 16421,
+              "completion_key": "give=I:16451;receive=I:16436,I:16451;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "prepare-a-staff-fragment-16422",
+      "title": "Prepare a Staff Fragment",
+      "category": "service",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 16422,
+          "completion_key": "give=I:16450;receive=I:16451;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16450",
+          "text": "Carry 1 x Eckraldu's staff",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16450
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 16422,
+              "completion_key": "give=I:16450;receive=I:16451;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "release-the-haunted-family-16422",
+      "title": "Release the Haunted Family",
+      "category": "story",
+      "summary": "Return the three family keepsakes to release the lord. The staff-fragment exchanges can supply them; possession alone does not prove that you personally freed each spirit.",
+      "contracts": [
+        {
+          "giver_vnum": 16422,
+          "completion_key": "give=I:16452,I:16453,I:16454;receive=I:16445,I:16455;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16452",
+          "text": "Carry 1 x a boy's signet ring",
+          "kind": "carried_item",
+          "hint": "A corresponding family spirit returns this keepsake when released with a staff fragment. Another valid keepsake also works.",
+          "item_vnums": [
+            16452
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-16453",
+          "text": "Carry 1 x a girl's broach",
+          "kind": "carried_item",
+          "hint": "A corresponding family spirit returns this keepsake when released with a staff fragment. Another valid keepsake also works.",
+          "item_vnums": [
+            16453
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-16454",
+          "text": "Carry 1 x an elegant silver broach",
+          "kind": "carried_item",
+          "hint": "A corresponding family spirit returns this keepsake when released with a staff fragment. Another valid keepsake also works.",
+          "item_vnums": [
+            16454
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 16422,
+              "completion_key": "give=I:16452,I:16453,I:16454;receive=I:16445,I:16455;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "release-the-boy-16424",
+      "title": "Release the Boy",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 16424,
+          "completion_key": "give=I:16451;receive=I:16451,I:16452;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16451",
+          "text": "Carry 1 x a piece of a staff",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16451
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 16424,
+              "completion_key": "give=I:16451;receive=I:16451,I:16452;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "release-the-young-girl-16425",
+      "title": "Release the Young Girl",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 16425,
+          "completion_key": "give=I:16451;receive=I:16451,I:16453;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16451",
+          "text": "Carry 1 x a piece of a staff",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16451
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 16425,
+              "completion_key": "give=I:16451;receive=I:16451,I:16453;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "release-the-first-gardener-16426",
+      "title": "Release the First Gardener",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 16426,
+          "completion_key": "give=I:16451;receive=I:16451;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16451",
+          "text": "Carry 1 x a piece of a staff",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16451
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 16426,
+              "completion_key": "give=I:16451;receive=I:16451;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "release-the-second-gardener-16427",
+      "title": "Release the Second Gardener",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 16427,
+          "completion_key": "give=I:16451;receive=I:16422,I:16451;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-16451",
+          "text": "Carry 1 x a piece of a staff",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            16451
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 16427,
+              "completion_key": "give=I:16451;receive=I:16422,I:16451;disappear=1"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": [],
+  "introduction": "Explore the haunted mansion and listen to the spirits you can identify.",
+  "orientation": [
+    "Use look and exits to explore. Meet visible people to reveal their requests.",
+    "Talk to the people you meet to learn about local requests. The checklist shows your current supplies and completed exchanges."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 16419,
+      "name": "the ghost of a Lady",
+      "keyword": "lady",
+      "description": "Review the local requests below.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 16420,
+      "name": "a serving girl's ghost",
+      "keyword": "servant",
+      "description": "Review the local requests below.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 16421,
+      "name": "the crying ghost",
+      "keyword": "woman",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "crying",
+        "leave",
+        "lord"
+      ]
+    },
+    {
+      "mob_vnum": 16422,
+      "name": "Lord Krimeneha's ghost",
+      "keyword": "krimeneha",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "pool",
+        "eckraldu"
+      ]
+    },
+    {
+      "mob_vnum": 16424,
+      "name": "a boy's ghost",
+      "keyword": "boy",
+      "description": "Review the local requests below.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 16425,
+      "name": "a young girl's ghost",
+      "keyword": "girl",
+      "description": "Review the local requests below.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 16426,
+      "name": "a gardener's ghost",
+      "keyword": "gardener",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "pool",
+        "monster",
+        "lord"
+      ]
+    },
+    {
+      "mob_vnum": 16427,
+      "name": "a gardener's ghost",
+      "keyword": "gardener",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "lord"
+      ]
+    }
+  ]
+}

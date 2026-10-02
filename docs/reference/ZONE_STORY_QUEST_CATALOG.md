@@ -12,11 +12,16 @@ Optional `areas/story/<area>.story.json` mappings project raw contracts into
 named stories without changing native receipt IDs. Twin Towers replaces 84
 contracts with 10 achievement units and 3 daily groups, excluding 40 returned
 offerings and 24 supporting services/trades. The global projection now has
-2,464 achievement units and 2,055 daily candidate units after adding all 27
-starter/town mappings, equipment/crafting services, intermediate outcomes,
-and explicit missing-item exclusions. There are 28 area sidecars and 2,579
-projected units including services and administrative content. Other areas
+2,436 achievement units and 2,039 daily candidate units after adding all 27
+starter/town mappings and eight further journals, equipment/crafting services,
+intermediate outcomes, and explicit missing-item exclusions. There are 36
+area sidecars and 2,573 projected units including services and administrative
+content. Other areas
 retain native-contract fallback; these counts do not claim full semantic review.
+The [priority roadmap](../design/ZONE_STORY_ZONE_PRIORITIES.md) and
+[complete active inventory](ZONE_STORY_ZONE_INVENTORY.md) distinguish reviewed
+story proposals from provisional static candidates. Player journals and new
+discovery/encounter/daily eligibility require active economic accounting.
 The [starter/town register](ZONE_STORY_STARTER_HOMETOWN_COVERAGE.md) identifies
 the native selection sources, exact mapped areas, and remaining journey work.
 See the [builder guide](../guides/ZONE_STORY_BUILDING.md) and

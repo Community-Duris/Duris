@@ -11,6 +11,12 @@ The sidecar does not execute scripts, move players, consume offerings, or
 grant rewards. The [larger plan](../design/ZONE_STORY_INTEGRATION_PLAN.md)
 tracks the later event and provenance work.
 
+Player journals and new discovery/encounter/daily eligibility require verified
+active economic accounting. Builder source validation can run offline without
+activating accounting or daily rewards. See the [ordered zone roadmap](../design/ZONE_STORY_ZONE_PRIORITIES.md)
+and [complete evidence inventory](../reference/ZONE_STORY_ZONE_INVENTORY.md) to
+choose the next integration.
+
 ## Builder workflow
 
 1. Export readable native bindings for the active area's source filename:
@@ -154,6 +160,27 @@ one-renown-per-day cap keep their existing authority.
 Do not automatically exclude all returned-item exchanges: another zone may use
 that shape for a legitimate transformation. Twin Towers exclusions were reviewed
 against their actual responses.
+
+## Linked preparations and independent stages
+
+`contracts` on a story means **any one terminal alternative completes the unit**.
+Do not put all promotions or all successive exchanges into this array and call
+it an entire campaign: the first receipt would prematurely complete it.
+
+The Elven Homestead and Torg journals name terminal stories and separate
+preparation services. Their summaries/hints explain one valid material route;
+native exchanges still accept valid gifted materials. Krimeneha's rescue
+exchanges retain genuine returned-fragment milestones instead of treating every
+returned item as rejection feedback. Bastine promotions and Breale's successive
+mixtures remain distinct accepted requests until an all-stage family can be
+authored. Native receipt checklists are historical evidence; inventory is live.
+
+The current schema has no optional historical-step or conditional-subrecipe
+field. Do not use an obligatory-looking preparation checklist when possessing
+the terminal material already satisfies the native request. Document the
+reviewed progression in the roadmap and use separate service entries instead.
+The future event/schema plan adds these capabilities after accounting-backed
+evidence and client projections are qualified.
 
 ## The gardener dependency
 

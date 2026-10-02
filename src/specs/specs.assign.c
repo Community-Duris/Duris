@@ -1268,10 +1268,13 @@ void assign_mobiles(void)
 	if (!zone_story_quest_runtime::bootstrap(&zone_story_error))
 		logit(LOG_DEBUG, "Zone-story quest catalog disabled at boot: %s",
 		      zone_story_error.c_str());
-	else
+	else if (auto *zone_story_service = zone_story_quest_runtime::service())
 		logit(LOG_STATUS, "Zone-story quest catalog ready: %zu definitions, revision %u",
-		      zone_story_quest_runtime::service()->catalog().definitions.size(),
+		      zone_story_service->catalog().definitions.size(),
 		      zone_story_quest_runtime::content_revision());
+	else
+		logit(LOG_STATUS,
+		      "Zone-story catalog loaded; journals await active economic accounting.");
 	logit(LOG_STATUS, "   Assigning questers.");
 	fprintf(stderr, "--    Assigning the questors.\r\n");
 	assign_the_questers();

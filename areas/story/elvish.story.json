@@ -1,0 +1,202 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "elvish",
+  "coverage": "complete",
+  "stories": [
+    {
+      "id": "release-the-cursed-drider-35800",
+      "title": "Release the Cursed Drider",
+      "category": "story",
+      "summary": "Deliver the golden engraved dragon statue to release the cursed drider. Local statue exchanges provide a preparation route; a valid statue from another source also works.",
+      "contracts": [
+        {
+          "giver_vnum": 35800,
+          "completion_key": "give=I:35813;receive=E:50000,I:35820;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-35813",
+          "text": "Carry 1 x a golden engraved dragon statue",
+          "kind": "carried_item",
+          "hint": "The local two-statue exchange can prepare this item. Another valid statue also works.",
+          "item_vnums": [
+            35813
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 35800,
+              "completion_key": "give=I:35813;receive=E:50000,I:35820;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "prepare-the-two-statues-35800",
+      "title": "Prepare the Two Statues",
+      "category": "service",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 35800,
+          "completion_key": "give=I:35817,I:35818;receive=I:35814,I:35816;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-35817",
+          "text": "Carry 1 x a robin's tail feather",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            35817
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-35818",
+          "text": "Carry 1 x a strangly glowing ivy leaf",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            35818
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 35800,
+              "completion_key": "give=I:35817,I:35818;receive=I:35814,I:35816;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-spider-eggs-and-the-hidden-key-35801",
+      "title": "The Spider Eggs and the Hidden Key",
+      "category": "request",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 35801,
+          "completion_key": "give=I:35812,I:35812,I:35812,I:35812;receive=E:30000,I:35824;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-35812",
+          "text": "Carry 4 x some unhatched spider eggs",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            35812
+          ],
+          "count": 4
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 35801,
+              "completion_key": "give=I:35812,I:35812,I:35812,I:35812;receive=E:30000,I:35824;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "combine-the-statues-35801",
+      "title": "Combine the Statues",
+      "category": "service",
+      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "contracts": [
+        {
+          "giver_vnum": 35801,
+          "completion_key": "give=I:35814,I:35816;receive=I:35813;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-35814",
+          "text": "Carry 1 x a blood-red glass manticore",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            35814
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-35816",
+          "text": "Carry 1 x a blue sea serpent statue",
+          "kind": "carried_item",
+          "hint": "Supplies received from another player are also accepted.",
+          "item_vnums": [
+            35816
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange",
+          "kind": "completion",
+          "hint": "Return to the request giver with the exact offering.",
+          "contracts": [
+            {
+              "giver_vnum": 35801,
+              "completion_key": "give=I:35814,I:35816;receive=I:35813;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": [],
+  "introduction": "Explore the abandoned homestead and meet its surviving inhabitants.",
+  "orientation": [
+    "Use look and exits to explore. Meet visible people to reveal their requests.",
+    "Talk to the people you meet to learn about local requests. The checklist shows your current supplies and completed exchanges."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 35800,
+      "name": "a half-elf, half-spider creature",
+      "keyword": "drider",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "life",
+        "fighter",
+        "help",
+        "yes",
+        "no"
+      ]
+    },
+    {
+      "mob_vnum": 35801,
+      "name": "Kalaban the aging hermit",
+      "keyword": "kalaban",
+      "description": "Ask about the listed topics, then review the local requests below.",
+      "topics": [
+        "spiders"
+      ]
+    }
+  ]
+}
