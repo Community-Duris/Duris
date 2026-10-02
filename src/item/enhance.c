@@ -384,10 +384,14 @@ static int enhance_entry_modifier(const struct enhance_index_entry *entry, int a
 	return 0;
 }
 
-/* A superior stat may reach floor(1.5 * its positive prototype modifier). */
+/* A superior stat must fit its persisted signed-byte modifier. */
 static int enhance_stat_cap(int base_modifier)
 {
-	return base_modifier > 0 ? (int)(base_modifier * enhance_stat_cap_multiplier) : 0;
+	if (base_modifier <= 0 || !std::isfinite(enhance_stat_cap_multiplier) ||
+	    enhance_stat_cap_multiplier <= 0.0)
+		return 0;
+	const double cap = base_modifier * enhance_stat_cap_multiplier;
+	return cap >= SCHAR_MAX ? SCHAR_MAX : static_cast<int>(cap);
 }
 
 /* Find the deterministic next template: exact stat value, compatible wear slot, lowest vnum. */
