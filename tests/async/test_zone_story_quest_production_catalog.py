@@ -221,7 +221,27 @@ for reset in tezcat["reset_commands"]:
         foreign_head_sources.append((parent, values[2], values[4]))
 assert foreign_head_sources == [(98961, 1, 100)]
 assert "diabolus" in tezcat["mobs"][98961]["keywords"]
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev"):
+keeps = inventory_module.area_evidence(ROOT, "caertannad")
+assert len(keeps["requests"]) == 30 and len(keeps["dialogue"]) == 37
+assert len(keeps["reset_commands"]) == 1614 and len(keeps["mobs"]) == 123 and len(keeps["items"]) == 121
+assert keeps["zone"]["reset_mode"] == 0
+assert {(a["kind"], a["vnum"], a["function"]) for a in keeps["special_assignments"]} == {("mob", 78476, "caertannad_summon")}
+keeps_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "caertannad")
+keeps_contacts = {c["mob_vnum"]: c for c in keeps_mapping["contacts"]}
+assert len(keeps_contacts) == 24 and not keeps_contacts[78484]["topics"]
+for response in keeps["dialogue"]:
+    assert set(response["body"][0].rstrip("~").split()) & set(keeps_contacts[response["giver_vnum"]]["topics"])
+for vnum, contact in keeps_contacts.items():
+    assert contact["keyword"] in keeps["mobs"][vnum]["keywords"]
+# Exact nested source identity matters: Blackbeard and pirate chests differ.
+assert any(r["command"] == "P" and r["arguments"][1:4] == [78499, 1, 78490] for r in keeps["reset_commands"])
+assert any(r["command"] == "P" and r["arguments"][1:4] == [78492, 1, 78491] for r in keeps["reset_commands"])
+assert any(r["command"] == "D" and r["arguments"][1:4] == [78781, 0, 8] for r in keeps["reset_commands"])
+assert not any(r["command"] == "O" and r["arguments"][1] == 78503 for r in keeps["reset_commands"])
+rifts = inventory_module.area_evidence(ROOT, "tharnrifts")
+assert any(r["command"] == "O" and r["arguments"][1:5] == [78503, 1, 113375, 100] for r in rifts["reset_commands"])
+assert any(r["command"] == "O" and r["arguments"][1:5] == [78455, 1, 116025, 65] for r in rifts["reset_commands"])
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

@@ -153,9 +153,10 @@ int main(int argc, char **argv)
 		service tracker(catalog);
 		for (const auto &mapping : catalog.story_mappings)
 		{
-			const auto &zone = *std::find_if(
-				catalog.zones.begin(), catalog.zones.end(), [&](const auto &z)
-				{ return z.source_area == mapping.source_area; });
+			const auto &zone =
+				*std::find_if(catalog.zones.begin(), catalog.zones.end(),
+					      [&](const auto &z)
+					      { return z.source_area == mapping.source_area; });
 			require(tracker.discover_zone(7, 42, zone.zone_number,
 						      std::max(1, zone.first_vnum), 100,
 						      "arrival") == result::applied,
@@ -177,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 37 &&
-				tracker.summary_for(7, 42).total == 2358,
+		require(catalog.story_mappings.size() == 38 &&
+				tracker.summary_for(7, 42).total == 2357,
 			"native story projection disagreed with the complete source audit");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -737,9 +738,9 @@ int main(int argc, char **argv)
 		const auto &cosmos = story_for("wh", "request-55103-0e8b41819618");
 		const auto &dagger_marks = story_for("wh", "request-55116-e78a927f5454");
 		const auto &chief_key = story_for("wh", "request-55229-23f9768a6235");
-		const auto &winter = *std::find_if(catalog.story_mappings.begin(),
-						   catalog.story_mappings.end(), [](const auto &m)
-						   { return m.source_area == "wh"; });
+		const auto &winter =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "wh"; });
 		service supplied_winter(catalog);
 		require(supplied_winter.discover_zone(7, 42, 550, 55125, 100, "arrival") ==
 				result::applied,
@@ -823,9 +824,9 @@ int main(int argc, char **argv)
 				restored_winter.progress_for_zone(7, 42, 306).completed == 0 &&
 				restored_winter.progress_for_zone(7, 42, 831).completed == 0,
 			"Winterhaven reload changed local receipts or invented foreign completion");
-		const auto &smoke = *std::find_if(catalog.story_mappings.begin(),
-						  catalog.story_mappings.end(), [](const auto &m)
-						  { return m.source_area == "smokev"; });
+		const auto &smoke =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "smokev"; });
 		const auto &ivar_hearts = story_for("smokev", "the-two-dragon-hearts");
 		const auto &ivar_talon = story_for("smokev", "ivars-talon-reward");
 		const auto &tarlator = story_for("smokev", "tarlators-humanity-request");
@@ -906,6 +907,78 @@ int main(int argc, char **argv)
 				restored_smoke.progress_for_zone(7, 42, 202).total == 10 &&
 				restored_smoke.progress_for_zone(7, 42, 831).completed == 0,
 			"Smokeveil reload changed receipts or invented Ravi's foreign completion");
+		const auto &shards = story_for("caertannad", "four-distinct-life-shards");
+		const auto &blackrock = story_for("caertannad", "marnys-blackrock-sample");
+		const auto &endurium = story_for("caertannad", "marnys-endurium-commission");
+		const auto &twin_staff = story_for("caertannad", "the-staff-of-twin-worlds");
+		const auto &figurine = story_for("caertannad", "hindiss-figurine-exchange");
+		const auto &head = story_for("caertannad", "hindiss-thel-samar-proof");
+		const auto &remedy = story_for("caertannad", "mungirs-silverleaf-remedy");
+		const auto &keeps =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "caertannad"; });
+		service supplied_keeps(catalog);
+		require(supplied_keeps.discover_zone(7, 42, 784, 78504, 100, "arrival") ==
+				result::applied,
+			"Twin Keeps discovery failed");
+		for (const auto &contact : keeps.contacts)
+			require(supplied_keeps.meet_npc(7, 42, contact.mob_vnum, 78504, 101) ==
+					result::applied,
+				"Twin Keeps fixture encounter failed");
+		const auto before_keeps_read = supplied_keeps.serialize_state();
+		supplies.carried.clear();
+		supplies.carried[78499] = 4;
+		journal = supplied_keeps.render_journal(7, 42, 784, 10, 1, 102, false, false,
+							&supplies);
+		require(journal.find("Next: " + shards.steps[2].text) != std::string::npos,
+			"four copies of one same-named shard satisfied four distinct kinds");
+		for (int item : { 78513, 78514, 78515, 78465, 78477, 78480, 78486, 78492, 78459 })
+			supplies.carried[item] = 1;
+		journal = supplied_keeps.render_journal(7, 42, 784, 10, 1, 102, false, false,
+							&supplies);
+		require(journal.find("Next: " + shards.steps.back().text) != std::string::npos &&
+				journal.find("Next: " + twin_staff.steps.back().text) !=
+					std::string::npos &&
+				journal.find("Next: " + figurine.steps.back().text) !=
+					std::string::npos &&
+				supplied_keeps.serialize_state() == before_keeps_read &&
+				supplied_keeps.progress_for_zone(7, 42, 784).completed == 0,
+			"supplied components needed producer history or possession invented progress");
+		record(supplied_keeps, blackrock.contracts.front(), "blackrock-sample", 784, 78646);
+		supplies.carried.clear();
+		supplies.carried[78463] = 1;
+		journal = supplied_keeps.render_journal(7, 42, 784, 10, 1, 122, false, false,
+							&supplies);
+		require(journal.find("Next: " + endurium.steps[1].text) != std::string::npos,
+			"producer history replaced Marny's missing physical receipt");
+		supplies.carried[78424] = 1;
+		journal = supplied_keeps.render_journal(7, 42, 784, 10, 1, 122, false, false,
+							&supplies);
+		require(journal.find("Next: " + endurium.steps.back().text) != std::string::npos &&
+				journal.find("Turn-in currently unavailable:") != std::string::npos,
+			"exact receipt did not ready the recipe or mixed-fee service lacked a warning");
+		record(supplied_keeps, twin_staff.contracts.front(), "supplied-twin-staff", 784,
+		       78823);
+		record(supplied_keeps, figurine.contracts.front(), "supplied-figurine", 784, 78820);
+		record(supplied_keeps, remedy.contracts.front(), "recovered-potion-service", 784,
+		       78719);
+		require(supplied_keeps.progress_for_zone(7, 42, 784).completed == 3 &&
+				supplied_keeps.progress_for_zone(7, 42, 784).total == 29,
+			"service added an achievement or a finale completed producer/head requests");
+		record(supplied_keeps, head.contracts.front(), "independent-head", 784, 78820);
+		for (const auto &request : keeps.stories)
+			if (request.category != "service" && request.id != blackrock.id &&
+			    request.id != twin_staff.id && request.id != figurine.id &&
+			    request.id != head.id)
+				record(supplied_keeps, request.contracts.front(),
+				       request.id.c_str(), 784, 78504);
+		service restored_keeps(catalog);
+		require(restored_keeps.deserialize_state(supplied_keeps.serialize_state(),
+							 &error) &&
+				restored_keeps.progress_for_zone(7, 42, 784).completed == 29 &&
+				restored_keeps.progress_for_zone(7, 42, 55).completed == 0 &&
+				restored_keeps.progress_for_zone(7, 42, 831).completed == 0,
+			"Twin Keeps reload changed independent receipts or invented foreign key/collector credit");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

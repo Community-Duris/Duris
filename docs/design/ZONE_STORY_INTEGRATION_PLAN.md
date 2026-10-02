@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 37 authored journals, accounting-gated player surfaces, starter/town
+**Status: 38 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -9,7 +9,7 @@ The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
 source dossiers, shipped changes, newly found dependencies, and verification.
 Twin Towers, Plains of Life, Ailvio, Braddistock, Breale, Abandoned Elven
 Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus, Torg, Vast Hidden
-Grove, Winterhaven and Shairak/Smokeveil now have complete source story maps;
+Grove, Winterhaven, Shairak/Smokeveil and the Twin Keeps now have complete source story maps;
 their active-world journeys remain unqualified. Schema 3 adds
 optional preparation. Ailvio's 78 pair recipes project one family-feeding story;
 Braddistock's pet rescue is displayed as an intermediate service. Breale preserves
@@ -41,6 +41,16 @@ three talon consumers, the shaman-to-healer helm route, exact ground-animal
 recovery and foreign Tezcat/Alatorin/Raxthan ownership. Table-driven Dorno/Keebo
 services, cap-one replenishment and narrated cure/reunion boundaries extend
 qualification without adding unsupported historical objectives.
+
+The Twin Keeps adds 30 independent exchanges, four distinct same-named shards,
+the scouting/message/ore route, physical Marny receipts, four crystals plus a
+shadow staff, and consumed/broken keys with shared switch/teleport/container
+access. Optional foreign gate-key and local producer history preserve supplied
+materials. Hindis/CrowFoot removal and mode-zero epic-reset scheduling require
+recipient/attempt availability separate from daily eligibility; table difficulty
+must not be mistaken for reset mode. Foreign crevice/reset ownership and alternate
+void-crystal sources expand conditional recipe and source-location qualification.
+Unfinished egg/finale prose has concrete builder repair proposals.
 
 Maintain this plan as zones are reviewed. Keep static contract classification,
 historical objective coverage, economic support, and gameplay qualification
@@ -533,7 +543,12 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   competing talons/hearts, optional helm history and owned foreign continuations.
   Record table-driven services, inactive legacy menu/custody defects and stale
   coral-golem ownership before any gameplay restoration.
-- [ ] Complete comprehensive source dossiers for the other 206 roadmap areas.
+- [x] Complete Twin Keeps source dossier: thirty exchanges, all 37 addressable
+  families, four distinct shards, physical Marny receipt, complete crystal and
+  scouting-message routes, consumed/broken keys, crate/crevice/nested access,
+  recipient removal and mode-zero epic resets. Preserve foreign key/consumer
+  ownership and record bounded prose and combat-event qualification proposals.
+- [ ] Complete comprehensive source dossiers for the other 205 roadmap areas.
 - [ ] Add district/family authoring and shared presentation for large zones.
   Winterhaven's 219 rows fit existing story/objective limits but need a bounded
   512 KiB source-sidecar allowance for detailed guidance. Preserve receipt IDs;
@@ -561,6 +576,7 @@ contract classification; it does not claim complete objective coverage.
 | All 27 starter/town areas | 1–2 | Complete static Q classification; detailed counts and evidence in starter/town register | Orientation, encountered people, concrete delivery counts and native receipt checklists; selected multi-step routes | Existing offering limits; reviewed crafting and equipment services do not create story/daily units | All maps pass source/native validation; isolated native guided journey; individual full-world routes pending |
 | Eight additional quest areas | 2 | Complete: 86 contracts → 80 named story/request/service entries | Verified Q/M guidance, distinct material counts, optional preparation hints and receipts; deeper dialogue/lineage/branches pending | Mixed item-and-coin grove recipes remain unavailable; preparation services do not earn story/daily units | Source/native parser and encounter visibility checks; each full-world journey remains pending in the priority roadmap |
 | Shairak and Smokeveil Forest | 1 | Complete: ten achievements plus one bottle service across eleven contracts | [Source-comprehensive dossier](zone-stories/SHAIRAK_AND_SMOKEVEIL_FOREST.md); nine contacts/all 32 topic families, simultaneous hearts, exact sources, optional helm producer and independent trophies | Active local/foreign reset and shop supply need durable generation; legacy smith/teacher purchases deliberately refuse | Native projection checks; active source/cap/recipient availability, owned foreign, teaching/forge and cure/reunion journeys pending |
+| Twin Keeps of Devastated Tharnadia | 1 | Complete: 29 achievements and one potion service across 30 exchanges | [Source-comprehensive dossier](zone-stories/TWIN_KEEPS_OF_DEVASTATED_THARNADIA.md); 24 contacts/all 37 addressable families, fifteen optional producer checks, distinct shards, physical receipt, full crystal/message and shared access guidance | Active local/foreign reset supply and mixed potion fee need qualification; mode-zero epic resets affect recipient/source availability | Native projection/receipt checks; confirmed access/recovery, actual NPC episodes, conditional sources and selected prose/combat repairs pending |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
 
 ## Twin Towers evidence and decisions

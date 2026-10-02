@@ -39,6 +39,26 @@ assert all(smokev_stories[s]["category"] == "request" for s in ("dargast-scales-
 assert [t["item_vnums"] for t in smokev_stories["the-two-dragon-hearts"]["steps"][:-1]] == [[20200], [20209]]
 assert [t["item_vnums"] for t in smokev_stories["a-meal-for-azcatlipoca"]["steps"][:-1]] == [[20211]]
 assert all(s["steps"][-1]["contracts"] == s["contracts"] for s in smokev["stories"])
+keeps = next(m for m in catalog["story_mappings"] if m["source_area"] == "caertannad")
+assert keeps["schema_version"] == 3 and keeps["revision"] == 1
+assert report["eligible_by_zone"]["784"] == 29 and len(keeps["stories"]) == 30
+assert not keeps["exclusions"] and sum(s["category"] == "service" for s in keeps["stories"]) == 1
+keeps_stories = {s["id"]: s for s in keeps["stories"]}
+shards = keeps_stories["four-distinct-life-shards"]
+assert [t["item_vnums"] for t in shards["steps"] if t["kind"] == "carried_item"] == [[78499], [78513], [78514], [78515]]
+assert all(t["count"] == 1 for t in shards["steps"] if t["kind"] == "carried_item")
+endurium = keeps_stories["marnys-endurium-commission"]
+assert endurium["steps"][0]["optional"]
+assert [t["item_vnums"] for t in endurium["steps"] if t["kind"] == "carried_item"] == [[78424], [78463]]
+staff = keeps_stories["the-staff-of-twin-worlds"]
+assert [t["item_vnums"] for t in staff["steps"] if t["kind"] == "carried_item"] == [[78465], [78477], [78480], [78486], [78492]]
+assert len(staff["contracts"]) == 1 and all(t.get("optional") for t in staff["steps"][:4])
+assert keeps_stories["mungirs-silverleaf-remedy"]["category"] == "service"
+assert len(keeps_stories["gremlin-claws-for-the-tower-key"]["steps"][0]["contracts"]) == 2
+assert keeps_stories["gremlin-claws-for-the-tower-key"]["steps"][0]["optional"]
+assert keeps_stories["hindiss-figurine-exchange"]["contracts"] != keeps_stories["hindiss-thel-samar-proof"]["contracts"]
+assert keeps_stories["crowfoots-nether-ore"]["contracts"] != keeps_stories["crowfoots-basilisk-egg"]["contracts"]
+assert all(s["steps"][-1]["contracts"] == s["contracts"] for s in keeps["stories"])
 new_mappings = {m["source_area"]: m for m in catalog["story_mappings"] if m["source_area"] in new_areas}
 assert set(new_mappings) == new_areas and all(m["coverage"] == "complete" for m in new_mappings.values())
 assert sum(d["source_area"] in new_areas for d in catalog["definitions"]) == 86

@@ -39,10 +39,11 @@ neither every branch nor every historical prerequisite.
 | 12 | Vast Hidden Grove | [Comprehensive source dossier](zone-stories/VAST_HIDDEN_GROVE.md): 15 Q contracts, 12 M families, 100 rooms, 41 mobiles, 72 objects, seven shops, 152 resets and thirteen scenery teleports | Revision 2: three equipment stories, two bird requests and ten services; optional recipe history, fourteen contacts/all topics, exact inputs/rewards and shared-material guidance | Active resets; three mixed fees; Valin/miner roaming/holding; ordinary dead-mouse pickup; invalid inn target; loaded access versus prose; confirmed source/travel/recipe lineage |
 | 13 | Winterhaven | [Comprehensive source dossier](zone-stories/WINTERHAVEN.md): all 221 Q/QA contracts, 350 M/MA responses, 599 rooms, 314 mobiles, 483 objects, thirteen shops, 1,284 resets, 92 literal assignment candidates and bounded foreign continuations | Revision 2: 135 requests, 84 services, two exclusions, 92 contacts/152 nonempty topic families, 38 optional preparation checks and exact source/key/timer/recipe guidance | Active resets; 49 mixed fees; foreign sources/recipient availability; timed births/decay; random scroll/gift lineage; physical access, source gaps and selected prose/power/service repairs |
 | 14 | Shairak and Smokeveil Forest | [Comprehensive source dossier](zone-stories/SHAIRAK_AND_SMOKEVEIL_FOREST.md): eleven Q/QA contracts, 32 M families, 100 rooms, 74 mobiles, 59 objects, one shop, 435 resets, table-driven support roles and bounded Tezcat/Alatorin/Raxthan continuations | Revision 1: ten achievements plus one service, nine contacts/all topics; exact simultaneous hearts, competing trophies, ordinary animal recovery and optional helm route | Active reset/shop supply; cap-one/recipient availability; committed source versus gift; owned foreign journeys; all-stage cure/reunion and supported forge/teaching |
-| 15–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 15 | Twin Keeps of Devastated Tharnadia | [Comprehensive source dossier](zone-stories/TWIN_KEEPS_OF_DEVASTATED_THARNADIA.md): 30 Q/QA exchanges, 86 M/MA blocks, 451 rooms, 123 mobiles, 121 objects, 1,614 resets, Zorana handler and bounded foreign continuations | Revision 1: 29 achievements plus one service, 24 contacts/all 37 addressable families, fifteen optional producer checks, distinct shards, physical receipt and complete crystal/message/access guidance | Active sources; mixed potion fee; confirmed switch/key/travel/retrieval; recipient/epic-reset episodes; conditional sources, personal versus supplied proof and selected prose repairs |
+| 16–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is the Twin Keeps of Devastated Tharnadia, followed by Bloodstone
-Keep. Their earlier native bindings do not establish comprehensive
+The next area is Bloodstone Keep, followed by Neverwinter Woods.
+Their earlier native bindings do not establish comprehensive
 source review. Do not advance a zone's status
 merely because the map parses, the Q denominator matches, or a candidate item
 graph was extracted.
@@ -51,6 +52,10 @@ graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-KEEPS-RECIPIENT / EPIC-RESET | Hindis's head reward removes the figurine recipient; CrowFoot's message removes the egg recipient; Brothedin leaves despite continuing-supply wording. Mode-zero zone reset depends on epic/reset admission rather than ordinary timer scheduling. | Qualify both orders, current NPC generation, normal/force/epic/recovered reset episodes and retry. Builder decides retained removal versus follow-up/replacement; do not promise daily stock or change reset mode from a difficulty-column guess. |
+| ZSQ-KEEPS-IDENTITY / PHYSICAL-RECEIPT | Four life shards share a name but require distinct VNUMs. Marny's second exchange needs the physical receipt in addition to ore. Void crystal has an independent chance-loaded elemental source; final staff needs four crystals plus a shadow staff. | Keep exact live checks and optional source receipts. Extend conditional recipe/source edges and shared ingredient allocation with source/actor/UID lineage; qualify spent receipts, supplied shards/components and independent finales. |
+| ZSQ-KEEPS-ACCESS / OWNERSHIP | Crate auto-binds a pull switch; keys break on use; pirate crevice is loaded by Tharnadia Rifts; Blackbeard's chest/shard and ether crystal occupy different containers. Foreign city givers supply an outer gate key. | Add confirmed switch/unlock/travel/retrieval with exit/reset episode and original object identity. Qualify exact nested recovery, partly-open routes and key replacement. Preserve owned foreign receipts and normal versus administrative sources. |
+| ZSQ-KEEPS-CONTENT / CUSTOM-COMBAT | Heads/hearts and names differ; Woten/Weskel award one crystal despite plural prose; CrowFoot's egg response is unfinished and the final staff has empty success text. Zorana calls existing helpers without a story event. | Builder chooses bounded prose/count repairs; publish success after committed outputs. Qualify confirmed helper arrival and approved encounter/closure semantics before counting war, cure, dragon defeat or advertised item powers. |
 | ZSQ-RESET-AUTHORITY | Confirmed source blocker for fresh active-accounting item reset generation, including scenery and nested supplies. Existing recovered items may still exist; this is not proof every deployed area is empty. | Qualify committed reset generation before the active-world pilots. Stable reset occurrence/command keys, exact custody, parent dependencies, retry/replay, NPC equipment, non-takeable portals/signs, and cross-area reset ownership are required. |
 | ZSQ-TUTORIAL-GRANT | Confirmed ordering weakness: the tag is removed before sword creation/publication is confirmed. | Implement committed script grants with recoverable tag outcome; avoid success prose before confirmed grant. Keep failure distinct from repeated completed lesson. |
 | ZSQ-TUTORIAL-TRAVEL | Confirmed failure-path weakness: refresh/success text precede destination validation; room index zero is excluded. | Validate destination and mutation admission first, then publish confirmed arrival. Test valid index zero and missing room, alongside normal Ailvio travel. |
@@ -525,3 +530,54 @@ database operation, migration or merge. Fresh active sources and actual played
 failure/reconnect/recovery journeys remain pending. The queue is fourteen of
 220 source-comprehensive areas, with 206 pending; the Twin Keeps and Bloodstone
 Keep are next.
+
+### Twin Keeps checkpoint — October 2, 2026
+
+Completed the full source review of 116 native blocks, 451 rooms, 123 mobiles,
+121 objects and 1,614 resets, together with Zorana's assigned combat handler,
+shared switch/teleport/key/container/movement execution and bounded foreign
+source/consumer reads. The [dossier](zone-stories/TWIN_KEEPS_OF_DEVASTATED_THARNADIA.md)
+and [reproducible index](../reference/zone-story-audits/caertannad.md) distinguish
+actual prototype/reset/receipt ownership from derived spans and current location.
+
+Revision 1 adds all 30 exchange rows: 29 achievements and Mungir's one potion
+service. Twenty-four contacts cover all 37 addressable topic families. Fifteen
+optional producer checks include the foreign outer-gate key, tower key,
+Marny's physical receipt, Jenzuel figurine, Keshia key and the moonstone/crystal/
+scouting-message routes. Four same-named shards remain four exact checks, and
+the final staff requires four crystals plus the shadow staff. Source history
+does not replace a consumed physical item or require a personally performed
+producer route for supplied materials.
+
+The plan now covers Hindis/CrowFoot removal order, Brothedin's repeat wording,
+mode-zero epic-reset availability, broken/consumed keys, the auto-bound crate
+switch, Tharnadia Rifts' crevice/silverleaf ownership, exact nested sources and
+conditional void-crystal sourcing. Selected head/name/count discrepancies,
+unfinished egg prose and the empty staff response have bounded builder repair
+proposals. Zorana's existing-helper hunt does not record spawning or war closure.
+Foreign scepter-collector token wording remains an Alatorin content decision.
+
+Focused checks passed:
+
+- `test_zone_story_quest_production_catalog.py`: snapshot/catalog/inventory
+  agreement, all fifteen source indices, contacts/topic aliases, exact nested
+  sources, mode-zero metadata and foreign crevice/silverleaf ownership.
+- `test_zone_story_quest_story.py`: all 38 native mappings and schemas 1/2/3;
+  four distinct same-named shards, supplied finale/figurine without producer
+  history, spent physical receipt despite recorded preparation, visible mixed-fee
+  refusal, independent head/figurine receipts, service exclusion and 29 recovered
+  achievements without invented foreign key or collector credit. This tests
+  projection and receipt recovery, not unavailable fee execution or played access.
+- `test_zone_story_quest_production.py`: runtime catalog/bootstrap regression.
+- Cached SQL C++20 `make -C src` with the existing matched hiredis/TLS library
+  path; whole-file harness formatting check and whitespace check.
+- All 2,668 native definitions, registry, fingerprint/revision and other 37
+  mappings remain unchanged as parsed objects; all local document links resolve.
+
+The catalog now has 38 authored journals, 2,357 achievement units, 1,961 potential
+daily units and 2,509 total rows. Only the potion-service classification changes
+the achievement denominator; native contract IDs and reward terms are preserved.
+Accounting remains a player-surface prerequisite. No activation, DB operation,
+migration, server operation or merge occurred. The queue is fifteen of 220
+source-comprehensive areas, with 205 pending. Continue with Bloodstone Keep,
+then Neverwinter Woods; full active-world qualification remains open.
