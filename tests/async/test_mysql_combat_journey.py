@@ -12,6 +12,8 @@ source rows intact, requires a durable retained-conflict death acknowledgement,
 then verifies account-menu recovery reads, cold-load refusal, and restart
 stability. Use --evidence-dir to choose where transcripts, ordered events, logs,
 and exact read-backs are retained; unassisted mode retains them by default.
+The guarded retained-conflict owner requires a TEST_MUD development executable;
+the disposable environment does not enable it in a production executable.
 """
 from pathlib import Path
 from collections import Counter
