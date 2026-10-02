@@ -1703,7 +1703,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			else if (accounted_coin)
 				retained_error = coin_transfer_accounting_verify_retained(
 					connection, command, stored.result_code,
-					stored.result_payload.data(), stored.result_payload.size());
+					stored.result_payload.data(), stored.result_payload.size(),
+					static_cast<critical_failure_stage>(stored.failure_stage));
 			else if (accounted_item)
 				retained_error = economic_sql_item_transfer_verify_retained(
 					connection, command, stored.result_code,
@@ -1930,7 +1931,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				return root_failure(session_error);
 			}
 		}
-		else
+		if (!result_code)
 			result_size = bytes.size();
 		std::array<uint8_t, CRITICAL_OUTBOX_COIN_RECEIPT_BYTES> receipt;
 		std::copy(coin_payload.source.change.operation_id.bytes.begin(),
@@ -1958,11 +1959,11 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		{
 			const auto session_error =
 				accounted_session_check(connection, &root_session, true);
-			const auto verify_error = session_error ?
-							  session_error :
-							  coin_transfer_accounting_verify_retained(
-								  connection, command, result_code,
-								  bytes.data(), result_size);
+			const auto verify_error =
+				session_error ? session_error :
+						coin_transfer_accounting_verify_retained(
+							connection, command, result_code,
+							bytes.data(), result_size, failure_stage);
 			const auto outbox_error = verify_error ?
 							  verify_error :
 							  verify_accounted_root_outbox(
@@ -2784,8 +2785,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				for (size_t i = 0; i < zone_payload.group_size; ++i)
 					order.push_back(i);
 				std::sort(order.begin(), order.end(),
-					  [&](size_t a, size_t b)
-					  {
+					  [&](size_t a, size_t b) {
 						  return zone_payload.participant_pids[a] <
 							 zone_payload.participant_pids[b];
 					  });
@@ -3124,7 +3124,8 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 		else if (accounted_coin)
 			error = coin_transfer_accounting_verify_retained(
 				connection, command, stored.result_code,
-				stored.result_payload.data(), stored.result_payload.size());
+				stored.result_payload.data(), stored.result_payload.size(),
+				static_cast<critical_failure_stage>(stored.failure_stage));
 		else if (accounted_item)
 			error = economic_sql_item_transfer_verify_retained(
 				connection, command, stored.result_code,

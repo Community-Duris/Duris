@@ -171,7 +171,7 @@ The same harness also retains the existing SQL fault/rollback and interrupted
 transaction probe. A race where the pause finishes before `KILL CONNECTION` is
 now treated as an assertion outcome rather than an unrelated fixture SQL abort.
 
-Executed checks on this branch:
+The original receipt change was validated with:
 
 - `python3 tests/async/test_coin_command_transaction_contract.py` — passed.
 - `python3 tests/async/test_currency_transaction_contract.py` — 10 tests passed.
@@ -186,6 +186,42 @@ Executed checks on this branch:
 - `./tests/async/run_currency_transaction_schema_mysql.sh` — passed on the
   disposable MariaDB wrapper, including schema migration, coin SQL matrix, and
   player-load companion harness.
+
+### Accounting compatibility qualification (October 2, 2026)
+
+The accounting branch additionally verifies schema-version-2 terminal receipts and
+stores full authority in its flatfile records. Its SQL retained-receipt verifier now
+accepts a nonempty failure receipt only for a classified, validated `ESTALE` currency
+result. Apply, exact-ID replay, and reconciliation pass the recorded failure stage
+into that verifier. A refused root still requires no postings, effects, children,
+source claims, or outbox events.
+
+The flatfile adapter keeps its existing persisted record format. Completion derives
+the same bounded 83-byte recovery receipt from the retained opening authority;
+unclassified item conflicts and other refusals expose no currency repair payload.
+Replay and restart retain the same result and revision guards.
+
+The focused SQL wrapper now links the current accounting writer modules. Its
+synthetic fixture deletes its own source claims before deleting their parent
+operations, satisfying the newer foreign-key contract.
+
+The compatibility preparation passed:
+
+- 106 ASan/UBSan completion-retention scenarios across MySQL and flatfile builds,
+  including the disconnect, reconnect, morph, and older-receipt cases.
+- Both input-queue configurations, the real flatfile accounting coin journey,
+  native coin-accounting refusal tests, typed coin source contracts, and the coin
+  and critical transaction contracts.
+- `CURRENCY_TEST_COIN_ONLY=1 ./tests/async/run_currency_transaction_schema_mysql.sh`
+  on disposable MariaDB 10.11, including typed stale receipt replay/reconciliation,
+  malformed receipt rejection, no-posting refusals, shared banks, change making,
+  split children, physical pile custody, and rollback/reload cases.
+- `make -C src -j2` in the existing Docker build toolchain, formatting checks for
+  every touched C/C++ file, and `git diff --check`.
+
+These accounting-specific adjustments are prepared to accompany the branch's next
+merge from `master`; this qualification did not update the remote accounting branch.
+No live game database was used.
 
 ## Historical evidence and limits
 
