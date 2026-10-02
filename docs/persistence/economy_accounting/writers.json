@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "7360003fa2da31df73ed4a7f8a5020b7c2c896d7",
+  "source_commit": "9fd3b77b1c2fb859f2f0d20a84d385547138417b",
   "census_complete": true,
   "writers": [
     {
@@ -6925,22 +6925,17 @@
       "sites": [
         [
           "src/economy/crafting.c",
-          1266,
+          1274,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1282,
+          1290,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1334,
-          "item_lifecycle"
-        ],
-        [
-          "src/economy/crafting.c",
-          1352,
+          1342,
           "item_lifecycle"
         ],
         [
@@ -6950,77 +6945,82 @@
         ],
         [
           "src/economy/crafting.c",
-          1361,
-          "item_lifecycle"
-        ],
-        [
-          "src/economy/crafting.c",
           1368,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1372,
+          1369,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1374,
+          1376,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1417,
+          1380,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1418,
+          1382,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1419,
+          1425,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1430,
+          1426,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1441,
+          1427,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1460,
+          1438,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1510,
+          1449,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1519,
+          1468,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1532,
+          1518,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1551,
+          1527,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1562,
+          1540,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1559,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1570,
           "item_lifecycle"
         ]
       ],
@@ -7134,7 +7134,7 @@
       "coverage": "legacy",
       "classification": "Frozen recipe requirements and output are submitted as one craft custody operation, including generated usage on the retained pouch and a durable progression continuation.",
       "authority_boundary": "Exact input retirement, output admission and optional retained-pouch mutation commit together; the recipe callback waits for the exact progression save receipt.",
-      "current_support": "Compound recipe custody and progression have native SQL and flatfile component evidence. The real mortal recipe journey and release qualification remain incomplete.",
+      "current_support": "Compound recipe custody and progression have native SQL and flatfile component evidence. One frozen leather recipe passes mortal physical and retained-pouch Craft/Forge on flatfile, MySQL 8.0.46 and MariaDB 10.11.14, including copyover and two cold restarts with accounting inactive. Temporary material-probe refusal cleanup passes native sanitizers. Active accounting, broader recipe variants and full release qualification remain incomplete.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -7152,7 +7152,8 @@
       "test_candidates": [
         "tests/async/test_recipe_craft_transaction.py",
         "tests/async/test_craft_progression.py",
-        "tests/async/test_publication_retention_runtime.py"
+        "tests/async/test_publication_retention_runtime.py",
+        "tests/async/test_crafting_material_probe_cleanup.py"
       ],
       "sites": [
         [
@@ -7202,127 +7203,147 @@
         ],
         [
           "src/economy/crafting.c",
-          819,
+          820,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          865,
+          822,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          867,
+          823,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          868,
+          869,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          879,
+          871,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          895,
+          872,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          914,
+          883,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          925,
+          899,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          926,
+          918,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          937,
+          929,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          970,
+          930,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          971,
+          942,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          972,
+          944,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          981,
+          945,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          982,
+          978,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          983,
+          979,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          992,
+          980,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          993,
+          989,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          994,
+          990,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1007,
+          991,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1008,
+          1000,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1009,
+          1001,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1031,
+          1002,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1036,
+          1015,
           "item_lifecycle"
         ],
         [
           "src/economy/crafting.c",
-          1037,
+          1016,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1017,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1039,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1044,
+          "item_lifecycle"
+        ],
+        [
+          "src/economy/crafting.c",
+          1045,
           "item_lifecycle"
         ]
       ],
@@ -51302,271 +51323,295 @@
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 819,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(tobj);"
-    },
-    {
-      "path": "src/economy/crafting.c",
-      "line": 865,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(tobj);"
-    },
-    {
-      "path": "src/economy/crafting.c",
-      "line": 867,
+      "line": 820,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matLowest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 868,
+      "line": 822,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matHighest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 879,
+      "line": 823,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(tobj);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 869,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(tobj);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 871,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(matLowest);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 872,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(matHighest);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 883,
       "family": "item_lifecycle",
       "excerpt": "tobj = read_object(selected, VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 895,
+      "line": 899,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 914,
+      "line": 918,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 925,
+      "line": 929,
       "family": "item_lifecycle",
       "excerpt": "matLowest = read_object(lowQualityMaterialVnum, VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 926,
+      "line": 930,
       "family": "item_lifecycle",
       "excerpt": "matHighest = read_object(highQualityMaterialVnum, VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 937,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(tobj);"
-    },
-    {
-      "path": "src/economy/crafting.c",
-      "line": 970,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(tobj);"
-    },
-    {
-      "path": "src/economy/crafting.c",
-      "line": 971,
+      "line": 942,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matLowest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 972,
+      "line": 944,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matHighest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 981,
+      "line": 945,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 982,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(matLowest);"
-    },
-    {
-      "path": "src/economy/crafting.c",
-      "line": 983,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(matHighest);"
-    },
-    {
-      "path": "src/economy/crafting.c",
-      "line": 992,
+      "line": 978,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 993,
+      "line": 979,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matLowest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 994,
+      "line": 980,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matHighest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1007,
+      "line": 989,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1008,
+      "line": 990,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matLowest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1009,
+      "line": 991,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matHighest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1031,
+      "line": 1000,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1036,
+      "line": 1001,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matLowest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1037,
+      "line": 1002,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(matHighest);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1266,
+      "line": 1015,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(tobj);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 1016,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(matLowest);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 1017,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(matHighest);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 1039,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(tobj);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 1044,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(matLowest);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 1045,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(matHighest);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 1274,
       "family": "item_lifecycle",
       "excerpt": "if (!(obj = read_object(recipes[i], VIRTUAL)))"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1282,
+      "line": 1290,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1334,
+      "line": 1342,
       "family": "item_lifecycle",
       "excerpt": "if (!(obj = read_object(objVnum, VIRTUAL)))"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1352,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/economy/crafting.c",
       "line": 1360,
       "family": "item_lifecycle",
-      "excerpt": "lowQualityMaterial = read_object(lowQualityMaterialVnum, VIRTUAL);"
-    },
-    {
-      "path": "src/economy/crafting.c",
-      "line": 1361,
-      "family": "item_lifecycle",
-      "excerpt": "highQualityMaterial = read_object(highQualityMaterialVnum, VIRTUAL);"
+      "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
       "line": 1368,
       "family": "item_lifecycle",
-      "excerpt": "extract_obj(lowQualityMaterial);"
+      "excerpt": "lowQualityMaterial = read_object(lowQualityMaterialVnum, VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1372,
+      "line": 1369,
       "family": "item_lifecycle",
-      "excerpt": "extract_obj(highQualityMaterial);"
+      "excerpt": "highQualityMaterial = read_object(highQualityMaterialVnum, VIRTUAL);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1374,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/economy/crafting.c",
-      "line": 1417,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/economy/crafting.c",
-      "line": 1418,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(highQualityMaterial);"
-    },
-    {
-      "path": "src/economy/crafting.c",
-      "line": 1419,
+      "line": 1376,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(lowQualityMaterial);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1430,
+      "line": 1380,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(highQualityMaterial);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 1382,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1441,
+      "line": 1425,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1460,
+      "line": 1426,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(highQualityMaterial);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 1427,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(lowQualityMaterial);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 1438,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1510,
+      "line": 1449,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1519,
+      "line": 1468,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1532,
+      "line": 1518,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1551,
+      "line": 1527,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/economy/crafting.c",
-      "line": 1562,
+      "line": 1540,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 1559,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/economy/crafting.c",
+      "line": 1570,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
