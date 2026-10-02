@@ -77,6 +77,14 @@ tests and the 14 golden fixtures pass. This strengthens synthetic audit
 evidence; it does not qualify native money writers or complete independent
 runtime reconciliation.
 
+The fixture auditor also rejects missing, non-string, or zero root/child
+operation IDs. Previously a zero root ID and malformed child IDs passed,
+while non-string root IDs raised an unhandled parser error. Negative cases
+reproduce that gap before repair; the updated 16-test suite passes and CLI
+refusals return a bounded audit diagnostic without a traceback. This matches
+the native critical-command nonzero-identity rule without claiming complete
+child evidence or item-history reconciliation.
+
 ## Bandage save/restart qualification
 
 The real mortal bandage journey passes on disposable MySQL 8.0.46 and

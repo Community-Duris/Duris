@@ -69,8 +69,10 @@ class AccountingInvariantAuditor:
         consumed_item_transfers = set()
 
         for op in fixture.get("operations", []):
-            op_id = op["operation_id"]
-            require(bool(re.fullmatch(r"[0-9a-f]{32}", op_id)), f"Invalid operation ID format: {op_id}")
+            op_id = op.get("operation_id")
+            require(isinstance(op_id, str) and
+                    bool(re.fullmatch(r"[0-9a-f]{32}", op_id)) and int(op_id, 16) != 0,
+                    f"Invalid operation ID format: {op_id}")
 
             serialized = json.dumps(op, sort_keys=True)
             if op_id in receipts:
@@ -115,7 +117,10 @@ class AccountingInvariantAuditor:
             children = op.get("children", [])
             child_ids = set()
             for child in children:
-                c_id = child["operation_id"]
+                c_id = child.get("operation_id")
+                require(isinstance(c_id, str) and
+                        bool(re.fullmatch(r"[0-9a-f]{32}", c_id)) and int(c_id, 16) != 0,
+                        f"Invalid child operation ID format: {c_id}")
                 require(c_id != op_id, f"Self-referential child operation {c_id} in op {op_id}")
                 require(c_id not in child_ids, f"Duplicate child operation {c_id} in op {op_id}")
                 child_ids.add(c_id)

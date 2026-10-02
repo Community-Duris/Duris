@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -98,6 +99,48 @@ class TestAccountingInvariants(unittest.TestCase):
         with self.assertRaises(AuditError) as ctx:
             self.auditor.audit_fixture(fix, "self_child")
         self.assertIn("Self-referential child operation", str(ctx.exception))
+
+    def test_rejects_missing_or_zero_operation_identity(self):
+        for invalid in (None, False, 1, "", "0" * 32):
+            with self.subTest(operation_id=invalid):
+                fixture = copy.deepcopy(self.golden["fixtures"][0])
+                fixture["operations"][0]["operation_id"] = invalid
+                with self.assertRaises(AuditError):
+                    self.auditor.audit_fixture(fixture, "invalid_operation_id")
+        fixture = copy.deepcopy(self.golden["fixtures"][0])
+        del fixture["operations"][0]["operation_id"]
+        with self.assertRaises(AuditError):
+            self.auditor.audit_fixture(fixture, "missing_operation_id")
+
+    def test_rejects_invalid_child_identity(self):
+        for invalid in (None, False, 1, "", "0" * 32, "a" * 31, "A" * 32):
+            with self.subTest(child_id=invalid):
+                fixture = copy.deepcopy(self.golden["fixtures"][0])
+                operation = fixture["operations"][0]
+                operation["children"] = [{"operation_id": invalid,
+                                          "parent_id": operation["operation_id"]}]
+                with self.assertRaises(AuditError):
+                    self.auditor.audit_fixture(fixture, "invalid_child_id")
+        fixture = copy.deepcopy(self.golden["fixtures"][0])
+        operation = fixture["operations"][0]
+        operation["children"] = [{"parent_id": operation["operation_id"]}]
+        with self.assertRaises(AuditError):
+            self.auditor.audit_fixture(fixture, "missing_child_id")
+
+    def test_cli_rejects_invalid_evidence_without_traceback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "invalid.json"
+            for invalid in (None, "0" * 32):
+                with self.subTest(operation_id=invalid):
+                    fixture = copy.deepcopy(self.golden["fixtures"][0])
+                    fixture["operations"][0]["operation_id"] = invalid
+                    path.write_text(json.dumps({"fixtures": [fixture]}), encoding="utf-8")
+                    result = subprocess.run(
+                        [sys.executable, str(ROOT / "scripts/audit_accounting_invariants.py"),
+                         "--golden", str(path)], capture_output=True, text=True, check=False)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertIn("AUDIT FAILED", result.stderr)
+                    self.assertNotIn("Traceback", result.stderr)
 
     def test_detects_negative_opening_balance(self):
         fix = copy.deepcopy(self.golden["fixtures"][0])
