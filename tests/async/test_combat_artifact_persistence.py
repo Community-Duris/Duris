@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""Combat and artifact persistence-boundary source contracts."""
+"""Combat/artifact persistence contracts and native artifact-repair lifetime checks."""
 
-from _paths import SRC
+from _paths import SRC, extract_function
 from pathlib import Path
+import os
+import shlex
+import subprocess
+import tempfile
 
 root = Path(__file__).resolve().parents[2]
 fight_text = (SRC / "fight.c").read_text()
@@ -23,7 +27,7 @@ def function(text: str, signature: str, next_signature: str) -> str:
     return text[start:end]
 
 
-add_frags = function(fight_text, "void AddFrags(P_char ch, P_char victim)\n{", "unsigned int calculate_ch_state")
+add_frags = extract_function("fight.c", "void AddFrags(P_char ch, P_char victim)\n{")
 assert "submit_pvp_outcome(ch, victim, true)" in add_frags
 for forbidden in ("sql_modify_frags", "redis_invalidate_fraglist", "ADD_MONEY", "epic_frag"):
     assert forbidden not in add_frags
@@ -109,4 +113,163 @@ for caller, next_caller in (
     assert "return;" in failure_block or "continue;" in failure_block
 print("[PASS] all artifact bind callers fail closed before ownership decisions")
 
-print("combat and artifact persistence source contracts passed")
+repair = function(artifact_text, "void arti_fixit_sql(P_char ch)\n{", "// syncs all in-game")
+repair_harness = r'''
+#include "core/prototypes.h"
+#include "core/utility.h"
+#include "core/utils.h"
+#include "world/db.h"
+#include "sql/sql.h"
+#include <array>
+#include <cassert>
+#include <cstdarg>
+#include <unordered_set>
+#include <vector>
+
+// Run the production SQL command with isolated database/allocation boundaries.
+#define ARTIFACT_ON_PC 3
+static constexpr time_t now = 1700000000;
+static time_t repair_time(time_t *) { return now; }
+struct fixture_row { int vnum, location, owner; bool bind_ok, template_ok; };
+static std::vector<fixture_row> rows;
+static std::vector<std::array<std::string, 2>> sql_rows;
+static size_t cursor;
+static MYSQL_RES result{};
+static bool result_open;
+static std::unordered_set<P_obj> live;
+static std::vector<int> reads, releases, bind_writes, timer_writes;
+static int invalidations;
+static std::string output;
+MYSQL *DB = nullptr;
+
+static const fixture_row &fixture(int vnum) {
+    for (const auto &row : rows) if (row.vnum == vnum) return row;
+    std::abort();
+}
+bool qry_at(persistence_query_site, const char *format, ...) {
+    char text[512];
+    va_list args; va_start(args, format);
+    vsnprintf(text, sizeof(text), format, args); va_end(args);
+    if (std::string(text) == "SELECT vnum, location FROM artifacts WHERE locType=3") {
+        cursor = 0; result_open = true; return true;
+    }
+    unsigned long expiry = 0; int vnum = 0;
+    assert(sscanf(text, "UPDATE artifacts SET timer = FROM_UNIXTIME(%lu), lastUpdate=SYSDATE() WHERE vnum = %d",
+                  &expiry, &vnum) == 2);
+    assert(expiry == now + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY);
+    timer_writes.push_back(vnum);
+    return true;
+}
+MYSQL_RES *mysql_store_result(MYSQL *) { assert(result_open); return &result; }
+my_ulonglong mysql_num_rows(MYSQL_RES *) { return sql_rows.size(); }
+MYSQL_ROW mysql_fetch_row(MYSQL_RES *) {
+    assert(result_open);
+    if (cursor == sql_rows.size()) return nullptr;
+    static char *columns[2];
+    columns[0] = sql_rows[cursor][0].data(); columns[1] = sql_rows[cursor++][1].data();
+    return columns;
+}
+void mysql_free_result(MYSQL_RES *) { assert(result_open); result_open = false; }
+bool sql_get_bind_data(int vnum, int *owner, int *timer) {
+    assert(!result_open);
+    const auto &row = fixture(vnum);
+    if (!row.bind_ok) return false;
+    *owner = row.owner; *timer = 1; return true;
+}
+void sql_update_bind_data(int vnum, int *owner, int *timer) {
+    assert(*owner == fixture(vnum).location && *timer == now);
+    bind_writes.push_back(vnum);
+}
+static void arti_cache_invalidate() { ++invalidations; }
+P_obj read_object(int vnum, int type) {
+    assert(type == VIRTUAL); reads.push_back(vnum);
+    if (!fixture(vnum).template_ok) return nullptr;
+    auto *obj = new obj_data{};
+    obj->R_num = vnum;
+    obj->short_description = strdup("artifact description");
+    live.insert(obj); return obj;
+}
+void extract_obj(P_obj obj, int gone_for_good) {
+    assert(obj && !gone_for_good && live.erase(obj) == 1);
+    releases.push_back(obj->R_num);
+    free(obj->short_description); delete obj;
+}
+std::string pad_ansi(const char *text, int length, bool trim) {
+    assert(length == 35 && trim); return text;
+}
+char *get_player_name_from_pid(int pid) { assert(pid == 20); static char name[] = "holder"; return name; }
+void logit(const char *, const char *, ...) { std::abort(); }
+void send_to_char(const char *text, P_char) { output += text; }
+void send_to_char_f(P_char, const char *format, ...) {
+    char text[512]; va_list args; va_start(args, format);
+    vsnprintf(text, sizeof(text), format, args); va_end(args); output += text;
+}
+
+#define time repair_time
+// INSERT_REPAIR
+#undef time
+
+static void run(std::vector<fixture_row> fixtures) {
+    assert(live.empty()); rows = std::move(fixtures); sql_rows.clear();
+    for (const auto &row : rows) sql_rows.push_back({std::to_string(row.vnum), std::to_string(row.location)});
+    reads.clear(); releases.clear(); bind_writes.clear(); timer_writes.clear();
+    invalidations = 0; output.clear();
+    arti_fixit_sql(nullptr);
+    assert(live.empty() && !result_open);
+}
+int main() {
+    // Mismatched owner: retain the description through the report, then release once.
+    run({{11, 20, 99, true, true}});
+    assert(reads == std::vector<int>{11} && releases == reads);
+    assert(bind_writes == reads && timer_writes == reads && invalidations == 1);
+    assert(output.find("  1) 'artifact description&n'") != std::string::npos);
+    assert(output.find("now owned by 'holder' 20.") != std::string::npos);
+
+    // An already-correct binding still cleans up its display prototype without writing.
+    run({{12, 20, 20, true, true}});
+    assert(reads == std::vector<int>{12} && releases == reads);
+    assert(bind_writes.empty() && timer_writes.empty() && invalidations == 0);
+    assert(output == "All artifact bind_data are up to date.\n\r");
+
+    // A missing prototype uses the existing NULL report without extracting nullptr.
+    run({{14, 20, 99, true, false}});
+    assert(reads == std::vector<int>{14} && releases.empty());
+    assert(bind_writes == reads && timer_writes == reads && invalidations == 1);
+    assert(output.find("  1) 'NULL&n'") != std::string::npos);
+    run({{15, 20, 20, true, false}});
+    assert(reads == std::vector<int>{15} && releases.empty());
+    assert(bind_writes.empty() && timer_writes.empty() && invalidations == 0);
+
+    // Failed binding lookup must not allocate a prototype or start a repair.
+    run({{13, 20, 99, false, true}});
+    assert(reads.empty() && releases.empty() && bind_writes.empty() && timer_writes.empty());
+    assert(invalidations == 0 && output.find("Skipped artifact 13: bind lookup failed.") != std::string::npos);
+
+    // Row iteration must keep lifetimes separate and count only repaired bindings.
+    run({{11, 20, 99, true, true}, {12, 20, 20, true, true},
+         {13, 20, 99, false, true}, {14, 20, 99, true, false}, {16, 20, 99, true, true}});
+    assert(reads == (std::vector<int>{11, 12, 14, 16}));
+    assert(releases == (std::vector<int>{11, 12, 16}));
+    assert(bind_writes == (std::vector<int>{11, 14, 16}) && timer_writes == bind_writes);
+    assert(invalidations == 3 && output.find("  3) 'artifact description&n'") != std::string::npos);
+    puts("[PASS] six native SQL artifact-repair lifetime scenarios (ASan/UBSan)");
+}
+'''
+build_root = root / "bin" / "tests"
+build_root.mkdir(parents=True, exist_ok=True)
+with tempfile.TemporaryDirectory(prefix="artifact-repair-", dir=build_root) as directory:
+    work = Path(directory)
+    source = work / "repair.cpp"
+    source.write_text(repair_harness.replace("// INSERT_REPAIR", repair))
+    binary = work / "repair"
+    mysql_cflags = shlex.split(subprocess.check_output(["mysql_config", "--cflags"], text=True))
+    subprocess.run([
+        os.environ.get("CXX", "g++"), "-std=c++20", "-O1", "-g",
+        "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-no-pie",
+        "-I", str(root / "src"), *mysql_cflags, str(source), "-o", str(binary),
+    ], check=True)
+    subprocess.run([str(binary)], check=True, env=dict(
+        os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
+        UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1",
+    ))
+print("combat and artifact persistence source contracts and native repair checks passed")
