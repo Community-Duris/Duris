@@ -1,5 +1,6 @@
 #include "core/prototypes.h"
 #include "core/utils.h"
+#include "economy/account_bank_balances.h"
 #include "economy/currency_transaction.h"
 #include "economy/economic_currency_adapter.h"
 #include "economy/economic_gameplay_authority.h"
