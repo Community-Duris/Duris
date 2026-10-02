@@ -45,7 +45,12 @@ Current implementation and execution evidence are recorded in
 startup schema/permission validation and admission gate have passed local
 MariaDB/MySQL qualification. [Durable outage evidence](OUTAGE_STORAGE.md) now
 passes worker/runtime, process restart/exec/kill and storage-failure qualification.
-Reviewed incident coverage and report gap integration remain.
+[Reviewed incident coverage](INCIDENT_COVERAGE.md) now supplies consecutive retained
+inventory versions, committed post-fix references, nullable unknown ends and
+explicit backlog/reconstruction dispositions. Publication preserves a reviewed
+snapshot and both rollup and administrator reports display its gaps. Historical
+incident facts still require an evidence-backed review; local synthetic fixtures
+qualify the implementation without asserting a production history.
 The presence of a specification, draft PR or fixture does not satisfy acceptance.
 
 The owner has authorized a personal local test setup as the technical acceptance

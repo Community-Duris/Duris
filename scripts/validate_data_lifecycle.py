@@ -42,6 +42,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "economic_baseline.sql",
     ROOT / "migrations" / "immutable" / "0051_player_item_runtime_state.sql",
     ROOT / "migrations" / "immutable" / "0053_craft_progression.sql",
+    ROOT / "migrations" / "immutable" / "0054_telemetry_incident_coverage.sql",
 )
 
 ROOT_FIELDS = {

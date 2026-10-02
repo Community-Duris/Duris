@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Actual #268 engine journeys in an explicitly opted-in disposable SQL database.
 
-Requires migrations 0014/0017 and root/rollup/report test credentials in the
+Requires migrations 0014/0017/0054 and root/rollup/report test credentials in the
 ROLLUP_TEST_* environment. Raw fixture setup is administrative test code only.
 The actual engine always runs with the restricted rollup or read-only report role.
 """
@@ -84,6 +84,8 @@ class RollupIntegration(unittest.TestCase):
         for db in getattr(self, 'adapters', []):
             db.close()
         with self.admin.cursor() as c:
+            c.execute('DELETE FROM telemetry_rollup_incident')
+            c.execute('DELETE FROM telemetry_rollup_incident_coverage')
             for table in (*TABLES, 'telemetry_interval'):
                 c.execute('TRUNCATE TABLE ' + table)
 

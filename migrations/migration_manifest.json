@@ -708,6 +708,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "4b17920b26cad6762637a1f3e0d7cb13d997e2f163b550c56b24363efa45aff1",
       "verify_checksum": "aacc5516aed02ca8b8b3115a2e8c22ef3f113b299723ea249034971ceb50417a"
+    },
+    {
+      "id": "0054_telemetry_incident_coverage",
+      "sequence": 54,
+      "description": "Retain reviewed telemetry incidents and published coverage snapshots",
+      "apply": "immutable/0054_telemetry_incident_coverage.sql",
+      "verify": "immutable/0054_telemetry_incident_coverage.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "87910e4bfdff86b1557ca5d390a58a15bf9373336b09dc8a6d15f36bebb6795b",
+      "verify_checksum": "7082566a54e2acd60496a90971761ff36fb606c0d9ccbd0eded9fc908b736e0d"
     }
   ]
 }

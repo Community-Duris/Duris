@@ -12,8 +12,8 @@ work. A future production deployment is a separate operational decision.
 | --- | --- | --- |
 | #561: full writer startup contract | Implemented and locally qualified | Validate every current writer column, type, signedness, width, nullable/default semantics, InnoDB engine and 12 required indexes. Exercise effective SELECT/INSERT/session UPDATE with zero-row statements and rollback. Reject admission until the worker qualifies; later transient outages retain buffering. |
 | #565: shared serialization/schema descriptor | Implemented and locally qualified | `telemetry_columns.inc` supplies the column identities used by serializers and startup validation. Preserve all record kinds 1–8, replay keys and column prefixes. Reserved/padding/absent union fields and sink-generated fields have explicit exclusions. |
-| #566: durable outage/loss evidence | Implemented and locally qualified | Worker registration before SQL initialization/admission; protected exclusive checksummed storage; bounded coherent samples; clean drain versus known abandonment and unknown tails; real restart/exec/SIGKILL and storage-failure tests. Offline read-only export preserves unknown ends. See [OUTAGE_STORAGE.md](OUTAGE_STORAGE.md). Report gap integration remains #567. |
-| #567: reviewed incident coverage | Pending | Versioned incident registry, nullable unknown ends, first verified post-fix observation, backlog disposition and gap visibility in rollups/reports. Historical facts require evidence; synthetic fixtures cannot establish a real incident history. |
+| #566: durable outage/loss evidence | Implemented and locally qualified | Worker registration before SQL initialization/admission; protected exclusive checksummed storage; bounded coherent samples; clean drain versus known abandonment and unknown tails; real restart/exec/SIGKILL and storage-failure tests. Offline read-only export preserves unknown ends. See [OUTAGE_STORAGE.md](OUTAGE_STORAGE.md) and the qualified #567 report integration below. |
+| #567: reviewed incident coverage | Implemented and locally qualified | Consecutive retained inventory versions, nullable unknown ends, committed first verified post-fix references, explicit backlog/reconstruction dispositions and atomic published coverage snapshots. Reports preserve gaps, source uncertainty and bounded private-role separation. Full local MariaDB/MySQL chains, capacity, digest/permission negatives, lost commit replies and unchanged v1 totals qualified. Historical facts require evidence; synthetic fixtures do not establish a real incident history. See [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
 | Publish existing progression/encounter/combat observations | Pending | Versioned bounded projections and reports, with deduplication, coverage and read-only report permissions. |
 | Character/account/confirmed controller association | Pending | Cached scoped tokens, authenticated account ownership, reviewed cross-account linkage and dated association versions. Unknown controllers remain unknown. |
 | Shared battles and changing rosters | Pending | Link opponents and support actors to a shared battle, retain mode/roster segments, ownership-aware pets, compact context, observed outcomes and censored boundaries. |
@@ -21,7 +21,7 @@ work. A future production deployment is a separate operational decision.
 | Progression and portfolios | Pending | Rested/assistance provenance, earned/lost/restored/admin XP, milestone exposure and censoring, account/controller portfolio totals and union player-time. |
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
 | #487: economic projection compatibility | Pending audit and implementation | Reuse current accounting reconciliation where it meets acceptance; project canonical earned receipts without counting compatibility ledgers, transfers or openings as new rewards. |
-| #258: local observational acceptance and final runbook | Pending | Dedicated roles/catalog, real session/progression readback, normal gameplay/save, failure/recovery and a single reproducible local qualification command. Cover players who log in before startup qualification, without inventing earlier observed time. |
+| #258: local observational acceptance and final runbook | Pending | Dedicated roles/catalog, real session/progression readback, normal gameplay/save, failure/recovery and a single reproducible local qualification command. Source audit confirmed that players entering before initial config admission can stay untracked: later evidence/context hooks do not retry session entry. Fix and qualify this without inventing earlier observed time. |
 
 ## Qualified first-layer checks
 
@@ -80,7 +80,42 @@ client-free variants: registration before repository initialization/admission,
 clean drain/restart, transient SQL recovery, unresolved commit shutdown, and
 disk-full startup/checkpoints. Instrumented writes/fsync confirmed worker-only I/O.
 
+## Qualified incident coverage and publication
+
+The final incident fixture passed on MariaDB 10.11.14 and MySQL 8.0.46. Each loaded
+and verified the complete 54-step accounting manifest through
+`0054_telemetry_incident_coverage`. Engine-measured normalized fingerprints, all
+three retained migration histories, compiled boot constants and the protected
+lifecycle inventory are synchronized. Existing sealed SQL/verifier content and
+checksums were preserved. The inventory now includes 229 SQL tables and 51
+non-database stores; destructive rules remain disabled.
+
+Thirteen offline incident tests passed. The actual SQL journeys qualified strict
+and complete packets, committed post-fix reference/mismatch refusal, exact and
+conflicting retries, retained corrections, explicit withdrawal, lost review and
+publication commit acknowledgements, source-digest mutation refusal, full
+64-incident capacity, byte-budget refusal before detail fetching, unknown and
+reconstructed tails, incremental/ambiguous UTC windows, missing-inventory scope,
+published report/cache visibility and distinct registrar/rollup/report permissions.
+SQL constraints reject partial identities, invalid families and reversed times.
+The migration verifier checks exact columns, indexes, check expressions, same-schema
+foreign keys and effective check enforcement; boot fingerprints cover the new
+metadata and constraints on both engines.
+
+The existing administrator report contracts (14), pure rollup semantics (14),
+rollup budget tests (7), immutable runner tests (24), runtime boot contracts (10),
+lifecycle inventory (22), collector schema (4) and corpse repository contracts (7)
+passed. The maintained SQL server build and formatting checks passed.
+
+```sh
+python3 tests/async/test_telemetry_incidents.py
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh --incidents
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --incidents
+```
+
 This implementation does not establish battle balance, controller linkage
 coverage, zone difficulty or progression speed. Those require the remaining
-implementations above and the end-to-end local qualification. Outage evidence
-is durable; reviewed incident registration and visible report gaps remain pending.
+implementations above and the end-to-end local qualification. The next runtime
+requirement is to recover session capture after delayed startup qualification;
+publication of existing progression/encounter/combat facts follows. No production
+or staging access is required for that work.

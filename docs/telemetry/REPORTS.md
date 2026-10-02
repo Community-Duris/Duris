@@ -24,7 +24,8 @@ TELEMETRY_REPORT_CACHE_DIR     (optional cache directory)
 There is no password option and no fallback to the game connection settings.
 The report role must have `SELECT` only on the published aggregate tables:
 `telemetry_rollup_state`, `telemetry_rollup_session`,
-`telemetry_cohort_day`, and `telemetry_cohort_member`. It must not have access
+`telemetry_cohort_day`, `telemetry_cohort_member`,
+`telemetry_rollup_incident_coverage`, and `telemetry_rollup_incident`. It must not have access
 to the immutable fact stream, gameplay tables, or schema mutation privileges.
 The CLI never selects raw facts, account/chat/IP data, or live character
 locations. The role/grant setup is an operator/deployment concern; the CLI
@@ -36,6 +37,13 @@ published generation, and reads its state and rows in that snapshot. Omitting
 `definition-version/environment-id/season-id` scope. A rebuild can therefore
 advance a building generation without making it visible. A requested exact
 generation must itself be published.
+
+All report pages also include versioned [reviewed incident coverage](INCIDENT_COVERAGE.md).
+Missing registration, unknown ends, unresolved backlog and separate reconstruction
+remain explicit coverage limits. The report reads only the published copies;
+registry corrections appear in a new generation. Existing v1 metrics retain their
+definitions. Report cache format 2 preserves this metadata and refuses old cached
+pages that lack it.
 
 ## CLI
 

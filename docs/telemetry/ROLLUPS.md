@@ -5,6 +5,9 @@ This is an observation-only, bounded consumer of the immutable
 `telemetry_interval`, runs migrations, resets a generation, or writes a report
 website. The external job owns the original player/day, cohort/day and cursor
 aggregates plus the additive session-summary/member stores from migration 0017.
+Migration 0054 adds [reviewed incident coverage](INCIDENT_COVERAGE.md): publication
+atomically copies a bounded registry version, and report coverage displays its
+known and possible gaps without creating missing activity or synthetic exits.
 It must use a dedicated rollup database identity.
 
 ## Public Python API

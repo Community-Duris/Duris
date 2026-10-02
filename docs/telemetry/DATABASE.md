@@ -3,13 +3,14 @@
 Migration `0014_telemetry_storage` adds exactly six InnoDB tables. The additive
 migration `0017_telemetry_rollup_support` adds the two replay-safe rollup support
 stores described below. Migration `0030_telemetry_quarantine` adds a durable,
-operator-controlled quarantine for record-specific SQL failures. Existing
-immutable migrations retain their original content and checksums; the current
-runtime inventory is 203 tables.
+operator-controlled quarantine for record-specific SQL failures. Migration
+`0054_telemetry_incident_coverage` adds the four reviewed/published incident stores.
+Existing immutable migrations retain their original content and checksums; the
+current complete runtime inventory is 229 tables through migration 0054.
 
 | Table | Grain and ownership |
 | --- | --- |
-| `telemetry_interval` | Immutable tagged facts of all five record kinds; writer inserts and reads replay evidence. `ingest_id` is the keyset cursor. Global unique `(boot_id,process_id,record_seq)` also covers process-wide gaps. |
+| `telemetry_interval` | Immutable tagged facts of all eight current record kinds; writer inserts and reads replay evidence. `ingest_id` is the keyset cursor. Global unique `(boot_id,process_id,record_seq)` also covers process-wide gaps. |
 | `telemetry_session` | Latest absolute checkpoint totals plus observed enter/exit flags and quality. Scoped primary key includes environment/season and original session identity; a second global session identity unique key prevents a changed scope from creating a second projection. Writer owns insertion/update. |
 | `telemetry_config` | Immutable `(environment_id,config_id)` and the complete typed effective snapshot, including its SHA-256 fingerprint and publication metadata. Writer owns insertion; publication reuse must match semantic content, excluding process-local revision and effective time. |
 | `telemetry_player_day` | Rollup definition/generation/environment/season/UTC-day/subject/session contribution. The six duration counters, attributable coverage and watermark remain separate from raw session totals. |
@@ -18,6 +19,9 @@ runtime inventory is 203 tables.
 | `telemetry_rollup_session` | Definition/generation/environment/season/original session identity projection with greatest checkpoint revision, absolute checkpoint totals, sealed interval coverage, attribution and provisional quality. Primary key is the replay identity; `idx_rollup_session_subject` supports bounded subject keysets. |
 | `telemetry_cohort_member` | Definition/generation/environment/season/UTC-day/captured cohort dimensions/category/member contribution. `membership_kind` distinguishes one subject member (zero session identity) from one original session member; the full member identity is the replay-safe primary key. |
 | `telemetry_quarantine` | Durable isolation of a record whose SQL failure is classified as record-specific. The writer stores replay identity, a payload digest, the fixed-size record and payload-free failure metadata; only an explicit reviewed recovery action may change `recovery_state`. |
+| `telemetry_reward_projection` / `telemetry_reward_projection_state` | Versioned committed reward projection and its external source/publication cursors; see [REWARD_PROJECTION.md](REWARD_PROJECTION.md). |
+| `telemetry_incident_registry` / `telemetry_incident` | Consecutive retained reviewed inventories at environment/season/version grain, with bounded incident identities, nullable ends, verified post-fix replay references and explicit backlog/provenance. Restricted registrar owns append-only insertion. |
+| `telemetry_rollup_incident_coverage` / `telemetry_rollup_incident` | Bounded reviewed coverage copied at report definition/generation/environment/season grain during atomic publication. Reports read these copies without registry/raw access. |
 
 The tagged fact stream stores named columns, with SQL NULL for fields absent from
 the selected kind. Allowed all-zero session and connection references remain zero
@@ -81,7 +85,8 @@ the dedicated session UPDATE permission.
 | Role | Allowed table operations |
 | --- | --- |
 | Telemetry writer | SELECT and INSERT on `telemetry_interval`, `telemetry_config` and `telemetry_quarantine`; SELECT, INSERT and UPDATE on `telemetry_session`. No quarantine UPDATE/DELETE, aggregate writes or gameplay-table privileges. |
-| External rollup | Bounded SELECT on `telemetry_interval`, `telemetry_config` and `telemetry_session`; SELECT, INSERT and UPDATE on `telemetry_player_day`, `telemetry_cohort_day`, `telemetry_rollup_session`, `telemetry_cohort_member` and `telemetry_rollup_state`. No gameplay writes or raw UPDATE/DELETE. |
+| External rollup | Bounded SELECT on `telemetry_interval`, `telemetry_config`, `telemetry_session`, `telemetry_incident_registry` and `telemetry_incident`; SELECT, INSERT and UPDATE on `telemetry_player_day`, `telemetry_cohort_day`, `telemetry_rollup_session`, `telemetry_cohort_member` and `telemetry_rollup_state`; SELECT/INSERT on `telemetry_rollup_incident_coverage` and `telemetry_rollup_incident`. No gameplay writes or raw/registry UPDATE/DELETE. |
+| Restricted incident registrar | SELECT/INSERT on the two reviewed incident registry tables and bounded SELECT on raw facts to verify a named post-fix replay key. See [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
 | Reports | SELECT only on reviewed aggregate/state tables or restricted views; no unrestricted raw history or gameplay access. |
 | Migration/lifecycle operator | Existing reviewed administrative workflow; distinct from runtime identities. No automatic purge is authorized. |
 
@@ -92,7 +97,7 @@ sequential writer with ambiguous commits resolved before later batches.
 
 ## Lifecycle and recovery
 
-All nine stores are registered in `migrations/data_lifecycle_manifest.json` with
+All fifteen SQL telemetry stores are registered in `migrations/data_lifecycle_manifest.json` with
 season and terminal action `retain`, pending retention/archive/controller/export
 decisions, and destructive rules disabled. The fact/config/state stores protect
 replay and rebuild evidence. Telemetry is observational and never an economic or
@@ -102,8 +107,9 @@ retention as a controller policy.
 Scoped subject/PID facts and per-subject contributions require a reviewed subject
 processing route before activation. No account linkage is claimed or derived from
 current player rows. Aggregate disclosure also remains pending. Backup and restore
-must preserve the nine tables together, including facts, quarantine evidence, config identities,
-projection revisions, rollup generations and cursor state. Rebuild is possible only
+must preserve the stores together, including facts, quarantine evidence, config identities,
+reward projections, incident inventory versions, published coverage, rollup generations
+and cursor state. Retain protected outage ledger archives with that evidence. Rebuild is possible only
 while required fact detail is retained. Restored/test worlds require a fresh
 environment and producer incarnation before new observations. Copyover retains the
 original session identity and changes current producer/connection identities; SQL

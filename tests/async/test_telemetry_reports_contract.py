@@ -63,6 +63,10 @@ class _FixedReportDatabase(ReportDatabase):
     def _read_published_state(self, _request):
         return state_row()
 
+    def _read_incident_coverage(self, _target, _state, *, max_bytes):
+        return {"status": "not_registered", "quality_flags": 1 << 28,
+                "registry_version": None, "incidents": []}
+
     def _read_page(self, _request, _target):
         return _QueryPage(
             rows=self.fixed_rows,

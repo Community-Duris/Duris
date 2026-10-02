@@ -70,6 +70,8 @@ ROLLUP_QUALITY_LIFECYCLE_CONFLICT = 1 << 23
 ROLLUP_QUALITY_CHECKPOINT_CONFLICT = 1 << 24
 ROLLUP_QUALITY_LATE_INPUT = 1 << 25
 ROLLUP_QUALITY_SESSION_GAP = 1 << 26
+ROLLUP_QUALITY_INCIDENT_GAP = 1 << 27
+ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN = 1 << 28
 ROLLUP_QUALITY_KNOWN_MASK = (1 << 9) - 1
 ROLLUP_QUALITY_MASK = (
     ROLLUP_QUALITY_KNOWN_MASK
@@ -84,6 +86,8 @@ ROLLUP_QUALITY_MASK = (
     | ROLLUP_QUALITY_CHECKPOINT_CONFLICT
     | ROLLUP_QUALITY_LATE_INPUT
     | ROLLUP_QUALITY_SESSION_GAP
+    | ROLLUP_QUALITY_INCIDENT_GAP
+    | ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN
 )
 
 
@@ -176,6 +180,7 @@ class RollupCoverage:
     provisional: bool
     rebuild_from_ingest_id: int
     rebuild_through_ingest_id: int
+    incident_coverage: Mapping[str, Any] | None = None
 
     @property
     def input_complete_to_snapshot(self) -> bool:
@@ -211,6 +216,7 @@ class RollupCoverage:
             "provisional": self.provisional,
             "rebuild_from_ingest_id": self.rebuild_from_ingest_id,
             "rebuild_through_ingest_id": self.rebuild_through_ingest_id,
+            "incident_coverage": self.incident_coverage,
         }
 
 
@@ -529,6 +535,8 @@ __all__ = [
     "ROLLUP_QUALITY_KNOWN_MASK",
     "ROLLUP_QUALITY_LATE_INPUT",
     "ROLLUP_QUALITY_SESSION_GAP",
+    "ROLLUP_QUALITY_INCIDENT_GAP",
+    "ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN",
     "ROLLUP_QUALITY_LIFECYCLE_CONFLICT",
     "ROLLUP_QUALITY_PROCESS_GAP",
     "ROLLUP_QUALITY_UTC_BACKWARD",
