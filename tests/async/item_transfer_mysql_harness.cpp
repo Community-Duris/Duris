@@ -1984,7 +1984,8 @@ void check_accounted_craft_conservation(MYSQL *connection)
 	request.deadline_usec = persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
 	const auto pending_load = player_load_repository_execute(reopened, request);
 	assert(pending_load.outcome == player_load_outcome::applied &&
-	       pending_load.metrics.query_count == PLAYER_LOAD_NAME_QUERY_MAX + PLAYER_LOAD_SPELL_EFFECT_QUERY_MAX &&
+	       pending_load.metrics.query_count ==
+		       PLAYER_LOAD_NAME_QUERY_MAX + PLAYER_LOAD_SPELL_EFFECT_QUERY_MAX &&
 	       pending_load.spell_effect_receipts.size() == 1 &&
 	       pending_load.spell_effect_receipts[0].effect_id ==
 		       static_cast<uint32_t>(item_spell_component_effect::faerie_sight));
@@ -2050,12 +2051,16 @@ void check_craft_conservation(MYSQL *connection)
 	recipe.output_uid = output.object_uid;
 	craft.continuation.kind = item_transfer_continuation_kind::craft_recipe;
 	assert(craft_recipe_continuation_encode(recipe, &craft.continuation.data));
-	execute(connection, "CREATE TRIGGER craft_progression_root_failure BEFORE INSERT ON player_craft_progression FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='injected craft receipt failure'");
+	execute(connection,
+		"CREATE TRIGGER craft_progression_root_failure BEFORE INSERT ON player_craft_progression FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='injected craft receipt failure'");
 	assert(apply(connection, 31, craft).outcome == critical_apply_outcome::terminal_failure);
 	assert(owner_revision(connection, owner) == 1);
-	assert(scalar(connection, "SELECT COUNT(*) FROM item_current_owner WHERE item_uid IN(55101,55102) AND state=1") == 2);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM item_current_owner WHERE item_uid IN(55101,55102) AND state=1") ==
+	       2);
 	assert(scalar(connection, "SELECT COUNT(*) FROM player_items WHERE obj_uid=55103") == 0);
-	assert(scalar(connection, "SELECT COUNT(*) FROM player_craft_progression WHERE pid=551") == 0);
+	assert(scalar(connection, "SELECT COUNT(*) FROM player_craft_progression WHERE pid=551") ==
+	       0);
 	execute(connection, "DROP TRIGGER craft_progression_root_failure");
 	auto applied = apply(connection, 31, craft);
 	if (applied.outcome != critical_apply_outcome::applied)
@@ -2070,7 +2075,9 @@ void check_craft_conservation(MYSQL *connection)
 		      "SELECT COUNT(*) FROM item_current_owner WHERE item_uid IN(55101,55102) AND owner_type=8 AND state=2") ==
 	       2);
 	assert(owner_revision(connection, owner) == 2);
-	assert(scalar(connection, "SELECT COUNT(*) FROM player_craft_progression WHERE pid=551 AND discipline=2 AND experience=7000 AND applied_revision=0") == 1);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM player_craft_progression WHERE pid=551 AND discipline=2 AND experience=7000 AND applied_revision=0") ==
+	       1);
 	const auto stored = read_blob(
 		connection,
 		"SELECT state.payload FROM player_item_runtime_state state JOIN player_items pi ON pi.id=state.item_id WHERE pi.obj_uid=55103");
