@@ -20,8 +20,25 @@ static void require(bool condition, const string &message)
 }
 
 /** Exercise flat-file help lookup, including the supported No Locate aliases. */
-int main()
+int main(int argc, char **argv)
 {
+	if (argc == 2 && string(argv[1]) == "search-fixture")
+	{
+		const string result = wiki_help("  BULK  ");
+		require(result.find("EXACT_AFTER_CAP") != string::npos,
+			"exact title beyond the search cap was not rendered");
+		require(result.find("aaa bulk099\n") != string::npos &&
+				result.find("aaa bulk100\n") == string::npos,
+			"topic list did not respect the 100-result display limit");
+		require(result.find("limited to 100 topics") != string::npos &&
+				result.find("Type HELP <topic>") != string::npos,
+			"bounded results did not explain how to refine or read a topic");
+		require(wiki_help(" \t\r\n").find("DEFAULT_MENU") != string::npos,
+			"blank help did not use the default menu");
+		require(wiki_help("missing").find("HELP COMMANDS") != string::npos,
+			"missing help did not suggest a recovery action");
+		return 0;
+	}
 	const string default_help = wiki_help("");
 	require(default_help.find("temporarily disabled") == string::npos &&
 			default_help.find("help") != string::npos,

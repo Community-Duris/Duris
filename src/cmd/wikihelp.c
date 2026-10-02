@@ -132,6 +132,7 @@ string wiki_help_single(string str)
 
 string wiki_help(string str)
 {
+	str = trim(str, " \t\r\n");
 	if (str.empty())
 		return wiki_help_single("help");
 	const auto &help = flat_help();
@@ -145,19 +146,13 @@ string wiki_help(string str)
 	if (matches.empty())
 	{
 		logit(LOG_HELP, "%s", str.c_str());
-		return string("&+GSorry, but there are no help topics that match your search.");
+		return string("&+GSorry, but there are no help topics that match your search.\n"
+			      "Try HELP <shorter keyword>, HELP COMMANDS, or COMMANDS.");
 	}
 	if (matches.size() == 1)
 		return render_flat_help(*matches.front(), 0);
-	const string key = tolower(str);
-	const flatfile_help_entry *exact = nullptr;
+	const flatfile_help_entry *exact = flatfile_help_catalog_find(help.catalog, str);
 	string result;
-	for (const auto *entry : matches)
-		if (tolower(entry->title) == key)
-		{
-			exact = entry;
-			break;
-		}
 	if (exact)
 	{
 		result = render_flat_help(*exact, 0);
@@ -165,9 +160,19 @@ string wiki_help(string str)
 	}
 	else
 		result = "&+GThe following help topics matched your search:\n";
+	size_t listed = 0;
 	for (const auto *entry : matches)
 		if (entry != exact)
+		{
+			if (listed == WIKIHELP_RESULTS_LIMIT)
+				break;
 			result += " &+c" + entry->title + "\n";
+			++listed;
+		}
+	if (matches.size() > WIKIHELP_RESULTS_LIMIT)
+		result +=
+			"&+GThe list is limited to 100 topics; use a longer keyword to narrow your search.\n";
+	result += "&+GType HELP <topic> to read an entry.&N\n";
 	return result;
 }
 
@@ -175,42 +180,51 @@ string wiki_help(string str)
 
 string wiki_help(string str)
 {
+	str = trim(str, " \t\r\n");
 	const auto *catalog = help_cache_get();
 	if (!catalog)
 		return "&+GHelp is temporarily unavailable while its catalog loads. Please try again shortly.";
 	if (str.empty())
 		return wiki_help_single("help");
 	std::vector<const help_page *> matches;
+	const help_page *exact = nullptr;
 	for (const auto &page : *catalog)
-		if (help_title_matches(page.fields[0], str))
+	{
+		if (help_title_equal(page.fields[0], str))
+			exact = &page;
+		if (matches.size() < WIKIHELP_RESULTS_LIMIT + 1 &&
+		    help_title_matches(page.fields[0], str))
 		{
 			matches.push_back(&page);
-			if (matches.size() == WIKIHELP_RESULTS_LIMIT + 1)
-				break;
 		}
+	}
 	if (matches.empty())
 	{
 		logit(LOG_HELP, "%s", str.c_str());
-		return "&+GSorry, but there are no help topics that match your search.";
+		return "&+GSorry, but there are no help topics that match your search.\n"
+		       "Try HELP <shorter keyword>, HELP COMMANDS, or COMMANDS.";
 	}
 	if (matches.size() == 1)
 		return wiki_help_single(matches.front()->fields[0]);
 	std::string result;
-	const help_page *exact = nullptr;
-	for (const auto *page : matches)
-		if (help_title_equal(page->fields[0], str))
-		{
-			exact = page;
-			break;
-		}
 	if (exact)
 		result = wiki_help_single(exact->fields[0]) +
 			 "\n\n&+GThe following help topics also matched your search:\n";
 	else
 		result = "&+GThe following help topics matched your search:\n";
+	size_t listed = 0;
 	for (const auto *page : matches)
 		if (page != exact)
+		{
+			if (listed == WIKIHELP_RESULTS_LIMIT)
+				break;
 			result += " &+c" + page->fields[0] + "\n";
+			++listed;
+		}
+	if (matches.size() > WIKIHELP_RESULTS_LIMIT)
+		result +=
+			"&+GThe list is limited to 100 topics; use a longer keyword to narrow your search.\n";
+	result += "&+GType HELP <topic> to read an entry.&N\n";
 	return result;
 }
 

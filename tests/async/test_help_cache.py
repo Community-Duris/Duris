@@ -63,10 +63,13 @@ int main() {
  ready=true; add("help","welcome"); add("Fire","burn","9"); add("Fire shield","protect");
  add("Alias","Redirect: Fire shield"); add("Cycle","Redirect: Cycle");
  assert(wiki_help("").find("welcome")!=string::npos);
+ assert(wiki_help(" \t\r\n").find("welcome")!=string::npos);
+ assert(wiki_help("  fIrE  ").find("burn")!=string::npos);
  assert(wiki_help("fIrE").find("burn")!=string::npos);
  assert(wiki_help("Fire").find("also matched")!=string::npos);
  assert(wiki_help("shield").find("protect")!=string::npos);
  assert(wiki_help("missing").find("no help topics")!=string::npos);
+ assert(wiki_help("missing").find("HELP COMMANDS")!=string::npos);
  assert(wiki_help("Alias").find("protect")!=string::npos);
  assert(wiki_help("Cycle").find("redirect limit")!=string::npos);
  assert(wiki_help("Fire").find("Editor")!=string::npos);
@@ -75,8 +78,13 @@ int main() {
  assert(wiki_help("Fire").find("dynamic2")!=string::npos);
  for(int i=0;i<150;++i) add("bulk"+to_string(i),"text");
  auto result=wiki_help("bulk");
- assert(result.find("bulk100\n")!=string::npos);
+ assert(result.find("bulk99\n")!=string::npos);
+ assert(result.find("bulk100\n")==string::npos);
  assert(result.find("bulk101\n")==string::npos);
+ assert(result.find("limited to 100 topics")!=string::npos);
+ assert(result.find("Type HELP <topic>")!=string::npos);
+ add("bulk","exact match after the first 101 results");
+ assert(wiki_help("bulk").find("exact match after the first 101 results")!=string::npos);
  for(int i=0;i<10000;++i) assert(wiki_help("Fire").find("burn")!=string::npos);
  cout << "help matching, redirects, dynamic content, metadata and repeated reads passed\n";
 }
