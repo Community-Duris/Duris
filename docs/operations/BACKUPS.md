@@ -271,7 +271,14 @@ the runtime schema, recomputes the complete migration history, and reconciles
 account/character, wallet, bank, and epic evidence. Epic qualification also
 requires the saved revision to match the last immutable event and every
 revision after its opening baseline to be present; cancelling missing events
-cannot qualify from an unchanged aggregate balance. Runtime boot uses only the
+cannot qualify from an unchanged aggregate balance. Wallet and bank revisions
+also require a complete post-opening history. Their witnesses include successful
+native currency receipts and committed economic account effects resolved through
+retained native mappings; the same revision witnessed by both counts once.
+Unwitnessed future counters, missing revisions and stale saved counters refuse.
+Revision comparison retains the full unsigned 64-bit range. These checks do not
+replace full economic source/custody reconciliation or route qualification.
+Runtime boot uses only the
 new socket. Flatfile restore verifies copied bytes before mutation, runs native
 authority replay, and validates existing account, snapshot, and world catalog bytes.
 Full player/domain loads run after WAL replay, allowing a durable first snapshot
