@@ -58,8 +58,8 @@ class SplitEconomyActivationContract(unittest.TestCase):
             ("src/cmd/actobj.c", 1336): "item.legacy_get",
             ("src/cmd/actobj.c", 6278): "item.legacy_give",
             ("src/cmd/actobj.c", 7842): "item.equipment_remove",
-            ("src/world/handler.c", 1853): "item.obj_to_char_admission",
-            ("src/world/handler.c", 2025): "item.obj_to_char_admission",
+            ("src/world/handler.c", 1856): "item.obj_to_char_admission",
+            ("src/world/handler.c", 2029): "item.obj_to_char_admission",
             ("src/world/handler.h", 15): "macro.checked_item_publication_declaration",
         }
         for row in checked:
@@ -399,7 +399,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         sites = {row["id"]: row["sites"] for row in registry["writers"]}
         expected = {
-            "world.mobile_template": ("src/world/db.c", {2280, 2281, 2282, 2283, 2671, 2672, 2673, 2674}),
+            "world.mobile_template": ("src/world/db.c", {2281, 2282, 2283, 2284, 2672, 2673, 2674, 2675}),
             "player.flatfile_baseline_projection": ("src/core/files.c", {1872, 1873, 1874, 1875, 1877, 1878, 1879, 1880}),
             "player.legacy_flatfile_load": ("src/core/files.c", {2426, 2427, 2428, 2429}),
             "recovery.pet_cash_discard": ("src/core/files.c", {4691, 4692, 4693, 4694, 4696, 4697, 4698, 4699}),
@@ -743,11 +743,11 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new handler item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/world/handler.c", 3372, "item_lifecycle")],
+        self.assertEqual(owners[("src/world/handler.c", 3385, "item_lifecycle")],
                          {"item.extraction"})
-        self.assertEqual(owners[("src/world/handler.c", 3988, "item_publication")],
+        self.assertEqual(owners[("src/world/handler.c", 4001, "item_publication")],
                          {"death.corpse_compaction_bone_grant"})
-        self.assertEqual(owners[("src/world/handler.c", 4357, "item_lifecycle")],
+        self.assertEqual(owners[("src/world/handler.c", 4370, "item_lifecycle")],
                          {"death.resurrection_money_pile"})
         for route_id in ("item.prototype_weight_probe", "item.creation_candidate_reject",
                          "coin.wallet_pile_stage_cleanup", "death.corpse_compaction_stage_cleanup"):
@@ -953,7 +953,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new NPC behavior item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/mob/mobact.c", 1164, "item_publication")],
+        self.assertEqual(owners[("src/mob/mobact.c", 1165, "item_publication")],
                          {"mob.corpse_dig_creation"})
         self.assertEqual(self.routes["mob.corpse_dig_creation"]["disposition"],
                          "runtime_mutation_route")
@@ -1388,9 +1388,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
                     owners.setdefault(tuple(site), set()).add(route["id"])
         self.assertEqual(current, owners.keys(), "review new Heavens special item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[(path, 5829, "item_publication")],
+        self.assertEqual(owners[(path, 5840, "item_publication")],
                          {"special.treasure_chest_detach"})
-        self.assertEqual(owners[(path, 5716, "item_lifecycle")],
+        self.assertEqual(owners[(path, 5727, "item_lifecycle")],
                          {"gambling.slot_coupon_grant"})
         self.assertEqual(self.routes["special.flying_citadel_unreachable_move"]["disposition"],
                          "non_writer_candidate")
