@@ -139,6 +139,22 @@ class LifecycleManifestTest(unittest.TestCase):
                         "non-database coverage mismatch",
                     )
 
+    def test_recipe_recovery_protection_cannot_be_removed_by_policy_edits(self) -> None:
+        stores = ("database:player_craft_progression", "file:player-craft-receipts",
+                  "file:player-craft-obligations")
+        for entry_id in stores:
+            for field, value in (("protected_record", False), ("season_action", "reset_delete"),
+                                 ("terminal_action", "deactivate")):
+                with self.subTest(store=entry_id, field=field):
+                    changed = json.loads(json.dumps(self.manifest))
+                    target = next(row for row in changed["entries"] if row["id"] == entry_id)
+                    target[field] = value
+                    with tempfile.TemporaryDirectory() as temporary:
+                        self.assert_rejected(
+                            self.run_validator(self.write_manifest(Path(temporary), changed)),
+                            "recipe progression recovery must remain protected and retained",
+                        )
+
     def test_journal_archive_and_fences_are_protected_recovery_evidence(self) -> None:
         for name in ("file:player_save_quarantine_archive", "file:player_save_quarantine_policy"):
             entry = self.entry(name)

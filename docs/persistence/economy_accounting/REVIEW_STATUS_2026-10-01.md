@@ -63,7 +63,9 @@ This checkpoint publishes the completed review fixes directly to
 
 - Flatfile `.craft` application receipts and `.craft-obligation` frozen terms
   now have separate protected retention/export inventory entries. The lifecycle
-  validator requires both; removing either is rejected. Fifteen lifecycle,
+  validator requires both; removing either is rejected. SQL and flatfile recipe
+  recovery policies must also remain protected and retained; nine policy-edit
+  fault cases that previously passed are now refused. Sixteen lifecycle,
   seven erasure, and six export regressions pass. The inventory now counts 39
   non-database stores, 225 SQL tables, and 42 Redis surfaces, with destructive
   rules and shared disclosure still disabled pending controller decisions.
