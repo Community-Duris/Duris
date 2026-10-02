@@ -8,14 +8,22 @@ and makes execution failures, skips and costs visible.
 
 ## Scope and per-entry decisions
 
-The starting checkout was `5c157f693` on `experimental-accounting`. The audit branch
-also incorporates base-branch changes through `db2822706`, including three new
-salvage regressions. Those salvage changes belong to the base branch.
+The starting checkout was `5c157f693` on `experimental-accounting`. The final audit
+branch incorporates the base through `e831cf7bf`, including its salvage regressions
+and currency receipt work. Those production changes belong to the base branch.
 
-After validation was frozen, the base advanced to `e831cf7bf` with separate currency
-receipt work. `git merge-tree --write-tree` found no text conflicts with the audit
-branch. This report covers the tested branch snapshot through `db2822706`; execution
-against that later combined currency tree remains a draft-review qualification.
+The complete uninterrupted gate ran the combined code at `33fa12bbd199efc9f8719eed50feeef9805f5648`.
+The exported fixture's tracked file contents were compared with that commit. Its
+source stayed fixed throughout execution. Its single failure was upstream coin-
+fixture formatting. The formatter then changed only whitespace in three lambda
+expressions; replacement XML and a character comparison verified this, and the
+affected native regression and complete formatting check passed after repair.
+
+The qualified code is `3beb1d73c96bf201e4e70aadd65643df7bec01d7`. Its `src` tree remains
+`3de65a8e0664ceb2229808528a319b7e208dd5b3`; its `tests` tree is `a82eb958a546a0722fd1d10de558be272e531cfd`.
+Later audit-evidence edits change only documentation. Final coverage combines
+the complete run with that narrowly scoped formatting follow-up; it is not
+represented as an uninterrupted zero-failure full run.
 
 The starting inventory had 859 Python entry scripts: 857 `test_*.py` files and two
 `*_test.py` files. The old runner selected 832, excluded 25 with explicit manual
@@ -29,6 +37,8 @@ explicit manual invocations.
   named cases, target literals, local helpers, Python assertion counts and
   diagnostics, evidence limits, baseline outcome/duration, current core outcome
   with its validation-run provenance, and additional native/SQL verification.
+  Every core row cites its supplying full or focused report; formatting and its
+  affected native driver cite their post-repair runs.
 - [TEST_SUITE_SUPPORT.csv](TEST_SUITE_SUPPORT.csv) records 436 native fixtures, helpers,
   wrappers and root-level verification tools, with their textual owners. Input
   data files are assessed through their owning tests rather than counted as
@@ -177,8 +187,36 @@ exercise them.
 
 The optional backup fixture had another hidden link failure because it reused the
 qualifier's smaller source list while exercising item mutations. Craft restore and
-backup tests now share `_restore_fixture.py`, with the required collector sources
-and test-access flags. It replaces the two drifting build definitions.
+backup tests now share `_restore_fixture.py`, with the required collector sources,
+UID allocator dependency and test-access flags. It replaces the two drifting build
+definitions. Privileged execution found two further fixture defects: seeded custody
+items lacked a durable UID allocator, so the real server correctly refused boot;
+and a migration-runner client invocation duplicated `--no-defaults`, so MariaDB
+rejected it. The fixture now seeds complete authority and uses the runner's existing
+client option. Both real isolated boot paths pass.
+
+A backup case also expected every unreplayable partial player save to refuse
+qualification. The current recovery design instead preserves that save in a durable
+quarantine and fences its PID. The earlier boot failure concealed the stale assertion.
+The revised case verifies the original WAL bytes survive, the active journal is
+drained, missing PID 999 is not materialized and its real load is refused with
+`EPERM`, while healthy PID 42 loads account/player/domain state. Corrupt player and
+critical journals still refuse qualification. The backup run exercises all nine
+cases, rather than treating a fixture compilation as restore evidence.
+
+The combined-base gate found a stale auction inspector-isolation stand-in. The
+journey now delegates compilation to `build_inspector`; its isolation test still
+patched a removed `subprocess` import and failed before exercising its assertions.
+The stand-in now intercepts the actual builder and retains all five cold-build,
+supplied-server and failure-cleanup scenarios. Private-copy faults for a lost
+inspector binding and shared destination are rejected by those assertions.
+
+The complete gate also detected upstream lambda-layout drift in
+`flatfile_accounting_coin_test.cpp`. The repository formatter changes only
+whitespace in those three expressions. Its replacement XML and before/after
+non-whitespace characters were checked; the complete formatting-tooling test
+and the affected native coin regression then passed. No test assertion or server
+source changed in that final repair.
 
 Real SQL execution exposed an incorrect fixture expectation that a healthy load
 must use exactly the maximum query budget. Optional empty receipt/obligation paths
@@ -191,38 +229,58 @@ that could print an obsolete error code. Its timeout is unchanged.
 
 ## Proof and measured cost
 
-Validation uses exported source snapshots in an owned Linux container with four
-CPUs, 4 GiB RAM, Python 3.12 and GCC 13. Database checks use two fresh owned
-containers, MariaDB 10.11.19 and MySQL 8.0.46, with loopback-only disposable fixtures.
-No repository `.env`, existing game account, running game, or production database
-is involved.
+Validation uses exported source snapshots in owned Linux containers with four
+CPUs, Python 3.12 and GCC 13. Initial measurements used 4 GiB RAM; final merge
+qualification used 5 GiB. Database checks use fresh owned MariaDB 10.11.19 and
+MySQL 8.0.46 containers with loopback-only disposable fixtures. The privileged
+backup suite additionally starts its own isolated MariaDB 10.11 server and private
+service/network namespaces. No repository `.env`, existing game account, running
+game, or production database is involved.
 
 | Check | Result |
 | --- | --- |
 | Original `make test-all -j2 TEST_JOBS=2` | 819 passing scripts, 13 failures; Python phase 5,278.73 seconds |
 | Revised full run | 817 passing scripts, 11 explicit skips, three failures; Python phase 5,348.11 seconds |
-| Revised full run plus repaired/current-base follow-ups | All 834 current core entries accounted for: 823 passed, 11 explicit skips, zero remaining failures |
+| Earlier revised run plus follow-ups | Historical composite: 834 core entries accounted for, 823 passed and 11 explicit skips |
+| Complete uninterrupted `make test-all -j2 TEST_JOBS=2 TEST_REPORT=bin/test-audit/merge-ready-results.json` | 822 passed, 11 explicit whole-script skips, one upstream fixture-formatting failure; Python phase 4,739.16 seconds; maintained builds, world generation and native targets passed |
+| Formatting-only repair | Full formatting-tooling check passed in 29.57 seconds; coin-focused `make test-all` passed its native regression in 139.55 seconds and passed maintained build/world/native targets |
+| Qualified current core coverage | All 834 entries accounted for: 823 passed, 11 explicit whole-script skips, zero unresolved failures; complete-run plus explicit formatting follow-up provenance is recorded per row |
 | Focused source-helper consumers | 82 scripts passed |
 | Current harness behavior | Seven real process/CLI/entry-point cases passed |
 | Previously silent training-dummy script | All 15 structural cases executed and passed |
 | Accounting auditor | Eleven cases passed, including exact replay and the relocated fixture |
 | Integrated base additions | All three salvage regressions passed; 52 writer classification, three census and 29 item-admission cases passed; generated matrix and accounting validator checks passed |
-| Real SQL load, conflict and pool fixtures | Eight unittest cases passed across both engines, including 30 ordered load cases and eight two-connection ordering scenarios per engine |
+| Final real SQL load and conflict fixtures | Six unittest executions passed across both engines; load coverage includes 30 ordered cases and eight two-connection ordering scenarios per engine |
+| Real SQL pool repetitions | 20 complete runs passed, ten fresh empty schemas per engine during concurrent native compilation; original three-second client deadlines retained |
+| Auction inspector isolation | Five orchestration scenarios passed; actual private-copy binding/destination faults both rejected |
+| Current currency/coin SQL harness | Maintained native harness passed against both engines, including balanced posting/replay/rollback and split/merge; this is the wrapper's native harness, not its entire schema-damage/loader matrix |
+| Privileged backup integration | All nine standalone opt-in cases passed in 151.677 seconds, including actual isolated flat-file/MariaDB boot, replay, corruption refusal and quarantine admission checks |
 | Restore fixture | Shared backup fixture compiled and executed native craft recovery; craft restore passed valid-state qualification and all six corruption/refusal variants |
-| Maintained server build and touched C++ formatting | `make -C src -j2` and `scripts/format.sh --check --file tests/async/player_death_recovery_mysql_harness.cpp` passed |
-| Final filtered root gate | `make test-all -j2 TEST_JOBS=2 TEST_MATCH=root_test_harness` passed, including maintained build/world/native targets and the current harness |
+| Maintained server build and touched C++ formatting | The final root gate's `make -C src` and maintained tool builds passed; formatting checks passed for `player_death_recovery_mysql_harness.cpp` and `persistence_restore_fixture.cpp` |
+| Final documentation | The maintained documentation-contract test passed against this updated audit and the corrected backup guide |
+| Harness-focused root gate | `make test-all -j2 TEST_JOBS=2 TEST_MATCH=root_test_harness` passed, including maintained build/world/native targets and the current harness |
 
-The full run selected 831 entries before the three upstream salvage additions were
+The earlier revised full run selected 831 entries before the three upstream salvage additions were
 integrated. Its failures were two native-fixture drivers requiring explicit literal
 SQL/log matching and an account journey whose cached build was rejected because
 the source changed during upstream integration. Both native drivers passed after
 repair; the stable account journey passed on retry. The current-base salvage and
-changed-entry supplements passed. The consolidated 834-entry outcome records each
-script's supplying run; it is not represented as a second uninterrupted full run.
-Current craft, auditor, training-dummy and harness changes were also executed after
-their final edits.
+changed-entry supplements passed. That earlier composite recorded each script's supplying run.
+It is retained above
+as historical evidence. The complete gate executes all 834 entries on the
+combined base and final behavioral test code. Its single fixture-formatting
+failure is repaired and verified separately; the record preserves both outcomes.
 
-Ten deliberate faults were rejected:
+Three preliminary merge-qualification gates were deliberately interrupted: two
+when privileged backup execution required fixture corrections, and one after the
+combined-base gate exposed the stale auction stand-in. Their partial outcomes
+are not counted as complete qualification. The completed run contains no cancellations
+or source changes. Its JSON still records optional skipped checks within passing
+scripts; the eleven whole-script skips are not counted as passes. The final
+whitespace repair has no behavioral change, so its native consumer and formatting
+tooling were rerun rather than repeating all 834 entries.
+
+Twelve deliberate faults were rejected:
 
 | Injected fault | Observed rejection |
 | --- | --- |
@@ -236,16 +294,18 @@ Ten deliberate faults were rejected:
 | Add an unmetered real SQL `SELECT 1` | Actual execution count was 34 while metrics reported 33; observer rejected the mismatch |
 | Have the auditor report zero checked operations for every golden fixture | Old positive test accepted it; revised test failed an assertion |
 | Give the training-dummy script empty source input | Old entry point exited successfully without running cases; current entry point ran all 15 and failed assertions |
+| Lose the auction journey's private inspector binding | Corrected isolation driver rejected the wrong inspector during the mocked journey |
+| Compile the auction inspector into a shared destination | Corrected isolation driver rejected the destination before running the journey |
 
 Native mutations compile private copies through the same harness and retain real
 synchronization/SQL execution. Source and helper mutations use the actual helper
 and existing assertions. Repository production sources are not altered by these
-experiments. These are demonstrated regression-detection capabilities, not ten
+experiments. These are demonstrated regression-detection capabilities, not twelve
 new production defects.
 
 | Controlled comparison | Before | After | Scope |
 | --- | ---: | ---: | --- |
-| 52 writer-coverage cases, same current source and registry | 111.17 s | 3.43 s | Both runs passed; repeated scans reduced from 34 to one |
+| 52 writer-coverage cases, same source and registry at measurement | 111.17 s | 3.43 s | Both runs passed; repeated scans reduced from 34 to one |
 | 80 matched/indexed lookups in the same `comm.c` | 10.69 s | 0.082 s | About 130 times faster for this repeated-lookup workload |
 
 The retired qualification orchestrator alone took 299.11 seconds in the original
@@ -257,10 +317,13 @@ remain substantial costs. Removing those assertions to improve a headline runtim
 would weaken coverage.
 
 One additional SQL pool repetition failed at table creation during concurrent
-validation; its original diagnostic reported the pre-query error code `0`. A fresh
-fixture passed on both engines after fixing diagnostic ordering, with the same
-timeouts. The initial client failure's cause was not established; it is retained
-as a qualification limit rather than treated as a proven production defect.
+validation; its original diagnostic reported the pre-query error code `0`. Fresh
+fixtures then passed on both engines after fixing diagnostic ordering. Final
+qualification repeated the complete test twenty times, ten per engine, each in
+a fresh empty schema while other tests compiled. All passed with the original
+three-second client deadlines. That stress did not reproduce the historical DDL
+failure; its original cause remains unknown. A better diagnostic and passing
+repetitions do not establish the cause of the earlier failure.
 
 ## Reproduction and remaining limits
 
@@ -268,7 +331,7 @@ Use the commands in [TESTING.md](../guides/TESTING.md), with build dependencies
 available:
 
 ```sh
-make test-all -j2 TEST_JOBS=2
+make test-all -j2 TEST_JOBS=2 TEST_REPORT=bin/test-audit/merge-ready-results.json
 python3 tests/async/test_root_test_harness.py
 python3 tests/async/test_contract_text.py
 python3 tests/async/test_server_build_artifacts.py
@@ -278,11 +341,24 @@ python3 tests/async/test_craft_progression_restore.py
 ```
 
 Real SQL fixtures require their documented empty/migrated disposable schemas and
-explicit opt-in environment. The complete `make test-db` matrix and privileged
-backup service/network-namespace integration are separate verification. Selected
-real SQL checks and native restore-fixture execution do not substitute for that
-entire matrix. Likewise, a source-contract pass is not gameplay evidence, and a
-compile followed by a runtime skip is not SQL integration evidence.
+explicit opt-in environment. Final qualification executed the real pool, load,
+conflict and currency/coin harnesses on both engines. The complete `make test-db`
+matrix and all 25 manual entries were not run. Those unrelated matrix rows remain
+outside this test-suite change's qualification. A source-contract pass is not
+gameplay evidence, and a compile followed by a runtime skip is not SQL integration
+evidence.
+
+The privileged backup command was executed with real MariaDB/native builds,
+`unshare`, private mount/network namespaces and the required capabilities in an
+owned disposable container:
+
+```sh
+DURIS_RUN_BACKUP_INTEGRATION=1 python3 tests/async/test_persistence_backup_integration.py -v
+```
+
+The final JSON, full console log, SQL repetition results and backup transcript
+are retained as local ignored artifacts under `bin/test-audit/`. They contain
+fixture evidence and are not committed.
 
 The next useful performance work is driven by the JSON timings: identify repeated
 native compilation with truly identical flags and dependencies, then share only
