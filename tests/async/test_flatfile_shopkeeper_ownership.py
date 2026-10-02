@@ -85,6 +85,7 @@ with tempfile.TemporaryDirectory(prefix="duris-shopkeeper-ownership-") as temp_d
             str(source),
             rel("flatfile_shopkeeper_ownership.c"),
             rel("item_transfer_command.c"),
+            rel("player_snapshot_codec.c"),
             rel("critical_command.c"),
             "-lcrypto",
             "-o",
