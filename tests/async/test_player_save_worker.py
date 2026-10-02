@@ -362,8 +362,64 @@ void verify_spell_receipt_worker_admission()
     player_revision_reset_for_tests();
 }
 
+void verify_ack_before_retained_submission()
+{
+    player_revision_reset_for_tests();
+    player_save_worker_reset_for_tests();
+    assert(player_revision_hydrate(74, 0));
+    capacity_state held;
+    assert(player_save_worker_init(hold_snapshot, &held, 1));
+    auto first = next_snapshot(74, PLAYER_COMPONENT_INVENTORY);
+    assert(player_save_worker_submit(first) == player_save_submit_result::accepted);
+    {
+        std::unique_lock<std::mutex> lock(held.mutex);
+        held.changed.wait(lock, [&] { return held.started; });
+    }
+    constexpr auto progression = PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_SKILLS |
+                                 PLAYER_COMPONENT_AFFECTS | PLAYER_COMPONENT_TROPHIES;
+    auto retained = next_snapshot(74, progression);
+    assert(retained.components == (progression | PLAYER_COMPONENT_INVENTORY));
+    retained.schema_version = PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
+    player_craft_receipt_snapshot receipt = {};
+    receipt.operation_id.bytes[0] = 0xc6;
+    receipt.discipline = 1;
+    receipt.experience = 7000;
+    retained.craft_receipts.push_back(receipt);
+    {
+        std::lock_guard<std::mutex> lock(held.mutex);
+        held.release = true;
+        held.changed.notify_all();
+    }
+    player_save_completion completion = {};
+    wait_until([&] { return player_save_worker_pulse(&completion, 1) == 1; });
+    player_revision_snapshot state = {};
+    assert(player_revision_snapshot_copy(74, &state));
+    assert(state.queued_revision == retained.revision && state.queued_components == progression);
+    // Reject missing value rows and a different revision without changing ownership.
+    auto incomplete = retained;
+    incomplete.components &= ~PLAYER_COMPONENT_SKILLS;
+    assert(player_save_worker_submit_retained(&incomplete) ==
+           player_save_submit_result::revision_state_mismatch);
+    auto wrong_revision = retained;
+    ++wrong_revision.revision;
+    assert(player_save_worker_submit_retained(&wrong_revision) ==
+           player_save_submit_result::revision_state_mismatch);
+    assert(player_save_worker_submit_retained(&retained) == player_save_submit_result::accepted);
+    wait_until([&] { return player_save_worker_pulse(&completion, 1) == 1; });
+    assert(completion.components == progression);
+    assert(completion.craft_receipts.size() == 1 &&
+           completion.craft_receipts[0].operation_id.bytes[0] == 0xc6);
+    assert(player_revision_snapshot_copy(74, &state));
+    assert(state.acknowledged_revision == completion.revision &&
+           !state.unacknowledged_components && !state.inflight_components);
+    player_save_worker_shutdown();
+    player_save_worker_reset_for_tests();
+    player_revision_reset_for_tests();
+}
+
 int main()
 {
+    verify_ack_before_retained_submission();
     verify_receipt_acknowledgements();
     verify_spell_receipt_worker_admission();
     verify_death_acknowledgements();

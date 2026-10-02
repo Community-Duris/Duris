@@ -20,6 +20,11 @@ This checkpoint publishes the completed review fixes directly to
   actual movement/publication regression coverage (`0464613a1`).
 - Recovery evidence updates are integrated, and recipe writer coverage is
   refreshed while retaining upstream creation-backend evidence (`72b3a5ab6`).
+- Worker admission now handles an older save ACK that narrows the queued
+  component mask while a newer capture waits for journal append. The actual
+  worker regression fails before the fix and passes afterward; missing
+  components and mismatched revisions remain rejected, and the craft receipt
+  reaches its exact successful completion.
 
 ## Verification and its limits
 

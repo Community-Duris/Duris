@@ -413,9 +413,19 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 		    snapshot.encoded_size_bound > PLAYER_SAVE_WORKER_MAX_BYTES - retained_bytes)
 			return durably_journaled ? player_save_submit_result::durably_spilled :
 						   player_save_submit_result::capacity_exceeded;
-		if (!player_revision_begin_inflight(snapshot.pid, snapshot.revision,
-						    snapshot.components))
+		player_revision_snapshot revision_state = {};
+		if (!player_revision_snapshot_copy(snapshot.pid, &revision_state) ||
+		    revision_state.queued_revision != snapshot.revision ||
+		    !revision_state.queued_components ||
+		    (snapshot.components & revision_state.queued_components) !=
+			    revision_state.queued_components ||
+		    !player_revision_begin_inflight(snapshot.pid, snapshot.revision,
+						    revision_state.queued_components))
 			return player_save_submit_result::revision_state_mismatch;
+		// An earlier worker ACK can narrow the queued mask while this sealed
+		// capture waits for its journal append. Apply the remaining components,
+		// just as promote_pending_locked does for a capture retained by the worker.
+		snapshot.components = revision_state.queued_components;
 		const int pid = snapshot.pid;
 		const player_revision_t revision = snapshot.revision;
 		const player_component_mask_t components = snapshot.components;
