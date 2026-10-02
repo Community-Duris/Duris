@@ -95,6 +95,8 @@ def write_mysql_wrapper(directory: Path) -> Path:
         "    if skip:\n"
         "        skip = False\n"
         "        continue\n"
+        "    if arg == '--no-defaults':\n"
+        "        continue\n"
         "    if arg in ('-h', '--host', '-P', '--port', '-u', '--user', '--protocol', '--connect-timeout', '--ssl-ca', '--ssl-cert', '--ssl-key', '--ssl-mode'):\n"
         "        skip = True\n"
         "        continue\n"
@@ -105,7 +107,7 @@ def write_mysql_wrapper(directory: Path) -> Path:
         "    if arg.startswith('-h') or arg.startswith('-P'):\n"
         "        continue\n"
         "    filtered.append(arg)\n"
-        "cmd = ['docker', 'exec', '-i', '-e', 'MYSQL_PWD=' + os.environ.get('MYSQL_PWD', ''), container, 'mysql', '--protocol=tcp', '--host=127.0.0.1', '--port=3306', '-uroot'] + filtered\n"
+        "cmd = ['docker', 'exec', '-i', '-e', 'MYSQL_PWD=' + os.environ.get('MYSQL_PWD', ''), container, 'mysql', '--no-defaults', '--protocol=tcp', '--host=127.0.0.1', '--port=3306', '-uroot'] + filtered\n"
         "raise SystemExit(subprocess.call(cmd))\n",
         encoding="utf-8",
     )

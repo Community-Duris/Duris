@@ -7,7 +7,12 @@ policy remains intact. The run creates and drops its own schema, boots the real
 server, creates two real characters, kills one in real combat, reconnects the
 dead PC, and casts the real resurrection spell while retaining the corpse.
 No checkout .env is read.
+
+The default remains the strict accounting release acceptance. --legacy-persistence
+qualifies the explicitly inactive fixture's durable gameplay contract and reports
+its accounting gap without claiming release coverage.
 """
+import argparse
 import ipaddress
 from contextlib import contextmanager
 from pathlib import Path
@@ -67,7 +72,7 @@ def disposable_db_loopback(host: str, port: int):
         thread.join()
 
 
-def run(server: Path) -> None:
+def run(server: Path, *, legacy_persistence: bool = False) -> None:
     remote_host = os.environ["TEST_DB_HOST"]
     remote_port = int(os.environ.get("TEST_DB_PORT", "3306"))
     try:
@@ -79,10 +84,10 @@ def run(server: Path) -> None:
              not private_address)):
         raise AssertionError("run through the disposable Docker MariaDB wrapper; refusing remote SQL")
     with disposable_db_loopback(remote_host, remote_port) as local_port:
-        run_local(server, local_port)
+        run_local(server, local_port, legacy_persistence=legacy_persistence)
 
 
-def run_local(server: Path, local_port: int) -> None:
+def run_local(server: Path, local_port: int, *, legacy_persistence: bool = False) -> None:
     database = "death_resurrection_" + uuid.uuid4().hex[:12]
     host = "127.0.0.1"
     port = str(local_port)
@@ -111,6 +116,14 @@ def run_local(server: Path, local_port: int) -> None:
     def scalar(statement: str) -> int:
         return int(sql(statement))
 
+    def require_inactive_accounting():
+        for table in ('economic_sql_global_activation', 'economic_sql_activation_receipt',
+                      'economic_sql_lifecycle_installation', 'economic_accounting_operation',
+                      'economic_accounting_child', 'economic_accounting_coin_posting',
+                      'economic_accounting_item_reference'):
+            assert scalar('SELECT COUNT(*) FROM ' + table) == 0, \
+                f'inactive persistence fixture unexpectedly contains accounting authority/evidence: {table}'
+
     sql(f"CREATE DATABASE {database} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", False)
     try:
         sql((ROOT / "migrations/bootstrap_multithread_safe.sql").read_text())
@@ -118,6 +131,8 @@ def run_local(server: Path, local_port: int) -> None:
                         "fresh_bootstrap"], cwd=ROOT, env=environment, check=True)
         subprocess.run(["python3", "scripts/migration_runner.py", "run"],
                        cwd=ROOT, env=environment, check=True)
+        if legacy_persistence:
+            require_inactive_accounting()
         with tempfile.TemporaryDirectory(prefix="death-resurrection-") as runtime_tmp:
             runtime = Path(runtime_tmp)
             journey.make_fixture(runtime)
@@ -376,7 +391,22 @@ def run_local(server: Path, local_port: int) -> None:
                         "WHERE p.operation_id=candidate.root_id)<>0") if new_currency_ops else 0
                     if not new_currency:
                         raise AssertionError("journey produced no post-death/resurrection currency ledger events")
-                    if uncovered_items or unaccounted_currency or missing_legs:
+                    if legacy_persistence:
+                        require_inactive_accounting()
+                        assert uncovered_items == corpse_events + resurrect_events + sum(coin_events.values()), \
+                            'inactive fixture has partial or mismatched item accounting coverage'
+                        assert unaccounted_currency == missing_legs == len(new_currency), \
+                            'inactive fixture has partial or mismatched currency accounting coverage'
+                        print(
+                            'PASS inactive-accounting death/resurrection persistence; '
+                            f'item events death={corpse_events} resurrection={resurrect_events} '
+                            f'coin_pile={coin_events}; currency operations={len(new_currency)}',
+                            flush=True)
+                        print(
+                            'RELEASE ACCOUNTING COVERAGE BLOCKED: '
+                            f'uncovered_item_events={uncovered_items} '
+                            f'unaccounted_currency_operations={unaccounted_currency}', flush=True)
+                    elif uncovered_items or unaccounted_currency or missing_legs:
                         raise AssertionError(
                             "RED double-entry gap after real PC death/resurrection: "
                             f"corpse_create_item_events={corpse_events} "
@@ -386,11 +416,12 @@ def run_local(server: Path, local_port: int) -> None:
                             f"currency_operations={len(new_currency)} "
                             f"unaccounted_currency_operations={unaccounted_currency} "
                             f"currency_operations_with_missing_root_or_postings={missing_legs}")
-                    print(
-                        f"PASS death/resurrection gameplay; item events death={corpse_events} "
-                        f"resurrection={resurrect_events} coin_pile={coin_events}; "
-                        f"currency operations={len(new_currency)} "
-                        "all double-entry-covered", flush=True)
+                    else:
+                        print(
+                            f"PASS death/resurrection gameplay; item events death={corpse_events} "
+                            f"resurrection={resurrect_events} coin_pile={coin_events}; "
+                            f"currency operations={len(new_currency)} "
+                            "all double-entry-covered", flush=True)
                     victim.send("quit")
                     victim.expect("ACCOUNT MENU", timeout=30)
                     victim.send("0")
@@ -426,6 +457,10 @@ def run_local(server: Path, local_port: int) -> None:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--legacy-persistence', action='store_true',
+                        help='qualify the inactive durable gameplay contract; retain explicit release-gap evidence')
+    args = parser.parse_args()
     if os.environ.get("TEST_DB_DISPOSABLE") != "1":
         raise SystemExit("run only through the disposable MariaDB wrapper")
     (ROOT / "bin/tests").mkdir(parents=True, exist_ok=True)
@@ -435,8 +470,8 @@ if __name__ == "__main__":
         build = load_base_build()
         if Path(frozen).resolve() != build.binary:
             raise SystemExit("death journey requires the attested matrix binary")
-        run(build.binary)
+        run(build.binary, legacy_persistence=args.legacy_persistence)
     else:
         subprocess.run(["make", "-C", "src", "-j2", "PERSISTENCE_BACKEND=mariadb"],
                        cwd=ROOT, check=True)
-        run((ROOT / "bin/server/dms_new").resolve())
+        run((ROOT / "bin/server/dms_new").resolve(), legacy_persistence=args.legacy_persistence)
