@@ -769,6 +769,22 @@ class ReconciliationTests(unittest.TestCase):
                 self.assertEqual(self.lineage_lifetime_report(
                     ["create", "destroy", action]).counts["resurrected_item_uid"], 1)
 
+    def test_lineage_history_rejects_second_retirement(self):
+        report = self.lineage_lifetime_report(["create", "destroy", "destroy"])
+        self.assertEqual(report.counts["duplicate_item_retirement"], 1)
+        origin = clean_snapshot()["item_origins"][0]
+        origin.update(state="tombstone", owner=[8, 0, 0])
+        self.assertEqual(self.lineage_lifetime_report(["destroy"], origin).counts[
+            "duplicate_item_retirement"], 1)
+
+    def test_epoch_history_rejects_retiring_opening_tombstone(self):
+        snapshot = clean_snapshot()
+        snapshot["item_origins"][0].update(state="tombstone", owner=[8, 0, 0])
+        snapshot["ownership_events"][0].update(action="destroy", state="tombstone",
+                                               owner=[8, 0, 0])
+        snapshot["native"]["items"][0].update(state="tombstone", owner=[8, 0, 0])
+        self.assertIn("duplicate_item_retirement", self.codes(snapshot))
+
     def test_supply_action_requires_matching_custody_state(self):
         for action, state in (("destroy", "live"), ("create", "tombstone")):
             for lineage in (False, True):
