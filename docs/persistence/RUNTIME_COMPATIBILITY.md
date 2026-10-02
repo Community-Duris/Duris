@@ -31,7 +31,11 @@ variants and refuses duplicate complete values before permanent DDL; it never
 deletes those conflicting rows. The metadata fingerprints were measured on
 disposable MySQL 8.0.46 and MariaDB 10.11 schemas using the real immutable runner.
 Canonical and staging histories through 0053 were qualified on both engines.
-The newly integrated master history through 0053 still requires engine qualification.
+The master-prefix upgrade through 0053 now passes on disposable MySQL 8.0.46 and
+MariaDB 10.11.14 targets: all 31 original receipts and retained item runtime
+payloads remain unchanged, 22 steps append, and reruns preserve every receipt.
+The fixture uses the sealed current baseline with the historical master prefix;
+an actual captured master bootstrap or production clone still needs qualification.
 Migration 0042 records
 a nullable keeper roaming policy; legacy rows remain unknown until a
 shopkeeper checkpoint. Migration 0043 records nullable item condition, and
