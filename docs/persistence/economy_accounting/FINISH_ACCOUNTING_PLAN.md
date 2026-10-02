@@ -50,6 +50,12 @@ including full MySQL and MariaDB dump/import and isolated server boot. Both SQL
 cases also pass with direct source/candidate version readbacks; 40 policy tests
 and seven provisioning tests pass. Captured-clone, complete accounting, erasure,
 remote backup custody and measured workload qualification remain open.
+Restore now also refuses unwitnessed wallet/bank revisions and missing native
+revision pairs even when all denomination totals remain unchanged. It accepts
+both currency-ledger and committed economic-effect witnesses, counting their
+same-revision bridge once. Dual-engine SELECT-only probes and all ten native
+recovery cases pass this bounded R8 repair; complete accounting/clone workload
+qualification is still required.
 
 The later frozen `79540e65d` broad run also finished: 826 passed, 11 skipped
 and two stale source-contract assertions failed in 6,127.39 seconds. NPC cash

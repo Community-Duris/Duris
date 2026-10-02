@@ -39,6 +39,49 @@ def require_epic_revision_history(executor):
         raise RuntimeError("restore_epic_revision_history_mismatch")
 
 
+def require_currency_revision_history(executor):
+    """Require every wallet/bank revision from native or accounted effects.
+
+    Accounted owners such as shops can advance native authority without a
+    legacy currency row. UNION removes the duplicate witness when both exist.
+    """
+    for table, identity, baseline, ledger_identity, revision, kind_tag in (
+            ("player_data", "pid", "currency_wallet_baseline", "pid", "wallet_revision", "01000100"),
+            ("account_banks", "id", "currency_bank_baseline", "bank_id", "bank_revision", "01000200")):
+        account_key = (
+            "CONCAT(m.lineage,UNHEX('" + kind_tag + "'),"
+            "REVERSE(UNHEX(LPAD(HEX(m.mapping_id),16,'0'))),"
+            "REVERSE(UNHEX(LPAD(HEX(m.context_id),16,'0'))),UNHEX('00000000'))"
+        )
+        events = (
+            f"SELECT l.{ledger_identity} native_id,l.{revision} revision "
+            "FROM currency_ledger l JOIN critical_operation_inbox i ON i.operation_id=l.operation_id "
+            "WHERE i.status=1 AND i.result_code=0 AND i.failure_stage=0 AND i.committed_at IS NOT NULL "
+            "UNION SELECT m.native_id,e.after_revision revision FROM economic_account_mapping m "
+            "JOIN economic_accounting_account_effect e ON e.account_key=" + account_key +
+            " JOIN economic_accounting_operation o ON o.operation_id=e.operation_id AND o.lineage=m.lineage "
+            "JOIN critical_operation_inbox i ON i.operation_id=o.operation_id "
+            "WHERE m.backend_kind=1 AND m.account_kind=" + ("1" if table == "player_data" else "2") +
+            " AND m.active_native_id=m.native_id AND m.retiring_operation_id IS NULL "
+            "AND o.outcome=1 AND o.result_code=0 AND o.reason<>38 "
+            "AND e.after_revision>e.before_revision "
+            "AND i.status=1 AND i.result_code=0 AND i.failure_stage=0 AND i.committed_at IS NOT NULL"
+        )
+        baseline_identity = ledger_identity
+        query = (
+            f"SELECT COUNT(*) FROM {table} n JOIN {baseline} b ON b.{baseline_identity}=n.{identity} "
+            f"LEFT JOIN (SELECT b.{baseline_identity} native_id,COUNT(e.revision) event_count,"
+            f"MAX(e.revision) last_revision FROM {baseline} b LEFT JOIN ({events}) e "
+            f"ON e.native_id=b.{baseline_identity} AND e.revision>b.opening_revision "
+            f"GROUP BY b.{baseline_identity}) h ON h.native_id=n.{identity} "
+            f"WHERE n.{revision}<>COALESCE(h.last_revision,b.opening_revision) OR "
+            f"CAST(n.{revision} AS DECIMAL(20,0))-CAST(b.opening_revision AS DECIMAL(20,0))"
+            "<>h.event_count;"
+        )
+        if executor.sql(query) != "0":
+            raise RuntimeError("restore_currency_revision_history_mismatch")
+
+
 def main():
     if os.environ.get("DB_NAME") != "duris_restore" or not os.environ.get("DB_SOCKET"):
         raise RuntimeError("isolated_restore_connection_required")
@@ -83,6 +126,7 @@ def main():
             if executor.sql(query) != "0":
                 raise RuntimeError("restore_reconciliation_failed")
         require_epic_revision_history(executor)
+        require_currency_revision_history(executor)
         print('{"history":"ok","reconciliation":"ok"}')
     finally:
         executor.release_lock()

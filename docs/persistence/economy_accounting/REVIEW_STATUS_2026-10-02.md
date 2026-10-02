@@ -791,3 +791,55 @@ capture is compiled against the actual repository implementation. QA source:
 `tmp/item-source-acb1-dual-sql.local.log`. These bounded native/component probes
 do not attest complete native classes or source identities for all gameplay
 writers, captured-clone authority or active-epoch release.
+
+## SQL restore money revision-history repair
+
+The actual native MariaDB dump/restore test reproduced another false admission:
+player 42 retained the exact original denomination totals but wallet revision 9
+with no immutable event still qualified. Its expected refusal failed in the
+155.811-second RED run. Unwitnessed or lost revision authority can fence later
+legitimate retries even when aggregate value remains conserved.
+
+Restore now checks complete post-opening wallet and bank revision histories.
+Successful native currency-ledger/inbox receipts and committed nonbaseline
+economic account effects are both eligible witnesses. Economic effects resolve
+their canonical account keys through SQL native mappings, preserving lineage,
+kind, lifetime and context. This accommodates owners such as accounted shops
+that advance authority without a legacy currency row. UNION counts a revision
+once when both native and economic evidence witness it. Saved counters must
+match the latest witnessed revision and the interval must contain every revision;
+DECIMAL arithmetic preserves the full uint64 range without unsigned underflow.
+These checks do not assert uniqueness/authenticity of every economic root or
+replace independent complete source/value/custody reconciliation.
+
+Both SELECT-only SQL component probes pass exact/empty cuts, future/stale
+counters, missing history, repair, pre-opening history, UINT64_MAX and the
+native/economic bridge. A committed economic-only final step passes; rejected
+roots, unacknowledged receipts and wrong mapping context refuse. The full native
+recovery suite passes all ten cases in 282.579 seconds with both SQL engines
+enabled. Its SQL cases refuse future wallet/bank counters, remove a cancelling
+native money pair while retaining every aggregate and the latest event, refuse,
+restore the exact missing rows and qualify again. Existing epic gaps, schema
+history, account identity, value, checksum and isolated native boot checks pass.
+The other WAL/flatfile/receipt/private-checkout cases also pass unchanged.
+
+The 40 backup policy, seven provisioning/socket, 24 migration-history and
+17 backup-remediation tests pass. The first remediation-contract attempt lacked
+a deployment fixture in the QA copy; it passes after copying the repository's
+deploy inputs. All 14 accounting fixtures and generated matrix --check pass.
+Native SQL/flatfile source and artifacts remain `2fa0d98...`, `abfc8124...` and
+`de5f8c10...`. Inactive gameplay, activation gates and the declined spell path
+remain unchanged; no production data or operational state is changed.
+
+QA native suite: `/opt/duris-accounting-backup-qualification-e7d7/source`;
+component source: `/opt/duris-accounting-restore-currency-history-review/source`.
+Qualifier SHA-256 `ccbfc8f76a10d393e71d2458ebd2281f4e7ca279845a5bfe79826c309d672de5`;
+SQL component SHA-256 `6879e74622f8d9fe31aee3d2dbe8832bced0161cc6ef8b36df4bab3684e1a12d`;
+native integration SHA-256 `7aa9e4f8a156e14bb1302d69aaf84f3508a7537049bf7e6588d155580459d509`.
+Logs: `tmp/backup-money-revision-red.local.log`,
+`tmp/restore-currency-history-dual-sql.local.log`, and
+`tmp/backup-currency-revision-green.local.log` (SHA-256
+`6031b5be89a5e4be4d6eb5f6afe93d791c2059a5b5ad17289e83e571f6b42c2f`).
+This closes a bounded native money-history restore omission. Captured-clone,
+full-world player recovery, full accounting, erasure propagation, remote custody
+and measured workload remain separate open gates; release remains BLOCKED.
