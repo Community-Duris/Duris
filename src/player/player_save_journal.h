@@ -66,6 +66,18 @@ player_save_journal_result player_save_journal_checkpoint(int pid,
 player_save_journal_result player_save_journal_replay(player_save_apply_fn apply, void *context);
 player_save_journal_health player_save_journal_health_copy(void);
 
+// Resident metadata only: try-lock, no initialization, decoding, replay or I/O.
+struct player_save_journal_diagnostic
+{
+	player_save_journal_health health = {};
+	bool available = false, global_fence = false, pid_fence = false, policy_fence = false;
+	size_t archived_frames = 0;
+	uint64_t archived_bytes = 0;
+	bool recovery_prepared = false, recovery_resolved = false, recovery_revoked = false;
+	player_revision_t replacement_revision = 0;
+};
+player_save_journal_diagnostic player_save_journal_diagnostic_copy(int pid);
+
 bool player_save_journal_worker_append(const player_snapshot &snapshot, void *context);
 bool player_save_journal_worker_ack(const player_snapshot &snapshot,
 				    player_revision_t durable_revision, void *context);

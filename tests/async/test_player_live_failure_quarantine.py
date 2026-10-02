@@ -113,6 +113,13 @@ void run(const std::string &directory, result_state state, bool sync_failure) {
 
     // No game-thread completion has consumed the terminal result yet.
     assert(player_save_journal_pid_quarantined(9001));
+    const auto diagnosis = player_save_journal_diagnostic_copy(9001);
+    assert(diagnosis.available && !diagnosis.policy_fence);
+    assert(diagnosis.pid_fence == !sync_failure);
+    assert(diagnosis.global_fence == sync_failure);
+    assert(diagnosis.archived_frames == (sync_failure ? 0U : 1U));
+    assert(diagnosis.archived_bytes == (sync_failure ? 0U : failed_frame.size()));
+    assert(!diagnosis.recovery_prepared);
     assert(!player_load_pipeline_login_admit(9001));
     assert(!player_save_pipeline_save_admitted(9001));
     player_revision_snapshot revision{};
@@ -137,6 +144,14 @@ void run(const std::string &directory, result_state state, bool sync_failure) {
     assert(!player_load_pipeline_login_admit(9001));
     assert(!player_save_pipeline_save_admitted(9001));
     assert(player_load_pipeline_login_admit(9002));
+    const auto restored_diagnosis = player_save_journal_diagnostic_copy(9001);
+    assert(restored_diagnosis.available && restored_diagnosis.pid_fence);
+    assert(restored_diagnosis.archived_frames >= 1);
+    assert(restored_diagnosis.archived_bytes >= failed_frame.size());
+    if (!sync_failure) {
+        assert(restored_diagnosis.archived_frames == diagnosis.archived_frames);
+        assert(restored_diagnosis.archived_bytes == diagnosis.archived_bytes);
+    }
     player_save_journal_shutdown();
 }
 int main(int argc, char **argv) {
