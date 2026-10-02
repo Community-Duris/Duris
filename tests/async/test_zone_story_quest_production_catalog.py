@@ -241,7 +241,39 @@ assert not any(r["command"] == "O" and r["arguments"][1] == 78503 for r in keeps
 rifts = inventory_module.area_evidence(ROOT, "tharnrifts")
 assert any(r["command"] == "O" and r["arguments"][1:5] == [78503, 1, 113375, 100] for r in rifts["reset_commands"])
 assert any(r["command"] == "O" and r["arguments"][1:5] == [78455, 1, 116025, 65] for r in rifts["reset_commands"])
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad"):
+bs = inventory_module.area_evidence(ROOT, "bs")
+assert len(bs["requests"]) == 65 and len(bs["dialogue"]) == 74
+assert len(bs["reset_commands"]) == 1624 and len(bs["mobs"]) == 255 and len(bs["items"]) == 300
+assert bs["zone"]["reset_mode"] == 2
+bs_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "bs")
+bs_contacts = {c["mob_vnum"]: c for c in bs_mapping["contacts"]}
+assert len(bs_contacts) == 20 and len(bs_contacts[74254]["topics"]) <= 32
+for response in bs["dialogue"]:
+    assert set(response["body"][0].rstrip("~").split()) & set(bs_contacts[response["giver_vnum"]]["topics"])
+for vnum, contact in bs_contacts.items():
+    assert contact["keyword"] in bs["mobs"][vnum]["keywords"]
+# These makers are definitions, not proof of an available world recipient.
+missing_makers = {74250, 74252, 74254, 74257, 74258}
+for area in active_areas:
+    path = ROOT / f"areas/zon/{area}.zon"
+    if path.is_file():
+        assert not any(int(m[1]) in missing_makers for m in re.finditer(r"^[MF]\s+\d+\s+(\d+)\s+", path.read_text(), re.M))
+# Parent and initial placement distinguish stocked sources from other instances.
+parent = room = None
+proof_sources = {}
+for reset in bs["reset_commands"]:
+    command, values = reset["command"], reset["arguments"]
+    if command in ("M", "F"):
+        parent, room = values[1], values[3]
+    elif command == "G" and values[1] in {74054, 74252, 74262, 74295}:
+        proof_sources.setdefault(values[1], []).append((parent, room, values[2]))
+assert proof_sources[74054] == [(74076, 74578, 1)]
+assert proof_sources[74252] == [(74132, 74579, 2), (74135, 74775, 2)]
+assert len(proof_sources[74262]) == 1 and proof_sources[74262][0][1:] == (74371, 1)
+assert proof_sources[74295] == [(74207, 74719, 1)]
+assert not any(r["command"] in ("G", "E", "O", "P") and r["arguments"][1] == 74243 for r in bs["reset_commands"])
+assert any(r["command"] == "D" and r["arguments"][1:4] == [74007, 5, 1] for r in bs["reset_commands"])
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

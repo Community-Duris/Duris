@@ -13,10 +13,10 @@ named stories without changing native receipt IDs. Twin Towers replaces 84
 contracts with 10 achievement units and 3 daily groups, excluding 40 returned
 offerings and displaying 24 supporting contracts as 12 non-achievement services.
 The global projection now has
-2,358 achievement units and 1,961 daily candidate units after adding starter/town
+2,323 achievement units and 1,930 daily candidate units after adding starter/town
 mappings and deeper journals, equipment/crafting services,
-intermediate outcomes, and explicit missing-item exclusions. There are 37
-area sidecars and 2,509 projected units including services and administrative
+intermediate outcomes, and explicit missing-item exclusions. There are 39
+area sidecars and 2,507 projected units including services and administrative
 content. Other areas
 retain native-contract fallback; these counts do not claim full semantic review.
 Ailvio now projects its 78 equivalent two-fish recipes into one family-feeding

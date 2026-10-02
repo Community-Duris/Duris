@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 38 &&
-				tracker.summary_for(7, 42).total == 2357,
+		require(catalog.story_mappings.size() == 39 &&
+				tracker.summary_for(7, 42).total == 2323,
 			"native story projection disagreed with the complete source audit");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -979,6 +979,131 @@ int main(int argc, char **argv)
 				restored_keeps.progress_for_zone(7, 42, 55).completed == 0 &&
 				restored_keeps.progress_for_zone(7, 42, 831).completed == 0,
 			"Twin Keeps reload changed independent receipts or invented foreign key/collector credit");
+		const auto &quarters = story_for("bs", "the-four-bloodstone-quarters");
+		const auto &wife = story_for("bs", "the-numbaca-ingredients");
+		const auto &captain = story_for("bs", "the-captains-missionary-proof");
+		const auto &bs_storm = story_for("bs", "navift-commission-55315");
+		const auto &bs_cosmos = story_for("bs", "navift-commission-55318");
+		const auto &bs_elixirs = story_for("bs", "fibblefingers-planar-elixirs");
+		const auto &bs_earrings = story_for("bs", "hedvigs-nine-earring-service");
+		const auto &bs_strength = story_for("bs", "hedvig-commission-55343");
+		const auto &bloodstone =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "bs"; });
+		service supplied_bs(catalog);
+		require(supplied_bs.discover_zone(7, 42, 740, 74000, 100, "arrival") ==
+				result::applied,
+			"Bloodstone discovery failed");
+		journal =
+			supplied_bs.render_journal(7, 42, 740, 10, 1, 102, false, false, &supplies);
+		require(journal.find("] " + quarters.title + "\r\n") == std::string::npos,
+			"Bloodstone discovery exposed an unseen giver's story");
+		for (const auto &contact : bloodstone.contacts)
+			require(supplied_bs.meet_npc(7, 42, contact.mob_vnum, 74000, 101) ==
+					result::applied,
+				"Bloodstone fixture encounter failed");
+		// Several recipes share a giver and final-step text. Inspect the owning row
+		// so another ready recipe cannot conceal a missing ingredient in this one.
+		const auto bs_section = [&](const auto &story)
+		{
+			const auto at = journal.find("] " + story.title + "\r\n");
+			require(at != std::string::npos, "Bloodstone journal row missing");
+			const auto end = journal.find("\r\n  [", at);
+			return journal.substr(at, end == std::string::npos ? end : end - at);
+		};
+		const auto before_bs_read = supplied_bs.serialize_state();
+		supplies.carried.clear();
+		supplies.carried[74259] = 4;
+		journal =
+			supplied_bs.render_journal(7, 42, 740, 10, 1, 102, false, false, &supplies);
+		require(bs_section(quarters).find("Next: " + quarters.steps[4].text) !=
+				std::string::npos,
+			"four copies of one quarter satisfied four different same-named kinds");
+		for (int item : { 74260, 74261, 74262, 74057, 74240, 74243, 74246, 74257, 55166,
+				  55209, 55284, 55316, 55317, 55167, 55319 })
+			supplies.carried[item] = 1;
+		journal =
+			supplied_bs.render_journal(7, 42, 740, 10, 1, 102, false, false, &supplies);
+		require(bs_section(quarters).find("Next: " + quarters.steps.back().text) !=
+					std::string::npos &&
+				bs_section(bs_storm).find("Next: " + bs_storm.steps.back().text) !=
+					std::string::npos &&
+				bs_section(wife).find("Next: " + wife.steps[5].text) !=
+					std::string::npos &&
+				bs_section(bs_cosmos).find("Next: " + bs_cosmos.steps[4].text) !=
+					std::string::npos &&
+				supplied_bs.serialize_state() == before_bs_read &&
+				supplied_bs.progress_for_zone(7, 42, 740).completed == 0,
+			"supplied finale needed history, original head/two-dust checks failed, or a read wrote progress");
+		record(supplied_bs, captain.contracts.front(), "bs-captain", 740, 74587);
+		journal =
+			supplied_bs.render_journal(7, 42, 740, 10, 1, 122, false, false, &supplies);
+		require(bs_section(wife).find("Next: " + wife.steps[5].text) != std::string::npos,
+			"captain receipt replaced the physical transformed head");
+		supplies.carried[74293] = 1;
+		supplies.carried[55319] = 2;
+		journal =
+			supplied_bs.render_journal(7, 42, 740, 10, 1, 122, false, false, &supplies);
+		require(bs_section(wife).find("Next: " + wife.steps.back().text) !=
+					std::string::npos &&
+				bs_section(bs_cosmos).find("Next: " +
+							   bs_cosmos.steps.back().text) !=
+					std::string::npos,
+			"exact transformed head or second dust failed to ready its recipe");
+		supplies.carried.clear();
+		for (int item = 55136; item <= 55140; ++item)
+			supplies.carried[item] = 1;
+		journal =
+			supplied_bs.render_journal(7, 42, 740, 10, 1, 122, false, false, &supplies);
+		require(bs_section(bs_elixirs).find("Next: " + bs_elixirs.steps[10].text) !=
+				std::string::npos,
+			"five potions alone satisfied Bloodstone's eleven-item elixir recipe");
+		for (int item = 55198; item <= 55203; ++item)
+			supplies.carried[item] = 1;
+		for (int item = 55343; item <= 55351; ++item)
+			supplies.carried[item] = 1;
+		supplies.carried[55130] = supplies.carried[55352] = supplies.carried[55353] = 1;
+		journal =
+			supplied_bs.render_journal(7, 42, 740, 10, 1, 122, false, false, &supplies);
+		require(bs_section(bs_elixirs).find("Next: " + bs_elixirs.steps.back().text) !=
+					std::string::npos &&
+				bs_section(bs_earrings).find("Turn-in currently unavailable:") !=
+					std::string::npos &&
+				bs_section(bs_strength).find("Next: " + bs_strength.steps[1].text) !=
+					std::string::npos,
+			"eleven-item recipe, mixed-fee warning, or matching-scroll requirement failed");
+		supplies.carried[55352] = 2;
+		journal =
+			supplied_bs.render_journal(7, 42, 740, 10, 1, 122, false, false, &supplies);
+		require(bs_section(bs_strength).find("Next: " + bs_strength.steps.back().text) !=
+				std::string::npos,
+			"two matching scrolls failed to ready the earring service");
+		record(supplied_bs, storm.contracts.front(), "bs-foreign-storm", 550, 55125);
+		require(supplied_bs.progress_for_zone(7, 42, 740).completed == 1,
+			"Winterhaven's equal-output storm recipe completed Bloodstone's recipe");
+		for (const auto &request : bloodstone.stories)
+			if (request.category == "service")
+				record(supplied_bs, request.contracts.front(), request.id.c_str(),
+				       740, 74000);
+		for (const auto &[id, reason] : bloodstone.exclusions)
+			record(supplied_bs, id, id.c_str(), 740, 74000);
+		require(supplied_bs.progress_for_zone(7, 42, 740).completed == 1 &&
+				supplied_bs.progress_for_zone(7, 42, 740).total == 31,
+			"Bloodstone services or rejection/invalid receipts added achievements");
+		record(supplied_bs, quarters.contracts.front(), "bs-supplied-quarters", 740, 74324);
+		record(supplied_bs, bs_storm.contracts.front(), "bs-supplied-storm", 740, 74000);
+		require(supplied_bs.progress_for_zone(7, 42, 740).completed == 3,
+			"final quarter/artifact receipts completed earlier producer commissions");
+		for (const auto &request : bloodstone.stories)
+			if (request.category != "service" && request.id != captain.id &&
+			    request.id != quarters.id && request.id != bs_storm.id)
+				record(supplied_bs, request.contracts.front(), request.id.c_str(),
+				       740, 74000);
+		service restored_bs(catalog);
+		require(restored_bs.deserialize_state(supplied_bs.serialize_state(), &error) &&
+				restored_bs.progress_for_zone(7, 42, 740).completed == 31 &&
+				restored_bs.progress_for_zone(7, 42, 550).completed == 1,
+			"Bloodstone recovery changed independent receipts or invented foreign producers");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

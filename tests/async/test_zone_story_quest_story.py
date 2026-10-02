@@ -15,7 +15,7 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1961
+assert report["daily_unit_count"] == 1930
 assert mapping["schema_version"] == 3 and mapping["stories"][0]["steps"][0]["optional"]
 assert sum(s["category"] == "service" for s in mapping["stories"]) == 12
 assert len(mapping["exclusions"]) == 1 and len(mapping["exclusions"][0]["contracts"]) == 40
@@ -59,6 +59,28 @@ assert keeps_stories["gremlin-claws-for-the-tower-key"]["steps"][0]["optional"]
 assert keeps_stories["hindiss-figurine-exchange"]["contracts"] != keeps_stories["hindiss-thel-samar-proof"]["contracts"]
 assert keeps_stories["crowfoots-nether-ore"]["contracts"] != keeps_stories["crowfoots-basilisk-egg"]["contracts"]
 assert all(s["steps"][-1]["contracts"] == s["contracts"] for s in keeps["stories"])
+bloodstone = next(m for m in catalog["story_mappings"] if m["source_area"] == "bs")
+assert bloodstone["schema_version"] == 3 and bloodstone["revision"] == 1
+assert report["eligible_by_zone"]["740"] == 31
+assert len(bloodstone["stories"]) == 63 and len(bloodstone["exclusions"]) == 2
+assert sum(s["category"] == "service" for s in bloodstone["stories"]) == 32
+assert sum(t.get("optional", False) for s in bloodstone["stories"] for t in s["steps"]) == 35
+bs_stories = {s["id"]: s for s in bloodstone["stories"]}
+quarters = bs_stories["the-four-bloodstone-quarters"]
+assert [t["item_vnums"] for t in quarters["steps"] if t["kind"] == "carried_item"] == [[74259], [74260], [74261], [74262]]
+wife = bs_stories["the-numbaca-ingredients"]
+assert [t["item_vnums"][0] for t in wife["steps"] if t["kind"] == "carried_item"] == [74057, 74240, 74243, 74246, 74293]
+assert wife["steps"][0]["optional"] and wife["steps"][0]["contracts"] == bs_stories["the-captains-missionary-proof"]["contracts"]
+bs_storm = bs_stories["navift-commission-55315"]
+assert [t["item_vnums"][0] for t in bs_storm["steps"] if t["kind"] == "carried_item"] == [55166, 55209, 55284, 55316, 55317]
+assert len(bs_storm["steps"][0]["contracts"]) == 2 and bs_storm["steps"][0]["optional"]
+bs_elixir = bs_stories["fibblefingers-planar-elixirs"]
+assert len([t for t in bs_elixir["steps"] if t["kind"] == "carried_item"]) == 11
+assert sum(t.get("optional", False) for t in bs_elixir["steps"]) == 5
+earrings = [s for s in bloodstone["stories"] if s["id"].startswith("hedvig-commission-")]
+assert len(earrings) == 9 and all(s["category"] == "service" for s in earrings)
+assert [(s["steps"][1]["item_vnums"], s["steps"][1]["count"]) for s in earrings] == [([n], 2) for n in range(55352, 55361)]
+assert all(s["steps"][-1]["contracts"] == s["contracts"] for s in bloodstone["stories"])
 new_mappings = {m["source_area"]: m for m in catalog["story_mappings"] if m["source_area"] in new_areas}
 assert set(new_mappings) == new_areas and all(m["coverage"] == "complete" for m in new_mappings.values())
 assert sum(d["source_area"] in new_areas for d in catalog["definitions"]) == 86

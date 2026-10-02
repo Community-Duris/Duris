@@ -40,9 +40,10 @@ neither every branch nor every historical prerequisite.
 | 13 | Winterhaven | [Comprehensive source dossier](zone-stories/WINTERHAVEN.md): all 221 Q/QA contracts, 350 M/MA responses, 599 rooms, 314 mobiles, 483 objects, thirteen shops, 1,284 resets, 92 literal assignment candidates and bounded foreign continuations | Revision 2: 135 requests, 84 services, two exclusions, 92 contacts/152 nonempty topic families, 38 optional preparation checks and exact source/key/timer/recipe guidance | Active resets; 49 mixed fees; foreign sources/recipient availability; timed births/decay; random scroll/gift lineage; physical access, source gaps and selected prose/power/service repairs |
 | 14 | Shairak and Smokeveil Forest | [Comprehensive source dossier](zone-stories/SHAIRAK_AND_SMOKEVEIL_FOREST.md): eleven Q/QA contracts, 32 M families, 100 rooms, 74 mobiles, 59 objects, one shop, 435 resets, table-driven support roles and bounded Tezcat/Alatorin/Raxthan continuations | Revision 1: ten achievements plus one service, nine contacts/all topics; exact simultaneous hearts, competing trophies, ordinary animal recovery and optional helm route | Active reset/shop supply; cap-one/recipient availability; committed source versus gift; owned foreign journeys; all-stage cure/reunion and supported forge/teaching |
 | 15 | Twin Keeps of Devastated Tharnadia | [Comprehensive source dossier](zone-stories/TWIN_KEEPS_OF_DEVASTATED_THARNADIA.md): 30 Q/QA exchanges, 86 M/MA blocks, 451 rooms, 123 mobiles, 121 objects, 1,614 resets, Zorana handler and bounded foreign continuations | Revision 1: 29 achievements plus one service, 24 contacts/all 37 addressable families, fifteen optional producer checks, distinct shards, physical receipt and complete crystal/message/access guidance | Active sources; mixed potion fee; confirmed switch/key/travel/retrieval; recipient/epic-reset episodes; conditional sources, personal versus supplied proof and selected prose repairs |
-| 16–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 16 | Bloodstone Keep | [Comprehensive source dossier](zone-stories/BLOODSTONE_KEEP.md): 65 Q/QA exchanges, 158 native blocks, 918 rooms, 255 mobiles, 300 objects, 34 shops, 1,624 resets, complete local special code and bounded foreign producers/consumers | Revision 1: 31 achievements, 32 services/two exclusions, twenty contacts/all 74 addressed families, 35 optional producer checks; complete local, artifact and alchemy guidance | Active supply; absent ordinary makers/missing components; exact source/access/transform episodes; mixed earring fee, unfinished Pellops/orphan gameplay and selected prose/assignment repair |
+| 17–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Bloodstone Keep, followed by Neverwinter Woods.
+The next area is Neverwinter Woods, followed by the Clawed Caverns.
 Their earlier native bindings do not establish comprehensive
 source review. Do not advance a zone's status
 merely because the map parses, the Q denominator matches, or a candidate item
@@ -52,6 +53,9 @@ graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-BS-SUPPLY / MISSING-MAKERS | Five advanced makers have no ordinary active placement; scalp and ten foreign component prototypes lack confirmed active producers. | Builder chooses placement/source restoration or retirement; qualify actual NPC/reset generations, cap/difficulty and recovered/computed stock. Do not infer absence solely from names or silently borrow Winterhaven ingredients. |
+| ZSQ-BS-IDENTITY / CONDITIONAL-RECIPES | Four same-named quarters and original/returned heads differ; fifteen artifact bindings, two cosmic dust, matching scrolls and Bloodstone's Storm/elixir recipes expose exact and competing prerequisites. | Preserve independent giver/binding ownership; add conditional producer/source alternatives, object allocation and committed source-versus-gift/transform lineage. Producer history does not replace spent stock or require a personal route. |
+| ZSQ-BS-UNFINISHED / SERVICES | Pellops and several room promises have no implemented finale. Nine-earring mixed payment and stat purchases are unavailable under active accounting; scroll recite extracts before publishing output. | Decide endpoints/gameplay with builder; qualify coordinated fee/effect/receipt and recoverable random transformation. Repair verified prose and ambient targets separately without inventing tracking completions. |
 | ZSQ-KEEPS-RECIPIENT / EPIC-RESET | Hindis's head reward removes the figurine recipient; CrowFoot's message removes the egg recipient; Brothedin leaves despite continuing-supply wording. Mode-zero zone reset depends on epic/reset admission rather than ordinary timer scheduling. | Qualify both orders, current NPC generation, normal/force/epic/recovered reset episodes and retry. Builder decides retained removal versus follow-up/replacement; do not promise daily stock or change reset mode from a difficulty-column guess. |
 | ZSQ-KEEPS-IDENTITY / PHYSICAL-RECEIPT | Four life shards share a name but require distinct VNUMs. Marny's second exchange needs the physical receipt in addition to ore. Void crystal has an independent chance-loaded elemental source; final staff needs four crystals plus a shadow staff. | Keep exact live checks and optional source receipts. Extend conditional recipe/source edges and shared ingredient allocation with source/actor/UID lineage; qualify spent receipts, supplied shards/components and independent finales. |
 | ZSQ-KEEPS-ACCESS / OWNERSHIP | Crate auto-binds a pull switch; keys break on use; pirate crevice is loaded by Tharnadia Rifts; Blackbeard's chest/shard and ether crystal occupy different containers. Foreign city givers supply an outer gate key. | Add confirmed switch/unlock/travel/retrieval with exit/reset episode and original object identity. Qualify exact nested recovery, partly-open routes and key replacement. Preserve owned foreign receipts and normal versus administrative sources. |
@@ -581,3 +585,53 @@ Accounting remains a player-surface prerequisite. No activation, DB operation,
 migration, server operation or merge occurred. The queue is fifteen of 220
 source-comprehensive areas, with 205 pending. Continue with Bloodstone Keep,
 then Neverwinter Woods; full active-world qualification remains open.
+
+### Bloodstone Keep checkpoint — October 2, 2026
+
+Completed the full 158-block source review: 65 Q/QA exchanges, 74 addressed
+dialogue families, 918 rooms, 255 mobiles, 300 objects, 34 shops and 1,624 resets.
+All local special code, relevant shared execution and bounded foreign ingredient
+producers/consumers were reviewed. The [dossier](zone-stories/BLOODSTONE_KEEP.md)
+and [source index](../reference/zone-story-audits/bs.md) preserve exact terms,
+actual stock/parent/location, door/key semantics and foreign receipt ownership.
+
+Revision 1 classifies all exchanges into nine stories, 22 requests, 32 services
+and two exclusions. Twenty contacts cover all 74 addressed families; 35 optional
+producer checks explain connected preparation without requiring personal routes.
+Four same-named quarters remain distinct, as do original/returned missionary
+heads. Fifteen artifact commissions retain their exact bindings, including two
+cosmic dust and a Storm recipe different from Winterhaven. The planar elixir
+requires five potions and six distinct essences; basic earrings require two
+matching scrolls, and the final service requires nine kinds plus 500,000 copper.
+
+The plan records five makers without ordinary active placement, missing local/
+foreign material sources, absent Pellops gameplay, quest-like room promises,
+random attribute-scroll publication ordering, mixed fee/stat service gaps and
+bounded prose/ambient-assignment repair decisions. Ordinary lizard/baby/trophy
+stock does not prove personal source, freshness or rescue. Cerrio's world-quest
+callback remains reachable through secondary shop dispatch. Mode-two timed resets
+remain distinct from the Twin Keeps' epic/reset scheduling.
+
+Focused checks passed:
+
+- `test_zone_story_quest_production_catalog.py`: snapshot/inventory agreement,
+  all sixteen source indices, contact/topic aliases, missing ordinary maker
+  placements, initial fish/cat source parents and actual quarter/key/head stock.
+- `test_zone_story_quest_story.py`: all 39 native maps and schemas 1/2/3;
+  exact same-named quarters and transformed head, supplied finales skipping
+  producer history, spent head remaining missing after captain receipt, two dust,
+  eleven elixir ingredients, matching scrolls, visible mixed-fee refusal, service/
+  rejection exclusion and 31 recovered independent achievements. Equal-output
+  Winterhaven Storm credit does not complete Bloodstone's commission. Assertions
+  inspect the owning row when recipes share a giver/final-step text.
+- `test_zone_story_quest_production.py`: runtime catalog/bootstrap regression.
+- Cached SQL C++20 server build, whole-file harness formatting and whitespace.
+- All 2,668 native definitions, registry, fingerprint/revision and other 38 maps
+  remain unchanged as parsed objects; all local document links resolve.
+
+The catalog has 39 authored journals, 2,323 achievement units, 1,930 potential
+daily units and 2,507 total rows including services/administrative content.
+These are projection/source checks, not played fee/source/access qualification.
+Accounting remains required. No migration, activation, DB/server operation or
+merge occurred. Sixteen of 220 roadmap areas are source-comprehensive, with
+204 pending. Continue with Neverwinter Woods, then the Clawed Caverns.
