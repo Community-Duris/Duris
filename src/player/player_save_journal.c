@@ -1298,6 +1298,34 @@ bool player_save_journal_pid_quarantined(int pid)
 	return quarantine_state_failed || (quarantine_state_ready && quarantined_pids.count(pid));
 }
 
+player_save_journal_diagnostic player_save_journal_diagnostic_copy(int pid)
+{
+	player_save_journal_diagnostic result;
+	std::unique_lock<std::mutex> lock(journal_mutex, std::try_to_lock);
+	if (!lock.owns_lock())
+		return result;
+	result.available = true;
+	result.health = health;
+	result.global_fence = quarantine_state_failed;
+	result.pid_fence = quarantined_pids.count(pid);
+	result.policy_fence = policy_pids.count(pid);
+	for (const auto &record : archive_records)
+		if (record.pid == pid)
+		{
+			++result.archived_frames;
+			result.archived_bytes += record.bytes.size();
+		}
+	for (const auto &stored : recovery_records)
+		if (stored.record.replacement.pid == pid)
+		{
+			result.recovery_prepared = true;
+			result.recovery_resolved = stored.resolved;
+			result.recovery_revoked = stored.revoked;
+			result.replacement_revision = stored.record.replacement.revision;
+		}
+	return result;
+}
+
 player_save_journal_result player_save_journal_append(const player_snapshot &snapshot)
 {
 	std::lock_guard<std::mutex> lock(journal_mutex);
@@ -1816,7 +1844,8 @@ bool recovery_generation_matches(const player_save_recovery_record &record)
 	if (!archive_recovery_frames(record.replacement.pid, &frames, &digest) ||
 	    digest != record.archive_digest || policy_pids.count(record.replacement.pid))
 		return false;
-	return std::all_of(frames.begin(), frames.end(), [&](const player_snapshot &frame)
+	return std::all_of(frames.begin(), frames.end(),
+			   [&](const player_snapshot &frame)
 			   { return frame.revision < record.replacement.revision; });
 }
 } // namespace

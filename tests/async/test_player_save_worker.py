@@ -100,12 +100,19 @@ player_save_apply_result apply_snapshot(const player_snapshot &snapshot, void *r
     const bool custody_mismatch = snapshot.pid == 6;
     --state.active;
     state.changed.notify_all();
-    return {custody_mismatch ? player_save_apply_outcome::terminal_failure
+    player_save_apply_result result{custody_mismatch ? player_save_apply_outcome::terminal_failure
                             : retry ? player_save_apply_outcome::retryable_failure
                                     : player_save_apply_outcome::applied,
             (retry || custody_mismatch) ? snapshot.revision - 1 : snapshot.revision,
             custody_mismatch ? PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH
                              : retry ? 1213U : 0U};
+    if (custody_mismatch) {
+        result.custody_diagnosis = player_save_custody_diagnosis::active_custody_absent_from_snapshot;
+        result.custody_witness.item_uid = 7001;
+        result.custody_witness.observed_present = true;
+        result.custody_witness.observed_item_revision = 3;
+    }
+    return result;
 }
 
 player_save_apply_result hold_snapshot(const player_snapshot &snapshot, void *raw)
@@ -491,6 +498,13 @@ int main()
     const player_save_worker_health mismatch_health = player_save_worker_health_copy();
     assert(mismatch_health.terminal_failures == 1);
     assert(mismatch_health.custody_payload_mismatches == 1);
+    assert(completions[0].custody_witness.item_uid == 7001);
+    assert(completions[0].custody_witness.observed_item_revision == 3);
+    const auto incident = persistence_trace_copy({critical_entity_type::player, 6});
+    assert(incident.incident_count == 1);
+    assert(incident.incidents[0].witness.item_uid == 7001);
+    assert(incident.incidents[0].diagnosis == 6);
+
 
     player_save_worker_shutdown();
     assert(!player_save_worker_health_copy().running);

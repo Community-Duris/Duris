@@ -2,6 +2,7 @@
 #define PLAYER_SAVE_WORKER_H
 
 #include "player/player_snapshot.h"
+#include "persistence/persistence_diagnostics.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -95,6 +96,7 @@ struct player_save_apply_result
 	// Replay may retire an obsolete non-death frame only after the repository
 	// verifies every attached operation receipt. This does not ACK a live save.
 	bool operation_receipts_verified = false;
+	persistence_custody_witness custody_witness = {};
 };
 
 // A newer revision alone cannot prove that death disposition or an attached
@@ -131,6 +133,7 @@ struct player_save_completion
 	std::vector<player_spell_effect_receipt_snapshot> failed_spell_effect_receipts;
 	std::vector<player_craft_receipt_snapshot> craft_receipts = {};
 	std::vector<player_craft_receipt_snapshot> failed_craft_receipts = {};
+	persistence_custody_witness custody_witness = {};
 };
 
 enum class player_save_submit_result : uint8_t
