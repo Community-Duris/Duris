@@ -21,10 +21,10 @@ The `help` command (`do_help`, `src/cmd/actinf.c`) does two things:
    batch, followed by at most `WIKIHELP_RESULTS_LIMIT` (100) related titles.
    Lists explain how to read a topic and refine a capped search. Leading and
    trailing input whitespace is ignored. A miss suggests a shorter keyword,
-   `help commands`, or `commands`, and is logged to `lib/etc/help`
+   `help index`, `help commands`, or `commands`, and is logged to `lib/etc/help`
    (`logit(LOG_HELP, ...)`). The log records a timestamp and query, without
    character identity; it records unresolved searches with no stored title match
-   or exact live provider. It does not measure ambiguity or whether a page
+   or registered live topic. It does not measure ambiguity or whether a page
    answered the player's question.
    Entries are stored wiki-formatted; `dewikify()` converts `[[...]]` markup
    into ANSI-colored output. Help imposes no character wait or browsing
@@ -43,13 +43,14 @@ The `help` command (`do_help`, `src/cmd/actinf.c`) does two things:
      16 spec (races, innates, skills, spells), 10 class-skillset (innates,
      skills, spells). Category-zero imports and flat files also bind exact
      registered race, class, specialization, and class-skillset names.
-     `<class> Skills` and `SKILL_<class>` are both recognized. `Multiclass` and
-     `Races` bind case-insensitively in any category. Active specializations
+     `<class> Skills` and `SKILL_<class>` are both recognized. `Multiclass`,
+     `Races`, and `Index` bind case-insensitively in any category. Active specializations
      take precedence over the retired Assassin/Thief class names in category 0;
      category 9 can explicitly select the historical class.
 
-     Known providers replace their captured generated sections and embedded
-     edit header at render time, then append current facts once. Descriptions,
+     Known providers replace their captured generated sections, older plain
+     tables (`Class list:`, `Statistics:`, `Skills`, etc.), and embedded edit
+     header at render time, then append current facts once. Descriptions,
      strengths/weaknesses, equipment notes, and See also sections remain.
      Race/class/spec titles and result links use their canonical game-table
      colors; live headings and values are colored. Author only the static part.
@@ -57,8 +58,33 @@ The `help` command (`do_help`, `src/cmd/actinf.c`) does two things:
      An exact registered topic without a stored page renders current facts and
      clearly states that its narrative has not yet been authored. This takes
      precedence over unrelated substring matches (for example, `Mentalist`
-     must not open `Elementalist`). Partial searches/indexes still enumerate
-     stored titles; discovery of generated-only topics needs a future index.
+     must not open `Elementalist`). Partial searches/indexes now enumerate
+     the combined stored/live topic catalog, so `help ment` offers Mentalist
+     even when its narrative is missing.
+
+   A shared, ASCII-normalized topic index merges stored titles with registered
+   live subjects and both class-skillset naming conventions. It is built once
+   per successfully published MySQL cache generation, or once for the flat
+   catalog. Failed refreshes retain the existing index; no command-time SQL is
+   added. Stored entries take precedence over generated placeholders.
+
+   `HELP INDEX [all|races|classes|specs|skillsets] [page]` lists 50 topics per
+   page and supplies the next-page command. The old captured `Index` page now
+   renders this current index. `[live]` identifies a current-data provider;
+   `[live; narrative missing]` identifies facts without an authored page.
+   Groups classify topic identity, including legacy/restricted subjects; their
+   presence does not establish current creation eligibility.
+
+   Unresolved queries of 3-64 bytes can receive up to five typo suggestions,
+   including adjacent transpositions. Suggestions use at most one edit for
+   queries up to four bytes and two edits for longer queries. Wildcard/escape
+   queries are excluded from suggestions. Suggestions show the exact HELP
+   command and never select a topic automatically. Existing MySQL wildcard
+   and flat literal-substring behavior remains.
+
+   `TOGGLE TERMINAL GEN` now removes color attributes at the final output step
+   before terminal rendering, including help, paging, and prompts. Text and
+   normal CRLF handling remain; switching back to ANSI retains configured colors.
 
 2. **`attrib_help()`** - appends per-command attributes (stat usage)
     loaded at boot from `docs/lib/information/command_attributes.txt`
@@ -269,6 +295,7 @@ Keep mutable game reads on the game loop; do not add command-time SQL.
 | Class skillset | Innates, skill levels, spell circles, and bard song/instrument unlocks (`wiki_innates`, `wiki_skills`, `wiki_spells`). |
 | Races | Canonical creation roster, configured enabled flags, and separately identified progression/restricted races (`wiki_pcraces`). |
 | Multiclass | Current secondary-class combinations and names (`wiki_multiclass`). |
+| Index | Current stored and generated topics, grouped and paginated (`help_index`, `render_help_index`). |
 
 Class/race availability sections describe character-creation choices through
 `creation_class_enabled`, `creation_class_align`, `creation_race_enabled`, the
@@ -285,3 +312,19 @@ provide useful authorities for a future contextual help provider. Today,
 `wiki_help` receives only a query string; the shared help providers present
 race/class/spec facts without a character context. `attrib_help` remains a
 separate boot-loaded text appendix, not a live command-requirement evaluator.
+
+## Reviewed source additions
+
+`lib/information/help_index` now supplies exact pages for `Named Equipment`,
+`Namedreport`, `Racewar`, `Introduce`, `Refine`, `Soulbind`, and `Prestige`.
+These pages include syntax, availability/requirements, behavior, feedback where
+applicable, examples, and exact related titles. They describe their feature
+gates, including build-dependent introductions and accounting-disabled refining
+and soulbound restoration. `Named Equipment` sends players to the existing
+current-data `NAMEDREPORT` command rather than maintaining a captured zone list.
+
+Flat builds load these sources at startup/first use. A MySQL deployment needs
+its reviewed content import followed by help-cache publication; a server build
+alone does not insert the new authored pages into `pages`. The runtime index
+and registry-based providers do not require that import. Follow the existing
+import procedure and target checks; this PR performs no operational import.

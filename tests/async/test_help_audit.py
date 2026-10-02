@@ -12,7 +12,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
-from audit_help import (audit, canonical, coverage_row, csv_report,
+from audit_help import (audit, canonical, coverage_row, csv_report, tracked_entries,
                         effective_catalog, references, resolve, source_terms)
 from parse_help_index import HelpEntry, parse_help_index, read_help_index, read_parsed_help
 
@@ -70,6 +70,21 @@ class HelpAuditTests(unittest.TestCase):
         self.assertEqual(references('[[Fire|label]]\n==See also==\n* Water, Ice\n\nThe following help topics\nFoo'),
                          ["Fire", "Ice", "Water"])
         self.assertEqual(references('See also: Fire, Water\nbody'), ["Fire", "Water"])
+        self.assertEqual(references('&+W==See also==&N\n&+cFire&n, &+GWater&n\n'),
+                         ["Fire", "Water"])
+
+    def test_new_player_topics_are_exact_and_keep_usable_links(self):
+        catalog, _ = effective_catalog(tracked_entries(ROOT))
+        for term in ("named equipment", "namedreport", "racewar", "introduce",
+                     "refine", "soulbind", "prestige"):
+            entry = catalog[canonical(term)]
+            self.assertEqual(coverage_row({"term": term}, catalog)["status"], "exact")
+            self.assertIn("==Syntax==", entry.text)
+            self.assertIn("==Example==", entry.text)
+            self.assertTrue(references(entry.text))
+            for target in references(entry.text):
+                self.assertEqual(coverage_row({"term": target}, catalog)["status"], "exact",
+                                 f"{term} links to a nonexact topic: {target}")
 
     def test_source_inventory_tracks_current_registrations(self):
         terms = source_terms(ROOT)

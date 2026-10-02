@@ -17,10 +17,13 @@ def function(signature, start=0):
         end += 1
     return source[begin:end]
 
-sql_branch = source.index('#else')
+sql_branch = source.index('#else\n\nstring wiki_help')
 lookup = function('string wiki_help(string str)', sql_branch)
 render = function('string wiki_help_single(string str)', sql_branch)
-assert 'qry(' not in lookup + render and 'mysql_' not in lookup + render
+shared = '\n'.join(function(signature, source.index('string help_index_line(')) for signature in (
+    'string help_index_line(', 'string render_help_index(', 'unsigned help_typo_distance(',
+    'string help_suggestions(', 'string lookup_help('))
+assert 'qry(' not in lookup + render + shared and 'mysql_' not in lookup + render + shared
 actinf = (ROOT / 'src/cmd/actinf.c').read_text()
 help_body = actinf.split('void do_help(', 1)[1].split('void do_wizhelp', 1)[0]
 assert 'CharWait(' not in help_body and 'affect_timer(' not in help_body
@@ -32,6 +35,8 @@ prefix = r'''
 #include <cstring>
 #include <cstdlib>
 #include <iostream>
+#include <charconv>
+#include <sstream>
 using namespace std;
 constexpr int WIKIHELP_RESULTS_LIMIT=100, MAX_INPUT_LENGTH=1024;
 constexpr int WIKI_CLASS=1, WIKI_RACE=2, WIKI_SPEC=3;
@@ -40,12 +45,27 @@ void logit(const char *, const char *, ...) {}
 int ansi_strlen(const char *s) { return strlen(s); }
 void one_argument(const char *s, char *out) { auto n=strcspn(s," "); memcpy(out,s,n); out[n]=0; }
 help_catalog pages;
+unsigned long generation=1;
 bool ready=false;
 const help_catalog *help_cache_get() { return ready ? &pages : nullptr; }
 bool help_title_equal(const string &a,const string &b) { return strcasecmp(a.c_str(),b.c_str())==0; }
 bool help_title_matches(const string &a,const string &b) {
  return search(a.begin(),a.end(),b.begin(),b.end(),[](unsigned char x,unsigned char y){return tolower(x)==tolower(y);}) != a.end(); }
 string wiki_help_single(string);
+string tolower(string);
+enum class dynamic_help_type { none, race, class_topic, specialization, skillset };
+struct help_index_entry {
+ string title, key; int category; dynamic_help_type type; bool generated;
+};
+const vector<help_index_entry> &help_index() {
+ static vector<help_index_entry> index; static unsigned long indexed=0;
+ if(indexed==generation) return index;
+ index.clear();
+ for(const auto &page:pages) index.push_back({page.fields[0],tolower(page.fields[0]),
+   atoi(page.fields[2].c_str()),dynamic_help_type::none,false});
+ sort(index.begin(),index.end(),[](const auto &a,const auto &b){return a.key<b.key;});
+ indexed=generation; return index;
+}
 string dewikify(string s) { return s; }
 string trim(const string &s,const char *chars) {
  auto begin=s.find_first_not_of(chars); return begin==string::npos ? "" : s.substr(begin,s.find_last_not_of(chars)-begin+1); }
@@ -57,7 +77,7 @@ string render_help_content(const string &, const string &s, int category) {
 '''
 main = r'''
 void add(string title,string text,string category="1") {
- pages.push_back({{title,text,category,"2026-09-10","Editor"}}); }
+ pages.push_back({{title,text,category,"2026-09-10","Editor"}}); ++generation; }
 int main() {
  assert(wiki_help("help").find("unavailable")!=string::npos);
  ready=true; add("help","welcome"); add("Fire","burn","9"); add("Fire shield","protect");
@@ -76,11 +96,11 @@ int main() {
  assert(wiki_help("Fire").find("dynamic1")!=string::npos);
  dynamic_version=2;
  assert(wiki_help("Fire").find("dynamic2")!=string::npos);
- for(int i=0;i<150;++i) add("bulk"+to_string(i),"text");
+ for(int i=0;i<150;++i) add("aaa bulk"+to_string(1000+i),"text");
  auto result=wiki_help("bulk");
- assert(result.find("bulk99&N\n")!=string::npos);
- assert(result.find("bulk100&N\n")==string::npos);
- assert(result.find("bulk101&N\n")==string::npos);
+ assert(result.find("bulk1099&N\n")!=string::npos);
+ assert(result.find("bulk1100&N\n")==string::npos);
+ assert(result.find("bulk1101&N\n")==string::npos);
  assert(result.find("limited to 100 topics")!=string::npos);
  assert(result.find("Type HELP <topic>")!=string::npos);
  add("bulk","exact match after the first 101 results");
@@ -108,7 +128,8 @@ int main() {
     for name, files in [('refresh', [ROOT / 'tests/async/refresh_cache_harness.cpp']),
                         ('help', [temp / 'help.cpp'])]:
         if name == 'help':
-            files[0].write_text(prefix + lookup + '\n' + render + main)
+            files[0].write_text(prefix + function('string tolower(string') + shared +
+                                lookup + '\n' + render + main)
         binary = temp / name
         subprocess.run(['g++','-std=c++20','-Wall','-Wextra','-Werror','-pthread',
                         '-Isrc', *map(str,files), '-o',str(binary)],cwd=ROOT,check=True)

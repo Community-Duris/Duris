@@ -12,6 +12,8 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <charconv>
+#include <map>
 #include "classes/specializations.h"
 #include "sql/sql.h"
 #include "string.h"
@@ -85,6 +87,7 @@ enum class dynamic_help_type
 	skillset,
 	race_index,
 	multiclass,
+	topic_index,
 };
 
 struct dynamic_help_topic
@@ -93,6 +96,18 @@ struct dynamic_help_topic
 	string subject;
 	string colored_title;
 };
+
+struct help_index_entry
+{
+	string title;
+	string key;
+	int category;
+	dynamic_help_type type;
+	bool generated;
+};
+
+const vector<help_index_entry> &help_index();
+string render_help_index(const string &query, const vector<help_index_entry> &index);
 
 string colored_race_name(int race)
 {
@@ -112,6 +127,8 @@ dynamic_help_topic dynamic_topic(const string &title, int category = 0)
 		return { dynamic_help_type::race_index, title, "&+WRaces&N" };
 	if (key == "multiclass")
 		return { dynamic_help_type::multiclass, title, "&+WMulticlass&N" };
+	if (key == "index")
+		return { dynamic_help_type::topic_index, title, "&+WIndex&N" };
 	if (category == 0 || category == 25)
 		for (int race = 1; race <= RACE_PLAYER_MAX; ++race)
 			if (key == tolower(race_names_table[race].normal))
@@ -152,14 +169,15 @@ bool dynamic_section(const dynamic_help_topic &topic, const string &heading)
 {
 	const string key = tolower(heading);
 	if (topic.type == dynamic_help_type::race)
-		return key == "class list" || key == "racial statistics" ||
-		       key == "racial traits" || key == "innate abilities";
+		return key == "class list" || key == "classes" || key == "statistics" ||
+		       key == "racial statistics" || key == "racial traits" ||
+		       key == "innate abilities" || key == "innates";
 	if (topic.type == dynamic_help_type::race_index)
 		return key == "good races" || key == "evil races" || key == "neutral races" ||
 		       key == "restricted races";
 	if (topic.type == dynamic_help_type::multiclass)
 		return key == "multi-class names" || key == "multiclass options";
-	if (key == "innate abilities" || key == "innates abilities")
+	if (key == "innate abilities" || key == "innates abilities" || key == "innates")
 		return true;
 	if (topic.type == dynamic_help_type::class_topic)
 		return key == "allowed races" || key == "allowable races" ||
@@ -180,7 +198,7 @@ string help_narrative(const string &title, const string &text, const dynamic_hel
 		return text;
 	std::istringstream input(text);
 	string line, output;
-	bool first = true, skip_rule = false, generated = false;
+	bool first = true, skip_rule = false, generated = false, plain_section = false;
 	while (std::getline(input, line))
 	{
 		const string plain = trim(strip_ansi(line.c_str()), " \t\r\n");
@@ -203,10 +221,22 @@ string help_narrative(const string &title, const string &text, const dynamic_hel
 		if (plain.size() > 4 && plain.rfind("==", 0) == 0 &&
 		    plain.compare(plain.size() - 2, 2, "==") == 0 &&
 		    plain.find_first_not_of('=') != string::npos)
+		{
 			generated = dynamic_section(topic,
 						    trim(plain.substr(2, plain.size() - 4), " "));
-		else if (topic.type == dynamic_help_type::skillset && dynamic_section(topic, plain))
-			generated = true; // The SKILL_<class> index uses plain section names.
+			plain_section = false;
+		}
+		else if (dynamic_section(topic, trim(plain.substr(0, plain.find(':')), " ")))
+		{
+			// Older source pages use Skills or Class list: instead of wiki headings.
+			generated = true;
+			plain_section = true;
+		}
+		else if (plain_section &&
+			 (key.rfind("equipment usage:", 0) == 0 || key.rfind("weakness:", 0) == 0 ||
+			  key.rfind("weaknesses:", 0) == 0 || key.rfind("strengths:", 0) == 0 ||
+			  key.rfind("description:", 0) == 0 || key.rfind("example:", 0) == 0))
+			generated = false;
 		else if (key.rfind("see also:", 0) == 0)
 			generated = false;
 		else if ((topic.type == dynamic_help_type::multiclass &&
@@ -223,6 +253,8 @@ string help_narrative(const string &title, const string &text, const dynamic_hel
 string render_help_content(const string &title, const string &text, int category = 0)
 {
 	const auto topic = dynamic_topic(title, category);
+	if (topic.type == dynamic_help_type::topic_index)
+		return render_help_index("index", help_index());
 	string result = dewikify(trim(help_narrative(title, text, topic), " \t\r\n"));
 	if (topic.type != dynamic_help_type::none)
 		result += "\n\n&+LCurrent game data&N\n";
@@ -255,6 +287,7 @@ string render_help_content(const string &title, const string &text, int category
 		result += wiki_multiclass(topic.subject);
 		break;
 	case dynamic_help_type::none:
+	case dynamic_help_type::topic_index:
 		break;
 	}
 	return result;
@@ -267,6 +300,180 @@ string generated_help(const string &title)
 	return help_display_title(title) + "&N\n" +
 	       render_help_content(
 		       title, "A narrative help entry has not yet been authored for this topic.");
+}
+
+string help_index_line(const help_index_entry &entry)
+{
+	string result = " " + help_display_title(entry.title, entry.category) + "&N";
+	if (entry.generated)
+		result += " &+L[live; narrative missing]&N";
+	else if (entry.type != dynamic_help_type::none)
+		result += " &+L[live]&N";
+	return result + "\n";
+}
+
+string render_help_index(const string &query, const vector<help_index_entry> &index)
+{
+	const string usage = "&+GUsage: HELP INDEX [all|races|classes|specs|skillsets] [page]&N\n";
+	std::istringstream input(tolower(query));
+	string command, group = "all", number = "1", extra;
+	input >> command;
+	if (input >> group)
+	{
+		if (group.find_first_not_of("0123456789") == string::npos)
+		{
+			number = group;
+			group = "all";
+		}
+		else
+			input >> number;
+	}
+	if (input >> extra)
+		return usage;
+	if (group != "all" && group != "races" && group != "classes" && group != "specs" &&
+	    group != "skillsets")
+		return usage;
+	size_t page = 0;
+	const auto parsed = std::from_chars(number.data(), number.data() + number.size(), page);
+	if (parsed.ec != std::errc() || parsed.ptr != number.data() + number.size() || !page)
+		return usage;
+	vector<const help_index_entry *> topics;
+	for (const auto &entry : index)
+		if (group == "all" || (group == "races" && entry.type == dynamic_help_type::race) ||
+		    (group == "classes" && entry.type == dynamic_help_type::class_topic) ||
+		    (group == "specs" && entry.type == dynamic_help_type::specialization) ||
+		    (group == "skillsets" && entry.type == dynamic_help_type::skillset))
+			topics.push_back(&entry);
+	constexpr size_t page_size = 50;
+	const size_t pages = std::max<size_t>(1, (topics.size() + page_size - 1) / page_size);
+	if (page > pages)
+		return "&+GHelp index page must be between 1 and " + std::to_string(pages) + "&N\n";
+	string result = "&+WHelp index: " + group + " (page " + std::to_string(page) + "/" +
+			std::to_string(pages) + ", " + std::to_string(topics.size()) +
+			" topics)&N\n";
+	const size_t begin = (page - 1) * page_size;
+	for (size_t i = begin; i < std::min(topics.size(), begin + page_size); ++i)
+		result += help_index_line(*topics[i]);
+	if (page < pages)
+		result += "&+GNext: HELP INDEX " + group + " " + std::to_string(page + 1) + "&N\n";
+	result +=
+		"&+GType HELP <topic> to read an entry. [live] sections use current game data.&N\n";
+	return result;
+}
+
+// Bounded edit distance, including adjacent transpositions. Called only on
+// misses with 3-64 byte queries; length/row bounds avoid broad fuzzy scans.
+unsigned help_typo_distance(const string &query, const string &title, unsigned limit)
+{
+	if (title.size() > 64 || title.size() > query.size() + limit ||
+	    query.size() > title.size() + limit)
+		return limit + 1;
+	std::array<unsigned, 65> older{}, previous{}, current{};
+	for (size_t i = 0; i <= title.size(); ++i)
+		previous[i] = i;
+	for (size_t i = 1; i <= query.size(); ++i)
+	{
+		current[0] = i;
+		unsigned best = current[0];
+		for (size_t j = 1; j <= title.size(); ++j)
+		{
+			current[j] = std::min({ previous[j] + 1, current[j - 1] + 1,
+						previous[j - 1] + (query[i - 1] != title[j - 1]) });
+			if (i > 1 && j > 1 && query[i - 1] == title[j - 2] &&
+			    query[i - 2] == title[j - 1])
+				current[j] = std::min(current[j], older[j - 2] + 1);
+			best = std::min(best, current[j]);
+		}
+		if (best > limit)
+			return limit + 1;
+		older = previous;
+		previous = current;
+	}
+	return previous[title.size()];
+}
+
+string help_suggestions(const string &query, const vector<help_index_entry> &index)
+{
+	const string key = tolower(query);
+	if (key.size() < 3 || key.size() > 64 || key.find_first_of("%_\\") != string::npos)
+		return {};
+	const unsigned limit = key.size() <= 4 ? 1 : 2;
+	using suggestion = std::pair<unsigned, const help_index_entry *>;
+	vector<suggestion> nearest;
+	const auto less = [](const suggestion &a, const suggestion &b)
+	{ return a.first != b.first ? a.first < b.first : a.second->key < b.second->key; };
+	for (const auto &entry : index)
+	{
+		const unsigned distance = help_typo_distance(key, entry.key, limit);
+		if (distance <= limit)
+		{
+			const suggestion candidate{ distance, &entry };
+			nearest.insert(std::lower_bound(nearest.begin(), nearest.end(), candidate,
+							less),
+				       candidate);
+			if (nearest.size() > 5)
+				nearest.pop_back();
+		}
+	}
+	if (nearest.empty())
+		return {};
+	string result = "\n&+GDid you mean?&N\n";
+	for (const auto &candidate : nearest)
+		result += "&+L HELP " + candidate.second->title + "&N\n";
+	return result;
+}
+
+string lookup_help(const string &query)
+{
+	if (query.empty())
+		return wiki_help_single("help");
+	const auto &index = help_index();
+	const string key = tolower(query);
+	if (key == "index" || key.rfind("index ", 0) == 0 || key.rfind("index\t", 0) == 0)
+		return render_help_index(query, index);
+	const auto found = std::lower_bound(index.begin(), index.end(), key,
+					    [](const auto &entry, const string &value)
+					    { return entry.key < value; });
+	const help_index_entry *exact = found != index.end() && found->key == key ? &*found :
+										    nullptr;
+	vector<const help_index_entry *> matches;
+	for (const auto &entry : index)
+	{
+		if (&entry == exact)
+			continue;
+#ifdef __NO_MYSQL__
+		const bool match = entry.key.find(key) != string::npos;
+#else
+		const bool match = help_title_matches(entry.title, query);
+#endif
+		if (match)
+		{
+			matches.push_back(&entry);
+			if (matches.size() > WIKIHELP_RESULTS_LIMIT)
+				break;
+		}
+	}
+	if (!exact && matches.empty())
+	{
+		logit(LOG_HELP, "%s", query.c_str());
+		return "&+GSorry, but there are no help topics that match your search.\n"
+		       "Try HELP <shorter keyword>, HELP INDEX, HELP COMMANDS, or COMMANDS.&N\n" +
+		       help_suggestions(query, index);
+	}
+	if (exact && matches.empty())
+		return wiki_help_single(exact->title);
+	if (!exact && matches.size() == 1)
+		return wiki_help_single(matches.front()->title);
+	string result =
+		exact ? wiki_help_single(exact->title) +
+				"\n\n&+GThe following help topics also matched your search:\n" :
+			"&+GThe following help topics matched your search:\n";
+	for (size_t i = 0; i < std::min<size_t>(matches.size(), WIKIHELP_RESULTS_LIMIT); ++i)
+		result += help_index_line(*matches[i]);
+	if (matches.size() > WIKIHELP_RESULTS_LIMIT)
+		result +=
+			"&+GThe list is limited to 100 topics; use a longer keyword to narrow your search.\n";
+	return result + "&+GType HELP <topic> to read an entry.&N\n";
 }
 
 bool creation_help_race(int race)
@@ -349,118 +556,94 @@ string wiki_help_single(string str)
 
 string wiki_help(string str)
 {
-	str = trim(str, " \t\r\n");
-	if (str.empty())
-		return wiki_help_single("help");
 	const auto &help = flat_help();
 	if (!help.ready)
 	{
 		logit(LOG_DEBUG, "flat-file help catalog unavailable: %s", help.error.c_str());
 		return string("&+GSorry, but there was an error with the help system.");
 	}
-	const flatfile_help_entry *exact = flatfile_help_catalog_find(help.catalog, str);
-	if (!exact)
-	{
-		const string generated = generated_help(str);
-		if (!generated.empty())
-			return generated;
-	}
-	const auto matches = flatfile_help_catalog_search(
-		help.catalog, str, static_cast<size_t>(WIKIHELP_RESULTS_LIMIT) + 1);
-	if (matches.empty())
-	{
-		logit(LOG_HELP, "%s", str.c_str());
-		return string("&+GSorry, but there are no help topics that match your search.\n"
-			      "Try HELP <shorter keyword>, HELP COMMANDS, or COMMANDS.");
-	}
-	if (matches.size() == 1)
-		return render_flat_help(*matches.front(), 0);
-	string result;
-	if (exact)
-	{
-		result = render_flat_help(*exact, 0);
-		result += "\n\n&+GThe following help topics also matched your search:\n";
-	}
-	else
-		result = "&+GThe following help topics matched your search:\n";
-	size_t listed = 0;
-	for (const auto *entry : matches)
-		if (entry != exact)
-		{
-			if (listed == WIKIHELP_RESULTS_LIMIT)
-				break;
-			result += " " + help_display_title(entry->title) + "&N\n";
-			++listed;
-		}
-	if (matches.size() > WIKIHELP_RESULTS_LIMIT)
-		result +=
-			"&+GThe list is limited to 100 topics; use a longer keyword to narrow your search.\n";
-	result += "&+GType HELP <topic> to read an entry.&N\n";
-	return result;
+	return lookup_help(trim(str, " \t\r\n"));
 }
 
 #else
 
 string wiki_help(string str)
 {
-	str = trim(str, " \t\r\n");
 	const auto *catalog = help_cache_get();
 	if (!catalog)
 		return "&+GHelp is temporarily unavailable while its catalog loads. Please try again shortly.";
-	if (str.empty())
-		return wiki_help_single("help");
-	std::vector<const help_page *> matches;
-	const help_page *exact = nullptr;
-	for (const auto &page : *catalog)
-	{
-		if (help_title_equal(page.fields[0], str))
-			exact = &page;
-		if (matches.size() < WIKIHELP_RESULTS_LIMIT + 1 &&
-		    help_title_matches(page.fields[0], str))
-		{
-			matches.push_back(&page);
-		}
-	}
-	if (!exact)
-	{
-		const string generated = generated_help(str);
-		if (!generated.empty())
-			return generated;
-	}
-	if (matches.empty())
-	{
-		logit(LOG_HELP, "%s", str.c_str());
-		return "&+GSorry, but there are no help topics that match your search.\n"
-		       "Try HELP <shorter keyword>, HELP COMMANDS, or COMMANDS.";
-	}
-	if (matches.size() == 1)
-		return wiki_help_single(matches.front()->fields[0]);
-	std::string result;
-	if (exact)
-		result = wiki_help_single(exact->fields[0]) +
-			 "\n\n&+GThe following help topics also matched your search:\n";
-	else
-		result = "&+GThe following help topics matched your search:\n";
-	size_t listed = 0;
-	for (const auto *page : matches)
-		if (page != exact)
-		{
-			if (listed == WIKIHELP_RESULTS_LIMIT)
-				break;
-			result +=
-				" " +
-				help_display_title(page->fields[0], atoi(page->fields[2].c_str())) +
-				"&N\n";
-			++listed;
-		}
-	if (matches.size() > WIKIHELP_RESULTS_LIMIT)
-		result +=
-			"&+GThe list is limited to 100 topics; use a longer keyword to narrow your search.\n";
-	result += "&+GType HELP <topic> to read an entry.&N\n";
-	return result;
+	return lookup_help(trim(str, " \t\r\n"));
 }
 
 #endif
+
+namespace
+{
+const vector<help_index_entry> &help_index()
+{
+	static vector<help_index_entry> entries;
+	static bool ready = false;
+	static unsigned long indexed_generation = 0;
+#ifdef __NO_MYSQL__
+	const unsigned long generation = 1;
+#else
+	const unsigned long generation = help_cache_generation();
+#endif
+	if (ready && indexed_generation == generation)
+		return entries;
+	std::map<string, help_index_entry> topics;
+	const auto add = [&topics](const string &title)
+	{
+		const string key = tolower(title);
+		topics.try_emplace(key, help_index_entry{ title, key, 0, dynamic_topic(title).type,
+							  true });
+	};
+	for (int race = 1; race <= RACE_PLAYER_MAX; ++race)
+		add(race_names_table[race].normal);
+	for (int cls = 1; cls <= CLASS_COUNT; ++cls)
+	{
+		add(class_names_table[cls].normal);
+		add(string(class_names_table[cls].normal) + " Skills");
+		add("SKILL_" + string(class_names_table[cls].normal));
+		for (int spec = 0; spec < MAX_SPEC; ++spec)
+		{
+			const string name = strip_ansi(specdata[cls][spec]);
+			if (!name.empty() && name != "Not Used")
+				add(name);
+		}
+	}
+	add("Races");
+	add("Multiclass");
+	add("Index");
+	// Only registered subjects need provider classification. Ordinary catalogs
+	// can contain 20,000 titles; do not rescan every game table for each one.
+	const auto add_stored = [&topics](const string &title, int category)
+	{
+		const string key = tolower(title);
+		const auto found = topics.find(key);
+		if (found != topics.end() && !found->second.generated)
+			return; // Same first-row choice as wiki_help_single for SQL duplicates.
+		const auto type = found == topics.end() ? dynamic_help_type::none :
+							  dynamic_topic(title, category).type;
+		topics.insert_or_assign(key, help_index_entry{ title, key, category, type, false });
+	};
+#ifdef __NO_MYSQL__
+	for (const auto &entry : flat_help().catalog.entries)
+		add_stored(entry.title, 0);
+#else
+	for (const auto &page : *help_cache_get())
+		add_stored(page.fields[0], atoi(page.fields[2].c_str()));
+#endif
+	vector<help_index_entry> next;
+	next.reserve(topics.size());
+	for (auto &topic : topics)
+		next.push_back(std::move(topic.second));
+	entries = std::move(next);
+	indexed_generation = generation;
+	ready = true;
+	return entries;
+}
+} // namespace
 
 // display racial stats for a race category help file
 string wiki_racial_stats(string title)

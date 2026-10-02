@@ -128,6 +128,12 @@ string list_songs(int cls, int spec)
 
 #ifndef __NO_MYSQL__
 static help_catalog help_pages;
+static unsigned long help_catalog_generation = 1;
+
+unsigned long help_cache_generation()
+{
+	return help_catalog_generation;
+}
 
 const help_catalog *help_cache_get()
 {

@@ -89,7 +89,7 @@ command,bash,exact,src/cmd/interp.c:3294,Bash | Doorbash | Shieldless bash,Bash,
 command,bearhug,exact,src/cmd/interp.c:3121,Bearhug,Bearhug,0,,
 command,beep,partial,src/cmd/interp.c:3096,Solbeeps Missile Barrage,,0,,
 command,berserk,exact,src/cmd/interp.c:3076,Berserk | Berserker | Berserker Skills | SKILL_BERSERKER,Berserk,0,,
-command,bind,exact,src/cmd/interp.c:3252,Bind | BINDING WIND | Spellbind | UNBIND,Bind,0,,
+command,bind,exact,src/cmd/interp.c:3252,Bind | BINDING WIND | SOULBIND | Spellbind | UNBIND,Bind,0,,
 command,blade,ambiguous,src/cmd/interp.c:3313,BLADE BARRAGE | Blademaster | CEGILUNES SEARING BLADE | Doom Blade | Dread blade | Flame Blade | Healing Blade | HOLY BLADE | TAINTED BLADE | WIND BLADE,,51,Age | ARTIFACTS | Avarne | Avenger Skills | BLADE BARRAGE,
 command,blood,ambiguous,src/cmd/interp.c:3286,Acid Blood | Blood Alliance | BLOOD REAVER | BLOOD SCENT | Blood to stone | BLOODSTONE | Boiling blood | Scent of the Bloodhound,,65,Acid Blood | Alchemist Recipe | ARTIFACTS | Bleed | BLIGHT,
 command,bodyslam,exact,src/cmd/interp.c:3122,Bodyslam,Bodyslam,0,,
@@ -97,7 +97,7 @@ command,boon,missing,src/cmd/interp.c:3451,,,2,Lesser resurrect | RESTED,Moon | 
 command,breathe,exact,src/cmd/interp.c:3300,"Breathe | BREATHE ""INNATE BREATHE"" | Breathe frost",Breathe,0,,
 command,buck,ambiguous,src/cmd/interp.c:3301,MOUNT RIDE DISMOUNT BUCK | Swashbuckler,,2,Mount | MOUNT RIDE DISMOUNT BUCK,
 command,bug,exact,src/cmd/interp.c:3302,"Bug | BUG IDEA TYPO | DEBUG | GOD, DEBUG | Goddebug",Bug,0,,
-command,build,missing,src/cmd/interp.c:3443,,,9,Construct | Flex | Flutter | Guildhall | GUILDHALLS,Guild | Guilds | Boulder
+command,build,missing,src/cmd/interp.c:3443,,,10,Construct | Flex | Flutter | Guildhall | GUILDHALLS,Guild | Guilds | Boulder
 command,bury,exact,src/cmd/interp.c:3083,Bury,Bury,0,,
 command,call,ambiguous,src/cmd/interp.c:3388,CALL ARCHON | Call asura | CALL AVATAR | CALL BRALANI | Call deva | CALL KNIGHT | CALL LIBERATOR | Call lightning | Call of the Grave | CALL OF THE WILD | CALL TITAN | Call woodland beings | God call | Group Recall | Natures calling | Recall | STORMCALLERS FURY | WORD OF RECALL,,57,ARTIFACTS | Avatar | Avenger | Avenger Skills | BATTLETIDE,
 command,camp,exact,src/cmd/interp.c:3124,Camp,Camp,0,,
@@ -122,7 +122,7 @@ command,conjure,ambiguous,src/cmd/interp.c:3287,Conjure air | Conjure elemental 
 command,consent,exact,src/cmd/interp.c:3316,Consent,Consent,0,,
 command,consider,exact,src/cmd/interp.c:3317,Consider,Consider,0,,
 command,construct,exact,src/cmd/interp.c:3166,Construct,Construct,0,,
-command,consume,partial,src/cmd/interp.c:3427,CONSUME CORPSE,,7,Abominal Consumption | CONSUME CORPSE | Elemental Aura | FLAME SPHERE | Quaff,
+command,consume,partial,src/cmd/interp.c:3427,CONSUME CORPSE,,8,Abominal Consumption | CONSUME CORPSE | Elemental Aura | FLAME SPHERE | Quaff,
 command,cover,missing,src/cmd/interp.c:3254,,,7,Bury | Earthen Tomb | Grease | kingdoms | Pass without trace,Coder | Love
 command,craft,exact,src/cmd/interp.c:3260,chaos craft pouch | Craft | CRAFTING,Craft,0,,
 command,credits,exact,src/cmd/interp.c:3128,Credits,Credits,0,,
@@ -144,7 +144,7 @@ command,dismiss,missing,src/cmd/interp.c:3113,,,1,Pets,Disguise
 command,dismount,partial,src/cmd/interp.c:3321,MOUNT RIDE DISMOUNT BUCK,,2,Mount | MOUNT RIDE DISMOUNT BUCK,
 command,display,exact,src/cmd/interp.c:3322,Display,Display,0,,
 command,divineclaim,missing,src/cmd/interp.c:3174,,,0,,
-command,do,ambiguous,src/cmd/interp.c:3138,"ARMAGEDDON | Army of Armageddon | Baladors Protection | Creeping doom | Dimension Door | Docks | Dodge | Doom Blade | Doomlure | Doorbash | Doorkick | Double Attack | Double headbutt | Double Strike | DRACONIC CRESCENDO | Draconiccrescendo | EPIC WISDOM | FREEDOM OF MOVEMENT | GOD, PARDON | Godpardon | Indomitability | INDOMITABLE RAGE | KINGDOM | kingdoms | Mandolin | NORTH SOUTH EAST WEST UP DOWN SOUTHWEST SOUTHEAST NORTHWEST NORTHEAST | Outdoor Sneak | Outdoorsneak | Raise shadow | RANDOBJ | RANDOM ""RANDOM EQUIMENT"" ""RANDOM MOB"" ""RANDOM ZONE"" | Random Equipment | Random zones | Shadow | SHADOW ARCHERY | Shadow Aura | Shadow Beast | Shadow Gate | Shadow Merging | Shadow Monster | SHADOW MOVEMENT | SHADOW PROJECTION | Shadow shield | Shadow Spawn | Shadow Travel | Shadow Vision | Shadowmage | SHADOWSTEP | SHUTDOW | SHUTDOWN | WISDOM",,142,ACHIEVEMENTS | Aid | Amaze | Artifact | Ask,
+command,do,ambiguous,src/cmd/interp.c:3138,"ARMAGEDDON | Army of Armageddon | Baladors Protection | Creeping doom | Dimension Door | Docks | Dodge | Doom Blade | Doomlure | Doorbash | Doorkick | Double Attack | Double headbutt | Double Strike | DRACONIC CRESCENDO | Draconiccrescendo | EPIC WISDOM | FREEDOM OF MOVEMENT | GOD, PARDON | Godpardon | Indomitability | INDOMITABLE RAGE | KINGDOM | kingdoms | Mandolin | NORTH SOUTH EAST WEST UP DOWN SOUTHWEST SOUTHEAST NORTHWEST NORTHEAST | Outdoor Sneak | Outdoorsneak | Raise shadow | RANDOBJ | RANDOM ""RANDOM EQUIMENT"" ""RANDOM MOB"" ""RANDOM ZONE"" | Random Equipment | Random zones | Shadow | SHADOW ARCHERY | Shadow Aura | Shadow Beast | Shadow Gate | Shadow Merging | Shadow Monster | SHADOW MOVEMENT | SHADOW PROJECTION | Shadow shield | Shadow Spawn | Shadow Travel | Shadow Vision | Shadowmage | SHADOWSTEP | SHUTDOW | SHUTDOWN | WISDOM",,143,ACHIEVEMENTS | Aid | Amaze | Artifact | Ask,
 command,donate,missing,src/cmd/interp.c:3140,,,0,,Detonate | Desolate | Innate
 command,doorbash,exact,src/cmd/interp.c:3141,Doorbash,Doorbash,0,,
 command,doorkick,exact,src/cmd/interp.c:3142,Doorkick,Doorkick,0,,
@@ -168,7 +168,7 @@ command,encrust,exact,src/cmd/interp.c:3261,Encrust,Encrust,0,,
 command,enhance,ambiguous,src/cmd/interp.c:3105,Enhance Agility | Enhance Armor | Enhance Constitution | Enhance Dexterity | Enhance Strength,,41,Agility | Anatomy | Armor | Armor Class | Attributes,
 command,enter,exact,src/cmd/interp.c:3152,Enter,Enter,0,,
 command,epic,exact,src/cmd/interp.c:3177,Epic | EPIC AGILITY | Epic charisma | EPIC CONSTITUTION | EPIC DEXTERITY | EPIC INTELLIGENCE | EPIC LUCK | EPIC POWER | Epic skills | EPIC STRENGTH | Epic trophy | EPIC WARDING FAITH | EPIC WISDOM,Epic,0,,
-command,equipment,exact,src/cmd/interp.c:3327,Equipment | Random Equipment,Equipment,0,,
+command,equipment,exact,src/cmd/interp.c:3327,Equipment | NAMED EQUIPMENT | Random Equipment,Equipment,0,,
 command,examine,exact,src/cmd/interp.c:3153,Examine,Examine,0,,
 command,exhume,exact,src/cmd/interp.c:3135,Exhume,Exhume,0,,
 command,exits,exact,src/cmd/interp.c:3328,Exits,Exits,0,,
@@ -223,7 +223,7 @@ command,infuriate,exact,src/cmd/interp.c:3429,INFURIATE,INFURIATE,0,,
 command,infuse,ambiguous,src/cmd/interp.c:3274,INFUSE LIFE | INFUSE MAGICAL DEVICE,,26,ARMAGEDDON | Bard | Blighter | CEGILUNES SEARING BLADE | Cleric,
 command,innate,exact,src/cmd/interp.c:3353,"BREATHE ""INNATE BREATHE"" | FLURRY ""INNATE FLURRY"" | Innate | Innate disappear | Innate horse body",Innate,0,,
 command,insult,exact,src/cmd/interp.c:3354,Insult,Insult,0,,
-command,introduce,missing,src/cmd/interp.c:3269,,,0,,Reduce | JIN TOUCH
+command,introduce,exact,src/cmd/interp.c:3269,INTRODUCE,INTRODUCE,0,,
 command,inventory,exact,src/cmd/interp.c:3355,Inventory,Inventory,0,,
 command,itemmana,missing,src/cmd/interp.c:3464,,,0,,Vitalize Mana | Mana
 command,jchat,missing,src/cmd/interp.c:3091,,,0,,Nchat | CHEAT | Chant
@@ -256,9 +256,9 @@ command,mount,exact,src/cmd/interp.c:3197,Mount | Mount Banishment Guides | MOUN
 command,mug,exact,src/cmd/interp.c:3432,MUG,MUG,0,,
 command,multiclass,exact,src/cmd/interp.c:3267,Multiclass,Multiclass,0,,
 command,murder,partial,src/cmd/interp.c:3366,KILL HIT MURDER,,8,Aggr | AGGR AGGRESSIVE | Assassin | GARROTE | Hit,
-command,namedreport,missing,src/cmd/interp.c:3438,,,0,,MREPORT
+command,namedreport,exact,src/cmd/interp.c:3438,NAMEDREPORT,NAMEDREPORT,0,,
 command,nchat,exact,src/cmd/interp.c:3090,Nchat | TOGGLE_NCHAT,Nchat,0,,
-command,ne,ambiguous,src/cmd/interp.c:3198,"Adrenaline Control | Alter Energy Polarity | Aravne guides | Arcane block | Arcane Riposte | Arcane Whirlwind | Astral plane | ATONEMENT | Avarne | Awareness | Blindness | Blood to stone | BLOODSTONE | CEGILUNES SEARING BLADE | Channel | Channel Negative Energy | Channeler | CLONE | Clone form | Commune | Cone of Cold | Cyclone | Darkness | DECLINE | Dirge of Bones | Divine Blessing | DIVINE FONT | DIVINE FURY | Divine Home | DIVINE POWER | Divine Warding | Divine/Cerberus pits Guides | Divinefury | EDICTUM CINERIS | Elemental Plane of Air | Elemental Plane of Earth | Elemental Plane of Fire | Elemental Plane of Water | Energy containment | Energy Drain | ENERVATION | Ethereal Plane | Examine | Funereal Hymn | Globe of Darkness | Globe of Invulnerability | GOD, CLONE | Godclone | GREATER LIVING STONE | Group Globe of Invulnerability | Group Stone Skin | Hone weapon | Hurricane | IGNEUS VITAE | Inertial Barrier | Invoke Negative Energy | IOUN STONES | Kneel | LANCEA CINERALAE | LIVING STONE | Lodestone vision | Mine | Minor Globe of Invulnerability | Moonstone | MORDENKAINENS LUCUBRATION | MUNDANE LIFE | Mundanelife | Neckbite | Necrolyte | Necromancer | Necromancer Skills | Negative Concussion Blast | Negative Energy Barrier | Negative Energy Vortex | NEGATIVE FEEDBACK BARRIER | Neth_Guides' | Nether Gate | Nether Touch | Neutral point of view | New Player Guides | NEW-COMBAT ""NEW COMBAT"" ""GROUP RANKS"" RANKS ""FRONT RANK"" ""BACK RANK"" | Newbie | NEWBIE (IMMORTAL) | Newbie guides | NEWBSA | NEWBSU | NEWCHAR | Newhaven | Newhaven Guides | News | Nonexistence | OBTENEBRATION | OFFLINEMSG | Outdoor Sneak | Outdoorsneak | Pine hollows | Plane shift | Planetary alignment | Planetbound Illithid | Potion of Greater Living Stone | Potion of Living Stone | Potion of Slowness | PYROKINESES | Pyrokinesis | Pyrokinetic | RANDOM ""RANDOM EQUIMENT"" ""RANDOM MOB"" ""RANDOM ZONE"" | Random zones | Recline | Regenerate | Regeneration | REPAIR ONE ITEM | Runestone | Sense Holiness | Sense Weakness | Shrewtameness | SIGILLUM NEGATI | SKILL_NECROMANCER | SKILL_SUMMONER | SLASHING DARKNESS | Slowness | Sneak | SNEAKY STRIKE | Sneer | Sneeze | Song of Forgetfulness | SPELL PENETRATION | SQUERRIKS SNEAKY WAYS | STONE SKIN | Summoner | Summoner Skills | SWITCH OPPONENTS | TOGGLE_GROUP NEEDED | TOGGLE_HINT CHANNEL | TOUGHNESS | TRANSFER WELLNESS | UD-SNEAK ""UD SNEAK"" | VINES | WAKE REST SIT STAND KNEEL RECLINE ALERT | WALL OF BONES | WALL OF STONE | WELLNESS | WIND TUNNEL | WIZCONNECT | ZONE GOD | ZONES",,3,North | NORTH SOUTH EAST WEST UP DOWN SOUTHWEST SOUTHEAST NORTHWEST NORTHEAST | Ship commands,
+command,ne,ambiguous,src/cmd/interp.c:3198,"Adrenaline Control | Alter Energy Polarity | Aravne guides | Arcane block | Arcane Riposte | Arcane Whirlwind | Astral plane | ATONEMENT | Avarne | Awareness | Blindness | Blood to stone | BLOODSTONE | CEGILUNES SEARING BLADE | Channel | Channel Negative Energy | Channeler | CLONE | Clone form | Commune | Cone of Cold | Cyclone | Darkness | DECLINE | Dirge of Bones | Divine Blessing | DIVINE FONT | DIVINE FURY | Divine Home | DIVINE POWER | Divine Warding | Divine/Cerberus pits Guides | Divinefury | EDICTUM CINERIS | Elemental Plane of Air | Elemental Plane of Earth | Elemental Plane of Fire | Elemental Plane of Water | Energy containment | Energy Drain | ENERVATION | Ethereal Plane | Examine | Funereal Hymn | Globe of Darkness | Globe of Invulnerability | GOD, CLONE | Godclone | GREATER LIVING STONE | Group Globe of Invulnerability | Group Stone Skin | Hone weapon | Hurricane | IGNEUS VITAE | Inertial Barrier | Invoke Negative Energy | IOUN STONES | Kneel | LANCEA CINERALAE | LIVING STONE | Lodestone vision | Mine | Minor Globe of Invulnerability | Moonstone | MORDENKAINENS LUCUBRATION | MUNDANE LIFE | Mundanelife | Neckbite | Necrolyte | Necromancer | Necromancer Skills | Negative Concussion Blast | Negative Energy Barrier | Negative Energy Vortex | NEGATIVE FEEDBACK BARRIER | Neth_Guides' | Nether Gate | Nether Touch | Neutral point of view | New Player Guides | NEW-COMBAT ""NEW COMBAT"" ""GROUP RANKS"" RANKS ""FRONT RANK"" ""BACK RANK"" | Newbie | NEWBIE (IMMORTAL) | Newbie guides | NEWBSA | NEWBSU | NEWCHAR | Newhaven | Newhaven Guides | News | Nonexistence | OBTENEBRATION | OFFLINEMSG | Outdoor Sneak | Outdoorsneak | Pine hollows | Plane shift | Planetary alignment | Planetbound Illithid | Potion of Greater Living Stone | Potion of Living Stone | Potion of Slowness | PYROKINESES | Pyrokinesis | Pyrokinetic | RANDOM ""RANDOM EQUIMENT"" ""RANDOM MOB"" ""RANDOM ZONE"" | Random zones | Recline | REFINE | Regenerate | Regeneration | REPAIR ONE ITEM | Runestone | Sense Holiness | Sense Weakness | Shrewtameness | SIGILLUM NEGATI | SKILL_NECROMANCER | SKILL_SUMMONER | SLASHING DARKNESS | Slowness | Sneak | SNEAKY STRIKE | Sneer | Sneeze | Song of Forgetfulness | SPELL PENETRATION | SQUERRIKS SNEAKY WAYS | STONE SKIN | Summoner | Summoner Skills | SWITCH OPPONENTS | TOGGLE_GROUP NEEDED | TOGGLE_HINT CHANNEL | TOUGHNESS | TRANSFER WELLNESS | UD-SNEAK ""UD SNEAK"" | VINES | WAKE REST SIT STAND KNEEL RECLINE ALERT | WALL OF BONES | WALL OF STONE | WELLNESS | WIND TUNNEL | WIZCONNECT | ZONE GOD | ZONES",,3,North | NORTH SOUTH EAST WEST UP DOWN SOUTHWEST SOUTHEAST NORTHWEST NORTHEAST | Ship commands,
 command,neckbite,exact,src/cmd/interp.c:3367,Neckbite,Neckbite,0,,
 command,news,exact,src/cmd/interp.c:3199,News,News,0,,
 command,nexus,missing,src/cmd/interp.c:3178,,,1,Nova,News
@@ -281,14 +281,14 @@ command,pour,exact,src/cmd/interp.c:3372,Pour,Pour,0,,
 command,practice,exact,src/cmd/interp.c:3208,Practice,Practice,0,,
 command,practise,missing,src/cmd/interp.c:3209,,,0,,Practice | Raise | Appraise
 command,pray,exact,src/cmd/interp.c:3373,Color Spray | MEMORIZE PRAY FORGET | Molten spray | Pray | PRAYER | Prismatic Spray,Pray,0,,
-command,prestige,missing,src/cmd/interp.c:3444,,,5,Construct | KINGDOM | kingdoms | Rest | SUPERVISE,RESTED | Priest | RESTORE
+command,prestige,exact,src/cmd/interp.c:3444,PRESTIGE,PRESTIGE,0,,
 command,project,exact,src/cmd/interp.c:3365,Project | SHADOW PROJECTION,Project,0,,
 command,projects,missing,src/cmd/interp.c:3157,,,0,,Project | Map Objects | PROTECT SOUL
 command,protocol,missing,src/cmd/interp.c:3068,,,0,,PROTECT SOUL | PROCLIB
 command,put,exact,src/cmd/interp.c:3210,Put,Put,0,,
 command,quaff,exact,src/cmd/interp.c:3375,Quaff | QUAFF POTIONS,Quaff,0,,
 command,quest,exact,src/cmd/interp.c:3044,Highmoors forest/hexagon quest Guides | Old Quest | Quest | QUESTWHERE,Quest,0,,
-command,qui,ambiguous,src/cmd/interp.c:3212,"EQUIP SORT | Equipment | Quick Chant | QUICK STEP | Quit | Quivering Palm | RANDOM ""RANDOM EQUIMENT"" ""RANDOM MOB"" ""RANDOM ZONE"" | Random Equipment | Requiem of the Crypts | TRANQUILITY | TRANQUILIZE",,0,,
+command,qui,ambiguous,src/cmd/interp.c:3212,"EQUIP SORT | Equipment | NAMED EQUIPMENT | Quick Chant | QUICK STEP | Quit | Quivering Palm | RANDOM ""RANDOM EQUIMENT"" ""RANDOM MOB"" ""RANDOM ZONE"" | Random Equipment | Requiem of the Crypts | TRANQUILITY | TRANQUILIZE",,0,,
 command,quit,exact,src/cmd/interp.c:3075,Quit,Quit,0,,
 command,rage,exact,src/cmd/interp.c:3423,BLADE BARRAGE | Enrage | Forage | INDOMITABLE RAGE | Lionrage | LOCKER STORAGE | MIRAGE | RAGE | Ragelord | Solbeeps Missile Barrage | STORAGE | WINDRAGE,RAGE,0,,
 command,raid,exact,src/cmd/interp.c:3112,Raid,Raid,0,,
@@ -297,15 +297,15 @@ command,read,exact,src/cmd/interp.c:3213,Dread blade | Dread Wave | DREAD WRATH 
 command,recall,exact,src/cmd/interp.c:3193,Group Recall | Recall | WORD OF RECALL,Recall,0,,
 command,recite,exact,src/cmd/interp.c:3214,Recite | RECITE SCROLLS,Recite,0,,
 command,recline,exact,src/cmd/interp.c:3376,Recline | WAKE REST SIT STAND KNEEL RECLINE ALERT,Recline,0,,
-command,refine,missing,src/cmd/interp.c:3175,,,0,,Recline | RENAME | Recite
+command,refine,exact,src/cmd/interp.c:3175,REFINE,REFINE,0,,
 command,relic,missing,src/cmd/interp.c:3176,,,1,SIMULACRUM ANGUIS,Recline | Raise Lich | Lick
 command,reload,ambiguous,src/cmd/interp.c:3215,Rareload | SHIP_COMMANDS DISEMBARK REPAIR RELOAD,,6,PROPERTIES | Ship commands | Ship list | SHIP_COMBAT SHIP_BATTLE | SHIP_COMMANDS DISEMBARK REPAIR RELOAD,
 command,remort,exact,src/cmd/interp.c:3106,Remort | REMORT ASCEND,Remort,0,,
 command,remove,exact,src/cmd/interp.c:3377,Remove | Remove Curse | Remove Poison | TRAPREMOVE,Remove,0,,
 command,reply,missing,src/cmd/interp.c:3098,,,6,"Ask | Follow-Up Riposte | GOD, PTELL | Godptell | PTELL",Play
-command,report,partial,src/cmd/interp.c:3378,MREPORT,,11,"Bug | BUG IDEA TYPO | CHEAT | faq | GOD, INROOM",
+command,report,ambiguous,src/cmd/interp.c:3378,MREPORT | NAMEDREPORT,,14,"Bug | BUG IDEA TYPO | CHEAT | faq | GOD, INROOM",
 command,rescue,exact,src/cmd/interp.c:3379,Rescue | RESCUE ALL | Rescueall,Rescue,0,,
-command,rest,exact,src/cmd/interp.c:3216,"Awaken Forest | Firestorm | Forest druid | FORRESTAL | GOD, RESTORE | Godrestore | Highmoors forest/hexagon quest Guides | Mir Forest Guides | Rest | RESTED | RESTORATION | RESTORE | RESTORE SPIRIT | RESTRAIN | WAKE REST SIT STAND KNEEL RECLINE ALERT",Rest,0,,
+command,rest,exact,src/cmd/interp.c:3216,"Awaken Forest | Firestorm | Forest druid | FORRESTAL | GOD, RESTORE | Godrestore | Highmoors forest/hexagon quest Guides | Mir Forest Guides | PRESTIGE | Rest | RESTED | RESTORATION | RESTORE | RESTORE SPIRIT | RESTRAIN | WAKE REST SIT STAND KNEEL RECLINE ALERT",Rest,0,,
 command,restrain,exact,src/cmd/interp.c:3425,RESTRAIN,RESTRAIN,0,,
 command,retreat,exact,src/cmd/interp.c:3381,EXPEDITED RETREAT | EXPEDITIOUS RETREAT | Retreat,Retreat,0,,
 command,return,ambiguous,src/cmd/interp.c:3382,Labyrinth of no return Guides | RETURN SOUL,,35,AURA OF REBIRTH | CONSUME CORPSE | Corpse | Cr | CURSED ARROWS,
@@ -341,20 +341,20 @@ command,smite,ambiguous,src/cmd/interp.c:3447,HOLY SMITE | Smite evil,,10,ARMAGE
 command,smoke,exact,src/cmd/interp.c:3278,Smoke,Smoke,0,,
 command,sneak,exact,src/cmd/interp.c:3226,"Outdoor Sneak | Outdoorsneak | Sneak | SNEAKY STRIKE | SQUERRIKS SNEAKY WAYS | UD-SNEAK ""UD SNEAK""",Sneak,0,,
 command,society,exact,src/cmd/interp.c:3251,Society | Society examples,Society,0,,
-command,soulbind,missing,src/cmd/interp.c:3173,,,1,Bind,UNBIND | Spellbind | Soul Link
+command,soulbind,exact,src/cmd/interp.c:3173,SOULBIND,SOULBIND,0,,
 command,south,partial,src/cmd/interp.c:3227,NORTH SOUTH EAST WEST UP DOWN SOUTHWEST SOUTHEAST NORTHWEST NORTHEAST,,15,"Brief Mode | Charing | CHARING ""CITY OF ELVES"" | Commands | Construct",
 command,southeast,partial,src/cmd/interp.c:3229,NORTH SOUTH EAST WEST UP DOWN SOUTHWEST SOUTHEAST NORTHWEST NORTHEAST,,4,"Charing | CHARING ""CITY OF ELVES"" | Construct | Sarmiz",
 command,southwest,partial,src/cmd/interp.c:3228,NORTH SOUTH EAST WEST UP DOWN SOUTHWEST SOUTHEAST NORTHWEST NORTHEAST,,2,Construct | Tharnadia,
 command,specialize,partial,src/cmd/interp.c:3107,SPECIALIZATIONS SPECIALIZE,,8,Cleric | Conjurer | Forest druid | New Player Guides | RANGE SPECIALIST,
 command,spellbind,exact,src/cmd/interp.c:3262,Spellbind,Spellbind,0,,
-command,spells,ambiguous,src/cmd/interp.c:3094,"GOD, SPELLS | Godspells",,297,Acid blast | Air magus | Alchemist | Alchemist Skills | Animal Growth,
+command,spells,ambiguous,src/cmd/interp.c:3094,"GOD, SPELLS | Godspells",,299,Acid blast | Air magus | Alchemist | Alchemist Skills | Animal Growth,
 command,spellweave,exact,src/cmd/interp.c:3305,SPELLWEAVE,SPELLWEAVE,0,,
 command,split,exact,src/cmd/interp.c:3230,SPLIT,SPLIT,0,,
 command,springleap,exact,src/cmd/interp.c:3395,SPRINGLEAP,SPRINGLEAP,0,,
 command,squidrage,missing,src/cmd/interp.c:3862,,,0,,WINDRAGE | MIRAGE
 command,stampede,missing,src/cmd/interp.c:3255,,,1,Centaur,TRAMPLE | Cramped
 command,stand,partial,src/cmd/interp.c:3396,WAKE REST SIT STAND KNEEL RECLINE ALERT,,30,Alert | Battle Tactics | Bleed | BLIGHT | CLAIRVOYANCE,
-command,stat,ambiguous,src/cmd/interp.c:3397,"DEVASTATING CRITICAL | GOD, STAT | Godstat | STATIC DISCHARGE | STATISTIC | STATS STATISTICS",,24,Attributes | Auction List | Barter | Berserk | Craft,
+command,stat,ambiguous,src/cmd/interp.c:3397,"DEVASTATING CRITICAL | GOD, STAT | Godstat | STATIC DISCHARGE | STATISTIC | STATS STATISTICS",,25,Attributes | Auction List | Barter | Berserk | Craft,
 command,steal,exact,src/cmd/interp.c:3231,STEAL,STEAL,0,,
 command,stomp,missing,src/cmd/interp.c:3233,,,2,Brigand | Social actions,TOLM | SETHOME
 command,strike,ambiguous,src/cmd/interp.c:3431,Crippling Strike | Double Strike | DRAGON STRIKE | Flame strike | KI STRIKE | SNEAKY STRIKE | VAPOR STRIKE | VICIOUS STRIKE,,77,ANGELIC COUNTENANCE | Bard | BATTLETIDE | Berserker Skills | BLADE BARRAGE,
@@ -368,7 +368,7 @@ command,sweeping thrust,exact,src/cmd/interp.c:3399,SWEEPING THRUST,SWEEPING THR
 command,swim,exact,src/cmd/interp.c:3235,SWIM | SWIM (IMMORTAL),SWIM,0,,
 command,tackle,exact,src/cmd/interp.c:3348,TACKLE,TACKLE,0,,
 command,take,ambiguous,src/cmd/interp.c:3400,GET TAKE | TOGGLE_TAKE,,92,"AC ""ARMOR CLASS"" | ANGELIC COUNTENANCE | Animalist | Anti-Paladin | Armor Class",
-command,target,missing,src/cmd/interp.c:3268,,,229,Accuse | Acid blast | Ack | Agree | Amaze,Get | Forget | Charge
+command,target,missing,src/cmd/interp.c:3268,,,230,Accuse | Acid blast | Ack | Agree | Amaze,Get | Forget | Charge
 command,taste,partial,src/cmd/interp.c:3236,EAT DRINK SIP TASTE,,12,Acid Blood | BATTLETIDE | Commands | Drink | Eat,
 command,taunt,exact,src/cmd/interp.c:3712,TAUNT,TAUNT,0,,
 command,teach,exact,src/cmd/interp.c:3237,TEACH,TEACH,0,,
@@ -392,7 +392,7 @@ command,unhitch,missing,src/cmd/interp.c:3241,,,0,,WHICH | Punch | Notch
 command,unlock,partial,src/cmd/interp.c:3242,OPEN CLOSE LOCK UNLOCK,,7,Commands | Lock | Open | OPEN CLOSE LOCK UNLOCK | Pick Lock,
 command,unthrust,missing,src/cmd/interp.c:3272,,,0,,Encrust
 command,up,ambiguous,src/cmd/interp.c:3243,"Auction Pickup | Disruptive Blow | Follow-Up Riposte | GOD, LOOKUP | GOD, SUPERVISE | Godlookup | Group | Group Globe of Invulnerability | GROUP HASTE | Group heal | Group Recall | Group Stone Skin | Group stornogs spheres | GROUP TELEPORT | Hiccup | Induce Tupor | LOOKUP | NEW-COMBAT ""NEW COMBAT"" ""GROUP RANKS"" RANKS ""FRONT RANK"" ""BACK RANK"" | NORTH SOUTH EAST WEST UP DOWN SOUTHWEST SOUTHEAST NORTHWEST NORTHEAST | Quadruple Attack | SPINAL CORRUPTION | Supernova | SUPERVISE | SUPPRESS SOUND | TOGGLE_GROUP NEEDED | TUPOR",,277,ACCOUNT | Accuse | Ack | ADVANCE | Agree,
-command,use,ambiguous,src/cmd/interp.c:3408,"Accuse | Cause Critical | Cause light | Cause Serious | Confuse | GOD, USERS | Godusers | INFUSE LIFE | INFUSE MAGICAL DEVICE | Magic User | MAGIC-USER | Mousestrength | Multi-user dungeon | s_Wayhouse' | USE WANDS STAFF STAVES | USERS",,205,1h Bludgeon | 1h flaying | 1h Piercing | 1h slashing | 2h flaying,
+command,use,ambiguous,src/cmd/interp.c:3408,"Accuse | Cause Critical | Cause light | Cause Serious | Confuse | GOD, USERS | Godusers | INFUSE LIFE | INFUSE MAGICAL DEVICE | Magic User | MAGIC-USER | Mousestrength | Multi-user dungeon | s_Wayhouse' | USE WANDS STAFF STAVES | USERS",,206,1h Bludgeon | 1h flaying | 1h Piercing | 1h slashing | 2h flaying,
 command,vis,ambiguous,src/cmd/interp.c:3409,"Animal Vision | DAYVISION | Detect Invisibility | Dispel Invisible | GOD, SUPERVISE | GOD, VIS | Godvis | Hawkvision | Hymn of morbid visions | Improved Invisibility | Infravision | Invisibility | Lodestone vision | Mass Invisibility | Molevision | Shadow Vision | STUNNING VISIONS | SUPERVISE | ULTRAVISION | VISION OF THE DEAD",,4,"GOD, VIS | Godcommands | Godvis | Invisibility",
 command,vote,missing,src/cmd/interp.c:3270,,,1,OT,OT | Emote
 command,wail,exact,src/cmd/interp.c:3430,WAIL,WAIL,0,,
@@ -475,7 +475,7 @@ command_attribute,beer,exact,docs/lib/information/command_attributes.txt:616,Bee
 command_attribute,beg,exact,docs/lib/information/command_attributes.txt:618,Beg,Beg,0,,
 command_attribute,berserk,exact,docs/lib/information/command_attributes.txt:46,Berserk | Berserker | Berserker Skills | SKILL_BERSERKER,Berserk,0,,
 command_attribute,bhug,missing,docs/lib/information/command_attributes.txt:620,,,0,,Hug | Bug | THUG
-command_attribute,bind,exact,docs/lib/information/command_attributes.txt:622,Bind | BINDING WIND | Spellbind | UNBIND,Bind,0,,
+command_attribute,bind,exact,docs/lib/information/command_attributes.txt:622,Bind | BINDING WIND | SOULBIND | Spellbind | UNBIND,Bind,0,,
 command_attribute,bird,exact,docs/lib/information/command_attributes.txt:624,Bird,Bird,0,,
 command_attribute,bite,exact,docs/lib/information/command_attributes.txt:626,Bite | Cenobite | Frostbite | Neckbite,Bite,0,,
 command_attribute,bkiss,missing,docs/lib/information/command_attributes.txt:628,,,0,,Kiss | Hiss
@@ -506,7 +506,7 @@ command_attribute,bribe,missing,docs/lib/information/command_attributes.txt:670,
 command_attribute,bslap,missing,docs/lib/information/command_attributes.txt:672,,,0,,Slap | Snap | SLIP
 command_attribute,buck,ambiguous,docs/lib/information/command_attributes.txt:63,MOUNT RIDE DISMOUNT BUCK | Swashbuckler,,2,Mount | MOUNT RIDE DISMOUNT BUCK,
 command_attribute,bug,exact,docs/lib/information/command_attributes.txt:674,"Bug | BUG IDEA TYPO | DEBUG | GOD, DEBUG | Goddebug",Bug,0,,
-command_attribute,build,missing,docs/lib/information/command_attributes.txt:676,,,9,Construct | Flex | Flutter | Guildhall | GUILDHALLS,Guild | Guilds | Boulder
+command_attribute,build,missing,docs/lib/information/command_attributes.txt:676,,,10,Construct | Flex | Flutter | Guildhall | GUILDHALLS,Guild | Guilds | Boulder
 command_attribute,bully,partial,docs/lib/information/command_attributes.txt:678,Bullywug Village,,0,,
 command_attribute,bungee,missing,docs/lib/information/command_attributes.txt:680,,,0,,Hunger | Bug | Bounce
 command_attribute,burp,exact,docs/lib/information/command_attributes.txt:682,Burp,Burp,0,,
@@ -561,7 +561,7 @@ command_attribute,conjure,ambiguous,docs/lib/information/command_attributes.txt:
 command_attribute,consent,exact,docs/lib/information/command_attributes.txt:758,Consent,Consent,0,,
 command_attribute,consider,exact,docs/lib/information/command_attributes.txt:760,Consider,Consider,0,,
 command_attribute,construct,exact,docs/lib/information/command_attributes.txt:762,Construct,Construct,0,,
-command_attribute,consume,partial,docs/lib/information/command_attributes.txt:764,CONSUME CORPSE,,7,Abominal Consumption | CONSUME CORPSE | Elemental Aura | FLAME SPHERE | Quaff,
+command_attribute,consume,partial,docs/lib/information/command_attributes.txt:764,CONSUME CORPSE,,8,Abominal Consumption | CONSUME CORPSE | Elemental Aura | FLAME SPHERE | Quaff,
 command_attribute,cough,exact,docs/lib/information/command_attributes.txt:766,Cough,Cough,0,,
 command_attribute,cover,missing,docs/lib/information/command_attributes.txt:768,,,7,Bury | Earthen Tomb | Grease | kingdoms | Pass without trace,Coder | Love
 command_attribute,cow,partial,docs/lib/information/command_attributes.txt:770,Song of cowardice,,0,,
@@ -605,7 +605,7 @@ command_attribute,dismiss,missing,docs/lib/information/command_attributes.txt:83
 command_attribute,dismount,partial,docs/lib/information/command_attributes.txt:834,MOUNT RIDE DISMOUNT BUCK,,2,Mount | MOUNT RIDE DISMOUNT BUCK,
 command_attribute,display,exact,docs/lib/information/command_attributes.txt:836,Display,Display,0,,
 command_attribute,divineclaim,missing,docs/lib/information/command_attributes.txt:838,,,0,,
-command_attribute,do,ambiguous,docs/lib/information/command_attributes.txt:840,"ARMAGEDDON | Army of Armageddon | Baladors Protection | Creeping doom | Dimension Door | Docks | Dodge | Doom Blade | Doomlure | Doorbash | Doorkick | Double Attack | Double headbutt | Double Strike | DRACONIC CRESCENDO | Draconiccrescendo | EPIC WISDOM | FREEDOM OF MOVEMENT | GOD, PARDON | Godpardon | Indomitability | INDOMITABLE RAGE | KINGDOM | kingdoms | Mandolin | NORTH SOUTH EAST WEST UP DOWN SOUTHWEST SOUTHEAST NORTHWEST NORTHEAST | Outdoor Sneak | Outdoorsneak | Raise shadow | RANDOBJ | RANDOM ""RANDOM EQUIMENT"" ""RANDOM MOB"" ""RANDOM ZONE"" | Random Equipment | Random zones | Shadow | SHADOW ARCHERY | Shadow Aura | Shadow Beast | Shadow Gate | Shadow Merging | Shadow Monster | SHADOW MOVEMENT | SHADOW PROJECTION | Shadow shield | Shadow Spawn | Shadow Travel | Shadow Vision | Shadowmage | SHADOWSTEP | SHUTDOW | SHUTDOWN | WISDOM",,142,ACHIEVEMENTS | Aid | Amaze | Artifact | Ask,
+command_attribute,do,ambiguous,docs/lib/information/command_attributes.txt:840,"ARMAGEDDON | Army of Armageddon | Baladors Protection | Creeping doom | Dimension Door | Docks | Dodge | Doom Blade | Doomlure | Doorbash | Doorkick | Double Attack | Double headbutt | Double Strike | DRACONIC CRESCENDO | Draconiccrescendo | EPIC WISDOM | FREEDOM OF MOVEMENT | GOD, PARDON | Godpardon | Indomitability | INDOMITABLE RAGE | KINGDOM | kingdoms | Mandolin | NORTH SOUTH EAST WEST UP DOWN SOUTHWEST SOUTHEAST NORTHWEST NORTHEAST | Outdoor Sneak | Outdoorsneak | Raise shadow | RANDOBJ | RANDOM ""RANDOM EQUIMENT"" ""RANDOM MOB"" ""RANDOM ZONE"" | Random Equipment | Random zones | Shadow | SHADOW ARCHERY | Shadow Aura | Shadow Beast | Shadow Gate | Shadow Merging | Shadow Monster | SHADOW MOVEMENT | SHADOW PROJECTION | Shadow shield | Shadow Spawn | Shadow Travel | Shadow Vision | Shadowmage | SHADOWSTEP | SHUTDOW | SHUTDOWN | WISDOM",,143,ACHIEVEMENTS | Aid | Amaze | Artifact | Ask,
 command_attribute,dodge,exact,docs/lib/information/command_attributes.txt:129,Dodge,Dodge,0,,
 command_attribute,doh,missing,docs/lib/information/command_attributes.txt:842,,,0,,Duh
 command_attribute,donate,missing,docs/lib/information/command_attributes.txt:844,,,0,,Detonate | Desolate | Innate
@@ -651,7 +651,7 @@ command_attribute,epardon,missing,docs/lib/information/command_attributes.txt:92
 command_attribute,epic,exact,docs/lib/information/command_attributes.txt:925,Epic | EPIC AGILITY | Epic charisma | EPIC CONSTITUTION | EPIC DEXTERITY | EPIC INTELLIGENCE | EPIC LUCK | EPIC POWER | Epic skills | EPIC STRENGTH | Epic trophy | EPIC WARDING FAITH | EPIC WISDOM,Epic,0,,
 command_attribute,epicreset,missing,docs/lib/information/command_attributes.txt:927,,,0,,ZRESET | SECRET | Priest
 command_attribute,eqrate,exact,docs/lib/information/command_attributes.txt:929,EQRATE,EQRATE,0,,
-command_attribute,equipment,exact,docs/lib/information/command_attributes.txt:931,Equipment | Random Equipment,Equipment,0,,
+command_attribute,equipment,exact,docs/lib/information/command_attributes.txt:931,Equipment | NAMED EQUIPMENT | Random Equipment,Equipment,0,,
 command_attribute,esweep,missing,docs/lib/information/command_attributes.txt:933,,,0,,LEGSWEEP | Sleep
 command_attribute,examine,exact,docs/lib/information/command_attributes.txt:935,Examine,Examine,0,,
 command_attribute,exchange,exact,docs/lib/information/command_attributes.txt:938,Exchange | EXCHANGE BANKS BALANCE DEPOSIT WITHDRAW,Exchange,0,,
@@ -793,7 +793,7 @@ command_attribute,innate,exact,docs/lib/information/command_attributes.txt:1172,
 command_attribute,inroom,exact,docs/lib/information/command_attributes.txt:1174,"GOD, INROOM | Godinroom | INROOM",INROOM,0,,
 command_attribute,instacast,exact,docs/lib/information/command_attributes.txt:1176,INSTACAST,INSTACAST,0,,
 command_attribute,insult,exact,docs/lib/information/command_attributes.txt:1179,Insult,Insult,0,,
-command_attribute,introduce,missing,docs/lib/information/command_attributes.txt:1181,,,0,,Reduce | JIN TOUCH
+command_attribute,introduce,exact,docs/lib/information/command_attributes.txt:1181,INTRODUCE,INTRODUCE,0,,
 command_attribute,inventory,exact,docs/lib/information/command_attributes.txt:1183,Inventory,Inventory,0,,
 command_attribute,invite,exact,docs/lib/information/command_attributes.txt:1187,INVITE | UNINVITE,INVITE,0,,
 command_attribute,itemmana,missing,docs/lib/information/command_attributes.txt:1185,,,0,,Vitalize Mana | Mana
@@ -877,11 +877,11 @@ command_attribute,mutter,missing,docs/lib/information/command_attributes.txt:131
 command_attribute,mwalk,missing,docs/lib/information/command_attributes.txt:1320,,,0,,Warlock | WAIL | MAUL
 command_attribute,nafk,missing,docs/lib/information/command_attributes.txt:1322,,,0,,Afk | Sneak
 command_attribute,nails,partial,docs/lib/information/command_attributes.txt:1324,Snailspeed,,0,,
-command_attribute,namedreport,missing,docs/lib/information/command_attributes.txt:1326,,,0,,MREPORT
+command_attribute,namedreport,exact,docs/lib/information/command_attributes.txt:1326,NAMEDREPORT,NAMEDREPORT,0,,
 command_attribute,nap,ambiguous,docs/lib/information/command_attributes.txt:1328,Cold snap | NAPALM | Potion of Napalm | Snap,,1,Social actions,
 command_attribute,nasty,missing,docs/lib/information/command_attributes.txt:1330,,,8,Apocalypse | Doorbash | Enslaver | faq | Holy Word,Cast | Anatomy
 command_attribute,nchat,exact,docs/lib/information/command_attributes.txt:1332,Nchat | TOGGLE_NCHAT,Nchat,0,,
-command_attribute,ne,ambiguous,docs/lib/information/command_attributes.txt:1334,"Adrenaline Control | Alter Energy Polarity | Aravne guides | Arcane block | Arcane Riposte | Arcane Whirlwind | Astral plane | ATONEMENT | Avarne | Awareness | Blindness | Blood to stone | BLOODSTONE | CEGILUNES SEARING BLADE | Channel | Channel Negative Energy | Channeler | CLONE | Clone form | Commune | Cone of Cold | Cyclone | Darkness | DECLINE | Dirge of Bones | Divine Blessing | DIVINE FONT | DIVINE FURY | Divine Home | DIVINE POWER | Divine Warding | Divine/Cerberus pits Guides | Divinefury | EDICTUM CINERIS | Elemental Plane of Air | Elemental Plane of Earth | Elemental Plane of Fire | Elemental Plane of Water | Energy containment | Energy Drain | ENERVATION | Ethereal Plane | Examine | Funereal Hymn | Globe of Darkness | Globe of Invulnerability | GOD, CLONE | Godclone | GREATER LIVING STONE | Group Globe of Invulnerability | Group Stone Skin | Hone weapon | Hurricane | IGNEUS VITAE | Inertial Barrier | Invoke Negative Energy | IOUN STONES | Kneel | LANCEA CINERALAE | LIVING STONE | Lodestone vision | Mine | Minor Globe of Invulnerability | Moonstone | MORDENKAINENS LUCUBRATION | MUNDANE LIFE | Mundanelife | Neckbite | Necrolyte | Necromancer | Necromancer Skills | Negative Concussion Blast | Negative Energy Barrier | Negative Energy Vortex | NEGATIVE FEEDBACK BARRIER | Neth_Guides' | Nether Gate | Nether Touch | Neutral point of view | New Player Guides | NEW-COMBAT ""NEW COMBAT"" ""GROUP RANKS"" RANKS ""FRONT RANK"" ""BACK RANK"" | Newbie | NEWBIE (IMMORTAL) | Newbie guides | NEWBSA | NEWBSU | NEWCHAR | Newhaven | Newhaven Guides | News | Nonexistence | OBTENEBRATION | OFFLINEMSG | Outdoor Sneak | Outdoorsneak | Pine hollows | Plane shift | Planetary alignment | Planetbound Illithid | Potion of Greater Living Stone | Potion of Living Stone | Potion of Slowness | PYROKINESES | Pyrokinesis | Pyrokinetic | RANDOM ""RANDOM EQUIMENT"" ""RANDOM MOB"" ""RANDOM ZONE"" | Random zones | Recline | Regenerate | Regeneration | REPAIR ONE ITEM | Runestone | Sense Holiness | Sense Weakness | Shrewtameness | SIGILLUM NEGATI | SKILL_NECROMANCER | SKILL_SUMMONER | SLASHING DARKNESS | Slowness | Sneak | SNEAKY STRIKE | Sneer | Sneeze | Song of Forgetfulness | SPELL PENETRATION | SQUERRIKS SNEAKY WAYS | STONE SKIN | Summoner | Summoner Skills | SWITCH OPPONENTS | TOGGLE_GROUP NEEDED | TOGGLE_HINT CHANNEL | TOUGHNESS | TRANSFER WELLNESS | UD-SNEAK ""UD SNEAK"" | VINES | WAKE REST SIT STAND KNEEL RECLINE ALERT | WALL OF BONES | WALL OF STONE | WELLNESS | WIND TUNNEL | WIZCONNECT | ZONE GOD | ZONES",,3,North | NORTH SOUTH EAST WEST UP DOWN SOUTHWEST SOUTHEAST NORTHWEST NORTHEAST | Ship commands,
+command_attribute,ne,ambiguous,docs/lib/information/command_attributes.txt:1334,"Adrenaline Control | Alter Energy Polarity | Aravne guides | Arcane block | Arcane Riposte | Arcane Whirlwind | Astral plane | ATONEMENT | Avarne | Awareness | Blindness | Blood to stone | BLOODSTONE | CEGILUNES SEARING BLADE | Channel | Channel Negative Energy | Channeler | CLONE | Clone form | Commune | Cone of Cold | Cyclone | Darkness | DECLINE | Dirge of Bones | Divine Blessing | DIVINE FONT | DIVINE FURY | Divine Home | DIVINE POWER | Divine Warding | Divine/Cerberus pits Guides | Divinefury | EDICTUM CINERIS | Elemental Plane of Air | Elemental Plane of Earth | Elemental Plane of Fire | Elemental Plane of Water | Energy containment | Energy Drain | ENERVATION | Ethereal Plane | Examine | Funereal Hymn | Globe of Darkness | Globe of Invulnerability | GOD, CLONE | Godclone | GREATER LIVING STONE | Group Globe of Invulnerability | Group Stone Skin | Hone weapon | Hurricane | IGNEUS VITAE | Inertial Barrier | Invoke Negative Energy | IOUN STONES | Kneel | LANCEA CINERALAE | LIVING STONE | Lodestone vision | Mine | Minor Globe of Invulnerability | Moonstone | MORDENKAINENS LUCUBRATION | MUNDANE LIFE | Mundanelife | Neckbite | Necrolyte | Necromancer | Necromancer Skills | Negative Concussion Blast | Negative Energy Barrier | Negative Energy Vortex | NEGATIVE FEEDBACK BARRIER | Neth_Guides' | Nether Gate | Nether Touch | Neutral point of view | New Player Guides | NEW-COMBAT ""NEW COMBAT"" ""GROUP RANKS"" RANKS ""FRONT RANK"" ""BACK RANK"" | Newbie | NEWBIE (IMMORTAL) | Newbie guides | NEWBSA | NEWBSU | NEWCHAR | Newhaven | Newhaven Guides | News | Nonexistence | OBTENEBRATION | OFFLINEMSG | Outdoor Sneak | Outdoorsneak | Pine hollows | Plane shift | Planetary alignment | Planetbound Illithid | Potion of Greater Living Stone | Potion of Living Stone | Potion of Slowness | PYROKINESES | Pyrokinesis | Pyrokinetic | RANDOM ""RANDOM EQUIMENT"" ""RANDOM MOB"" ""RANDOM ZONE"" | Random zones | Recline | REFINE | Regenerate | Regeneration | REPAIR ONE ITEM | Runestone | Sense Holiness | Sense Weakness | Shrewtameness | SIGILLUM NEGATI | SKILL_NECROMANCER | SKILL_SUMMONER | SLASHING DARKNESS | Slowness | Sneak | SNEAKY STRIKE | Sneer | Sneeze | Song of Forgetfulness | SPELL PENETRATION | SQUERRIKS SNEAKY WAYS | STONE SKIN | Summoner | Summoner Skills | SWITCH OPPONENTS | TOGGLE_GROUP NEEDED | TOGGLE_HINT CHANNEL | TOUGHNESS | TRANSFER WELLNESS | UD-SNEAK ""UD SNEAK"" | VINES | WAKE REST SIT STAND KNEEL RECLINE ALERT | WALL OF BONES | WALL OF STONE | WELLNESS | WIND TUNNEL | WIZCONNECT | ZONE GOD | ZONES",,3,North | NORTH SOUTH EAST WEST UP DOWN SOUTHWEST SOUTHEAST NORTHWEST NORTHEAST | Ship commands,
 command_attribute,neckbite,exact,docs/lib/information/command_attributes.txt:1337,Neckbite,Neckbite,0,,
 command_attribute,newbie,exact,docs/lib/information/command_attributes.txt:1339,Newbie | NEWBIE (IMMORTAL) | Newbie guides,Newbie,0,,
 command_attribute,newbsa,exact,docs/lib/information/command_attributes.txt:1341,NEWBSA,NEWBSA,0,,
@@ -920,7 +920,7 @@ command_attribute,outpost,missing,docs/lib/information/command_attributes.txt:14
 command_attribute,page,exact,docs/lib/information/command_attributes.txt:1407,Main Page | PAGE | RAMPAGE,PAGE,0,,
 command_attribute,panic,exact,docs/lib/information/command_attributes.txt:1409,Panic,Panic,0,,
 command_attribute,pant,exact,docs/lib/information/command_attributes.txt:1411,Pant | Pantherspeed,Pant,0,,
-command_attribute,pardon,ambiguous,docs/lib/information/command_attributes.txt:1413,"GOD, PARDON | Godpardon",,4,"Cringe | GOD, PARDON | Godcommands | Godpardon",
+command_attribute,pardon,ambiguous,docs/lib/information/command_attributes.txt:1413,"GOD, PARDON | Godpardon",,5,"Cringe | GOD, PARDON | Godcommands | Godpardon | INTRODUCE",
 command_attribute,parlay,exact,docs/lib/information/command_attributes.txt:278,Parlay,Parlay,0,,
 command_attribute,parry,exact,docs/lib/information/command_attributes.txt:281,EXPERT PARRY | Parry,Parry,0,,
 command_attribute,pat,exact,docs/lib/information/command_attributes.txt:1415,"GOD, PARTICIPATION | Godparticipation | Pat | Path of frost | Patrols | SPATIAL FOCUS | STORM EMPATHY",Pat,0,,
@@ -956,7 +956,7 @@ command_attribute,practice,exact,docs/lib/information/command_attributes.txt:147
 command_attribute,practise,missing,docs/lib/information/command_attributes.txt:1473,,,0,,Practice | Raise | Appraise
 command_attribute,praise,partial,docs/lib/information/command_attributes.txt:1475,Appraise,,0,,
 command_attribute,pray,exact,docs/lib/information/command_attributes.txt:1477,Color Spray | MEMORIZE PRAY FORGET | Molten spray | Pray | PRAYER | Prismatic Spray,Pray,0,,
-command_attribute,prestige,missing,docs/lib/information/command_attributes.txt:1479,,,5,Construct | KINGDOM | kingdoms | Rest | SUPERVISE,RESTED | Priest | RESTORE
+command_attribute,prestige,exact,docs/lib/information/command_attributes.txt:1479,PRESTIGE,PRESTIGE,0,,
 command_attribute,proclib,exact,docs/lib/information/command_attributes.txt:1481,PROCLIB,PROCLIB,0,,
 command_attribute,project,exact,docs/lib/information/command_attributes.txt:1483,Project | SHADOW PROJECTION,Project,0,,
 command_attribute,projects,missing,docs/lib/information/command_attributes.txt:1485,,,0,,Project | Map Objects | PROTECT SOUL
@@ -978,7 +978,7 @@ command_attribute,puzzle,missing,docs/lib/information/command_attributes.txt:151
 command_attribute,quaff,exact,docs/lib/information/command_attributes.txt:300,Quaff | QUAFF POTIONS,Quaff,0,,
 command_attribute,quest,exact,docs/lib/information/command_attributes.txt:1515,Highmoors forest/hexagon quest Guides | Old Quest | Quest | QUESTWHERE,Quest,0,,
 command_attribute,questwhere,exact,docs/lib/information/command_attributes.txt:1517,QUESTWHERE,QUESTWHERE,0,,
-command_attribute,qui,ambiguous,docs/lib/information/command_attributes.txt:1519,"EQUIP SORT | Equipment | Quick Chant | QUICK STEP | Quit | Quivering Palm | RANDOM ""RANDOM EQUIMENT"" ""RANDOM MOB"" ""RANDOM ZONE"" | Random Equipment | Requiem of the Crypts | TRANQUILITY | TRANQUILIZE",,0,,
+command_attribute,qui,ambiguous,docs/lib/information/command_attributes.txt:1519,"EQUIP SORT | Equipment | NAMED EQUIPMENT | Quick Chant | QUICK STEP | Quit | Quivering Palm | RANDOM ""RANDOM EQUIMENT"" ""RANDOM MOB"" ""RANDOM ZONE"" | Random Equipment | Requiem of the Crypts | TRANQUILITY | TRANQUILIZE",,0,,
 command_attribute,quit,exact,docs/lib/information/command_attributes.txt:1521,Quit,Quit,0,,
 command_attribute,quivering palm,exact,docs/lib/information/command_attributes.txt:305,Quivering Palm,Quivering Palm,0,,
 command_attribute,rage,exact,docs/lib/information/command_attributes.txt:308,BLADE BARRAGE | Enrage | Forage | INDOMITABLE RAGE | Lionrage | LOCKER STORAGE | MIRAGE | RAGE | Ragelord | Solbeeps Missile Barrage | STORAGE | WINDRAGE,RAGE,0,,
@@ -995,7 +995,7 @@ command_attribute,recall,exact,docs/lib/information/command_attributes.txt:1535,
 command_attribute,recite,exact,docs/lib/information/command_attributes.txt:316,Recite | RECITE SCROLLS,Recite,0,,
 command_attribute,recline,exact,docs/lib/information/command_attributes.txt:1537,Recline | WAKE REST SIT STAND KNEEL RECLINE ALERT,Recline,0,,
 command_attribute,redis,exact,docs/lib/information/command_attributes.txt:1539,REDIS,REDIS,0,,
-command_attribute,refine,missing,docs/lib/information/command_attributes.txt:1541,,,0,,Recline | RENAME | Recite
+command_attribute,refine,exact,docs/lib/information/command_attributes.txt:1541,REFINE,REFINE,0,,
 command_attribute,reinitphys,exact,docs/lib/information/command_attributes.txt:1543,"GOD, REINITPHYS | Godreinitphys | REINITPHYS",REINITPHYS,0,,
 command_attribute,release,exact,docs/lib/information/command_attributes.txt:1545,"GOD, RELEASE | Godrelease | RELEASE",RELEASE,0,,
 command_attribute,relic,missing,docs/lib/information/command_attributes.txt:1547,,,1,SIMULACRUM ANGUIS,Recline | Raise Lich | Lick
@@ -1008,13 +1008,13 @@ command_attribute,rent,exact,docs/lib/information/command_attributes.txt:1559,Re
 command_attribute,repair,ambiguous,docs/lib/information/command_attributes.txt:1561,REPAIR ONE ITEM | SHIP_COMMANDS DISEMBARK REPAIR RELOAD,,7,Fix | hints | REPAIR ONE ITEM | Ship Combat | Ship commands,
 command_attribute,repiss,exact,docs/lib/information/command_attributes.txt:1563,REPISS,REPISS,0,,
 command_attribute,reply,missing,docs/lib/information/command_attributes.txt:1565,,,6,"Ask | Follow-Up Riposte | GOD, PTELL | Godptell | PTELL",Play
-command_attribute,report,partial,docs/lib/information/command_attributes.txt:1567,MREPORT,,11,"Bug | BUG IDEA TYPO | CHEAT | faq | GOD, INROOM",
+command_attribute,report,ambiguous,docs/lib/information/command_attributes.txt:1567,MREPORT | NAMEDREPORT,,14,"Bug | BUG IDEA TYPO | CHEAT | faq | GOD, INROOM",
 command_attribute,reporting,missing,docs/lib/information/command_attributes.txt:1569,,,1,CHEAT,MREPORT | RESTORATION | Remort
 command_attribute,reroll,exact,docs/lib/information/command_attributes.txt:1571,DELETE REROLL | REROLL,REROLL,0,,
 command_attribute,rescue,exact,docs/lib/information/command_attributes.txt:318,Rescue | RESCUE ALL | Rescueall,Rescue,0,,
 command_attribute,resetarti,exact,docs/lib/information/command_attributes.txt:1581,RESETARTI,RESETARTI,0,,
 command_attribute,resetspec,exact,docs/lib/information/command_attributes.txt:1583,RESETSPEC,RESETSPEC,0,,
-command_attribute,rest,exact,docs/lib/information/command_attributes.txt:1585,"Awaken Forest | Firestorm | Forest druid | FORRESTAL | GOD, RESTORE | Godrestore | Highmoors forest/hexagon quest Guides | Mir Forest Guides | Rest | RESTED | RESTORATION | RESTORE | RESTORE SPIRIT | RESTRAIN | WAKE REST SIT STAND KNEEL RECLINE ALERT",Rest,0,,
+command_attribute,rest,exact,docs/lib/information/command_attributes.txt:1585,"Awaken Forest | Firestorm | Forest druid | FORRESTAL | GOD, RESTORE | Godrestore | Highmoors forest/hexagon quest Guides | Mir Forest Guides | PRESTIGE | Rest | RESTED | RESTORATION | RESTORE | RESTORE SPIRIT | RESTRAIN | WAKE REST SIT STAND KNEEL RECLINE ALERT",Rest,0,,
 command_attribute,restitution,missing,docs/lib/information/command_attributes.txt:1587,,,0,,Constitution | Petition | RESTORATION
 command_attribute,restore,exact,docs/lib/information/command_attributes.txt:1589,"GOD, RESTORE | Godrestore | RESTORE | RESTORE SPIRIT",RESTORE,0,,
 command_attribute,restrain,exact,docs/lib/information/command_attributes.txt:320,RESTRAIN,RESTRAIN,0,,
@@ -1116,7 +1116,7 @@ command_attribute,song of charming,exact,docs/lib/information/command_attributes
 command_attribute,song of dissonance,exact,docs/lib/information/command_attributes.txt:401,SONG OF DISSONANCE,SONG OF DISSONANCE,0,,
 command_attribute,song of healing,exact,docs/lib/information/command_attributes.txt:407,Song of healing,Song of healing,0,,
 command_attribute,song of sleep,exact,docs/lib/information/command_attributes.txt:410,Song of Sleep,Song of Sleep,0,,
-command_attribute,soulbind,missing,docs/lib/information/command_attributes.txt:1751,,,1,Bind,UNBIND | Spellbind | Soul Link
+command_attribute,soulbind,exact,docs/lib/information/command_attributes.txt:1751,SOULBIND,SOULBIND,0,,
 command_attribute,south,partial,docs/lib/information/command_attributes.txt:1753,NORTH SOUTH EAST WEST UP DOWN SOUTHWEST SOUTHEAST NORTHWEST NORTHEAST,,15,"Brief Mode | Charing | CHARING ""CITY OF ELVES"" | Commands | Construct",
 command_attribute,southeast,partial,docs/lib/information/command_attributes.txt:1756,NORTH SOUTH EAST WEST UP DOWN SOUTHWEST SOUTHEAST NORTHWEST NORTHEAST,,4,"Charing | CHARING ""CITY OF ELVES"" | Construct | Sarmiz",
 command_attribute,southwest,partial,docs/lib/information/command_attributes.txt:1759,NORTH SOUTH EAST WEST UP DOWN SOUTHWEST SOUTHEAST NORTHWEST NORTHEAST,,2,Construct | Tharnadia,
@@ -1125,7 +1125,7 @@ command_attribute,spank,exact,docs/lib/information/command_attributes.txt:1764,S
 command_attribute,speak,exact,docs/lib/information/command_attributes.txt:1766,Speak,Speak,0,,
 command_attribute,specialize,partial,docs/lib/information/command_attributes.txt:1768,SPECIALIZATIONS SPECIALIZE,,8,Cleric | Conjurer | Forest druid | New Player Guides | RANGE SPECIALIST,
 command_attribute,spellbind,exact,docs/lib/information/command_attributes.txt:1770,Spellbind,Spellbind,0,,
-command_attribute,spells,ambiguous,docs/lib/information/command_attributes.txt:1772,"GOD, SPELLS | Godspells",,297,Acid blast | Air magus | Alchemist | Alchemist Skills | Animal Growth,
+command_attribute,spells,ambiguous,docs/lib/information/command_attributes.txt:1772,"GOD, SPELLS | Godspells",,299,Acid blast | Air magus | Alchemist | Alchemist Skills | Animal Growth,
 command_attribute,spellweave,exact,docs/lib/information/command_attributes.txt:1774,SPELLWEAVE,SPELLWEAVE,0,,
 command_attribute,spew,missing,docs/lib/information/command_attributes.txt:1777,,,1,Puke,Spell | Speak | Spawn
 command_attribute,spin,ambiguous,docs/lib/information/command_attributes.txt:1779,SPINAL CORRUPTION | SPINAL TAP,,2,Drider | Social actions,
@@ -1142,7 +1142,7 @@ command_attribute,squish,missing,docs/lib/information/command_attributes.txt:179
 command_attribute,stampede,missing,docs/lib/information/command_attributes.txt:419,,,1,Centaur,TRAMPLE | Cramped
 command_attribute,stand,partial,docs/lib/information/command_attributes.txt:1799,WAKE REST SIT STAND KNEEL RECLINE ALERT,,30,Alert | Battle Tactics | Bleed | BLIGHT | CLAIRVOYANCE,
 command_attribute,stare,missing,docs/lib/information/command_attributes.txt:1803,,,4,Dream | Fume | Social actions | TORMENTING SPIRITS,Scare | TREE | STORAGE
-command_attribute,stat,ambiguous,docs/lib/information/command_attributes.txt:1805,"DEVASTATING CRITICAL | GOD, STAT | Godstat | STATIC DISCHARGE | STATISTIC | STATS STATISTICS",,24,Attributes | Auction List | Barter | Berserk | Craft,
+command_attribute,stat,ambiguous,docs/lib/information/command_attributes.txt:1805,"DEVASTATING CRITICAL | GOD, STAT | Godstat | STATIC DISCHARGE | STATISTIC | STATS STATISTICS",,25,Attributes | Auction List | Barter | Berserk | Craft,
 command_attribute,statistic,exact,docs/lib/information/command_attributes.txt:1817,STATISTIC | STATS STATISTICS,STATISTIC,0,,
 command_attribute,steal,exact,docs/lib/information/command_attributes.txt:422,STEAL,STEAL,0,,
 command_attribute,steam,missing,docs/lib/information/command_attributes.txt:1819,,,1,Social actions,STEAL | Scream | Spam
@@ -1179,7 +1179,7 @@ command_attribute,tan,ambiguous,docs/lib/information/command_attributes.txt:1872
 command_attribute,tango,missing,docs/lib/information/command_attributes.txt:1874,,,1,Social actions,TANK | Bang
 command_attribute,tank,exact,docs/lib/information/command_attributes.txt:1876,TANK,TANK,0,,
 command_attribute,tap,partial,docs/lib/information/command_attributes.txt:1878,SPINAL TAP,,7,Assassin | Assassin Skills | Flame reaver | GARROTE | SKILL_ASSASSIN,
-command_attribute,target,missing,docs/lib/information/command_attributes.txt:1880,,,229,Accuse | Acid blast | Ack | Agree | Amaze,Get | Forget | Charge
+command_attribute,target,missing,docs/lib/information/command_attributes.txt:1880,,,230,Accuse | Acid blast | Ack | Agree | Amaze,Get | Forget | Charge
 command_attribute,tarzan,missing,docs/lib/information/command_attributes.txt:1882,,,1,Social actions,
 command_attribute,taste,partial,docs/lib/information/command_attributes.txt:1884,EAT DRINK SIP TASTE,,12,Acid Blood | BATTLETIDE | Commands | Drink | Eat,
 command_attribute,taunt,exact,docs/lib/information/command_attributes.txt:1886,TAUNT,TAUNT,0,,
@@ -1234,7 +1234,7 @@ command_attribute,twibble,missing,docs/lib/information/command_attributes.txt:19
 command_attribute,twiddle,missing,docs/lib/information/command_attributes.txt:1977,,,1,Social actions,Idle | TITLE
 command_attribute,twirl,missing,docs/lib/information/command_attributes.txt:1979,,,1,Social actions,WAIL
 command_attribute,twitch,missing,docs/lib/information/command_attributes.txt:1981,,,0,,SWITCH | WHICH | WITHER
-command_attribute,type,missing,docs/lib/information/command_attributes.txt:1983,,,828,Accelerated healing | ACID RAIN | Acid stream | ACIDIMMOLATE | Adrenaline Control,
+command_attribute,type,missing,docs/lib/information/command_attributes.txt:1983,,,830,Accelerated healing | ACID RAIN | Acid stream | ACIDIMMOLATE | Adrenaline Control,
 command_attribute,typo,partial,docs/lib/information/command_attributes.txt:1985,BUG IDEA TYPO,,8,Bug | BUG IDEA TYPO | Commands | Communications | COMMUNICATIONS UTILITIES,
 command_attribute,unbind,exact,docs/lib/information/command_attributes.txt:1987,UNBIND,UNBIND,0,,
 command_attribute,undress,missing,docs/lib/information/command_attributes.txt:1990,,,1,Social actions,Darkness
@@ -1243,7 +1243,7 @@ command_attribute,uninvite,exact,docs/lib/information/command_attributes.txt:199
 command_attribute,unlock,partial,docs/lib/information/command_attributes.txt:1996,OPEN CLOSE LOCK UNLOCK,,7,Commands | Lock | Open | OPEN CLOSE LOCK UNLOCK | Pick Lock,
 command_attribute,unthrust,missing,docs/lib/information/command_attributes.txt:1998,,,0,,Encrust
 command_attribute,up,ambiguous,docs/lib/information/command_attributes.txt:2000,"Auction Pickup | Disruptive Blow | Follow-Up Riposte | GOD, LOOKUP | GOD, SUPERVISE | Godlookup | Group | Group Globe of Invulnerability | GROUP HASTE | Group heal | Group Recall | Group Stone Skin | Group stornogs spheres | GROUP TELEPORT | Hiccup | Induce Tupor | LOOKUP | NEW-COMBAT ""NEW COMBAT"" ""GROUP RANKS"" RANKS ""FRONT RANK"" ""BACK RANK"" | NORTH SOUTH EAST WEST UP DOWN SOUTHWEST SOUTHEAST NORTHWEST NORTHEAST | Quadruple Attack | SPINAL CORRUPTION | Supernova | SUPERVISE | SUPPRESS SOUND | TOGGLE_GROUP NEEDED | TUPOR",,277,ACCOUNT | Accuse | Ack | ADVANCE | Agree,
-command_attribute,use,ambiguous,docs/lib/information/command_attributes.txt:493,"Accuse | Cause Critical | Cause light | Cause Serious | Confuse | GOD, USERS | Godusers | INFUSE LIFE | INFUSE MAGICAL DEVICE | Magic User | MAGIC-USER | Mousestrength | Multi-user dungeon | s_Wayhouse' | USE WANDS STAFF STAVES | USERS",,205,1h Bludgeon | 1h flaying | 1h Piercing | 1h slashing | 2h flaying,
+command_attribute,use,ambiguous,docs/lib/information/command_attributes.txt:493,"Accuse | Cause Critical | Cause light | Cause Serious | Confuse | GOD, USERS | Godusers | INFUSE LIFE | INFUSE MAGICAL DEVICE | Magic User | MAGIC-USER | Mousestrength | Multi-user dungeon | s_Wayhouse' | USE WANDS STAFF STAVES | USERS",,206,1h Bludgeon | 1h flaying | 1h Piercing | 1h slashing | 2h flaying,
 command_attribute,users,exact,docs/lib/information/command_attributes.txt:2003,"GOD, USERS | Godusers | USERS",USERS,0,,
 command_attribute,value,exact,docs/lib/information/command_attributes.txt:2005,VALUE,VALUE,0,,
 command_attribute,veto,missing,docs/lib/information/command_attributes.txt:2007,,,1,Social actions,
@@ -1303,12 +1303,12 @@ command_attribute,yodel,missing,docs/lib/information/command_attributes.txt:2116
 command_attribute,zap,missing,docs/lib/information/command_attributes.txt:2118,,,3,"GOD, LIGHTNING | Godlightning | Life Ward",Map
 command_attribute,zcheck,exact,docs/lib/information/command_attributes.txt:2120,ZCHECK,ZCHECK,0,,
 command_attribute,zlist,exact,docs/lib/information/command_attributes.txt:2122,WIZLIST | ZLIST,ZLIST,0,,
-command_attribute,zone,ambiguous,docs/lib/information/command_attributes.txt:2124,"RANDOM ""RANDOM EQUIMENT"" ""RANDOM MOB"" ""RANDOM ZONE"" | Random zones | ZONE GOD | ZONES",,76,ACHIEVEMENTS | Area | Area making | Areamaking | Congratulate,
+command_attribute,zone,ambiguous,docs/lib/information/command_attributes.txt:2124,"RANDOM ""RANDOM EQUIMENT"" ""RANDOM MOB"" ""RANDOM ZONE"" | Random zones | ZONE GOD | ZONES",,78,ACHIEVEMENTS | Area | Area making | Areamaking | Congratulate,
 command_attribute,zreset,exact,docs/lib/information/command_attributes.txt:2126,ZRESET,ZRESET,0,,
 command_attribute,ztestdesc,exact,docs/lib/information/command_attributes.txt:2128,ZTESTDESC,ZTESTDESC,0,,
 help_hint,ansi,exact,src/cmd/actoth.c:193,Ansi | ANSI COLORS | Forgotten Mansion Guides,Ansi,0,,
-help_hint,named equipment,missing,src/item/randomeq.c:909,,,2,Equipment | Random Equipment,Random Equipment | Equipment
-help_hint,RACEWAR,ambiguous,src/specs/specs.newbie2.c:47,Racewars | RACEWARS PKILL PLAYERKILL,,27,Army of Armageddon | ASCLIST | Construct | Crowded | Death,
+help_hint,named equipment,exact,src/item/randomeq.c:909,NAMED EQUIPMENT,NAMED EQUIPMENT,0,,
+help_hint,RACEWAR,exact,src/specs/specs.newbie2.c:47,RACEWAR | Racewars | RACEWARS PKILL PLAYERKILL,RACEWAR,0,,
 help_hint,string,exact,src/net/modify.c:1090,"GOD, STRING | Godstring | Hamstring | STRING",STRING,0,,
 innate,acid blood,exact,src/classes/innates.c:209,Acid Blood,Acid Blood,0,,
 innate,ally,partial,src/classes/innates.c:290,Mortally wounded,,3,GROUP HASTE | Soul Trap | STATIC DISCHARGE,
@@ -1400,7 +1400,7 @@ innate,improved flee,exact,src/classes/innates.c:227,Improved Flee,Improved Flee
 innate,improved healing,partial,src/classes/innates.c:220,Aura of Improved Healing,,12,Aura of Battle Lust | Aura of Endurance | Aura of Improved Healing | Aura of Precision | Aura of Protection,
 innate,infernal fury,exact,src/classes/innates.c:314,INFERNAL FURY,INFERNAL FURY,0,,
 innate,infravision,exact,src/classes/innates.c:147,Infravision,Infravision,0,,
-innate,intercept,missing,src/classes/innates.c:310,,,1,Bounty Hunter,
+innate,intercept,missing,src/classes/innates.c:310,,,1,Bounty Hunter,INTRODUCE
 innate,invisibility,exact,src/classes/innates.c:144,Detect Invisibility | Improved Invisibility | Invisibility | Mass Invisibility,Invisibility,0,,
 innate,knight,exact,src/classes/innates.c:207,CALL KNIGHT | Dark knight | Death Knight | Deathknight | Knight,Knight,0,,
 innate,lay hands,exact,src/classes/innates.c:256,Lay hands,Lay hands,0,,
@@ -1423,7 +1423,7 @@ innate,outdoor sneak,exact,src/classes/innates.c:150,Outdoor Sneak,Outdoor Sneak
 innate,perception,exact,src/classes/innates.c:215,Perception,Perception,0,,
 innate,phantasmal form,missing,src/classes/innates.c:192,,,2,Phantom | Shade,
 innate,plane shift,exact,src/classes/innates.c:179,Plane shift,Plane shift,0,,
-innate,project image,missing,src/classes/innates.c:171,,,1,Shadow Beast,Project
+innate,project image,missing,src/classes/innates.c:171,,,1,Shadow Beast,Project | PRESTIGE
 innate,protection from acid,exact,src/classes/innates.c:270,Protection From Acid,Protection From Acid,0,,
 innate,protection from cold,exact,src/classes/innates.c:269,Protection From Cold,Protection From Cold,0,,
 innate,protection from fire,exact,src/classes/innates.c:175,Protection From Fire,Protection From Fire,0,,
@@ -2020,7 +2020,7 @@ social,twibble,missing,src/cmd/interp.c:3726,,,2,Bbl | Social actions,Nibble | T
 social,twiddle,missing,src/cmd/interp.c:3727,,,1,Social actions,Idle | TITLE
 social,twirl,missing,src/cmd/interp.c:3728,,,1,Social actions,WAIL
 social,twitch,missing,src/cmd/interp.c:3848,,,0,,SWITCH | WHICH | WITHER
-social,type,missing,src/cmd/interp.c:3822,,,828,Accelerated healing | ACID RAIN | Acid stream | ACIDIMMOLATE | Adrenaline Control,
+social,type,missing,src/cmd/interp.c:3822,,,830,Accelerated healing | ACID RAIN | Acid stream | ACIDIMMOLATE | Adrenaline Control,
 social,undress,missing,src/cmd/interp.c:3729,,,1,Social actions,Darkness
 social,veto,missing,src/cmd/interp.c:3730,,,1,Social actions,
 social,wait,missing,src/cmd/interp.c:3731,,,22,Ask | Auction Offer | Camp | chaos craft pouch | chaos pouch,WAIL | WRITE | Wight
@@ -2049,7 +2049,7 @@ social,yahoo,missing,src/cmd/interp.c:3827,,,0,,
 social,yawn,missing,src/cmd/interp.c:3746,,,1,Social actions,Spawn
 social,yeehaw,missing,src/cmd/interp.c:3828,,,0,,
 social,yodel,missing,src/cmd/interp.c:3747,,,1,Social actions,
-social,zone,ambiguous,src/cmd/interp.c:3748,"RANDOM ""RANDOM EQUIMENT"" ""RANDOM MOB"" ""RANDOM ZONE"" | Random zones | ZONE GOD | ZONES",,76,ACHIEVEMENTS | Area | Area making | Areamaking | Congratulate,
+social,zone,ambiguous,src/cmd/interp.c:3748,"RANDOM ""RANDOM EQUIMENT"" ""RANDOM MOB"" ""RANDOM ZONE"" | Random zones | ZONE GOD | ZONES",,78,ACHIEVEMENTS | Area | Area making | Areamaking | Congratulate,
 song,song of calming,exact,src/classes/skills.c:3835,Song of calming,Song of calming,0,,
 song,song of chaos,exact,src/classes/skills.c:3826,Song of Chaos,Song of Chaos,0,,
 song,song of charming,exact,src/classes/skills.c:3814,Song of Charming,Song of Charming,0,,
@@ -2118,7 +2118,7 @@ specialization,Pyrokinetic,exact,src/core/common.c:27,Pyrokinetic,Pyrokinetic,0,
 specialization,RaGeloRd,exact,src/core/common.c:49,Ragelord,Ragelord,0,,
 specialization,Reaper,exact,src/core/common.c:38,Reaper,Reaper,0,,
 specialization,Red Dragon,exact,src/core/common.c:33,Red dragon,Red dragon,0,,
-specialization,Ruiner,missing,src/core/common.c:55,,,10,Blighter | Blighter Skills | Doom Blade | Drider | Drow elf,Ranger | Hunger | FINGER
+specialization,Ruiner,missing,src/core/common.c:55,,,10,Blighter | Blighter Skills | Doom Blade | Drider | Drow elf,REFINE | Ranger | Hunger
 specialization,Scoundrel,exact,src/core/common.c:43,Scoundrel,Scoundrel,0,,
 specialization,Scourge,missing,src/core/common.c:55,,,9,BLIGHT | Blighter | Blighter Skills | DRAIN NATURE | Drider,Score | Scoundrel | STORAGE
 specialization,Shadow Archer,partial,src/core/common.c:40,SHADOW ARCHERY,,2,Rogue | Shadow,
@@ -2907,7 +2907,7 @@ trigger_command,join,missing,src/cmd/interp.c:3480,,,11,"Charing | CHARING ""CIT
 trigger_command,list,exact,src/cmd/interp.c:3481,Animalist | ASCLIST | Auction List | Ballistic Attack | Elementalist | HLIST | IMPROVED LISTEN | List | Listen | MLIST | OLIST | RANGE SPECIALIST | Rangespecialist | RLIST | Ship list | SHIP_LIST | SPEC_LIST | Speclist | SPIRITUALIST | WHITELIST | WIZLIST | ZLIST,List,0,,
 trigger_command,move,ambiguous,src/cmd/interp.c:3483,FREEDOM OF MOVEMENT | Moves | Remove | Remove Curse | Remove Poison | SHADOW MOVEMENT | Ship movement | SHIP_MOVEMENT | TRAPREMOVE,,53,Acid stream | ARTIFACTS | Bind | Channel | Cr,
 trigger_command,offer,partial,src/cmd/interp.c:3484,Auction Offer,,6,Auction | Auction Offer | Commands | Rogue Plains | Seduce,
-trigger_command,pardon,ambiguous,src/cmd/interp.c:3491,"GOD, PARDON | Godpardon",,4,"Cringe | GOD, PARDON | Godcommands | Godpardon",
+trigger_command,pardon,ambiguous,src/cmd/interp.c:3491,"GOD, PARDON | Godpardon",,5,"Cringe | GOD, PARDON | Godcommands | Godpardon | INTRODUCE",
 trigger_command,pay,missing,src/cmd/interp.c:3490,,,9,help commands | hints | KINGDOM | kingdoms | Practice,Pray | Play | Parry
 trigger_command,peruse,missing,src/cmd/interp.c:3482,,,1,Shops,SUPERVISE
 trigger_command,rent,exact,src/cmd/interp.c:3485,Rent,Rent,0,,

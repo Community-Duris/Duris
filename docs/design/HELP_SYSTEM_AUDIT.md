@@ -4,8 +4,10 @@ Audit date: 2026-10-02. MUD baseline: `db2822706` on
 `experimental-accounting`. Website inspection:
 [`Community-Duris/DurisWebApp` at `c0982794`](https://github.com/Community-Duris/DurisWebApp/tree/c0982794e75d19b4cef303ec656650e3c585c3d8).
 These are source findings, not a claim about the deployed production catalog.
+The coverage snapshot and local qualification were refreshed after merging
+`experimental-accounting` through `baee2528e`.
 
-## Decision and draft scope
+## Decision and PR scope
 
 Keep narrative explanations authored and reviewed. Generate changing facts from
 the existing game registries/properties, and derive discovery/audit indexes from
@@ -14,7 +16,7 @@ current bounded, asynchronous MySQL loader. A replacement search service or
 automatic prose publication would add cost without addressing the current source
 collisions, lost categories, or disconnected publication paths.
 
-This draft implements the audit increment: a reproducible source/export auditor,
+This PR implements the audit increment: a reproducible source/export auditor,
 complete registered-keyword coverage snapshot, exact-match selection beyond the
 result cap, whitespace normalization, a real 100-title display limit, actionable
 search feedback, focused regression tests, and corrected operating documentation.
@@ -22,8 +24,13 @@ It also connects existing live providers through a shared renderer in both
 builds: exact registry bindings for category-zero/flat topics, canonical colors,
 current creation choices, replacement of captured generated sections, and
 generated facts for exact registered topics whose narrative is missing.
-It does not change storage/schema, publish help pages, migrate existing content,
-or modify the separate website repository.
+It adds a shared stored/live discovery index, paginated family browsing, bounded
+typo suggestions, and seven handler-reviewed source pages. It does not change
+storage/schema, perform an operational content import, or modify the separate
+website repository.
+The TCP walkthrough also exposed a final-output bug: generic terminal mode did
+not suppress ANSI attributes. The PR honors that setting before terminal
+encoding, retaining the normal CRLF conversion and configured colors for ANSI.
 
 ## Current data flow and hooks
 
@@ -53,8 +60,8 @@ flowchart TD
 | Player command | `src/cmd/interp.c` registers `help`; `actinf.c::do_help` sends `wiki_help` output and optionally appends `attrib_help` stat usage. It imposes no wait/cooldown. `rules` calls the same help path. |
 | MySQL lifecycle | `src/net/comm.c` requests help refresh after world boot, polls publication during the game loop, and joins the worker before pool shutdown. `help_cache.c` uses the pool/thread context, one bounded SELECT, and `refresh_cache`. Reads/rendering perform no SQL. |
 | Staff refresh | Greater gods use `page help` / `page help status`; queued work and published generations are distinct. Automatic loads run every 60 seconds when idle, preserve old content on failure, and require a default `help` page for initial publication. |
-| MySQL search | Case-insensitive ASCII title equality and LIKE-style substring matching with `%` and `_`. There is no body search, token index, typo correction, or per-character command filtering. At most 101 candidates are retained to bound the 100-title display. |
-| MySQL rendering | `wiki_help_single` follows category-1 `Redirect: ` text, bounded to eight lookups. Explicit categories 25/9/16/10 select live race/class/spec/skillset providers; category 0 also binds exact registry subjects. `Races` and `Multiclass` bind case-insensitively. Captured provider sections are replaced at render time. |
+| MySQL search | Shared stored/live topic index with ASCII title equality and LIKE-style substring matching with `%` and `_`. Exact hits render first, followed by up to 100 related titles. Up to five bounded typo suggestions appear on unresolved queries. There is no body search, token ranking, or per-character command filtering. |
+| MySQL rendering | `wiki_help_single` follows category-1 `Redirect: ` text, bounded to eight lookups. Explicit categories 25/9/16/10 select live race/class/spec/skillset providers; category 0 also binds exact registry subjects. `Races`, `Multiclass`, and `Index` bind case-insensitively. Captured provider sections and legacy plain tables are replaced at render time. |
 | Flat-file build | `make -C src PERSISTENCE_BACKEND=flatfile` defines `__NO_MYSQL__`. `flatfile_help_catalog.c` reads individual files, the index, then parsed help; ASCII-normalized duplicates overwrite. `wikihelp.c` loads narrative on first use and keeps it until restart. It uses literal substring search, then the same live renderer/registry bindings as MySQL. |
 | Information commands | MOTD/news/wizmotd use the boot/`page` path. Credits/FAQ/wizlist use the separate background `information_cache` and `page info`. These are not all the same help cache. `mud_info.rules` is not the `rules` command's authority. |
 | Command attributes | Boot loads a separate legacy text table with a 1,024-entry cap. It can append stat usage even when narrative help is absent. It carries no command syntax, explanation, publication revision, or permission context. |
@@ -112,14 +119,14 @@ python3 scripts/audit_help.py --format csv --output docs/reports/help-coverage.c
 python3 scripts/audit_help.py --output bin/help-audit.json
 ```
 
-The effective flat catalog has **2,161 titles from 2,898 source entries**, with
+The effective flat catalog has **2,168 titles from 2,905 source entries**, with
 **737 overwrite events**. The Python reconstruction is checked against the
 production C++ loader, including complete title/body equality. The raw help
 capture and area-editor help files are intentionally outside this runtime map.
 
 | Keyword source | Exact title | One partial match | Ambiguous matches | No title match |
 | --- | ---: | ---: | ---: | ---: |
-| Registered non-staff commands | 219 | 29 | 44 | 59 |
+| Registered non-staff commands | 224 | 28 | 45 | 54 |
 | Staff commands | 114 | 0 | 0 | 4 |
 | Item/proc trigger commands | 8 | 2 | 3 | 11 |
 | Social commands | 153 | 9 | 19 | 171 |
@@ -132,8 +139,8 @@ capture and area-editor help files are intentionally outside this runtime map.
 | Class table names | 30 | 0 | 0 | 0 |
 | Class skillset titles | 30 | 0 | 0 | 0 |
 | Specializations | 52 | 2 | 0 | 17 |
-| Attribute-file keywords | 525 | 43 | 66 | 262 |
-| Quoted help hints in game messages | 2 | 0 | 1 | 1 |
+| Attribute-file keywords | 530 | 42 | 67 | 257 |
+| Quoted help hints in game messages | 4 | 0 | 0 | 0 |
 
 These are retrieval classifications, not counts of mandatory new documents.
 Source registration does not prove that a feature is available to a player,
@@ -144,12 +151,19 @@ not prove that its explanation is adequate or its numbers are current.
 
 Concrete authoring/indexing priorities:
 
-- The random-equipment message explicitly sends players to `help named equipment`,
-  which has no title match; related explanations appear in `Equipment` and
-  `Random Equipment`. The newbie area's `help RACEWAR` hint produces two title
-  matches. These are concrete prompts to review for an exact topic or alias.
-- Missing current command names include `boon`, `collector`, `dummy`, `prestige`,
-  `protocol`, `outpost`, `introduce`, `refine`, `soulbind`, `divineclaim`, `relic`,
+- The PR adds exact `Named Equipment` and `Racewar` pages for the two broken
+  game hints, plus `Namedreport`, `Introduce`, `Refine`, `Soulbind`, and
+  `Prestige`. All seven pages survive import/flat precedence and have exact
+  related links. Non-staff command gaps drop from 59 to 54. The command pages
+  describe their feature gates; source registration alone does not enable them.
+  Reviewing `do_refine` also exposed a legacy implementation follow-up: it can
+  consume multiple carried ores while charging the platinum route, and reads
+  extracted objects when calculating ore quality or formatting failure output.
+  The page explains the ore/platinum behavior. Repairing and qualifying that
+  gated gameplay handler belongs in a separate change before enabling legacy
+  refining; this help PR does not change its item or money transactions.
+- Remaining missing command names include `boon`, `collector`, `dummy`,
+  `protocol`, `outpost`, `divineclaim`, `relic`,
   `itemmana`, and the dragoon attack verbs. Inspect each registered handler and
   its feature gates before writing syntax, requirements, failures, and examples.
 - The four missing staff command names are `audit`, `restitution`, `difficulty`,
@@ -158,8 +172,9 @@ Concrete authoring/indexing priorities:
   Lancer, Dragon Priest, Earth Reaver, Ice Reaver, Inquisitor, Medium, Naturalist,
   Ruiner, Scourge, Shadowlord, Storm Bringer, Tempest Magus, Templar, Thaumaturge,
   and Violator. Their names often occur inside class/race pages, but that is not
-  a dedicated searchable entry. Mentalist and Shadow Archer resolve through
-  one partial match each, also worth checking for topic equivalence.
+  an authored dedicated entry. The shared runtime index now discovers these
+  generated topics, including Mentalist and Shadow Archer; their missing
+  narrative remains visible in this authored-content report.
 - The apparent remaining skill/spell gaps are `charge cooldown.`, `throat crush
   cooldown.`, and `Auctions Disabled`. The registrations represent cooldown or
   state effects; they are not evidence that three player-facing explanations
@@ -177,7 +192,7 @@ The full JSON report provides source locations for every finding:
 | --- | ---: | --- |
 | Captured search-result text | 287 pages | Old `The following help topics...` output is stored as body content, so live searches can display stale related-title lists beside current matches. |
 | Embedded edit headers | 1,363 pages | Parsed captures include `Title - Last Edited:` in the body. MySQL prepends metadata again, potentially with a new import date above an old capture date. |
-| Nonexact cross-reference candidates | 748 references | 551 have no title match, 100 are ambiguous, and 97 have one partial match. These include wiki links, `See also:` lines, and `==See also==` sections. |
+| Nonexact cross-reference candidates | 747 references | 550 have no title match, 100 are ambiguous, and 97 have one partial match. These include wiki links, `See also:` lines, and `==See also==` sections, including colored headings/links. |
 | Flat prefix-redirect problems | 0 | No effective tracked entry starts with the recognized redirect marker. This does not establish that database redirects are healthy. |
 
 Cross-reference findings need review: legacy captures can put combat messages
@@ -189,9 +204,9 @@ tests do not detect these semantic failures or stale runtime values.
 
 Most importantly, every importer section assigns category 0. The SQL-backed
 baseline renderer supported live facts only through category metadata, which
-the imports did not retain. The draft now binds exact registered subjects in
+the imports did not retain. The PR now binds exact registered subjects in
 category 0 and in NOMYSQL, and replaces the provider's captured sections before
-appending current facts. The stored sources remain unchanged for auditability;
+appending current facts. Existing captured sources are retained for auditability;
 the website still receives their captured text until its publication/rendering
 path is updated. Explicit metadata/source cleanup remains useful for ownership,
 aliases, revision history, and less ambiguous publication.
@@ -202,8 +217,11 @@ racial properties, creation policy, specialization admission, and ability-list
 helpers remain the authorities. Current Rogue specializations take precedence
 over retired Assassin/Thief class names for untyped pages; an explicit SQL class
 category can still select the historical subject. Generated-only facts do not
-claim to fill the missing narrative measured by this report, and prefix/partial
-discovery still needs an expanded index.
+claim to fill the missing narrative measured by this report. `help_index` now
+combines these registry subjects with stored titles for partial discovery and
+`HELP INDEX` browsing. It follows the successful MySQL cache generation, keeps
+stored metadata, deduplicates ASCII-equivalent subjects, and bounds display and
+typo work. The captured 2007 `Index` body is superseded at render time.
 
 For readability, use one display header, clear Syntax / Requirements / What
 happens / Failure feedback / Example sections for commands, and named links
@@ -235,18 +253,19 @@ do not rewrap alignment-sensitive lists blindly or remove headings in bulk.
    full revision history and versioned exports for NOMYSQL. Acceptance: one
    title/category/body round-trip preserves metadata and reports drift/collisions;
    no unreviewed database-only content is lost.
-2. **Dynamic publication parity.** Runtime parity is implemented in this draft
+2. **Dynamic publication parity.** Runtime parity is implemented in this PR
    using exact registry subjects and existing SQL categories. Next, separate
    authored narrative from captured sections in the publication format and
    preserve explicit provider metadata through SQL/flat exports. Acceptance:
    a changed property/skill unlock updates output in both backends, each section
    appears once, metadata round-trips, and the website can obtain equivalent
    current facts without frozen capture data competing with them.
-3. **Discovery and feedback.** Build exact/alias lookup alongside prefix/token
-   discovery from the same bounded catalog. Add a paginated current index and
-   capped typo suggestions on misses; show the command to read each suggestion.
-   Acceptance: compound/short aliases, exact hits past a cap, typos, and broad
-   searches behave consistently without per-command SQL or unbounded output.
+3. **Discovery and feedback.** This PR implements a shared stored/live index,
+   paginated family browsing, exact priority, and bounded typo suggestions with
+   exact read commands. Next, preserve explicit alias metadata and add token
+   ranking where useful. Acceptance: compound/short aliases, exact hits past a
+   cap, typos, and broad searches behave consistently without per-command SQL
+   or unbounded output.
 4. **Website publication parity.** Confirm `pool`/`mudPool` ownership; make review
    status, content mutation, and full revision recording one transaction. Store
    narrative/redirect bodies without display headers, render categories/redirects
@@ -270,8 +289,8 @@ supplies spelling candidates in the offline audit, where suggestions do not
 change retrieval or publish content.
 
 The plan-ablation review removed a new search service, bulk generated prose,
-automatic category guessing, and schema changes from this draft. Their omission
-keeps this draft independently reviewable and useful without prematurely
+automatic category guessing, and schema changes from this PR. Their omission
+keeps this PR independently reviewable and useful without prematurely
 choosing another storage/authoring system.
 
 ## Validation and limits
@@ -291,6 +310,11 @@ choosing another storage/authoring system.
   Tests cover 37 race pages, 30 class skillsets, all registered specs, live
   property changes, correct list-provider arguments, colors, creation overrides,
   missing-topic generation, legacy-name precedence, and captured-section removal.
+  Legacy colon-labeled race/class blocks and plain specialization headings are
+  replaced as well; equipment/weakness narrative and related links are retained.
+  Shared discovery checks include live-only partial matches, family filtering,
+  50-topic pagination, malformed page requests, typo limits, and generation
+  refresh/removal with a stable fixture catalog address.
   SQL cache and ability-list boundaries are isolated fixtures; this is not a
   substitute for a live gameplay journey.
 - `test_reported_latency_contract.py`, `test_help_import_live_parser.py`,
@@ -303,6 +327,31 @@ choosing another storage/authoring system.
   This verified the real periodic refresh, SQL payload bounds, failure retention,
   no extra connection acquisition during reads, transactional rollback, and
   old/new reader visibility. It did not access the configured game database.
+- `scripts/validate_colorization_journey.py` passed against the completed flat
+  build over real TCP/Telnet with GMCP: 83 checks and 16 captured frames. It
+  creates a disposable world and two synthetic accounts without reading `.env`
+  or existing player data. Help checks read a racial Strength property changed
+  to 137 in the copied boot data, verify canonical Human/Warrior colors, replace
+  the plain captured class list, traverse the pager, discover Mentalist without
+  an authored page, browse the current index, suggest Human for `huamn`, render
+  bard songs and all seven new pages, suppress ANSI in generic terminal mode,
+  and restore canonical colors after switching back. Existing independent
+  chat-color, save/reconnect, room/pager, protected-art, combat/prompt, and clean
+  shutdown checks also pass. Reproduce after building the inspector:
+
+  ```bash
+  python3 tests/async/test_flatfile_player_repository.py --build-inspector bin/tests/color-inspector
+  python3 scripts/validate_colorization_journey.py \
+    --server bin/server/dms_flat_help_ready --inspector bin/tests/color-inspector \
+    --report bin/help-colorization-journey.json
+  ```
+
+- ANSI and Telnet/MCCP transport regressions passed, together with output
+  profiles/preferences, color-command, and production output-integration tests.
+  The latter hardcode `g++`; an ignored local PATH shim selects `g++-12`, matching
+  the full build. The workstation's default `g++-11` rejects the existing
+  `atomic<shared_ptr>` output-profile declaration. No compiler/test source or
+  global toolchain setting was changed.
 - Complete MySQL and flat-file server builds passed under WSL using `g++-12`
   and the existing Hiredis 1.4.1 headers/libraries. The workspace path contains a space, requiring
   `BIN_ROOT=../bin`; no build products are committed. Hiredis headers are treated
@@ -314,12 +363,19 @@ choosing another storage/authoring system.
     'EXTRA_LDFLAGS=-L/home/wsl/.local/duris-build-deps/hiredis-1.4.1/lib -Wl,-rpath,/home/wsl/.local/duris-build-deps/hiredis-1.4.1/lib'
 
   make -C src -j2 BIN_ROOT=../bin CC=g++-12 \
-    PERSISTENCE_BACKEND=flatfile DMS_BINARY=../bin/server/dms_flat_help \
+    PERSISTENCE_BACKEND=flatfile DMS_BINARY=../bin/server/dms_flat_help_ready \
     EXTRA_CFLAGS=-isystem/home/wsl/.local/duris-build-deps/hiredis-1.4.1/include \
     'EXTRA_LDFLAGS=-L/home/wsl/.local/duris-build-deps/hiredis-1.4.1/lib -Wl,-rpath,/home/wsl/.local/duris-build-deps/hiredis-1.4.1/lib'
   ```
 
-The configured database and live in-game character journey were unavailable;
-no production import, migration, restart, or website mutation was performed.
-Presence tests and this audit cannot certify semantic accuracy, currently enabled
-features, database collation equivalence, or the production cache generation.
+The configured local database remains unreachable, and `.env` has no
+`GAME_ACCOUNT_*` test credentials. A configured MySQL gameplay journey therefore
+remains unverified; the isolated flat-file TCP journey does not certify deployed
+SQL content, collation, cache generation, or website database ownership.
+The new authored pages require the reviewed operational import on a MySQL
+deployment; runtime provider/index fixes do not require that import. No
+production import, migration, restart, or website mutation was performed.
+The authored-content report still identifies 54 missing non-staff command
+titles, 17 missing specialization narratives, and 747 nonexact related-link
+candidates. Those findings require individual review rather than automatic prose
+publication; they are follow-ups to this bounded PR.

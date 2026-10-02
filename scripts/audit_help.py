@@ -224,6 +224,8 @@ def coverage_row(term, catalog, bodies=None, categories=None):
 
 
 def references(text):
+    # Colorized headings and links are still authored references.
+    text = re.sub(r"&\+.|&[A-Za-z]", "", text)
     targets = set(re.findall(r"\[\[([^\]]+)\]\]", text))
     for inline in re.finditer(r"^\s*See\s+also:\s*([^\n]+)", text, re.M | re.I):
         targets.update(part.strip() for part in inline[1].split(","))

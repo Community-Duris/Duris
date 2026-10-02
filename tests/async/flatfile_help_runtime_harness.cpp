@@ -84,8 +84,19 @@ int main(int argc, char **argv)
 		require(human.find("Strength    : &+c100&n") != string::npos,
 			"race help did not read current properties");
 		require(human.find("STALE") == string::npos &&
-				human.find("NARRATIVE_AFTER") != string::npos,
+				human.find("NARRATIVE_AFTER") != string::npos &&
+				human.find("NARRATIVE_WEAKNESS") != string::npos,
 			"captured sections were retained or authored sections were lost");
+		const string warrior = wiki_help_single("Warrior");
+		require(warrior.find("STALE") == string::npos &&
+				warrior.find("NARRATIVE_CLASS") != string::npos &&
+				warrior.find("NARRATIVE_EQUIPMENT") != string::npos,
+			"plain class tables were retained or equipment narrative was lost");
+		const string huntsman = wiki_help_single("Huntsman");
+		require(huntsman.find("STALE") == string::npos &&
+				huntsman.find("NARRATIVE_SPEC") != string::npos &&
+				huntsman.find("See also: Ranger") != string::npos,
+			"plain specialization lists were retained or narrative was lost");
 		require(human.find(class_names_table[1].ansi) != string::npos &&
 				human.find(class_names_table[30].ansi) == string::npos,
 			"class choices did not use canonical colors and current creation policy");
@@ -164,6 +175,63 @@ int main(int argc, char **argv)
 			"missing help did not suggest a recovery action");
 		return 0;
 	}
+	if (argc == 2 && string(argv[1]) == "index-fixture")
+	{
+		const string partial = wiki_help("ment");
+		require(strip_ansi(partial.c_str()).find("Mentalist") != string::npos &&
+				partial.find("[live; narrative missing]") != string::npos,
+			"partial search omitted an exact registered topic without narrative");
+		const string races = wiki_help(" INDEX races ");
+		require(races.find("37 topics") != string::npos &&
+				races.find(race_names_table[RACE_HUMAN].ansi) != string::npos &&
+				races.find("Warrior") == string::npos,
+			"race index lost its complete registry, colors or group filter");
+		const string specs = wiki_help("index specs");
+		require(strip_ansi(specs.c_str()).find("Mentalist") != string::npos &&
+				specs.find("[live; narrative missing]") != string::npos,
+			"specialization index did not label missing narrative");
+		const string classes = wiki_help("index classes");
+		require(classes.find(class_names_table[1].ansi) != string::npos &&
+				classes.find("Human") == string::npos,
+			"class index mixed race entries or lost canonical colors");
+		const string first = wiki_help("index");
+		const string second = wiki_help("index all 2");
+		require(occurrences(first, "\n ") == 50 &&
+				first.find("Next: HELP INDEX all 2") != string::npos &&
+				second.find("page 2/") != string::npos,
+			"index pagination failed to bound the first page or provide navigation");
+		for (const char *query :
+		     { "index nonsense", "index races 0", "index races -1", "index races 1x",
+		       "index races 99999999999999999999999", "index all 1 extra" })
+			require(wiki_help(query).find("Usage:") != string::npos,
+				"invalid index request did not report its syntax");
+		require(wiki_help("index races 2").find("between 1 and 1") != string::npos,
+			"index accepted a nonexistent page");
+		const string typo = wiki_help("huamn");
+		require(typo.find("no help topics") != string::npos &&
+				typo.find("HELP Human") != string::npos &&
+				occurrences(typo, "&+L HELP ") <= 5 &&
+				typo.find("==Racial Statistics==") == string::npos,
+			"typo suggestions were missing, unbounded or automatically selected");
+		require(wiki_help("xy").find("Did you mean?") == string::npos &&
+				wiki_help(string(65, 'x')).find("Did you mean?") == string::npos,
+			"unsupported typo queries entered fuzzy discovery");
+#ifndef __NO_MYSQL__
+		require(wiki_help("refreshfixture").find("no help topics") != string::npos,
+			"refresh fixture was present before publication");
+		help_pages.push_back(
+			{ { "refreshfixture", "FRESH_NARRATIVE", "0", "today", "Fixture" } });
+		++help_catalog_generation;
+		require(wiki_help("refreshfixture").find("FRESH_NARRATIVE") != string::npos,
+			"index did not follow a newly published generation");
+		help_pages.pop_back();
+		++help_catalog_generation;
+		require(wiki_help("refreshfixture").find("no help topics") != string::npos,
+			"index retained a removed title after refresh");
+#endif
+		cout << "shared discovery, generated topics, colors, pagination, typo bounds and refresh passed\n";
+		return 0;
+	}
 	const string default_help = wiki_help("");
 	require(default_help.find("temporarily disabled") == string::npos &&
 			default_help.find("help") != string::npos,
@@ -183,6 +251,10 @@ int main(int argc, char **argv)
 		require(no_locate.find("introduction system") != string::npos,
 			"No Locate help alias did not render the dedicated topic");
 	}
+	for (const char *query : { "named equipment", "namedreport", "racewar", "introduce",
+				   "refine", "soulbind", "prestige" })
+		require(wiki_help_single(query).find("==Syntax==") != string::npos,
+			"new help entry did not survive source precedence");
 	cout << "flat-file help runtime passed\n";
 	return 0;
 }

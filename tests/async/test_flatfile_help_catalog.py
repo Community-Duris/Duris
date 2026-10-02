@@ -70,6 +70,11 @@ DEFAULT_MENU
 Human - Last Edited: old
 ========================
 NARRATIVE_BEFORE
+Class list: STALE_PLAIN_CLASS
+            STALE_WRAPPED_CLASS
+Statistics: STALE_PLAIN_STATS
+Innates: STALE_PLAIN_INNATES
+Weakness: NARRATIVE_WEAKNESS
 ==Class list==
 STALE_CLASS
 ==Racial Statistics==
@@ -103,6 +108,23 @@ See also: Warrior
 STALE_SONGS
 ==Instruments==
 STALE_INSTRUMENTS
+#
+"Warrior"
+NARRATIVE_CLASS
+Allowable races: STALE_PLAIN_RACES
+Innate abilities: STALE_PLAIN_INNATES
+Specializations: STALE_PLAIN_SPECS
+Equipment usage: NARRATIVE_EQUIPMENT
+#
+"Huntsman"
+NARRATIVE_SPEC
+Skills
+----------------------
+31st level: STALE_PLAIN_SKILLS
+Innate Abilities
+----------------------
+30th level: STALE_PLAIN_INNATES
+See also: Ranger
 #
 "Elementalist"
 UNRELATED_PARTIAL_MATCH
@@ -167,6 +189,7 @@ STALE_NAMES
     subprocess.run([str(runtime_binary), "dynamic-catalog"], cwd=ROOT, check=True)
     subprocess.run([str(runtime_binary), "search-fixture"], cwd=fixture, check=True)
     subprocess.run([str(runtime_binary), "dynamic-fixture"], cwd=dynamic_fixture, check=True)
+    subprocess.run([str(runtime_binary), "index-fixture"], cwd=dynamic_fixture, check=True)
 
     # Compile the same gameplay renderer/harness through its SQL branch. Only
     # the cache boundary is seeded from files; rendering still performs no SQL.
@@ -180,7 +203,10 @@ STALE_NAMES
         "-Wl,--gc-sections", "-o", str(sql_binary)
     ], cwd=ROOT, check=True)
     subprocess.run([str(sql_binary), "dynamic-catalog"], cwd=ROOT, check=True)
+    subprocess.run([str(sql_binary)], cwd=ROOT, check=True)
     subprocess.run([str(sql_binary), "dynamic-fixture"], cwd=dynamic_fixture, check=True)
+    subprocess.run([str(sql_binary), "index-fixture"], cwd=dynamic_fixture, check=True)
+    subprocess.run([str(sql_binary), "search-fixture"], cwd=fixture, check=True)
 
     mud_info_binary = temporary_path / "flatfile_mud_info_runtime_test"
     subprocess.run(
