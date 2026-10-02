@@ -2,7 +2,8 @@
 
 This qualification follows the normal master integration in PR #674, merged as
 `ffb73e6518a2dc39f3d243d3384ea851b4c3b8a4`. It preserves the upstream save,
-recipe bounds, migration, and lifecycle fixes through `63309643c`.
+recipe bounds, migration, and lifecycle fixes, and subsequent enhancement
+payment/prototype guards through `5017a0e9e`.
 
 ## Observed failures and repairs
 
@@ -62,11 +63,12 @@ checkpoint creation, proves the saved progression receipt is applied while the
 critical journal frame stays unchanged, then crashes and replays it.
 
 Both strict production build profiles pass. All 1,210 tracked `src/` files used
-by the latest builds match committed tree `70ff83d74` after newline
+by the latest builds match committed tree `8b2693dc4` after newline
 normalization. The MariaDB fault matrix uses the frozen `0408d0825` candidate;
 MySQL uses the integrated `256785124` candidate. Both contain the same recovery
 repairs. Subsequent native changes to temporary material-probe cleanup,
-enhancement level gates, and initialized flatfile UID authority have separate
+enhancement level/payment/modifier/prototype gates, and initialized flatfile
+UID authority have separate
 focused regression evidence and both production-build profiles pass after
 integration. The SQL fault candidates remain pinned; this report does not
 claim that later binaries reran those SQL journeys.
@@ -106,7 +108,7 @@ drops only its private `alchemy_test_*` schema and temporary world.
 This evidence is for the fixture's physical input faults and healthy retained
 pouch path. It does not qualify every recipe, interruption during pouch
 mutation, active accounting posting/reconciliation, or flatfile fault parity.
-The writer census has 2,809 occurrences, 2,751 unique sites, 863 routes,
+The writer census has 2,811 occurrences, 2,753 unique sites, 863 routes,
 and zero unmapped sites. All 750 runtime/projection routes retain their existing
 release qualification gaps. No production migration, repair, activation, or
 deployment is performed by this work.

@@ -45,27 +45,27 @@
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2810,
-    "current_unique_path_line_family_sites": 2752,
+    "current_occurrences": 2811,
+    "current_unique_path_line_family_sites": 2753,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "a2c560b9dc477c28c36c69f0d78c42257ed405f6",
+    "draft_source_commit": "8b2693dc4c116e3d8df8d78b8a2c06c9c4fab27b",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2752,
+    "draft_unique_sites": 2753,
     "family_occurrences": {
       "coin_assignment": 160,
       "coin_bulk_mutation": 16,
       "direct_cash_assignment": 12,
       "economic_submit": 186,
-      "item_lifecycle": 1145,
+      "item_lifecycle": 1146,
       "item_publication": 1064,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
       "sql_economy": 55
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 863-row registry maps 2752 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
-    "mapped_sites_still_present": 2752,
-    "mapped_unique_sites_from_draft_rows": 2752,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 863-row registry maps 2753 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2753,
+    "mapped_unique_sites_from_draft_rows": 2753,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "a2c560b9dc477c28c36c69f0d78c42257ed405f6",
+  "repository_head": "8b2693dc4c116e3d8df8d78b8a2c06c9c4fab27b",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -16481,7 +16481,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1473
+          1488
         ],
         "file": "src/item/item_transfer_command.c",
         "function": "item_transfer_command_build",
@@ -17061,8 +17061,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2874,
-          2886
+          2888,
+          2900
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17124,7 +17124,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1280
+          1281
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -17186,7 +17186,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1180
+          1181
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -17371,7 +17371,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1061
+          1062
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -18058,7 +18058,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1948
+          1959
         ],
         "file": "src/item/enhance.c",
         "function": "load_enhance_index",
@@ -18353,7 +18353,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1169
+          1180
         ],
         "file": "src/item/enhance.c",
         "function": "enhance_load_essence_drop",
@@ -18415,7 +18415,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          898
+          899
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -18477,7 +18477,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          905
+          906
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -19550,7 +19550,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3122
+          3136
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19612,7 +19612,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2934
+          2948
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20401,7 +20401,7 @@
         "function": "modenhance",
         "original_draft_symbol": "modenhance"
       },
-      "source_classification": "Reads and frees a fresh prototype only to rebuild the already modified source item\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s description.",
+      "source_classification": "Reads and frees an unpublished temporary prototype to rebuild the source description; unavailable prototypes are refused before payment, and refused payment frees the probe.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -20598,7 +20598,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2022
+          2036
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -20660,7 +20660,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2077
+          2088
         ],
         "file": "src/item/enhance.c",
         "function": "enhance_on_npc_item_reset_skipped",
@@ -21210,7 +21210,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1556
+          1557
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -21272,7 +21272,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1112
+          1113
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -21640,7 +21640,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          967
+          968
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -22651,7 +22651,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1148
+          1159
         ],
         "file": "src/item/enhance.c",
         "function": "thanksgiving_proc",
@@ -30456,7 +30456,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1808
+          1811
         ],
         "file": "src/player/player_snapshot_repository.c",
         "function": "apply_death",
@@ -50667,7 +50667,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2536
+          2550
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
@@ -50733,7 +50733,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          698
+          699
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_craft",
@@ -50783,7 +50783,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          748
+          749
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_craft_outputs",
