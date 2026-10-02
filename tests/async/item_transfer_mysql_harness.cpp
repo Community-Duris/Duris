@@ -2129,6 +2129,43 @@ void check_craft_conservation(MYSQL *connection)
 	       loaded.extra2_flags == output.extra2_flags);
 	assert(loaded.dynamic_affects.size() == output.dynamic_affects.size() &&
 	       loaded.extra_descriptions.size() == output.extra_descriptions.size());
+	// An older retained frame may carry an award that a newer save committed.
+	// Its replay must verify against durable progression, then retire as stale
+	// without overwriting XP or quarantining otherwise valid player evidence.
+	player_snapshot progression = reloaded.snapshot;
+	progression.schema_version = PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
+	progression.revision = 2;
+	progression.components = PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_SKILLS |
+				 PLAYER_COMPONENT_AFFECTS | PLAYER_COMPONENT_TROPHIES;
+	const uint64_t awarded_xp =
+		scalar(connection, "SELECT exp FROM player_data WHERE pid=551") + 7000;
+	auto experience = std::find_if(progression.status_integers.begin(),
+				       progression.status_integers.end(), [](const auto &value)
+				       { return value.field == player_status_field::experience; });
+	assert(experience != progression.status_integers.end());
+	experience->signed_value = static_cast<int64_t>(awarded_xp);
+	experience->unsigned_value = awarded_xp;
+	progression.craft_receipts = { { operation(31), 2, 7000 } };
+	std::vector<uint8_t> progression_bytes;
+	assert(player_snapshot_encode(progression, &progression_bytes) ==
+	       player_snapshot_codec_result::ok);
+	const auto progressed = player_snapshot_repository_apply(connection, progression);
+	assert(progressed.outcome == player_save_apply_outcome::applied);
+	assert(scalar(connection,
+		      "SELECT applied_revision FROM player_craft_progression WHERE pid=551") == 2);
+	progression.revision = 1;
+	const auto obsolete = player_snapshot_repository_apply(connection, progression);
+	assert(obsolete.outcome == player_save_apply_outcome::stale_revision &&
+	       obsolete.durable_revision == 2 && obsolete.operation_receipts_verified);
+	assert(scalar(connection, "SELECT exp FROM player_data WHERE pid=551") == awarded_xp);
+	progression.craft_receipts[0].experience = 7001;
+	assert(player_snapshot_repository_apply(connection, progression).outcome ==
+	       player_save_apply_outcome::terminal_failure);
+	progression.craft_receipts[0].experience = 7000;
+	execute(connection, "UPDATE player_craft_progression SET applied_revision=3 WHERE pid=551");
+	assert(player_snapshot_repository_apply(connection, progression).outcome ==
+	       player_save_apply_outcome::terminal_failure);
+	execute(connection, "UPDATE player_craft_progression SET applied_revision=2 WHERE pid=551");
 	applied = apply(connection, 31, craft);
 	assert(applied.outcome == critical_apply_outcome::already_applied);
 	assert(scalar(connection, "SELECT COUNT(*) FROM player_items WHERE obj_uid=55103") == 1);

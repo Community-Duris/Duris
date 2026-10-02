@@ -23,6 +23,7 @@ import sys
 import tempfile
 import time
 import uuid
+import zlib
 
 import test_flatfile_combat_journey as journey
 from run_generated_npc_journey import FIXTURE, drain
@@ -238,6 +239,27 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False, recipe
         def receipt_count():
             return int(sql('SELECT COUNT(*) FROM player_craft_progression '
                            'WHERE pid=1 AND applied_revision>0'))
+
+        def sync_retained_craft():
+            # This qualifies process crashes with a complete, durable root.
+            # Force that boundary independently of engine diagnostic tables;
+            # the coordinator's own fsync-before-execution has native coverage.
+            journal = runtime / 'journals/critical/critical-command.journal'
+            with journal.open('rb') as retained:
+                frame = retained.read()
+                if len(frame) < 92:
+                    return False
+                payload = frame[40:]
+                if (frame[:8] != b'CCJ1\x01\x00\x00\x00' or
+                    int.from_bytes(frame[8:16], 'little') != len(frame) or
+                    int.from_bytes(frame[16:20], 'little') != len(payload) or
+                    int.from_bytes(frame[20:24], 'little') != zlib.crc32(payload) or
+                    payload[:8] != b'CCM1\x01\x00\x00\x00' or
+                    frame[24:40] != payload[8:24] or
+                    int.from_bytes(payload[24:26], 'little') != 5):
+                    return False
+                os.fsync(retained.fileno())
+                return True
 
         def release_native_lock():
             nonlocal native_lock
@@ -553,20 +575,16 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False, recipe
                 before_uids = {item['uid'] for item in before}
                 before_receipts = receipt_count() if recipe_fault else 0
                 if recipe_fault:
+                    if recipe_fault in ('disconnect', 'crash-before-commit'):
+                        await_value(lambda: (runtime / 'journals/critical/critical-command.journal').stat().st_size,
+                            lambda n: n == 0, 'preceding item publications checkpointed')
                     hold_native_lock(recipe_fault in ('crash-before-save', 'lost-ack'))
                 client.send(f'{discipline} make 30101')
                 if recipe_fault:
                     client.expect('Your requirements have been reserved', timeout=30)
                     if recipe_fault in ('disconnect', 'crash-before-commit'):
-                        # Execution starts only after journal admission is durable.
-                        # Wait for this fixture's executor to reach the held row;
-                        # the reservation message alone precedes the append ACK.
-                        await_value(lambda: int(sql(
-                            "SELECT COUNT(*) FROM information_schema.innodb_trx t "
-                            "JOIN information_schema.processlist p ON p.ID=t.trx_mysql_thread_id "
-                            "WHERE t.trx_state='LOCK WAIT' AND p.DB='" + database + "' "
-                            "AND t.trx_query LIKE '%item_owner_revision%'")), lambda n: n == 1,
-                            'durable craft execution blocked before native commit')
+                        await_value(sync_retained_craft, bool, 'complete durable craft root before native commit')
+                        assert int(sql('SELECT COUNT(*) FROM player_craft_progression WHERE pid=1')) == before_receipts
                     if recipe_fault in ('crash-before-save', 'lost-ack'):
                         await_value(lambda: int(sql('SELECT COUNT(*) FROM player_craft_progression '
                             'WHERE pid=1 AND applied_revision=0')), lambda n: n == 1,
