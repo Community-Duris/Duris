@@ -80,6 +80,12 @@ remaining in the game can participate and is paid without a descriptor check.
 
 ## Work order
 
+Ordinary bandage consumption now passes a real mortal SQL journey on both
+supported engines with exact surviving original UIDs, one unchanged retirement
+operation/revision, save, and two cold restarts. This inactive-accounting fixture
+does not qualify active accounting or a crash between retirement and publication;
+see the [October 2 evidence](REVIEW_STATUS_2026-10-02.md).
+
 1. **Close coupled save and publication gaps.** Finish spell-effect owner
    receipts and acknowledgements. Pending applied player effects now carry their
    receipt identity into later ordinary and terminal saves after capture or

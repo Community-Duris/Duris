@@ -76,3 +76,15 @@ signed endpoints, and denomination-weighted copper overflow. All 13 auditor
 tests and the 14 golden fixtures pass. This strengthens synthetic audit
 evidence; it does not qualify native money writers or complete independent
 runtime reconciliation.
+
+## Bandage save/restart qualification
+
+The real mortal bandage journey passes on disposable MySQL 8.0.46 and
+MariaDB 10.11.14 using the SQL artifact above. Its previous restart assertion
+only compared surviving counts. The fixture now requires the original surviving
+bandage UID set in both native custody and the saved player projection, one
+original UID tombstone, and exactly one retirement operation/revision unchanged
+through two cold restarts. Both engines pass those stronger assertions and the
+existing bandage custody contract passes. Accounting remains inactive in this
+journey; active-epoch evidence and interruption during consumption/publication
+remain open. It does not prove persistence of the NPC healing effect.
