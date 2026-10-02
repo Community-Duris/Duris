@@ -66,7 +66,6 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-item-repository-test-", dir=
             rel("boon_reward_command.c"),
             rel("boon_shop_command.c"),
             rel("persistence_mode.c"),
-            str(binary),
         ],
         ["-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
          "-D__NO_MYSQL__", "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST", "-Isrc", "-Isrc/no_mysql"],

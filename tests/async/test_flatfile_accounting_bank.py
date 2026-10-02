@@ -9,7 +9,7 @@ from test_flatfile_accounting_store import ROOT, SOURCES
 
 
 def main():
-    compiler = os.environ.get("CXX", "g++-12")
+    compiler = os.environ.get("CXX", "g++")
     sources = ["tests/async/flatfile_accounting_bank_test.cpp",
                "src/flatfile/flatfile_accounting_authority.c",
                "src/flatfile/flatfile_accounting_bank_transaction.c",
