@@ -446,6 +446,34 @@ try:
                                    "unmapped_native_wallet": 1,
                                    "unauthorized_mapping_creation": 1}
             assert report["exception_counts"] == expected_exceptions, report
+            # Aggregate owner revisions count changes to many UIDs. They may
+            # differ from this UID's revision without changing its history.
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_ownership_ledger SET from_owner_revision=99 "
+                               "WHERE item_uid=84")
+            owner_revision_snapshot = capture(audit, LINEAGE, EPOCH)
+            assert Reconciler().audit(owner_revision_snapshot)["exception_counts"] == \
+                expected_exceptions
+            assert owner_revision_snapshot["native"]["uid_history_events"][0]["before_revision"] == 0
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_ownership_ledger SET from_owner_revision=0 "
+                               "WHERE item_uid=84")
+            # Impossible native revision zero must refuse the audit cut, then
+            # permit a fresh read after restoring only the fixture corruption.
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_ownership_ledger SET item_revision=0 "
+                               "WHERE item_uid=84")
+            try:
+                capture(audit, LINEAGE, EPOCH)
+            except exporter.ExportError as error:
+                assert str(error) == "invalid native item ledger revision", error
+            else:
+                raise AssertionError("zero native item revision was accepted")
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_ownership_ledger SET item_revision=1 "
+                               "WHERE item_uid=84")
+            assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
+                expected_exceptions
             # A consistent current/history pair can still refer to a missing
             # native parent. Lineage history must not bypass topology checks.
             with setup.cursor() as writer:
@@ -591,6 +619,9 @@ try:
                                (prior_unlinked_operation,))
                 writer.execute("INSERT INTO item_current_owner VALUES "
                                "(86,86,NULL,8,0,0,2,2,1,NULL)")
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_ownership_ledger SET from_owner_revision=99 "
+                               "WHERE item_uid=86")
             historical_uid_snapshot = capture(audit, LINEAGE, EPOCH)
             assert historical_uid_snapshot["native"]["lineage_uid_reference_coverage"] == {
                 "rows": 2, "root_rows": 2}
