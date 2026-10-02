@@ -27,7 +27,15 @@ class TestAccountingInvariants(unittest.TestCase):
         self.assertGreater(len(fixtures), 0)
         for fix in fixtures:
             stats = self.auditor.audit_fixture(fix, fix.get("id", "test"))
-            self.assertGreaterEqual(stats["operations_checked"], 0)
+            expected_operations = len({op["operation_id"] for op in fix["operations"]})
+            self.assertEqual(stats["operations_checked"], expected_operations)
+            self.assertEqual(stats["zero_sum_verified"], expected_operations)
+
+    def test_exact_operation_replay_is_counted_once(self):
+        fixture = copy.deepcopy(self.golden["fixtures"][0])
+        expected = self.auditor.audit_fixture(fixture, "before_replay")
+        fixture["operations"].append(copy.deepcopy(fixture["operations"][0]))
+        self.assertEqual(self.auditor.audit_fixture(fixture, "exact_replay"), expected)
 
     def test_cli_execution_succeeds(self):
         res = subprocess.run(
@@ -115,8 +123,8 @@ class TestAccountingInvariants(unittest.TestCase):
         4. Outbid refund (auction_escrow -> wallet)
         5. Bank deposit (wallet -> bank)
         """
-        journey_fixture = {
-            "id": "e2e_qualification_journey",
+        accounting_fixture = {
+            "id": "multi_operation_auditor_fixture",
             "lineage": "33333333333333333333333333333333",
             "epoch": "44444444444444444444444444444444",
             "holdings": {
@@ -242,8 +250,8 @@ class TestAccountingInvariants(unittest.TestCase):
             ],
         }
 
-        # Validate that the entire synthetic journey preserves all double-entry and anti-duplication invariants
-        stats = self.auditor.audit_fixture(journey_fixture, "e2e_qualification_journey")
+        # Check the modeled postings and event counts; gameplay is tested separately.
+        stats = self.auditor.audit_fixture(accounting_fixture, "multi_operation_auditor_fixture")
         self.assertEqual(stats["operations_checked"], 5)
         self.assertEqual(stats["zero_sum_verified"], 5)
         self.assertEqual(stats["source_events_verified"], 4)

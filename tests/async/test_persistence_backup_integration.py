@@ -30,6 +30,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import persistence_backup as backup
 import persistence_restore as restore
 import build_restore_qualifier as native
+from _restore_fixture import build as build_fixture
 import migration_runner as migrations
 from test_persistence_backup import policy
 
@@ -62,19 +63,7 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
         if cls.native_built:
             return
         native.build()
-        sources = []
-        for name in native.SOURCES:
-            found = list((ROOT / "src").rglob(name + ".c"))
-            if len(found) != 1:
-                raise RuntimeError("ambiguous fixture source")
-            sources.append(str(found[0]))
-        subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
-                        "-D__NO_MYSQL__", "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
-                        "-DDURIS_FLATFILE_TRANSACTION_FAULT_TEST", "-DDURIS_FLATFILE_ACCOUNTING_TEST",
-                        "-Isrc", "-Isrc/no_mysql",
-                        "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
-                        "tests/async/persistence_restore_fixture.cpp", *sources, "-lcrypto", "-lz", "-pthread",
-                        "-o", str(cls.fixture)], cwd=ROOT, check=True)
+        build_fixture(cls.fixture)
         cls.native_built = True
 
     @classmethod

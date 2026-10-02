@@ -1,5 +1,6 @@
 """Contracts for the repository-level build and regression harness."""
 
+import ast
 import importlib.util
 import os
 import re
@@ -208,6 +209,29 @@ class RunnerBehavior(unittest.TestCase):
             self.assertEqual([p.name for p in runner.discover_tests(None)],
                              ["other_test.py", "test_both_test.py", "test_one.py"])
             self.assertEqual([p.name for p in runner.discover_tests("one")], ["test_one.py"])
+
+    def test_function_contract_entrypoint_executes_its_assertions(self):
+        # This script used to define pytest-style cases but silently execute
+        # none when launched by the standalone gate. Remove their source input
+        # in a private copy: its real entrypoint must run and reject the cases.
+        path = ROOT / "tests/async/test_training_dummy_contract.py"
+        tree = ast.parse(path.read_text())
+        provider = next(node for node in tree.body
+                        if isinstance(node, ast.FunctionDef) and node.name == "source")
+        provider.body = [ast.Return(value=ast.Constant(value=""))]
+        expected = sum(isinstance(node, ast.FunctionDef) and node.name.startswith("test_")
+                       for node in tree.body)
+        private = self.script("missing_contracts.py", ast.unparse(ast.fix_missing_locations(tree)))
+        command = (
+            "import runpy, sys; "
+            f"sys.path.insert(0, {str(ROOT / 'tests/async')!r}); "
+            f"runpy.run_path({str(private)!r}, run_name='__main__')"
+        )
+        completed = subprocess.run([sys.executable, "-c", command], cwd=ROOT,
+                                   capture_output=True, text=True, timeout=10)
+        self.assertNotEqual(completed.returncode, 0, "contract cases were silently omitted")
+        self.assertIn("AssertionError", completed.stdout + completed.stderr)
+        self.assertIn(f"Ran {expected} tests", completed.stdout + completed.stderr)
 
     def test_failure_signal_and_skip_are_distinct(self):
         cases = [("pass", "print('done')", 0, "passed"),
