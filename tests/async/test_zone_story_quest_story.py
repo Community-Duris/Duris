@@ -30,8 +30,16 @@ assert set(new_mappings) == new_areas and all(m["coverage"] == "complete" for m 
 assert sum(d["source_area"] in new_areas for d in catalog["definitions"]) == 86
 assert sum(len(m["stories"]) for m in new_mappings.values()) == 80
 drider = next(s for s in new_mappings["elvish"]["stories"] if s["title"] == "Release the Cursed Drider")
-assert len(drider["contracts"]) == 1 and drider["steps"][0]["item_vnums"] == [35813]
-assert len(drider["steps"]) == 2  # A gifted terminal material must not require replaying preparation.
+assert len(drider["contracts"]) == 1 and drider["steps"][-2]["item_vnums"] == [35813]
+assert len(drider["steps"]) == 6 and all(t["optional"] for t in drider["steps"][:-2])
+assert drider["steps"][0]["item_vnums"] == [35824]  # Exact access key, distinct from the reward key.
+breale = new_mappings["breale"]
+assert breale["schema_version"] == new_mappings["elvish"]["schema_version"] == 3
+assert breale["revision"] == new_mappings["elvish"]["revision"] == 2
+triad = next(s for s in breale["stories"] if s["id"] == "finish-the-triad-mixture-2602")
+assert len(triad["contracts"]) == 1 and sum(t.get("optional", False) for t in triad["steps"]) == 5
+assert all(len(t["contracts"]) == 1 for t in triad["steps"] if t["kind"] == "completion")
+assert report["eligible_by_zone"]["26"] == 6 and report["eligible_by_zone"]["358"] == 2
 promotions = [s for s in new_mappings["bastine"]["stories"] if s["title"].startswith("The Bastine Road:")]
 assert len(promotions) == 12 and all(len(s["contracts"]) == 1 for s in promotions)
 assert all(s["category"] == "service" for s in new_mappings["quietus"]["stories"] if "Credentials" in s["title"] or s["title"].startswith("Hear ") or s["title"].startswith("Obtain "))

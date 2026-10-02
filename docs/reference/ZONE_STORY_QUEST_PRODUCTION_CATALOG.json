@@ -40674,7 +40674,7 @@
     {
       "contacts": [
         {
-          "description": "Ask about the listed topics, then review the local requests below.",
+          "description": "Her greeting introduces the Triad and the Passage of Clarity. Her fennel exchange points you toward Abigail.",
           "keyword": "esmerelda",
           "mob_vnum": 2600,
           "name": "Esmerelda",
@@ -40683,7 +40683,7 @@
           ]
         },
         {
-          "description": "Ask about the listed topics, then review the local requests below.",
+          "description": "Brontella prompts her reagent clues. Her second mixture points you toward Pontif with the word montra.",
           "keyword": "abigail",
           "mob_vnum": 2601,
           "name": "Abigail",
@@ -40693,7 +40693,7 @@
           ]
         },
         {
-          "description": "Ask about the listed topics, then review the local requests below.",
+          "description": "Montra prompts the final ingredient clues. The reward is the Triad amulet; the journal records this delivery.",
           "keyword": "pontif",
           "mob_vnum": 2602,
           "name": "Pontif",
@@ -40703,7 +40703,7 @@
           ]
         },
         {
-          "description": "Ask about the listed topics, then review the local requests below.",
+          "description": "Her wrist gesture and plea ask for a small potion of healing. The triangular bracelet is a reward and a narrative clue.",
           "keyword": "dying",
           "mob_vnum": 2617,
           "name": "the dying witch",
@@ -40714,13 +40714,14 @@
       ],
       "coverage": "complete",
       "exclusions": [],
-      "introduction": "Explore the town and its hidden passages for local requests and unusual mixtures.",
+      "introduction": "Breale hides a second world beneath its streets. Help a wounded witch, decipher the Passage of Clarity, and follow the Triad's reagent requests.",
       "orientation": [
-        "Use look and exits to explore. Meet visible people to reveal their requests.",
-        "Talk to the people you meet to learn about local requests. The checklist shows your current supplies and completed exchanges."
+        "Explore with look and exits. Inspect inscriptions and numbered drawings; the Triad uses their east and west positions as ingredient clues.",
+        "Meet people to reveal their conversations and requests. Some townsfolk are hostile to shaman, sorcerer, necromancer, summoner, and conjurer classes.",
+        "Each accepted exchange has its own progress. Earlier deliveries and passwords provide guidance; valid supplied ingredients are accepted without that history."
       ],
-      "revision": 1,
-      "schema_version": 2,
+      "revision": 2,
+      "schema_version": 3,
       "source_area": "breale",
       "stories": [
         {
@@ -40735,7 +40736,18 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "Hagatha holds the key for the trapdoor beneath her hut. This is optional route preparation, not a turn-in requirement; another player can provide a valid key.",
+              "id": "access-key",
+              "item_vnums": [
+                2680
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small key for the hidden stairway"
+            },
+            {
+              "count": 1,
+              "hint": "The eastern hat drawing in the Passage of Clarity depicts digging the ground. Celia stocks the actual reagent. Supplies received from another player are accepted.",
               "id": "material-2673",
               "item_vnums": [
                 2673
@@ -40750,13 +40762,13 @@
                   "giver_vnum": 2600
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "Bring the exact listed offering to the named giver. The recorded outcome is the exchange reward.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Deliver the dirt to Esmerelda"
             }
           ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+          "summary": "Esmerelda calls this ingredient an eastern hat. The Passage of Clarity explains the clue; deliver dirt for an emerald bracelet.",
           "title": "Dirt for the Triad"
         },
         {
@@ -40771,7 +40783,18 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "Hagatha holds the key for the trapdoor beneath her hut. This is optional route preparation, not a turn-in requirement; another player can provide a valid key.",
+              "id": "access-key",
+              "item_vnums": [
+                2680
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small key for the hidden stairway"
+            },
+            {
+              "count": 1,
+              "hint": "Celia stocks fennel root. Esmerelda's accepted delivery explains how to approach Abigail. Supplies received from another player are accepted.",
               "id": "material-2674",
               "item_vnums": [
                 2674
@@ -40786,13 +40809,13 @@
                   "giver_vnum": 2600
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "Bring the exact listed offering to the named giver. The recorded outcome is the exchange reward.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Deliver the fennel root to Esmerelda"
             }
           ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+          "summary": "Deliver a fennel root to Esmerelda for iron gloves and guidance to Abigail. The word brontella is a conversational clue, not a recorded prerequisite.",
           "title": "Begin the Triad Reagents"
         },
         {
@@ -40807,7 +40830,18 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "Hagatha holds the key for the trapdoor beneath her hut. This is optional route preparation, not a turn-in requirement; another player can provide a valid key.",
+              "id": "access-key",
+              "item_vnums": [
+                2680
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small key for the hidden stairway"
+            },
+            {
+              "count": 1,
+              "hint": "Inspect the west-wall hat and wand drawings in the Passage of Clarity. Celia stocks both reagents. Supplies received from another player are accepted.",
               "id": "material-2671",
               "item_vnums": [
                 2671
@@ -40817,7 +40851,7 @@
             },
             {
               "count": 2,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "Inspect the west-wall hat and wand drawings in the Passage of Clarity. Celia stocks both reagents. Supplies received from another player are accepted.",
               "id": "material-2674",
               "item_vnums": [
                 2674
@@ -40832,13 +40866,13 @@
                   "giver_vnum": 2601
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "Bring the exact listed offering to the named giver. The recorded outcome is the exchange reward.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Deliver the first mixture to Abigail"
             }
           ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+          "summary": "Ask Abigail about brontella, then bring two fennel roots and one peppercorn for a blue potion. These match her western hats and wand clues.",
           "title": "The First Triad Mixture"
         },
         {
@@ -40852,8 +40886,19 @@
           "id": "the-second-triad-mixture-2601",
           "steps": [
             {
+              "count": 1,
+              "hint": "Hagatha holds the key for the trapdoor beneath her hut. This is optional route preparation, not a turn-in requirement; another player can provide a valid key.",
+              "id": "access-key",
+              "item_vnums": [
+                2680
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small key for the hidden stairway"
+            },
+            {
               "count": 2,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "Inspect the west-wall broom and east-wall hat drawings. Earlier deliveries guide the route but do not gate this exchange. Supplies received from another player are accepted.",
               "id": "material-2672",
               "item_vnums": [
                 2672
@@ -40863,7 +40908,7 @@
             },
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "Inspect the west-wall broom and east-wall hat drawings. Earlier deliveries guide the route but do not gate this exchange. Supplies received from another player are accepted.",
               "id": "material-2673",
               "item_vnums": [
                 2673
@@ -40878,13 +40923,13 @@
                   "giver_vnum": 2601
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "Bring the exact listed offering to the named giver. The recorded outcome is the exchange reward.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Deliver the second mixture to Abigail"
             }
           ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+          "summary": "Bring Abigail two piles of wood and one dirt for a pink potion and the word montra. Her western brooms and eastern hat refer to the Passage of Clarity.",
           "title": "The Second Triad Mixture"
         },
         {
@@ -40899,7 +40944,70 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "Hagatha holds the key for the trapdoor beneath her hut. This is optional route preparation, not a turn-in requirement; another player can provide a valid key.",
+              "id": "access-key",
+              "item_vnums": [
+                2680
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small key for the hidden stairway"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2673;receive=I:2681;disappear=0",
+                  "giver_vnum": 2600
+                }
+              ],
+              "hint": "Optional earlier Triad exchange. This receipt is not required for Pontif to accept valid ingredients.",
+              "id": "triad-preparation-1",
+              "kind": "completion",
+              "optional": true,
+              "text": "Dirt for the Triad"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2674;receive=I:2682;disappear=0",
+                  "giver_vnum": 2600
+                }
+              ],
+              "hint": "Optional earlier Triad exchange. This receipt is not required for Pontif to accept valid ingredients.",
+              "id": "triad-preparation-2",
+              "kind": "completion",
+              "optional": true,
+              "text": "Begin the Triad Reagents"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2671,I:2674,I:2674;receive=I:2683;disappear=0",
+                  "giver_vnum": 2601
+                }
+              ],
+              "hint": "Optional earlier Triad exchange. This receipt is not required for Pontif to accept valid ingredients.",
+              "id": "triad-preparation-3",
+              "kind": "completion",
+              "optional": true,
+              "text": "The First Triad Mixture"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2672,I:2672,I:2673;receive=I:2684;disappear=0",
+                  "giver_vnum": 2601
+                }
+              ],
+              "hint": "Optional earlier Triad exchange. This receipt is not required for Pontif to accept valid ingredients.",
+              "id": "triad-preparation-4",
+              "kind": "completion",
+              "optional": true,
+              "text": "The Second Triad Mixture"
+            },
+            {
+              "count": 1,
+              "hint": "The east-wall broom and wand and west-wall broom drawings explain the ingredients. Celia stocks all three; mushrooms also appear in the lower cave. Supplies received from another player are accepted.",
               "id": "material-2670",
               "item_vnums": [
                 2670
@@ -40909,7 +41017,7 @@
             },
             {
               "count": 2,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "The east-wall broom and wand and west-wall broom drawings explain the ingredients. Celia stocks all three; mushrooms also appear in the lower cave. Supplies received from another player are accepted.",
               "id": "material-2672",
               "item_vnums": [
                 2672
@@ -40919,7 +41027,7 @@
             },
             {
               "count": 2,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "The east-wall broom and wand and west-wall broom drawings explain the ingredients. Celia stocks all three; mushrooms also appear in the lower cave. Supplies received from another player are accepted.",
               "id": "material-2675",
               "item_vnums": [
                 2675
@@ -40934,13 +41042,13 @@
                   "giver_vnum": 2602
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "Bring the exact listed offering to the named giver. The recorded outcome is the exchange reward.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Deliver the final mixture to Pontif"
             }
           ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+          "summary": "Ask Pontif about montra, then bring two red mushrooms, one ash, and two piles of wood for the Triad amulet. Earlier requests are optional route history; this delivery records Pontif's exchange.",
           "title": "Finish the Triad Mixture"
         },
         {
@@ -40955,7 +41063,7 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "The doctor carries this specific potion. A valid potion supplied by another player works too; another healing potion with a similar name may not. Supplies received from another player are accepted.",
               "id": "material-2679",
               "item_vnums": [
                 2679
@@ -40970,13 +41078,13 @@
                   "giver_vnum": 2617
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "Bring the exact listed offering to the named giver. The recorded outcome is the exchange reward.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Deliver the healing potion to the dying witch"
             }
           ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+          "summary": "Bring the dying witch a small potion of healing. She gives a triangular bracelet and fades away. Her guidance toward the witches does not make the bracelet a required exchange ingredient.",
           "title": "Aid the Dying Witch"
         }
       ]
@@ -49015,7 +49123,7 @@
     {
       "contacts": [
         {
-          "description": "Ask about the listed topics, then review the local requests below.",
+          "description": "Follow his life, fighter, and help conversation, then answer yes for the ingredient request. His no response is a rebuke; the native exchanges do not record a permanent refusal.",
           "keyword": "drider",
           "mob_vnum": 35800,
           "name": "a half-elf, half-spider creature",
@@ -49028,7 +49136,7 @@
           ]
         },
         {
-          "description": "Ask about the listed topics, then review the local requests below.",
+          "description": "Ask about spiders to learn of the eggs. He offers the War Room access key and combines the drider's two potion statues into the remedy.",
           "keyword": "kalaban",
           "mob_vnum": 35801,
           "name": "Kalaban the aging hermit",
@@ -49039,13 +49147,14 @@
       ],
       "coverage": "complete",
       "exclusions": [],
-      "introduction": "Explore the abandoned homestead and meet its surviving inhabitants.",
+      "introduction": "Follow the traces of an ancient elven home, meet its surviving inhabitants, and uncover a remedy for the cursed drider.",
       "orientation": [
-        "Use look and exits to explore. Meet visible people to reveal their requests.",
-        "Talk to the people you meet to learn about local requests. The checklist shows your current supplies and completed exchanges."
+        "Explore with look and exits, inspect gates and wall hangings, and search for concealed passages. Some doors respond to spoken words.",
+        "Two spider-shaped keys have different uses. Read their full descriptions: the adamantium key opens the War Room; the key made of adamantium and mithril opens reward containers.",
+        "Local ingredient and statue exchanges offer preparation routes. Valid supplied materials are accepted; live possession does not prove personal recovery."
       ],
-      "revision": 1,
-      "schema_version": 2,
+      "revision": 2,
+      "schema_version": 3,
       "source_area": "elvish",
       "stories": [
         {
@@ -49060,7 +49169,57 @@
           "steps": [
             {
               "count": 1,
-              "hint": "The local two-statue exchange can prepare this item. Another valid statue also works.",
+              "hint": "Kalaban exchanges four spider eggs for this key. It opens the door north of the Hall of Redemption. The key is access guidance; an existing open route or supplied key also works.",
+              "id": "war-room-key",
+              "item_vnums": [
+                35824
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the adamantium spider key for the War Room"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:35812,I:35812,I:35812,I:35812;receive=E:30000,I:35824;disappear=0",
+                  "giver_vnum": 35801
+                }
+              ],
+              "hint": "Optional access preparation. A supplied key or another valid access route does not require this receipt.",
+              "id": "egg-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Trade four spider eggs with Kalaban"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:35817,I:35818;receive=I:35814,I:35816;disappear=0",
+                  "giver_vnum": 35800
+                }
+              ],
+              "hint": "Optional recipe: one robin tail feather and one glowing ivy leaf. A supplied final statue does not require this receipt.",
+              "id": "statue-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Have the drider prepare the two potion statues"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:35814,I:35816;receive=I:35813;disappear=0",
+                  "giver_vnum": 35801
+                }
+              ],
+              "hint": "Optional recipe: one blood-red manticore and one blue sea serpent. Return the resulting golden dragon statue to the drider.",
+              "id": "statue-combination",
+              "kind": "completion",
+              "optional": true,
+              "text": "Have Kalaban combine the two potion statues"
+            },
+            {
+              "count": 1,
+              "hint": "The two local potion-statue exchanges prepare this item. Keep it for delivery; another valid statue also works without earlier receipts.",
               "id": "material-35813",
               "item_vnums": [
                 35813
@@ -49075,13 +49234,13 @@
                   "giver_vnum": 35800
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "Return to the War Room with the exact statue. This terminal delivery gives experience and the reward key; earlier exchanges alone do not complete the story.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Deliver the golden dragon statue to the drider"
             }
           ],
-          "summary": "Deliver the golden engraved dragon statue to release the cursed drider. Local statue exchanges provide a preparation route; a valid statue from another source also works.",
+          "summary": "Deliver the golden engraved dragon statue to the drider for experience and the adamantium-and-mithril spider key. The local preparation exchanges are optional when a valid statue is supplied. The reward key fits the runed chest and master-bedroom belt pouch.",
           "title": "Release the Cursed Drider"
         },
         {
@@ -49096,7 +49255,7 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "The red-breasted robin by the pond carries this feather. A valid supplied feather also works; possession is not a personal kill or recovery achievement.",
               "id": "material-35817",
               "item_vnums": [
                 35817
@@ -49106,7 +49265,7 @@
             },
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "Golden ivy in the eastern glade carries this glowing leaf. The dialogue calls it petals, but the accepted ingredient is the leaf. Valid supplied leaves work too.",
               "id": "material-35818",
               "item_vnums": [
                 35818
@@ -49121,13 +49280,13 @@
                   "giver_vnum": 35800
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "He gives the blood-red manticore and blue sea serpent. Keep both for Kalaban instead of drinking them.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Give the feather and ivy leaf to the drider"
             }
           ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+          "summary": "Bring the drider one robin tail feather and one glowing ivy leaf for a blood-red manticore and blue sea-serpent potion statue. Take both to Kalaban for the remedy. This preparation service does not add a separate story achievement.",
           "title": "Prepare the Two Statues"
         },
         {
@@ -49142,7 +49301,7 @@
           "steps": [
             {
               "count": 4,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "Sword spiders in the upper sleeping chambers carry the eggs. Bring four separate items; supplied eggs are accepted without personal sourcing proof.",
               "id": "material-35812",
               "item_vnums": [
                 35812
@@ -49157,13 +49316,13 @@
                   "giver_vnum": 35801
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "Kalaban gives the adamantium spider key and experience. The key is for War Room access, not the runed chest or belt pouch.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Give four spider eggs to Kalaban"
             }
           ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+          "summary": "Bring Kalaban four unhatched spider eggs for experience and the adamantium spider key. This key opens the War Room north of the Hall of Redemption; it differs from the drider's container key.",
           "title": "The Spider Eggs and the Hidden Key"
         },
         {
@@ -49178,7 +49337,7 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "The drider prepares this potion statue from a robin feather and glowing ivy leaf. A valid supplied statue also works. Keep it for the exchange instead of drinking it.",
               "id": "material-35814",
               "item_vnums": [
                 35814
@@ -49188,7 +49347,7 @@
             },
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "The drider prepares this potion statue from a robin feather and glowing ivy leaf. A valid supplied statue also works. Keep it for the exchange instead of drinking it.",
               "id": "material-35816",
               "item_vnums": [
                 35816
@@ -49203,13 +49362,13 @@
                   "giver_vnum": 35801
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "Deliver the resulting golden dragon statue to the drider for the terminal reward. Combining the statues alone does not release him.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Have Kalaban combine the two statues"
             }
           ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+          "summary": "Bring Kalaban the blood-red manticore and blue sea-serpent potion statues. He combines them into the golden engraved dragon statue for delivery to the drider. This is a preparation service, not the terminal release.",
           "title": "Combine the Statues"
         }
       ]

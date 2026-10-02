@@ -22,6 +22,9 @@ retain native-contract fallback; these counts do not claim full semantic review.
 Ailvio now projects its 78 equivalent two-fish recipes into one family-feeding
 story, leaving 22 achievement rows and 17 services. Braddistock displays its
 intermediate pet rescue as a service while preserving one final achievement.
+Breale preserves its Passage drawing riddle and independent Triad rewards.
+The Homestead now displays optional access/statue preparation and explains the
+two spider keys, while retaining two achievements and two services.
 All raw definitions, receipt identities, zone registry and source fingerprint
 remain unchanged. Comprehensive source dossiers for these areas are tracked in
 the [execution register](../design/ZONE_STORY_ROADMAP_EXECUTION.md).

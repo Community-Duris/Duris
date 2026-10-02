@@ -29,9 +29,11 @@ neither every branch nor every historical prerequisite.
 | 2 | Plains of Life | [Comprehensive source dossier](zone-stories/PLAINS_OF_LIFE.md): Q-free tutorial, all four specials, 21 reset commands, creation tag and travel semantics | Revision 2: full route, optional sign aids, both racewar aliases, encounter guidance; no invented terminal receipts | Active reset scenery; transactional tag/sword; validated travel; durable scripted objectives; played failure/restart cases |
 | 3 | Ailvio | [Comprehensive source dossier](zone-stories/AILVIO.md): 116 Q contracts, 160 addressable and 35 ambient M responses, five local procedures, shared fishing/bandaging/forage/pet/home rules, 314 reset commands | Revision 2: 22 stories/requests, 17 services; all 78 fish pairs grouped into one story; optional medicine/note/jar/seal routes; readable topic guidance | Script map/search grants; successful bandage event; active forage; missing eye source; actual NPC closure; fish grant result and personal source; confirmed hometown departure |
 | 4 | Braddistock Mansion | [Comprehensive source dossier](zone-stories/BRADDISTOCK_MANSION.md): both Q contracts, one addressable and two ambient M responses, maul procedure, 186 reset commands; other same-name area's level gate distinguished | Revision 2: final story plus pet-rescue service; optional key/rescue steps for supplied collars | Active key/container reset sources; hidden-exit journey; rat-purge/later-payment prose decision; personal recovery; optional maul effect evidence |
-| 5–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 5 | Breale | [Comprehensive source dossier](zone-stories/BREALE.md): six Q contracts, six M responses, nine town-special assignments, five shops, 399 resets, full Passage of Clarity puzzle | Revision 2: six distinct achievements; optional key and earlier Triad receipts; source/clue guidance and exact rewards | Active item/shop sources; accepted puzzle/topic events; all-stage Triad family; bracelet/escort decision; reward-spell prose review |
+| 6 | Abandoned Elven Homestead | [Comprehensive source dossier](zone-stories/ABANDONED_ELVEN_HOMESTEAD.md): four Q contracts, six M/MA responses, 138 resets, two key targets, shared speech doors and three item teleports | Revision 2: two achievements plus two services; optional egg/access/statue steps; source and post-reward key guidance | Active material/scenery sources; live access and confirmed travel; potion lineage; narrated elf closure; accepted tapestry examination |
+| 7–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Breale, followed by Abandoned Elven Homestead. Their earlier native bindings
+The next area is Krimeneha's Mansion, followed by Bastine. Their earlier native bindings
 do not establish comprehensive source review. Do not advance a zone's status
 merely because the map parses, the Q denominator matches, or a candidate item
 graph was extracted.
@@ -56,6 +58,11 @@ graph was extracted.
 | ZSQ-AILVIO-DEPARTURE | Home/birthplace mutation precedes teleport confirmation. | Qualify resolved destination and confirmed travel with recoverable home outcome, including race/class/default selection. |
 | ZSQ-AILVIO-NARRATIVE / BRADD-NARRATIVE | Medicine note, voice restoration, captive release, rat purge and later payment contain prose beyond verified native effects. Some may intentionally be narrated closure. | Separate accepted delivery, narrated closure, actual NPC state, encounter generation and personal action. Make content decisions before adding effects, prerequisites or rewards. |
 | ZSQ-BRADD-PREPARATION | Fixed supplied-collar guidance and displayed intermediate rescue without another achievement. | Qualify optional and ordinary routes separately; retain exact receipts and require Lord's terminal delivery for final story. Same-name area/procedure ownership and maul spell ownership remain explicit review boundaries. |
+| ZSQ-BREALE-RIDDLE / SPELLS | Passage drawings explain the witches' ingredient vocabulary; it is a deliberate riddle. Separately, promised learned fire spells do not match potion/amulet rewards. | Preserve the puzzle; author staged clue/solution reveals and accepted examination. Builders review spell reward versus prose intent separately, preserving receipts and balance until that decision. |
+| ZSQ-BREALE-ESCORT | Wrist/bracelet narrative suggests guidance, but no assigned bracelet/escort gate exists; Hagatha really does hold the trapdoor key. | Journal explains actual key/access. Builder chooses narrative clarification or committed escort/arrival. Do not invent bracelet immunity or report the key as missing. |
+| ZSQ-ACCESS-STATE / MAGIC-DOORS | Shared mechanics make property data executable: Homestead key `-2` plus last exit keyword unlocks the locked outer gate through speech. The hidden beach has the same negative key but is reset unlocked. | Add reviewed exit/key/password/property leads and live blocked reasons. Separate current access from accepted unlock and confirmed arrival history; open routes and supplied keys work without local preparation receipts. |
+| ZSQ-ELVISH-KEY-IDENTITY / POTION-LINEAGE | Two identically aliased spider keys have different targets; preparation statues are consumable potion types. | Fixed journal distinctions and optional preparation. Future projection links exact target/item identity and committed recipe UIDs, handles consumed/gifted ingredients, and does not infer personal recovery or terminal release from preparation alone. |
+| ZSQ-ELVISH-NARRATIVE / SHARED-TRAVEL | Leaf/petals and serpent/dragon differ in prose; final elf change is narrated closure. Deity statues invoke generic item teleports, including a cross-area destination. | Builder reviews narrative/effects deliberately. Qualify accepted examination/topic and confirmed shared travel; echoed MA/QA text is not recipient objective evidence. Spellcase magical opening remains unintegrated flavor pending builder intent. |
 | Evidence extractor gaps | Fixed chained literal assignment detection and ignored commented assignments. Object/mobile membership follows source prototypes rather than room bounds. | Continue review for aliases, computed VNUMs, preprocessor branches, dynamic assignments, and foreign reset sources; extraction remains a lead list, not execution proof. |
 
 ## Verification record
@@ -133,3 +140,30 @@ definitions, zone registry, source fingerprint, content revision, and other
 accounting activation, or merge occurred. Active-world qualification remains
 open for the exact reset, grant, forage, successful-aid and narrative dependencies
 recorded above. Priorities 5–220 still require comprehensive source review.
+
+### Third comprehensive mapping batch — October 2, 2026
+
+Breale and Abandoned Elven Homestead source dossiers and reproducible source
+indices are complete. Schema 3 revision 2 journals preserve six independent
+Breale achievements, two Homestead achievements, both preparation services,
+and all ten original native bindings. Optional access/earlier-exchange checks
+cannot displace a supplied final offering's required turn-in action.
+
+The native C++20 warnings-as-errors story regression passed for all 36 maps
+and schemas 1/2/3. New journeys cover supplied Triad reagents with no earlier
+history, exact duplicate mushroom counts, supplied Homestead remedy without
+local preparation, service-only progress, independent terminal completion,
+read-only projection and original receipt restart. Production catalog/snapshot,
+generated inventory, all six source indices, and the 27 required home mappings
+passed. The maintained SQL server `make -C src` completed; this batch changed
+no production C/C++ source. Whole touched-file and changed-line formatting,
+818 checked document links, and `git diff --check` passed. Existing corrupted
+arrow/multiplication glyphs in the priority document were repaired.
+
+All 2,668 raw native definitions, source fingerprint, content revision, zone
+registry and other 34 sidecars remain unchanged as parsed objects. Global
+projection stays at 2,359 achievements, 1,962 potential daily units and 2,509
+rows including services/administrative content. No database operation,
+migration, accounting activation or merge occurred. Source mapping now covers
+priorities 1–6 of 220; the remaining 214 areas and active-world journeys remain
+open. Continue with Krimeneha's Mansion and Bastine, retaining the original queue.

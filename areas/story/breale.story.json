@@ -1,6 +1,6 @@
 {
-  "schema_version": 2,
-  "revision": 1,
+  "schema_version": 3,
+  "revision": 2,
   "source_area": "breale",
   "coverage": "complete",
   "stories": [
@@ -8,7 +8,7 @@
       "id": "dirt-for-the-triad-2600",
       "title": "Dirt for the Triad",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Esmerelda calls this ingredient an eastern hat. The Passage of Clarity explains the clue; deliver dirt for an emerald bracelet.",
       "contracts": [
         {
           "giver_vnum": 2600,
@@ -17,10 +17,21 @@
       ],
       "steps": [
         {
+          "id": "access-key",
+          "text": "Carry the small key for the hidden stairway",
+          "kind": "carried_item",
+          "hint": "Hagatha holds the key for the trapdoor beneath her hut. This is optional route preparation, not a turn-in requirement; another player can provide a valid key.",
+          "item_vnums": [
+            2680
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
           "id": "material-2673",
           "text": "Carry 1 x some dirt",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The eastern hat drawing in the Passage of Clarity depicts digging the ground. Celia stocks the actual reagent. Supplies received from another player are accepted.",
           "item_vnums": [
             2673
           ],
@@ -28,9 +39,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver the dirt to Esmerelda",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Bring the exact listed offering to the named giver. The recorded outcome is the exchange reward.",
           "contracts": [
             {
               "giver_vnum": 2600,
@@ -44,7 +55,7 @@
       "id": "begin-the-triad-reagents-2600",
       "title": "Begin the Triad Reagents",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Deliver a fennel root to Esmerelda for iron gloves and guidance to Abigail. The word brontella is a conversational clue, not a recorded prerequisite.",
       "contracts": [
         {
           "giver_vnum": 2600,
@@ -53,10 +64,21 @@
       ],
       "steps": [
         {
+          "id": "access-key",
+          "text": "Carry the small key for the hidden stairway",
+          "kind": "carried_item",
+          "hint": "Hagatha holds the key for the trapdoor beneath her hut. This is optional route preparation, not a turn-in requirement; another player can provide a valid key.",
+          "item_vnums": [
+            2680
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
           "id": "material-2674",
           "text": "Carry 1 x a fennel root",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Celia stocks fennel root. Esmerelda's accepted delivery explains how to approach Abigail. Supplies received from another player are accepted.",
           "item_vnums": [
             2674
           ],
@@ -64,9 +86,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver the fennel root to Esmerelda",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Bring the exact listed offering to the named giver. The recorded outcome is the exchange reward.",
           "contracts": [
             {
               "giver_vnum": 2600,
@@ -80,7 +102,7 @@
       "id": "the-first-triad-mixture-2601",
       "title": "The First Triad Mixture",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Ask Abigail about brontella, then bring two fennel roots and one peppercorn for a blue potion. These match her western hats and wand clues.",
       "contracts": [
         {
           "giver_vnum": 2601,
@@ -89,10 +111,21 @@
       ],
       "steps": [
         {
+          "id": "access-key",
+          "text": "Carry the small key for the hidden stairway",
+          "kind": "carried_item",
+          "hint": "Hagatha holds the key for the trapdoor beneath her hut. This is optional route preparation, not a turn-in requirement; another player can provide a valid key.",
+          "item_vnums": [
+            2680
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
           "id": "material-2671",
           "text": "Carry 1 x a peppercorn",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Inspect the west-wall hat and wand drawings in the Passage of Clarity. Celia stocks both reagents. Supplies received from another player are accepted.",
           "item_vnums": [
             2671
           ],
@@ -102,7 +135,7 @@
           "id": "material-2674",
           "text": "Carry 2 x a fennel root",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Inspect the west-wall hat and wand drawings in the Passage of Clarity. Celia stocks both reagents. Supplies received from another player are accepted.",
           "item_vnums": [
             2674
           ],
@@ -110,9 +143,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver the first mixture to Abigail",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Bring the exact listed offering to the named giver. The recorded outcome is the exchange reward.",
           "contracts": [
             {
               "giver_vnum": 2601,
@@ -126,7 +159,7 @@
       "id": "the-second-triad-mixture-2601",
       "title": "The Second Triad Mixture",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Bring Abigail two piles of wood and one dirt for a pink potion and the word montra. Her western brooms and eastern hat refer to the Passage of Clarity.",
       "contracts": [
         {
           "giver_vnum": 2601,
@@ -135,10 +168,21 @@
       ],
       "steps": [
         {
+          "id": "access-key",
+          "text": "Carry the small key for the hidden stairway",
+          "kind": "carried_item",
+          "hint": "Hagatha holds the key for the trapdoor beneath her hut. This is optional route preparation, not a turn-in requirement; another player can provide a valid key.",
+          "item_vnums": [
+            2680
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
           "id": "material-2672",
           "text": "Carry 2 x a tiny pile of wood",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Inspect the west-wall broom and east-wall hat drawings. Earlier deliveries guide the route but do not gate this exchange. Supplies received from another player are accepted.",
           "item_vnums": [
             2672
           ],
@@ -148,7 +192,7 @@
           "id": "material-2673",
           "text": "Carry 1 x some dirt",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Inspect the west-wall broom and east-wall hat drawings. Earlier deliveries guide the route but do not gate this exchange. Supplies received from another player are accepted.",
           "item_vnums": [
             2673
           ],
@@ -156,9 +200,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver the second mixture to Abigail",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Bring the exact listed offering to the named giver. The recorded outcome is the exchange reward.",
           "contracts": [
             {
               "giver_vnum": 2601,
@@ -172,7 +216,7 @@
       "id": "finish-the-triad-mixture-2602",
       "title": "Finish the Triad Mixture",
       "category": "story",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Ask Pontif about montra, then bring two red mushrooms, one ash, and two piles of wood for the Triad amulet. Earlier requests are optional route history; this delivery records Pontif's exchange.",
       "contracts": [
         {
           "giver_vnum": 2602,
@@ -181,10 +225,73 @@
       ],
       "steps": [
         {
+          "id": "access-key",
+          "text": "Carry the small key for the hidden stairway",
+          "kind": "carried_item",
+          "hint": "Hagatha holds the key for the trapdoor beneath her hut. This is optional route preparation, not a turn-in requirement; another player can provide a valid key.",
+          "item_vnums": [
+            2680
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "triad-preparation-1",
+          "text": "Dirt for the Triad",
+          "kind": "completion",
+          "hint": "Optional earlier Triad exchange. This receipt is not required for Pontif to accept valid ingredients.",
+          "contracts": [
+            {
+              "giver_vnum": 2600,
+              "completion_key": "give=I:2673;receive=I:2681;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "triad-preparation-2",
+          "text": "Begin the Triad Reagents",
+          "kind": "completion",
+          "hint": "Optional earlier Triad exchange. This receipt is not required for Pontif to accept valid ingredients.",
+          "contracts": [
+            {
+              "giver_vnum": 2600,
+              "completion_key": "give=I:2674;receive=I:2682;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "triad-preparation-3",
+          "text": "The First Triad Mixture",
+          "kind": "completion",
+          "hint": "Optional earlier Triad exchange. This receipt is not required for Pontif to accept valid ingredients.",
+          "contracts": [
+            {
+              "giver_vnum": 2601,
+              "completion_key": "give=I:2671,I:2674,I:2674;receive=I:2683;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "triad-preparation-4",
+          "text": "The Second Triad Mixture",
+          "kind": "completion",
+          "hint": "Optional earlier Triad exchange. This receipt is not required for Pontif to accept valid ingredients.",
+          "contracts": [
+            {
+              "giver_vnum": 2601,
+              "completion_key": "give=I:2672,I:2672,I:2673;receive=I:2684;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
           "id": "material-2670",
           "text": "Carry 1 x some ash",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The east-wall broom and wand and west-wall broom drawings explain the ingredients. Celia stocks all three; mushrooms also appear in the lower cave. Supplies received from another player are accepted.",
           "item_vnums": [
             2670
           ],
@@ -194,7 +301,7 @@
           "id": "material-2672",
           "text": "Carry 2 x a tiny pile of wood",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The east-wall broom and wand and west-wall broom drawings explain the ingredients. Celia stocks all three; mushrooms also appear in the lower cave. Supplies received from another player are accepted.",
           "item_vnums": [
             2672
           ],
@@ -204,7 +311,7 @@
           "id": "material-2675",
           "text": "Carry 2 x a red mushroom",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The east-wall broom and wand and west-wall broom drawings explain the ingredients. Celia stocks all three; mushrooms also appear in the lower cave. Supplies received from another player are accepted.",
           "item_vnums": [
             2675
           ],
@@ -212,9 +319,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver the final mixture to Pontif",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Bring the exact listed offering to the named giver. The recorded outcome is the exchange reward.",
           "contracts": [
             {
               "giver_vnum": 2602,
@@ -228,7 +335,7 @@
       "id": "aid-the-dying-witch-2617",
       "title": "Aid the Dying Witch",
       "category": "story",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Bring the dying witch a small potion of healing. She gives a triangular bracelet and fades away. Her guidance toward the witches does not make the bracelet a required exchange ingredient.",
       "contracts": [
         {
           "giver_vnum": 2617,
@@ -240,7 +347,7 @@
           "id": "material-2679",
           "text": "Carry 1 x a small potion of healing",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The doctor carries this specific potion. A valid potion supplied by another player works too; another healing potion with a similar name may not. Supplies received from another player are accepted.",
           "item_vnums": [
             2679
           ],
@@ -248,9 +355,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver the healing potion to the dying witch",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Bring the exact listed offering to the named giver. The recorded outcome is the exchange reward.",
           "contracts": [
             {
               "giver_vnum": 2617,
@@ -262,17 +369,18 @@
     }
   ],
   "exclusions": [],
-  "introduction": "Explore the town and its hidden passages for local requests and unusual mixtures.",
+  "introduction": "Breale hides a second world beneath its streets. Help a wounded witch, decipher the Passage of Clarity, and follow the Triad's reagent requests.",
   "orientation": [
-    "Use look and exits to explore. Meet visible people to reveal their requests.",
-    "Talk to the people you meet to learn about local requests. The checklist shows your current supplies and completed exchanges."
+    "Explore with look and exits. Inspect inscriptions and numbered drawings; the Triad uses their east and west positions as ingredient clues.",
+    "Meet people to reveal their conversations and requests. Some townsfolk are hostile to shaman, sorcerer, necromancer, summoner, and conjurer classes.",
+    "Each accepted exchange has its own progress. Earlier deliveries and passwords provide guidance; valid supplied ingredients are accepted without that history."
   ],
   "contacts": [
     {
       "mob_vnum": 2600,
       "name": "Esmerelda",
       "keyword": "esmerelda",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Her greeting introduces the Triad and the Passage of Clarity. Her fennel exchange points you toward Abigail.",
       "topics": [
         "hi"
       ]
@@ -281,7 +389,7 @@
       "mob_vnum": 2601,
       "name": "Abigail",
       "keyword": "abigail",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Brontella prompts her reagent clues. Her second mixture points you toward Pontif with the word montra.",
       "topics": [
         "hi",
         "brontella"
@@ -291,7 +399,7 @@
       "mob_vnum": 2602,
       "name": "Pontif",
       "keyword": "pontif",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Montra prompts the final ingredient clues. The reward is the Triad amulet; the journal records this delivery.",
       "topics": [
         "hi",
         "montra"
@@ -301,7 +409,7 @@
       "mob_vnum": 2617,
       "name": "the dying witch",
       "keyword": "dying",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Her wrist gesture and plea ask for a small potion of healing. The triangular bracelet is a reward and a narrative clue.",
       "topics": [
         "wrist"
       ]

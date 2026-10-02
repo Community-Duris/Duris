@@ -7,10 +7,13 @@ Deeper objective and provenance integration is incremental.**
 
 The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
 source dossiers, shipped changes, newly found dependencies, and verification.
-Twin Towers, Plains of Life, Ailvio and Braddistock now have complete source
+Twin Towers, Plains of Life, Ailvio, Braddistock, Breale and Abandoned Elven
+Homestead now have complete source
 story maps; their active-world journeys remain unqualified. Schema 3 adds
 optional preparation. Ailvio's 78 pair recipes project one family-feeding story;
-Braddistock's pet rescue is displayed as an intermediate service.
+Braddistock's pet rescue is displayed as an intermediate service. Breale preserves
+its deliberate drawing riddle and five independent Triad stages. The Homestead
+explains actual gate/key/potion routes with optional access and recipe preparation.
 
 Maintain this plan as zones are reviewed. Keep static contract classification,
 historical objective coverage, economic support, and gameplay qualification
@@ -85,6 +88,10 @@ Implement and qualify the remaining additions in this order:
 4. **Source and transformation evidence.** Build on committed accounting
    lifecycle/custody evidence for personal recovery, distinct sources, tanning,
    freshness, and lineage. Never infer these from possession or text.
+   Review property-driven mechanics as well as assigned specials: key-target
+   locks, shared spoken passwords and ITEM_TELEPORT command/destination values
+   are executable world data. Live access status and successful unlock/arrival
+   history need separate projections; never infer admission from a recipe receipt.
    Use distinct source types for fishing, forage, search discovery and creature
    proof. Cross-area item prototypes can have local reset carriers, as Ailvio's
    drow spores do; prototype ownership is not travel or personal provenance.
@@ -272,6 +279,36 @@ every individual world journey or the future dialogue/provenance/client adapters
 Proof: aliases, failed interactions, repeated dialogue, branch choices, groups,
 store failure, reconnect, replay, and cold restart.
 
+### Access, puzzle clues and property-driven mechanics
+
+- [ ] Add reviewed candidates for exact key/exit/container targets, current
+  lock/secret/blocked flags, spoken magic-door keywords, item teleport command
+  and destination, and source NPC/room/reset ownership. Source extraction is a
+  lead list; builder approval defines the journal integration and reveal policy.
+- [ ] Project current access separately from previous receipt history: supplied
+  keys, already-open doors, equivalent routes and access provided by another
+  actor must not demand replay of an unrelated recipe. A live key count alone
+  cannot prove that a hidden exit was found, unlocked or successfully traversed.
+- [ ] Emit accepted reveal/unlock and confirmed arrival only after real effects,
+  with actor, exact source/target generation, room/direction, event identity and
+  recipient policy. Qualify shared magic doors and ITEM_TELEPORT travel alongside
+  bespoke escort/garden gates, without treating every negative key as a password.
+- [ ] Author riddle clues and translations with source references and optional
+  staged hints. Breale's east/west wand/broom/hat drawings map to real reagents;
+  preserve that puzzle rather than labeling its vocabulary a broken contract.
+  Reading a clue is a learned objective only after an accepted examination event.
+- [ ] Keep narrated effects distinct from actual mutation. Review Breale's
+  bracelet escort and promised learned spells; the Homestead's petals/leaf,
+  serpent/dragon and elf closure; and the spellcase opening flavor. Builders
+  choose corrected prose or explicit supported effects while preserving existing
+  rewards and native receipt identities until a deliberate content revision.
+
+Proof: locked versus merely closed/secret exits, exact similarly named keys,
+spoken keyword aliases/repetition/silent or failed speech, supplied/open access,
+changed reset generations, consumed/gifted potion ingredients, failed travel,
+known versus unseen contacts/clues, cross-area destinations, replay/restart,
+read-only journal projection, and spoiler/reveal choices for both clients.
+
 ### Acquisition provenance and transformations
 
 - [ ] Project committed lifecycle/movement evidence with actor, item UID,
@@ -347,7 +384,9 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   and dynamic code still need manual review.
 - [x] Complete source story dossiers for Twin Towers and Plains of Life,
   including all support/rejection/lore interactions and custom dependencies.
-- [ ] Complete comprehensive source dossiers for the other 218 roadmap areas.
+- [x] Complete source dossiers for Ailvio, Braddistock, Breale and Abandoned
+  Elven Homestead; retain source findings, optional preparation and exact receipts.
+- [ ] Complete comprehensive source dossiers for the other 214 roadmap areas.
 
 ## Per-zone integration register
 
@@ -358,8 +397,10 @@ contract classification; it does not claim complete objective coverage.
 | --- | ---: | --- | --- | --- | --- |
 | Twin Towers Forest | 3 | Complete: 84 contracts → 10 story/request units plus 12 service units; 40 rejections excluded | Source-comprehensive dossier; all addressable topics, optional live belt check, materials, receipts; dialogue/provenance pending | Fresh reset sources need durable generation; clothing/tanning mixed offerings unavailable | Source/native checks; full active journey remains pending |
 | Plains of Life | 2 | Q-free scripted tutorial; no invented native terminal | Source-comprehensive dossier: optional sign aids, accepted topic/tag/sword and stream travel; scripted history pending | Active reset scenery and confirmed sword grant remain blockers | Source/alias checks; active journey remains pending |
-| All 27 starter/town areas | 1 | Complete static Q classification; detailed counts and evidence in starter/town register | Orientation, encountered people, concrete delivery counts and native receipt checklists; selected multi-step routes | Existing offering limits; reviewed crafting and equipment services do not create story/daily units | All maps pass source/native validation; isolated native guided journey; individual full-world routes pending |
-| Eight additional quest areas | 1 | Complete: 86 contracts → 80 named story/request/service entries | Verified Q/M guidance, distinct material counts, optional preparation hints and receipts; deeper dialogue/lineage/branches pending | Mixed item-and-coin grove recipes remain unavailable; preparation services do not earn story/daily units | Source/native parser and encounter visibility checks; each full-world journey remains pending in the priority roadmap |
+| Breale | 2 | Complete: six independent Q exchanges | Source-comprehensive dossier; drawing translations, optional access/history, accepted materials and named reward guidance; all-stage/learned events pending | Active key/potion/reagent/shop resets need generation authority | Source/native checks; active journey and spell/escort content decisions pending |
+| Abandoned Elven Homestead | 2 | Complete: two achievement rows and two preparation services | Source-comprehensive dossier; optional egg/access/statue history, distinct key uses, shared speech/teleport and tapestry leads | Active materials/scenery/nested container sources need generation authority; native exchanges retain existing accounting | Source/native checks; active journey, lineage and accepted travel/lore events pending |
+| All 27 starter/town areas | 1–2 | Complete static Q classification; detailed counts and evidence in starter/town register | Orientation, encountered people, concrete delivery counts and native receipt checklists; selected multi-step routes | Existing offering limits; reviewed crafting and equipment services do not create story/daily units | All maps pass source/native validation; isolated native guided journey; individual full-world routes pending |
+| Eight additional quest areas | 1–2 | Complete: 86 contracts → 80 named story/request/service entries | Verified Q/M guidance, distinct material counts, optional preparation hints and receipts; deeper dialogue/lineage/branches pending | Mixed item-and-coin grove recipes remain unavailable; preparation services do not earn story/daily units | Source/native parser and encounter visibility checks; each full-world journey remains pending in the priority roadmap |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
 
 ## Twin Towers evidence and decisions

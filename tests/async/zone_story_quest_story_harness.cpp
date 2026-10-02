@@ -258,8 +258,59 @@ int main(int argc, char **argv)
 		record(mansion, lord.contracts.front(), "lord-collar", 13, 1300);
 		require(mansion.progress_for_zone(7, 42, 13).completed == 1,
 			"collar delivery did not complete the mansion story");
+		const auto &triad = story_for("breale", "finish-the-triad-mixture-2602");
+		service supplied_triad(catalog);
+		require(supplied_triad.discover_zone(7, 42, 26, 2654, 100, "arrival") ==
+					result::applied &&
+				supplied_triad.meet_npc(7, 42, 2602, 2654, 101) == result::applied,
+			"Triad encounter failed");
+		supplies.carried.clear();
+		supplies.carried[2670] = 1;
+		supplies.carried[2672] = 2;
+		supplies.carried[2675] = 2;
+		journal = supplied_triad.render_journal(7, 42, 26, 10, 1, 102, false, false,
+							&supplies);
+		require(journal.find("Next: " + triad.steps.back().text) != std::string::npos &&
+				supplied_triad.progress_for_zone(7, 42, 26).completed == 0,
+			"a supplied Triad recipe required earlier exchanges or invented history");
+		supplies.carried[2675] = 1;
+		require(supplied_triad.render_journal(7, 42, 26, 10, 1, 103, false, false,
+						      &supplies)
+					.find("Next: Carry 2 x a red mushroom") !=
+				std::string::npos,
+			"Triad duplicate ingredients did not require two actual mushrooms");
+		record(supplied_triad, triad.contracts.front(), "supplied-triad", 26, 2654);
+		require(supplied_triad.progress_for_zone(7, 42, 26).completed == 1 &&
+				supplied_triad.progress_for_zone(7, 42, 26).total == 6,
+			"Pontif delivery fabricated the other Triad or wounded-witch exchanges");
+		const auto &drider = story_for("elvish", "release-the-cursed-drider-35800");
+		const auto &statues = story_for("elvish", "prepare-the-two-statues-35800");
+		const auto &combine = story_for("elvish", "combine-the-statues-35801");
+		service homestead(catalog);
+		require(homestead.discover_zone(7, 42, 358, 35828, 100, "arrival") ==
+					result::applied &&
+				homestead.meet_npc(7, 42, 35800, 35828, 101) == result::applied &&
+				homestead.meet_npc(7, 42, 35801, 35822, 102) == result::applied,
+			"Homestead encounters failed");
+		supplies.carried.clear();
+		supplies.carried[35813] = 1;
+		const auto homestead_before_read = homestead.serialize_state();
+		journal = homestead.render_journal(7, 42, 358, 10, 1, 103, false, false, &supplies);
+		require(journal.find("Next: " + drider.steps.back().text) != std::string::npos &&
+				homestead.serialize_state() == homestead_before_read,
+			"a supplied remedy required local egg/access/recipe history or read wrote state");
+		record(homestead, statues.contracts.front(), "drider-prep", 358, 35828);
+		record(homestead, combine.contracts.front(), "hermit-prep", 358, 35822);
+		require(homestead.progress_for_zone(7, 42, 358).completed == 0 &&
+				homestead.progress_for_zone(7, 42, 358).total == 2,
+			"statue preparation prematurely completed the drider or egg request");
+		record(homestead, drider.contracts.front(), "supplied-remedy", 358, 35828);
+		service restored_homestead(catalog);
+		require(restored_homestead.deserialize_state(homestead.serialize_state(), &error) &&
+				restored_homestead.progress_for_zone(7, 42, 358).completed == 1,
+			"drider terminal receipt did not survive restart independently of the egg request");
 		std::cout
-			<< "All mappings, fish grouping, supplied-note/collar guidance, and receipt recovery passed.\n";
+			<< "All mappings, fish grouping, supplied-material guidance, Triad/Homestead preparation, and receipt recovery passed.\n";
 		return 0;
 	}
 	const bool applied = zone_story_quest_story::apply(read(argv[2]), "twin_towers_forest",

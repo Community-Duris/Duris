@@ -80,7 +80,14 @@ assert len(mansion["reset_commands"]) == 186
 assert [(a["kind"], a["vnum"], a["function"]) for a in mansion["special_assignments"]] == [("obj", 1372, "jet_black_maul")]
 # The identically named mobile procedure belongs to the other mansion area.
 assert not any(a["function"] == "braddistock" for a in mansion["special_assignments"])
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock"):
+breale = inventory_module.area_evidence(ROOT, "breale")
+assert len(breale["requests"]) == 6 and len(breale["dialogue"]) == 6
+assert len(breale["reset_commands"]) == 399
+assert len(breale["special_assignments"]) == 9 and set(breale["specials"]) == {"breale_townsfolk"}
+elvish = inventory_module.area_evidence(ROOT, "elvish")
+assert len(elvish["requests"]) == 4 and len(elvish["dialogue"]) == 6
+assert len(elvish["reset_commands"]) == 138 and not elvish["special_assignments"]
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:
