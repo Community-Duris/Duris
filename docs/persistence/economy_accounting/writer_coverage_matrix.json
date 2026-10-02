@@ -48084,8 +48084,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1955,
-          2779
+          1972,
+          2796
         ],
         "file": "src/world/db.c",
         "function": "read_mobile",
@@ -48239,7 +48239,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3059
+          3076
         ],
         "file": "src/world/db.c",
         "function": "instantiate_object_template",
@@ -49288,7 +49288,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3177
+          3194
         ],
         "file": "src/world/db.c",
         "function": "read_object",
@@ -49348,7 +49348,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3292
+          3309
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -49823,7 +49823,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3292
+          3309
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -49884,7 +49884,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3292
+          3309
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -49944,7 +49944,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3292
+          3309
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50004,7 +50004,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3292
+          3309
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50064,7 +50064,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3292
+          3309
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50111,7 +50111,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3292
+          3309
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",

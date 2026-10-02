@@ -256,3 +256,31 @@ port/scope tests pass. The direct disposable MySQL probe reproduces the old
 named-lock refusal. With the accompanying boot-owner candidate repair, the
 complete refusal/rollback/retry/restart journey passes on both SQL engines.
 Production exclusion-lock names, credentials and authority rules are unchanged.
+
+## No-specials quest-state boot repair
+
+The native quest-state bootstrap now runs after world/special initialization,
+outside the `no_specials` conditional. Normal boot retains its existing quest
+catalog load; `-s` boot loads the catalog before decoding retained quest state.
+A failed bootstrap still leaves the quest service disabled and logs its failure.
+The ASan/UBSan native helper regression passes normal, no-specials and failed-load
+cases. Quest feature, production catalog and account-delete runtime regressions
+pass. Incoming help repair PR #679 is preserved; its catalog, cache and nine
+audit tests also pass on the combined source.
+
+The combined native source tree is `2fa0d98dac56a1687e4af4314da7ac9b327a670d`.
+Both strict production builds pass. SQL executable SHA-256 is
+`abfc8124335fc7dbe95540db9582307b587cd7a8087268a7f214a5d441d1cec1`;
+flatfile executable SHA-256 is
+`de5f8c1089e143dc27aaa8329d78227af1d86986812c677af87cc8fc7eadcc8b`.
+The actual deletion journey passes both injected rollback refusals, playable
+reconnect, successful retry exactly once and usable account after cold restart
+on disposable MySQL 8.0.46 and MariaDB 10.11.14 using that SQL executable.
+
+An additional real flatfile account-menu journey remains RED: character authority
+deletion refuses before quest-state erasure with an unspecified authority failure.
+This separate backend refusal is being traced; the passing SQL journey and
+flatfile build do not qualify flatfile deletion, retained economic identity,
+all alias-erasure paths or full R8. The frozen broader candidate suite remains
+separate and in progress. Writer anchors are refreshed without adding writers;
+normal validation passes with release still blocked.

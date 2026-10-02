@@ -151,6 +151,14 @@ see the [October 2 evidence](REVIEW_STATUS_2026-10-02.md).
    flatfile journeys. Production migration and deployment require separate
    owner authorization.
 
+The no-specials quest-state boot dependency is repaired and the native SQL
+deletion refusal/rollback/retry/cold-restart journey passes on both engines for
+the combined source including help PR #679. A real flatfile account-menu
+deletion still refuses in its authority transaction before quest cleanup;
+trace and repair that separate backend failure without weakening deletion
+fences. These bounded results leave retained economic identity, complete alias
+erasure and the wider R8 gates open; see the October 2 review status for hashes.
+
 ## Nonnegotiable invariants
 
 - Native authority decides balances and custody; stale snapshots and live
