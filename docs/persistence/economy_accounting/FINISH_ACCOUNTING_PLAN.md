@@ -53,9 +53,15 @@ remote backup custody and measured workload qualification remain open.
 Restore now also refuses unwitnessed wallet/bank revisions and missing native
 revision pairs even when all denomination totals remain unchanged. It accepts
 both currency-ledger and committed economic-effect witnesses, counting their
-same-revision bridge once. Dual-engine SELECT-only probes and all ten native
+same-root, same-transition bridge once, including receipted native children.
+Distinct roots claiming the same revision and invalid wallet/bank transitions
+refuse even when counting them could hide another missing revision. Dual-engine
+SELECT-only probes and all ten native
 recovery cases pass this bounded R8 repair; complete accounting/clone workload
-qualification is still required.
+qualification is still required. The diagnostics integration now also passes
+both strict production builds, all ten native recovery cases and the nested
+locker journey on both SQL engines at native source `5d6cf93...`. These bounded
+proofs remain separate from the frozen failed broad runs and full R1-R8 gates.
 
 The later frozen `79540e65d` broad run also finished: 826 passed, 11 skipped
 and two stale source-contract assertions failed in 6,127.39 seconds. NPC cash

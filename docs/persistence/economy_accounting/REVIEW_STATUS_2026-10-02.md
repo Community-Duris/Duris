@@ -881,3 +881,68 @@ bootstrap and all 53 migrations. Its first attempt omitted migration 0038's
 item equipment-slot prerequisite; it passes with the fully migrated schema.
 Log: `tmp/diagnostics-doctor-dual-sql-green.local.log`. Earlier native proofs and these
 component results do not close R1-R8 or the full qualification gate.
+
+## SQL restore revision-root identity repair and integrated native refresh
+
+The frozen `820607ce5` qualifier admits two unrelated committed economic roots
+claiming the same wallet/bank revision. Its UNION projected only native identity
+and revision, so distinct operations collapsed into one apparent witness. A
+changed economic before-revision also admitted alongside the native final
+revision. The RED SELECT probe retains native currency-ledger revision uniqueness
+constraints; the collision is across economic/native evidence, not a native
+ledger row that the real schema would already refuse.
+
+The qualifier now preserves the original root and before/after revision in each
+witness. A durably receipted native child resolves through its declared economic
+root. UNION deduplicates only matching root/transition witnesses; per-revision
+grouping rejects distinct roots or conflicting transitions before counting the
+complete interval. Current native wallet/bank effects must be one-step
+transitions. Several distinct native child revisions within one root remain
+admissible. Full uint64 comparison, empty/opening cuts, and legacy native-only
+histories remain supported. No native operation or inactive gameplay changes.
+
+The actual SELECT-only probes pass on both engines: same-root bridge, receipted
+parent/child bridge, multiple native child revisions, distinct-root collision,
+missing revision plus conflicting witness, backward/skipping transition refusal,
+exact repaired history, stale/future counters and UINT64_MAX. These are bounded
+SQL component proofs, not a complete audit of root payload authenticity,
+sources, values or active-accounting player journeys. Qualifier SHA-256:
+`1e5f61eb140b43cca2a92d545af01f8fc8d12a816ab311aee9cdf4586fbba2c4`;
+component SHA-256:
+`32311549032f75c977e3bd09870286f9e0840c4684f0d3207a1c043f899c45f0`.
+Logs: `tmp/restore-currency-revision-identity-red-real-constraints.local.log`
+and `tmp/restore-currency-revision-identity-green.local.log` (SHA-256
+`d9a119c178ed84c915f45dc1b16c578b397d6f25bfae9fb22ed5df44f3407912`).
+
+Native source `5d6cf93e958abab2f9c32d4c9c86159a6808dc7f`, including upstream
+persistence diagnostics, passes both strict production builds. SQL executable
+SHA-256 is `3ed76722665a7025d07d5ea4353fb1a57dfc31d6daef1d5d1830014c41468601`;
+flatfile is `4d913107685f82231888536bf9e2b05be2c2e36ce6add1282613a7e23aad9dc5`.
+The ten-case native backup/recovery suite passes in 281.916 seconds with both SQL
+engines enabled: full dump/import, exact completed migration history, source and
+candidate version readbacks, wallet/bank/epic history corruption refusal, retained
+receipts, WAL/flatfile recovery, private-checkout isolation and native service
+boot. Its first integrated attempt added an impossible native duplicate-revision
+fixture, which the real ledger uniqueness indexes refused; that probe is removed
+from the native suite and constrained correctly in the independent SQL component.
+The 301.181-second failed fixture run remains retained separately, not relabeled.
+
+QA source: `/opt/duris-accounting-diagnostics-integration-820607ce/source`.
+Logs: `tmp/diagnostics-integration-build.local.log`,
+`tmp/diagnostics-current-native-recovery-fixture-red.local.log`, and
+`tmp/diagnostics-current-native-recovery.local.log`. The same SQL executable also
+passes the complete nested locker deposit/reload/withdrawal/reload journey on
+both engines, preserving original UIDs, exact 5->6->7 revisions, original
+metadata, exactly two immutable item events per transfer and durable receipts.
+Accounting remains inactive. QA: `/opt/duris-accounting-diagnostics-locker-review/source`;
+log `tmp/diagnostics-locker-dual-sql.local.log`, SHA-256
+`4e930cb526450ebdea953e4333d62e363d442baf4c86d75bb71fb75f13b24d95`.
+
+The earlier 40 policy/seven socket tests and integrated diagnostics/save/journal
+checks remain passing; all 14 accounting fixtures, matrix --check and 52 writer
+contracts pass after the source-location refresh. This closes a bounded R8
+revision-root ambiguity and refreshes named native checks after integration.
+Full money value/source reconstruction, active journeys, flatfile parity,
+captured-clone/full-world, erasure, remote custody and measured workload remain
+open. The original combat RED and declined inactive spell boundary are retained;
+coverage_complete=False and release BLOCKED.

@@ -43,7 +43,8 @@ def require_currency_revision_history(executor):
     """Require every wallet/bank revision from native or accounted effects.
 
     Accounted owners such as shops can advance native authority without a
-    legacy currency row. UNION removes the duplicate witness when both exist.
+    legacy currency row. Only the same root and one-step transition may share
+    a native revision; unrelated operations are distinct evidence, not retries.
     """
     for table, identity, baseline, ledger_identity, revision, kind_tag in (
             ("player_data", "pid", "currency_wallet_baseline", "pid", "wallet_revision", "01000100"),
@@ -54,29 +55,41 @@ def require_currency_revision_history(executor):
             "REVERSE(UNHEX(LPAD(HEX(m.context_id),16,'0'))),UNHEX('00000000'))"
         )
         events = (
-            f"SELECT l.{ledger_identity} native_id,l.{revision} revision "
+            f"SELECT l.{ledger_identity} native_id,l.{revision} revision,"
+            f"CAST(l.{revision} AS DECIMAL(20,0))-1 before_revision,"
+            "COALESCE(c.operation_id,l.operation_id) event_root "
             "FROM currency_ledger l JOIN critical_operation_inbox i ON i.operation_id=l.operation_id "
+            "LEFT JOIN economic_accounting_child c ON c.child_operation_id=l.operation_id "
+            "AND c.receipt_operation_id=l.operation_id AND c.relationship=1 "
             "WHERE i.status=1 AND i.result_code=0 AND i.failure_stage=0 AND i.committed_at IS NOT NULL "
-            "UNION SELECT m.native_id,e.after_revision revision FROM economic_account_mapping m "
+            "UNION SELECT m.native_id,e.after_revision revision,e.before_revision,o.operation_id event_root "
+            "FROM economic_account_mapping m "
             "JOIN economic_accounting_account_effect e ON e.account_key=" + account_key +
             " JOIN economic_accounting_operation o ON o.operation_id=e.operation_id AND o.lineage=m.lineage "
             "JOIN critical_operation_inbox i ON i.operation_id=o.operation_id "
             "WHERE m.backend_kind=1 AND m.account_kind=" + ("1" if table == "player_data" else "2") +
             " AND m.active_native_id=m.native_id AND m.retiring_operation_id IS NULL "
             "AND o.outcome=1 AND o.result_code=0 AND o.reason<>38 "
-            "AND e.after_revision>e.before_revision "
+            "AND e.after_revision<>e.before_revision "
             "AND i.status=1 AND i.result_code=0 AND i.failure_stage=0 AND i.committed_at IS NOT NULL"
+        )
+        revisions = (
+            "SELECT native_id,revision,MAX(before_revision) before_revision,COUNT(*) witnesses "
+            f"FROM ({events}) raw_events GROUP BY native_id,revision"
         )
         baseline_identity = ledger_identity
         query = (
             f"SELECT COUNT(*) FROM {table} n JOIN {baseline} b ON b.{baseline_identity}=n.{identity} "
             f"LEFT JOIN (SELECT b.{baseline_identity} native_id,COUNT(e.revision) event_count,"
-            f"MAX(e.revision) last_revision FROM {baseline} b LEFT JOIN ({events}) e "
+            "SUM(CASE WHEN CAST(e.revision AS DECIMAL(20,0))-"
+            "CAST(e.before_revision AS DECIMAL(20,0))<>1 OR e.witnesses<>1 "
+            "THEN 1 ELSE 0 END) invalid_steps,"
+            f"MAX(e.revision) last_revision FROM {baseline} b LEFT JOIN ({revisions}) e "
             f"ON e.native_id=b.{baseline_identity} AND e.revision>b.opening_revision "
             f"GROUP BY b.{baseline_identity}) h ON h.native_id=n.{identity} "
             f"WHERE n.{revision}<>COALESCE(h.last_revision,b.opening_revision) OR "
             f"CAST(n.{revision} AS DECIMAL(20,0))-CAST(b.opening_revision AS DECIMAL(20,0))"
-            "<>h.event_count;"
+            "<>h.event_count OR h.invalid_steps<>0;"
         )
         if executor.sql(query) != "0":
             raise RuntimeError("restore_currency_revision_history_mismatch")
