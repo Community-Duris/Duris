@@ -46,6 +46,11 @@ source-reuse refusal; its full transaction/replay/epoch/concurrency probe passes
 on both engines. Native load/recovery and telemetry schema/factory checks also
 pass separately on both engines. These leave player-journey, backup/restore,
 real telemetry-role grants and Docker integration gates open.
+Guarded development combat has bounded variant passes on both engines,
+but the first MariaDB boon attempt has an unexplained owner-revision failure.
+The fixture now retains exact acknowledged source rows before assertions for
+that investigation. Production conflict-release attempts remain RED; no gate
+or inactive selector is changed.
 
 The disposable playtime journey now honors a validated `TEST_DB_PORT` in both
 native connections and SQL clients. Its outdated temporary-table probe is

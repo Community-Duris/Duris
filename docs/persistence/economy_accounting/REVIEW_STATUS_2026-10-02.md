@@ -381,8 +381,10 @@ The same source builds a separate strict development executable, SHA-256
 `8b3556f6e1417c23645883e0e03e19ab9632ca71faf716825753d3373b649b26`.
 Its default-coin MariaDB unassisted journey passes durable acknowledgement before
 the account menu, original item evidence, self-scoped recovery list/detail,
-cold-entry refusal and restart without manual fixture repair. Remaining coin,
-boon and MySQL variants are in progress. The production selector and safety gates
+cold-entry refusal and restart without manual fixture repair. The reset-coin MariaDB variant also passed. The first boon variant failed
+its byte-exact unrelated-owner revision check; that RED result is retained.
+Later diagnostic qualification passes all three MySQL variants and the MariaDB
+boon repeat, as detailed below. The production selector and safety gates
 remain unchanged; these development results do not qualify production release.
 
 ## Item supply-state audit consistency
@@ -462,3 +464,31 @@ the exact baseline exception set. Existing creation, movement, one retirement,
 UID-reuse, supply-state and deep topology checks continue to pass. This closes
 that bounded R4/R7 audit omission; it does not make the partial exporter or
 unqualified routes complete, and activation/release remain blocked.
+
+## Retained-conflict failure readbacks and development variants
+
+The first development MariaDB boon run failed because an unrelated item-owner
+revision row changed during the wallet-conversion window. Its assertion ran
+before the acknowledged source readback was attached to retained evidence,
+leaving no exact after-row set to diagnose. The fixture now stores that complete
+readback immediately after observation and reports exact before/after revision
+rows on failure. No native selector or assertion is relaxed.
+
+With that diagnostic test, SHA-256
+`1e5e87a2b8b204cebeeab3aeada5e4c6d2ab57fe53c047fae0b6b11bda8c4327`,
+the complete default/reset-coin/boon MySQL run and a MariaDB boon repeat pass on
+the strict development executable recorded above. The initial default/reset-coin
+MariaDB passes used the earlier diagnostic-free test. These actual player
+journeys prove healthy death with 12 original item identities, one corpse-create
+operation, retained-conflict acknowledgement before the account menu, exact
+wallet/source evidence, self-scoped recovery list/detail, cold-entry refusal and
+restart without manual fixture repair. The fixture checkout is exact
+`d3135428207aef41407434849dadf922780cb151` plus only the diagnostic test changes;
+native source remains `2fa0d98dac56a1687e4af4314da7ac9b327a670d`.
+
+The later passes do not explain or erase the original owner-revision failure.
+Its intermittent cause remains an open qualification finding, now with exact
+failure capture for further investigation. These TEST_MUD-only fixture results
+do not promote production conflict release or active accounting. Both original
+production-profile attempts remain RED, and the broad 839-test frozen run is
+still in progress.
