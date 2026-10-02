@@ -5,6 +5,7 @@
 #include "persistence/persistence_observability.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_save_journal.h"
+#include "player/player_quarantine_recovery.h"
 #include "sql/item_extra_descr_codec.h"
 #include "sql/sql_pool.h"
 
@@ -2240,6 +2241,110 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 			 durable, query.error_code };
 	}
 	return { player_save_apply_outcome::applied, snapshot.revision, 0 };
+}
+
+player_save_apply_result
+player_snapshot_repository_recovery_apply(MYSQL *connection,
+					  const player_save_recovery_record &record)
+try
+{
+	if (!connection || record.backend != 2 || !player_save_journal_recovery_matches(record))
+		return { player_save_apply_outcome::terminal_failure, 0, EPERM };
+#ifndef __NO_MYSQL__
+	if (!(connection->server_status & SERVER_STATUS_AUTOCOMMIT) ||
+	    (connection->server_status & SERVER_STATUS_IN_TRANS))
+		return { player_save_apply_outcome::terminal_failure, 0, EBUSY };
+#endif
+	const auto &snapshot = record.replacement;
+	auto query = execute(connection, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+	if (query.ok)
+		query = execute(connection, "START TRANSACTION");
+	if (!query.ok)
+		return failure(query.error_code);
+	const auto rollback_transaction = [](MYSQL *owner)
+	{
+#ifndef __NO_MYSQL__
+		if (!(owner->server_status & SERVER_STATUS_IN_TRANS))
+			return;
+#endif
+		mysql_real_query(owner, "ROLLBACK", 8);
+	};
+	std::unique_ptr<MYSQL, decltype(rollback_transaction)> rollback_guard(connection,
+									      rollback_transaction);
+	query = execute(connection, "SELECT pid FROM player_data WHERE pid=" +
+					    std::to_string(snapshot.pid) + " FOR UPDATE");
+	if (!query.ok)
+	{
+		execute(connection, "ROLLBACK");
+		return failure(query.error_code);
+	}
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+		mysql_store_result(connection), mysql_free_result);
+	if (!rows || mysql_num_rows(rows.get()) != 1)
+	{
+		rows.reset();
+		execute(connection, "ROLLBACK");
+		return { player_save_apply_outcome::terminal_failure, 0, ENOENT };
+	}
+	rows.reset();
+	bool present = false;
+	const bool receipt =
+		player_quarantine_recovery_sql_receipt(connection, record, false, &present);
+	const auto current =
+		receipt ? player_load_repository_quarantine_inspect(
+				  connection, player_quarantine_recovery_request(record), &record) :
+			  player_load_result{};
+	if (receipt && present && player_quarantine_recovery_state_matches(current, record, true))
+	{
+		execute(connection, "ROLLBACK");
+		return { player_save_apply_outcome::already_applied, snapshot.revision, 0 };
+	}
+	if (!receipt || present ||
+	    !player_quarantine_recovery_state_matches(current, record, false) ||
+	    !player_quarantine_recovery_creation_proofs_sql(connection, record))
+	{
+		execute(connection, "ROLLBACK");
+		return { player_save_apply_outcome::terminal_failure, current.snapshot.revision,
+			 ESTALE };
+	}
+	// Reuse the native component/custody writers. Recovery never applies a grant,
+	// economic mutation, death disposition, or operation-bearing save receipt.
+	query = apply_components(connection, snapshot);
+	if (query.ok)
+		query = execute(connection, "UPDATE player_data SET save_revision=" +
+						    std::to_string(snapshot.revision) +
+						    " WHERE pid=" + std::to_string(snapshot.pid) +
+						    " AND save_revision=" +
+						    std::to_string(record.baseline.revision));
+	if (!query.ok || mysql_affected_rows(connection) != 1)
+	{
+		execute(connection, "ROLLBACK");
+		return failure(query.ok ? EAGAIN : query.error_code, query.custody_diagnosis);
+	}
+	const auto projected = player_load_repository_quarantine_inspect(
+		connection, player_quarantine_recovery_request(record), &record);
+	if (!player_quarantine_recovery_state_matches(projected, record, true) ||
+	    !player_quarantine_recovery_sql_receipt(connection, record, true, &present) || !present)
+	{
+		execute(connection, "ROLLBACK");
+		return { player_save_apply_outcome::terminal_failure, record.baseline.revision,
+			 EILSEQ };
+	}
+	query = execute(connection, "COMMIT");
+	if (!query.ok)
+	{
+		if (!connection_error(query.error_code))
+			execute(connection, "ROLLBACK");
+		return { connection_error(query.error_code) ?
+				 player_save_apply_outcome::ambiguous_commit :
+				 failure(query.error_code).outcome,
+			 record.baseline.revision, query.error_code };
+	}
+	return { player_save_apply_outcome::applied, snapshot.revision, 0 };
+}
+catch (...)
+{
+	return { player_save_apply_outcome::retryable_failure, 0, ENOMEM };
 }
 
 player_save_apply_result player_snapshot_repository_apply_from_pool(const player_snapshot &snapshot,

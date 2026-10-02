@@ -24,6 +24,11 @@ DB_NAME="$DB_NAME" "$ROOT/migrations/verify_collector_item_owner.sh"
 DB_NAME="$DB_NAME" "$ROOT/migrations/verify_item_ownership_schema.sh"
 export ITEM_TRANSFER_TEST_DB_NAME="$DB_NAME"
 mkdir -p "$ROOT/bin/tests"
+TEST_BINARY="$ROOT/bin/tests/item_transfer_mysql_harness"
+if [[ "${PLAYER_QUARANTINE_RECOVERY_TEST:-}" == 1 ]]; then
+    [[ "$DB_NAME" =~ ^economic_schema_test_recovery_[a-f0-9]{16}$ ]] || { echo 'refusing recovery fixture outside its generated disposable schema' >&2; exit 1; }
+    TEST_BINARY="$ROOT/bin/tests/${DB_NAME}_item_transfer_harness"
+fi
 read -r -a MYSQL_CFLAGS <<< "$(mysql_config --cflags)"
 read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
 g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fdata-sections -Isrc \
@@ -52,6 +57,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
     src/player/player_snapshot_repository.c src/player/player_load_repository.c \
     src/player/player_death_recovery_query.c src/player/player_death_conflict_repository.c \
     src/player/player_save_journal.c \
+    src/player/player_quarantine_recovery.c \
     src/player/player_load_topology.c src/persistence/persistence_observability.c \
     src/persistence/economic_accounting_repository.c \
     src/persistence/economic_sql_bank_transaction.c \
@@ -67,13 +73,13 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
     src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
     src/persistence/quest_reward_obligation_repository.c \
     src/persistence/critical_command_journal.c src/persistence/critical_command_coordinator.c \
-    -Wl,--gc-sections "${MYSQL_LIBS[@]}" -lcrypto -lz \
-    -o "$ROOT/bin/tests/item_transfer_mysql_harness"
+    -Wl,--gc-sections -Wl,--wrap=mysql_real_query "${MYSQL_LIBS[@]}" -lcrypto -lz \
+    -o "$TEST_BINARY"
 # The accounted lifecycle fixture retains many bounded item payloads in one
 # test frame. The usual 8 MiB shell stack can overflow before its SQL checks.
 if ! ulimit -s 65536; then
     echo 'item transfer SQL harness requires a 64 MiB stack' >&2
     exit 1
 fi
-"$ROOT/bin/tests/item_transfer_mysql_harness"
+"$TEST_BINARY"
 printf 'item creation, sourced creation claims, subtree, stale, incomplete, replay, transfer, destruction, ledger, and outbox checks passed\n'

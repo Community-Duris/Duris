@@ -19,6 +19,15 @@ pinned 225-table schema on disposable MySQL 8.0.46 and MariaDB 10.11.14 targets.
 The writer inventory covers 863 routes, 2,811 occurrences and 2,753 unique sites
 with zero unmapped sites. These counts do not replace route qualification.
 
+Stopped quarantine recovery from upstream `5c157f693` is integrated with the
+review fixes. Version-2 archives retain original frames and frozen grant
+commands; native commit proofs gate resolution and later-save revalidation.
+Synthetic native archive/flatfile restore checks and actual commit/crash tests
+on disposable MySQL 8.0.46 and MariaDB 10.11.14 pass. This does not establish
+recoverability of historical live PIDs. The stopped recovery restrictions and
+proof requirements are in the [recovery contract](../PLAYER_QUARANTINE_RECOVERY.md);
+the captured-clone gameplay and integrated workload gates below remain open.
+
 ## Delivery gates
 
 | Gate | Required outcome |

@@ -544,6 +544,7 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_revision_state.o \
 				 player/player_save_worker.o \
 				 player/player_save_journal.o \
+				 player/player_quarantine_recovery.o \
 				 player/player_save_pipeline.o \
 				 player/player_death_restitution_runtime.o \
 				 player/player_death_restitution_adapter.o \

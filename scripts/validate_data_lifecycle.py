@@ -99,6 +99,9 @@ REQUIRED_NON_DATABASE_STORES = {
     "file:player_save_quarantine_policy": (
         "recovery_state", "PLAYER_SAVE_JOURNAL_DIR/player-save.quarantine-pids",
     ),
+    "file:player-quarantine-recovery-receipts": (
+        "recovery_state", "FLATFILE_ROOT/metadata/player-recovery-*.receipt",
+    ),
     "file:critical_command_journal": ("journal", "CRITICAL_COMMAND_JOURNAL_DIR"),
     "file:persistence_fallback": ("fallback", "legacy persistence fallback file"),
     "file:persistence_fallback_quarantine": (
@@ -140,6 +143,7 @@ RECIPE_PROGRESSION_RECOVERY_STORES = {
     "file:player-craft-obligations",
 }
 COUPLED_PLAYER_RECOVERY_STORES = {
+    "file:player-quarantine-recovery-receipts",
     "database:player_death_disposition",
     "database:player_death_conflict_evidence",
     "database:player_spell_effect_receipt",
