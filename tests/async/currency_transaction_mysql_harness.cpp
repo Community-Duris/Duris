@@ -329,15 +329,20 @@ void coin_failure_matrix()
 	assert(scalar("SELECT COUNT(*) FROM critical_operation_inbox i WHERE status=1 "
 		      "AND NOT EXISTS (SELECT 1 FROM critical_outbox o WHERE o.operation_id=i.operation_id)") ==
 	       0);
-	// A crash before the inventory snapshot leaves no player_items coin row.
+	// Simulate a missing legacy inventory projection. Custody still owns the pile.
+	execute("DELETE FROM player_items WHERE pid=" + pid_text + " AND obj_uid=900000002");
 	verify_reload(900, 100);
 	// A later stale projection must not replace the committed amount or metadata.
 	execute("INSERT INTO player_items(pid,vnum,obj_uid,container_id,value0,name,item_type) VALUES(" +
 		pid_text + ",402013,900000002," + std::to_string(bag_row) + ",1,'stale coins',20)");
 
 	critical_command merge = make_put(900, 100, 200);
-	assert(critical_command_repository_apply(connection, merge).outcome ==
-	       critical_apply_outcome::applied);
+	const auto merged = critical_command_repository_apply(connection, merge);
+	if (merged.outcome != critical_apply_outcome::applied)
+		fprintf(stderr, "coin merge failed: outcome=%u error=%u stage=%u mysql=%s\n",
+			unsigned(merged.outcome), merged.error_code, unsigned(merged.failure_stage),
+			mysql_error(connection));
+	assert(merged.outcome == critical_apply_outcome::applied);
 	// Discard the first acknowledgement, then replay its operation ID.
 	assert(critical_command_repository_apply(connection, merge).outcome ==
 	       critical_apply_outcome::already_applied);

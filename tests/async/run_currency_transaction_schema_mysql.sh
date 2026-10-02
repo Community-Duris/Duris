@@ -91,6 +91,11 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/persistence/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
     -o "$ROOT/bin/tests/currency_transaction_mysql_harness"
 "$ROOT/bin/tests/currency_transaction_mysql_harness"
+if [[ "${CURRENCY_TEST_COIN_ONLY:-0}" == 1 ]]; then
+    # The coin matrix has completed; the default runner retains its unrelated
+    # loader companion. EXIT still removes this disposable database.
+    exit 0
+fi
 # The new coin query also runs on ordinary inventories; retain the full existing
 # loader regression matrix alongside the crash-window coin cases above.
 g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \

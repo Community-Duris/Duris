@@ -171,7 +171,7 @@ The same harness also retains the existing SQL fault/rollback and interrupted
 transaction probe. A race where the pause finishes before `KILL CONNECTION` is
 now treated as an assertion outcome rather than an unrelated fixture SQL abort.
 
-Executed checks on this branch:
+The original receipt change was validated with:
 
 - `python3 tests/async/test_coin_command_transaction_contract.py` — passed.
 - `python3 tests/async/test_currency_transaction_contract.py` — 10 tests passed.
@@ -186,6 +186,29 @@ Executed checks on this branch:
 - `./tests/async/run_currency_transaction_schema_mysql.sh` — passed on the
   disposable MariaDB wrapper, including schema migration, coin SQL matrix, and
   player-load companion harness.
+
+The disconnect expansion was validated on October 2, 2026 with:
+
+- `python3 tests/async/test_currency_completion_retention.py` — 74 ASan/UBSan
+  scenarios passed across MySQL and flatfile builds.
+- `python3 tests/async/test_currency_input_queue.py` — both builds passed,
+  including retained publication, reconnect admission, and morph bank guards.
+- The coin-command, currency-transaction (10 tests), and critical-transaction
+  contract tests — passed.
+- `CURRENCY_TEST_COIN_ONLY=1 ./tests/async/run_currency_transaction_schema_mysql.sh`
+  — passed using a disposable MariaDB 10.11 server. The fixture now explicitly
+  removes the materialized legacy coin row before simulating a missing projection,
+  rather than accidentally creating duplicate physical rows.
+- `make -C src -j2` in the existing Docker build toolchain — passed.
+- `./scripts/format.sh --check --file ...` for every changed C/C++ file and
+  `git diff --check` — passed. Explicit files avoid Windows executable-mode noise
+  in WSL's Git comparison.
+
+The default SQL wrapper completed the coin matrix, then failed its unchanged
+player-loader companion at the invalid trophy expectation (request 811): that test
+expects `component_failure` while the loader returns a degraded load. The focused
+coin selector leaves the default companion enabled and avoids changing unrelated
+loader behavior or fixtures in this fix. No live game database was used.
 
 ## Historical evidence and limits
 
