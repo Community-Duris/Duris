@@ -99,7 +99,9 @@ Each entry runs in a separate interpreter. The adapter observes named unittest
 cases, rejects a successful zero-case suite, verifies declared function/main
 invocation, and preserves failure/skip outcomes. Native drivers remain explicit
 entry-level cases; their internal assertions are not counted as observed Python
-cases. Failure diagnostics print immediately and a 30-second heartbeat names
+cases. Successful entries must acknowledge completed observation, so a premature
+zero exit cannot bypass validation. Observed unittest skips do not depend on its
+console summary. Failure diagnostics print immediately and a 30-second heartbeat names
 active tests. Existing 900/1800-second deadlines remain in metadata; `TEST_TIMEOUT`
 overrides them. Timeout/interrupt cleanup terminates process groups on POSIX and
 uses `taskkill /T /F` on Windows. Ctrl+C cancels queued work and returns 130.
@@ -153,16 +155,15 @@ preflight, Chaos kit, combat and full-world boot acquire one compatible flat-fil
 authority, journals, logs, listeners and process cleanup. Executables are shared
 read-only; runtime state is never stored in the artifact directory. The
 item-prompt ASan/UBSan harness remains a separate build with its existing flags
-and timeout. Resource-intensive tests still run serially, with two jobs per
-server build and the original 600-second build ceiling. Auction/coin-put also
-builds its inspector in a per-invocation temporary directory, so independent
-runners do not overwrite a shared executable.
+and timeout. Resource reservations bound overlapping journeys; each server build
+retains two compiler jobs and the original 600-second build ceiling. Auction/coin-put
+acquires a private copy of the immutable inspector, so independent runners do not
+overwrite a shared executable.
 
-Serial scheduling prevents compiler contention within one runner; it does not
-guarantee a warm cache. A filtered run, disabled cache, or changed build inputs
-can still require a cold server build in the serial phase. Even cache hits hash
-inputs and validate the artifact before reuse. The runner reports build and
-validation time separately so this cost remains visible.
+Resource scheduling bounds contention within one runner; a filtered run, disabled
+cache, or changed build inputs can still require a cold server build. Cache hits
+also hash inputs and validate the artifact before reuse. The runner reports build
+and validation time separately so this cost remains visible.
 
 The artifact key covers all files under `src/` (including untracked files),
 test headers, the helper contract, the flat-file backend, and the inherited build
