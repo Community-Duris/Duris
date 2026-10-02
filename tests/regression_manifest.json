@@ -70,7 +70,7 @@
   "test_auction_ship_txn_fixes.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.281,"purpose":"Regression checks for auction bid transaction leak, cargo commit rollback, and ship db_id reset."},
   "test_auction_transaction_engines.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.017,"purpose":"auction transaction engines"},
   "test_auction_transactional_cutover.py": {"profile":"native","mode":"unittest","minimum_cases":6,"cpu":1,"memory_mb":512,"seconds":1.41,"purpose":"Command-codec, route, schema, and publication contracts for auction cutover."},
-  "test_audit_accounting_invariants.py": {"profile":"fast","mode":"unittest","minimum_cases":11,"cpu":1,"memory_mb":256,"seconds":0.065,"purpose":"Regression and invariant tests for audit_accounting_invariants.py."},
+  "test_audit_accounting_invariants.py": {"profile":"fast","mode":"unittest","minimum_cases":16,"cpu":1,"memory_mb":256,"seconds":0.065,"purpose":"Regression and invariant tests for audit_accounting_invariants.py."},
   "test_audit_command_contract.py": {"profile":"fast","mode":"unittest","minimum_cases":2,"cpu":1,"memory_mb":256,"seconds":0.036,"purpose":"Contract and behavior tests for the immortal 'audit' provenance command."},
   "test_automaton_quest_recovery.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.028,"purpose":"Keep automaton quest setup on the side of the world-authority boundary."},
   "test_backup_pfiles.py": {"profile":"recovery","mode":"unittest","minimum_cases":2,"cpu":1,"memory_mb":256,"seconds":4.757,"purpose":"Shell entry point with synthetic dump processes; no database is contacted."},
