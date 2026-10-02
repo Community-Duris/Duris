@@ -32,9 +32,10 @@ int enhance_material_ival_delta=0, enhance_search_max_attempts=1,
  enhance_ival_gain_normal=1, enhance_original_max_roll=0, enhance_original_cascade_down_first=1,
  enhance_ival_cap=100;
 int attempts, debits, published, input_retired, output_retired, reads;
+int luck=0,roll=INT_MAX,maximum_item_value=150;
 bool reject_debit, pouch_mode;
 object output, source_item, material_item;
-#define GET_C_LUK(ch) 0
+#define GET_C_LUK(ch) luck
 #define GET_LEVEL(ch) ((ch)->player.level)
 #define GET_MONEY(ch) ((ch)->money)
 #define GET_NAME(ch) "fixture"
@@ -49,9 +50,9 @@ bool is_enhance_banned(P_obj) { return false; }
 bool chaos_material_pouch_is_active(P_obj o) { return pouch_mode && o==&material_item; }
 P_obj chaos_material_pouch_find(P_char) { return &material_item; }
 int itemvalue(P_obj o) { return o->value; }
-int number(int,int) { return INT_MAX; }
+int number(int,int) { return roll; }
 int enhance_hash(int) { return 0; }
-int enhance_maximum_item_value(int) { return 150; }
+int enhance_maximum_item_value(int) { return maximum_item_value; }
 P_obj read_object(int,int) { ++reads; return &output; }
 void act(const char*,int,P_char,P_obj,void*,int) {}
 void send_to_char(const char*,P_char) {}
@@ -68,7 +69,30 @@ int SUB_MONEY(P_char ch,int amount,int) {
  ch->money-=amount; ++debits; return 0;
 }
 @FUNCTION@
+void reset_counts() { attempts=debits=published=input_retired=output_retired=reads=0; }
 int main() {
+ character numeric_actor;
+ reject_debit=false; pouch_mode=false;
+ source_item.value=10; material_item.value=100; entry.ival=11;
+ enhance_material_ival_delta=INT_MIN; reset_counts();
+ enhance(&numeric_actor,&source_item,&material_item);
+ assert(numeric_actor.money==10000 && !attempts && !published && !input_retired && !reads);
+ enhance_material_ival_delta=0; enhance_ival_gain_normal=INT_MAX; reset_counts();
+ enhance(&numeric_actor,&source_item,&material_item);
+ assert(numeric_actor.money==10000 && !attempts && !published && !input_retired && !reads);
+ enhance_ival_gain_normal=1; enhance_ival_cap=INT_MAX; enhance_original_max_roll=1;
+ reset_counts(); enhance(&numeric_actor,&source_item,&material_item);
+ assert(numeric_actor.money==9500 && published==1 && input_retired==2);
+ numeric_actor.money=10000; luck=2;roll=1;enhance_search_max_attempts=INT_MAX;
+ reset_counts(); enhance(&numeric_actor,&source_item,&material_item);
+ assert(numeric_actor.money==9500 && published==1 && input_retired==2);
+ luck=0;roll=INT_MAX;maximum_item_value=INT_MAX;enhance_ival_gain_normal=0;
+ source_item.value=INT_MAX;material_item.value=INT_MAX;entry.ival=INT_MAX-1;
+ enhance_original_max_roll=INT_MAX;reset_counts();numeric_actor.money=10000;
+ enhance(&numeric_actor,&source_item,&material_item);
+ assert(numeric_actor.money==9500 && published==1 && input_retired==2);
+ maximum_item_value=150;enhance_ival_gain_normal=1;enhance_original_max_roll=0;
+ enhance_search_max_attempts=1;enhance_ival_cap=100;
  for(bool pouch : {false,true}) for(int value : {10,21}) {
   source_item.value=value; material_item.value=100; entry.ival=value+1; pouch_mode=pouch;
   for(int fee : {500,0,-1,INT_MIN}) for(bool reject : {true,false}) {
@@ -98,4 +122,4 @@ with tempfile.TemporaryDirectory(prefix='duris-ordinary-enhance-payment-') as te
                     '-O1','-g','-fsanitize=address,undefined','-fno-sanitize-recover=all',
                     '-fno-pie','-no-pie',str(cpp),'-o',str(binary)],cwd=ROOT,check=True)
     subprocess.run([str(binary)],check=True,timeout=30)
-print('Ordinary enhancement: debit refusal preserves inputs, releases output, and accepts valid free/paid quotes')
+print('Ordinary enhancement: wide material/value/cascade/search bounds, payment refusal cleanup and valid free/paid quotes passed')
