@@ -5,6 +5,8 @@ Uses the existing isolated combat journey's account, socket and world helpers.
 Requires the combined #551/#661 server and the flat-file repository inspector.
 The optional --recipe-only mode isolates mortal Craft/Forge progression,
 retained pouch counters, copyover and cold restarts.
+Adding --material-downgrade verifies a two-output salvage downgrade through the
+same copyover and cold restarts, with exact original and output UIDs.
 The optional --creation-save-only mode qualifies #664 with overlapping setup
 grants and saves, then copyover, disconnect and cold reload, without crafting.
 """
@@ -31,9 +33,10 @@ def authored(vnum):
     raise AssertionError(f'missing authored object {vnum}')
 
 
-def run(binary, mode='file', creation_save_only=False, recipe_only=False):
+def run(binary, mode='file', creation_save_only=False, recipe_only=False, material_downgrade=False):
     assert mode in ('file', 'redis')
     assert not (creation_save_only and recipe_only), 'select one focused journey'
+    assert not material_downgrade or recipe_only, 'material downgrade extends the recipe journey'
     with tempfile.TemporaryDirectory(prefix='alchemist-crafting-journey-') as temporary:
         root = Path(temporary)
         state = root / 'state'
@@ -53,6 +56,15 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False):
                      857, 855, 853, 850, 400230, 400231, 400291, 400300, 400045, 400049, 400211, 400223, 400224):
             if not re.search(rf'(?m)^#{vnum}$', objects):
                 objects = objects.replace('$~', authored(vnum) + '$~')
+        if material_downgrade:
+            for vnum in (400046, 400047):
+                block = authored(vnum)
+                if vnum == 400047:
+                    lines = block.splitlines(keepends=True)
+                    lines[1] = 'downgradeprobe material leather~\n'
+                    block = ''.join(lines)
+                assert not re.search(rf'(?m)^#{vnum}$', objects)
+                objects = objects.replace('$~', block + '$~')
         # real_object() uses the maintained sorted prototype index.
         blocks = re.findall(r'(?ms)^#\d+\n.*?(?=^#\d+\n|^\$~)', objects)
         path.write_text(''.join(sorted(blocks, key=lambda block: int(block.split('\n', 1)[0][1:]))) + '$~\n')
@@ -121,6 +133,7 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False):
             'snapshot.skills.push_back({1148,100,100});\n'
             'snapshot.skills.push_back({1132,100,100});\n'
             'snapshot.skills.push_back({1134,100,100});\n'
+            'snapshot.skills.push_back({1297,100,100});\n'
             'auto established=flatfile_recipe_establish(root,{},&error);\n'
             'assert(established==flatfile_recipe_result::ok || established==flatfile_recipe_result::already_exists);\n'
             'auto recipe_result=flatfile_recipe_add(root,pid,30101,&error);\n'
@@ -221,7 +234,7 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False):
                 subprocess.run([str(fixture), str(state)], check=True)
             else:
                 sql("UPDATE player_data SET level=62,highest_level=62,base_hit=200000 WHERE name='Taverek'")
-                for skill_id in (1308, 1148, 1132, 1134):
+                for skill_id in (1308, 1148, 1132, 1134, 1297):
                     sql("INSERT INTO player_skills(pid,skill_id,learned,taught) "
                         f"SELECT pid,{skill_id},100,100 FROM player_data WHERE name='Taverek' "
                         "ON DUPLICATE KEY UPDATE learned=100,taught=100")
@@ -467,6 +480,8 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False):
             for vnum, count in ((400049, 2 * high), (400045, 2 * low), (400224, 2), (400223, 2)):
                 for _ in range(count):
                     command(f'load obj {vnum}')
+            if material_downgrade:
+                command('load obj 400047')
             seeded = save_items()
             material_uids = {item['uid'] for item in seeded if item['vnum'] in (400045, 400049)}
             tool_uids = {item['uid'] for item in seeded if item['vnum'] in (400223, 400224)}
@@ -530,6 +545,26 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False):
             assert tool_uids.isdisjoint({item['uid'] for item in save_items()})
             recipe_scores = command('look in pouch', 1)
             assert f'{2 * high} generated / 0 collected' in recipe_scores, recipe_scores
+            if material_downgrade:
+                before = save_items()
+                original = [item for item in before if item['vnum'] == 400047]
+                assert len(original) == 1, original
+                client.send('salvage downgradeprobe')
+                client.expect('You break down your material into two lesser materials.', timeout=30)
+                after = save_items()
+                before_uids = {item['uid'] for item in before}
+                after_uids = {item['uid'] for item in after}
+                fresh = [item for item in after if item['uid'] not in before_uids]
+                assert before_uids - after_uids == {original[0]['uid']}
+                assert len(fresh) == 2 and all(item['vnum'] == 400046 for item in fresh), fresh
+                assert len({item['uid'] for item in fresh}) == 2
+                if mode != 'file':
+                    assert sql(f"SELECT state FROM item_current_owner WHERE item_uid={original[0]['uid']}") == '2'
+                client.send('salvage downgradeprobe')
+                client.expect('What would you like to salvage?', timeout=30)
+                assert {(item['uid'], item['vnum']) for item in save_items()} == {
+                    (item['uid'], item['vnum']) for item in after}
+                print('PASS material downgrade retires original once and admits exactly two fresh lower-tier UIDs', flush=True)
             expected_items = {(item['uid'], item['vnum']) for item in save_items()}
             expected_experience = durable_recipe_experience()
             # Exercise the normal launcher lifecycle request while the actor
@@ -547,6 +582,8 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False):
                 assert durable_recipe_experience() == expected_experience
                 assert f'{2 * high} generated / 0 collected' in command('look in pouch', 1)
             print('PASS retained pouch Craft/Forge output UIDs, counters and exact XP survive copyover and two cold restarts', flush=True)
+            if material_downgrade:
+                print('PASS material downgrade exact output UIDs survive copyover and two cold restarts', flush=True)
         except Exception:
             print((runtime / 'server.out').read_text(errors='replace')[-6000:])
             print(journey.runtime_logs(runtime)[-12000:])
@@ -563,4 +600,5 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False):
 
 if __name__ == '__main__':
     run(Path(sys.argv[1]).resolve(), sys.argv[2] if len(sys.argv) > 2 else 'file',
-        '--creation-save-only' in sys.argv[3:], '--recipe-only' in sys.argv[3:])
+        '--creation-save-only' in sys.argv[3:], '--recipe-only' in sys.argv[3:],
+        '--material-downgrade' in sys.argv[3:])

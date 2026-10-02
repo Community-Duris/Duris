@@ -33,6 +33,44 @@ bool grant_salvage_item(P_char ch, P_obj object)
 	send_to_char("The ownership authority is busy; no salvage item was created.\r\n", ch);
 	return false;
 }
+
+void salvage_material_completed(P_char ch, bool committed, const item_transfer_result &,
+				unsigned int, const uint8_t *, size_t)
+{
+	if (!ch)
+		return;
+	if (!committed)
+	{
+		send_to_char(
+			"The material downgrade could not be committed; your material was preserved.\r\n",
+			ch);
+		return;
+	}
+	act("$n breaks down a material into two lesser materials.", TRUE, ch, 0, 0, TO_ROOM);
+	send_to_char("You break down your material into two lesser materials.\r\n", ch);
+}
+
+bool downgrade_salvage_material(P_char ch, P_obj item, int output_vnum)
+{
+	P_obj outputs[] = { read_object(output_vnum, VIRTUAL), read_object(output_vnum, VIRTUAL) };
+	P_obj inputs[] = { item };
+	item_movement_reject reject = item_movement_reject::none;
+	if (outputs[0] && outputs[1] &&
+	    item_movement_transaction_submit_craft(ch, inputs, 1, outputs, 2, OBJ_VNUM(item),
+						   salvage_material_completed, nullptr, 0, &reject))
+	{
+		send_to_char("You begin breaking your material down.\r\n", ch);
+		return true;
+	}
+	// Only an admitted craft owns its detached outputs and input retirement.
+	for (auto output : outputs)
+		if (output)
+			extract_obj(output, FALSE);
+	send_to_char(
+		"The material downgrade could not be admitted; your material was preserved.\r\n",
+		ch);
+	return false;
+}
 }
 
 bool is_salvageable(P_obj temp)
@@ -206,14 +244,7 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 			return;
 		}
 
-		grant_salvage_item(ch, read_object(--itemvnum, VIRTUAL));
-		grant_salvage_item(ch, read_object(itemvnum, VIRTUAL));
-		act("$n breaks down their $p into its &+ylesser&n material...", TRUE, ch, item, 0,
-		    TO_ROOM);
-		act("You break down your $p into its &+ylesser &+Ymaterial&n...", FALSE, ch, item,
-		    0, TO_CHAR);
-		obj_from_char(item);
-		extract_obj(item);
+		downgrade_salvage_material(ch, item, itemvnum - 1);
 		return;
 	}
 
