@@ -705,3 +705,42 @@ fixture SHA remains `1e5e87a2b8b204cebeeab3aeada5e4c6d2ab57fe53c047fae0b6b11bda8
 These repeats do not explain the first MariaDB owner-revision RED. Keep that
 finding and the production-profile TEST_MUD-only release-selector RED open;
 no assertion, selector or inactive behavior is weakened.
+
+## Independent audit item-revision type and range repair
+
+A clean disposable snapshot previously reported no exceptions with boolean item
+revisions or a prior revision of 2^64 followed by 2^64 + 1. Those values cannot
+represent the native unsigned 64-bit item lifetime. Separately, lineage
+references and unreferenced history rejected otherwise valid transitions in the
+upper half of that range. Native item/ledger and accounting-reference schemas
+all use BIGINT UNSIGNED; denomination signed ranges are a different contract.
+
+The independent reconciler now validates exact integer item revisions in
+0..UINT64_MAX for native custody, baseline/creation origins and current-epoch
+reference/event evidence before history-scope shortcuts. Lineage references,
+lineage events, unreferenced events and unattributed events validate their
+one-step transition with the same range. Boolean, negative and overflowing
+values refuse; consistent evidence can reach UINT64_MAX. Existing orphan
+reference and broken-history diagnostics remain intact for in-range evidence.
+No native transaction, price, ownership or inactive gameplay path changes.
+
+All 57 reconciliation regressions and ten exporter/origin tests pass. New
+corruptions cover both signed-boundary sides, UINT64_MAX, overflow and booleans
+across every history scope. The actual SELECT-only snapshot probe passes on
+MySQL 8.0.46 and MariaDB 10.11.14: a changed witnessed baseline, exact native
+move to UINT64_MAX, independent aggregate owner counter 99, missing high-revision
+reference detection and exact original snapshot restoration. Probe tables now
+use the native unsigned item-revision column types. The original partial-cut,
+corruption, consistent-read and CLI refusal cases also pass on both engines.
+
+QA source: `/opt/duris-accounting-audit-uint64-review/source`; reconciler
+SHA-256 `9fc39b8c0591d756849e0dd9911f74f253bbeff98d31031cbaad4de09fc4440a`,
+SQL probe SHA-256 `5b925b4507b7eb1a6577329fe9b0dadf4ed3c511d33a351f0c0eabf7d9b892d6`.
+Logs: `tmp/audit-revision-bounds-red.local.log`,
+`tmp/audit-revision-bounds-green.local.log`, and
+`tmp/audit-uint64-dual-sql.local.log` (SHA-256
+`a873be145052f50793b596c55521e43d4be9dd1fe932081fee7363e6a7ed28bc`).
+The 14 accounting fixtures and generated matrix --check also pass. Native
+source remains `2fa0d98...`; coverage remains incomplete and release BLOCKED.
+This closes a bounded R4/R7 input-validation and native-range mismatch, without
+claiming complete sources/origins, active gameplay or release qualification.

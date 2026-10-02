@@ -77,6 +77,14 @@ def account_key(value: object) -> tuple[str, int, int, int]:
     return raw[:16].hex(), kind, identity, context
 
 
+def item_revision(value: object) -> bool:
+    return type(value) is int and 0 <= value < 2**64
+
+
+def item_revision_transition(before: object, after: object) -> bool:
+    return item_revision(before) and item_revision(after) and after == before + 1
+
+
 def require_id(value: object, label: str) -> str:
     if not isinstance(value, str) or not HEX_ID.fullmatch(value) or value == "0" * 32:
         raise SnapshotError(f"invalid {label}")
@@ -183,8 +191,7 @@ class Reconciler:
                 owner = event.get("owner")
                 if (type(event_index) is not int or not 0 <= event_index <= 65535 or
                         type(uid) is not int or not 0 < uid < 2**64 or
-                        type(before_revision) is not int or not 0 <= before_revision < 2**63 or
-                        type(revision) is not int or revision != before_revision + 1 or
+                        not item_revision_transition(before_revision, revision) or
                         type(root_uid) is not int or not 0 < root_uid < 2**64 or
                         (parent_uid is not None and
                          (type(parent_uid) is not int or not 0 < parent_uid < 2**64)) or
@@ -1284,8 +1291,7 @@ class Reconciler:
             if (type(event_index) is not int or not 0 <= event_index <= 65535 or
                     type(uid) is not int or not 0 < uid < 2**64 or
                     type(child_index) is not int or not 0 <= child_index <= 64 or
-                    type(before_revision) is not int or not 0 <= before_revision < 2**63 or
-                    type(after_revision) is not int or after_revision != before_revision + 1 or
+                    not item_revision_transition(before_revision, after_revision) or
                     type(legacy_event_index) is not int or not 0 <= legacy_event_index <= 65535 or
                     not isinstance(operation_epoch, str) or not HEX_ID.fullmatch(operation_epoch) or
                     root is None or root.get("epoch") != operation_epoch or
@@ -1402,8 +1408,7 @@ class Reconciler:
                 self.emit("invalid_uid_history_root", operation_id=operation_id, uid=uid)
             if (type(event_index) is not int or not 0 <= event_index <= 65535 or
                     type(uid) is not int or not 0 < uid < 2**64 or
-                    type(before) is not int or before < 0 or
-                    type(revision) is not int or revision != before + 1 or
+                    not item_revision_transition(before, revision) or
                     type(row.get("referenced")) is not bool or
                     type(row.get("root")) is not int or not 0 < row["root"] < 2**64 or
                     (row.get("parent") is not None and
@@ -1521,8 +1526,7 @@ class Reconciler:
             parent = row.get("parent")
             if (type(event_index) is not int or not 0 <= event_index <= 65535 or
                     type(uid) is not int or not 0 < uid < 2**64 or
-                    type(before) is not int or before < 0 or
-                    type(revision) is not int or revision != before + 1 or
+                    not item_revision_transition(before, revision) or
                     type(root) is not int or not 0 < root < 2**64 or
                     (parent is not None and (type(parent) is not int or not 0 < parent < 2**64)) or
                     not isinstance(owner, list) or len(owner) != 3 or
@@ -1813,8 +1817,14 @@ class Reconciler:
 
     def audit_items(self, ownership: dict, references: dict, origins: dict, native: dict,
                     lineage_history_uids: set[int] | None = None) -> None:
+        for row in list(origins.values()) + list(native.values()):
+            if not item_revision(row.get("revision")):
+                raise SnapshotError("invalid item origin or native revision")
         referenced = set()
         for ref in references.values():
+            if (not item_revision(ref.get("before_revision")) or
+                    not item_revision(ref.get("after_revision"))):
+                raise SnapshotError("invalid item reference revision")
             legacy_key = (ref.get("legacy_operation_id"), ref.get("legacy_event_index"))
             event = ownership.get(legacy_key)
             uid = ref.get("uid")
@@ -1828,6 +1838,9 @@ class Reconciler:
                 referenced.add(legacy_key)
         by_uid: dict[int, list[dict]] = defaultdict(list)
         for key, event in ownership.items():
+            if (not item_revision(event.get("before_revision")) or
+                    not item_revision(event.get("revision"))):
+                raise SnapshotError("invalid ownership event revision")
             uid = event.get("uid")
             by_uid[uid].append(event)
             if key not in referenced:

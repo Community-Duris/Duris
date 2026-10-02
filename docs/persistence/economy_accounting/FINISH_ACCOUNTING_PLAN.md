@@ -24,13 +24,17 @@ Independent reconciliation now checks every native item's parent edge even when
 lineage history replaces its epoch-local history or its opening origin is
 missing. Corruption/recovery probes pass through the read-only SQL exporter on
 both engines. Lineage and epoch-local history also share creation and irreversible
-UID-retirement checks; memoized native topology bounds ancestor work, and 53
+UID-retirement checks; memoized native topology bounds ancestor work, and 57
 reconciler tests pass. Explicit creation/destruction must also match live/tombstone
 custody, a corrupt destruction cannot erase the UID retirement fence, and
 a second destruction of an already retired UID is reported. SQL lineage
 references and history cuts now derive prior UID revisions from the immutable
 item revision, independently of aggregate owner counters; impossible revision
-zero refuses before filtering. Ten exporter tests and both SQL probes pass. Complete native source/origin
+zero refuses before filtering. The independent audit now also rejects boolean,
+negative and overflowing item revisions in origins, native custody, references
+and all event scopes, while admitting the full native uint64 range. A witnessed
+UINT64_MAX transition, missing-reference detection and exact baseline recovery
+pass through SELECT-only exports on both engines. Ten exporter tests and both SQL probes pass. Complete native source/origin
 and writer qualification remain open. Restore qualification also rejects
 unwitnessed epic revisions and gaps that conserve aggregate value; both SQL
 component probes and the nine-case native recovery suite pass this repair. See the October 2 review status for scope.
