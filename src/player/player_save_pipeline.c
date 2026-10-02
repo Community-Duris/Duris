@@ -682,7 +682,7 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 }
 } // namespace
 
-bool player_save_pipeline_init(const char *journal_directory)
+bool player_save_pipeline_init(const char *journal_directory, void (*verify_resolved_recovery)())
 {
 	if (!journal_directory || journal_directory[0] != '/')
 		return false;
@@ -694,6 +694,8 @@ bool player_save_pipeline_init(const char *journal_directory)
 	replay_gate.begin_replay();
 	if (!player_save_journal_init(journal_directory, PLAYER_SAVE_JOURNAL_MAX_BYTES))
 		return false;
+	if (verify_resolved_recovery)
+		verify_resolved_recovery();
 	if (!player_save_worker_init(selected_snapshot_apply(), nullptr))
 	{
 		player_save_journal_shutdown();

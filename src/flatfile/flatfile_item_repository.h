@@ -169,6 +169,11 @@ flatfile_item_repository_result flatfile_item_repository_pending_quest_rewards(
 	std::vector<flatfile_quest_reward_obligation> *obligations, std::string *error,
 	std::vector<flatfile_quest_xp_entitlement> *entitlements = nullptr,
 	player_revision_t durable_revision = UINT64_MAX);
+flatfile_item_repository_result flatfile_item_repository_pending_quest_rewards_locked(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t player_pid,
+	std::vector<flatfile_quest_reward_obligation> *obligations, std::string *error,
+	std::vector<flatfile_quest_xp_entitlement> *entitlements,
+	player_revision_t durable_revision);
 // Stage application markers with the XP-bearing player image under the same
 // authority lock. Existing markers must precede the player's durable revision.
 // Verification never prepares an image or advances a marker.
@@ -187,6 +192,11 @@ flatfile_item_repository_establish_owner(const std::string &root, const item_own
 					 std::string *error);
 critical_apply_result flatfile_item_repository_apply(const std::string &root,
 						     const critical_command &command);
+// Exact retained receipt lookup only. The caller holds native authority; a
+// missing operation is a refusal, never an instruction to create the item.
+critical_apply_result flatfile_item_repository_verify_creation_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_command &command, std::string *error);
 flatfile_item_repository_result flatfile_item_repository_prepare_auction_transfer(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const auction_command_payload &payload, uint32_t auction_id, bool to_auction,
