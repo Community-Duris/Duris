@@ -1,6 +1,6 @@
 {
-  "schema_version": 2,
-  "revision": 1,
+  "schema_version": 3,
+  "revision": 2,
   "source_area": "torg",
   "coverage": "complete",
   "stories": [
@@ -8,7 +8,7 @@
       "id": "cure-dracolich-hide-28917",
       "title": "Cure Dracolich Hide",
       "category": "service",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Kordor cures a strip of dracolich hide for the jeweler. This preparation is optional when you already have cured hide.",
       "contracts": [
         {
           "giver_vnum": 28917,
@@ -20,7 +20,7 @@
           "id": "material-28923",
           "text": "Carry 1 x a strip of dracolich hide",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The dracolich deep beneath Torg can carry raw hide, but both creature and hide availability vary. Kordor discusses dracolich and rare materials. Supplied raw hide is accepted.",
           "item_vnums": [
             28923
           ],
@@ -28,9 +28,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Give the raw dracolich hide to Kordor",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "He returns cured hide. Keep it for the separate bracelet exchange with the hobgoblin jeweler.",
           "contracts": [
             {
               "giver_vnum": 28917,
@@ -41,10 +41,59 @@
       ]
     },
     {
+      "id": "a-dracolich-hide-bracelet-28936",
+      "title": "A Dracolich Hide Bracelet",
+      "category": "story",
+      "summary": "Bring cured dracolich hide to the hobgoblin jeweler for a bracelet. Kordor's curing service explains the ordinary preparation; supplied cured hide works directly.",
+      "contracts": [
+        {
+          "giver_vnum": 28936,
+          "completion_key": "give=I:28924;receive=I:28911;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "optional-hide-curing",
+          "text": "Have Kordor cure the dracolich hide",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional preparation when cured hide is already supplied.",
+          "contracts": [
+            {
+              "giver_vnum": 28917,
+              "completion_key": "give=I:28923;receive=I:28924;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-28924",
+          "text": "Carry 1 x some cured dracolich hide",
+          "kind": "carried_item",
+          "hint": "Kordor converts raw dracolich hide into this cured strip. The jeweler accompanies Councilor Zarina; his current location can follow hers. Supplied cured hide is accepted.",
+          "item_vnums": [
+            28924
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Give the cured hide to the hobgoblin jeweler",
+          "kind": "completion",
+          "hint": "He awards a bracelet of dracolich hide. Ask about looking for his commission; curing alone does not complete it.",
+          "contracts": [
+            {
+              "giver_vnum": 28936,
+              "completion_key": "give=I:28924;receive=I:28911;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "a-token-of-favor-28922",
       "title": "A Token of Favor",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Recover an illithid tentacle for the Keeper to earn a token of favor. The token leads to the pacing woman's rose service; it does not open the Keeper's door.",
       "contracts": [
         {
           "giver_vnum": 28922,
@@ -56,7 +105,7 @@
           "id": "material-28906",
           "text": "Carry 1 x a long severed tentacle",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The illithid at the end of the newly dug tunnel carries the tentacle. The Keeper's own gate has a separate obsidian key. Supplied tentacles are accepted.",
           "item_vnums": [
             28906
           ],
@@ -64,9 +113,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver the severed tentacle to the Keeper",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "The Keeper awards a token of favor. Ask about crime and tentacle for context; the woman accepts this token separately.",
           "contracts": [
             {
               "giver_vnum": 28922,
@@ -77,10 +126,108 @@
       ]
     },
     {
+      "id": "prepare-a-secret-rose-28965",
+      "title": "Prepare a Secret Rose",
+      "category": "service",
+      "summary": "Give the Keeper's token to the pacing preoccupied woman for her rose and instructions to deliver it discreetly to Zuzon. Her concealment language describes the story; the rose is not an access key.",
+      "contracts": [
+        {
+          "giver_vnum": 28965,
+          "completion_key": "give=I:28917;receive=I:28955;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-28917",
+          "text": "Carry 1 x a token of favor",
+          "kind": "carried_item",
+          "hint": "The Keeper awards a token for the illithid tentacle. The pacing woman describes her problem when asked about story. A supplied token is accepted.",
+          "item_vnums": [
+            28917
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Give the token of favor to the pacing woman",
+          "kind": "completion",
+          "hint": "She supplies a rose. Deliver the rose to Councilor Zuzon for the separate reward; this preparation earns no additional achievement.",
+          "contracts": [
+            {
+              "giver_vnum": 28965,
+              "completion_key": "give=I:28917;receive=I:28955;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a-secret-rose-delivery-28937",
+      "title": "A Secret Rose Delivery",
+      "category": "story",
+      "summary": "Deliver the woman's rose to Councilor Zuzon for a shining golden helm. The Keeper's favor and the woman's trust explain the route; a supplied rose also works.",
+      "contracts": [
+        {
+          "giver_vnum": 28937,
+          "completion_key": "give=I:28955;receive=I:28956;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "optional-keepers-favor",
+          "text": "Earn the Keeper's token of favor",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional context if you already carry the rose.",
+          "contracts": [
+            {
+              "giver_vnum": 28922,
+              "completion_key": "give=I:28906;receive=I:28917;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "optional-rose-preparation",
+          "text": "Receive the woman's rose",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional preparation if the rose was supplied by another player.",
+          "contracts": [
+            {
+              "giver_vnum": 28965,
+              "completion_key": "give=I:28917;receive=I:28955;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-28955",
+          "text": "Carry 1 x a perfect magic rose",
+          "kind": "carried_item",
+          "hint": "The pacing woman exchanges the Keeper's token for this rose. Zuzon waits along the council route and discusses his lover. A supplied rose is accepted; no recorded trust or invisibility effect is required.",
+          "item_vnums": [
+            28955
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Deliver the secret rose to Councilor Zuzon",
+          "kind": "completion",
+          "hint": "He awards a shining golden helm. The exchange does not implement another meeting or escort stage.",
+          "contracts": [
+            {
+              "giver_vnum": 28937,
+              "completion_key": "give=I:28955;receive=I:28956;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "the-colosseum-medallion-28929",
       "title": "The Colosseum Medallion",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Deliver the champion's laurel medallion to Councilor Zillra for a sculpted tree. The medallion also unlocks the upper route to her quarters, so use it for access before offering it.",
       "contracts": [
         {
           "giver_vnum": 28929,
@@ -92,7 +239,7 @@
           "id": "material-28930",
           "text": "Carry 1 x the laurel medallion",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The Colosseum Champion wears the laurel medallion. At the locked Colosseum entrance, say carnage, then open the doors. The medallion unlocks the northern upper gate; supplied medallions are accepted.",
           "item_vnums": [
             28930
           ],
@@ -100,9 +247,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Give the laurel medallion to Councilor Zillra",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Zillra awards a sculpted tree. Reaching her and completing this delivery are separate from asking about her promise ring.",
           "contracts": [
             {
               "giver_vnum": 28929,
@@ -116,7 +263,7 @@
       "id": "evidence-of-a-secret-affair-28932",
       "title": "Evidence of a Secret Affair",
       "category": "story",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Decide whether to expose Zillra's secret affair by delivering both distinct promise rings to Councilor Zojt. Zillra asks you to destroy the rings; the recorded exchange instead rewards their delivery.",
       "contracts": [
         {
           "giver_vnum": 28932,
@@ -126,9 +273,9 @@
       "steps": [
         {
           "id": "material-28916",
-          "text": "Carry 1 x a secret promise ring",
+          "text": "Carry the promise ring from the handsome corpse",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Look inside the handsome corpse in the secluded blood-stained corner. This ring differs from Zillra's ring despite their matching names. A supplied ring of this exact kind is accepted.",
           "item_vnums": [
             28916
           ],
@@ -136,9 +283,9 @@
         },
         {
           "id": "material-28938",
-          "text": "Carry 1 x a secret promise ring",
+          "text": "Carry Zillra's distinct promise ring",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Councilor Zillra carries this second ring. Use the Colosseum medallion gate to reach her upper route. Two copies of the other ring do not substitute; supplied exact rings are accepted.",
           "item_vnums": [
             28938
           ],
@@ -146,9 +293,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Give both distinct promise rings to Councilor Zojt",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Zojt awards Swiftblade. His threatening words do not establish another quest stage; destroying the rings has no recorded local completion.",
           "contracts": [
             {
               "giver_vnum": 28932,
@@ -159,82 +306,10 @@
       ]
     },
     {
-      "id": "a-dracolich-hide-bracelet-28936",
-      "title": "A Dracolich Hide Bracelet",
-      "category": "story",
-      "summary": "Bring cured dracolich hide for the prototype bracelet. A local curing exchange prepares the material; the journal does not prove personal recovery or transformation lineage.",
-      "contracts": [
-        {
-          "giver_vnum": 28936,
-          "completion_key": "give=I:28924;receive=I:28911;disappear=0"
-        }
-      ],
-      "steps": [
-        {
-          "id": "material-28924",
-          "text": "Carry 1 x some cured dracolich hide",
-          "kind": "carried_item",
-          "hint": "The local smith can cure raw dracolich hide. Other valid cured hide also works.",
-          "item_vnums": [
-            28924
-          ],
-          "count": 1
-        },
-        {
-          "id": "turn-in",
-          "text": "Complete the exchange",
-          "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
-          "contracts": [
-            {
-              "giver_vnum": 28936,
-              "completion_key": "give=I:28924;receive=I:28911;disappear=0"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "a-secret-rose-delivery-28937",
-      "title": "A Secret Rose Delivery",
-      "category": "story",
-      "summary": "Deliver the perfect magic rose discreetly. A favor-token exchange can supply it, but another valid rose also satisfies the native request.",
-      "contracts": [
-        {
-          "giver_vnum": 28937,
-          "completion_key": "give=I:28955;receive=I:28956;disappear=0"
-        }
-      ],
-      "steps": [
-        {
-          "id": "material-28955",
-          "text": "Carry 1 x a perfect magic rose",
-          "kind": "carried_item",
-          "hint": "A local favor-token exchange supplies the rose. Another valid rose also works.",
-          "item_vnums": [
-            28955
-          ],
-          "count": 1
-        },
-        {
-          "id": "turn-in",
-          "text": "Complete the exchange",
-          "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
-          "contracts": [
-            {
-              "giver_vnum": 28937,
-              "completion_key": "give=I:28955;receive=I:28956;disappear=0"
-            }
-          ]
-        }
-      ]
-    },
-    {
       "id": "relics-of-the-eight-legends-28964",
       "title": "Relics of the Eight Legends",
       "category": "story",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Collect all eight distinct legendary relics and deliver them together to the Lore Keeper. He awards a shimmering curtain of fire and his legend; each later tale transformation belongs to a separate route.",
       "contracts": [
         {
           "giver_vnum": 28964,
@@ -246,7 +321,7 @@
           "id": "material-28944",
           "text": "Carry 1 x Llznixor's cleaned skull symbol",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "LLznixor carries this exact relic. The legends emerge through the Colosseum, but their current availability varies. You need one of each of the eight kinds; supplied relics are accepted.",
           "item_vnums": [
             28944
           ],
@@ -256,7 +331,7 @@
           "id": "material-28945",
           "text": "Carry 1 x Dorn's steel forehead plate",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Dorn carries this exact relic. The legends emerge through the Colosseum, but their current availability varies. You need one of each of the eight kinds; supplied relics are accepted.",
           "item_vnums": [
             28945
           ],
@@ -266,7 +341,7 @@
           "id": "material-28946",
           "text": "Carry 1 x Tibor's tankard",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Tibor carries this exact relic. The legends emerge through the Colosseum, but their current availability varies. You need one of each of the eight kinds; supplied relics are accepted.",
           "item_vnums": [
             28946
           ],
@@ -276,7 +351,7 @@
           "id": "material-28947",
           "text": "Carry 1 x Elirandel's ball of flame",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Elirandel carries this exact relic. The legends emerge through the Colosseum, but their current availability varies. You need one of each of the eight kinds; supplied relics are accepted.",
           "item_vnums": [
             28947
           ],
@@ -286,7 +361,7 @@
           "id": "material-28948",
           "text": "Carry 1 x Jonxin's magic cards",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Jonxin carries this exact relic. The legends emerge through the Colosseum, but their current availability varies. You need one of each of the eight kinds; supplied relics are accepted.",
           "item_vnums": [
             28948
           ],
@@ -296,7 +371,7 @@
           "id": "material-28949",
           "text": "Carry 1 x Smurp's boot knife",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Smurp carries this exact relic. The legends emerge through the Colosseum, but their current availability varies. You need one of each of the eight kinds; supplied relics are accepted.",
           "item_vnums": [
             28949
           ],
@@ -306,7 +381,7 @@
           "id": "material-28950",
           "text": "Carry 1 x Kulnon's brass knuckles",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Kulnon carries this exact relic. The legends emerge through the Colosseum, but their current availability varies. You need one of each of the eight kinds; supplied relics are accepted.",
           "item_vnums": [
             28950
           ],
@@ -316,7 +391,7 @@
           "id": "material-28951",
           "text": "Carry 1 x Lanom's medallion of purity",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Lanom carries this exact relic. The legends emerge through the Colosseum, but their current availability varies. You need one of each of the eight kinds; supplied relics are accepted.",
           "item_vnums": [
             28951
           ],
@@ -324,9 +399,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver all eight distinct relics together to the Lore Keeper",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "He awards the curtain of fire and the Legend of The Lore Keeper. Reciting legend with that scroll produces one random half of Uz's tale. Both halves belong to Uz's separate quest beyond Torg.",
           "contracts": [
             {
               "giver_vnum": 28964,
@@ -338,9 +413,9 @@
     },
     {
       "id": "lore-keeper-relic-28983",
-      "title": "Deliver a piece of cloth from Vecna's robe",
+      "title": "The Lore Keeper: Vecna's Cloth",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Deliver the cloth of the right hand of Vecna from Tranug to the Lore Keeper for Blazesword. Each of the three relic commissions is independent.",
       "contracts": [
         {
           "giver_vnum": 28964,
@@ -352,7 +427,7 @@
           "id": "material-28983",
           "text": "Carry 1 x a piece of cloth from Vecna's robe",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Tranug carries this exact relic when it is available. His three relics appear independently; finding one does not promise the others. Ask the Lore Keeper about tranug. Supplied proof is accepted.",
           "item_vnums": [
             28983
           ],
@@ -360,9 +435,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver the cloth of the right hand of Vecna to the Lore Keeper",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "He awards Blazesword. The exchange requires this item, without an earlier eight-legends receipt or a recorded personal kill of Tranug.",
           "contracts": [
             {
               "giver_vnum": 28964,
@@ -374,9 +449,9 @@
     },
     {
       "id": "lore-keeper-relic-28984",
-      "title": "Deliver a shaving of one of Bahamut's scales",
+      "title": "The Lore Keeper: Bahamut's Scales",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Deliver the strip of scaled skin of Bahamut from Tranug to the Lore Keeper for a collar of shining firestones. Each of the three relic commissions is independent.",
       "contracts": [
         {
           "giver_vnum": 28964,
@@ -388,7 +463,7 @@
           "id": "material-28984",
           "text": "Carry 1 x a shaving of one of Bahamut's scales",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Tranug carries this exact relic when it is available. His three relics appear independently; finding one does not promise the others. Ask the Lore Keeper about tranug. Supplied proof is accepted.",
           "item_vnums": [
             28984
           ],
@@ -396,9 +471,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver the strip of scaled skin of Bahamut to the Lore Keeper",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "He awards a collar of shining firestones. The exchange requires this item, without an earlier eight-legends receipt or a recorded personal kill of Tranug.",
           "contracts": [
             {
               "giver_vnum": 28964,
@@ -410,9 +485,9 @@
     },
     {
       "id": "lore-keeper-relic-28985",
-      "title": "Deliver the hand of an elven prodigy",
+      "title": "The Lore Keeper: The Prodigy's Hand",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Deliver the severed hand of a prodigy from Tranug to the Lore Keeper for a cloak of multi-colored beads. Each of the three relic commissions is independent.",
       "contracts": [
         {
           "giver_vnum": 28964,
@@ -424,7 +499,7 @@
           "id": "material-28985",
           "text": "Carry 1 x the hand of an elven prodigy",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Tranug carries this exact relic when it is available. His three relics appear independently; finding one does not promise the others. Ask the Lore Keeper about tranug. Supplied proof is accepted.",
           "item_vnums": [
             28985
           ],
@@ -432,9 +507,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver the severed hand of a prodigy to the Lore Keeper",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "He awards a cloak of multi-colored beads. The exchange requires this item, without an earlier eight-legends receipt or a recorded personal kill of Tranug.",
           "contracts": [
             {
               "giver_vnum": 28964,
@@ -445,46 +520,10 @@
       ]
     },
     {
-      "id": "prepare-a-secret-rose-28965",
-      "title": "Prepare a Secret Rose",
-      "category": "service",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
-      "contracts": [
-        {
-          "giver_vnum": 28965,
-          "completion_key": "give=I:28917;receive=I:28955;disappear=0"
-        }
-      ],
-      "steps": [
-        {
-          "id": "material-28917",
-          "text": "Carry 1 x a token of favor",
-          "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
-          "item_vnums": [
-            28917
-          ],
-          "count": 1
-        },
-        {
-          "id": "turn-in",
-          "text": "Complete the exchange",
-          "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
-          "contracts": [
-            {
-              "giver_vnum": 28965,
-              "completion_key": "give=I:28917;receive=I:28955;disappear=0"
-            }
-          ]
-        }
-      ]
-    },
-    {
       "id": "return-the-wedding-locket-28974",
       "title": "Return the Wedding Locket",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Return Dranar's wedding locket from Tagnor for the blood-doused obsidian. Dranar arrives with the dwarven invasion force after Timoro's death; possessing the locket alone does not bring him into reach.",
       "contracts": [
         {
           "giver_vnum": 28974,
@@ -496,7 +535,7 @@
           "id": "material-28940",
           "text": "Carry 1 x a tiny gold locket",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Tagnor carries the wedding locket. His commander carries the glowing key to the northern door. Locate Dranar with the arriving dwarves; a supplied locket is accepted.",
           "item_vnums": [
             28940
           ],
@@ -504,9 +543,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Return the wedding locket to Dranar",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "He awards blood-doused obsidian and describes his vengeance. No recorded kill of Torg is required; the obsidian is material for the equipment master's separate buckle.",
           "contracts": [
             {
               "giver_vnum": 28974,
@@ -520,7 +559,7 @@
       "id": "a-fine-chisel-for-the-craftsman",
       "title": "A Fine Chisel for the Craftsman",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Bring a fine chisel to the dwarven equipment master for an obsidian hoop earring. Seek the master who arrives with the invasion force; both native master alternatives remain one accomplishment.",
       "contracts": [
         {
           "giver_vnum": 29023,
@@ -536,7 +575,7 @@
           "id": "material-28959",
           "text": "Carry 1 x an intricate jeweler's chisel",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The hobgoblin jeweler accompanying Zarina can carry a fine chisel, but it is not always available. This is different from Zravi's unholy chisel. Supplied fine chisels are accepted.",
           "item_vnums": [
             28959
           ],
@@ -544,9 +583,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Give the fine chisel to the dwarven equipment master",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "The arriving master awards an obsidian hoop earring. The older alternate master has no confirmed ordinary placement; this commission does not require or supply the buckle's unholy chisel.",
           "contracts": [
             {
               "giver_vnum": 29023,
@@ -564,7 +603,7 @@
       "id": "an-obsidian-buckle-29024",
       "title": "An Obsidian Buckle",
       "category": "story",
-      "summary": "Bring the obsidian block and divine shaping tool for a buckle. Returning the wedding locket is one route to the block; it is not an extra native turn-in requirement.",
+      "summary": "Bring blood-doused obsidian and Zravi's unholy chisel together to the arriving dwarven equipment master for a Rage buckle. Dranar's locket exchange explains the obsidian; supplied materials work.",
       "contracts": [
         {
           "giver_vnum": 29024,
@@ -573,10 +612,23 @@
       ],
       "steps": [
         {
+          "id": "optional-locket-return",
+          "text": "Return Dranar's wedding locket for obsidian",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional preparation if you already carry the obsidian.",
+          "contracts": [
+            {
+              "giver_vnum": 28974,
+              "completion_key": "give=I:28940;receive=I:28962;disappear=0"
+            }
+          ]
+        },
+        {
           "id": "material-28962",
           "text": "Carry 1 x a block doused in Torg's blood",
           "kind": "carried_item",
-          "hint": "Returning the wedding locket supplies an obsidian block. Other valid blocks also work.",
+          "hint": "Dranar awards this obsidian when his wedding locket is returned. He and the accepting equipment master arrive with the dwarven invasion force. Supplied blood-doused obsidian is accepted.",
           "item_vnums": [
             28962
           ],
@@ -586,7 +638,7 @@
           "id": "material-28982",
           "text": "Carry 1 x the unholy chisel of shaping",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Zravi carries the divine chisel empowered with unholy magic near Tagnor. His commander's glowing key leads through the northern door. The jeweler's fine chisel does not substitute; a supplied exact chisel is accepted.",
           "item_vnums": [
             28982
           ],
@@ -594,9 +646,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver the obsidian and unholy chisel to the arriving equipment master",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "The arriving master awards the Rage buckle. His fine-chisel commission is separate; it is not a prerequisite for this delivery.",
           "contracts": [
             {
               "giver_vnum": 29024,
@@ -608,17 +660,22 @@
     }
   ],
   "exclusions": [],
-  "introduction": "Explore the kingdom for requests involving favors, relics, craftsmanship, and intrigue.",
+  "introduction": "Explore Torg's captive city through council secrets, legendary relics and the dwarven invasion. Each accepted delivery is a separate accomplishment; supplied materials can skip preparation.",
   "orientation": [
-    "Use look and exits to explore. Meet visible people to reveal their requests.",
-    "Talk to the people you meet to learn about local requests. The checklist shows your current supplies and completed exchanges."
+    "Begin with Kordor and the Keeper for the hide and favor routes. The woman's token exchange supplies a rose for Zuzon; the jeweler accompanies Zarina.",
+    "The Colosseum's locked entrance answers to the spoken word carnage. The champion's medallion unlocks the upper council route before Zillra accepts it as an offering.",
+    "Zillra asks you to destroy the two promise rings. Zojt instead rewards delivery of both distinct rings; that is the recorded affair exchange.",
+    "The Lore Keeper accepts all eight distinct legendary relics together. His three Tranug commissions are separate and need neither the eight-relic delivery nor a recorded kill.",
+    "Timoro's death calls down the dwarven invasion force. Dranar and the accepting buckle craftsman arrive with that force; their availability depends on its actual arrival.",
+    "The legend scroll and Lanella's randomly created heart lead to quests outside Torg. A transformed scroll or a supplied heart does not establish a Torg achievement.",
+    "Optional curing, favor, rose and locket history explains preparation without blocking supplied terminal materials. Ask the contacts about the listed topics; learning a topic alone earns no achievement."
   ],
   "contacts": [
     {
       "mob_vnum": 28917,
       "name": "Kordor, the smith",
       "keyword": "kordor",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Ask Kordor about dracolich and rare materials. His hide-curing exchange supplies the jeweler's material for the bracelet commission.",
       "topics": [
         "dracolich",
         "rare"
@@ -628,7 +685,7 @@
       "mob_vnum": 28922,
       "name": "The Keeper",
       "keyword": "troll",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Ask this troll Keeper about crime and tentacle. His token buys the woman's trust, while the obsidian door uses its own key.",
       "topics": [
         "crime",
         "tentacle"
@@ -638,7 +695,7 @@
       "mob_vnum": 28929,
       "name": "Councilor Zillra",
       "keyword": "zillra",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Reach Zillra through the medallion gate and upper council route. Ask about ring and forgotten to hear her plea before choosing what to do with the rings.",
       "topics": [
         "ring",
         "forgotten"
@@ -648,7 +705,7 @@
       "mob_vnum": 28932,
       "name": "Councilor Zojt",
       "keyword": "zojt",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Ask Zojt about ring. He accepts both distinct promise rings together for Swiftblade; his threats do not add a second quest objective.",
       "topics": [
         "ring"
       ]
@@ -657,7 +714,7 @@
       "mob_vnum": 28936,
       "name": "a hobgoblin jeweler",
       "keyword": "jeweler",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "This jeweler accompanies Zarina. Ask about looking for the cured-hide bracelet commission; he can also carry the fine chisel requested by the dwarven master.",
       "topics": [
         "looking"
       ]
@@ -666,7 +723,7 @@
       "mob_vnum": 28937,
       "name": "Councilor Zuzon",
       "keyword": "zuzon",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Ask Zuzon about lover, then deliver the woman's rose for his helm. His other trophies lead to different stories outside Torg.",
       "topics": [
         "lover"
       ]
@@ -675,7 +732,7 @@
       "mob_vnum": 28964,
       "name": "The Lore Keeper",
       "keyword": "lore",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Ask the Lore Keeper about legends and tranug. The eight-relic collection and his three Tranug relic commissions have separate deliveries.",
       "topics": [
         "legends",
         "tranug"
@@ -685,7 +742,7 @@
       "mob_vnum": 28965,
       "name": "a pacing preoccupied woman",
       "keyword": "preoccupied",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Ask the pacing preoccupied woman about story. The Keeper's token obtains her rose; the concealment narrative does not make the rose a door key.",
       "topics": [
         "story"
       ]
@@ -694,7 +751,7 @@
       "mob_vnum": 28974,
       "name": "Dranar",
       "keyword": "dranar",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Look for Dranar among the dwarven invasion force after it arrives. Ask about note for the wedding-locket request; the returned locket earns obsidian for the buckle.",
       "topics": [
         "note"
       ]
@@ -703,7 +760,7 @@
       "mob_vnum": 29023,
       "name": "the dwarven equipment master",
       "keyword": "master",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "This older equipment-master alternative accepts a fine chisel, but has no confirmed ordinary placement. Seek the arriving master for the practical route.",
       "topics": [
         "create"
       ]
@@ -712,10 +769,17 @@
       "mob_vnum": 29024,
       "name": "the dwarven equipment master",
       "keyword": "master",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "This master accompanies Tibornor's invasion force. Ask about create; a fine chisel earns an earring, while obsidian plus the different unholy chisel earns the buckle.",
       "topics": [
         "create"
       ]
+    },
+    {
+      "mob_vnum": 28975,
+      "name": "Tibornor",
+      "keyword": "tibornor",
+      "description": "Tibornor leads the arriving dwarves and also teaches Indomitable Rage through the separate epic-practice service. Its level, class, cost and accounting availability rules apply.",
+      "topics": []
     }
   ]
 }

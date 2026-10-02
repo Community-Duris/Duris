@@ -79,6 +79,25 @@ assert next(c for c in quietus["contacts"] if c["mob_vnum"] == 1751)["topics"] =
 chisel = next(s for s in new_mappings["torg"]["stories"] if s["id"] == "a-fine-chisel-for-the-craftsman")
 assert {c["giver_vnum"] for c in chisel["contracts"]} == {29023, 29024}
 assert len(chisel["steps"]) == 2 and chisel["steps"][0]["count"] == 1
+torg = new_mappings["torg"]
+assert torg["schema_version"] == 3 and torg["revision"] == 2
+assert report["eligible_by_zone"]["289"] == 12 and len(torg["stories"]) == 14
+assert sum(s["category"] == "service" for s in torg["stories"]) == 2
+assert sum(len(s["contracts"]) for s in torg["stories"]) == 15 and not torg["exclusions"]
+assert len(torg["contacts"]) == 12
+assert next(c for c in torg["contacts"] if c["mob_vnum"] == 28975)["topics"] == []
+assert all(s["steps"][-1]["contracts"] == s["contracts"] for s in torg["stories"])
+for prefix, optional in (("a-dracolich-hide-", 1), ("a-secret-rose-delivery-", 2), ("an-obsidian-buckle-", 1)):
+    story = next(s for s in torg["stories"] if s["id"].startswith(prefix))
+    assert sum(t.get("optional", False) for t in story["steps"]) == optional
+rings = next(s for s in torg["stories"] if s["id"] == "evidence-of-a-secret-affair-28932")
+assert [t["item_vnums"] for t in rings["steps"] if t["kind"] == "carried_item"] == [[28916], [28938]]
+legends = next(s for s in torg["stories"] if s["id"] == "relics-of-the-eight-legends-28964")
+assert [t["item_vnums"][0] for t in legends["steps"][:-1]] == list(range(28944, 28952))
+assert all(t["count"] == 1 for t in legends["steps"][:-1])
+buckle = next(s for s in torg["stories"] if s["id"] == "an-obsidian-buckle-29024")
+assert {c["giver_vnum"] for c in buckle["contracts"]} == {29024}
+assert [t["item_vnums"] for t in buckle["steps"] if t["kind"] == "carried_item"] == [[28962], [28982]]
 family = next(s for s in new_mappings["krimman"]["stories"] if s["title"] == "Release the Haunted Family")
 assert len(family["contracts"]) == 1 and len(family["steps"]) == 9
 assert all(t["optional"] for t in family["steps"][:-4])

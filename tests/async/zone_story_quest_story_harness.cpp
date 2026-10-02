@@ -133,9 +133,10 @@ int main(int argc, char **argv)
 		service tracker(catalog);
 		for (const auto &mapping : catalog.story_mappings)
 		{
-			const auto &zone = *std::find_if(
-				catalog.zones.begin(), catalog.zones.end(), [&](const auto &z)
-				{ return z.source_area == mapping.source_area; });
+			const auto &zone =
+				*std::find_if(catalog.zones.begin(), catalog.zones.end(),
+					      [&](const auto &z)
+					      { return z.source_area == mapping.source_area; });
 			require(tracker.discover_zone(7, 42, zone.zone_number,
 						      std::max(1, zone.first_vnum), 100,
 						      "arrival") == result::applied,
@@ -533,8 +534,100 @@ int main(int argc, char **argv)
 				restored_quietus.progress_for_zone(7, 42, 94).completed == 0 &&
 				restored_quietus.progress_for_zone(7, 42, 164).completed == 0,
 			"Quietus reload changed mission receipts or invented foreign source accomplishments");
+		const auto &hide_commission = story_for("torg", "a-dracolich-hide-bracelet-28936");
+		const auto &rose_commission = story_for("torg", "a-secret-rose-delivery-28937");
+		const auto &buckle_commission = story_for("torg", "an-obsidian-buckle-29024");
+		const auto &ring_commission =
+			story_for("torg", "evidence-of-a-secret-affair-28932");
+		const auto &legend_commission =
+			story_for("torg", "relics-of-the-eight-legends-28964");
+		const auto &fine_chisel_commission =
+			story_for("torg", "a-fine-chisel-for-the-craftsman");
+		service supplied_torg(catalog);
+		require(supplied_torg.discover_zone(7, 42, 289, 28900, 100, "arrival") ==
+				result::applied,
+			"Torg discovery failed");
+		for (int contact : { 28917, 28922, 28929, 28932, 28936, 28937, 28964, 28965, 28974,
+				     29023, 29024 })
+			require(supplied_torg.meet_npc(7, 42, contact, 28900, 101) ==
+					result::applied,
+				"Torg contact encounter failed");
+		supplies.carried.clear();
+		supplies.carried[28924] = 1;
+		supplies.carried[28955] = 1;
+		supplies.carried[28962] = 1;
+		supplies.carried[28982] = 1;
+		supplies.carried[28916] = 2;
+		supplies.carried[28944] = 8;
+		const auto before_torg_read = supplied_torg.serialize_state();
+		journal = supplied_torg.render_journal(7, 42, 289, 10, 1, 102, false, false,
+						       &supplies);
+		for (const auto *commission :
+		     { &hide_commission, &rose_commission, &buckle_commission })
+		{
+			require(journal.find("Next: " + commission->steps.back().text) !=
+					std::string::npos,
+				"supplied Torg materials required optional preparation or personal source history");
+			for (const auto &step : commission->steps)
+				if (step.optional)
+					require(journal.find("Next: " + step.text) ==
+							std::string::npos,
+						"optional Torg preparation displaced required delivery");
+		}
+		require(journal.find("Next: " + ring_commission.steps[1].text) !=
+					std::string::npos &&
+				journal.find("Next: " + ring_commission.steps.back().text) ==
+					std::string::npos,
+			"two copies of one promise ring substituted for two distinct ring kinds");
+		require(journal.find("Next: " + legend_commission.steps[1].text) !=
+					std::string::npos &&
+				journal.find("Next: " + legend_commission.steps.back().text) ==
+					std::string::npos,
+			"eight copies of one relic substituted for all eight distinct legends");
+		supplies.carried[28938] = 1;
+		for (int relic = 28944; relic <= 28951; ++relic)
+			supplies.carried[relic] = 1;
+		journal = supplied_torg.render_journal(7, 42, 289, 10, 1, 102, false, false,
+						       &supplies);
+		require(journal.find("Next: " + ring_commission.steps.back().text) !=
+					std::string::npos &&
+				journal.find("Next: " + legend_commission.steps.back().text) !=
+					std::string::npos &&
+				supplied_torg.serialize_state() == before_torg_read &&
+				supplied_torg.progress_for_zone(7, 42, 289).completed == 0 &&
+				supplied_torg.progress_for_zone(7, 42, 289).total == 12,
+			"Torg read/possession changed history or counted preparation services");
+		for (const auto &id :
+		     { "cure-dracolich-hide-28917", "prepare-a-secret-rose-28965" })
+		{
+			const auto &preparation = story_for("torg", id);
+			record(supplied_torg, preparation.contracts.front(), id, 289, 28900);
+		}
+		require(supplied_torg.progress_for_zone(7, 42, 289).completed == 0,
+			"Torg curing or rose service added an achievement");
+		record(supplied_torg, fine_chisel_commission.contracts[0], "old-master", 289,
+		       28900);
+		record(supplied_torg, fine_chisel_commission.contracts[1], "arriving-master", 289,
+		       28900);
+		require(supplied_torg.progress_for_zone(7, 42, 289).completed == 1,
+			"both fine-chisel alternatives counted as two achievements");
+		for (const auto &mapping : catalog.story_mappings)
+			if (mapping.source_area == "torg")
+				for (const auto &commission : mapping.stories)
+					if (commission.category != "service" &&
+					    commission.id != fine_chisel_commission.id)
+						record(supplied_torg, commission.contracts.front(),
+						       commission.id.c_str(), 289, 28900);
+		service restored_torg(catalog);
+		require(restored_torg.deserialize_state(supplied_torg.serialize_state(), &error) &&
+				restored_torg.progress_for_zone(7, 42, 289).completed == 12 &&
+				restored_torg.progress_for_zone(7, 42, 289).total == 12 &&
+				restored_torg.progress_for_zone(7, 42, 550).completed == 0 &&
+				restored_torg.progress_for_zone(7, 42, 875).completed == 0 &&
+				restored_torg.progress_for_zone(7, 42, 712).completed == 0,
+			"Torg reload changed local receipts or fabricated foreign quest completion");
 		std::cout
-			<< "All mappings, optional preparation, independent family/commission/dragon/Quietus journeys, exact materials, service exclusion, and receipt recovery passed.\n";
+			<< "All mappings, optional preparation, independent family/commission/dragon/Quietus/Torg journeys, exact materials, service exclusion, and receipt recovery passed.\n";
 		return 0;
 	}
 	const bool applied = zone_story_quest_story::apply(read(argv[2]), "twin_towers_forest",

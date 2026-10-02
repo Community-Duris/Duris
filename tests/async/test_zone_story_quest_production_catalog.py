@@ -118,7 +118,31 @@ for response in quietus["dialogue"]:
     assert set(response["body"][0].rstrip("~").split()) & set(quietus_contacts[response["giver_vnum"]]["topics"])
 for vnum, contact in quietus_contacts.items():
     assert contact["keyword"] in quietus["mobs"][vnum]["keywords"]
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus"):
+torg = inventory_module.area_evidence(ROOT, "torg")
+assert len(torg["requests"]) == 15 and len(torg["dialogue"]) == 15
+assert len(torg["reset_commands"]) == 597 and len(torg["mobs"]) == 126 and len(torg["items"]) == 100
+assert {(a["kind"], a["vnum"], a["function"]) for a in torg["special_assignments"]} == {
+    ("mob", 28961, "timoro_die"), ("mob", 29025, "lanella_heart"), ("room", 29103, "inn")}
+# The alternate master remains a valid native contract without an ordinary reset.
+assert not any(r["command"] in ("M", "F") and r["arguments"][1] == 29023 for r in torg["reset_commands"])
+assert any(r["command"] == "F" and r["arguments"][1:4] == [29024, 1, 29116] for r in torg["reset_commands"])
+# F changes the source parent: this chisel belongs to the jeweler, not the last M (Zarina).
+fine_chisel = next(i for i, r in enumerate(torg["reset_commands"]) if r["command"] == "G" and r["arguments"][1] == 28959)
+assert torg["reset_commands"][fine_chisel]["arguments"][4] == 20
+assert torg["reset_commands"][fine_chisel - 1]["command"] == "F"
+assert torg["reset_commands"][fine_chisel - 1]["arguments"][1] == 28936
+legend_mobs = {28948, 28949, 28950, 28951, 28952, 28954, 28955, 28957}
+legend_resets = [r for r in torg["reset_commands"] if r["command"] == "M" and r["arguments"][1] in legend_mobs]
+assert len(legend_resets) == 8 and all(r["arguments"][2:5] == [1, 29061, 100] for r in legend_resets)
+tranug_relics = [r for r in torg["reset_commands"] if r["command"] == "G" and r["arguments"][1] in (28983, 28984, 28985)]
+assert len(tranug_relics) == 3 and all(r["arguments"][4] == 50 for r in tranug_relics)
+torg_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "torg")
+torg_contacts = {c["mob_vnum"]: c for c in torg_mapping["contacts"]}
+for response in torg["dialogue"]:
+    assert set(response["body"][0].rstrip("~").split()) & set(torg_contacts[response["giver_vnum"]]["topics"])
+for vnum, contact in torg_contacts.items():
+    assert contact["keyword"] in torg["mobs"][vnum]["keywords"]
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

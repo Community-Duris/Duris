@@ -35,9 +35,10 @@ neither every branch nor every historical prerequisite.
 | 8 | Bastine Castle | [Comprehensive source dossier](zone-stories/BASTINE_CASTLE.md): 14 Q contracts, four M responses, 428 resets, twelve promotion sources, prince/tower key and complete bounded Morlanthra continuation | Revision 2: twelve independent commissions in narrated order, prince and Victor requests; optional promotion/tower history; precise external sources and rewards | Active local/foreign sources; replacement hide lineage; all-stage rank campaign; owned cross-zone rescue; term/concealment decisions |
 | 9 | Pine Hollow | [Comprehensive source dossier](zone-stories/PINE_HOLLOW.md): seven Q contracts, ten M responses, 352 resets, roaming dragon sources, both mine keys, shared hazards and three external consumers | Revision 2: seven independent achievements; exact skin counts/types, source/availability guidance, real rewards and mine exploration | Active source generation; two-skin/one-cap conflict; holding-room availability; explicit branch attempts; hazard/access and owned foreign journeys |
 | 10 | Quietus Quay | [Comprehensive source dossier](zone-stories/QUIETUS_QUAY.md): 16 Q contracts, 14 M families, four special assignments, five shops, 216 resets; reachable world-quest/ship/shared money execution | Revision 2: four missions plus seven services; optional briefings, ten contacts/all native topic families, exact proof/rewards and rare-source guidance | Active resets; filled-badge tree/parent policy; rare episode availability; world-quest refunds/exact attempts; coordinated ship coin/epic settlement |
-| 11–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 11 | Torg | [Comprehensive source dossier](zone-stories/TORG.md): 15 Q contracts, 15 M families, three literal assignments, table-driven teacher/forge reachability, two shops, 597 resets, complete local death specials and bounded foreign continuations | Revision 2: twelve achievements plus two services; optional hide/rose/locket preparation, twelve contacts/all topics, exact rings/relics/chisels and access guidance | Active resets; holding/cap availability; confirmed invasion; committed random scroll/heart lineage and expiry intent; service/unused-content decisions; owned foreign journeys |
+| 12–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Torg, followed by Vast Hidden Grove (Solonar). Their earlier
+The next area is Vast Hidden Grove (Solonar), followed by Winterhaven. Their earlier
 native bindings do not establish comprehensive source review. Do not advance a zone's status
 merely because the map parses, the Q denominator matches, or a candidate item
 graph was extracted.
@@ -80,7 +81,12 @@ graph was extracted.
 | ZSQ-QUIETUS-CONTAINER-STATE | Two treasure chests have locked/pickproof bits but no closed bit, unlike the captain's closed chest. | Use executable live state in access hints; reproduce initial get versus close/reopen and review flags/prose deliberately. A named key is not automatically required for already-open treasure. |
 | ZSQ-WORLD-QUEST-SERVICE | Existing fee callback and committed item rewards are present, but generic wallet_spend is refused before active fee admission. Downstream failed/stale refunds use active-refused ADD_MONEY; map/abandon context lacks original quest generation. | Port identified fee admission together with compensation from the original debit and exact attempt/target. Test failed creation, replaced task, retained payments across activation, refunds/restart and zero-fee policy; preserve separate namespace and existing reward generation. |
 | ZSQ-SHIP-SERVICE-SETTLEMENT | Crew/service handlers ignore active-refused SUB_MONEY or ADD_MONEY. Reachable hull callback waits for epic commit, but coin outcome is ignored; sale assets can clear without credit. | Extend existing epic hull adapter and port services to coordinated coins/epics/ship revision/publication/save with compensation. Qualify rejection/replay/changed owner/ship/timers/market before service objectives. Preserve inn save ordering and deliberate shop/whole-ship-sale refusals. |
-| Evidence extractor gaps | Fixed chained literal assignment detection and ignored commented assignments. Object/mobile membership follows source prototypes rather than room bounds. | Continue review for aliases, computed VNUMs, preprocessor branches, dynamic assignments, and foreign reset sources; extraction remains a lead list, not execution proof. |
+| ZSQ-TORG-INVASION | Confirmed source weakness: Timoro's death announces invasion before validating leader/movement, with an unchecked room lookup; follower movement is conditional. Dranar/master 29024 begin in the incoming-only staging room. | Guard destination and exact NPC generations; confirm leader/partial/full-force arrival and actor/episode/replay policy. Do not infer liberation or personal kill from a delivery receipt. |
+| ZSQ-TORG-HOLDING | All eight legends and Lanella can wander into exitless 29063 while live cap one prevents ordinary replacement. Legend resets are 100%; Tranug's three relics have separate 50% rolls. | Reproduce live source movement/availability; builder reviews return/barrier/placement without blanket-removing intentional variation. Keep source ownership, random stock and current reachability distinct. |
+| ZSQ-TORG-SCROLL-TRANSFORM | Foreign-prototype legend reward is consumed before unconfirmed direct publication of one random Uz half. | Commit exact selected scroll UID and generation, freeze the one-of-two result, and recover input/output together. Test invalid target/output, rejection, retry/crash and foreign terminal ownership. |
+| ZSQ-TORG-LANELLA-BIRTH / TIMER | Custom death directly publishes one random intact/broken heart without actor/source evidence. Duration is assigned to value[0], but no reviewed timer consumer or decay affect implements it. | Commit one-of-two actor-aware birth and placement; builder confirms intended expiry before implementing exact UID/deadline/recovery. Gifts permit foreign delivery without invented personal kill credit. |
+| ZSQ-TORG-CONTENT / FORGE | Normal shop boot leaves Kordor's smith table unattached; old master/placeholder are unplaced and altar procedure is commented out. Shared smith menu/material paths need review before enabling. | Builder chooses intended forge/altar/retired content; qualify compatible shop-secondary dispatch, exact choices/materials and service settlement. Preserve deliberate active refusals, valid alternate receipts and permanent-character safeguards. |
+| Evidence extractor gaps | Fixed chained literal assignment detection and ignored commented assignments. Object/mobile membership follows source prototypes rather than room bounds. | Continue review for aliases, computed VNUMs, preprocessor branches, table-driven teacher/smith assignments, F-selected parents, and foreign reset sources; extraction remains a lead list, not execution proof. |
 
 ## Verification record
 
@@ -301,4 +307,55 @@ claim an observed production loss or a completed economic repair.
 
 The source queue is now ten of 220 complete, with 210 areas pending. Continue
 with Torg, then Vast Hidden Grove (Solonar). Full active-world source generation,
+semantic events, service settlement and played/recovery journeys remain open.
+
+### Seventh comprehensive mapping batch — October 2, 2026
+
+Torg's complete source dossier and reproducible index cover all fifteen Q
+contracts and fifteen native M families, 282 rooms, 126 mobiles, 100 objects,
+two shops and 597 resets. Reviewed three literal special assignments, complete
+Timoro/Lanella death handlers, table-driven teacher/forge reachability, shared
+door/teleport/follower/holding behavior and bounded foreign legend/heart/head
+continuations. These foreign reads do not qualify whole foreign areas.
+
+Revision 2 retains twelve achievement rows and two preparation services, all
+fifteen bindings and the two equivalent fine-chisel recipients. Optional
+curing, favor/rose and locket history preserves supplied materials. Every native
+topic family has a valid representative contact/keyword. The journal explains
+the Colosseum password and medallion gate, two identically named ring kinds,
+eight distinct legendary relics, three independent Tranug relics, different
+chisel commissions and actual invasion-dependent recipient availability.
+
+Native C++20 warnings-as-errors regressions passed for all 36 maps and schemas
+1/2/3. New cases prove supplied terminal materials skip optional preparation,
+two copies of one ring cannot replace the other kind, eight copies of one relic
+cannot replace all eight kinds, services add no achievement, both fine-chisel
+alternatives count once, reads never write, and reload retains twelve local
+receipts without inventing Winterhaven/Juiblex/Scorch Valley completion. These
+are isolated projection/receipt tests, not played source or invasion journeys.
+
+Production catalog/snapshot, generated world inventory and all eleven source
+indices passed. Source checks include the actual F-parent fine chisel, its 20%
+roll, the unplaced alternate master, incoming master, eight 100% cap-one legend
+resets and three separate 50% Tranug rolls. All 27 required home maps remain
+present. The maintained SQL `make -C src` completed from existing artifacts;
+no production C/C++ source changed. Complete touched-file/changed-line
+formatting, whitespace checks and 314 local document links passed.
+
+All 2,668 raw definitions, source fingerprint/content revision, registry, native
+bindings/categories and other 35 maps remain unchanged as parsed objects.
+Projection remains 2,359 achievements, 1,962 potential daily units and 2,509
+rows including services/administrative content. No database operation, migration,
+accounting activation or merge occurred.
+
+New findings have explicit repair/qualification plans: validate and confirm
+invasion arrival rather than announcing success first; review one-way holding
+availability without guessing missing sources; commit one frozen random scroll
+replacement or heart birth with exact lineage; decide intended heart expiry;
+and review unattached forge/disabled altar content before enabling mechanics.
+Existing native accounting, deliberate service refusals and shared inn ordering
+are preserved. Source weaknesses are not claims of observed production loss.
+
+The source queue is now eleven of 220 complete, with 209 areas pending. Continue
+with Vast Hidden Grove (Solonar), then Winterhaven. Full active-world generation,
 semantic events, service settlement and played/recovery journeys remain open.

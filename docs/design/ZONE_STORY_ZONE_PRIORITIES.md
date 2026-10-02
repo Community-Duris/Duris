@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 10 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 11 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Active reset-generation qualification is a shared prerequisite for the pilots.
 
@@ -31,7 +31,7 @@ Active reset-generation qualification is a shared prerequisite for the pilots.
 | 8 | [Bastine Castle](zone-stories/BASTINE_CASTLE.md) (`bastine`) | Narrated Initiate → twelve independent trophy commissions → knighthood; Phex note/key → prince; Lamerok ring → Victor trust → four ordinary locks → Morlanthra's Highway rescue. | Source-comprehensive, revision 2. Exact external sources and accepted wand; optional earlier commissions/tower key. Rank/kill history, replacement hide and cross-zone campaign remain pending. |
 | 9 | [Pine Hollow](zone-stories/PINE_HOLLOW.md) (`pineholl`) | Opposing dragon accounts → local warrior/Auriam materials + roaming children/shaman → independent rewards; five skin commissions; mine keys → hidden duergar refuge → trapped desk eye for Skelenak. | Source-comprehensive, revision 2. Exact source/availability/reward guidance; two-skin/one-cap and one-way holding concerns; no inferred faction, kills or liberation. Foreign receipts remain owned in their zones. |
 | 10 | [The Docks of Quietus Quay](zone-stories/QUIETUS_QUAY.md) (`quietus`) | Credential introduction → drow note + Aresliean head; independent Rodev sword/Eckraldu staff contracts; optional seal/dagger briefing → bloodstone finale; rare-load/treasure, world-quest and ship services. | Source-comprehensive, revision 2. Four achievements and seven services; optional briefing receipts, all native topic families, exact foreign sources/rewards. Filled badges, rare availability, world-quest refunds and ship settlement have explicit qualification/repair plans. |
-| 11 | [The Kingdom of Torg](../../areas/qst/torg.qst) (`torg`) | Raw dracolich hide → curing → bracelet; tentacle → favor token → secret rose → courier reward; locket → obsidian → divine-chisel buckle; eight legendary relics. | New journal. Several local exchange chains; personal lineage and intrusion/invasion specials need separate evidence. |
+| 11 | [The Kingdom of Torg](zone-stories/TORG.md) (`torg`) | Hide → curing → bracelet; tentacle → token → rose → Zuzon; spoken Colosseum gate → medallion/council rings; eight legends and three independent Tranug relics; invasion → locket/obsidian and distinct chisel commissions; owned legend/heart continuations. | Source-comprehensive, revision 2. Twelve achievements plus two services; optional preparation, all native topic families. F-parent supply, holding availability, confirmed invasion, random transforms/births and unattached forge/altar have explicit qualification/repair plans. |
 | 12 | [Vast Hidden Grove](../../areas/qst/solonar.qst) (`solonar`) | Arch-magi robes via orb, scales, hide robes, thread, and faerie dust; ancient scroll/adamantium → piwafwi; repaired diamond + living wooden heart → Mage Bane. | New journal. Strong recipe graph; mixed item-and-coin terminal routes remain unavailable under current active accounting. |
 | 13 | [The City of Winterhaven](../../areas/qst/wh.qst) (`wh`) | Starter-city supply errands; tanning/thread/silk/jewelry services; reviewed material routes into larger equipment requests. | Mapped baseline. Integrate one district at a time; 221 contracts include many support services. |
 | 14 | [Shairak and Smokeveil Forest](../../areas/qst/smokev.qst) (`smokev`) | Learn the village/forest conflict → Sanrabb and Dolgar heart proof; dragon/tentabeast requests; shaman and magician reward branches. | Candidate reviewed in Q/M source. Qualify story grouping and personal/group trophy evidence. |
@@ -108,6 +108,17 @@ replacement can consume nested contents. Bartender world quests retain their
 separate namespace. Shared world-quest refunds and ship coin settlement gaps
 are recorded with targeted repair plans that preserve existing committed
 reward/epic adapters and the inn's terminal-save behavior.
+
+Torg's comprehensive source review explains all fifteen item-only contracts and
+all fifteen native topic families. Optional hide/rose/locket preparation preserves
+supplied materials. Two promise rings and two chisel kinds remain distinct; the
+eight legends need one of each relic, while Tranug's three drops are independent.
+Recipients arriving with the invasion require confirmed movement, and live
+cap-one sources can wander into an exitless holding room. The legend scroll
+produces one random foreign tale half; Lanella produces one random heart for
+Sierra's owned Winterhaven contracts. Direct birth/transform ordering, absent
+timer consumption, unattached forge dispatch and disabled altar content have
+concrete repair or builder-decision plans without invented local completion.
 
 ## Remaining native quest areas in triage order
 

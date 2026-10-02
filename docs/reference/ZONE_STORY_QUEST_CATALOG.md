@@ -32,6 +32,12 @@ Quietus now has optional briefing receipts and exact proof/reward guidance,
 four mission achievements and seven supporting services. Its comprehensive
 dossier records all topic families, rare-load availability, filled-badge
 replacement and distinct world-quest/ship service settlement gaps.
+Torg retains twelve achievements and two services across fifteen contracts.
+Optional curing, rose and locket receipts preserve supplied-material routes;
+its dossier explains all topic families, actual speech/key access, distinct
+rings/chisels, eight legends and three separate Tranug commissions. Invasion
+arrival, holding availability, direct random legend/heart grants and owned
+foreign terminals remain separate qualification work.
 All raw definitions, receipt identities, zone registry and source fingerprint
 remain unchanged. Comprehensive source dossiers for these areas are tracked in
 the [execution register](../design/ZONE_STORY_ROADMAP_EXECUTION.md).
