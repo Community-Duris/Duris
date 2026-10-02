@@ -63,23 +63,69 @@ This checkpoint publishes the completed review fixes directly to
 
 - Flatfile `.craft` application receipts and `.craft-obligation` frozen terms
   now have separate protected retention/export inventory entries. The lifecycle
-  validator requires both; removing either is rejected. Fifteen lifecycle,
-  seven erasure, and six export regressions pass. The inventory now counts 39
+  validator requires both; removing either is rejected. SQL and flatfile recipe
+  recovery policies must also remain protected and retained; nine policy-edit
+  fault cases that previously passed are now refused. Twenty lifecycle,
+  seven erasure, and six export regressions pass. The inventory now counts 43
   non-database stores, 225 SQL tables, and 42 Redis surfaces, with destructive
   rules and shared disclosure still disabled pending controller decisions.
+
+- The administrator-property regression harness now supplies the unrelated
+  world-activity reload hook required by upstream property application. The real
+  initialize/set/revert/save/reload journey passes on SQL and flatfile again;
+  the full regression run remains in progress.
+
+- Four files identified by the full formatting check now match the repository
+  style with unchanged C++ tokens and comments. The whole-tree formatter, ten
+  runtime-compatibility contracts, and the native read-transaction cleanup fault
+  harness pass. Both strict production profiles rebuild successfully.
+
+- Native flatfile player snapshots, account records, identity allocation/name
+  catalog, and item-ownership catalog now have separate required lifecycle
+  entries, alongside legacy compatibility files. Twelve protection/reset edits
+  are refused, and account export rules must exclude both stored password hashes
+  and confirmation secrets. Controller retention and disclosure decisions remain
+  pending; this adds inventory guards without enabling erasure or disclosure.
+
+- The newborn-item grant lifecycle fixture now models the recipient's sealed
+  save fence. Its production movement/publication harness passes under ASan/UBSan,
+  including held grants to the actor and to another recipient, release after
+  the save clears, and exact once-only publication after duplicate completion.
+
+- Craft/Forge material planning now widens item-value arithmetic, checks finite
+  positive scaling and integer limits before conversion, and leaves the caller's
+  plan untouched on refusal. A shared wide required-level calculation also
+  removes overflow from recipe availability, both command gates, and level
+  messages. The production planner reproduces signed overflow before the fix
+  and passes under address, undefined-behavior and float-cast sanitizers afterward.
+  Both production builds pass for source tree `7360003fa`. Its real flatfile
+  mortal physical and pouch Craft/Forge journey preserves exact inputs, output
+  UIDs, XP and counters through copyover and two cold restarts.
+
+- The terminal-death entrypoint fixture now compiles the production craft-receipt
+  merge and component mask alongside quest XP. Controlled capture/ACK checks
+  prove that progression capture refusal releases pins and queue bytes, while
+  timeout/resume retains the original operation, discipline and XP even if live
+  recovery state changes. Only the exact database ACK releases the request.
+
+- Coupled death disposition/conflict, spell, quest-XP and save-quarantine recovery
+  records must also remain protected and retained in lifecycle policy. Thirty
+  edits that previously removed protection or selected reset/deactivation now
+  fail closed. Twenty lifecycle, seven erasure and six export checks pass;
+  destructive rules remain disabled.
 
 ## Verification and its limits
 
 | Check | Current evidence |
 | --- | --- |
-| Strict SQL and flatfile production builds | Passed for `49f76401c`; all 1,210 native source files match its committed tree. Recipe gameplay uses the separately qualified `ad5bc52bf` builds. |
+| Strict SQL and flatfile production builds | Passed for `7360003fa`; all 1,210 native source files match its committed tree. Current flatfile recipe gameplay uses that binary; SQL recipe gameplay remains separately qualified at `ad5bc52bf`. |
 | Recipe SQL receipts and fault recovery | Passed on disposable MySQL 8.0 and MariaDB 10.11 before the latest upstream integration. |
 | Integrated focused runtime checks | All 16 selected checks passed after the first upstream integration, including the ASan/UBSan prompt fixture. |
 | Null-output publication regression | Passed using the actual native movement module after `0464613a1`. |
 | Combat continuation and quarantine restore | Passed after integrating the upstream recovery evidence. Quarantine archives retain both original component frames and keep recovery fenced on conflicting evidence. |
-| Writer census | Refreshed for `49f76401c`: 2,805 lexical occurrences, 2,747 unique sites, 863 routes, zero unmapped sites. Coverage contracts and artifact freshness pass after reanchoring the affected enhancement check. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
+| Writer census | Refreshed for `7360003fa`: 2,805 lexical occurrences, 2,747 unique sites, 863 routes, zero unmapped sites. Coverage contracts and artifact freshness pass after reanchoring the affected enhancement check. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
 | Recipe flatfile restore | Passed through the actual native restore decoder: complete recovery, checksum damage, missing obligation/root, future revision, and invalid receipt filename. |
-| Mortal recipe gameplay | Physical and retained-pouch Craft/Forge passed on flatfile and both SQL engines with exact XP, output UIDs and counters through copyover and two cold restarts. |
+| Mortal recipe gameplay | Physical and retained-pouch Craft/Forge passed on the current `7360003fa` flatfile binary with exact XP, output UIDs and counters through copyover and two cold restarts. Both SQL engines retain the earlier separately qualified `ad5bc52bf` journey. |
 | Death/resurrection accounting acceptance | **RED** on disposable MariaDB 10.11.14 and MySQL 8.0.46 using the verified `49f76401c` SQL binary. Real combat/death and resurrection returned all 12 original fixture item UIDs, restored the exact wallet, and retired the new death coin pile. The inactive-accounting journey still reports 27 uncovered item events and two currency operations missing accounting roots/postings. It does not qualify active accounting or subsequent restart. |
 | Latest migration integration | Runtime manifest validator and all 34 native boot/migration contract tests passed with head 0053 and 225 tables. All three histories converge on the pinned schema on disposable MySQL 8.0.46 and MariaDB 10.11.14, including preserved master receipts/runtime payloads, append/replay, shell/compiled boot, restore selection, and tamper refusal. The fixture uses the current sealed baseline with the master prefix; a captured production clone remains outside this proof. |
 
