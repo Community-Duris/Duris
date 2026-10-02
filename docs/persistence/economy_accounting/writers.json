@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "508912dd2cd24e1e6d60648febdd5c272049c85b",
+  "source_commit": "a2c560b9dc477c28c36c69f0d78c42257ed405f6",
   "census_complete": true,
   "writers": [
     {
@@ -15441,17 +15441,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1956,
+          1963,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1968,
-          "item_lifecycle"
-        ],
-        [
-          "src/item/enhance.c",
-          1974,
+          1975,
           "item_lifecycle"
         ],
         [
@@ -15461,17 +15456,22 @@
         ],
         [
           "src/item/enhance.c",
-          1987,
+          1988,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1997,
+          1994,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          2037,
+          2004,
+          "item_lifecycle"
+        ],
+        [
+          "src/item/enhance.c",
+          2044,
           "item_lifecycle"
         ]
       ],
@@ -15816,12 +15816,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1281,
+          1288,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1289,
+          1296,
           "item_publication"
         ]
       ],
@@ -17975,12 +17975,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1099,
+          1106,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1109,
+          1116,
           "item_lifecycle"
         ]
       ],
@@ -18004,9 +18004,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Modifier enhancement changes source affected fields before debiting the player and extracting its material; fee, in-place payload and material sink are separate direct effects.",
+      "classification": "Modifier enhancement validates the planned signed-byte affect and accepts the wallet fee before changing the source item and extracting its material. Fee, retained item payload and material sink still lack one durable compound receipt.",
       "authority_boundary": "Fence source UID/revision, material UID and wallet fee; commit payload, sink and fee atomically before any live field change.",
-      "current_support": "Legacy money-helper/source behavior only; unified accounting, both-backend parity and active-epoch refusal unverified.",
+      "current_support": "Actual production-function sanitizer evidence qualifies payment refusal without item/material mutation, all three ordinary fee tiers, the normal step cap and persisted modifier bounds. Compound durability and accounting backend qualification remain unverified.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -18021,18 +18021,20 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_essence_enhancement_payment.py"
+      ],
       "sites": [
         [
           "src/item/enhance.c",
-          1084,
+          1083,
           "money_helper"
         ]
       ],
       "evidence": [],
       "reachability_evidence": "The linked helper call is in the named source function; caller reachability, committed root identity and refusal still need executable qualification.",
       "native_effects": {
-        "holding_effect": "Modifier enhancement changes source affected fields before debiting the player and extracting its material; fee, in-place payload and material sink are separate direct effects.",
+        "holding_effect": "Modifier enhancement validates the planned signed-byte affect and accepts the wallet fee before changing the source item and extracting its material. Fee, retained item payload and material sink still lack one durable compound receipt.",
         "custody_effect": "Linked enhancement item route owns source/replacement/material UID history; the fee site alone does not prove it.",
         "native_state_targets": [
           "PC or NPC wallet denominations / native player_data where applicable",
@@ -18069,12 +18071,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1093,
+          1100,
           "item_publication"
         ],
         [
           "src/item/enhance.c",
-          1094,
+          1101,
           "item_lifecycle"
         ]
       ],
@@ -18206,12 +18208,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          2080,
+          2087,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          2088,
+          2095,
           "item_publication"
         ]
       ],
@@ -20111,12 +20113,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1156,
+          1163,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1156,
+          1163,
           "item_publication"
         ]
       ],
@@ -53532,9 +53534,9 @@
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1084,
+      "line": 1083,
       "family": "money_helper",
-      "excerpt": "SUB_MONEY(ch, cost, 0);"
+      "excerpt": "if (SUB_MONEY(ch, cost, 0) != 0)"
     },
     {
       "path": "src/item/enhance.c",
@@ -53598,49 +53600,43 @@
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1094,
+      "line": 1101,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(material);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1099,
+      "line": 1106,
       "family": "item_lifecycle",
       "excerpt": "P_obj tempobj = read_object(OBJ_VNUM(source), VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1109,
+      "line": 1116,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tempobj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1156,
+      "line": 1163,
       "family": "item_lifecycle",
       "excerpt": "obj_to_char(read_object(400232, VIRTUAL), mob);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1281,
+      "line": 1288,
       "family": "item_lifecycle",
       "excerpt": "P_obj gift = read_object(reward, VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1956,
+      "line": 1963,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(vnum, VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1968,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/item/enhance.c",
-      "line": 1974,
+      "line": 1975,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
@@ -53652,25 +53648,31 @@
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1987,
+      "line": 1988,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1997,
+      "line": 1994,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2037,
+      "line": 2004,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2080,
+      "line": 2044,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/item/enhance.c",
+      "line": 2087,
       "family": "item_lifecycle",
       "excerpt": "if (!(material = read_object(high_vnum, VIRTUAL)))"
     },
@@ -53694,25 +53696,25 @@
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1093,
+      "line": 1100,
       "family": "item_publication",
       "excerpt": "obj_from_char(material);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1156,
+      "line": 1163,
       "family": "item_publication",
       "excerpt": "obj_to_char(read_object(400232, VIRTUAL), mob);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1289,
+      "line": 1296,
       "family": "item_publication",
       "excerpt": "obj_to_char(gift, ch);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2088,
+      "line": 2095,
       "family": "item_publication",
       "excerpt": "obj_to_char(material, mob);"
     },
