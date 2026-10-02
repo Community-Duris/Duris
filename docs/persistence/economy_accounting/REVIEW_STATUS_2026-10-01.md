@@ -170,6 +170,16 @@ Follow-up Craft/Forge interruption repairs and qualification are recorded in
   and witness together; this does not qualify older-generation rollback or an
   incomplete legacy root with all custody evidence missing.
 
+- Ordinary and superior enhancement now refuse a rejected wallet debit before
+  publishing an output, consuming material, or upgrading the retained item.
+  Ordinary enhancement releases its provisional output on refusal and rejects
+  negative configured fees; valid free quotes skip the debit API. Actual
+  production-function regressions fail before `508912dd2` and pass under
+  ASan/UBSan afterward for physical and pouch materials. All 15 affected
+  enhancement checks and both strict production builds pass; all 1,210 native
+  source files match that committed tree. Wallet admission is not a compound
+  durable enhancement receipt; that integration remains outstanding.
+
 ## Verification and its limits
 
 | Check | Current evidence |
@@ -177,10 +187,10 @@ Follow-up Craft/Forge interruption repairs and qualification are recorded in
 | Strict SQL and flatfile production builds | Passed for the recovery integration; all 1,210 tracked `src/` files match `70ff83d74` after newline normalization. Frozen fault candidates and their limits are recorded in the recovery checkpoint. |
 | Recipe SQL receipts and fault recovery | All four interruption journeys pass on disposable MySQL 8.0.46 and MariaDB 10.11.19: disconnect, crash-before-commit, crash-before-save and refused checkpoint. Each checks physical Craft/Forge with exact UIDs and XP, then pouch crafting, copyover and two cold restarts. Active accounting and broader recipe/pouch faults remain unqualified. |
 | Integrated focused runtime checks | All 16 selected checks passed after the first upstream integration, including the ASan/UBSan prompt fixture. |
-| Frozen broad regression | The `8be8b55c0` snapshot completed all 822 scripts in 7,221.31 seconds; the runner reported 818 successes and four failures. Property reload, formatting, newborn grants and terminal-death entrypoints fail on that snapshot and pass their separately recorded focused repairs. Optional checks are included in the runner's success total: the MariaDB combat journey skipped because `TEST_DB_HOST` was not configured. This is not an all-green current-head or SQL gameplay qualification. |
+| Frozen broad regression | The `8be8b55c0` snapshot completed all 822 scripts in 7,221.31 seconds; the runner reported 818 successes and four failures. Property reload, formatting, newborn grants and terminal-death entrypoints fail on that snapshot and pass their separately recorded focused repairs. Optional checks are included in the runner's success total: the MariaDB combat journey skipped because `TEST_DB_HOST` was not configured. This is not an all-green current-head or SQL gameplay qualification. A fresh 828-script run is in progress on frozen `63309643c`; it predates the enhancement payment fix and has no final result yet. |
 | Null-output publication regression | Passed using the actual native movement module after `0464613a1`. |
 | Combat continuation and quarantine restore | Passed after integrating the upstream recovery evidence. Quarantine archives retain both original component frames and keep recovery fenced on conflicting evidence. |
-| Writer census | Refreshed for `70ff83d74`: 2,809 lexical occurrences, 2,751 unique sites, 863 routes, zero unmapped sites. The four temporary material-probe cleanup sites remain explicitly classified; changed recovery writer anchors are reverified. All 52 coverage tests, 2,721 writer-site checks and artifact freshness pass. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
+| Writer census | The `70ff83d74` recovery checkpoint passes all 52 coverage tests, 2,721 writer-site checks and artifact freshness. The later `508912dd2` enhancement repair adds one provisional-output cleanup site: 2,810 lexical occurrences, 2,752 unique sites, 863 routes, zero unmapped sites. Its moved wallet calls and provisional cleanup retain explicit ownership; integrated anchors and checks are being refreshed. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
 | Recipe flatfile restore | Passed through the actual native restore decoder: complete recovery, checksum damage, missing obligation/root, future revision, and invalid receipt filename. |
 | Mortal recipe gameplay | Physical and retained-pouch Craft/Forge pass on the `70ff83d74` flatfile binary through copyover and two cold restarts. SQL physical interruptions and subsequent healthy pouch/restart journeys pass on frozen `0408d0825` (MariaDB) and `256785124` (MySQL) candidates, with exact input retirement, output UIDs and XP. See the recovery checkpoint for proof limits. |
 | Death/resurrection accounting acceptance | **RED** on disposable MariaDB 10.11.14 and MySQL 8.0.46 using the verified `49f76401c` SQL binary. Real combat/death and resurrection returned all 12 original fixture item UIDs, restored the exact wallet, and retired the new death coin pile. The inactive-accounting journey still reports 27 uncovered item events and two currency operations missing accounting roots/postings. It does not qualify active accounting or subsequent restart. |
