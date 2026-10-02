@@ -87,6 +87,11 @@ This checkpoint publishes the completed review fixes directly to
   and confirmation secrets. Controller retention and disclosure decisions remain
   pending; this adds inventory guards without enabling erasure or disclosure.
 
+- The newborn-item grant lifecycle fixture now models the recipient's sealed
+  save fence. Its production movement/publication harness passes under ASan/UBSan,
+  including held grants to the actor and to another recipient, release after
+  the save clears, and exact once-only publication after duplicate completion.
+
 ## Verification and its limits
 
 | Check | Current evidence |
