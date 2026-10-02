@@ -309,3 +309,25 @@ The journey owns all temporary runtime/state files and loopback listeners.
 These are inactive-accounting character/quest-alias lifecycle checks; retained
 non-personal economic identity, all personal-data domains, active accounting and
 the remaining R8 qualification are still open.
+
+## Frozen full-suite outcome and Redis socket fixture repair
+
+The exact frozen `fbd9f5035` run has finished: **822 passed, 11 skipped, one
+failed**, in 5,924.75 seconds. It exits nonzero; no full passing result is claimed.
+The skipped entries require external SQL/telemetry, backup or other documented
+opt-ins. SQL combat/death qualification is now running separately on owned
+MySQL/MariaDB instances against the combined current source; it has no result yet.
+
+The lone failure is `test_redis_connection_security_live.py`: its inherited
+qualification TMPDIR generates a 109-byte Unix socket pathname. The owned Redis
+server refuses that pathname and never opens its TCP listener. A standalone
+repeat under the same TMPDIR reproduces the refusal. The test now retains its
+other artifacts under TMPDIR and creates its socket in a separate private short
+directory. It passes the actual native ASan/UBSan TCP password/ACL/database,
+verified TLS, invalid peer-name refusal, Unix-socket authentication/database and
+invalid socket/TLS configuration assertions under the previously failing long
+TMPDIR. Runtime Redis configuration and authentication rules are unchanged.
+
+This focused repair does not rewrite the frozen suite report into a pass or
+qualify the later source/test changes. The full report and console transcript
+remain local ignored evidence; current-head and external-service gates remain.

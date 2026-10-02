@@ -28,11 +28,13 @@ UID-retirement checks; memoized native topology bounds ancestor work, and 49
 reconciler tests pass. Complete native source/origin
 and writer qualification remain open. See the October 2 review status for scope.
 
-A complete `make test-all` run is in progress on frozen candidate `fbd9f5035`
-after its full archived Git tree was verified. The strict SQL server, area
-editor and world generators have built successfully. This run does not yet
-establish a passing broad regression result; the later bounded-topology repair
-has separate focused evidence in the October 2 review status.
+The frozen candidate `fbd9f5035` completed `make test-all`: 822 passed, 11
+skipped and one live Redis fixture failed because its Unix socket path exceeded
+the platform limit under a long qualification TMPDIR. The repaired fixture
+passes the same native authentication/TLS/database checks under that TMPDIR.
+The strict SQL server, area editor and world generators built successfully.
+This is a failed broad run plus a separate focused repair pass; a current-head
+integrated run and skipped external-service checks remain qualification gates.
 
 The disposable playtime journey now honors a validated `TEST_DB_PORT` in both
 native connections and SQL clients. Its outdated temporary-table probe is
