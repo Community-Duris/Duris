@@ -1802,6 +1802,9 @@ class Reconciler:
                 if created:
                     self.emit("duplicate_uid", uid=uid, operation_id=event.get("operation_id"))
                 created = True
+            if retired and action == "destroy":
+                self.emit("duplicate_item_retirement", uid=uid,
+                          operation_id=event.get("operation_id"))
             if retired and event.get("state") == "live":
                 self.emit("resurrected_item_uid", uid=uid, operation_id=event.get("operation_id"))
             retired = retired or action == "destroy" or event.get("state") == "tombstone"

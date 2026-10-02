@@ -525,13 +525,27 @@ try:
             revived_uid_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
             assert revived_uid_report["exception_counts"] == {
                 **expected_exceptions, "resurrected_item_uid": 1}, revived_uid_report
+            # A second, internally consistent destruction must not count the
+            # already retired UID as another supply expense.
+            with setup.cursor() as writer:
+                writer.execute("UPDATE economic_accounting_operation SET reason=34 "
+                               "WHERE operation_id=%s", (revived_uid_root,))
+                writer.execute("UPDATE item_ownership_ledger SET reason_type=3,"
+                               "to_owner_type=8,to_owner_id=0 WHERE operation_id=%s",
+                               (revived_uid_root,))
+                writer.execute("UPDATE item_current_owner SET state=2,owner_type=8,"
+                               "owner_id=0 WHERE item_uid=84")
+            duplicate_retirement_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert duplicate_retirement_report["exception_counts"] == {
+                **expected_exceptions, "duplicate_item_retirement": 1}, duplicate_retirement_report
             with setup.cursor() as writer:
                 for table in ("economic_accounting_operation", "critical_operation_inbox",
                               "economic_accounting_source_claim", "economic_accounting_item_reference",
                               "item_ownership_ledger"):
                     writer.execute(f"DELETE FROM {table} WHERE operation_id IN (%s,%s)",
                                    (duplicate_uid_root, revived_uid_root))
-                writer.execute("UPDATE item_current_owner SET item_revision=1 WHERE item_uid=84")
+                writer.execute("UPDATE item_current_owner SET item_revision=1,state=1,"
+                               "owner_type=1,owner_id=7 WHERE item_uid=84")
             assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
                 expected_exceptions
             # A deep, unanchored native forest is still auditable. Its missing
