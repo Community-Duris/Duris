@@ -7,6 +7,7 @@ import re
 import subprocess
 import sys
 import json
+import io
 import signal
 import tempfile
 import threading
@@ -198,6 +199,14 @@ class RunnerBehavior(unittest.TestCase):
         self.assertEqual(len(observed), 1)
         self.assertEqual(observed[0]["PA_RUNTIME_SQL_MARIADB_IMAGE"], document["engines"]["mariadb"])
         self.assertEqual(observed[0]["PA_RUNTIME_SQL_MYSQL_IMAGE"], document["engines"]["mysql"])
+
+    def test_matrix_repeated_filters_select_each_requested_owner_once(self):
+        matrix = self.integration_module()
+        with patch("sys.stdout", new_callable=io.StringIO) as output:
+            self.assertEqual(matrix.main(["--engine", "once", "--match", "epic_save_guards",
+                                          "--match", "flatfile_accounting_bank", "--list"]), 0)
+        selected = [line.split()[1] for line in output.getvalue().splitlines()]
+        self.assertCountEqual(selected, ["epic_save_guards", "flatfile_accounting_bank"])
 
     def test_matrix_reports_pending_required_rows_as_incomplete_in_json_and_junit(self):
         matrix = self.integration_module()

@@ -2,7 +2,9 @@
 
 from _paths import SRC, rel
 import pathlib
+import hashlib
 import shutil
+import struct
 import sys
 import subprocess
 import tempfile
@@ -37,6 +39,34 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
         )
         if run_result.returncode:
             raise SystemExit(run_result.stdout)
+
+        # The native checksum-refusal case deliberately damages this synthetic
+        # snapshot last. Undo that exact fault before exercising its observer.
+        state = pathlib.Path(state_temporary)
+        snapshot = state / "players/42.snapshot"
+        data = bytearray(snapshot.read_bytes())
+        data[-1] ^= 0x5a
+        snapshot.write_bytes(data)
+        inspection = [str(binary), str(state), "inspect", "42"]
+        before = {p.relative_to(state): p.read_bytes() for p in state.rglob("*") if p.is_file()}
+        subprocess.run(inspection, cwd=ROOT, check=True, capture_output=True)
+        assert before == {p.relative_to(state): p.read_bytes() for p in state.rglob("*") if p.is_file()}, \
+            "ordinary inspection changed authority files"
+
+        # This is a valid native v2 after-image journal, not an invalid marker.
+        # The old observer replayed it, installed the image, and reported success.
+        name, image = b"inspection_should_not_write", b"observer side effect"
+        payload = struct.pack("<HBBH", 1, 1, 1, len(name)) + name + struct.pack("<I", len(image)) + image
+        pending = b"DURAUTH\0" + struct.pack("<II", 2, len(payload)) + hashlib.sha256(payload).digest() + payload
+        journal = state / "domains/.critical-authority-transaction"
+        journal.write_bytes(pending)
+        journal.chmod(0o600)
+        refused = subprocess.run(inspection, cwd=ROOT, capture_output=True, text=True)
+        assert refused.returncode != 0 and "inspect refuses pending recovery" in refused.stderr, \
+            "observer accepted authority that requires recovery"
+        assert journal.read_bytes() == pending and not (state / "domains" / name.decode()).exists(), \
+            "inspection replayed a pending after-image"
+        print("PASS: native authority inspection preserves files and refuses a valid pending after-image")
 
     with tempfile.TemporaryDirectory(prefix="flat-recovery-state-") as recovery_temporary:
         recovery_result = subprocess.run([str(binary), recovery_temporary, "quarantine-recovery"],

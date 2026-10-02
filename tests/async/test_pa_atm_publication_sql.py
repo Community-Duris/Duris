@@ -9,7 +9,7 @@ import shlex
 import subprocess
 import tempfile
 
-from _paths import ROOT
+from _paths import ROOT, extract_function
 from pa_accounting_batch_artifact import load_base_build, report_base_build
 
 RUNNER = ROOT / "tests/async/run_pa_atm_publication_sql.sh"
@@ -63,6 +63,12 @@ def run_component_harness() -> None:
     compiler = shlex.split(os.environ.get("CXX", "g++"))
     with tempfile.TemporaryDirectory(prefix="run-", dir=work) as temporary:
         executable = Path(temporary) / "atm-publication"
+        # Link the real morph predicate without the utility unit's unrelated
+        # process-wide logging and publication owners, supplied by this fixture.
+        morph_source = Path(temporary) / "live-character.cpp"
+        morph_source.write_text(
+            '#include "core/prototypes.h"\n#include "core/utils.h"\n' +
+            extract_function("utility.c", "int IS_MORPH(") + "\n")
         command = compiler + [
             "-std=c++20",
             "-Wall",
@@ -82,6 +88,7 @@ def run_component_harness() -> None:
             "-Isrc",
             *cflags,
             str(HARNESS.relative_to(ROOT)),
+            str(morph_source),
             *sources,
             "-Wl,--gc-sections",
             *libs,
