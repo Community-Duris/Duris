@@ -66,7 +66,7 @@ This checkpoint publishes the completed review fixes directly to
   validator requires both; removing either is rejected. SQL and flatfile recipe
   recovery policies must also remain protected and retained; nine policy-edit
   fault cases that previously passed are now refused. Twenty lifecycle,
-  seven erasure, and six export regressions pass. The inventory now counts 47
+  seven erasure, and six export regressions pass. The inventory now counts 49
   non-database stores, 225 SQL tables, and 42 Redis surfaces, with destructive
   rules and shared disclosure still disabled pending controller decisions.
 
@@ -131,18 +131,55 @@ This checkpoint publishes the completed review fixes directly to
   stay pending and destructive rules remain disabled. Other native domain
   catalogs still require inventory review.
 
+- Ordinary and superior enhancement now share a wide configured level limit,
+  capped at the maximum representable item value. Both command comparisons
+  and messages use that limit. The production gates reproduce signed overflow
+  for a level-50 character and a large valid multiplier before the fix; native
+  ASan/UBSan checks pass afterward, preserving the ordinary 150/151 boundary
+  and refusing positive item values when the level or multiplier is invalid.
+  Both production builds pass for `cfb42c8ec`, with all 1,210 native source
+  files verified. Existing payment, material, stat-cap and configuration checks
+  also pass; compound enhancement durability is still outstanding.
+
+- Core accounting lineage, mappings, baseline/activation records, immutable
+  evidence, inbox/outbox dedupe and transaction journals must remain protected
+  and retained. The validator previously accepted all 99 protection/reset/
+  deactivation edits across 33 stores; it now rejects them. Twenty-one lifecycle,
+  seven erasure and six export checks pass. This preserves the current recovery
+  contract; disclosure and destructive policy decisions remain pending.
+
+- Missing native flatfile UID authority no longer silently starts reservations
+  again at UID 1. A permanent `metadata/item_uid_allocator.initialized` witness
+  is durably written after the allocator state and before releasing IDs. Missing
+  state with that witness, or surviving legacy custody, is refused; healthy older
+  allocator files preserve their high-water mark during upgrade. Native ASan/UBSan
+  checks cover four concurrent writers, missing/corrupt state, legacy upgrade,
+  and an injected marker-write failure that releases no IDs and burns the range
+  before retry. The actual flatfile server reaches healthy boot and clean shutdown,
+  then refuses missing initialized authority without recreating it or changing
+  the witness. Both production builds pass for `97ffd76d8`; all 1,210 source files
+  match the committed tree. The allocator and witness are separate required,
+  protected retained stores; SQL allocator protection is also mandatory. All
+  34 lifecycle/erasure/export checks pass. The current flatfile binary also
+  passes mortal physical and retained-pouch recipe Craft/Forge, preserving exact
+  inputs, output UIDs, XP and counters through copyover and two cold restarts.
+  Restore must preserve the allocator
+  and witness together; this does not qualify older-generation rollback or an
+  incomplete legacy root with all custody evidence missing.
+
 ## Verification and its limits
 
 | Check | Current evidence |
 | --- | --- |
-| Strict SQL and flatfile production builds | Passed for `9fd3b77b1`; all 1,210 native source files match its committed tree. Current flatfile recipe gameplay uses that binary; SQL recipe gameplay remains separately qualified at `ad5bc52bf`. |
+| Strict SQL and flatfile production builds | Passed for `97ffd76d8`; all 1,210 native source files match its committed tree. Current flatfile recipe gameplay uses that binary; SQL recipe gameplay remains separately qualified at `ad5bc52bf`. |
 | Recipe SQL receipts and fault recovery | Passed on disposable MySQL 8.0 and MariaDB 10.11 before the latest upstream integration. |
 | Integrated focused runtime checks | All 16 selected checks passed after the first upstream integration, including the ASan/UBSan prompt fixture. |
+| Frozen broad regression | The `8be8b55c0` snapshot completed all 822 scripts in 7,221.31 seconds; the runner reported 818 successes and four failures. Property reload, formatting, newborn grants and terminal-death entrypoints fail on that snapshot and pass their separately recorded focused repairs. Optional checks are included in the runner's success total: the MariaDB combat journey skipped because `TEST_DB_HOST` was not configured. This is not an all-green current-head or SQL gameplay qualification. |
 | Null-output publication regression | Passed using the actual native movement module after `0464613a1`. |
 | Combat continuation and quarantine restore | Passed after integrating the upstream recovery evidence. Quarantine archives retain both original component frames and keep recovery fenced on conflicting evidence. |
-| Writer census | Refreshed for `9fd3b77b1`: 2,809 lexical occurrences, 2,751 unique sites, 863 routes, zero unmapped sites. The four added temporary material-probe cleanup sites are explicitly classified in the recipe route. Coverage contracts and artifact freshness pass. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
+| Writer census | Refreshed for `97ffd76d8`: 2,809 lexical occurrences, 2,751 unique sites, 863 routes, zero unmapped sites. The UID repair leaves all writer calls and anchors unchanged. The four temporary material-probe cleanup sites are explicitly classified in the recipe route. The 51 unaffected coverage checks and corrected enhancement check pass, as does artifact freshness; enhancement assertions now resolve their unique current source calls. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
 | Recipe flatfile restore | Passed through the actual native restore decoder: complete recovery, checksum damage, missing obligation/root, future revision, and invalid receipt filename. |
-| Mortal recipe gameplay | Physical and retained-pouch Craft/Forge passed on the current `9fd3b77b1` flatfile binary with exact XP, output UIDs and counters through copyover and two cold restarts. Both SQL engines retain the earlier separately qualified `ad5bc52bf` journey. |
+| Mortal recipe gameplay | Physical and retained-pouch Craft/Forge passed on the current `97ffd76d8` flatfile binary with exact XP, output UIDs and counters through copyover and two cold restarts. Both SQL engines retain the earlier separately qualified `ad5bc52bf` journey. |
 | Death/resurrection accounting acceptance | **RED** on disposable MariaDB 10.11.14 and MySQL 8.0.46 using the verified `49f76401c` SQL binary. Real combat/death and resurrection returned all 12 original fixture item UIDs, restored the exact wallet, and retired the new death coin pile. The inactive-accounting journey still reports 27 uncovered item events and two currency operations missing accounting roots/postings. It does not qualify active accounting or subsequent restart. |
 | Latest migration integration | Runtime manifest validator and all 34 native boot/migration contract tests passed with head 0053 and 225 tables. All three histories converge on the pinned schema on disposable MySQL 8.0.46 and MariaDB 10.11.14, including preserved master receipts/runtime payloads, append/replay, shell/compiled boot, restore selection, and tamper refusal. The fixture uses the current sealed baseline with the master prefix; a captured production clone remains outside this proof. |
 
@@ -159,10 +196,12 @@ matrix describes that gap; a complete census alone cannot close it.
 Recipe flatfile restore and mortal Craft/Forge restart qualification are
 published, along with mini-mode startup and save-admission fixes. Broader recipe
 variants and active accounting journeys still need qualification. Current
-strict builds pass. The full 822-test regression run uses a frozen `8be8b55c0`
-snapshot and is in progress. The subsequent enhancement price, material, and
-stat bounds fixes have separate native sanitizer and production-build evidence. Earlier full-suite failures
-have not yet been superseded by a complete passing run.
+strict builds pass. The full 822-test regression run finished on the frozen
+`8be8b55c0` snapshot, with the four failures and optional-check limit described
+above. Each failed check has a passing focused repair. Subsequent enhancement
+and recipe bounds, probe cleanup and lifecycle protections have separate native
+sanitizer, production-build or policy-fault evidence. A complete current-head
+regression and integrated accounting qualification remain outstanding.
 
 Paid same-UID superior enhancement, remaining pouch writers, day-one quest and
 loot paths, audit completeness, activation/recovery/backup/retention gates, and

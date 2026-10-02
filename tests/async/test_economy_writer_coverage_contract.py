@@ -1070,10 +1070,10 @@ class SplitEconomyActivationContract(unittest.TestCase):
 
     def test_enhancement_item_sites_link_fees_to_transforms_and_materials(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
-        current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
-                   if row["path"] == "src/item/enhance.c" and
-                   row["family"] in ("item_lifecycle", "item_publication")}
+        current_rows = [row for row in coverage.load_validator().scan_sources(ROOT)
+                        if row["path"] == "src/item/enhance.c" and
+                        row["family"] in ("item_lifecycle", "item_publication")]
+        current = {(row["path"], row["line"], row["family"]) for row in current_rows}
         owners = {}
         for route in registry["writers"]:
             for site in route.get("sites", []):
@@ -1082,10 +1082,14 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new enhancement item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/item/enhance.c", 286, "item_lifecycle")],
-                         {"item.enhance_transform"})
-        self.assertEqual(owners[("src/item/enhance.c", 1132, "item_publication")],
-                         {"item.thanksgiving_turkey_grant"})
+        for excerpt, family, route_id in (("extract_obj(source);", "item_lifecycle",
+                                          "item.enhance_transform"),
+                                         ("obj_to_char(read_object(400232, VIRTUAL), mob);",
+                                          "item_publication", "item.thanksgiving_turkey_grant")):
+            sites = [(row["path"], row["line"], row["family"]) for row in current_rows
+                     if row["excerpt"] == excerpt and row["family"] == family]
+            self.assertEqual(len(sites), 1, "the production call must have one current anchor")
+            self.assertEqual(owners[sites[0]], {route_id})
         for route_id in ("item.enhance_base_probe", "item.enhance_material_name_probe",
                          "item.superior_target_probe", "item.mod_enhance_description_probe",
                          "item.enhance_index_probe"):

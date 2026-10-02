@@ -67,6 +67,14 @@ extern P_room world;
 extern struct zone_data *zone_table;
 extern int top_of_zone_table;
 
+static int enhance_maximum_item_value(int level)
+{
+	if (level <= 0 || enhance_level_gate_multiplier <= 0)
+		return 0;
+	const int64_t limit = static_cast<int64_t>(level) * enhance_level_gate_multiplier;
+	return limit > INT_MAX ? INT_MAX : static_cast<int>(limit);
+}
+
 void enhance(P_char ch, P_obj source, P_obj material)
 {
 	char buf[MAX_STRING_LENGTH];
@@ -119,12 +127,12 @@ void enhance(P_char ch, P_obj source, P_obj material)
 	}
 
 	// Can enhance up to 3x level, same as forge/craft. --Eikel
-	if (sval > GET_LEVEL(ch) * enhance_level_gate_multiplier)
+	if (sval > enhance_maximum_item_value(GET_LEVEL(ch)))
 	{
 		snprintf(
 			buf, MAX_STRING_LENGTH,
 			"This item has ival %d; at your level you can enhance items up to ival %d.\r\n",
-			sval, GET_LEVEL(ch) * enhance_level_gate_multiplier);
+			sval, enhance_maximum_item_value(GET_LEVEL(ch)));
 		send_to_char(buf, ch);
 		return;
 	}
@@ -737,12 +745,12 @@ void do_enhance(P_char ch, char *argument, int /*cmd*/)
 			    FALSE, ch, source, 0, TO_CHAR);
 			return;
 		}
-		if (itemvalue(source) > GET_LEVEL(ch) * enhance_level_gate_multiplier)
+		if (itemvalue(source) > enhance_maximum_item_value(GET_LEVEL(ch)))
 		{
 			snprintf(
 				rest, sizeof(rest),
 				"&+yThis item has ival %d; at your level you can enhance items up to ival %d.\r\n",
-				itemvalue(source), GET_LEVEL(ch) * enhance_level_gate_multiplier);
+				itemvalue(source), enhance_maximum_item_value(GET_LEVEL(ch)));
 			send_to_char(rest, ch);
 			return;
 		}

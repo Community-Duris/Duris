@@ -108,7 +108,7 @@ class LifecycleManifestTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
         self.assertEqual(report["database_tables"], 225)
-        self.assertEqual(report["non_database_stores"], 47)
+        self.assertEqual(report["non_database_stores"], 49)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
 
@@ -130,6 +130,8 @@ class LifecycleManifestTest(unittest.TestCase):
             ("file:flatfile-bank-domains", "FLATFILE_ROOT/domains/bank-*.domain"),
             ("file:flatfile-player-domain-journal", "FLATFILE_ROOT/domains/.player-domain-transaction"),
             ("file:flatfile-legacy-currency-journal", "FLATFILE_ROOT/domains/.currency-transaction"),
+            ("file:flatfile-item-uid-allocator", "FLATFILE_ROOT/metadata/item_uid_allocator"),
+            ("file:flatfile-item-uid-initialization", "FLATFILE_ROOT/metadata/item_uid_allocator.initialized"),
         )
         for entry_id, locator in stores:
             with self.subTest(store=entry_id):
@@ -229,6 +231,30 @@ class LifecycleManifestTest(unittest.TestCase):
                         self.assert_rejected(
                             self.run_validator(self.write_manifest(Path(temporary), changed)),
                             "coupled player recovery must remain protected and retained",
+                        )
+
+    def test_core_transaction_recovery_protection_cannot_be_removed(self) -> None:
+        shared = {
+            "database:critical_operation_inbox", "database:critical_outbox",
+            "database:critical_outbox_delivery_dedupe", "file:player_save_journal",
+            "database:item_uid_allocator",
+            "file:critical_command_journal", "file:persistence_fallback",
+            "file:persistence_fallback_quarantine", "file:flatfile-authority-journal",
+        }
+        stores = {row["id"] for row in self.manifest["entries"]
+                  if row["id"].startswith(("database:economic_", "file:economic-"))} | shared
+        self.assertEqual(len(stores), 34)
+        for entry_id in sorted(stores):
+            for field, value in (("protected_record", False), ("season_action", "reset_delete"),
+                                 ("terminal_action", "deactivate")):
+                with self.subTest(store=entry_id, field=field):
+                    changed = json.loads(json.dumps(self.manifest))
+                    target = next(row for row in changed["entries"] if row["id"] == entry_id)
+                    target[field] = value
+                    with tempfile.TemporaryDirectory() as temporary:
+                        self.assert_rejected(
+                            self.run_validator(self.write_manifest(Path(temporary), changed)),
+                            "core transaction recovery must remain protected and retained",
                         )
 
     def test_journal_archive_and_fences_are_protected_recovery_evidence(self) -> None:

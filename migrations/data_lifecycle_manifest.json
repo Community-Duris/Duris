@@ -8257,6 +8257,68 @@
       "exception": "protected_recovery_replay_or_restore_horizon",
       "protected_record": true,
       "dependencies": []
+    },
+    {
+      "id": "file:flatfile-item-uid-allocator",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/metadata/item_uid_allocator",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "not_subject_scoped",
+      "technical_purpose": "global never-reused item UID reservation high-water mark and revision; retain across restart and restore",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:flatfile-item-ownership"
+      ]
+    },
+    {
+      "id": "file:flatfile-item-uid-initialization",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/metadata/item_uid_allocator.initialized",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "not_subject_scoped",
+      "technical_purpose": "permanent evidence that this root has issued UID reservations; missing allocator must be recovered rather than bootstrapped",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:flatfile-item-uid-allocator"
+      ]
     }
   ]
 }
