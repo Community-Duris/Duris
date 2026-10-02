@@ -624,3 +624,38 @@ focused build contract passes. Native code, help behavior and documentation
 remain unchanged; the strict builds and native help proofs recorded above are
 separate evidence. The frozen 79540e65d report remains 826/11/2, and 8c997b00d
 already contains the same stale writer assertion while its run continues.
+
+
+## Native MySQL restore candidates with explicit policy
+
+The restore owner previously created only MariaDB datadirs, leaving MySQL
+candidate recovery unimplemented. A policy regression reproduced rejection of
+an explicit MySQL choice. Version-1 policies now accept the optional
+`restore_database_engine` value `mariadb` or `mysql`; omission preserves the
+existing MariaDB default. Unknown/non-string values refuse. MySQL requires a
+resolved MySQL 8.0 executable from the clean tool PATH, rejecting missing tools,
+MariaDB compatibility symlinks and unsupported families before initialization.
+The resolved installation supplies its basedir. Both engines retain private
+new datadirs, TCP disabled, schema-only import accounts, bounded socket paths,
+complete schema/history checks and isolated native server boot. Qualification
+receipts record the selected engine.
+
+All 40 backup policy tests and seven Linux provisioning/socket tests pass.
+The ten-case native recovery suite passes in 361.778 seconds with both SQL
+engines enabled: original flatfile/WAL/receipt/corruption cases plus full MySQL
+8.0.46 and MariaDB 10.11.14 dump/import, retained values, migration history,
+SQL server boot and identity/value/epic-revision/checksum corruption refusal.
+A follow-up two-case SQL run passes in 605.993 seconds with direct VERSION()
+readbacks proving the source and restored daemon match the selected engine.
+The actual dump client is MariaDB 10.11.14 on both sources. It is exposed with
+the separate MySQL executable only in the disposable mount namespace; host
+packages and production configuration are unchanged. The native SQL/flatfile
+artifacts remain `abfc8124...` / `de5f8c10...`, source tree `2fa0d98...`.
+
+This closes the bounded MySQL isolated-candidate restore implementation gap.
+These synthetic source/candidate drills do not certify captured staging or
+production generations, full-world player recovery, complete accounting,
+erasure propagation, remote backup custody or workload budgets. Inactive
+accounting, activation/refusal gates and the declined spell path are preserved.
+R1-R8 and release remain incomplete. The completed 79540e65d broad run stays
+826 passed / 11 skipped / 2 failed; the frozen 8c997b00d run remains underway.

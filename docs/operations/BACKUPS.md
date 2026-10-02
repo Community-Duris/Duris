@@ -22,6 +22,17 @@ The example values approved for this PR are:
 | Published-generation recovery | Disabled unless explicitly approved |
 | Unchanged blocked-state retry | One hour |
 
+The optional `restore_database_engine` policy field selects `mariadb` (the
+existing default) or `mysql` for a fresh isolated SQL restore candidate. MySQL
+requires a MySQL 8.0 `mysqld` in the clean tool PATH; a missing binary, a MariaDB
+compatibility symlink or another MySQL family refuses before datadir
+initialization. The resolved installation supplies its own basedir. Both choices
+use private datadirs, socket-only daemons, schema-only import credentials,
+runtime/history/value qualification and an engine-labelled qualification
+receipt. The SQL persistence mode remains `mariadb-primary` for both engines.
+Qualification is version-specific; the current disposable evidence covers
+MariaDB 10.11.14 and MySQL 8.0.46.
+
 Existing version-1 policies remain valid. The optional `resume_published` field
 defaults to `false`; only set it to `true` after the custodian approves scheduled
 continuation. With it enabled, a scheduled call continues a published generation
@@ -200,7 +211,7 @@ A disconnected mount must fail; never replace it with an ordinary local folder.
 
 ## Isolated restore and qualification
 
-Install Python 3.11+, MariaDB 10.11 server/client tools, OpenSSL, iproute2, and
+Install Python 3.11+, the selected MariaDB 10.11 or MySQL 8.0 server/client tools, OpenSSL, iproute2, and
 util-linux. Build the native verifier and the matching server binaries:
 
     make -C src
@@ -254,7 +265,7 @@ restore an older schema, use its matching reviewed code/toolchain in a separate
 recovery workspace, then plan a separate migration on another candidate.
 Never bypass the compatibility check or edit backup metadata.
 
-MariaDB restore initializes a new private datadir with networking disabled,
+SQL restore initializes a new private datadir on the selected engine with networking disabled,
 imports through a schema-only account with no global/FILE privileges, validates
 the runtime schema, recomputes the complete migration history, and reconciles
 account/character, wallet, bank, and epic evidence. Epic qualification also
@@ -325,8 +336,10 @@ recovery as a gameplay feature.
     python3 tests/async/test_flatfile_launcher.py
     DURIS_RUN_BACKUP_INTEGRATION=1 python3 tests/async/test_persistence_backup_integration.py
 
-The integration test uses synthetic identities, private MariaDB daemons, a
-bounded temporary restore mount, and isolated service namespaces. It requires
+Add `DURIS_RUN_MYSQL_BACKUP_INTEGRATION=1` when an independently installed
+MySQL 8.0 executable is available to include its full dump/restore case.
+The integration test uses synthetic identities, private MariaDB and optionally
+MySQL daemons, a bounded temporary restore mount, and isolated service namespaces. It requires
 mount/unshare privileges; run on a disposable Linux host/container (for Docker,
 CAP_SYS_ADMIN and an appropriate seccomp profile). No production environment,
 credentials, existing database, or live game connection is used.

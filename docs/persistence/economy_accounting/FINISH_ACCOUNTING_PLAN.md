@@ -35,6 +35,14 @@ and writer qualification remain open. Restore qualification also rejects
 unwitnessed epic revisions and gaps that conserve aggregate value; both SQL
 component probes and the nine-case native recovery suite pass this repair. See the October 2 review status for scope.
 
+Native isolated SQL restore now supports an explicit `restore_database_engine`
+policy choice, retaining MariaDB by default and admitting an installed MySQL 8.0
+executable only after a version check. All ten native recovery cases pass,
+including full MySQL and MariaDB dump/import and isolated server boot. Both SQL
+cases also pass with direct source/candidate version readbacks; 40 policy tests
+and seven provisioning tests pass. Captured-clone, complete accounting, erasure,
+remote backup custody and measured workload qualification remain open.
+
 The later frozen `79540e65d` broad run also finished: 826 passed, 11 skipped
 and two stale source-contract assertions failed in 6,127.39 seconds. NPC cash
 assignments still match the classified registry; their expected locations in

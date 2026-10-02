@@ -54,6 +54,67 @@ class RestoreSocketBounds(unittest.TestCase):
             run.assert_not_called()
             self.assertEqual(list(candidate.iterdir()), [])
 
+    def test_unknown_engine_refuses_before_files_or_processes(self):
+        with tempfile.TemporaryDirectory(prefix="re-", dir="/tmp") as temporary:
+            candidate = Path(temporary)
+            with mock.patch.object(self.restore.backup, "run") as run, \
+                    mock.patch.object(self.restore.subprocess, "Popen") as start:
+                with self.assertRaisesRegex(self.restore.backup.BackupError,
+                                            "invalid_restore_database_engine"):
+                    with self.restore.private_database(candidate, "unknown"):
+                        self.fail("unknown engine admitted")
+            run.assert_not_called()
+            start.assert_not_called()
+            self.assertEqual(list(candidate.iterdir()), [])
+
+    def test_mysql_choice_refuses_mariadb_binary_before_initialization(self):
+        with tempfile.TemporaryDirectory(prefix="re-", dir="/tmp") as temporary:
+            candidate = Path(temporary)
+            with mock.patch.object(self.restore.shutil, "which", return_value="/usr/sbin/mysqld"), \
+                    mock.patch.object(self.restore.backup, "run",
+                                      return_value=b"mysqld Ver 10.11.14-MariaDB") as run, \
+                    mock.patch.object(self.restore.subprocess, "Popen") as start:
+                with self.assertRaisesRegex(self.restore.backup.BackupError,
+                                            "mysql_restore_version_unsupported"):
+                    with self.restore.private_database(candidate, "mysql"):
+                        self.fail("MariaDB binary admitted for MySQL")
+            run.assert_called_once()
+            start.assert_not_called()
+            self.assertFalse((candidate / "mysql").exists())
+
+    def test_mysql_choice_requires_an_installed_executable(self):
+        with tempfile.TemporaryDirectory(prefix="re-", dir="/tmp") as temporary:
+            candidate = Path(temporary)
+            with mock.patch.object(self.restore.shutil, "which", return_value=None), \
+                    mock.patch.object(self.restore.backup, "run") as run, \
+                    mock.patch.object(self.restore.subprocess, "Popen") as start:
+                with self.assertRaisesRegex(self.restore.backup.BackupError,
+                                            "mysql_restore_executable_required"):
+                    with self.restore.private_database(candidate, "mysql"):
+                        self.fail("missing MySQL binary admitted")
+            run.assert_not_called()
+            start.assert_not_called()
+            self.assertFalse((candidate / "mysql").exists())
+
+    def test_mysql8_initialization_uses_resolved_binary_and_basedir(self):
+        class InitializationReached(Exception):
+            pass
+        with tempfile.TemporaryDirectory(prefix="re-", dir="/tmp") as temporary:
+            candidate = Path(temporary)
+            executable = "/opt/disposable-mysql/bin/mysqld"
+            with mock.patch.object(self.restore.shutil, "which", return_value=executable), \
+                    mock.patch.object(self.restore.backup, "run", side_effect=[
+                        b"mysqld Ver 8.0.46 for Linux", InitializationReached]) as run:
+                with self.assertRaises(InitializationReached):
+                    with self.restore.private_database(candidate, "mysql"):
+                        self.fail("mock initialization should stop the probe")
+            self.assertEqual(run.call_count, 2)
+            args = run.call_args.args[0]
+            self.assertEqual(args[0], executable)
+            self.assertIn("--initialize-insecure", args)
+            self.assertIn("--basedir=/opt/disposable-mysql", args)
+            self.assertIn("--datadir=" + str(candidate / "mysql"), args)
+
     def test_last_supported_byte_reaches_initialization(self):
         class InitializationReached(Exception):
             pass
