@@ -1582,7 +1582,7 @@
     {
       "id": "item_transfer_schema_mysql",
       "path": "tests/async/run_item_transfer_schema_mysql.sh",
-      "provider": "self-sql",
+      "provider": "sql",
       "engines": [
         "mysql",
         "mariadb"
@@ -1597,7 +1597,11 @@
       "covers": [
         "run_item_transfer_schema_mysql.sh"
       ],
-      "required_markers": []
+      "required_markers": [
+        "PASS: legacy grants, transfers and replay retain custody without implicit accounting"
+      ],
+      "schema_prefix": "economic_schema_test_",
+      "migrated": true
     },
     {
       "id": "epic_zone_seed_sql",

@@ -150,10 +150,10 @@ class DisposableMariaDB:
                 probe.bind(("127.0.0.1", 0))
                 self.port = probe.getsockname()[1]
             network_args = ["--network", network]
-            server_args = ["--port=" + str(self.port), "--bind-address=127.0.0.1"]
+            server_args = ["--innodb-use-native-aio=OFF", "--port=" + str(self.port), "--bind-address=127.0.0.1"]
         else:
             network_args = ["--publish", "127.0.0.1::3306"]
-            server_args = []
+            server_args = ["--innodb-use-native-aio=OFF"]
         try:
             created = subprocess.run(
                 ["docker", "run", "--detach", "--name", self.container,

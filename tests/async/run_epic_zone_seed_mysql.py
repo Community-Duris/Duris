@@ -20,8 +20,10 @@ spec.loader.exec_module(seed)
 def run(image: str) -> None:
     name = f"duris-epic-seed-qa-{uuid.uuid4().hex}"
     client = "mariadb" if image.startswith("mariadb:") else "mysql"
+    empty_password = ("MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=1" if image.startswith("mariadb:")
+                      else "MYSQL_ALLOW_EMPTY_PASSWORD=yes")
     subprocess.run(["docker", "run", "--detach", "--name", name, "--network", "none",
-                    "--env", "MYSQL_ALLOW_EMPTY_PASSWORD=yes", image], check=True,
+                    "--env", empty_password, image, "--innodb-use-native-aio=OFF"], check=True,
                    capture_output=True, text=True)
     try:
         def query(sql: str, *, database: str | None = "epic_seed_qa", ok: bool = True):

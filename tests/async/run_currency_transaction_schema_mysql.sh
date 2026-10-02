@@ -13,7 +13,7 @@ cleanup() { docker rm -fv "$NAME" >/dev/null 2>&1 || true; }
 trap cleanup EXIT HUP INT TERM
 if [[ "$IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PASSWORD_ENV=MYSQL_ROOT_PASSWORD; fi
 if [[ "$IMAGE" == mariadb:* ]]; then DB_CLIENT=mariadb; else DB_CLIENT=mysql; fi
-docker run -d --name "$NAME" -p 127.0.0.1::3306 -e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" >/dev/null
+docker run -d --name "$NAME" -p 127.0.0.1::3306 -e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" --innodb-use-native-aio=OFF >/dev/null
 mapping="$(docker port "$NAME" 3306/tcp)"
 published_host=127.0.0.1
 published_port="${mapping##*:}"

@@ -11,7 +11,7 @@ UPGRADE_DB=collector_catalog_upgrade
 cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
 trap cleanup EXIT HUP INT TERM
 if [[ "$IMAGE" == mariadb:* ]]; then SECRET=MARIADB_ROOT_PASSWORD; else SECRET=MYSQL_ROOT_PASSWORD; fi
-docker run -d --name "$NAME" -e "$SECRET=$PASSWORD" "$IMAGE" >/dev/null
+docker run -d --name "$NAME" -e "$SECRET=$PASSWORD" "$IMAGE" --innodb-use-native-aio=OFF >/dev/null
 ready=0
 for _ in $(seq 1 90); do
     if docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -N -e 'SELECT 1' >/dev/null 2>&1; then
