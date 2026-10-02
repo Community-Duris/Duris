@@ -291,6 +291,36 @@ class RunnerBehavior(unittest.TestCase):
             os.kill(pid, signal.SIGKILL)
             self.fail("a timed-out test left a live child")
 
+    @unittest.skipUnless(sys.platform == "linux", "requires Linux process groups")
+    def test_fault_control_timeout_retains_redacted_log_and_stops_descendants(self):
+        import qualify_behavioral_faults as qualification
+
+        child = self.script("fault_child.py", "import os, signal, time\n"
+                            "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+                            "open(__file__ + '.pid', 'w').write(str(os.getpid()))\n"
+                            "while True: time.sleep(1)\n")
+        parent = self.script("fault_owner.py", "import subprocess, sys, time\n"
+                             f"subprocess.Popen([sys.executable, {str(child)!r}], stdout=subprocess.DEVNULL)\n"
+                             "print('partial diagnostic: synthetic-secret', flush=True)\n"
+                             "while True: time.sleep(1)\n")
+        log = self.root / "fault-before.log"
+        with self.assertRaises(subprocess.TimeoutExpired):
+            qualification.run_owner([sys.executable, str(parent)], self.root, dict(os.environ),
+                                    log, lambda text: text.replace("synthetic-secret", "<redacted>"),
+                                    timeout=0.5)
+        self.assertIn("partial diagnostic: <redacted>", log.read_text())
+        self.assertNotIn("synthetic-secret", log.read_text())
+        pid = int(Path(str(child) + ".pid").read_text())
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline:
+            status = Path(f"/proc/{pid}/stat")
+            if not status.exists() or status.read_text().split()[2] == "Z":
+                break
+            time.sleep(0.01)
+        else:
+            os.kill(pid, signal.SIGKILL)
+            self.fail("fault qualification left a live descendant")
+
     def test_cancellation_stops_running_and_never_starts_queued_test(self):
         stop = threading.Event()
         marker = self.root / "started"

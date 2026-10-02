@@ -22,6 +22,7 @@ import time
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tests/async"))
 from disposable_sql_fixture import DisposableSQL, clean_environment
+from run_regression_tests import terminate_test
 
 
 def digest(path):
@@ -32,6 +33,23 @@ def atomic(path, report):
     temporary = path.with_suffix(".tmp")
     temporary.write_text(json.dumps(report, indent=2) + "\n")
     temporary.replace(path)
+
+
+def run_owner(command, cwd, environment, log, redact, timeout=900):
+    process = subprocess.Popen(command, cwd=cwd, env=environment, text=True,
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               start_new_session=True)
+    try:
+        output = process.communicate(timeout=timeout)[0]
+    except BaseException:
+        # Retain the original partial diagnostics before the private source
+        # copy and SQL provider are cleaned up. Stop descendants as well.
+        output = terminate_test(process)
+        log.write_text(redact(output))
+        raise
+    output = redact(output)
+    log.write_text(output)
+    return process.returncode, output
 
 
 def main():
@@ -76,16 +94,15 @@ def main():
                         with fixture as fixture_environment:
                             execution_environment = dict(fixture_environment, **fault.get("environment", {}))
                             started = time.monotonic()
-                            result = subprocess.run([sys.executable, str(copied / "tests/async" / fault["owner"])],
-                                                    cwd=copied, env=execution_environment,
-                                                    text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                                    timeout=900)
-                            output = sql.redact(result.stdout) if sql else result.stdout
-                            (directory / (fault["id"] + "-" + phase + ".log")).write_text(output)
-                            passed = (result.returncode != 0 and fault["compiled_marker"] in output
+                            exit_code, output = run_owner(
+                                [sys.executable, str(copied / "tests/async" / fault["owner"])],
+                                copied, execution_environment,
+                                directory / (fault["id"] + "-" + phase + ".log"),
+                                sql.redact if sql else lambda value: value)
+                            passed = (exit_code != 0 and fault["compiled_marker"] in output
                                       and fault["failure_marker"] in output) if phase == "fault" else (
-                                          result.returncode == 0 and fault["positive_marker"] in output)
-                            outcomes.append(dict(phase=phase, exit=result.returncode,
+                                          exit_code == 0 and fault["positive_marker"] in output)
+                            outcomes.append(dict(phase=phase, exit=exit_code,
                                                  elapsed=time.monotonic() - started, passed=passed))
                             atomic(directory / (fault["id"] + ".json"), dict(fault=fault, outcomes=outcomes))
                             print(f"fault {fault['id']} {phase}: {'qualified' if passed else 'FAILED'}", flush=True)
@@ -98,9 +115,9 @@ def main():
             if any(digest(ROOT / name) != value for name, value in original_sources.items()):
                 raise RuntimeError("qualification changed the original production source")
             report["status"] = "passed"
-        except Exception as error:
-            report["status"] = "failed"
-            report["error"] = str(error)
+        except BaseException as error:
+            report["status"] = "incomplete" if isinstance(error, (KeyboardInterrupt, SystemExit)) else "failed"
+            report["error"] = str(error) or type(error).__name__
         finally:
             atomic(target, report)
     if report["status"] != "passed":
