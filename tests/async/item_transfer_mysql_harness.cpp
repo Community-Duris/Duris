@@ -11,6 +11,7 @@
 #include "player/player_snapshot.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_snapshot_repository.h"
+#include "player/player_save_journal.h"
 #include "player/player_load_repository.h"
 #include "persistence/persistence_observability.h"
 
@@ -21,6 +22,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <limits>
 #include <mysql.h>
 #include <span>
@@ -2129,6 +2131,55 @@ void check_craft_conservation(MYSQL *connection)
 	       loaded.extra2_flags == output.extra2_flags);
 	assert(loaded.dynamic_affects.size() == output.dynamic_affects.size() &&
 	       loaded.extra_descriptions.size() == output.extra_descriptions.size());
+	// An older retained frame may carry an award that a newer save committed.
+	// Its replay must verify against durable progression, then retire as stale
+	// without overwriting XP or quarantining otherwise valid player evidence.
+	player_snapshot progression = reloaded.snapshot;
+	progression.schema_version = PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
+	progression.revision = 2;
+	progression.encoded_size_bound = PLAYER_SNAPSHOT_MAX_BYTES;
+	progression.components = PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_SKILLS |
+				 PLAYER_COMPONENT_AFFECTS | PLAYER_COMPONENT_TROPHIES;
+	const uint64_t awarded_xp =
+		scalar(connection, "SELECT exp FROM player_data WHERE pid=551") + 7000;
+	auto experience = std::find_if(progression.status_integers.begin(),
+				       progression.status_integers.end(), [](const auto &value)
+				       { return value.field == player_status_field::experience; });
+	assert(experience != progression.status_integers.end());
+	experience->signed_value = static_cast<int64_t>(awarded_xp);
+	experience->unsigned_value = awarded_xp;
+	progression.craft_receipts = { { operation(31), 2, 7000 } };
+	std::vector<uint8_t> progression_bytes;
+	assert(player_snapshot_encode(progression, &progression_bytes) ==
+	       player_snapshot_codec_result::ok);
+	const auto progressed = player_snapshot_repository_apply(connection, progression);
+	assert(progressed.outcome == player_save_apply_outcome::applied);
+	assert(scalar(connection,
+		      "SELECT applied_revision FROM player_craft_progression WHERE pid=551") == 2);
+	progression.revision = 1;
+	experience->signed_value = static_cast<int64_t>(awarded_xp - 7000);
+	experience->unsigned_value = awarded_xp - 7000;
+	const auto obsolete = player_snapshot_repository_apply(connection, progression);
+	assert(obsolete.outcome == player_save_apply_outcome::stale_revision &&
+	       obsolete.durable_revision == 2 && obsolete.operation_receipts_verified);
+	assert(scalar(connection, "SELECT exp FROM player_data WHERE pid=551") == awarded_xp);
+	assert(player_save_journal_append(progression) == player_save_journal_result::ok);
+	assert(player_save_journal_replay(
+		       [](const player_snapshot &snapshot, void *context) {
+			       return player_snapshot_repository_apply(
+				       static_cast<MYSQL *>(context), snapshot);
+		       },
+		       connection) == player_save_journal_result::ok);
+	assert(!player_save_journal_pid_quarantined(551));
+	assert(player_save_journal_health_copy().records == 0);
+	progression.craft_receipts[0].experience = 7001;
+	assert(player_snapshot_repository_apply(connection, progression).outcome ==
+	       player_save_apply_outcome::terminal_failure);
+	progression.craft_receipts[0].experience = 7000;
+	execute(connection, "UPDATE player_craft_progression SET applied_revision=3 WHERE pid=551");
+	assert(player_snapshot_repository_apply(connection, progression).outcome ==
+	       player_save_apply_outcome::terminal_failure);
+	execute(connection, "UPDATE player_craft_progression SET applied_revision=2 WHERE pid=551");
 	applied = apply(connection, 31, craft);
 	assert(applied.outcome == critical_apply_outcome::already_applied);
 	assert(scalar(connection, "SELECT COUNT(*) FROM player_items WHERE obj_uid=55103") == 1);
@@ -2363,6 +2414,9 @@ void check_accounted_pouch_conservation(MYSQL *connection)
 int main()
 {
 	assert(mysql_library_init(0, nullptr, nullptr) == 0);
+	char replay_directory[] = "/tmp/duris-item-transfer-XXXXXX";
+	assert(mkdtemp(replay_directory));
+	assert(player_save_journal_init(replay_directory));
 	MYSQL *connection = mysql_init(nullptr);
 	assert(connection);
 	assert(mysql_real_connect(
@@ -2787,6 +2841,8 @@ int main()
 	check_craft_conservation(connection);
 	check_accounted_craft_conservation(connection);
 	check_accounted_pouch_conservation(connection);
+	player_save_journal_shutdown();
+	std::filesystem::remove_all(replay_directory);
 	mysql_close(connection);
 	return 0;
 }

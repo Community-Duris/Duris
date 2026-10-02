@@ -270,6 +270,9 @@ bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 					  std::vector<uint8_t> *encoded);
 bool item_transfer_command_decode_payload(const critical_command &command,
 					  item_transfer_payload *payload);
+// Decode the durable recipe obligation for schema-1 replay without rewriting
+// legacy journal bytes. Invalid legacy item payloads fail closed.
+bool item_transfer_command_replay_publication(const critical_command &command, bool *retain);
 bool item_transfer_command_encode_result(const item_transfer_result &result,
 					 std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> *encoded);
 bool item_transfer_command_decode_result(const uint8_t *encoded, size_t size,

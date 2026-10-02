@@ -985,7 +985,8 @@ int run_the_game(int port, int sslport)
 		!critical_command_coordinator_init(critical_journal_directory, critical_apply, NULL,
 						   CRITICAL_COORDINATOR_DEFAULT_WORKERS,
 						   critical_gameplay_restore_replayed_command, NULL,
-						   critical_extension_validator))
+						   critical_extension_validator,
+						   item_transfer_command_replay_publication))
 	{
 		if (critical_command_coordinator_shutdown())
 		{

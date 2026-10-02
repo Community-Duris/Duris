@@ -71,6 +71,7 @@ struct pending_movement
 	bool creation_batch;
 	bool registry_applied;
 	bool recovered_publication;
+	bool craft_published = false;
 	bool craft_notified = false;
 	bool collector_invalidated;
 	critical_completion completed;
@@ -1613,10 +1614,15 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 					     critical_apply_outcome::already_applied;
 	if (retained && entry.publication_status == publication_state::ack_pending)
 	{
+		// Craft already notified after its progression checkpoint. Retrying only
+		// the publication ACK must neither repeat that callback nor retain the
+		// bounded progression entry once the durable frame is checkpointed.
+		const item_movement_completion_fn completion_fn =
+			craft && entry.craft_notified ? nullptr : entry.completion;
 		P_char completion_actor = actor;
-		if (entry.completion && !completion_actor)
+		if (completion_fn && !completion_actor)
 			completion_actor = find_live_player(entry.actor_pid);
-		if (entry.completion && !completion_actor)
+		if (completion_fn && !completion_actor)
 		{
 			account_health();
 			return;
@@ -1625,11 +1631,15 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			    entry.completed.operation_id))
 		{
 			const bool was_committed = committed;
-			const item_movement_completion_fn completion_fn = entry.completion;
 			const auto context = entry.context;
 			const size_t context_size = entry.context_size;
 			const unsigned int error_code = decoded ? entry.completed.error_code :
 								  EBADMSG;
+			if (craft &&
+			    entry.payload.continuation.kind ==
+				    item_transfer_continuation_kind::craft_recipe &&
+			    craft_progression_hooks.acknowledged)
+				craft_progression_hooks.acknowledged(entry.completed.operation_id);
 			pending.erase(found);
 			if (was_committed)
 				++health.committed;
@@ -1714,11 +1724,15 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			account_health();
 			return;
 		}
-		if (committed && !publish_craft(entry, actor))
+		if (committed && !entry.craft_published)
 		{
-			retain_publication_failure(entry, "craft");
-			account_health();
-			return;
+			if (!publish_craft(entry, actor))
+			{
+				retain_publication_failure(entry, "craft");
+				account_health();
+				return;
+			}
+			entry.craft_published = true;
 		}
 		if (committed && entry.payload.continuation.kind ==
 					 item_transfer_continuation_kind::craft_recipe)
@@ -3250,7 +3264,10 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 
 bool item_movement_transaction_restore_replayed_command(const critical_command &command)
 {
-	if (command.type != critical_command_type::item_transfer || !command.publication_required)
+	bool retain = false;
+	if (!item_transfer_command_replay_publication(command, &retain))
+		return false;
+	if (command.type != critical_command_type::item_transfer || !retain)
 		return true;
 	const std::string key = operation_key(command.operation_id);
 	if (pending.find(key) != pending.end())
@@ -3377,9 +3394,10 @@ bool item_movement_transaction_restore_replayed_publication(
 	const critical_command &command, item_movement_publication_fn publication,
 	const void *context, size_t context_size)
 {
-	if (command.type != critical_command_type::item_transfer || !command.publication_required ||
-	    !publication || context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES ||
-	    (context_size && !context))
+	bool retain = false;
+	if (!item_transfer_command_replay_publication(command, &retain) ||
+	    command.type != critical_command_type::item_transfer || !retain || !publication ||
+	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context))
 		return false;
 	const std::string key = operation_key(command.operation_id);
 	if (pending.find(key) != pending.end() || pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
@@ -3501,13 +3519,21 @@ bool item_creation_grant_player_publication_pending(P_char player)
 	return false;
 }
 
-// A creation commit can establish custody before its live publication. Ordinary
-// saves must wait for actor-owned and inbound grants to publish their snapshots.
+// Creation and craft commits can establish custody before live publication.
+// Hold inventory capture until grants and crafted outputs publish their graph;
+// the recipe progression checkpoint can then run while its root remains fenced.
 bool item_movement_transaction_player_creation_busy(P_char actor)
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0)
 		return false;
 	const uint32_t pid = static_cast<uint32_t>(GET_PID(actor));
+	for (const auto &[key, entry] : pending)
+	{
+		(void)key;
+		if (entry.actor_pid == pid && entry.payload.reason == item_transfer_reason::craft &&
+		    !entry.craft_published)
+			return true;
+	}
 	if (creation_grants.find(pid) != creation_grants.end())
 		return true;
 	for (const auto &[actor_pid, queue] : creation_grants)

@@ -6,6 +6,9 @@ This checkpoint publishes the completed review fixes directly to
 0045, and master 0031 migration histories. The master upgrade now appends the
 0052 witness index and 0053 craft receipts without rewriting its existing prefix.
 
+Follow-up Craft/Forge interruption repairs and qualification are recorded in
+[the recovery checkpoint](CRAFT_FORGE_RECOVERY_2026-10-01.md) and PR #675.
+
 ## Completed fixes
 
 - Recipe Craft/Forge now use frozen item retirement, output publication, and
@@ -187,27 +190,27 @@ This checkpoint publishes the completed review fixes directly to
   native source files match that tree. This does not supply a compound durable
   wallet/item/material receipt.
 
-- Essence description rebuilding now requires its prototype before charging or
-  consuming the material. The prior production function dereferences a null
-  template under UBSan; `5017a0e9e` refuses instead, preserves the player/item/
-  material, and releases a valid probe if payment is refused. Encrusted items
-  retain their separate description path without a probe. All 16 affected
-  enhancement checks and both strict production builds pass; all 1,210 native
-  source files match that tree. The new temporary cleanup is explicitly mapped.
+- The later essence prototype guard (`5017a0e9e`) is integrated. A missing
+  description template is refused before payment or material consumption;
+  refused payment releases a successfully loaded temporary probe. The actual
+  production-function ASan/UBSan fixture covers those failures, exact probe
+  cleanup, encrusted descriptions and modifier bounds. Ordinary and superior
+  payment regressions, crafting contracts and both production builds also pass
+  on the combined recovery source tree `8b2693dc4`.
 
 ## Verification and its limits
 
 | Check | Current evidence |
 | --- | --- |
-| Strict SQL and flatfile production builds | Passed for `5017a0e9e`; all 1,210 native source files match its committed tree. Current recipe gameplay is separately qualified at `97ffd76d8` on flatfile and both SQL engines; it does not execute the enhancement payment repair. |
-| Recipe SQL receipts and fault recovery | Passed on disposable MySQL 8.0 and MariaDB 10.11 before the latest upstream integration. |
+| Strict SQL and flatfile production builds | Passed for the recovery integration through upstream `5017a0e9e`; all 1,210 tracked `src/` files match `8b2693dc4` after newline normalization. Frozen gameplay/fault candidates and their limits are recorded in the recovery checkpoint. |
+| Recipe SQL receipts and fault recovery | All four interruption journeys pass on disposable MySQL 8.0.46 and MariaDB 10.11.19: disconnect, crash-before-commit, crash-before-save and refused checkpoint. Each checks physical Craft/Forge with exact UIDs and XP, then pouch crafting, copyover and two cold restarts. Active accounting and broader recipe/pouch faults remain unqualified. |
 | Integrated focused runtime checks | All 16 selected checks passed after the first upstream integration, including the ASan/UBSan prompt fixture. |
 | Frozen broad regression | The `8be8b55c0` snapshot completed all 822 scripts in 7,221.31 seconds; the runner reported 818 successes and four failures. Property reload, formatting, newborn grants and terminal-death entrypoints fail on that snapshot and pass their separately recorded focused repairs. Optional checks are included in the runner's success total: the MariaDB combat journey skipped because `TEST_DB_HOST` was not configured. This is not an all-green current-head or SQL gameplay qualification. A fresh 828-script run is in progress on frozen `63309643c`; it predates the enhancement payment fix and has no final result yet. |
 | Null-output publication regression | Passed using the actual native movement module after `0464613a1`. |
 | Combat continuation and quarantine restore | Passed after integrating the upstream recovery evidence. Quarantine archives retain both original component frames and keep recovery fenced on conflicting evidence. |
-| Writer census | Refreshed for `5017a0e9e`: 2,811 lexical occurrences, 2,753 unique sites, 863 routes, zero unmapped sites. The new provisional enhancement-output cleanup is explicitly classified; both moved wallet call sites retain their existing route ownership. The four temporary material-probe cleanup sites are explicitly classified in the recipe route. All 52 writer coverage checks pass on the frozen `508912dd2` source in 236.014 seconds, along with 14 accounting fixtures and matrix freshness; the essence fix reanchors the same route set and passes its 14-fixture validation, matrix freshness and corrected focused enhancement check; enhancement assertions now resolve their unique current source calls. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
+| Writer census | Refreshed for `01139b907`, whose native source is unchanged from qualified `8b2693dc4`: 2,811 occurrences, 2,753 unique sites, 863 routes, zero unmapped sites. All 52 coverage tests pass at `0c49bf2bf`; the later essence guard and documentation integration pass the focused enhancement coverage check, all 2,723 writer-site checks, 14 accounting fixtures and artifact freshness. Both provisional-output and temporary-probe cleanup sites retain explicit ownership. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
 | Recipe flatfile restore | Passed through the actual native restore decoder: complete recovery, checksum damage, missing obligation/root, future revision, and invalid receipt filename. |
-| Mortal recipe gameplay | Physical and retained-pouch Craft/Forge passed on the current `97ffd76d8` flatfile binary with exact XP, output UIDs and counters through copyover and two cold restarts. Both disposable SQL engines now pass the same physical and retained-pouch journey on the verified `97ffd76d8` SQL binary, preserving inputs, output UIDs, XP and counters through copyover and two cold restarts. This remains one frozen leather recipe with accounting inactive. |
+| Mortal recipe gameplay | Physical and retained-pouch Craft/Forge pass on the `70ff83d74` flatfile binary through copyover and two cold restarts. SQL physical interruptions and subsequent healthy pouch/restart journeys pass on frozen `0408d0825` (MariaDB) and `256785124` (MySQL) candidates, with exact input retirement, output UIDs and XP. See the recovery checkpoint for proof limits. |
 | Death/resurrection accounting acceptance | **RED** on disposable MariaDB 10.11.14 and MySQL 8.0.46 using the verified `49f76401c` SQL binary. Real combat/death and resurrection returned all 12 original fixture item UIDs, restored the exact wallet, and retired the new death coin pile. The inactive-accounting journey still reports 27 uncovered item events and two currency operations missing accounting roots/postings. It does not qualify active accounting or subsequent restart. |
 | Latest migration integration | Runtime manifest validator and all 34 native boot/migration contract tests passed with head 0053 and 225 tables. All three histories converge on the pinned schema on disposable MySQL 8.0.46 and MariaDB 10.11.14, including preserved master receipts/runtime payloads, append/replay, shell/compiled boot, restore selection, and tamper refusal. The fixture uses the current sealed baseline with the master prefix; a captured production clone remains outside this proof. |
 

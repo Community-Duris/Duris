@@ -54,6 +54,7 @@ struct replay_observer_context
 {
 	critical_replay_observer_fn observer;
 	void *context;
+	critical_replay_retention_fn retention;
 };
 
 std::mutex coordinator_mutex;
@@ -398,6 +399,22 @@ bool execution_supported(const critical_command &command)
 
 bool enqueue_replayed(critical_command command, void *context)
 {
+	const replay_observer_context *replay =
+		static_cast<const replay_observer_context *>(context);
+	bool retain_until_publication = command.publication_required;
+	if (command.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION && replay &&
+	    replay->retention)
+	{
+		try
+		{
+			if (!replay->retention(command, &retain_until_publication))
+				return false;
+		}
+		catch (...)
+		{
+			return false;
+		}
+	}
 	std::vector<uint8_t> encoded;
 	if (!execution_supported(command) ||
 	    critical_command_encode(command, &encoded) != critical_command_codec_result::ok)
@@ -416,7 +433,7 @@ bool enqueue_replayed(critical_command command, void *context)
 		state->attempt = 1;
 		state->attachments = 0;
 		state->phase = critical_operation_phase::queued;
-		state->retain_until_publication = state->command.publication_required;
+		state->retain_until_publication = retain_until_publication;
 		state->admission_failure_queued = false;
 		operations.emplace(identity, std::move(state));
 		pending.push_back(identity);
@@ -434,8 +451,6 @@ bool enqueue_replayed(critical_command command, void *context)
 		return false;
 	}
 
-	const replay_observer_context *replay =
-		static_cast<const replay_observer_context *>(context);
 	if (replay && replay->observer)
 	{
 		bool observed = false;
@@ -910,7 +925,8 @@ bool critical_command_coordinator_init(const char *journal_directory_path, criti
 				       void *context, unsigned int worker_count,
 				       critical_replay_observer_fn replay_observer,
 				       void *replay_context,
-				       critical_extension_validator_fn extension_validator)
+				       critical_extension_validator_fn extension_validator,
+				       critical_replay_retention_fn replay_retention)
 {
 	if (!apply || !worker_count || worker_count > CRITICAL_COORDINATOR_DEFAULT_WORKERS * 4)
 		return false;
@@ -946,9 +962,9 @@ bool critical_command_coordinator_init(const char *journal_directory_path, criti
 	recovery_requested = false;
 	uncertain_recovery_not_before_usec = 0;
 	uncertain_recovery_delay_usec = 1000000;
-	replay_observer_context replay = { replay_observer, replay_context };
-	if (critical_command_journal_replay(enqueue_replayed,
-					    replay_observer ? &replay : nullptr) !=
+	replay_observer_context replay = { replay_observer, replay_context, replay_retention };
+	if (critical_command_journal_replay(
+		    enqueue_replayed, (replay_observer || replay_retention) ? &replay : nullptr) !=
 	    critical_command_journal_result::ok)
 	{
 		health = {};

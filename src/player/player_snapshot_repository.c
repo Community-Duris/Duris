@@ -1697,7 +1697,8 @@ query_result verify_spell_effect_receipts(MYSQL *connection, const player_snapsh
 	return { true, 0 };
 }
 
-query_result craft_receipts(MYSQL *connection, const player_snapshot &snapshot, bool apply)
+query_result craft_receipts(MYSQL *connection, const player_snapshot &snapshot, bool apply,
+			    uint64_t verification_revision = 0)
 {
 	for (const auto &receipt : snapshot.craft_receipts)
 	{
@@ -1723,8 +1724,10 @@ query_result craft_receipts(MYSQL *connection, const player_snapshot &snapshot, 
 			if (!row || !parse_custody_uint64(row[index], &values[index]))
 				return { false, EILSEQ };
 		rows.reset();
+		const uint64_t receipt_revision = verification_revision ? verification_revision :
+									  snapshot.revision;
 		if (values[0] != receipt.discipline || values[1] != receipt.experience ||
-		    values[2] > snapshot.revision || values[3] != 1 || values[4] != 0)
+		    values[2] > receipt_revision || values[3] != 1 || values[4] != 0)
 			return { false, EILSEQ };
 		if (values[2])
 			continue;
@@ -2162,9 +2165,12 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 		const auto quest_receipt = spell_receipt.ok ?
 						   verify_quest_xp_receipts(connection, snapshot) :
 						   spell_receipt;
-		const auto craft_receipt = quest_receipt.ok ?
-						   craft_receipts(connection, snapshot, false) :
-						   quest_receipt;
+		// A newer durable save can prove an award carried by an older retained
+		// frame. Bound that proof by the locked player revision, while keeping
+		// exact operation, discipline, XP and native-success checks intact.
+		const auto craft_receipt =
+			quest_receipt.ok ? craft_receipts(connection, snapshot, false, durable) :
+					   quest_receipt;
 		execute(connection, "ROLLBACK");
 		if (!receipt.ok)
 			return failure(receipt.error_code, receipt.custody_diagnosis);
