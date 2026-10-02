@@ -64,3 +64,15 @@ The refreshed inventory remains 864 routes, with 2,815 lexical occurrences,
 accounting fixtures pass. The 751 runtime/projection routes still lack complete
 route qualification; `coverage_complete=False` and `release=BLOCKED` remain.
 No production repair, migration, activation, or deployment has occurred.
+
+## Fixture auditor denomination repair
+
+The fixture auditor now requires integer denominations and checked signed
+64-bit denomination/copper bounds. Its previous `int()` conversion silently
+truncated fractional postings and accepted booleans, numeric strings, and
+oversized opening balances. The new regression reproduces those failures
+before repair and passes afterward, including exact integers above `2**53`,
+signed endpoints, and denomination-weighted copper overflow. All 13 auditor
+tests and the 14 golden fixtures pass. This strengthens synthetic audit
+evidence; it does not qualify native money writers or complete independent
+runtime reconciliation.
