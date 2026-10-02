@@ -119,7 +119,7 @@ NON_WRITERS = {
     "artifact.swap_first_template_probe": "Staff swap reads and frees a provisional copy of the old vnum before looking up the admitted live artifact.",
     "artifact.swap_second_template_stage": "Staff swap instantiates a provisional replacement before all checks; several early returns leave it unowned in the global object list.",
     "artifact.bind_template_probe": "Periodic binding maintenance reads and frees a fresh template for logging, not item custody.",
-    "artifact.fixit_template_probe": "Binding repair uses provisional templates for display; its SQL branch currently has use-after-free and double-extract paths that require repair.",
+    "artifact.fixit_template_probe": "Binding repair keeps provisional templates alive through reporting and extracts each existing template once afterward.",
     "artifact.npc_restore_rejected_stage": "A freshly instantiated NPC artifact is freed before placement when its saved mob vnum has no matching live mob.",
     "artifact.player_display_probe": "Staff player artifact listings read and free fresh templates for display only.",
     "world.random_sigil_factory": "create_sigil returns a modified but unpublished template; its caller supplies the room owner and source event.",
