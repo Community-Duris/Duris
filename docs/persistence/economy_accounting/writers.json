@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "a2c560b9dc477c28c36c69f0d78c42257ed405f6",
+  "source_commit": "5017a0e9e4d569c31356053ec7258040ecc1492a",
   "census_complete": true,
   "writers": [
     {
@@ -15441,37 +15441,37 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1963,
+          1974,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1975,
+          1986,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1981,
+          1992,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1988,
+          1999,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1994,
+          2005,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          2004,
+          2015,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          2044,
+          2055,
           "item_lifecycle"
         ]
       ],
@@ -15816,12 +15816,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1288,
+          1299,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1296,
+          1307,
           "item_publication"
         ]
       ],
@@ -17956,7 +17956,7 @@
       "coverage": "legacy",
       "classification": "Reads and frees a fresh prototype only to rebuild the already modified source item\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s description.",
       "authority_boundary": "Keep the temporary template unpublished; description change belongs to the retained source UID revision.",
-      "current_support": "Source review only; exclusion and caller reachability need executable proof.",
+      "current_support": "Actual production-function sanitizers qualify missing-template refusal before payment/item/material mutation, exact probe release on rejected debit, ordinary description rebuilding and the encrusted path without a template. Compound retained-item durability remains unverified.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -17971,16 +17971,23 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_essence_enhancement_payment.py"
+      ],
       "sites": [
         [
           "src/item/enhance.c",
-          1106,
+          1086,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1116,
+          1096,
+          "item_lifecycle"
+        ],
+        [
+          "src/item/enhance.c",
+          1127,
           "item_lifecycle"
         ]
       ],
@@ -18027,7 +18034,7 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1083,
+          1093,
           "money_helper"
         ]
       ],
@@ -18071,12 +18078,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1100,
+          1112,
           "item_publication"
         ],
         [
           "src/item/enhance.c",
-          1101,
+          1113,
           "item_lifecycle"
         ]
       ],
@@ -18208,12 +18215,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          2087,
+          2098,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          2095,
+          2106,
           "item_publication"
         ]
       ],
@@ -20113,12 +20120,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1163,
+          1174,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1163,
+          1174,
           "item_publication"
         ]
       ],
@@ -53534,7 +53541,7 @@
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1083,
+      "line": 1093,
       "family": "money_helper",
       "excerpt": "if (SUB_MONEY(ch, cost, 0) != 0)"
     },
@@ -53600,79 +53607,85 @@
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1101,
+      "line": 1086,
       "family": "item_lifecycle",
-      "excerpt": "extract_obj(material);"
+      "excerpt": "tempobj = read_object(OBJ_VNUM(source), VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1106,
-      "family": "item_lifecycle",
-      "excerpt": "P_obj tempobj = read_object(OBJ_VNUM(source), VIRTUAL);"
-    },
-    {
-      "path": "src/item/enhance.c",
-      "line": 1116,
+      "line": 1096,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tempobj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1163,
+      "line": 1113,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(material);"
+    },
+    {
+      "path": "src/item/enhance.c",
+      "line": 1127,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(tempobj);"
+    },
+    {
+      "path": "src/item/enhance.c",
+      "line": 1174,
       "family": "item_lifecycle",
       "excerpt": "obj_to_char(read_object(400232, VIRTUAL), mob);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1288,
+      "line": 1299,
       "family": "item_lifecycle",
       "excerpt": "P_obj gift = read_object(reward, VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1963,
+      "line": 1974,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(vnum, VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1975,
+      "line": 1986,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1981,
+      "line": 1992,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1988,
+      "line": 1999,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1994,
+      "line": 2005,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2004,
+      "line": 2015,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2044,
+      "line": 2055,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2087,
+      "line": 2098,
       "family": "item_lifecycle",
       "excerpt": "if (!(material = read_object(high_vnum, VIRTUAL)))"
     },
@@ -53696,25 +53709,25 @@
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1100,
+      "line": 1112,
       "family": "item_publication",
       "excerpt": "obj_from_char(material);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1163,
+      "line": 1174,
       "family": "item_publication",
       "excerpt": "obj_to_char(read_object(400232, VIRTUAL), mob);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1296,
+      "line": 1307,
       "family": "item_publication",
       "excerpt": "obj_to_char(gift, ch);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2095,
+      "line": 2106,
       "family": "item_publication",
       "excerpt": "obj_to_char(material, mob);"
     },
