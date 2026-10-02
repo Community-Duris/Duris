@@ -14,10 +14,14 @@ current bounded, asynchronous MySQL loader. A replacement search service or
 automatic prose publication would add cost without addressing the current source
 collisions, lost categories, or disconnected publication paths.
 
-This draft implements the first increment: a reproducible source/export auditor,
+This draft implements the audit increment: a reproducible source/export auditor,
 complete registered-keyword coverage snapshot, exact-match selection beyond the
 result cap, whitespace normalization, a real 100-title display limit, actionable
 search feedback, focused regression tests, and corrected operating documentation.
+It also connects existing live providers through a shared renderer in both
+builds: exact registry bindings for category-zero/flat topics, canonical colors,
+current creation choices, replacement of captured generated sections, and
+generated facts for exact registered topics whose narrative is missing.
 It does not change storage/schema, publish help pages, migrate existing content,
 or modify the separate website repository.
 
@@ -29,7 +33,7 @@ flowchart TD
     Import["Transactional importer<br/>last writer wins<br/>category_id = 0"]
     SQL[("MUD database: pages")]
     Cache["Background help refresh<br/>immutable generation<br/>60-second idle interval"]
-    Game["help / rules<br/>title search + rendering<br/>optional live sections"]
+    Game["help / rules<br/>shared provider rendering<br/>current facts + canonical colors"]
     Flat["NOMYSQL loader<br/>first-use catalog<br/>literal title search"]
     Attributes["command_attributes.txt<br/>boot-time stat-usage index"]
     WebDB[("Website primary database: pages")]
@@ -50,11 +54,11 @@ flowchart TD
 | MySQL lifecycle | `src/net/comm.c` requests help refresh after world boot, polls publication during the game loop, and joins the worker before pool shutdown. `help_cache.c` uses the pool/thread context, one bounded SELECT, and `refresh_cache`. Reads/rendering perform no SQL. |
 | Staff refresh | Greater gods use `page help` / `page help status`; queued work and published generations are distinct. Automatic loads run every 60 seconds when idle, preserve old content on failure, and require a default `help` page for initial publication. |
 | MySQL search | Case-insensitive ASCII title equality and LIKE-style substring matching with `%` and `_`. There is no body search, token index, typo correction, or per-character command filtering. At most 101 candidates are retained to bound the 100-title display. |
-| MySQL rendering | `wiki_help_single` follows category-1 `Redirect: ` text, bounded to eight lookups. Categories 25/9/16/10 append live race/class/spec/skillset facts. Literal titles `Races` and `Multiclass` also append live content. |
-| Flat-file build | `make -C src PERSISTENCE_BACKEND=flatfile` defines `__NO_MYSQL__`. `flatfile_help_catalog.c` reads individual files, the index, then parsed help; ASCII-normalized duplicates overwrite. `wikihelp.c` loads the catalog on first use and keeps it until restart. It has literal substring search and no category metadata/live append. |
+| MySQL rendering | `wiki_help_single` follows category-1 `Redirect: ` text, bounded to eight lookups. Explicit categories 25/9/16/10 select live race/class/spec/skillset providers; category 0 also binds exact registry subjects. `Races` and `Multiclass` bind case-insensitively. Captured provider sections are replaced at render time. |
+| Flat-file build | `make -C src PERSISTENCE_BACKEND=flatfile` defines `__NO_MYSQL__`. `flatfile_help_catalog.c` reads individual files, the index, then parsed help; ASCII-normalized duplicates overwrite. `wikihelp.c` loads narrative on first use and keeps it until restart. It uses literal substring search, then the same live renderer/registry bindings as MySQL. |
 | Information commands | MOTD/news/wizmotd use the boot/`page` path. Credits/FAQ/wizlist use the separate background `information_cache` and `page info`. These are not all the same help cache. `mud_info.rules` is not the `rules` command's authority. |
 | Command attributes | Boot loads a separate legacy text table with a 1,024-entry cap. It can append stat usage even when narrative help is absent. It carries no command syntax, explanation, publication revision, or permission context. |
-| Demand evidence | Zero-title-match searches append timestamp/query to `lib/etc/help`; there is no identity, structured term normalization, ambiguous-search counter, result selection, or usefulness signal. Review aggregated counts privately before choosing authoring priorities. |
+| Demand evidence | Unresolved searches with no stored title match or exact live provider append timestamp/query to `lib/etc/help`; there is no identity, structured term normalization, ambiguous-search counter, result selection, or usefulness signal. Review aggregated counts privately before choosing authoring priorities. |
 | Historical wiki code | `src/sql/sql.c::perform_wiki_search` still references old `wikki_*` tables. There is no caller in the current server tree, and NOMYSQL has an empty stub. It is not the active help backend. |
 
 MySQL limits are 20,000 pages, 256 title bytes, 128 KiB per complete record,
@@ -184,10 +188,22 @@ sections despite its title being present. Existing race/class section-presence
 tests do not detect these semantic failures or stale runtime values.
 
 Most importantly, every importer section assigns category 0. The SQL-backed
-renderer already supports live facts, but source imports cannot retain the
-metadata that activates them. Many parsed pages instead contain old rendered
-race/class/spec tables. Merely turning on dynamic append would then show both
-old and live sections; content boundaries must be cleaned and tested first.
+baseline renderer supported live facts only through category metadata, which
+the imports did not retain. The draft now binds exact registered subjects in
+category 0 and in NOMYSQL, and replaces the provider's captured sections before
+appending current facts. The stored sources remain unchanged for auditability;
+the website still receives their captured text until its publication/rendering
+path is updated. Explicit metadata/source cleanup remains useful for ownership,
+aliases, revision history, and less ambiguous publication.
+
+The live layer is centralized in `dynamic_topic`, `help_narrative`, and
+`render_help_content`; it is not a new persistence or search service. Existing
+racial properties, creation policy, specialization admission, and ability-list
+helpers remain the authorities. Current Rogue specializations take precedence
+over retired Assassin/Thief class names for untyped pages; an explicit SQL class
+category can still select the historical subject. Generated-only facts do not
+claim to fill the missing narrative measured by this report, and prefix/partial
+discovery still needs an expanded index.
 
 For readability, use one display header, clear Syntax / Requirements / What
 happens / Failure feedback / Example sections for commands, and named links
@@ -219,11 +235,13 @@ do not rewrap alignment-sensitive lists blindly or remove headings in bulk.
    full revision history and versioned exports for NOMYSQL. Acceptance: one
    title/category/body round-trip preserves metadata and reports drift/collisions;
    no unreviewed database-only content is lost.
-2. **Dynamic parity.** Separate static narrative from captured generated sections,
-   then reuse current race/class/spec helpers in both builds. Choose providers
-   through explicit categories, not guesses from arbitrary words. Acceptance:
+2. **Dynamic publication parity.** Runtime parity is implemented in this draft
+   using exact registry subjects and existing SQL categories. Next, separate
+   authored narrative from captured sections in the publication format and
+   preserve explicit provider metadata through SQL/flat exports. Acceptance:
    a changed property/skill unlock updates output in both backends, each section
-   appears once, and frozen capture data no longer competes with current facts.
+   appears once, metadata round-trips, and the website can obtain equivalent
+   current facts without frozen capture data competing with them.
 3. **Discovery and feedback.** Build exact/alias lookup alongside prefix/token
    discovery from the same bounded catalog. Add a paginated current index and
    capped typo suggestions on misses; show the command to read each suggestion.
@@ -253,7 +271,7 @@ change retrieval or publish content.
 
 The plan-ablation review removed a new search service, bulk generated prose,
 automatic category guessing, and schema changes from this draft. Their omission
-leaves the first increment independently reviewable and useful without prematurely
+keeps this draft independently reviewable and useful without prematurely
 choosing another storage/authoring system.
 
 ## Validation and limits
@@ -267,22 +285,37 @@ choosing another storage/authoring system.
   an exact title beyond the candidate batch.
 - `python3 tests/async/test_flatfile_help_catalog.py`: the production C++ loader
   vs auditor title/body equality, bounds, flat runtime/help aliases, information
-  reads, and a synthetic capped search with a late exact hit.
+  reads, and a synthetic capped search with a late exact hit. It also compiles
+  the actual shared renderer through both SQL and NOMYSQL branches against
+  production race/class/color tables, creation configuration, and spec admission.
+  Tests cover 37 race pages, 30 class skillsets, all registered specs, live
+  property changes, correct list-provider arguments, colors, creation overrides,
+  missing-topic generation, legacy-name precedence, and captured-section removal.
+  SQL cache and ability-list boundaries are isolated fixtures; this is not a
+  substitute for a live gameplay journey.
 - `test_reported_latency_contract.py`, `test_help_import_live_parser.py`,
   `test_race_helpfiles_complete.py`, and `test_class_helpfiles_contract.py`:
   existing adjacent contracts passed.
+- `test_creation_availability_contract.py`, `test_creation_all_races_toggle.py`,
+  and `test_creation_all_classes_toggle.py`: creation policy contracts passed.
 - Existing `help_cache_mysql_harness.cpp` and `test_help_import_atomic.py` passed
   against a disposable MariaDB 10.6.23 instance bound to `127.0.0.2`, then stopped.
   This verified the real periodic refresh, SQL payload bounds, failure retention,
   no extra connection acquisition during reads, transactional rollback, and
   old/new reader visibility. It did not access the configured game database.
-- The complete server build passed under WSL using `g++-12` and the existing
-  Hiredis 1.4.1 headers/libraries. The workspace path contains a space, requiring
-  `BIN_ROOT=../bin`; no build products are committed. Exact command:
+- Complete MySQL and flat-file server builds passed under WSL using `g++-12`
+  and the existing Hiredis 1.4.1 headers/libraries. The workspace path contains a space, requiring
+  `BIN_ROOT=../bin`; no build products are committed. Hiredis headers are treated
+  as external system headers to avoid vendor-only pedantic diagnostics. Commands:
 
   ```bash
-  make -C src -j2 -B BIN_ROOT=../bin CC=g++-12 \
-    EXTRA_CFLAGS=-I/home/wsl/.local/duris-build-deps/hiredis-1.4.1/include \
+  make -C src -j2 BIN_ROOT=../bin CC=g++-12 \
+    EXTRA_CFLAGS=-isystem/home/wsl/.local/duris-build-deps/hiredis-1.4.1/include \
+    'EXTRA_LDFLAGS=-L/home/wsl/.local/duris-build-deps/hiredis-1.4.1/lib -Wl,-rpath,/home/wsl/.local/duris-build-deps/hiredis-1.4.1/lib'
+
+  make -C src -j2 BIN_ROOT=../bin CC=g++-12 \
+    PERSISTENCE_BACKEND=flatfile DMS_BINARY=../bin/server/dms_flat_help \
+    EXTRA_CFLAGS=-isystem/home/wsl/.local/duris-build-deps/hiredis-1.4.1/include \
     'EXTRA_LDFLAGS=-L/home/wsl/.local/duris-build-deps/hiredis-1.4.1/lib -Wl,-rpath,/home/wsl/.local/duris-build-deps/hiredis-1.4.1/lib'
   ```
 

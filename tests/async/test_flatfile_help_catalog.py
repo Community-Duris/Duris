@@ -58,6 +58,71 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-help-", dir=ROOT / "bin"
         (ROOT / rel("flatfile_help_catalog.c")).read_text(), encoding="utf-8")
     compare_catalog(fixture)
 
+    dynamic_fixture = temporary_path / "dynamic-fixture"
+    (dynamic_fixture / "lib/information").mkdir(parents=True)
+    (dynamic_fixture / "lib/duris.properties").write_bytes((ROOT / "lib/duris.properties").read_bytes())
+    (dynamic_fixture / "lib/creation_availability.cfg").write_bytes(
+        (ROOT / "lib/creation_availability.cfg").read_bytes())
+    (dynamic_fixture / "lib/information/help_index").write_text('''"help"
+DEFAULT_MENU
+#
+"Human"
+Human - Last Edited: old
+========================
+NARRATIVE_BEFORE
+==Class list==
+STALE_CLASS
+==Racial Statistics==
+Strength    : STALE_STATS
+==Innate abilities==
+STALE_INNATES
+==Strengths==
+NARRATIVE_AFTER
+==See also==
+* Races
+#
+"Warrior Skills"
+==See also==
+* Warrior
+==Skills==
+STALE_SKILLS
+==Spells==
+STALE_SPELLS
+#
+"SKILL_WARRIOR"
+Skills
+----------------------
+STALE_SKILLS
+Warrior Specializations
+----------------------
+STALE_SPECS
+See also: Warrior
+#
+"Bard Skills"
+==Songs==
+STALE_SONGS
+==Instruments==
+STALE_INSTRUMENTS
+#
+"Elementalist"
+UNRELATED_PARTIAL_MATCH
+#
+"Assassin"
+Current or historical narrative
+#
+"Races"
+==Good Races==
+STALE_ROSTER
+#
+"Multiclass"
+NARRATIVE_BEFORE
+Here are the options available to each class:
+STALE_OPTIONS
+==Multi-Class Names==
+STALE_NAMES
+#
+''', encoding="utf-8")
+
     invalid_root = temporary_path / "invalid"
     (invalid_root / "lib/information").mkdir(parents=True)
     with (invalid_root / "lib/information/help_index").open("wb") as source:
@@ -87,6 +152,10 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-help-", dir=ROOT / "bin"
             "tests/async/flatfile_help_runtime_harness.cpp",
             rel("wikihelp.c"),
             rel("flatfile_help_catalog.c"),
+            rel("common.c"),
+            rel("constant.c"),
+            rel("creation_availability_config.c"),
+            rel("specializations.c"),
             "-Wl,--gc-sections",
             "-o",
             str(runtime_binary),
@@ -95,7 +164,23 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-help-", dir=ROOT / "bin"
         check=True,
     )
     subprocess.run([str(runtime_binary)], cwd=ROOT, check=True)
+    subprocess.run([str(runtime_binary), "dynamic-catalog"], cwd=ROOT, check=True)
     subprocess.run([str(runtime_binary), "search-fixture"], cwd=fixture, check=True)
+    subprocess.run([str(runtime_binary), "dynamic-fixture"], cwd=dynamic_fixture, check=True)
+
+    # Compile the same gameplay renderer/harness through its SQL branch. Only
+    # the cache boundary is seeded from files; rendering still performs no SQL.
+    sql_binary = temporary_path / "sql_help_runtime_test"
+    subprocess.run([
+        "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-ffunction-sections",
+        "-fdata-sections", "-I/usr/include/mysql", "-Isrc",
+        "tests/async/flatfile_help_runtime_harness.cpp", rel("wikihelp.c"),
+        rel("flatfile_help_catalog.c"), rel("common.c"), rel("constant.c"),
+        rel("creation_availability_config.c"), rel("specializations.c"),
+        "-Wl,--gc-sections", "-o", str(sql_binary)
+    ], cwd=ROOT, check=True)
+    subprocess.run([str(sql_binary), "dynamic-catalog"], cwd=ROOT, check=True)
+    subprocess.run([str(sql_binary), "dynamic-fixture"], cwd=dynamic_fixture, check=True)
 
     mud_info_binary = temporary_path / "flatfile_mud_info_runtime_test"
     subprocess.run(

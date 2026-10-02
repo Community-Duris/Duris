@@ -50,11 +50,11 @@ string dewikify(string s) { return s; }
 string trim(const string &s,const char *chars) {
  auto begin=s.find_first_not_of(chars); return begin==string::npos ? "" : s.substr(begin,s.find_last_not_of(chars)-begin+1); }
 int dynamic_version=1;
+string generated_help(const string &) { return ""; }
+string help_display_title(const string &s, int) { return "&+c"+s; }
+string render_help_content(const string &, const string &s, int category) {
+ return s+(category==9 ? "dynamic"+to_string(dynamic_version) : ""); }
 '''
-for name in ['wiki_classes', 'wiki_racial_stats', 'wiki_specs', 'wiki_multiclass', 'wiki_pcraces']:
-    prefix += f'string {name}(string) {{ return "dynamic"+to_string(dynamic_version); }}\n'
-for name in ['wiki_innates', 'wiki_races', 'wiki_skills', 'wiki_spells']:
-    prefix += f'string {name}(string,int) {{ return "dynamic"+to_string(dynamic_version); }}\n'
 main = r'''
 void add(string title,string text,string category="1") {
  pages.push_back({{title,text,category,"2026-09-10","Editor"}}); }
@@ -78,9 +78,9 @@ int main() {
  assert(wiki_help("Fire").find("dynamic2")!=string::npos);
  for(int i=0;i<150;++i) add("bulk"+to_string(i),"text");
  auto result=wiki_help("bulk");
- assert(result.find("bulk99\n")!=string::npos);
- assert(result.find("bulk100\n")==string::npos);
- assert(result.find("bulk101\n")==string::npos);
+ assert(result.find("bulk99&N\n")!=string::npos);
+ assert(result.find("bulk100&N\n")==string::npos);
+ assert(result.find("bulk101&N\n")==string::npos);
  assert(result.find("limited to 100 topics")!=string::npos);
  assert(result.find("Type HELP <topic>")!=string::npos);
  add("bulk","exact match after the first 101 results");

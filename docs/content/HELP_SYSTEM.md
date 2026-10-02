@@ -23,8 +23,9 @@ The `help` command (`do_help`, `src/cmd/actinf.c`) does two things:
    trailing input whitespace is ignored. A miss suggests a shorter keyword,
    `help commands`, or `commands`, and is logged to `lib/etc/help`
    (`logit(LOG_HELP, ...)`). The log records a timestamp and query, without
-   character identity; it records zero title matches, not ambiguity or whether
-   a page answered the player's question.
+   character identity; it records unresolved searches with no stored title match
+   or exact live provider. It does not measure ambiguity or whether a page
+   answered the player's question.
    Entries are stored wiki-formatted; `dewikify()` converts `[[...]]` markup
    into ANSI-colored output. Help imposes no character wait or browsing
    cooldown; the obsolete `help.cooldown.secs` property is ignored.
@@ -34,13 +35,30 @@ The `help` command (`do_help`, `src/cmd/actinf.c`) does two things:
 
    - **Redirects**: a row with `category_id` 1 whose text starts with
      `Redirect: <target>` is followed to the complete multiword title, with
-     an eight-lookup bound. Missing targets and excessive chains return errors.
-   - **Dynamic sections**: rows with certain `category_id`s get content
-     appended from code/properties, not from stored text: 25 race (classes,
+     an eight-lookup bound. An exact live provider can supply a missing target;
+     other missing targets and excessive chains return errors.
+   - **Dynamic sections**: the shared renderer selects live code/property
+     providers. Explicit SQL categories select 25 race (classes,
      racial stats, innates), 9 class (allowed races, innates, specs),
      16 spec (races, innates, skills, spells), 10 class-skillset (innates,
-     skills, spells). Titles `Multiclass` and `Races` also get hardcoded
-     sections. Editing those pages means authoring only the static part.
+     skills, spells). Category-zero imports and flat files also bind exact
+     registered race, class, specialization, and class-skillset names.
+     `<class> Skills` and `SKILL_<class>` are both recognized. `Multiclass` and
+     `Races` bind case-insensitively in any category. Active specializations
+     take precedence over the retired Assassin/Thief class names in category 0;
+     category 9 can explicitly select the historical class.
+
+     Known providers replace their captured generated sections and embedded
+     edit header at render time, then append current facts once. Descriptions,
+     strengths/weaknesses, equipment notes, and See also sections remain.
+     Race/class/spec titles and result links use their canonical game-table
+     colors; live headings and values are colored. Author only the static part.
+
+     An exact registered topic without a stored page renders current facts and
+     clearly states that its narrative has not yet been authored. This takes
+     precedence over unrelated substring matches (for example, `Mentalist`
+     must not open `Elementalist`). Partial searches/indexes still enumerate
+     stored titles; discovery of generated-only topics needs a future index.
 
 2. **`attrib_help()`** - appends per-command attributes (stat usage)
     loaded at boot from `docs/lib/information/command_attributes.txt`
@@ -62,11 +80,11 @@ searches without a database connection. Missing or structurally invalid source
 catalogs fail closed with the normal help-system error instead of silently
 returning the former disabled stub.
 
-The flat help catalog initializes on the first help lookup and remains fixed
-until restart. It uses literal substrings rather than SQL wildcards, has no
-category/edit metadata, and does not append the category-driven dynamic
-sections above. Dynamic-looking sections already present in exported text
-are stored snapshots. Its redirects recognize a leading `Redirect:` without
+The flat narrative catalog initializes on the first help lookup and remains
+fixed until restart. It uses literal substrings rather than SQL wildcards and
+has no category/edit metadata. It calls the same dynamic renderer as MySQL;
+properties, current lists, and availability are evaluated on each read rather
+than frozen in the cached text. Its redirects recognize a leading `Redirect:` without
 category metadata; invalid chains can fall back to displaying redirect text.
 `page help` reports this load-once behavior. The database-backed `page help`
 queues refresh and `page help status` reports generation, readiness, pending
@@ -112,9 +130,10 @@ lib/information/*          help/                      database
   Titles compare case-insensitively (MySQL default collation). Check both
   sources before adding an entry to `help_index`.
 - All three import sections write `category_id=0`. Importing a race/class/spec
-  page does not activate the dynamic renderer; importing `Redirect:` text does
-  not activate MySQL redirect behavior. The source/export formats do not retain
-  categories. The flat loader additionally registers the `chaos pouch` title.
+  page now activates a provider when its title matches an exact registered
+  subject. Importing `Redirect:` text still does not activate MySQL redirect
+  behavior. The source/export formats do not retain categories. The flat loader
+  additionally registers the `chaos pouch` title.
 - Title parsing in `help_index`: unquoted titles are truncated at `(` -
   `PURGE (Spell)` stores page title `PURGE`; quoted titles keep everything
   inside the quotes - `"ECHO (IMMORTAL)"` stores the full string. Use
@@ -195,6 +214,10 @@ The auditor excludes commented registrations, distinguishes staff/social/trigger
 commands, and reports unregistered names separately. It is a source-layout-aware
 inventory, not a C++ compiler or runtime permission evaluator.
 
+This report audits stored/authored entries. A missing title can still have a
+generated-only runtime view when it is an exact registered dynamic topic; that
+does not fill the missing explanation or satisfy the authored-topic gate.
+
 `--require-term` is repeatable and exits 1 for absent/nonexact or unusable topics.
 Use it for the keyword introduced by a change; existing gaps do not make every
 contribution fail. Normal reports exit 0 even with gaps; malformed input/source
@@ -230,3 +253,35 @@ generated solely from tracked source material.
 - Login hints: `docs/lib/information/hints.txt` read by `nanny.c`.
 - Wiki export helpers and formatting utilities live alongside the loader in
   `wikihelp.c`.
+
+## Live providers and extension point
+
+`dynamic_topic` and `render_help_content` in `src/cmd/wikihelp.c` are the shared
+binding/rendering path for both persistence builds. New providers should bind
+explicit identities, own a defined set of sections, and reuse gameplay helpers.
+Keep mutable game reads on the game loop; do not add command-time SQL.
+
+| Topic | Live information and existing helpers |
+| --- | --- |
+| Race | Configured racial statistics and combat/spell pulses (`wiki_racial_stats`); current creation class/spec choices (`wiki_classes`); innate unlocks (`wiki_innates`). |
+| Class | Current creation races (`wiki_races`), innate unlocks (`wiki_innates`), and colored specializations (`wiki_specs`). |
+| Specialization | Current creation races, innate unlocks, skills, spells, and bard songs/instruments (`wiki_races`, `wiki_innates`, `wiki_skills`, `wiki_spells`). |
+| Class skillset | Innates, skill levels, spell circles, and bard song/instrument unlocks (`wiki_innates`, `wiki_skills`, `wiki_spells`). |
+| Races | Canonical creation roster, configured enabled flags, and separately identified progression/restricted races (`wiki_pcraces`). |
+| Multiclass | Current secondary-class combinations and names (`wiki_multiclass`). |
+
+Class/race availability sections describe character-creation choices through
+`creation_class_enabled`, `creation_class_align`, `creation_race_enabled`, the
+normal roster, and `CREATION_ALL_RACES` / `CREATION_ALL_CLASSES`. They do not
+revoke existing characters or certify account-specific admission. Racial values
+come from `stats.*.<race-key>` and pulse properties, not the querying character's
+rolled/buffed stats. Creation configuration is still loaded at boot; property
+reload and existing override mechanisms keep their own normal lifecycle.
+
+Related information commands already read current game state: `do_skills`,
+`do_spells`, and `do_practice` in `src/guild/guild.c`, and `do_innate` /
+`do_list_innates` in `src/classes/innates.c`. Their character-specific views
+provide useful authorities for a future contextual help provider. Today,
+`wiki_help` receives only a query string; the shared help providers present
+race/class/spec facts without a character context. `attrib_help` remains a
+separate boot-loaded text appendix, not a live command-requirement evaluator.
