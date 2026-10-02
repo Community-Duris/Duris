@@ -3,7 +3,7 @@
 This qualification follows the normal master integration in PR #674, merged as
 `ffb73e6518a2dc39f3d243d3384ea851b4c3b8a4`. It preserves the upstream save,
 recipe bounds, migration, and lifecycle fixes, and subsequent enhancement
-payment/prototype guards through `5017a0e9e`.
+payment/prototype guards and qualification records through `05976f0a0`.
 
 ## Observed failures and repairs
 
