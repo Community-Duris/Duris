@@ -45,27 +45,27 @@
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2819,
-    "current_unique_path_line_family_sites": 2761,
+    "current_occurrences": 2806,
+    "current_unique_path_line_family_sites": 2748,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "4ac592b2f46156d2bd19c1c3c304ad5b703fd263",
+    "draft_source_commit": "0464613a1f105320cc7c511f29603bc1c69adf7c",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2761,
+    "draft_unique_sites": 2748,
     "family_occurrences": {
       "coin_assignment": 160,
       "coin_bulk_mutation": 16,
       "direct_cash_assignment": 12,
       "economic_submit": 186,
-      "item_lifecycle": 1150,
-      "item_publication": 1068,
+      "item_lifecycle": 1141,
+      "item_publication": 1064,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
       "sql_economy": 55
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 863-row registry maps 2761 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
-    "mapped_sites_still_present": 2761,
-    "mapped_unique_sites_from_draft_rows": 2761,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 863-row registry maps 2748 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2748,
+    "mapped_unique_sites_from_draft_rows": 2748,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "4ac592b2f46156d2bd19c1c3c304ad5b703fd263",
+  "repository_head": "0464613a1f105320cc7c511f29603bc1c69adf7c",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -117,7 +117,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1899
+          1907
         ],
         "file": "src/account/account.c",
         "function": "cleanup_temp_char",
@@ -1156,7 +1156,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6813
+          6824
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "good_evil_poofSword",
@@ -1217,7 +1217,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6894
+          6905
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "good_evil_sword",
@@ -1384,7 +1384,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5837
+          5848
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "holy_weapon",
@@ -1443,7 +1443,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5837
+          5848
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "holy_weapon",
@@ -1623,7 +1623,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5084
+          5095
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "artifact_monolith",
@@ -5909,7 +5909,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4218
+          4324
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_coin_apply",
@@ -6402,7 +6402,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2086
+          2091
         ],
         "file": "src/world/handler.c",
         "function": "money_inventory_completion",
@@ -6449,7 +6449,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2086
+          2091
         ],
         "file": "src/world/handler.c",
         "function": "money_inventory_completion",
@@ -8128,7 +8128,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          279
+          402
         ],
         "file": "src/economy/crafting.c",
         "function": "crafting_configure_recipe_scroll",
@@ -8188,7 +8188,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          380
+          504
         ],
         "file": "src/economy/crafting.c",
         "function": "crafting_get_player_recipes",
@@ -8368,13 +8368,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1114
+          1169
         ],
         "file": "src/economy/crafting.c",
         "function": "crafting_handle_forge_command",
         "original_draft_symbol": "crafting_handle_forge_command"
       },
-      "source_classification": "Tool/input consumption and output grant; chaos-pouch variant bypasses low/high material consumption; tools/flux and applicable essence remain consumed, and generated material usage is recorded after grant submission.",
+      "source_classification": "Frozen recipe requirements and output are submitted as one craft custody operation, including generated usage on the retained pouch and a durable progression continuation.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -8427,13 +8427,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          30
+          73
         ],
         "file": "src/economy/crafting.c",
-        "function": "grant_crafted_item",
-        "original_draft_symbol": "grant_crafted_item"
+        "function": "submit_recipe_craft",
+        "original_draft_symbol": "submit_recipe_craft"
       },
-      "source_classification": "Crafting output grants a new UID linked to consumed inputs.",
+      "source_classification": "Frozen recipe requirements and output are submitted as one craft custody operation, including generated usage on the retained pouch and a durable progression continuation.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -8547,13 +8547,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          491
+          611
         ],
         "file": "src/economy/crafting.c",
         "function": "crafting_handle_craft_command",
         "original_draft_symbol": "crafting_handle_craft_command"
       },
-      "source_classification": "Physical ingredients consumed before durable output grant; chaos-pouch variant bypasses low/high material consumption; tools/flux and applicable essence remain consumed, and generated material usage is recorded after grant submission. Preview objects are excluded.",
+      "source_classification": "Frozen recipe requirements and output are submitted as one craft custody operation, including generated usage on the retained pouch and a durable progression continuation.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -9943,7 +9943,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6412
+          6425
         ],
         "file": "src/world/handler.c",
         "function": "add_coins",
@@ -10004,7 +10004,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6558
+          6571
         ],
         "file": "src/world/handler.c",
         "function": "create_money",
@@ -10065,7 +10065,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2773
+          2780
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_room",
@@ -10511,7 +10511,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2140
+          2145
         ],
         "file": "src/world/handler.c",
         "function": "money_to_inventory",
@@ -10760,7 +10760,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4452
+          4465
         ],
         "file": "src/world/handler.c",
         "function": "discard_corpse_release_money",
@@ -10821,7 +10821,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3830
+          3843
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_release",
@@ -10868,7 +10868,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5129
+          5142
         ],
         "file": "src/world/handler.c",
         "function": "persistence_defer_corpse_compaction",
@@ -11012,7 +11012,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4613
+          4626
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_destruction",
@@ -11257,7 +11257,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4468
+          4481
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_nested_release",
@@ -11382,7 +11382,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4083
+          4096
         ],
         "file": "src/world/handler.c",
         "function": "recover_corpse_raise_items",
@@ -11443,7 +11443,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4743
+          4756
         ],
         "file": "src/world/handler.c",
         "function": "persistence_defer_corpse_raise",
@@ -11505,7 +11505,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3830
+          3843
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_release",
@@ -11567,7 +11567,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4249
+          4262
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_resurrection_item",
@@ -11693,7 +11693,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3767
+          3780
         ],
         "file": "src/world/handler.c",
         "function": "discard_corpse_transient_items",
@@ -11802,7 +11802,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4314
+          4315
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "necro_dracolich",
@@ -13049,7 +13049,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4317
+          4330
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_resurrection",
@@ -13130,7 +13130,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4317
+          4330
         ],
         "file": "src/world/handler.c",
         "function": "publish_corpse_resurrection",
@@ -13862,7 +13862,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5228
+          5239
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "slot_machine",
@@ -13921,7 +13921,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5228
+          5239
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "slot_machine",
@@ -16171,7 +16171,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6229
+          6240
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "banana",
@@ -16232,7 +16232,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6229
+          6240
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "banana",
@@ -16434,7 +16434,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5552
+          5565
         ],
         "file": "src/world/handler.c",
         "function": "extract_char",
@@ -16481,7 +16481,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1459
+          1473
         ],
         "file": "src/item/item_transfer_command.c",
         "function": "item_transfer_command_build",
@@ -16981,7 +16981,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1853
+          1856
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_char_checked",
@@ -17061,8 +17061,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2820,
-          2832
+          2874,
+          2886
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17124,7 +17124,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1276
+          1280
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -17186,7 +17186,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1176
+          1180
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -17247,7 +17247,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1853
+          1856
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_char_checked",
@@ -17371,7 +17371,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1057
+          1061
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -18415,7 +18415,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          894
+          898
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -18477,7 +18477,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          901
+          905
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -18539,7 +18539,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3372
+          3385
         ],
         "file": "src/world/handler.c",
         "function": "extract_obj",
@@ -19061,7 +19061,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3207
+          3218
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_char_at_end",
@@ -19122,7 +19122,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2032
+          2036
         ],
         "file": "src/world/handler.c",
         "function": "obj_from_char",
@@ -19183,7 +19183,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3061
+          3070
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_obj",
@@ -19244,7 +19244,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3268
+          3280
         ],
         "file": "src/world/handler.c",
         "function": "obj_from_obj",
@@ -19305,7 +19305,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2217
+          2222
         ],
         "file": "src/world/handler.c",
         "function": "equip_char",
@@ -19366,7 +19366,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2773
+          2780
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_room",
@@ -19427,7 +19427,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2921
+          2929
         ],
         "file": "src/world/handler.c",
         "function": "obj_from_room",
@@ -19550,7 +19550,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3068
+          3122
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19612,7 +19612,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2880
+          2934
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -19798,7 +19798,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5204
+          5217
         ],
         "file": "src/world/handler.c",
         "function": "Decay",
@@ -20598,7 +20598,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1991
+          2022
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -20721,7 +20721,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1853
+          1856
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_char_checked",
@@ -20905,7 +20905,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5517
+          5530
         ],
         "file": "src/world/handler.c",
         "function": "hold_durable_pet_items",
@@ -21148,7 +21148,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          127
+          128
         ],
         "file": "src/world/handler.c",
         "function": "obj_prototype_weight",
@@ -21210,7 +21210,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1552
+          1556
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -21272,7 +21272,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1108
+          1112
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -21640,7 +21640,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          963
+          967
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -21824,7 +21824,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1227
+          1229
         ],
         "file": "src/world/handler.c",
         "function": "char_to_room",
@@ -22359,7 +22359,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2335
+          2359
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_execute_at_offset",
@@ -22420,7 +22420,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2959
+          2983
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_destroy_owners",
@@ -22773,7 +22773,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1853
+          1856
         ],
         "file": "src/world/handler.c",
         "function": "obj_to_char_checked",
@@ -22834,7 +22834,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2352
+          2359
         ],
         "file": "src/world/handler.c",
         "function": "transfer_inventory",
@@ -26062,7 +26062,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3663
+          3680
         ],
         "file": "src/magic/affects.c",
         "function": "falling_obj",
@@ -26119,7 +26119,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3437
+          3454
         ],
         "file": "src/magic/affects.c",
         "function": "poo",
@@ -27642,7 +27642,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          253
+          254
         ],
         "file": "src/magic/spells.c",
         "function": "cast_minor_creation",
@@ -27699,7 +27699,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2034
+          2035
         ],
         "file": "src/magic/spells.c",
         "function": "cast_vines",
@@ -27756,7 +27756,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2575
+          2576
         ],
         "file": "src/magic/spells.c",
         "function": "create_walls",
@@ -28354,7 +28354,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6923
+          6924
         ],
         "file": "src/mob/mobact.c",
         "function": "IsBetterObject",
@@ -28413,7 +28413,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1068
+          1069
         ],
         "file": "src/mob/mobact.c",
         "function": "CastMageSpell",
@@ -28473,7 +28473,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8327
+          8323
         ],
         "file": "src/mob/mobact.c",
         "function": "MobHuntCheck",
@@ -28826,7 +28826,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5887
+          5888
         ],
         "file": "src/mob/mobact.c",
         "function": "MobThief",
@@ -29441,7 +29441,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1122
+          1123
         ],
         "file": "src/account/nanny.c",
         "function": "perform_eq_wipe",
@@ -29499,7 +29499,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          896
+          897
         ],
         "file": "src/account/nanny.c",
         "function": "load_obj_to_newbies",
@@ -30174,7 +30174,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          539
+          540
         ],
         "file": "src/account/nanny.c",
         "function": "schedule_chaos_starting_bank",
@@ -30233,7 +30233,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          681
+          682
         ],
         "file": "src/account/nanny.c",
         "function": "load_chaos_new_character_kit",
@@ -30456,7 +30456,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1763
+          1808
         ],
         "file": "src/player/player_snapshot_repository.c",
         "function": "apply_death",
@@ -30697,7 +30697,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          376
+          377
         ],
         "file": "src/player/player_load_materialize.c",
         "function": "player_load_materialize",
@@ -30744,7 +30744,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4533
+          4534
         ],
         "file": "src/account/nanny.c",
         "function": "init_char",
@@ -38529,7 +38529,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2503
+          2504
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "disarm_pick_gloves",
@@ -38980,7 +38980,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2244
+          2245
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "flying_citadel",
@@ -39270,7 +39270,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2832
+          2833
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "guild_badge",
@@ -39786,7 +39786,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3692
+          3693
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "huntsman_ward",
@@ -39846,7 +39846,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3078
+          3079
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "obj_imprison",
@@ -39906,7 +39906,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4917
+          4928
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "io_assistant",
@@ -41649,7 +41649,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4359
+          4360
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "sales_spec",
@@ -42339,7 +42339,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5760
+          5771
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "treasure_chest",
@@ -42399,7 +42399,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5760
+          5771
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "treasure_chest",
@@ -43543,7 +43543,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4763
+          4764
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "witch_doctor",
@@ -43602,7 +43602,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1562
+          1563
         ],
         "file": "src/specs/specs.heavens.c",
         "function": "xmas_cap",
@@ -45214,7 +45214,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4825
+          4826
         ],
         "file": "src/cmd/actinf.c",
         "function": "do_world",
@@ -47575,7 +47575,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          538
+          539
         ],
         "file": "src/world/limits.c",
         "function": "githyanki_weapon",
@@ -48084,8 +48084,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1954,
-          2778
+          1955,
+          2779
         ],
         "file": "src/world/db.c",
         "function": "read_mobile",
@@ -48239,7 +48239,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3058
+          3059
         ],
         "file": "src/world/db.c",
         "function": "instantiate_object_template",
@@ -49288,7 +49288,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3176
+          3177
         ],
         "file": "src/world/db.c",
         "function": "read_object",
@@ -49348,7 +49348,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3291
+          3292
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -49763,7 +49763,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2070
+          2078
         ],
         "file": "src/world/new_events.c",
         "function": "zone_purge",
@@ -49823,7 +49823,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3291
+          3292
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -49884,7 +49884,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3291
+          3292
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -49944,7 +49944,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3291
+          3292
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50004,7 +50004,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3291
+          3292
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50064,7 +50064,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3291
+          3292
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50111,7 +50111,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3291
+          3292
         ],
         "file": "src/world/db.c",
         "function": "reset_zone",
@@ -50667,7 +50667,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2505
+          2536
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
@@ -50733,7 +50733,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          696
+          698
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_craft",
@@ -50783,7 +50783,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          746
+          748
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_craft_outputs",
@@ -50849,7 +50849,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1636
+          1637
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "insert_craft_output_item",
