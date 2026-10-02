@@ -124,6 +124,19 @@ actual_head=$(MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" -N -B "$MIGRATED_DB" -e \
         "${actual_head:-baseline-only}" "$expected_head" >&2
     exit 1
 }
+ITEM_VERIFY=(env ENVIRONMENT=test DB_HOST=127.0.0.1 DB_PORT="$DB_PORT" DB_USER=root
+    DB_PASSWD="$PASSWORD" DB_NAME="$MIGRATED_DB"
+    bash "$ROOT/migrations/verify_item_ownership_schema.sh")
+"${ITEM_VERIFY[@]}"
+MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$MIGRATED_DB" -e \
+    "ALTER TABLE item_current_owner DROP COLUMN equipment_slot"
+if "${ITEM_VERIFY[@]}" >/dev/null 2>&1; then
+    echo 'FAILED: current item-ownership verifier accepted a missing equipment slot' >&2
+    exit 1
+fi
+MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$MIGRATED_DB" -e \
+    "ALTER TABLE item_current_owner ADD COLUMN equipment_slot SMALLINT UNSIGNED NOT NULL DEFAULT 0"
+"${ITEM_VERIFY[@]}"
 ENVIRONMENT=test DB_HOST=127.0.0.1 DB_PORT="$DB_PORT" DB_USER=root \
     DB_PASSWD="$PASSWORD" DB_NAME="$MIGRATED_DB" \
     python3 "$ROOT/scripts/migration_runner.py" run
