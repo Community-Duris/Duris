@@ -51,7 +51,8 @@ def main():
                   pending=[fault["id"] for fault in faults])
     target = directory / "faults.json"
     atomic(target, report)
-    environment = dict(clean_environment(), DURIS_NATIVE_BUILD_JOBS="2")
+    environment = dict(clean_environment(), CXX=os.environ.get("CXX", "g++"),
+                       DURIS_NATIVE_BUILD_JOBS="2")
     # No credentials, local configuration, runtime data or artifacts are copied.
     with tempfile.TemporaryDirectory(prefix="behavioral-faults-", dir=ROOT / "bin") as temporary:
         copied = Path(temporary)
