@@ -187,6 +187,29 @@ The original receipt change was validated with:
   disposable MariaDB wrapper, including schema migration, coin SQL matrix, and
   player-load companion harness.
 
+The disconnect expansion on `master` was validated on October 2, 2026 with:
+
+- `python3 tests/async/test_currency_completion_retention.py` — 74 ASan/UBSan
+  scenarios passed across MySQL and flatfile builds.
+- `python3 tests/async/test_currency_input_queue.py` — both builds passed,
+  including retained publication, reconnect admission, and morph bank guards.
+- The coin-command, currency-transaction (10 tests), and critical-transaction
+  contract tests — passed.
+- `CURRENCY_TEST_COIN_ONLY=1 ./tests/async/run_currency_transaction_schema_mysql.sh`
+  — passed using a disposable MariaDB 10.11 server. The fixture now explicitly
+  removes the materialized legacy coin row before simulating a missing projection,
+  rather than accidentally creating duplicate physical rows.
+- `make -C src -j2` in the existing Docker build toolchain — passed.
+- `./scripts/format.sh --check --file ...` for every changed C/C++ file and
+  `git diff --check` — passed. Explicit files avoid Windows executable-mode noise
+  in WSL's Git comparison.
+
+On `master`, the default SQL wrapper completed the coin matrix, then failed its
+unchanged player-loader companion at the invalid trophy expectation (request 811): that test
+expects `component_failure` while the loader returns a degraded load. The focused
+coin selector leaves the default companion enabled and avoids changing unrelated
+loader behavior or fixtures in this fix. No live game database was used.
+
 ### Accounting compatibility qualification (October 2, 2026)
 
 The accounting branch additionally verifies schema-version-2 terminal receipts and
@@ -219,9 +242,18 @@ The compatibility preparation passed:
 - `make -C src -j2` in the existing Docker build toolchain, formatting checks for
   every touched C/C++ file, and `git diff --check`.
 
-These accounting-specific adjustments are prepared to accompany the branch's next
-merge from `master`; this qualification did not update the remote accounting branch.
-No live game database was used.
+The accounting merge incorporates `master` commit `4f9f41dd7` together with these
+compatibility changes. The server build, 106 sanitizer scenarios, input-queue
+configurations, flatfile coin journey, native accounting refusal test, coin and
+critical command contracts, and disposable SQL matrix passed on the integrated
+tree. The missing legacy projection case from `master` explicitly removes the
+synthetic row before reload and inserts one stale projection afterward.
+
+The writer inventory now classifies the four retained-bank assignments as live
+projections and refreshes existing source locations. Accounting contract validation,
+the five affected writer-coverage checks, and the generated-report freshness check
+pass, with no unmapped lexical sites. These checks do not change the broader
+accounting release status. No live game database was used.
 
 ## Historical evidence and limits
 

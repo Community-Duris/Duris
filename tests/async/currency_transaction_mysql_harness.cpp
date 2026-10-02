@@ -1259,11 +1259,12 @@ void coin_failure_matrix()
 	assert(scalar("SELECT COUNT(*) FROM critical_operation_inbox i WHERE status=1 "
 		      "AND NOT EXISTS (SELECT 1 FROM critical_outbox o WHERE o.operation_id=i.operation_id)") ==
 	       0);
-	// A crash before the inventory snapshot leaves no player_items coin row.
+	// Simulate a missing legacy inventory projection. Custody still owns the pile.
+	execute("DELETE FROM player_items WHERE pid=" + pid_text + " AND obj_uid=900000002");
 	verify_reload(900, 100);
 	// A later stale projection must not replace the committed amount or metadata.
-	execute("UPDATE player_items SET value0=1,name='stale coins',item_type=20 WHERE pid=" +
-		pid_text + " AND obj_uid=900000002");
+	execute("INSERT INTO player_items(pid,vnum,obj_uid,container_id,value0,name,item_type) VALUES(" +
+		pid_text + ",402013,900000002," + std::to_string(bag_row) + ",1,'stale coins',20)");
 	assert(scalar("SELECT COUNT(*) FROM player_items WHERE pid=" + pid_text +
 		      " AND obj_uid=900000002") == 1);
 
