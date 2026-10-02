@@ -557,6 +557,16 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False, recipe
                 client.send(f'{discipline} make 30101')
                 if recipe_fault:
                     client.expect('Your requirements have been reserved', timeout=30)
+                    if recipe_fault in ('disconnect', 'crash-before-commit'):
+                        # Execution starts only after journal admission is durable.
+                        # Wait for this fixture's executor to reach the held row;
+                        # the reservation message alone precedes the append ACK.
+                        await_value(lambda: int(sql(
+                            "SELECT COUNT(*) FROM information_schema.innodb_trx t "
+                            "JOIN information_schema.processlist p ON p.ID=t.trx_mysql_thread_id "
+                            "WHERE t.trx_state='LOCK WAIT' AND p.DB='" + database + "' "
+                            "AND t.trx_query LIKE '%item_owner_revision%'")), lambda n: n == 1,
+                            'durable craft execution blocked before native commit')
                     if recipe_fault in ('crash-before-save', 'lost-ack'):
                         await_value(lambda: int(sql('SELECT COUNT(*) FROM player_craft_progression '
                             'WHERE pid=1 AND applied_revision=0')), lambda n: n == 1,
