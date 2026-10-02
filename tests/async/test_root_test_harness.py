@@ -51,54 +51,10 @@ assert runner_spec is not None and runner_spec.loader is not None
 runner = importlib.util.module_from_spec(runner_spec)
 sys.modules[runner_spec.name] = runner
 runner_spec.loader.exec_module(runner)
-expected_resource_intensive = {
-    "test_player_quarantine_restore.py",
-    "test_static_quest_reward_journey.py",
-    "test_account_recovery_journey.py",
-    "test_creation_prompt_journey.py",
-    "test_game_loop_session_journey.py",
-    "test_area_coin_pickup.py",
-    "test_flatfile_auction_coin_put_journey.py",
-    "test_flatfile_boot_preflight.py",
-    "test_flatfile_chaos_new_character_kit.py",
-    "test_flatfile_combat_journey.py",
-    "test_flatfile_newbie_regrant_journey.py",
-    "test_flatfile_first_session_currency.py",
-    "test_flatfile_full_world_boot.py",
-    "test_item_movement_prompt_runtime.py",
-    "test_information_cache_journey.py",
-    "test_mysql_combat_journey.py",
-}
-assert runner.RESOURCE_INTENSIVE_TEST_NAMES == expected_resource_intensive
-assert runner.MANUAL_ONLY_TEST_NAMES == {
-    "test_player_save_journal_quarantine.py",
-    "test_staging_migration_fork_mysql.py",
-    "test_quest_recovery_read_budget_mysql.py",
-    "test_economic_accounting_schema_mysql.py",
-    "test_economic_baseline_schema_mysql.py",
-    "test_economic_accounting_item_reference_mysql.py",
-    "test_player_save_item_reconcile_mysql.py",
-    "test_player_spell_effect_receipt_mysql.py",
-    "test_economic_sql_lifecycle_owner_contract.py",
-    "test_mob_gold_dial_runtime.py",
-    "test_mysql_playtime_journey.py",
-    "test_pet_restart_journey.py",
-    "test_playtime_mysql_repository.py",
-    "test_issue331_player_journey.py",
-    "test_issue331_staff_recovery_journey.py",
-    "test_death_resurrection_mysql_journey.py",
-    "test_pa_runtime_sql.py",
-    "test_pa_copyover_sql.py",
-    "test_pa_copyover_account_authority.py",
-    "test_pa_necromancy_sql.py",
-    "test_pa_item_creation_sql.py",
-    "test_pa_item_flags_sql.py",
-    "test_pa_atm_publication_sql.py",
-    "test_pa_coin_sql.py",
-    "test_pa_web_recovery_sql.py",
-}
+specs = runner.inventory(runner.TEST_DIRECTORY, runner.MANIFEST)
+manual_names = {spec.path.name for spec in specs if spec.manual}
 discovered = {path.name for path in runner.discover_tests(None)}
-assert not (runner.MANUAL_ONLY_TEST_NAMES & discovered)
+assert not (manual_names & discovered)
 assert {
     "test_player_playtime_capture.py", "test_playtime_checkpoint.py",
     "test_playtime_flatfile.py", "test_playtime_legacy_sql.py",
@@ -117,19 +73,6 @@ assert {
     "test_account_bank_dual_backend_baseline.py", "test_player_load_items.py",
     "test_economic_sql_lifecycle_no_mysql.py", "test_sql_pool_discard_recovery.py",
 } <= discovered, "the consolidated suite must retain every independently executed regression"
-sample_tests = [
-    Path("test_fast.py"),
-    Path("test_flatfile_combat_journey.py"),
-    Path("test_flatfile_auction_coin_put_journey.py"),
-    Path("test_account_recovery_journey.py"),
-    Path("test_mysql_combat_journey.py"),
-    Path("test_information_cache_journey.py"),
-    Path("test_creation_prompt_journey.py"),
-]
-parallel_tests, resource_intensive_tests = runner.partition_tests(sample_tests)
-assert parallel_tests == [Path("test_fast.py")]
-assert resource_intensive_tests == sample_tests[1:]
-
 editor_makefile = (ROOT / "areas" / "de" / "src" / "Makefile").read_text()
 assert re.search(r"^CXX_STANDARD\s*=\s*-std=c\+\+20$", editor_makefile, re.MULTILINE)
 for flags in ("CCFLAGS", "CFLAGS"):
@@ -200,12 +143,27 @@ class RunnerBehavior(unittest.TestCase):
         path.write_text(body)
         return path
 
+    def fixture_inventory(self):
+        entries = {}
+        for path in self.root.glob("*.py"):
+            if path.name.startswith("test_") or path.name.endswith("_test.py"):
+                entries[path.name] = {"profile": "fast", "purpose": "isolated runner fixture",
+                                      "seconds": 0 if "boot_preflight" in path.name else 1}
+        manifest = self.root / "inventory.json"
+        manifest.write_text(json.dumps({"version": 1, "tests": entries}))
+        return manifest
+
     def test_discovers_both_names_once_and_keeps_manual_fixtures_explicit(self):
         for name in ("test_one.py", "other_test.py", "test_both_test.py", "helper.py"):
             self.script(name, "")
-        manual = next(iter(runner.MANUAL_ONLY_TEST_NAMES))
+        manual = next(iter(manual_names))
         self.script(manual, "raise RuntimeError('must not execute')")
-        with patch.object(runner, "TEST_DIRECTORY", self.root):
+        manifest = self.fixture_inventory()
+        rows = json.loads(manifest.read_text())
+        rows["tests"][manual].update(manual=True, profile="database", reason="explicit fixture")
+        manifest.write_text(json.dumps(rows))
+        with (patch.object(runner, "TEST_DIRECTORY", self.root),
+              patch.object(runner, "MANIFEST", manifest)):
             self.assertEqual([p.name for p in runner.discover_tests(None)],
                              ["other_test.py", "test_both_test.py", "test_one.py"])
             self.assertEqual([p.name for p in runner.discover_tests("one")], ["test_one.py"])
@@ -306,12 +264,14 @@ class RunnerBehavior(unittest.TestCase):
         report = self.root / "result.json"
         # Use a private test directory, with the real runner and real child
         # interpreters. No mocks of execution or timing can satisfy this check.
+        manifest = self.fixture_inventory()
         command = (
             "import runpy, pathlib, sys; "
             f"r=runpy.run_path({str(RUNNER)!r}, run_name='runner_fixture'); "
             "main=r['main']; "
             f"main.__globals__['ROOT']=pathlib.Path({str(self.root)!r}); "
             f"main.__globals__['TEST_DIRECTORY']=pathlib.Path({str(self.root)!r}); "
+            f"main.__globals__['MANIFEST']=pathlib.Path({str(manifest)!r}); "
             f"sys.argv=['runner', '--jobs', '2', '--timeout', '5', '--report', {str(report)!r}]; "
             "sys.exit(main())"
         )
@@ -339,11 +299,13 @@ class RunnerBehavior(unittest.TestCase):
         self.script("test_flatfile_boot_preflight.py", "from pathlib import Path\n"
                     f"Path({str(queued_marker)!r}).write_text('serialized test must not start')\n")
         report = self.root / "interrupted.json"
+        manifest = self.fixture_inventory()
         command = (
             "import runpy, pathlib, sys; "
             f"r=runpy.run_path({str(RUNNER)!r}, run_name='runner_fixture'); main=r['main']; "
             f"main.__globals__['ROOT']=pathlib.Path({str(self.root)!r}); "
             f"main.__globals__['TEST_DIRECTORY']=pathlib.Path({str(self.root)!r}); "
+            f"main.__globals__['MANIFEST']=pathlib.Path({str(manifest)!r}); "
             f"sys.argv=['runner', '--jobs', '1', '--timeout', '30', '--report', {str(report)!r}]; "
             "sys.exit(main())"
         )
@@ -371,6 +333,98 @@ class RunnerBehavior(unittest.TestCase):
                     os.killpg(int(marker.read_text()), signal.SIGKILL)
                 except ProcessLookupError:
                     pass
+
+
+    def test_rejects_unclassified_entries_and_stale_inventory(self):
+        self.script("test_one.py", "assert True")
+        manifest = self.fixture_inventory()
+        self.script("test_omitted.py", "assert True")
+        with self.assertRaisesRegex(ValueError, "unclassified: test_omitted.py"):
+            runner.inventory(self.root, manifest)
+        manifest = self.fixture_inventory()
+        (self.root / "test_one.py").unlink()
+        with self.assertRaisesRegex(ValueError, "missing files: test_one.py"):
+            runner.inventory(self.root, manifest)
+
+    def test_zero_unittest_or_disconnected_function_entrypoint_cannot_pass(self):
+        fixtures = {
+            "empty_unit.py": "import unittest\nclass Checks(unittest.TestCase):\n def test_real(self): assert False\n",
+            "empty_main.py": "def main():\n raise AssertionError('must execute')\n",
+            "omitted_function.py": "def test_real():\n raise AssertionError('must execute')\n",
+            "ignored_unit_failure.py": "import unittest\nclass Checks(unittest.TestCase):\n"
+                                       " def test_real(self): assert False\nunittest.main(exit=False)\n",
+        }
+        for name, body in fixtures.items():
+            with self.subTest(name=name):
+                result = runner.run_test(self.script(name, body), timeout=5)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("case execution contract failed", result.output)
+
+    def test_named_case_results_and_junit_preserve_failure_and_partial_skip(self):
+        path = self.script("unit.py", "import unittest\n"
+                           "class Cases(unittest.TestCase):\n"
+                           " def test_pass(self): self.assertTrue(True)\n"
+                           " def test_skip(self): self.skipTest('explicit fixture')\n"
+                           " def test_failure(self): self.assertEqual(1, 2)\n"
+                           "if __name__ == '__main__': unittest.main()\n")
+        result = runner.run_test(path, timeout=5)
+        outcomes = {row["id"].split("::")[-1]: row["status"] for row in result.cases}
+        self.assertEqual(outcomes, {"Cases.test_pass": "passed", "Cases.test_skip": "skipped",
+                                    "Cases.test_failure": "failed"})
+        xml = self.root / "cases.xml"
+        runner.write_junit(xml, [result])
+        document = runner.ET.parse(xml).getroot()
+        self.assertEqual(document.attrib["failures"], "1")
+        self.assertEqual(document.attrib["skipped"], "1")
+
+    def timed_script(self, name, pause):
+        begin, end = self.root / (name + ".begin"), self.root / (name + ".end")
+        path = self.script("test_" + name + ".py", "from pathlib import Path\nimport time\n"
+                           f"Path({str(begin)!r}).write_text(str(time.monotonic()))\n"
+                           f"time.sleep({pause})\n"
+                           f"Path({str(end)!r}).write_text(str(time.monotonic()))\n")
+        return path, begin, end
+
+    def test_resource_scheduler_overlaps_light_work_and_bounds_heavy_work(self):
+        a = self.timed_script("heavy_a", 0.3)
+        b = self.timed_script("heavy_b", 0.1)
+        light = self.timed_script("light", 0.05)
+        specs = [runner.TestSpec(a[0], cpu=2, memory_mb=768, seconds=3),
+                 runner.TestSpec(b[0], cpu=2, memory_mb=768, seconds=2),
+                 runner.TestSpec(light[0], cpu=1, memory_mb=256, seconds=1)]
+        results = []
+        runner.schedule(specs, 3, 3, 1024, threading.Event(), results.append)
+        self.assertTrue(all(row.returncode == 0 for row in results))
+        self.assertLess(float(light[1].read_text()), float(a[2].read_text()))
+        self.assertGreaterEqual(float(b[1].read_text()), float(a[2].read_text()))
+
+    def test_resource_locks_and_duration_history_control_actual_start_order(self):
+        a = self.timed_script("first", 0.1)
+        b = self.timed_script("second", 0.2)
+        light = self.timed_script("independent", 0.05)
+        specs = [runner.TestSpec(a[0], locks=("exclusive-fixture",)),
+                 runner.TestSpec(b[0], locks=("exclusive-fixture",)),
+                 runner.TestSpec(light[0])]
+        estimates = {runner.relative(a[0]): 1, runner.relative(b[0]): 10,
+                     runner.relative(light[0]): 0.1}
+        results = []
+        runner.schedule(specs, 3, 4, 4096, threading.Event(), results.append, durations=estimates)
+        self.assertLess(float(light[1].read_text()), float(b[2].read_text()))
+        self.assertGreaterEqual(float(a[1].read_text()), float(b[2].read_text()))
+        self.assertEqual(len(results), 3)
+
+    def test_required_integration_profile_rejects_a_successful_skip(self):
+        path = self.script("test_db.py", "print('SKIP: explicitly disposable fixture required')")
+        manifest = self.fixture_inventory()
+        row = json.loads(manifest.read_text())
+        row["tests"][path.name]["profile"] = "database"
+        manifest.write_text(json.dumps(row))
+        report = self.root / "database.json"
+        with (patch.object(runner, "ROOT", self.root), patch.object(runner, "TEST_DIRECTORY", self.root),
+              patch.object(runner, "MANIFEST", manifest), patch.object(sys, "argv", [
+                  "runner", "--profile", "database", "--report", str(report)])):
+            self.assertEqual(runner.main(), 1)
+        self.assertEqual(json.loads(report.read_text())["results"][0]["status"], "skipped")
 
 
 if __name__ == "__main__":

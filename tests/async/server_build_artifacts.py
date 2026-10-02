@@ -23,6 +23,7 @@ IGNORED_ENV = {
     "DURIS_FULL_WORLD_REPEATS", "DURIS_FULL_WORLD_DELAY_CAMP",
     "DURIS_FULL_WORLD_CRASH_PHASE", "DURIS_NEVENT_ANALYTICS",
     "DURIS_NEVENT_TRACE_PLAYER",
+    "DURIS_NATIVE_BUILD_JOBS",
 }
 
 
@@ -74,7 +75,7 @@ def compiler_configuration(environment):
     return "\n".join(values)
 
 
-def toolchain_key(environment):
+def toolchain_key(environment, *, configuration=None, working_directory=None):
     """Fingerprint installed compiler, headers and link libraries by content."""
     digest = hashlib.sha256()
 
@@ -82,9 +83,9 @@ def toolchain_key(environment):
         digest.update(json.dumps(value, sort_keys=True).encode() + b"\0")
 
     def source_path(value):
-        return (ROOT / "src" / value).resolve()
+        return ((working_directory or ROOT / "src") / value).resolve()
 
-    configuration = compiler_configuration(environment)
+    configuration = configuration or compiler_configuration(environment)
     lines = configuration.splitlines()
     compiler = shlex.split(lines[0])
     for command in sorted({compiler[0], "g++", "make", "ld", "as"}):
