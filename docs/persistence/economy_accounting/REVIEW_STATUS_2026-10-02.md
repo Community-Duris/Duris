@@ -843,3 +843,41 @@ Logs: `tmp/backup-money-revision-red.local.log`,
 This closes a bounded native money-history restore omission. Captured-clone,
 full-world player recovery, full accounting, erasure propagation, remote custody
 and measured workload remain separate open gates; release remains BLOCKED.
+
+## Diagnostics integration and writer-location continuity
+
+Canonical experimental-accounting advanced from `8140dbd70` to `4fffb0748`
+while the native money-history restore fix was being published. The local fix
+rebased cleanly and was pushed as `820607ce5`, with canonical GitHub SHA
+readback. The upstream persistence diagnostics changes are preserved; native
+source is now `5d6cf93e958abab2f9c32d4c9c86159a6808dc7f`. Previous `2fa0d98...`
+native build/journey evidence remains attached to its original source.
+
+The matrix --check reproduced stale generation and three unmapped sites.
+Direct source review confirms they are the existing staff world-info temporary
+object preview and death snapshot quarantine SQL update, shifted by diagnostics
+code. Their classifications and refusal boundaries are unchanged. The registry
+census and site locations now name the integrated upstream source; regenerated
+coverage remains 864 routes, 2,815 occurrences, 2,756 unique sites, zero unmapped,
+coverage_complete=False and release BLOCKED. All 52 writer contracts pass.
+This repairs inventory drift without qualifying additional runtime writers.
+
+The exact frozen `8c997b00d` broad run finished: 828 passed, 11 skipped and two
+failed among 841 automatic tests in 7,160.80 seconds. The failed writer-location
+and supported-help-build contracts are the same stale assertions subsequently
+repaired with focused passes. Strict SQL/editor/world builds and the admitted
+real journeys passed. Its final report is
+`tmp/integrated-8c997b00d-results.local.json`; do not relabel this failed frozen
+run as current-head qualification. External service and manual gates remain.
+
+At publication of this inventory repair, integrated diagnostics/save/journal
+focused checks and backup policy/socket tests pass. The strict production SQL
+build passes (SHA-256 `3ed76722665a7025d07d5ea4353fb1a57dfc31d6daef1d5d1830014c41468601`);
+flatfile compilation is still running and fresh native recovery remains pending.
+The standalone doctor suite's SQL case was explicitly skipped in the focused
+run. A separate invocation passes all ten cases, including native read-only
+custody capture without authority changes, on both engines after canonical
+bootstrap and all 53 migrations. Its first attempt omitted migration 0038's
+item equipment-slot prerequisite; it passes with the fully migrated schema.
+Log: `tmp/diagnostics-doctor-dual-sql-green.local.log`. Earlier native proofs and these
+component results do not close R1-R8 or the full qualification gate.

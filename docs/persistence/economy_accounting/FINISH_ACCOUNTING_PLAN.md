@@ -63,7 +63,9 @@ assignments still match the classified registry; their expected locations in
 the test now match the boot-integration source, and all 52 writer contracts
 pass. The help-build contract now checks the documented flatfile make target
 and compiler define and passes its focused check. This remains
-a failed full run plus a focused repair; the frozen `8c997b00d` run continues.
+a failed full run plus a focused repair. The frozen `8c997b00d` run also
+finished: 828 passed, 11 skipped and the same two stale source-contract tests
+failed in 7,160.80 seconds. Later focused repairs remain separate evidence.
 
 The frozen candidate `fbd9f5035` completed `make test-all`: 822 passed, 11
 skipped and one live Redis fixture failed because its Unix socket path exceeded
@@ -75,7 +77,10 @@ integrated run and skipped external-service checks remain qualification gates.
 The skipped help-import fixture now honors a validated disposable connection;
 its rollback, atomic publication and nontransactional refusal test passes on
 both SQL engines. The 79540e65d run completed with the failure totals above; later fixture fixes
-retain separate focused evidence.
+retain separate focused evidence. The later diagnostics merge `4fffb0748`
+moved three existing census sites; the registry and generated matrix now retain
+the same 864 routes and 2,756 unique sites, zero unmapped, with all 52 writer
+contracts passing. This inventory refresh does not qualify those routes.
 The optional native item-provenance fixture now links and honors terminal
 source-reuse refusal; its full transaction/replay/epoch/concurrency probe passes
 on both engines. Native load/recovery and telemetry schema/factory checks also
