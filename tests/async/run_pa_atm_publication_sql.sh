@@ -50,7 +50,7 @@ if docker container inspect "$NAME" >/dev/null 2>&1; then
 fi
 
 if [[ "$IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PASSWORD_ENV=MYSQL_ROOT_PASSWORD; fi
-export MYSQL_ROOT_PASSWORD="$PASSWORD"
+export "$PASSWORD_ENV=$PASSWORD"
 docker run -d --name "$NAME" --cpus=2 --memory=2g --memory-swap=2g \
     -p 127.0.0.1::3306 -e "$PASSWORD_ENV" "$IMAGE" >/dev/null
 mapping="$(docker port "$NAME" 3306/tcp)"

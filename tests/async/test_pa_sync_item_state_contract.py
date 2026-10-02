@@ -80,7 +80,7 @@ class SyncItemStateSourceContract(unittest.TestCase):
             "migrations/immutable/0035_player_item_dynamic_state.sh",
         ):
             self.assertIn(required_source, fixture)
-        self.assertIn('MARIADB_IMAGE = "mariadb:10.11"', fixture)
+        self.assertIn('os.environ.get("DURIS_TEST_DB_IMAGE", "mariadb:10.11")', fixture)
         self.assertIn("c14_sync_item_state_test_", fixture)
         self.assertIn('"--pull=never"', fixture)
         self.assertIn("mariadb", fixture)

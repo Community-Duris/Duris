@@ -18,6 +18,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <map>
 #include <string>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -883,11 +884,179 @@ static void coin_matrix(const fs::path &path, int coin_vnum)
 		<< "flatfile coin atomic conversion, interrupted commit, replay, rejection, merge and retirement passed\n";
 }
 
+// CUSTODY-HISTORY: expected owner, parent and revisions come from this small
+// independent history, never from a repository result used to build the oracle.
+static void custody_history(const fs::path &root)
+{
+	fs::create_directories(root / "domains");
+	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(root / "domains", fs::perms::owner_all, fs::perm_options::replace);
+	require(flatfile_item_repository_apply(root.string(), creation(180)).outcome ==
+			critical_apply_outcome::applied,
+		"custody history creation");
+	std::map<uint64_t, uint64_t> owner_revision = { { 42, 1 }, { 77, 0 } };
+	std::map<uint64_t, uint64_t> item_revision = { { 100, 1 }, { 101, 1 } };
+	uint64_t owner = 42;
+	bool attached = true;
+	std::vector<critical_command> history;
+	auto catalog_bytes = [&]
+	{
+		std::ifstream input(root / "domains/item_ownership", std::ios::binary);
+		return std::string(std::istreambuf_iterator<char>(input), {});
+	};
+	auto verify = [&]
+	{
+		std::string error;
+		unsigned live = 0;
+		for (uint64_t pid : { 42, 77 })
+		{
+			uint64_t revision = 0;
+			std::vector<flatfile_item_ownership_record> rows;
+			const auto status = flatfile_item_repository_load_owner(
+				root.string(), { item_owner_type::player, pid, 0 }, &revision,
+				&rows, &error);
+			if (owner_revision[pid] == 0)
+			{
+				require(status == flatfile_item_repository_result::not_found,
+					"unexpected owner");
+				continue;
+			}
+			require(status == flatfile_item_repository_result::ok &&
+					revision == owner_revision[pid],
+				"custody history owner revision: " + error);
+			require(rows.size() == size_t(pid == owner ? 2 : 0),
+				"two owners or missing live UID");
+			for (const auto &row : rows)
+			{
+				++live;
+				require((row.item_uid == 100 || row.item_uid == 101) &&
+						row.owner.id == owner &&
+						row.state == item_custody_state::active &&
+						row.item_revision == item_revision[row.item_uid] &&
+						row.parent_item_uid ==
+							(row.item_uid == 101 && attached ? 100 :
+											   0) &&
+						row.root_item_uid ==
+							(row.item_uid == 101 && !attached ? 101 :
+											    100),
+					"custody history UID topology/model disagreement");
+			}
+		}
+		require(live == 2, "live UID cardinality");
+	};
+	verify();
+	for (unsigned step = 0; step < 12; ++step)
+	{
+		const bool handoff = step % 3 == 2;
+		item_transfer_payload payload = {};
+		payload.from_owner = { item_owner_type::player, owner, 0 };
+		payload.to_owner = { item_owner_type::player,
+				     handoff ? (owner == 42 ? 77u : 42u) : owner, 0 };
+		payload.reason = handoff  ? item_transfer_reason::player_give :
+				 attached ? item_transfer_reason::player_get :
+					    item_transfer_reason::player_put;
+		payload.reason_id = step + 1;
+		payload.expected_from_revision = owner_revision[owner];
+		payload.expected_to_revision = owner_revision[payload.to_owner.id];
+		payload.selected_item_uid = handoff ? 100 : 101;
+		payload.target_root_item_uid = handoff || !attached ? 100 : 101;
+		payload.target_parent_item_uid = !handoff && !attached ? 100 : 0;
+		payload.expected_target_parent_revision =
+			payload.target_parent_item_uid ? item_revision[100] : 0;
+		payload.item_count = handoff ? 2 : 1;
+		std::vector<player_item_snapshot> items = movement_items();
+		if (!handoff)
+		{
+			items.erase(items.begin());
+			items.front().parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		}
+		for (size_t index = 0; index < items.size(); ++index)
+		{
+			const auto uid = items[index].object_uid;
+			payload.items[index] = { uid,
+						 uid == 101 && !attached ? 101u : 100u,
+						 uid == 101 && attached ? 100u : 0u,
+						 item_revision[uid],
+						 items[index].vnum,
+						 item_custody_state::active };
+		}
+		std::vector<uint8_t> bytes;
+		require(player_item_snapshot_list_encode(items, &bytes) ==
+				player_snapshot_codec_result::ok,
+			"custody history snapshot codec");
+		payload.item_blob_size = bytes.size();
+		std::copy(bytes.begin(), bytes.end(), payload.item_blob.begin());
+		critical_command command = {};
+		require(item_transfer_command_build(&command, operation(181 + step), payload,
+						    critical_source_site::command,
+						    critical_deadline_class::interactive),
+			"custody history command");
+		command.accepted_at_usec = step + 1;
+		std::cout << "CUSTODY-HISTORY step=" << step << " owner=" << owner
+			  << " handoff=" << handoff << " attached=" << attached << std::endl;
+		if (step % 4 == 0)
+		{
+			const auto before = catalog_bytes();
+			setenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT", "1", 1);
+			require(flatfile_item_repository_apply(root.string(), command).outcome ==
+					critical_apply_outcome::retryable_failure,
+				"failed publication acknowledged");
+			unsetenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT");
+			require(catalog_bytes() == before, "failed publication changed custody");
+			verify();
+		}
+		if (step == 7)
+		{
+			const pid_t child = fork();
+			require(child >= 0, "custody history restart fork");
+			if (!child)
+			{
+				setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1",
+				       1);
+				_exit(flatfile_item_repository_apply(root.string(), command)
+							      .outcome ==
+						      critical_apply_outcome::retryable_failure ?
+					      0 :
+					      1);
+			}
+			int status = 0;
+			require(waitpid(child, &status, 0) == child && WIFEXITED(status) &&
+					WEXITSTATUS(status) == 0,
+				"custody history interruption failed");
+		}
+		const auto applied = flatfile_item_repository_apply(root.string(), command);
+		require(applied.outcome == (step == 7 ? critical_apply_outcome::already_applied :
+							critical_apply_outcome::applied),
+			"custody history apply");
+		++owner_revision[owner];
+		if (handoff)
+		{
+			owner = payload.to_owner.id;
+			++owner_revision[owner];
+			++item_revision[100];
+		}
+		else
+			attached = !attached;
+		++item_revision[101];
+		verify();
+		history.push_back(command);
+		const auto before_replay = catalog_bytes();
+		for (const auto &old : history)
+			require(flatfile_item_repository_apply(root.string(), old).outcome ==
+					critical_apply_outcome::already_applied,
+				"old custody operation replay");
+		require(catalog_bytes() == before_replay, "replay rewrote custody or receipts");
+		verify();
+	}
+	std::cout << "PASS: CUSTODY-HISTORY 12 split/merge/handoff/publication/restart histories\n";
+}
+
 int main(int argc, char **argv)
 {
 	require(argc == 2, "state root argument required");
 	const fs::path root = argv[1];
 	const fs::path domains = root / "domains";
+	custody_history(root / "custody-history");
 	coin_matrix(root / "coin-matrix", VOBJ_COINS);
 	coin_matrix(root / "area-coin-matrix", 402013);
 	fs::create_directories(domains);
