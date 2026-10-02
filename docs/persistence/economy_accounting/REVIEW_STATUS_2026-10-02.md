@@ -96,3 +96,151 @@ through two cold restarts. Both engines pass those stronger assertions and the
 existing bandage custody contract passes. Accounting remains inactive in this
 journey; active-epoch evidence and interruption during consumption/publication
 remain open. It does not prove persistence of the NPC healing effect.
+
+## Independent native topology audit repair
+
+The independent reconciler previously skipped its missing-parent check when an
+item had lineage UID history or lacked a known opening origin. A current row
+and immutable history could agree on a nonexistent parent without reporting
+`orphan_item_parent`. The check now runs independently for every native direct
+parent edge, including retained tombstones, before ancestor cycle/root checks.
+It reports the offending child once even when descendants traverse that edge.
+
+New regressions reproduce five failures before repair and all 41 reconciler
+tests pass afterward. They cover history-scoped and ordinary UIDs, missing and
+known origins, nested valid custody, missing ancestors, and tombstones. An
+actual SQL corruption probe also reproduces the omission on disposable
+MariaDB before repair. The complete read-only snapshot probe passes after repair
+on MariaDB 10.11.14 and MySQL 8.0.46: consistent current/history rows with an
+absent parent report the orphan, and restoring those fixture rows returns the
+original exception set. Existing SELECT-only reader, consistent-cut, CLI,
+mapping, source, and ledger corruption checks also pass.
+
+This fixes an R7 diagnostic gap. The SQL exporter still marks its output
+`complete=false`; source/origin completeness, gameplay writers, integrated
+recovery, and release qualification remain open. Native gameplay behavior and
+accounting activation are unchanged.
+
+## Independent UID lifetime audit repair
+
+Lineage UID history previously checked revision continuity and final native
+state but bypassed the epoch-local creation checks. A second creation of an
+already-created UID, a missing first creation, or a malformed creation origin
+could escape the lifetime audit. Tombstoned UIDs could also become live again
+without a dedicated lifetime exception. A shared read-only lifetime check now
+validates creation origins, requires creation evidence for new UIDs, reports
+duplicate creation, and reports `resurrected_item_uid` when retained retirement
+is followed by a live state. Both lineage and epoch-local histories use it.
+Normal creation, movement, retirement, and baseline-live movement remain valid.
+
+Five new negative cases fail before repair; all 47 reconciler tests and six
+opening-origin tests pass afterward. The disposable MariaDB SQL probe also
+reproduces acceptance of a duplicate creation before repair despite consistent
+roots, references, revisions, and native state. The expanded read-only SQL
+snapshot probe passes on MariaDB 10.11.14 and MySQL 8.0.46: duplicate creation
+reports `duplicate_uid`, valid creation followed by destruction adds no
+exception, revival by a later move reports `resurrected_item_uid`, and fixture
+restoration returns the original exception set. Earlier snapshot corruption,
+consistent-cut, and SELECT-only-reader checks continue to pass.
+
+This strengthens R4/R7 audit diagnostics without changing native writers,
+inactive accounting, production data, or activation gates. SQL snapshots remain
+explicitly incomplete and do not qualify gameplay or crash recovery.
+
+## Bounded native topology reconciliation
+
+The native topology audit previously walked the full ancestry of every item,
+performing quadratic work on deep or corrupt cuts. A 1,200-node regression
+requires 721,799 native lookups before repair and fails a 24,000-lookup budget.
+The audit now resolves each direct edge, terminal root, missing ancestor and
+cycle once using an iterative memoized traversal, with linear graph work and
+no recursive stack growth. It retains live edge/root mismatch diagnostics,
+tombstone cycle checks, and one orphan diagnostic per missing direct edge.
+
+All 49 reconciler tests pass. The work budget passes for a 1,200-node valid
+chain, closed cycle and missing-ancestor chain; explicit small-graph cases
+cover self-cycles, shared ancestors, incorrect roots, conflicting edges and
+mixed live/tombstone cycles. The expanded SELECT-only SQL probe also passes
+on MySQL 8.0.46 and MariaDB 10.11.14 with 1,200 additional native nested rows:
+their unknown origins remain reported, and closing the chain into a cycle
+adds exactly 1,200 cycle exceptions. Removing these owned fixture rows restores
+the original exception set. Earlier lifetime/orphan/source/mapping checks pass.
+This bounds graph work in an R7 component; it does not establish full operator
+latency, storage budgets, workload qualification or accounting completion.
+
+## Integrated candidate qualification in progress
+
+The complete archived tree of candidate `fbd9f503581cd61369bf7100476ea66e1b3722d4`
+matches Git tree `6e0e63d777abc06d2e8350f784ae74247e15594c` in a separate disposable
+checkout. Its source tree is `c8804d6bc84b2f779c43030c5986fe92ceb0a245`, test tree
+`7fbff73ca6a8ca9edf49b9fe310fad63d8ef4a47`, and script tree
+`6904c98e6284fec4946576af11d33a72af6b4359`. The first archive was rejected before
+testing because Windows checkout conversion changed its bytes; archiving with
+that conversion disabled fixes the provenance check.
+
+The strict production SQL server builds successfully, with executable SHA-256
+`34f0302d01deefa1f953c841e15b7250857004988135f556b92a12997f7adf04`.
+The area editor and world generators also build. Missing ncurses development
+headers initially stopped the editor target; extracting the matching Ubuntu
+development package into the disposable qualification directory resolves it
+without modifying host packages. `make test-all` has resumed and is running
+834 automatic regressions with two workers; 25 manual probes are separate.
+No broad passing result is claimed while that run is unfinished. The bounded
+topology repair above occurred after this freeze and has separate focused
+evidence; this run must not be labeled an uninterrupted full run of later heads.
+
+## Disposable SQL journey port routing
+
+The playtime journey previously ignored `TEST_DB_PORT`, hardcoding the native
+server connection to 3306 and omitting a port from its SQL client. It now validates
+a bounded ASCII TCP port before the first connection and sends the same explicit
+port to both clients. Three connection-free regressions pass, covering custom
+and default routing plus invalid-port refusal. They failed before repair without
+opening a connection. The actual native repository probe now connects to the
+owned MariaDB instance on 34667, but its first item save fails with foreign-key
+error 1452: temporary item projections cannot satisfy the migrated permanent
+runtime-state table. The repair and bounded qualification below close that
+fixture blocker; full accounting qualification remains open.
+
+## Migrated SQL save/recovery journey fixture repair
+
+The playtime repository probe now uses the real migrated tables, with their
+runtime-state and custody foreign keys intact. It refuses targets outside the
+fresh loopback journey namespace, checks synthetic PID/UID collisions before
+insertion, and deletes only its own rows in foreign-key order. Three scope tests
+pass, including refusal before compilation or connection. The native SQL probe
+passes status saves, duplicate acknowledgements, stale revisions, rollback-safe
+missing-custody refusal, inline coin omission, and retained runtime-state rows.
+
+The complete `test_mysql_playtime_journey.py --server <qualified SQL executable>`
+run passes on disposable MySQL 8.0.46 and MariaDB 10.11.14. It exercises real
+elapsed, quiet and repeated saves, link-loss reconnect, quit/restart without
+offline credit, death/reload, process kill and journal recovery, and live
+copyover. The following native item-reconciliation and exact spell/quest-XP
+receipt probes also pass on both engines. The executable is the frozen candidate
+artifact above, SHA-256 `34f0302d01deefa1f953c841e15b7250857004988135f556b92a12997f7adf04`;
+the fixture repairs affect tests only and the production source tree remains
+`c8804d6bc84b2f779c43030c5986fe92ceb0a245`.
+
+This qualifies these inactive-accounting save/recovery routes with synthetic
+characters on an actual native server and database. It does not qualify active
+economic roots, all item/currency routes, database interruption, full-world
+clone login, flatfile parity, or complete R1-R8 acceptance. The automatic frozen
+candidate suite remains in progress and is separate evidence.
+
+## Disposable deletion journey port routing
+
+`run_mysql_deletion_journey.py` also hardcoded port 3306 in the native connection
+and omitted the SQL client's port. It now validates `TEST_DB_PORT` before any
+connection and routes both clients explicitly. Two connection-free tests pass;
+custom/default routing and all seven invalid-port cases fail before repair
+without opening a connection. An actual MariaDB instance on the selected owned
+port passes the soft-delete and late-cleanup injected failures, retaining the
+mapping and inventory through rollback and playable reconnect.
+
+The successful retry remains RED: durable player cleanup completes but the
+server reports reconciliation because `zone_story_quest_runtime` is not ready
+under the journey's `-s` boot. Its bootstrap currently lives in mobile special-
+procedure assignment, which that option skips. This is a separate R8 lifecycle
+dependency to repair and requalify; neither successful SQL deletion nor economic
+identity/alias erasure is qualified by the port fix. No production rows changed.

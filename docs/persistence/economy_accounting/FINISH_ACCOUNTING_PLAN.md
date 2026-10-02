@@ -20,6 +20,33 @@ pinned 225-table schema on disposable MySQL 8.0.46 and MariaDB 10.11.14 targets.
 The writer inventory covers 864 routes, 2,815 occurrences and 2,756 unique sites
 with zero unmapped sites. These counts do not replace route qualification.
 
+Independent reconciliation now checks every native item's parent edge even when
+lineage history replaces its epoch-local history or its opening origin is
+missing. Corruption/recovery probes pass through the read-only SQL exporter on
+both engines. Lineage and epoch-local history also share creation and irreversible
+UID-retirement checks; memoized native topology bounds ancestor work, and 49
+reconciler tests pass. Complete native source/origin
+and writer qualification remain open. See the October 2 review status for scope.
+
+A complete `make test-all` run is in progress on frozen candidate `fbd9f5035`
+after its full archived Git tree was verified. The strict SQL server, area
+editor and world generators have built successfully. This run does not yet
+establish a passing broad regression result; the later bounded-topology repair
+has separate focused evidence in the October 2 review status.
+
+The disposable playtime journey now honors a validated `TEST_DB_PORT` in both
+native connections and SQL clients. Its outdated temporary-table probe is
+repaired to retain the migrated runtime-state foreign key. The complete native
+save/death/crash/copyover journey and item/spell/XP receipt probes now pass on
+both SQL engines using the strict frozen-candidate executable. These qualify
+the measured inactive-accounting routes, not complete economic accounting.
+
+The character-deletion journey also honors its selected disposable SQL port.
+Its native MariaDB refusal and rollback checks pass, but the successful retry
+ends in reconciliation after player deletion because `-s` skips the zone-story
+tracker's special-procedure bootstrap. That lifecycle dependency remains open;
+the port repair does not qualify successful deletion or erasure.
+
 Stopped quarantine recovery from upstream `5c157f693` is integrated with the
 review fixes. Version-2 archives retain original frames and frozen grant
 commands; native commit proofs gate resolution and later-save revalidation.

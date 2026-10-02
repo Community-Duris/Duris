@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Issue #259: real login/save/quit/restart playtime on a disposable MariaDB.
+"""Issue #259: real login/save/quit/restart playtime on disposable SQL.
 
 Requires TEST_DB_HOST=127.0.0.1, TEST_DB_USER, TEST_DB_PASSWORD and --server.
+TEST_DB_PORT optionally selects the owned disposable instance (default 3306).
 Never reads checkout .env or touches an existing schema. Only the fresh schema
-created by this invocation is dropped. Uses the existing small journey world;
-no combat or unrelated gameplay checks are run.
+created by this invocation is dropped. Uses the existing small journey world
+for save, link-loss, restart, death recovery and copyover checks.
 """
 from pathlib import Path
 import argparse
 import json
 import os
+import re
 import signal
 import shutil
 import subprocess
@@ -49,10 +51,14 @@ def reconnect_resident(port):
 def run(server):
     host = os.environ["TEST_DB_HOST"]
     assert host == "127.0.0.1", "requires a disposable loopback database"
+    port_text = os.environ.get("TEST_DB_PORT", "3306")
+    if not re.fullmatch(r"[0-9]{1,5}", port_text) or not 1 <= int(port_text) <= 65535:
+        raise RuntimeError("TEST_DB_PORT must be a TCP port from 1 to 65535")
+    port = str(int(port_text))
     database = "playtime_test_" + uuid.uuid4().hex[:12]
     environment = {
         "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
-        "ENVIRONMENT": "local", "DB_HOST": host, "DB_PORT": "3306",
+        "ENVIRONMENT": "local", "DB_HOST": host, "DB_PORT": port,
         "DB_NAME": database, "DB_USER": os.environ["TEST_DB_USER"],
         "DB_PASSWD": os.environ["TEST_DB_PASSWORD"],
         "DB_ALLOWED_TARGETS": host + "/" + database,
@@ -63,7 +69,8 @@ def run(server):
     }
     if "LD_LIBRARY_PATH" in os.environ:
         environment["LD_LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH"]
-    mysql = ["mysql", "--protocol=tcp", "-h", host, "-u", environment["DB_USER"], "-N", "-B"]
+    mysql = ["mysql", "--protocol=tcp", "-h", host, "-P", port,
+             "-u", environment["DB_USER"], "-N", "-B"]
 
     def sql(text, selected=True):
         return subprocess.check_output(mysql + ([database] if selected else []),
@@ -233,7 +240,7 @@ def run(server):
                     stop()
                     process = None
                     print(json.dumps(rows, indent=2))
-                    print("[PASS] MariaDB elapsed/quiet/repeated saves, link loss, quit/restart, death/reload, crash recovery and live copyover")
+                    print("[PASS] SQL elapsed/quiet/repeated saves, link loss, quit/restart, death/reload, crash recovery and live copyover")
                     subprocess.run(
                         ["python3", "tests/async/test_player_save_item_reconcile_mysql.py"],
                         cwd=ROOT, env=environment, check=True,
