@@ -39,6 +39,10 @@ enum class persistence_trace_stage : uint8_t
 	command_apply,
 	command_result,
 	publication_ack,
+	save_replay_apply,
+	save_replay_result,
+	save_replay_fence,
+	command_checkpoint,
 };
 
 inline const char *persistence_trace_stage_name(persistence_trace_stage stage)
@@ -73,6 +77,14 @@ inline const char *persistence_trace_stage_name(persistence_trace_stage stage)
 		return "command_result";
 	case persistence_trace_stage::publication_ack:
 		return "publication_ack";
+	case persistence_trace_stage::save_replay_apply:
+		return "save_replay_apply";
+	case persistence_trace_stage::save_replay_result:
+		return "save_replay_result";
+	case persistence_trace_stage::save_replay_fence:
+		return "save_replay_fence";
+	case persistence_trace_stage::command_checkpoint:
+		return "command_checkpoint";
 	}
 	return "unknown";
 }
@@ -178,12 +190,15 @@ inline void persistence_trace_record(persistence_trace_event event) noexcept
 	if (!event.incident)
 		return;
 	// Preserve the first witness for a failed save/operation even after the rolling
-	// history wraps. Repeated attempts cannot displace that original observation.
+	// history wraps. A timeout is a separate observation and must not suppress a
+	// later definitive failure. Repeated attempts preserve each first observation.
 	for (size_t i = 0; i < diagnostic_incident_count; ++i)
 		if (diagnostic_incidents[i].pid == event.pid &&
 		    diagnostic_incidents[i].revision == event.revision &&
 		    diagnostic_incidents[i].operation.bytes == event.operation.bytes &&
-		    diagnostic_incidents[i].request_id == event.request_id)
+		    diagnostic_incidents[i].request_id == event.request_id &&
+		    (diagnostic_incidents[i].stage == persistence_trace_stage::save_timeout) ==
+			    (event.stage == persistence_trace_stage::save_timeout))
 			return;
 	diagnostic_incidents[diagnostic_incident_head] = event;
 	diagnostic_incident_head = (diagnostic_incident_head + 1) % diagnostic_incidents.size();

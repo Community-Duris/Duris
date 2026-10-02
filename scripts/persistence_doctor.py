@@ -14,9 +14,8 @@ import subprocess
 import sys
 from collections import Counter
 
-from import_legacy_dump import (
-    LegacyImportError, preferred_mysql_ssl_arguments, process_environment, read_env_file,
-)
+from classify_item_topology import TopologyError, connection_arguments
+from import_legacy_dump import LegacyImportError, process_environment, read_env_file
 
 MAX_BYTES = 8 * 1024 * 1024
 MAX_ROWS = 8192
@@ -122,8 +121,14 @@ def capture_sql(config: dict, selected: dict) -> dict:
         raise DoctorError("database target is not explicitly allow-listed")
     if not re.fullmatch(r"[A-Za-z0-9_]+", config["DB_NAME"]):
         raise DoctorError("invalid database name")
-    command = ["mysql", "--no-defaults", "--protocol=tcp", *preferred_mysql_ssl_arguments(), "--host", config["DB_HOST"],
-               "--port", port, "--user", config["DB_USER"], "--batch", "--skip-column-names",
+    try:
+        # Keep the doctor's explicitly selected TCP target; a socket from the
+        # environment file must not override its host/port or remote TLS policy.
+        transport = connection_arguments({**config, "DB_SOCKET": ""})
+    except TopologyError as error:
+        raise DoctorError("remote SQL capture requires verified TLS and a valid CA file") from error
+    command = ["mysql", "--no-defaults", "--protocol=tcp", *transport,
+               "--user", config["DB_USER"], "--batch", "--skip-column-names",
                "--raw", "--connect-timeout=5", config["DB_NAME"]]
     completed = subprocess.run(command, input=sql_snapshot_statement(selected), text=True,
                                capture_output=True, timeout=30, env=process_environment(config))
@@ -240,7 +245,8 @@ def assess(report: dict | None, native: dict | None) -> dict:
     events = history.get("events", []) + history.get("incidents", [])
     if any(event.get("keys_truncated") for event in events):
         gaps.append("command_entity_keys_truncated")
-    failed_saves = [event for event in events if event["stage"] in ("save_result", "save_fence")
+    failed_saves = [event for event in events if event["stage"] in
+                    ("save_result", "save_fence", "save_replay_result", "save_replay_fence")
                     and (event.get("error") or event.get("outcome") in (3, 4, 5))]
     last = max(failed_saves, key=lambda event: event["sequence"], default=None)
     diagnosis = last.get("diagnosis", 0) if last else 0

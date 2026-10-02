@@ -84,6 +84,14 @@ class DoctorTest(unittest.TestCase):
         self.assertIn("native_authority_not_captured", assessment["gaps"])
         self.assertTrue(any("envelopes" in value for value in assessment["required_recovery_evidence"]))
 
+        for stage in ("save_replay_result", "save_replay_fence"):
+            fixture = report()
+            fixture["history"]["incidents"][0].update(stage=stage, sequence=2)
+            replay = doctor.assess(fixture, None)
+            self.assertEqual(replay["diagnosis"], "active_custody_absent_from_snapshot")
+            self.assertEqual(replay["last_failed_save"]["stage"], stage)
+            self.assertFalse(replay["recovery_verified"])
+
     def test_history_loss_is_explicit(self):
         fixture = report()
         fixture["history"].update(overwritten=1, dropped=1, matching_events=3)
@@ -133,13 +141,62 @@ class DoctorTest(unittest.TestCase):
         config = {"DB_HOST": "127.0.0.1", "DB_PORT": "3407", "DB_NAME": "test_diagnostic",
                   "DB_USER": "test", "DB_PASSWD": "secret", "DB_ALLOWED_TARGETS": "127.0.0.1/test_diagnostic"}
         failed = subprocess.CompletedProcess([], 1, "", "ERROR 1146: secret private sql")
-        with patch.object(doctor, "preferred_mysql_ssl_arguments", return_value=()), \
+        with patch("classify_item_topology.preferred_mysql_ssl_arguments", return_value=()), \
                 patch.object(doctor.subprocess, "run", return_value=failed) as run:
             with self.assertRaisesRegex(doctor.DoctorError, r"code 1146") as error:
                 doctor.capture_sql(config, doctor.target("player", "9001"))
             self.assertNotIn("secret", str(error.exception))
             self.assertIn("3407", run.call_args.args[0])
             self.assertNotIn("secret", run.call_args.args[0])
+
+    def test_remote_capture_verifies_tls_for_mysql_and_mariadb(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ca = Path(directory) / "ca.pem"
+            ca.write_text("fixture CA; no connection is made")
+            config = {"DB_HOST": "db.example.invalid", "DB_PORT": "3407", "DB_NAME": "test_diagnostic",
+                      "DB_USER": "test", "DB_PASSWD": "secret",
+                      "DB_ALLOWED_TARGETS": "db.example.invalid/test_diagnostic",
+                      "DB_TLS": "TRUE", "DB_SSL_CA": str(ca), "DB_SOCKET": "/ignored/socket"}
+            for help_flag, expected in (("--ssl-mode", "--ssl-mode=VERIFY_IDENTITY"),
+                                        ("--ssl-verify-server-cert", "--ssl-verify-server-cert")):
+                with self.subTest(client=help_flag), patch.object(
+                        doctor.subprocess, "run", side_effect=[
+                            subprocess.CompletedProcess([], 0, help_flag, ""),
+                            subprocess.CompletedProcess([], 0, "", "")]) as run:
+                    native = doctor.capture_sql(config, doctor.target("player", "9001"))
+                    self.assertTrue(native["consistent_read"])
+                    args = run.call_args.args[0]
+                    self.assertEqual(args[:3], ["mysql", "--no-defaults", "--protocol=tcp"])
+                    self.assertIn(expected, args)
+                    self.assertIn(f"--ssl-ca={ca}", args)
+                    self.assertIn("db.example.invalid", args)
+                    self.assertIn("3407", args)
+                    self.assertNotIn("--skip-ssl", args)
+                    self.assertNotIn("--ssl-mode=PREFERRED", args)
+                    self.assertNotIn("secret", args)
+                    self.assertFalse(any("socket" in arg for arg in args))
+
+    def test_remote_capture_refuses_missing_tls_ca_or_client_support(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ca = Path(directory) / "ca.pem"
+            ca.write_text("fixture CA")
+            config = {"DB_HOST": "db.example.invalid", "DB_PORT": "3306", "DB_NAME": "test_diagnostic",
+                      "DB_USER": "test", "DB_PASSWD": "secret",
+                      "DB_ALLOWED_TARGETS": "db.example.invalid/test_diagnostic",
+                      "DB_TLS": "TRUE", "DB_SSL_CA": str(ca)}
+            for changes in ({"DB_TLS": "FALSE"}, {"DB_SSL_CA": ""},
+                            {"DB_SSL_CA": str(ca.parent / "absent.pem")}):
+                with self.subTest(changes=changes), patch.object(doctor.subprocess, "run") as run:
+                    with self.assertRaises(doctor.DoctorError) as refused:
+                        doctor.capture_sql({**config, **changes}, doctor.target("player", "9001"))
+                    run.assert_not_called()
+                    self.assertNotIn("db.example.invalid", str(refused.exception))
+                    self.assertNotIn("secret", str(refused.exception))
+            with patch.object(doctor.subprocess, "run", return_value=
+                              subprocess.CompletedProcess([], 0, "unsupported client", "")) as run:
+                with self.assertRaises(doctor.DoctorError):
+                    doctor.capture_sql(config, doctor.target("player", "9001"))
+                self.assertEqual(run.call_count, 1)  # help probe only; no SQL capture
 
     def test_owner_only_files_no_overwrite_and_cli(self):
         with tempfile.TemporaryDirectory() as directory:
