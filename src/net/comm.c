@@ -86,6 +86,7 @@
 #include "magic/spell_item_lifecycle.h"
 #include "item/enhance.h"
 #include "economy/crafting.h"
+#include "player/craft_progression_hooks.h"
 #include "account/account_recovery.h"
 #include "item/locker_identify.h"
 #include "cmd/information_cache.h"
@@ -834,6 +835,9 @@ int run_the_game(int port, int sslport)
 		fprintf(stderr, "World quest catalog unavailable; bartender quests fail closed.\n");
 	}
 	fprintf(stderr, "--  Done calculating mob level and world-quest catalog.\r\n");
+
+	// Recipe commands and receipt recovery also run in mini-mode worlds.
+	craft_progression_initialize();
 
 	if (!mini_mode)
 		initialize_tradeskills();
