@@ -342,13 +342,16 @@ fence survives reinitialization, and that a healthy unrelated PID remains usable
 This is executable preservation/refusal evidence, not a positive SQL recovery or
 an injected process crash at a replacement-commit boundary.
 
-### Proposed bounded transition — review required before implementation
+### Approved bounded transition — 2026-10-01
 
 The existing archive owner is the smallest place to retain the transition. The
 proposal extends its versioned format rather than adding a second recovery store
 or a general quarantine override. This changes persistent format and introduces
 recovery-owner interfaces, so the prepared plan and scopeguard skill require a
-concrete design review before implementation.
+concrete design review before implementation. The user approved implementation
+on 2026-10-01. The delivered native owner, archive/receipt contract, exact commands
+and qualification limits are documented in
+[PLAYER_QUARANTINE_RECOVERY.md](../PLAYER_QUARANTINE_RECOVERY.md).
 
 - **Operation environment:** one listener-free recovery operation on an isolated,
   coherent restore with the server and other writers stopped. Require selected

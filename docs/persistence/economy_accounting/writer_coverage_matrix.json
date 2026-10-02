@@ -48,7 +48,7 @@
     "current_occurrences": 2811,
     "current_unique_path_line_family_sites": 2753,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "e8ca4e4482768c95e22a83772db1d2605863708f",
+    "draft_source_commit": "3dc1f35bbf144e862104767e77fc7fb9795f81a6",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
     "draft_unique_sites": 2753,
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "e8ca4e4482768c95e22a83772db1d2605863708f",
+  "repository_head": "3dc1f35bbf144e862104767e77fc7fb9795f81a6",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -223,7 +223,7 @@
       },
       "id": "account.reward_duplicate_cleanup",
       "native_effects": {
-        "custody_effect": "Direct child item custody is moved to the duplicate root\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s prior parent or the player inventory before the exact reward root is retired; a failed promotion leaves the children and root intact.",
+        "custody_effect": "Direct child item custody is moved to the duplicate root\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s prior parent or the player inventory before the exact reward root is retired; a failed promotion leaves the children and root intact.",
         "holding_effect": "No coin balance changes.",
         "native_state_targets": [
           "direct child item UIDs and player_items parent links",
@@ -1611,7 +1611,7 @@
       },
       "id": "artifact.monolith_absorb",
       "native_effects": {
-        "custody_effect": "The periodic monolith proc adds a duplicate room monolith\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s charge count to the survivor and extracts the duplicate.",
+        "custody_effect": "The periodic monolith proc adds a duplicate room monolith\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s charge count to the survivor and extracts the duplicate.",
         "holding_effect": "No coin balance changes at these call sites.",
         "native_state_targets": [
           "surviving monolith payload",
@@ -1629,7 +1629,7 @@
         "function": "artifact_monolith",
         "original_draft_symbol": "artifact_monolith"
       },
-      "source_classification": "The periodic monolith proc adds a duplicate room monolith\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s charge count to the survivor and extracts the duplicate.",
+      "source_classification": "The periodic monolith proc adds a duplicate room monolith\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s charge count to the survivor and extracts the duplicate.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -5909,7 +5909,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4324
+          4391
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_coin_apply",
@@ -7290,7 +7290,7 @@
       },
       "id": "combat.disarm_slot_relink",
       "native_effects": {
-        "custody_effect": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s carrying list; its owner UID stays with that character.",
+        "custody_effect": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s carrying list; its owner UID stays with that character.",
         "holding_effect": "No coin balance change at these sites.",
         "native_state_targets": [
           "same-character equipment and inventory slots",
@@ -7309,7 +7309,7 @@
         "function": "do_disarm",
         "original_draft_symbol": "do_disarm"
       },
-      "source_classification": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s carrying list; its owner UID stays with that character.",
+      "source_classification": "Successful disarm or a severe fumble moves the equipped weapon into the same character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s carrying list; its owner UID stays with that character.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -8056,7 +8056,7 @@
       },
       "id": "craft.make_lock_payload",
       "native_effects": {
-        "custody_effect": "A successful make lock changes an existing container\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s lock flags/value or a door pair\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
+        "custody_effect": "A successful make lock changes an existing container\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s lock flags/value or a door pair\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
         "holding_effect": "No coin balance change at these sites.",
         "native_state_targets": [
           "live container payload or door state",
@@ -8074,7 +8074,7 @@
         "function": "make_lock",
         "original_draft_symbol": "make_lock"
       },
-      "source_classification": "A successful make lock changes an existing container\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s lock flags/value or a door pair\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
+      "source_classification": "A successful make lock changes an existing container\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s lock flags/value or a door pair\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s lock state before consuming the carried template; this payload mutation is invisible to the lexical item-call scan.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -20401,7 +20401,7 @@
         "function": "modenhance",
         "original_draft_symbol": "modenhance"
       },
-      "source_classification": "Reads and frees a fresh prototype only to rebuild the already modified source item\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s description.",
+      "source_classification": "Reads and frees a fresh prototype only to rebuild the already modified source item\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s description.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -28920,7 +28920,7 @@
       },
       "id": "movement.drag_room_relink",
       "native_effects": {
-        "custody_effect": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s new room with the same UID.",
+        "custody_effect": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s new room with the same UID.",
         "holding_effect": "No coin balance change at these call sites.",
         "native_state_targets": [
           "old and new live room contents",
@@ -28939,7 +28939,7 @@
         "function": "do_drag",
         "original_draft_symbol": "do_drag"
       },
-      "source_classification": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s new room with the same UID.",
+      "source_classification": "After executing the requested movement command, do_drag relinks a room item, including a player corpse, from its old room to the actor\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s new room with the same UID.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -30115,7 +30115,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          609
+          611
         ],
         "file": "src/player/player_load_repository.c",
         "function": "load_bank",
@@ -30344,7 +30344,7 @@
         "function": "confiscate_item",
         "original_draft_symbol": "confiscate_item"
       },
-      "source_classification": "The second confiscation branch\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
+      "source_classification": "The second confiscation branch\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s child-relocation code is inside a literal #if 0 block and cannot execute in the current build.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -30456,7 +30456,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1808
+          1809
         ],
         "file": "src/player/player_snapshot_repository.c",
         "function": "apply_death",
@@ -32615,7 +32615,7 @@
         "function": "writePet",
         "original_draft_symbol": "writePet"
       },
-      "source_classification": "Pet save\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
+      "source_classification": "Pet save\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s old extraction loop is inside a literal #if 0 block; the active path re-equips instead of destroying the pet inventory.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -38515,7 +38515,7 @@
       },
       "id": "special.disarm_pick_gloves_slot_relink",
       "native_effects": {
-        "custody_effect": "The gloves proc unequips the struck character\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s weapon into the same character\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s carrying list.",
+        "custody_effect": "The gloves proc unequips the struck character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s weapon into the same character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s carrying list.",
         "holding_effect": "No coin balance changes at these call sites.",
         "native_state_targets": [
           "victim equipment slot",
@@ -38535,7 +38535,7 @@
         "function": "disarm_pick_gloves",
         "original_draft_symbol": "disarm_pick_gloves"
       },
-      "source_classification": "The gloves proc unequips the struck character\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s weapon into the same character\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s carrying list.",
+      "source_classification": "The gloves proc unequips the struck character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s weapon into the same character\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s carrying list.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -39893,7 +39893,7 @@
       },
       "id": "special.io_assistant_rose_grant",
       "native_effects": {
-        "custody_effect": "Io\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
+        "custody_effect": "Io\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
         "holding_effect": "No coin balance changes at these call sites.",
         "native_state_targets": [
           "fresh rose UID",
@@ -39912,7 +39912,7 @@
         "function": "io_assistant",
         "original_draft_symbol": "io_assistant"
       },
-      "source_classification": "Io\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
+      "source_classification": "Io\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s assistant creates a fresh rose when Vareena enters, gives it first to itself and then calls do_give.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -42386,7 +42386,7 @@
       },
       "id": "special.treasure_chest_potion_grant",
       "native_effects": {
-        "custody_effect": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s inventory.",
+        "custody_effect": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s inventory.",
         "holding_effect": "No coin balance changes at these call sites.",
         "native_state_targets": [
           "chest UID",
@@ -42405,7 +42405,7 @@
         "function": "treasure_chest",
         "original_draft_symbol": "treasure_chest"
       },
-      "source_classification": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s inventory.",
+      "source_classification": "Opening a treasure chest creates one or more glowing potions and places them directly in the opener\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2s inventory.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -50906,7 +50906,7 @@
         "function": "sql_load_player_items",
         "original_draft_symbol": "sql_load_player_items"
       },
-      "source_classification": "Malformed rich runtime state discards only this load attempt\u2019s materialized object graph; durable player item rows remain unchanged.",
+      "source_classification": "Malformed rich runtime state discards only this load attempt\u00e2\u20ac\u2122s materialized object graph; durable player item rows remain unchanged.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     }
   ],

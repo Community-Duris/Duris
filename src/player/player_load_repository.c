@@ -338,7 +338,8 @@ bool read_load_identity(MYSQL *connection, const std::string &sql, player_load_r
 	return true;
 }
 
-bool load_status(MYSQL *connection, const player_load_request &request, player_load_result *result)
+bool load_status(MYSQL *connection, const player_load_request &request, player_load_result *result,
+		 bool recovery_inspection)
 {
 	std::ostringstream sql;
 	sql << "SELECT pid,COALESCE(account_name,(SELECT ac.account_name FROM account_characters ac "
@@ -392,7 +393,8 @@ bool load_status(MYSQL *connection, const player_load_request &request, player_l
 	result->pid = static_cast<int32_t>(signed_value(row[column++]));
 	// Name-based requests have no PID at admission; check the resolved identity
 	// before copying any player payload or loading optional components.
-	if (result->pid > 0 && player_save_journal_pid_quarantined(result->pid))
+	if (!recovery_inspection && result->pid > 0 &&
+	    player_save_journal_pid_quarantined(result->pid))
 	{
 		mysql_free_result(rows);
 		result->outcome = player_load_outcome::cancelled;
@@ -2001,8 +2003,9 @@ bool player_load_request_valid(const player_load_request &request, uint64_t now_
 	return (pid_identity || name_identity) && (!request.include_pets || request.include_items);
 }
 
-player_load_result player_load_repository_execute(MYSQL *connection,
-						  const player_load_request &request)
+static player_load_result execute_player_load(MYSQL *connection, const player_load_request &request,
+					      bool caller_transaction,
+					      bool recovery_inspection = false)
 {
 	player_load_result result = {};
 	result.request_id = request.request_id;
@@ -2010,13 +2013,6 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	result.request_account_name = request.account_name;
 	result.request_player_name = request.player_name;
 	result.death_recovery_query.kind = request.death_recovery_query.kind;
-	if (request.pid > 0 && player_save_journal_pid_quarantined(request.pid))
-	{
-		result.outcome = player_load_outcome::cancelled;
-		result.error_code = EPERM;
-		result.failed_component = "durable player-save quarantine";
-		return result;
-	}
 	const uint64_t started = persistence_observability_now_usec();
 	if (!connection || !player_load_request_valid(request, started))
 	{
@@ -2038,8 +2034,9 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	}
 	// Own the read transaction: never commit a caller's work or reuse its view.
 #ifndef __NO_MYSQL__
-	if (!(connection->server_status & SERVER_STATUS_AUTOCOMMIT) ||
-	    (connection->server_status & SERVER_STATUS_IN_TRANS))
+	if (caller_transaction ? !(connection->server_status & SERVER_STATUS_IN_TRANS) :
+				 (!(connection->server_status & SERVER_STATUS_AUTOCOMMIT) ||
+				  (connection->server_status & SERVER_STATUS_IN_TRANS)))
 	{
 		result.error_code = EBUSY;
 		result.failed_component = "snapshot_transaction";
@@ -2059,8 +2056,9 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	}
 	// Resolve names without locks, then lock only the primary key. A locking
 	// LOWER(name) scan could lock unrelated players. Revalidate this PID below.
-	if (!execute(connection, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ", &result) ||
-	    !execute(connection, "START TRANSACTION", &result))
+	if (!caller_transaction &&
+	    (!execute(connection, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ", &result) ||
+	     !execute(connection, "START TRANSACTION", &result)))
 	{
 		result.error_code = mysql_errno(connection);
 		result.outcome = failure_outcome(result.error_code);
@@ -2085,7 +2083,7 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	result.snapshot.components = request.include_pets  ? PLAYER_LOAD_SESSION03_COMPONENTS :
 				     request.include_items ? PLAYER_LOAD_SESSION02_COMPONENTS :
 							     PLAYER_LOAD_SESSION01_COMPONENTS;
-	if (!load_status(connection, request, &result))
+	if (!load_status(connection, request, &result, recovery_inspection))
 	{
 		result.failed_component = "status";
 		if (result.outcome == player_load_outcome::component_failure &&
@@ -2465,7 +2463,7 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	{
 		execute(connection, "ROLLBACK", &result);
 	}
-	else if (!execute(connection, "COMMIT", &result))
+	else if (!caller_transaction && !execute(connection, "COMMIT", &result))
 	{
 		result.error_code = mysql_errno(connection);
 		mark_degraded(&result, PLAYER_LOAD_DEGRADED_PIPELINE, "commit");
@@ -2475,4 +2473,50 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 		result.outcome = player_load_outcome::applied;
 	result.metrics.transaction_usec = persistence_observability_now_usec() - started;
 	return result;
+}
+
+player_load_result player_load_repository_execute(MYSQL *connection,
+						  const player_load_request &request)
+{
+	player_load_result result = {};
+	result.request_id = request.request_id;
+	result.pid = request.pid;
+	result.request_account_name = request.account_name;
+	result.request_player_name = request.player_name;
+	result.death_recovery_query.kind = request.death_recovery_query.kind;
+	if (request.pid > 0 && player_save_journal_pid_quarantined(request.pid))
+	{
+		result.outcome = player_load_outcome::cancelled;
+		result.error_code = EPERM;
+		result.failed_component = "durable player-save quarantine";
+		return result;
+	}
+
+	return execute_player_load(connection, request, false);
+}
+
+player_load_result
+player_load_repository_quarantine_inspect(MYSQL *connection, const player_load_request &request,
+					  const player_save_recovery_record *owner)
+{
+	std::vector<player_snapshot> frames;
+	std::array<uint8_t, 32> digest;
+	const bool prepared = owner && owner->replacement.pid == request.pid &&
+			      player_save_journal_recovery_matches(*owner);
+	if (request.pid <= 0 || !request.include_items || !request.include_pets ||
+	    !request.pending_spell_effect_operations.empty() ||
+	    !request.pending_craft_operations.empty() ||
+	    request.death_recovery_query.kind != player_death_recovery_query_kind::none ||
+	    (owner ? !prepared :
+		     player_save_journal_recovery_inspect(request.pid, &frames, &digest) !=
+			     player_save_journal_result::ok))
+	{
+		player_load_result refused = {};
+		refused.pid = request.pid;
+		refused.outcome = player_load_outcome::cancelled;
+		refused.error_code = EPERM;
+		refused.failed_component = "quarantine recovery inspection";
+		return refused;
+	}
+	return execute_player_load(connection, request, prepared, true);
 }

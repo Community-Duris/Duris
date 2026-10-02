@@ -12,15 +12,18 @@
 #include "player/player_snapshot_codec.h"
 #include "player/player_snapshot_repository.h"
 #include "player/player_load_repository.h"
+#include "player/player_quarantine_recovery.h"
 #include "persistence/persistence_observability.h"
 
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <cerrno>
+#include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <limits>
 #include <mysql.h>
 #include <span>
@@ -29,6 +32,19 @@
 #include <thread>
 #include <unistd.h>
 #include <vector>
+
+static int recovery_kill_commit = 0;
+extern "C" int __real_mysql_real_query(MYSQL *, const char *, unsigned long);
+extern "C" int __wrap_mysql_real_query(MYSQL *connection, const char *query, unsigned long size)
+{
+	const bool commit = size == 6 && !memcmp(query, "COMMIT", 6);
+	if (commit && recovery_kill_commit == 1)
+		kill(getpid(), SIGKILL);
+	const int result = __real_mysql_real_query(connection, query, size);
+	if (commit && recovery_kill_commit == 2 && !result)
+		kill(getpid(), SIGKILL);
+	return result;
+}
 
 namespace
 {
@@ -2360,6 +2376,231 @@ void check_accounted_pouch_conservation(MYSQL *connection)
 	puts("PASS: pouch rollback, stale native counters and zero-output virtual failure preserve atomicity and replay");
 }
 
+static void check_player_quarantine_recovery(MYSQL *connection)
+{
+	std::string directory = "/tmp/duris-native-sql-recovery-XXXXXX";
+	assert(mkdtemp(directory.data()));
+	for (int boundary = 0; boundary <= 2; ++boundary)
+	{
+		const int pid = 6640 + boundary;
+		const std::string journal = directory + "/case-" + std::to_string(boundary);
+		std::filesystem::create_directory(journal);
+		std::filesystem::permissions(journal, std::filesystem::perms::owner_all);
+		assert(player_save_journal_init(journal.c_str()));
+		execute(connection,
+			("INSERT INTO player_data(pid,name,account_name,save_revision,copper,wallet_revision) VALUES(" +
+			 std::to_string(pid) + ",'Recovery" + std::to_string(pid) +
+			 "','RecoveryFixture',0,11,1)")
+				.c_str());
+		const item_owner_identity system{ item_owner_type::system, 0, 0 },
+			player{ item_owner_type::player, static_cast<uint64_t>(pid), 0 };
+		owner_revision(connection, player);
+		player_load_request request;
+		request.request_id = 1;
+		request.pid = pid;
+		request.account_name = "RecoveryFixture";
+		request.deadline_usec =
+			persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+		auto baseline = player_load_repository_execute(connection, request);
+		if (baseline.outcome != player_load_outcome::applied ||
+		    baseline.degraded_components)
+			fprintf(stderr,
+				"recovery baseline refused: outcome=%u degraded=%llu component=%s error=%u\n",
+				static_cast<unsigned>(baseline.outcome),
+				static_cast<unsigned long long>(baseline.degraded_components),
+				baseline.failed_component, baseline.error_code);
+		assert(baseline.outcome == player_load_outcome::applied &&
+		       !baseline.degraded_components);
+		baseline.snapshot.revision = 1;
+		baseline.snapshot.encoded_size_bound = PLAYER_SNAPSHOT_MAX_BYTES;
+		baseline.snapshot.trophies = { { 20, 1 }, { 10, 2 } };
+		assert(player_snapshot_repository_apply(connection, baseline.snapshot).outcome ==
+		       player_save_apply_outcome::applied);
+		item_uid_allocator_reset_for_tests();
+		assert(item_uid_allocator_reserve(connection, 1));
+		const uint64_t uid = item_uid_allocator_next();
+		item_transfer_payload grant{};
+		grant.from_owner = system;
+		grant.to_owner = player;
+		grant.expected_from_revision = owner_revision(connection, system);
+		grant.expected_to_revision = owner_revision(connection, player);
+		grant.reason = item_transfer_reason::creation;
+		grant.reason_id = 664;
+		grant.selected_item_uid = grant.target_root_item_uid = uid;
+		grant.item_count = 1;
+		grant.items[0] = { uid,	 uid,
+				   0,	 ITEM_TRANSFER_ABSENT_REVISION,
+				   1001, item_custody_state::absent };
+		attach_blob(&grant, { physical_item(uid, 1001, PLAYER_SNAPSHOT_NO_PARENT) });
+		critical_operation_id id;
+		critical_command command;
+		assert(critical_operation_id_generate(&id) &&
+		       item_transfer_command_build(&command, id, grant,
+						   critical_source_site::operator_repair,
+						   critical_deadline_class::interactive));
+		command.accepted_at_usec = 1;
+		if (boundary == 2)
+		{
+			critical_operation_id creator{}, lineage{}, epoch{};
+			assert(critical_operation_id_generate(&creator) &&
+			       critical_operation_id_generate(&lineage) &&
+			       critical_operation_id_generate(&epoch));
+			execute(connection,
+				"INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,command_type,schema_version,payload_version,status,result_payload) VALUES(UNHEX('" +
+					operation_hex(creator) +
+					"'),REPEAT(CHAR(1),32),REPEAT(CHAR(2),32),1,1,1,1,X'')");
+			execute(connection,
+				"INSERT INTO economic_epoch(lineage,epoch,ordinal,predecessor,transition_kind,transition_digest,creating_operation_id) VALUES(UNHEX('" +
+					operation_hex(lineage) + "'),UNHEX('" +
+					operation_hex(epoch) +
+					"'),1,NULL,1,REPEAT(CHAR(0),32),UNHEX('" +
+					operation_hex(creator) + "'))");
+			execute(connection,
+				"INSERT INTO economic_lineage_state(lineage,active_epoch,revision) VALUES(UNHEX('" +
+					operation_hex(lineage) + "'),UNHEX('" +
+					operation_hex(epoch) + "'),0)");
+			command = accounted_item_transfer(id, grant, lineage, epoch, pid,
+							  economic_source_kind::starter_grant);
+		}
+		const auto granted = critical_command_repository_apply(connection, command);
+		assert(granted.outcome == critical_apply_outcome::applied);
+		auto stale = baseline.snapshot;
+		stale.revision = 2;
+		for (auto &field : stale.status_integers)
+			if (field.field == player_status_field::copper)
+				field.signed_value = 9999;
+		player_snapshot skills{};
+		skills.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+		skills.pid = pid;
+		skills.revision = 3;
+		skills.components = PLAYER_COMPONENT_SKILLS;
+		skills.encoded_size_bound = 8192;
+		skills.skills.push_back({ 9, 88, 1 });
+		assert(player_save_journal_append(stale) == player_save_journal_result::ok &&
+		       player_save_journal_append(skills) == player_save_journal_result::ok);
+		player_save_journal_worker_terminal(stale, nullptr);
+		assert(player_save_journal_pid_quarantined(pid));
+		player_save_recovery_record record;
+		std::string error;
+		auto wrong = command;
+		++wrong.accepted_at_usec;
+		assert(!player_quarantine_recovery_prepare_sql(connection, pid, { wrong }, "",
+							       &record, &error));
+		const bool prepared = player_quarantine_recovery_prepare_sql(
+			connection, pid, { command }, "", &record, &error);
+		if (!prepared)
+			fprintf(stderr, "native SQL prepare: %s\n", error.c_str());
+		assert(prepared);
+		item_transfer_result receipt{};
+		assert(item_transfer_command_decode_result(granted.result_payload.data(),
+							   granted.result_size, &receipt));
+		const auto native = player_load_repository_quarantine_inspect(
+			connection, player_quarantine_recovery_request(record));
+		for (int refusal = 0; refusal < 6; ++refusal)
+		{
+			auto current = native;
+			auto frames = std::vector<player_snapshot>{ stale, skills };
+			if (refusal == 0)
+				current.item_identities[0].item_revision = 2;
+			if (refusal == 1)
+				current.missing_payload_rows = 1;
+			if (refusal == 2)
+				frames[1].revision = frames[0].revision;
+			if (refusal == 3)
+				frames[0].schema_version =
+					PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
+			if (refusal == 4)
+				frames[0].items.push_back(
+					physical_item(uid + 1, 1001, PLAYER_SNAPSHOT_NO_PARENT));
+			if (refusal == 5)
+				current.snapshot.items[0].vnum += 1;
+			player_save_recovery_record rejected;
+			assert(!player_quarantine_recovery_build(
+				current, frames, { { command, receipt } }, &rejected, &error));
+		}
+		auto changed = record;
+		++changed.replacement.skills[0].learned;
+		assert(player_snapshot_repository_recovery_apply(connection, changed).error_code ==
+		       EPERM);
+		assert(!player_quarantine_recovery_resume_sql(connection, pid,
+							      "sql:wrong-generation", &error));
+		execute(connection,
+			"UPDATE player_data SET wallet_revision=wallet_revision+1 WHERE pid=" +
+				std::to_string(pid));
+		assert(!player_quarantine_recovery_resume_sql(connection, pid, "", &error) &&
+		       player_save_journal_pid_quarantined(pid));
+		execute(connection,
+			"UPDATE player_data SET wallet_revision=wallet_revision-1 WHERE pid=" +
+				std::to_string(pid));
+		assert(player_snapshot_repository_apply(connection, record.replacement).error_code ==
+		       EPERM);
+		if (boundary)
+		{
+			player_save_journal_shutdown();
+			const pid_t child = fork();
+			assert(child >= 0);
+			if (!child)
+			{
+				MYSQL *child_connection = open_pool_test_connection();
+				assert(child_connection);
+				assert(player_save_journal_init(journal.c_str()));
+				recovery_kill_commit = boundary;
+				player_quarantine_recovery_resume_sql(child_connection, pid, "",
+								      &error);
+				_exit(2);
+			}
+			int status;
+			assert(waitpid(child, &status, 0) == child && WIFSIGNALED(status) &&
+			       WTERMSIG(status) == SIGKILL);
+			assert(player_save_journal_init(journal.c_str()) &&
+			       player_save_journal_pid_quarantined(pid));
+		}
+		const bool resumed =
+			player_quarantine_recovery_resume_sql(connection, pid, "", &error);
+		if (!resumed)
+			fprintf(stderr, "native SQL resume: %s\n", error.c_str());
+		assert(resumed && !player_save_journal_pid_quarantined(pid));
+		request.deadline_usec =
+			persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+		auto recovered = player_load_repository_execute(connection, request);
+		assert(recovered.outcome == player_load_outcome::applied &&
+		       recovered.snapshot.items.size() == 1 &&
+		       recovered.snapshot.items[0].object_uid == uid &&
+		       recovered.snapshot.skills[0].learned == 88 &&
+		       recovered.domains.wallet[0] == 11);
+		assert(player_quarantine_recovery_resume_sql(connection, pid, "", &error));
+		assert(scalar(connection,
+			      ("SELECT COUNT(*) FROM item_ownership_ledger WHERE operation_id=UNHEX('" +
+			       operation_hex(id) + "')")
+				      .c_str()) == 1);
+		auto later = recovered.snapshot;
+		++later.revision;
+		later.skills[0].learned = 89;
+		assert(player_snapshot_repository_apply(connection, later).outcome ==
+		       player_save_apply_outcome::applied);
+		player_save_journal_shutdown();
+		assert(player_save_journal_init(journal.c_str()) &&
+		       player_save_journal_pid_quarantined(pid));
+		assert(player_quarantine_recovery_resume_sql(connection, pid, "", &error) &&
+		       !player_save_journal_pid_quarantined(pid));
+		player_save_journal_shutdown();
+		std::array<char, 33> recovery_id{};
+		critical_operation_id operation{ record.identity };
+		assert(critical_operation_id_to_hex(operation, recovery_id.data(),
+						    recovery_id.size()));
+		execute(connection,
+			("DELETE FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
+			 std::string(recovery_id.data()) + "')")
+				.c_str());
+		assert(player_save_journal_init(journal.c_str()));
+		assert(!player_quarantine_recovery_resume_sql(connection, pid, "", &error) &&
+		       player_save_journal_pid_quarantined(pid));
+		player_save_journal_shutdown();
+	}
+	std::filesystem::remove_all(directory);
+	puts("[PASS] native SQL quarantine recovery: retained commands, exact components/UIDs/native wallet, actual pre/post-COMMIT SIGKILL, repeat, later-save restart and missing backend proof refusal");
+}
+
 int main()
 {
 	assert(mysql_library_init(0, nullptr, nullptr) == 0);
@@ -2369,6 +2610,12 @@ int main()
 		connection, getenv("DB_HOST"), getenv("DB_USER"), getenv("DB_PASSWD"),
 		getenv("ITEM_TRANSFER_TEST_DB_NAME"),
 		static_cast<unsigned int>(strtoul(getenv("DB_PORT"), nullptr, 10)), nullptr, 0));
+	if (getenv("PLAYER_QUARANTINE_RECOVERY_TEST"))
+	{
+		check_player_quarantine_recovery(connection);
+		mysql_close(connection);
+		return 0;
+	}
 	const uint64_t baseline_epoch_count =
 		scalar(connection, "SELECT COUNT(*) FROM economic_epoch");
 	const uint64_t baseline_lineage_count =

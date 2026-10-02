@@ -108,7 +108,7 @@ class LifecycleManifestTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
         self.assertEqual(report["database_tables"], 225)
-        self.assertEqual(report["non_database_stores"], 49)
+        self.assertEqual(report["non_database_stores"], 50)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
 
@@ -214,6 +214,7 @@ class LifecycleManifestTest(unittest.TestCase):
 
     def test_coupled_player_recovery_protection_cannot_be_removed(self) -> None:
         stores = (
+            "file:player-quarantine-recovery-receipts",
             "database:player_death_disposition", "database:player_death_conflict_evidence",
             "database:player_spell_effect_receipt", "database:quest_reward_obligation",
             "database:quest_reward_xp_entitlement", "file:player-deaths",
