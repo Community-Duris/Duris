@@ -215,6 +215,12 @@ on the live filesystem is rejected, even if its pathname is different. This
 bounds compressed-dump expansion without risking the live filesystem. Mount
 provisioning belongs to the operator and is never performed by restore.
 
+For MariaDB, the encoded absolute socket pathname
+`<restore-root>/candidate-<32 hex digits>/mysql.sock` must fit Linux's 107-byte
+Unix socket limit. Use a sufficiently short restore mount path. An overlong
+candidate reports `isolated_database_socket_path_too_long` before datadir
+creation, database initialization or daemon startup.
+
 Supply independently current erasure evidence, held outside backups/candidates:
 
     {"version":1,"captured_at":<UTC epoch seconds>,
