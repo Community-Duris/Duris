@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <climits>
+#include <cmath>
 #include <new>
 #include <vector>
 
@@ -350,33 +351,44 @@ bool has_affect(P_obj obj)
 	return FALSE;
 }
 
+static int crafting_required_level(int item_value)
+{
+	return static_cast<int>((static_cast<int64_t>(item_value) + crafting_level_gate - 1) /
+				crafting_level_gate);
+}
+
+static bool crafting_scale_material_count(int64_t count, int *scaled)
+{
+	if (count < 0 || !std::isfinite(crafting_material_quantity_multiplier) ||
+	    crafting_material_quantity_multiplier <= 0.0)
+		return false;
+	const double quote =
+		std::ceil(static_cast<double>(count) * crafting_material_quantity_multiplier);
+	if (!std::isfinite(quote) || quote < 0.0 || quote > INT_MAX)
+		return false;
+	*scaled = static_cast<int>(quote);
+	return true;
+}
+
 bool crafting_build_plan(P_obj item, struct crafting_plan *plan)
 {
-	int item_value;
-	int low_material_vnum;
-	int high_material_count;
-
 	if (item == NULL || plan == NULL)
-	{
 		return FALSE;
-	}
-
-	item_value = itemvalue(item);
-	low_material_vnum = get_matstart(item);
-	if (item_value < 1 || low_material_vnum <= 0)
-	{
+	const int item_value = itemvalue(item);
+	const int low_material_vnum = get_matstart(item);
+	if (item_value < 1 || low_material_vnum <= 0 || low_material_vnum > INT_MAX - 4)
 		return FALSE;
-	}
 
-	high_material_count = (item_value + 4) / 5;
-	plan->item_value = item_value;
-	plan->low_material_vnum = low_material_vnum;
-	plan->high_material_vnum = low_material_vnum + 4;
-	plan->high_material_count =
-		(int)ceil(high_material_count * crafting_material_quantity_multiplier);
-	plan->low_material_count = (int)ceil(((item_value + 4) - high_material_count * 5) *
-					     crafting_material_quantity_multiplier);
-	plan->magical = has_affect(item);
+	const int64_t total = static_cast<int64_t>(item_value) + 4;
+	crafting_plan quoted = {};
+	if (!crafting_scale_material_count(total / 5, &quoted.high_material_count) ||
+	    !crafting_scale_material_count(total % 5, &quoted.low_material_count))
+		return FALSE;
+	quoted.item_value = item_value;
+	quoted.low_material_vnum = low_material_vnum;
+	quoted.high_material_vnum = low_material_vnum + 4;
+	quoted.magical = has_affect(item);
+	*plan = quoted;
 	return TRUE;
 }
 
@@ -396,7 +408,7 @@ bool crafting_recipe_target_is_available(P_obj item)
 	    (!crafting_craft_enabled && !crafting_forge_enabled) ||
 	    !crafting_build_plan(item, &plan))
 		return FALSE;
-	return plan.item_value <= crafting_level_gate * crafting_recipe_max_player_level;
+	return crafting_required_level(plan.item_value) <= crafting_recipe_max_player_level;
 }
 
 void crafting_configure_recipe_scroll(P_obj recipe, P_obj target)
@@ -884,7 +896,7 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 			return;
 		}
 		int iVal = plan.item_value;
-		if (iVal > GET_LEVEL(ch) * crafting_level_gate_multiplier() ||
+		if (GET_LEVEL(ch) < crafting_required_level(iVal) ||
 		    IS_OBJ_STAT2(tobj, ITEM2_QUESTITEM))
 		{
 			if (IS_OBJ_STAT2(tobj, ITEM2_QUESTITEM))
@@ -896,9 +908,7 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 				snprintf(
 					buf1, sizeof buf1,
 					"You need level %d to craft this recipe (you are level %d).\r\n",
-					(iVal + crafting_level_gate_multiplier() - 1) /
-						crafting_level_gate_multiplier(),
-					GET_LEVEL(ch));
+					crafting_required_level(iVal), GET_LEVEL(ch));
 				send_to_char(buf1, ch);
 			}
 			extract_obj(tobj);
@@ -1432,7 +1442,7 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int /*cmd*/
 			return;
 		}
 		iVal = plan.item_value;
-		if (iVal > GET_LEVEL(ch) * crafting_level_gate_multiplier() ||
+		if (GET_LEVEL(ch) < crafting_required_level(iVal) ||
 		    IS_OBJ_STAT2(obj, ITEM2_QUESTITEM))
 		{
 			if (IS_OBJ_STAT2(obj, ITEM2_QUESTITEM))
@@ -1444,9 +1454,7 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int /*cmd*/
 				snprintf(
 					buf, sizeof(buf),
 					"You need level %d to forge this recipe (you are level %d).\r\n",
-					(iVal + crafting_level_gate_multiplier() - 1) /
-						crafting_level_gate_multiplier(),
-					GET_LEVEL(ch));
+					crafting_required_level(iVal), GET_LEVEL(ch));
 				send_to_char(buf, ch);
 			}
 			extract_obj(obj);
