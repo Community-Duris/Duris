@@ -6,13 +6,14 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs/persistence/economy_accounting"
 
 sys.path.insert(0, str(ROOT / "scripts"))
-from audit_accounting_invariants import AccountingInvariantAuditor, AuditError
+from audit_accounting_invariants import AccountingInvariantAuditor, AuditError, parse_copper
 
 
 class TestAccountingInvariants(unittest.TestCase):
@@ -99,12 +100,75 @@ class TestAccountingInvariants(unittest.TestCase):
             self.auditor.audit_fixture(fix, "self_child")
         self.assertIn("Self-referential child operation", str(ctx.exception))
 
+    def test_rejects_missing_or_zero_operation_identity(self):
+        for invalid in (None, False, 1, "", "0" * 32):
+            with self.subTest(operation_id=invalid):
+                fixture = copy.deepcopy(self.golden["fixtures"][0])
+                fixture["operations"][0]["operation_id"] = invalid
+                with self.assertRaises(AuditError):
+                    self.auditor.audit_fixture(fixture, "invalid_operation_id")
+        fixture = copy.deepcopy(self.golden["fixtures"][0])
+        del fixture["operations"][0]["operation_id"]
+        with self.assertRaises(AuditError):
+            self.auditor.audit_fixture(fixture, "missing_operation_id")
+
+    def test_rejects_invalid_child_identity(self):
+        for invalid in (None, False, 1, "", "0" * 32, "a" * 31, "A" * 32):
+            with self.subTest(child_id=invalid):
+                fixture = copy.deepcopy(self.golden["fixtures"][0])
+                operation = fixture["operations"][0]
+                operation["children"] = [{"operation_id": invalid,
+                                          "parent_id": operation["operation_id"]}]
+                with self.assertRaises(AuditError):
+                    self.auditor.audit_fixture(fixture, "invalid_child_id")
+        fixture = copy.deepcopy(self.golden["fixtures"][0])
+        operation = fixture["operations"][0]
+        operation["children"] = [{"parent_id": operation["operation_id"]}]
+        with self.assertRaises(AuditError):
+            self.auditor.audit_fixture(fixture, "missing_child_id")
+
+    def test_cli_rejects_invalid_evidence_without_traceback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "invalid.json"
+            for invalid in (None, "0" * 32):
+                with self.subTest(operation_id=invalid):
+                    fixture = copy.deepcopy(self.golden["fixtures"][0])
+                    fixture["operations"][0]["operation_id"] = invalid
+                    path.write_text(json.dumps({"fixtures": [fixture]}), encoding="utf-8")
+                    result = subprocess.run(
+                        [sys.executable, str(ROOT / "scripts/audit_accounting_invariants.py"),
+                         "--golden", str(path)], capture_output=True, text=True, check=False)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertIn("AUDIT FAILED", result.stderr)
+                    self.assertNotIn("Traceback", result.stderr)
+
     def test_detects_negative_opening_balance(self):
         fix = copy.deepcopy(self.golden["fixtures"][0])
         fix["holdings"]["wallet"]["balance"] = [0, 0, -1, 0]
         with self.assertRaises(AuditError) as ctx:
             self.auditor.audit_fixture(fix, "negative_balance")
         self.assertIn("Negative opening balance", str(ctx.exception))
+
+    def test_rejects_lossy_or_out_of_range_denominations(self):
+        for invalid in (True, False, 0.5, -0.5, "1", None, 2**63, -(2**63) - 1):
+            for location in ("holding", "posting"):
+                with self.subTest(invalid=invalid, location=location):
+                    fixture = copy.deepcopy(self.golden["fixtures"][0])
+                    if location == "holding":
+                        fixture["holdings"]["wallet"]["balance"][0] = invalid
+                    else:
+                        fixture["operations"][0]["postings"][0]["delta"][0] = invalid
+                    with self.assertRaises(AuditError):
+                        self.auditor.audit_fixture(fixture, "invalid_denomination")
+
+    def test_exact_integer_copper_bounds(self):
+        self.assertEqual(parse_copper([2**53 + 1, 0, 0, 0]), 2**53 + 1)
+        self.assertEqual(parse_copper([2**63 - 1, 0, 0, 0]), 2**63 - 1)
+        self.assertEqual(parse_copper([-(2**63), 0, 0, 0]), -(2**63))
+        for vector in ([2**63 - 1, 1, 0, 0], [-(2**63), -1, 0, 0],
+                       [0, 0, 0, 2**63 // 1000 + 1]):
+            with self.subTest(vector=vector), self.assertRaises(AuditError):
+                parse_copper(vector)
 
     def test_detects_unauthorized_account_kind(self):
         fix = copy.deepcopy(self.golden["fixtures"][0])

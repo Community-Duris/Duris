@@ -23,8 +23,13 @@ def require(condition: bool, message: str) -> None:
 def parse_copper(denomination_vector) -> int:
     require(isinstance(denomination_vector, (list, tuple)) and len(denomination_vector) == 4,
             "Denomination vector must contain exactly 4 values")
+    require(all(type(amount) is int and -(2**63) <= amount < 2**63
+                for amount in denomination_vector),
+            "Denominations must be signed 64-bit integers")
     multipliers = [1, 10, 100, 1000]
-    return sum(int(amount) * mult for amount, mult in zip(denomination_vector, multipliers))
+    total = sum(amount * mult for amount, mult in zip(denomination_vector, multipliers))
+    require(-(2**63) <= total < 2**63, "Total copper exceeds signed 64-bit range")
+    return total
 
 
 class AccountingInvariantAuditor:
@@ -64,8 +69,10 @@ class AccountingInvariantAuditor:
         consumed_item_transfers = set()
 
         for op in fixture.get("operations", []):
-            op_id = op["operation_id"]
-            require(bool(re.fullmatch(r"[0-9a-f]{32}", op_id)), f"Invalid operation ID format: {op_id}")
+            op_id = op.get("operation_id")
+            require(isinstance(op_id, str) and
+                    bool(re.fullmatch(r"[0-9a-f]{32}", op_id)) and int(op_id, 16) != 0,
+                    f"Invalid operation ID format: {op_id}")
 
             serialized = json.dumps(op, sort_keys=True)
             if op_id in receipts:
@@ -110,7 +117,10 @@ class AccountingInvariantAuditor:
             children = op.get("children", [])
             child_ids = set()
             for child in children:
-                c_id = child["operation_id"]
+                c_id = child.get("operation_id")
+                require(isinstance(c_id, str) and
+                        bool(re.fullmatch(r"[0-9a-f]{32}", c_id)) and int(c_id, 16) != 0,
+                        f"Invalid child operation ID format: {c_id}")
                 require(c_id != op_id, f"Self-referential child operation {c_id} in op {op_id}")
                 require(c_id not in child_ids, f"Duplicate child operation {c_id} in op {op_id}")
                 child_ids.add(c_id)
