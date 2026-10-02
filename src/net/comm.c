@@ -143,6 +143,7 @@
 #include "world/epic_transaction.h"
 #include "world/vnum.mob.h"
 #include "player/player_save_pipeline.h"
+#include "player/player_quarantine_recovery.h"
 #include "player/player_load_pipeline.h"
 #include "player/player_death_restitution_adapter.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
@@ -960,7 +961,8 @@ int run_the_game(int port, int sslport)
 	if (!mini_mode)
 		locker_async_init();
 	const char *journal_directory = getenv("PLAYER_SAVE_JOURNAL_DIR");
-	if (!player_save_pipeline_init(journal_directory))
+	if (!player_save_pipeline_init(journal_directory,
+				       player_quarantine_recovery_revalidate_selected))
 	{
 		logit(LOG_STATUS,
 		      "Player save pipeline unavailable; nonterminal saves fail closed.");

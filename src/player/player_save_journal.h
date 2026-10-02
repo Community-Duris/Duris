@@ -5,6 +5,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <array>
+#include <string>
+#include <vector>
 
 constexpr size_t PLAYER_SAVE_JOURNAL_MAX_BYTES = 256 * 1024 * 1024;
 // Admission bound for new writes. The reader still scans every byte of a
@@ -69,5 +72,39 @@ bool player_save_journal_worker_ack(const player_snapshot &snapshot,
 // Preserve every unresolved frame for this PID before any completion can
 // reopen admission. Archive failure fences all admission; it never ACKs.
 void player_save_journal_worker_terminal(const player_snapshot &snapshot, void *context) noexcept;
+
+// Recovery is a separate, listener-free owner. These records preserve the exact
+// request and proof before that owner may touch authority; they are never live
+// save ACKs. Ordinary admission remains fenced while a record is prepared.
+struct player_save_recovery_record
+{
+	std::array<uint8_t, 16> identity = {};
+	uint32_t backend = 0; // 1: flat-file, 2: SQL
+	std::string backend_identity;
+	std::string account_name;
+	std::array<uint8_t, 32> archive_digest = {};
+	player_snapshot baseline;
+	player_snapshot replacement;
+	std::vector<std::vector<uint8_t>> creation_commands;
+	std::vector<uint8_t> authority_evidence;
+};
+
+player_save_journal_result
+player_save_journal_recovery_inspect(int pid, std::vector<player_snapshot> *frames,
+				     std::array<uint8_t, 32> *digest);
+player_save_journal_result
+player_save_journal_recovery_prepare(const player_save_recovery_record &record);
+player_save_journal_result
+player_save_journal_recovery_read(int pid, player_save_recovery_record *record, bool *resolved);
+bool player_save_journal_recovery_matches(const player_save_recovery_record &record);
+bool player_save_journal_recovery_fingerprint(const player_save_recovery_record &record,
+					      std::array<uint8_t, 32> *digest);
+bool player_save_journal_resolved_recoveries(std::vector<player_save_recovery_record> *records);
+// Only the native recovery owner supplies this proof after exact read-back. A
+// revision-only result or an unverified operation receipt must not call resolve.
+using player_save_recovery_verify_fn = bool (*)(const player_save_recovery_record &, void *);
+player_save_journal_result
+player_save_journal_recovery_resolve(const player_save_recovery_record &record,
+				     player_save_recovery_verify_fn verify, void *context);
 
 #endif

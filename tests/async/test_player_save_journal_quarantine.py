@@ -671,8 +671,8 @@ def main() -> None:
     )
     repository_body = repository_source[repository_start:]
     repository_fence = repository_body.find("player_save_journal_pid_quarantined(request.pid)")
-    first_transaction = repository_body.find('"SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"')
-    if repository_start < 0 or repository_fence < 0 or first_transaction < 0 or repository_fence > first_transaction:
+    ordinary_delegate = repository_body.find("execute_player_load(connection, request, false)")
+    if repository_start < 0 or repository_fence < 0 or ordinary_delegate < 0 or repository_fence > ordinary_delegate:
         fail("the direct repository load path can start SQL before checking the PID fence")
 
     print("[PASS] copied capture: byte-exact hashed quarantine, fail-closed sync failure, dynamic PID fence, unaffected replay order")

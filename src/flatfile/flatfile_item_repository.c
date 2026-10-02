@@ -1956,6 +1956,18 @@ flatfile_item_repository_result flatfile_item_repository_pending_quest_rewards(
 		return recovered == flatfile_authority_transaction_result::io_error ?
 			       flatfile_item_repository_result::io_error :
 			       flatfile_item_repository_result::invalid;
+	return flatfile_item_repository_pending_quest_rewards_locked(
+		root, authority, player_pid, obligations, error, entitlements, durable_revision);
+}
+
+flatfile_item_repository_result flatfile_item_repository_pending_quest_rewards_locked(
+	const std::string &root, const flatfile_authority_lock &authority, uint32_t player_pid,
+	std::vector<flatfile_quest_reward_obligation> *obligations, std::string *error,
+	std::vector<flatfile_quest_xp_entitlement> *entitlements,
+	player_revision_t durable_revision)
+{
+	if (!authority.matches(root) || !player_pid || !obligations)
+		return flatfile_item_repository_result::invalid;
 	ownership_catalog catalog;
 	const auto loaded = load_catalog(root, &catalog, error);
 	if (loaded != flatfile_item_repository_result::ok)
@@ -3375,6 +3387,61 @@ flatfile_item_repository_result flatfile_item_repository_craft_root_locked(
 				       flatfile_item_repository_result::ok :
 				       flatfile_item_repository_result::invalid;
 	return flatfile_item_repository_result::not_found;
+}
+
+critical_apply_result
+flatfile_item_repository_verify_creation_locked(const std::string &root,
+						const flatfile_authority_lock &lock,
+						const critical_command &command, std::string *error)
+{
+	item_transfer_payload payload{};
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+	const bool accounted = command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	if (!lock.matches(root) ||
+	    (accounted ? !item_transfer_accounting_command_supported(command) :
+			 !critical_command_valid(command)) ||
+	    !item_transfer_command_decode_payload(command, &payload) ||
+	    payload.reason != item_transfer_reason::creation ||
+	    payload.from_owner.type != item_owner_type::system ||
+	    payload.to_owner.type != item_owner_type::player || payload.to_owner.context_id ||
+	    !payload.item_blob_size ||
+	    payload.continuation.kind != item_transfer_continuation_kind::none ||
+	    !command_digest(command, &digest))
+		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+	ownership_catalog catalog;
+	if (load_catalog(root, &catalog, error) != flatfile_item_repository_result::ok)
+		return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+	for (const auto &entry : catalog.operations)
+		if (critical_operation_id_equal(entry.operation_id, command.operation_id))
+		{
+			if (entry.result_code || entry.coin_operation ||
+			    entry.result.item_count != payload.item_count ||
+			    entry.result.max_item_revision != 1 ||
+			    CRYPTO_memcmp(entry.command_digest.data(), digest.data(),
+					  digest.size()))
+				return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+			if (accounted)
+			{
+				flatfile_accounting_record retained;
+				std::vector<economic_accounting_item_reference> references;
+				if (flatfile_accounting_lookup(root, lock, command, &retained,
+							       error) !=
+					    flatfile_accounting_status::ok ||
+				    !verify_accounted_item_record(command, payload, retained, 0,
+								  entry.result, &references) ||
+				    flatfile_item_accounting_reference_verify_operation(
+					    root, command.operation_id, references, error) !=
+					    flatfile_item_accounting_status::ok ||
+				    flatfile_accounting_item_transfer_transaction::verify_source_claim(
+					    root, lock, retained, error) !=
+					    flatfile_accounting_status::ok)
+					return { critical_apply_outcome::terminal_failure, 0,
+						 EILSEQ };
+			}
+			return make_result(critical_apply_outcome::already_applied, 0,
+					   entry.result);
+		}
+	return { critical_apply_outcome::terminal_failure, 0, ENOENT };
 }
 
 critical_apply_result flatfile_item_repository_apply(const std::string &root,

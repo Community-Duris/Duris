@@ -266,4 +266,12 @@ bool player_load_request_valid(const player_load_request &request, uint64_t now_
 player_load_result player_load_repository_execute(MYSQL *connection,
 						  const player_load_request &request);
 
+struct player_save_recovery_record;
+// Read-only inspection for the isolated recovery owner. A supplied durable
+// record permits joining that owner's existing transaction; normal loads keep
+// their admission fence and their own read transaction.
+player_load_result
+player_load_repository_quarantine_inspect(MYSQL *connection, const player_load_request &request,
+					  const player_save_recovery_record *owner = nullptr);
+
 #endif

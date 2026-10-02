@@ -38,6 +38,8 @@ constexpr const char *JOURNAL_ARCHIVE_TEMP_NAME = "player-save.journal.quarantin
 constexpr const char *JOURNAL_QUARANTINE_PIDS_NAME = "player-save.quarantine-pids";
 constexpr std::array<uint8_t, 8> ARCHIVE_MAGIC = { 'D', 'P', 'Q', 'A', 'R', 'C', '1', 0 };
 constexpr uint32_t ARCHIVE_VERSION = 1;
+constexpr uint32_t ARCHIVE_RECOVERY_VERSION = 2;
+constexpr std::array<uint8_t, 8> RECOVERY_MAGIC = { 'D', 'P', 'R', 'C', 'O', 'V', '1', 0 };
 constexpr size_t ARCHIVE_HEADER_SIZE = 28;
 constexpr size_t ARCHIVE_ENTRY_SIZE = 56;
 constexpr uint64_t ARCHIVE_MAX_BYTES = 2ULL * PLAYER_SAVE_JOURNAL_MAX_BYTES;
@@ -83,6 +85,14 @@ player_save_journal_health health = {};
 std::set<int32_t> quarantined_pids;
 std::set<int32_t> archived_pids;
 std::vector<scan_result::quarantine_record> archive_records;
+struct stored_recovery
+{
+	player_save_recovery_record record;
+	bool resolved = false;
+	bool revoked = false;
+};
+std::vector<stored_recovery> recovery_records;
+std::set<int32_t> policy_pids;
 bool quarantine_state_ready = false;
 bool quarantine_state_failed = false;
 
@@ -329,6 +339,158 @@ bool read_safe_bytes(const std::string &path, uint64_t limit, std::vector<uint8_
 	return true;
 }
 
+bool ordinary_recovery_snapshot(const player_snapshot &snapshot)
+{
+	return snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION && snapshot.pid > 0 &&
+	       snapshot.revision && !snapshot.death && snapshot.quest_xp_receipts.empty() &&
+	       snapshot.spell_effect_receipts.empty() && snapshot.craft_receipts.empty();
+}
+
+bool archive_recovery_frames(int pid, std::vector<player_snapshot> *frames,
+			     std::array<uint8_t, 32> *digest)
+{
+	if (!frames || !digest || pid <= 0)
+		return false;
+	frames->clear();
+	std::vector<uint8_t> fingerprints;
+	for (const auto &record : archive_records)
+	{
+		if (record.pid != pid)
+			continue;
+		if (record.reason != QUARANTINE_RUNTIME_TERMINAL ||
+		    frames->size() >= PLAYER_SAVE_JOURNAL_MAX_RECORDS)
+			return false;
+		const auto &bytes = record.bytes;
+		if (bytes.size() < JOURNAL_HEADER_SIZE || bytes.size() > JOURNAL_MAX_RECORD_SIZE ||
+		    !std::equal(JOURNAL_MAGIC.begin(), JOURNAL_MAGIC.end(), bytes.begin()) ||
+		    get_u32(bytes.data(), 8) != JOURNAL_FORMAT_VERSION ||
+		    get_u32(bytes.data(), 12) != JOURNAL_HEADER_SIZE ||
+		    get_u64(bytes.data(), 16) != bytes.size() ||
+		    static_cast<int32_t>(get_u32(bytes.data(), 40)) != pid ||
+		    get_u32(bytes.data(), 64) != bytes.size() - JOURNAL_HEADER_SIZE ||
+		    get_u32(bytes.data(), 68) != frame_checksum(bytes.data(), bytes.size()))
+			return false;
+		player_snapshot snapshot;
+		if (player_snapshot_decode(bytes.data() + JOURNAL_HEADER_SIZE,
+					   bytes.size() - JOURNAL_HEADER_SIZE,
+					   &snapshot) != player_snapshot_codec_result::ok ||
+		    !ordinary_recovery_snapshot(snapshot) || snapshot.pid != pid ||
+		    snapshot.schema_version != get_u32(bytes.data(), 44) ||
+		    snapshot.revision != get_u64(bytes.data(), 48) ||
+		    snapshot.components != get_u64(bytes.data(), 56))
+			return false;
+		frames->push_back(std::move(snapshot));
+		const auto hash = sha256(bytes.data(), bytes.size());
+		fingerprints.insert(fingerprints.end(), hash.begin(), hash.end());
+	}
+	if (frames->empty())
+		return false;
+	*digest = sha256(fingerprints.data(), fingerprints.size());
+	return true;
+}
+
+bool encode_recovery(const stored_recovery &stored, std::vector<uint8_t> *encoded)
+{
+	const auto &record = stored.record;
+	std::vector<uint8_t> baseline, replacement;
+	if (!encoded || (record.backend != 1 && record.backend != 2) ||
+	    record.backend_identity.empty() || record.backend_identity.size() > 256 ||
+	    record.account_name.empty() || record.account_name.size() > 50 ||
+	    std::all_of(record.identity.begin(), record.identity.end(),
+			[](uint8_t b) { return !b; }) ||
+	    !ordinary_recovery_snapshot(record.baseline) ||
+	    !ordinary_recovery_snapshot(record.replacement) ||
+	    record.baseline.pid != record.replacement.pid ||
+	    record.baseline.components != PLAYER_CHECKPOINT_COMPONENT_ALL ||
+	    record.replacement.components != PLAYER_CHECKPOINT_COMPONENT_ALL ||
+	    record.replacement.revision <= record.baseline.revision ||
+	    record.creation_commands.empty() || record.creation_commands.size() > 64 ||
+	    record.authority_evidence.empty() || record.authority_evidence.size() > 1024 * 1024 ||
+	    player_snapshot_encode(record.baseline, &baseline) !=
+		    player_snapshot_codec_result::ok ||
+	    player_snapshot_encode(record.replacement, &replacement) !=
+		    player_snapshot_codec_result::ok)
+		return false;
+	encoded->assign(60, 0);
+	put_u32(*encoded, 0, stored.revoked ? 2 : stored.resolved ? 1 : 0);
+	put_u32(*encoded, 4, record.backend);
+	std::copy(record.identity.begin(), record.identity.end(), encoded->begin() + 8);
+	std::copy(record.archive_digest.begin(), record.archive_digest.end(),
+		  encoded->begin() + 24);
+	put_u32(*encoded, 56, record.creation_commands.size());
+	auto block = [&](const uint8_t *bytes, size_t size)
+	{
+		const size_t offset = encoded->size();
+		encoded->resize(offset + 4);
+		put_u32(*encoded, offset, size);
+		encoded->insert(encoded->end(), bytes, bytes + size);
+	};
+	block(reinterpret_cast<const uint8_t *>(record.backend_identity.data()),
+	      record.backend_identity.size());
+	block(reinterpret_cast<const uint8_t *>(record.account_name.data()),
+	      record.account_name.size());
+	block(baseline.data(), baseline.size());
+	block(replacement.data(), replacement.size());
+	block(record.authority_evidence.data(), record.authority_evidence.size());
+	for (const auto &command : record.creation_commands)
+	{
+		if (command.empty() || command.size() > CRITICAL_COMMAND_MAX_ENCODED_BYTES)
+			return false;
+		block(command.data(), command.size());
+	}
+	return true;
+}
+
+bool decode_recovery(const uint8_t *bytes, size_t size, stored_recovery *stored)
+{
+	if (!stored || size < 60 || get_u32(bytes, 0) > 2 || get_u32(bytes, 56) > 64)
+		return false;
+	stored_recovery result;
+	result.resolved = get_u32(bytes, 0) != 0;
+	result.revoked = get_u32(bytes, 0) == 2;
+	result.record.backend = get_u32(bytes, 4);
+	std::copy(bytes + 8, bytes + 24, result.record.identity.begin());
+	std::copy(bytes + 24, bytes + 56, result.record.archive_digest.begin());
+	size_t cursor = 60;
+	auto block = [&](std::vector<uint8_t> *value, size_t maximum)
+	{
+		if (cursor > size || size - cursor < 4)
+			return false;
+		const size_t length = get_u32(bytes, cursor);
+		cursor += 4;
+		if (!length || length > maximum || length > size - cursor)
+			return false;
+		value->assign(bytes + cursor, bytes + cursor + length);
+		cursor += length;
+		return true;
+	};
+	std::vector<uint8_t> identity, account, baseline, replacement;
+	if (!block(&identity, 256) || !block(&account, 50) ||
+	    !block(&baseline, PLAYER_SNAPSHOT_MAX_BYTES) ||
+	    !block(&replacement, PLAYER_SNAPSHOT_MAX_BYTES) ||
+	    !block(&result.record.authority_evidence, 1024 * 1024) ||
+	    player_snapshot_decode(baseline.data(), baseline.size(), &result.record.baseline) !=
+		    player_snapshot_codec_result::ok ||
+	    player_snapshot_decode(replacement.data(), replacement.size(),
+				   &result.record.replacement) != player_snapshot_codec_result::ok)
+		return false;
+	result.record.backend_identity.assign(identity.begin(), identity.end());
+	result.record.account_name.assign(account.begin(), account.end());
+	for (uint32_t index = 0; index < get_u32(bytes, 56); ++index)
+	{
+		std::vector<uint8_t> command;
+		if (!block(&command, CRITICAL_COMMAND_MAX_ENCODED_BYTES))
+			return false;
+		result.record.creation_commands.push_back(std::move(command));
+	}
+	std::vector<uint8_t> canonical;
+	if (cursor != size || !encode_recovery(result, &canonical) || canonical.size() != size ||
+	    !std::equal(canonical.begin(), canonical.end(), bytes))
+		return false;
+	*stored = std::move(result);
+	return true;
+}
+
 bool load_quarantine_archive()
 {
 	std::vector<uint8_t> bytes;
@@ -339,7 +501,8 @@ bool load_quarantine_archive()
 		return true;
 	if (bytes.size() < ARCHIVE_HEADER_SIZE ||
 	    !std::equal(ARCHIVE_MAGIC.begin(), ARCHIVE_MAGIC.end(), bytes.begin()) ||
-	    get_u32(bytes.data(), 8) != ARCHIVE_VERSION ||
+	    (get_u32(bytes.data(), 8) != ARCHIVE_VERSION &&
+	     get_u32(bytes.data(), 8) != ARCHIVE_RECOVERY_VERSION) ||
 	    get_u64(bytes.data(), 12) != bytes.size())
 		return false;
 	const uint32_t pid_count = get_u32(bytes.data(), 20);
@@ -394,7 +557,41 @@ bool load_quarantine_archive()
 		}
 		expected_data_offset += size;
 	}
-	return expected_data_offset == bytes.size();
+	if (get_u32(bytes.data(), 8) == ARCHIVE_VERSION)
+		return expected_data_offset == bytes.size();
+	cursor = expected_data_offset;
+	if (bytes.size() - cursor < 12 ||
+	    !std::equal(RECOVERY_MAGIC.begin(), RECOVERY_MAGIC.end(), bytes.begin() + cursor))
+		return false;
+	const uint32_t count = get_u32(bytes.data(), cursor + 8);
+	cursor += 12;
+	if (!count || count > 65536)
+		return false;
+	std::set<std::array<uint8_t, 16>> identities;
+	for (uint32_t index = 0; index < count; ++index)
+	{
+		if (bytes.size() - cursor < 40)
+			return false;
+		const uint64_t size = get_u64(bytes.data(), cursor);
+		const uint8_t *hash = bytes.data() + cursor + 8;
+		cursor += 40;
+		if (size > bytes.size() - cursor)
+			return false;
+		const auto actual_hash = sha256(bytes.data() + cursor, size);
+		stored_recovery stored;
+		if (!std::equal(actual_hash.begin(), actual_hash.end(), hash) ||
+		    !decode_recovery(bytes.data() + cursor, size, &stored) ||
+		    !archived_pids.count(stored.record.replacement.pid) ||
+		    !identities.insert(stored.record.identity).second)
+			return false;
+		recovery_records.push_back(std::move(stored));
+		cursor += size;
+	}
+	if (cursor != bytes.size())
+		return false;
+	// A retained resolution is not sufficient for a mixed-generation restore.
+	// The native owner must verify its backend evidence again before admission.
+	return true;
 }
 
 bool load_quarantine_pid_policy()
@@ -420,6 +617,7 @@ bool load_quarantine_pid_policy()
 		if (parsed.ec != std::errc() || parsed.ptr != finish || pid <= 0)
 			return false;
 		quarantined_pids.insert(pid);
+		policy_pids.insert(pid);
 		if (quarantined_pids.size() > 65536)
 			return false;
 		offset = end + (end < bytes.size() ? 1 : 0);
@@ -428,14 +626,31 @@ bool load_quarantine_pid_policy()
 }
 
 bool persist_quarantine_archive(const std::set<int32_t> &pids,
-				const std::vector<scan_result::quarantine_record> &additions)
+				const std::vector<scan_result::quarantine_record> &additions,
+				const std::vector<stored_recovery> *recoveries = nullptr)
 {
+	const auto &recovery = recoveries ? *recoveries : recovery_records;
+	std::vector<std::vector<uint8_t>> encoded_recovery;
+	uint64_t recovery_bytes = recovery.empty() ? 0 : 12;
+	if (recovery.size() > 65536)
+		return false;
+	for (const auto &stored : recovery)
+	{
+		std::vector<uint8_t> encoded;
+		if (!encode_recovery(stored, &encoded) ||
+		    encoded.size() + 40 > ARCHIVE_MAX_BYTES - recovery_bytes)
+			return false;
+		recovery_bytes += encoded.size() + 40;
+		encoded_recovery.push_back(std::move(encoded));
+	}
 	const uint64_t entry_count = archive_records.size() + additions.size();
 	if (pids.size() > 65536 || entry_count > 262144)
 		return false;
 	const uint64_t table_size =
 		ARCHIVE_HEADER_SIZE + pids.size() * 4 + entry_count * ARCHIVE_ENTRY_SIZE;
-	uint64_t total_size = table_size;
+	if (recovery_bytes > ARCHIVE_MAX_BYTES - table_size)
+		return false;
+	uint64_t total_size = table_size + recovery_bytes;
 	const std::vector<scan_result::quarantine_record> *collections[] = { &archive_records,
 									     &additions };
 	for (const auto *collection : collections)
@@ -458,7 +673,7 @@ bool persist_quarantine_archive(const std::set<int32_t> &pids,
 		return false;
 	}
 	std::copy(ARCHIVE_MAGIC.begin(), ARCHIVE_MAGIC.end(), bytes.begin());
-	put_u32(bytes, 8, ARCHIVE_VERSION);
+	put_u32(bytes, 8, recovery.empty() ? ARCHIVE_VERSION : ARCHIVE_RECOVERY_VERSION);
 	put_u64(bytes, 12, total_size);
 	put_u32(bytes, 20, static_cast<uint32_t>(pids.size()));
 	put_u32(bytes, 24, static_cast<uint32_t>(entry_count));
@@ -486,6 +701,20 @@ bool persist_quarantine_archive(const std::set<int32_t> &pids,
 			raw_offset += record.bytes.size();
 			++record_index;
 		}
+	if (!recovery.empty())
+	{
+		std::copy(RECOVERY_MAGIC.begin(), RECOVERY_MAGIC.end(), bytes.begin() + raw_offset);
+		put_u32(bytes, raw_offset + 8, recovery.size());
+		raw_offset += 12;
+		for (const auto &encoded : encoded_recovery)
+		{
+			put_u64(bytes, raw_offset, encoded.size());
+			const auto digest = sha256(encoded.data(), encoded.size());
+			std::copy(digest.begin(), digest.end(), bytes.begin() + raw_offset + 8);
+			std::copy(encoded.begin(), encoded.end(), bytes.begin() + raw_offset + 40);
+			raw_offset += encoded.size() + 40;
+		}
+	}
 	const int fd = open_safe_file(archive_temporary_path, O_WRONLY | O_CREAT | O_TRUNC, 0600);
 	if (fd < 0)
 		return false;
@@ -504,19 +733,29 @@ bool persist_quarantine_archive(const std::set<int32_t> &pids,
 bool commit_quarantine_archive(const std::set<int32_t> &additional_pids,
 			       std::vector<scan_result::quarantine_record> additions)
 {
-	std::set<int32_t> next_pids = quarantined_pids;
+	std::set<int32_t> next_pids = archived_pids;
+	next_pids.insert(quarantined_pids.begin(), quarantined_pids.end());
 	for (int32_t pid : additional_pids)
 	{
 		if (pid <= 0)
 			return false;
 		next_pids.insert(pid);
 	}
-	if (next_pids == archived_pids && additions.empty())
+	auto next_recovery = recovery_records;
+	bool revoked = false;
+	for (auto &stored : next_recovery)
+		if (additional_pids.count(stored.record.replacement.pid) && !stored.revoked)
+		{
+			stored.revoked = true;
+			revoked = true;
+		}
+	if (next_pids == archived_pids && additions.empty() && !revoked)
 		return true;
-	if (!persist_quarantine_archive(next_pids, additions))
+	if (!persist_quarantine_archive(next_pids, additions, &next_recovery))
 		return false;
-	quarantined_pids.swap(next_pids);
-	archived_pids = quarantined_pids;
+	recovery_records.swap(next_recovery);
+	archived_pids.swap(next_pids);
+	quarantined_pids.insert(additional_pids.begin(), additional_pids.end());
 	try
 	{
 		archive_records.insert(archive_records.end(),
@@ -847,7 +1086,16 @@ bool quarantine_configured_frames()
 		retained.reserve(scanned.frames.size());
 		for (journal_frame &frame : scanned.frames)
 		{
-			if (!quarantined_pids.count(frame.snapshot.pid))
+			const bool pending_verification =
+				std::any_of(recovery_records.begin(), recovery_records.end(),
+					    [&](const stored_recovery &stored)
+					    {
+						    return stored.resolved && !stored.revoked &&
+							   stored.record.replacement.pid ==
+								   frame.snapshot.pid &&
+							   !policy_pids.count(frame.snapshot.pid);
+					    });
+			if (!quarantined_pids.count(frame.snapshot.pid) || pending_verification)
 			{
 				retained.push_back(std::move(frame));
 				continue;
@@ -942,6 +1190,8 @@ bool player_save_journal_init(const char *directory, size_t quota_bytes)
 		quarantined_pids.clear();
 		archived_pids.clear();
 		archive_records.clear();
+		recovery_records.clear();
+		policy_pids.clear();
 		if (!directory || !*directory || directory[0] != '/' ||
 		    quota_bytes < JOURNAL_HEADER_SIZE + 64 ||
 		    quota_bytes > PLAYER_SAVE_JOURNAL_MAX_BYTES)
@@ -1034,6 +1284,8 @@ void player_save_journal_shutdown(void)
 	quarantined_pids.clear();
 	archived_pids.clear();
 	archive_records.clear();
+	recovery_records.clear();
+	policy_pids.clear();
 	journal_quota = 0;
 	oldest_record_msec = 0;
 }
@@ -1306,10 +1558,27 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 		scan_result scanned = scan_journal_safe();
 		if (scanned.result != player_save_journal_result::ok)
 			return scanned.result;
-		for (const journal_frame &frame : scanned.frames)
+		for (journal_frame &frame : scanned.frames)
+		{
 			if (quarantined_pids.count(frame.snapshot.pid))
-				return player_save_journal_result::replay_blocked;
-		frames = std::move(scanned.frames);
+			{
+				const bool resolved_pending_verification = std::any_of(
+					recovery_records.begin(), recovery_records.end(),
+					[&](const stored_recovery &stored)
+					{
+						return stored.resolved && !stored.revoked &&
+						       stored.record.replacement.pid ==
+							       frame.snapshot.pid &&
+						       !policy_pids.count(frame.snapshot.pid);
+					});
+				if (!resolved_pending_verification)
+					return player_save_journal_result::replay_blocked;
+				// Keep its original active frames in the journal. Only this PID
+				// waits for native recovery verification; unrelated PIDs replay.
+				continue;
+			}
+			frames.push_back(std::move(frame));
+		}
 	}
 	std::map<int, player_revision_t> acknowledged;
 	std::vector<operation_record_proof> proven_operations;
@@ -1507,4 +1776,223 @@ bool player_save_journal_worker_ack(const player_snapshot &snapshot,
 		return false;
 	return checkpoint_proven({}, { { snapshot.pid, snapshot.revision, std::move(encoded) } },
 				 true) == player_save_journal_result::ok;
+}
+
+player_save_journal_result
+player_save_journal_recovery_inspect(int pid, std::vector<player_snapshot> *frames,
+				     std::array<uint8_t, 32> *digest)
+{
+	std::lock_guard<std::mutex> lock(journal_mutex);
+	if (!health.initialized || quarantine_state_failed)
+		return player_save_journal_result::not_initialized;
+	if (!quarantined_pids.count(pid) || policy_pids.count(pid))
+		return player_save_journal_result::replay_blocked;
+	try
+	{
+		return archive_recovery_frames(pid, frames, digest) ?
+			       player_save_journal_result::ok :
+			       player_save_journal_result::corrupt_data;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_save_journal_result::io_failure;
+	}
+}
+
+namespace
+{
+bool recovery_equal(const player_save_recovery_record &left,
+		    const player_save_recovery_record &right)
+{
+	std::vector<uint8_t> a, b;
+	return encode_recovery({ left, false }, &a) && encode_recovery({ right, false }, &b) &&
+	       a == b;
+}
+
+bool recovery_generation_matches(const player_save_recovery_record &record)
+{
+	std::vector<player_snapshot> frames;
+	std::array<uint8_t, 32> digest;
+	if (!archive_recovery_frames(record.replacement.pid, &frames, &digest) ||
+	    digest != record.archive_digest || policy_pids.count(record.replacement.pid))
+		return false;
+	return std::all_of(frames.begin(), frames.end(), [&](const player_snapshot &frame)
+			   { return frame.revision < record.replacement.revision; });
+}
+} // namespace
+
+player_save_journal_result
+player_save_journal_recovery_prepare(const player_save_recovery_record &record)
+{
+	std::lock_guard<std::mutex> lock(journal_mutex);
+	if (!health.initialized || quarantine_state_failed)
+		return player_save_journal_result::not_initialized;
+	try
+	{
+		std::vector<uint8_t> encoded;
+		if (!quarantined_pids.count(record.replacement.pid) ||
+		    !encode_recovery({ record, false }, &encoded) ||
+		    !recovery_generation_matches(record))
+			return player_save_journal_result::replay_blocked;
+		for (const auto &stored : recovery_records)
+		{
+			if (stored.record.identity == record.identity)
+				return !stored.revoked && recovery_equal(stored.record, record) ?
+					       player_save_journal_result::ok :
+					       player_save_journal_result::replay_blocked;
+			if (stored.record.replacement.pid == record.replacement.pid &&
+			    stored.record.archive_digest == record.archive_digest)
+				return player_save_journal_result::replay_blocked;
+		}
+		auto next = recovery_records;
+		next.push_back({ record, false });
+		if (!persist_quarantine_archive(archived_pids, {}, &next))
+		{
+			// Rename may already have succeeded. Prevent later writes from
+			// forgetting that uncertain prepared record until reinitialization.
+			quarantine_state_failed = true;
+			return player_save_journal_result::io_failure;
+		}
+		recovery_records.swap(next);
+		return player_save_journal_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_save_journal_result::io_failure;
+	}
+}
+
+player_save_journal_result
+player_save_journal_recovery_read(int pid, player_save_recovery_record *record, bool *resolved)
+{
+	std::lock_guard<std::mutex> lock(journal_mutex);
+	if (!health.initialized || quarantine_state_failed)
+		return player_save_journal_result::not_initialized;
+	if (!record || !resolved)
+		return player_save_journal_result::corrupt_data;
+	try
+	{
+		for (auto found = recovery_records.rbegin(); found != recovery_records.rend();
+		     ++found)
+			if (!found->revoked && found->record.replacement.pid == pid &&
+			    recovery_generation_matches(found->record))
+			{
+				*record = found->record;
+				*resolved = found->resolved;
+				return player_save_journal_result::ok;
+			}
+		return player_save_journal_result::replay_blocked;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_save_journal_result::io_failure;
+	}
+}
+
+bool player_save_journal_recovery_matches(const player_save_recovery_record &record)
+{
+	std::lock_guard<std::mutex> lock(journal_mutex);
+	if (!health.initialized || quarantine_state_failed)
+		return false;
+	try
+	{
+		return recovery_generation_matches(record) &&
+		       std::any_of(recovery_records.begin(), recovery_records.end(),
+				   [&](const stored_recovery &stored) {
+					   return !stored.revoked &&
+						  recovery_equal(stored.record, record);
+				   });
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+player_save_journal_result
+player_save_journal_recovery_resolve(const player_save_recovery_record &record,
+				     player_save_recovery_verify_fn verify, void *context)
+{
+	// Backend proof may query the journal and must not run under its mutex.
+	try
+	{
+		if (!verify || !player_save_journal_recovery_matches(record) ||
+		    !verify(record, context))
+			return player_save_journal_result::replay_blocked;
+	}
+	catch (...)
+	{
+		// A failed native verifier cannot grant admission or erase evidence.
+		return player_save_journal_result::replay_blocked;
+	}
+	std::lock_guard<std::mutex> lock(journal_mutex);
+	if (!health.initialized || quarantine_state_failed)
+		return player_save_journal_result::not_initialized;
+	try
+	{
+		if (!recovery_generation_matches(record))
+			return player_save_journal_result::replay_blocked;
+		auto next = recovery_records;
+		for (auto &stored : next)
+			if (!stored.revoked && recovery_equal(stored.record, record))
+			{
+				if (!stored.resolved)
+				{
+					stored.resolved = true;
+					if (!persist_quarantine_archive(archived_pids, {}, &next))
+					{
+						quarantine_state_failed = true;
+						return player_save_journal_result::io_failure;
+					}
+					recovery_records.swap(next);
+				}
+				quarantined_pids.erase(record.replacement.pid);
+				return player_save_journal_result::ok;
+			}
+		return player_save_journal_result::replay_blocked;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_save_journal_result::io_failure;
+	}
+}
+
+bool player_save_journal_recovery_fingerprint(const player_save_recovery_record &record,
+					      std::array<uint8_t, 32> *digest)
+{
+	if (!digest)
+		return false;
+	try
+	{
+		std::vector<uint8_t> encoded;
+		if (!encode_recovery({ record, false }, &encoded))
+			return false;
+		*digest = sha256(encoded.data(), encoded.size());
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool player_save_journal_resolved_recoveries(std::vector<player_save_recovery_record> *records)
+{
+	std::lock_guard<std::mutex> lock(journal_mutex);
+	if (!records || !health.initialized || quarantine_state_failed)
+		return false;
+	try
+	{
+		std::vector<player_save_recovery_record> next;
+		for (const auto &stored : recovery_records)
+			if (stored.resolved && !stored.revoked &&
+			    recovery_generation_matches(stored.record))
+				next.push_back(stored.record);
+		records->swap(next);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
 }

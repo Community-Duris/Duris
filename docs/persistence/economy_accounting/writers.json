@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "5017a0e9e4d569c31356053ec7258040ecc1492a",
+  "source_commit": "bf6aac22ffaf4406a364089b8f7eafcf4feacca9",
   "census_complete": true,
   "writers": [
     {
@@ -26617,7 +26617,7 @@
       "sites": [
         [
           "src/player/player_load_repository.c",
-          640,
+          642,
           "direct_cash_assignment"
         ]
       ],
@@ -26958,7 +26958,7 @@
       "sites": [
         [
           "src/player/player_snapshot_repository.c",
-          1837,
+          1838,
           "sql_economy"
         ]
       ],
@@ -56331,13 +56331,13 @@
     },
     {
       "path": "src/player/player_load_repository.c",
-      "line": 640,
+      "line": 642,
       "family": "direct_cash_assignment",
       "excerpt": "result->domains.bank[index] = unsigned_value(row[index]);"
     },
     {
       "path": "src/player/player_snapshot_repository.c",
-      "line": 1837,
+      "line": 1838,
       "family": "sql_economy",
       "excerpt": "\"UPDATE item_current_owner AS current_item SET item_revision=item_revision+1,state=\" +"
     },
