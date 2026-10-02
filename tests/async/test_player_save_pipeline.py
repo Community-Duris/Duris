@@ -206,7 +206,7 @@ assert "nevent_periodic_policy::fixed_delay, true" in event_init
 print("[PASS] autosave durability is local and the Redis dirty-save fork is retired")
 
 assert 'getenv("PLAYER_SAVE_JOURNAL_DIR")' in COMM
-assert "player_save_pipeline_init(journal_directory)" in COMM
+assert "player_save_pipeline_init(journal_directory,player_quarantine_recovery_revalidate_selected)" in "".join(COMM.split())
 assert "player_save_pipeline_pulse();" in COMM
 assert "player_save_pipeline_shutdown();" in COMM
 assert "PLAYER_SAVE_JOURNAL_DIR" in (ROOT / ".env.example").read_text()
