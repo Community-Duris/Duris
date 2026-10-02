@@ -141,6 +141,13 @@ This checkpoint publishes the completed review fixes directly to
   files verified. Existing payment, material, stat-cap and configuration checks
   also pass; compound enhancement durability is still outstanding.
 
+- Core accounting lineage, mappings, baseline/activation records, immutable
+  evidence, inbox/outbox dedupe and transaction journals must remain protected
+  and retained. The validator previously accepted all 99 protection/reset/
+  deactivation edits across 33 stores; it now rejects them. Twenty-one lifecycle,
+  seven erasure and six export checks pass. This preserves the current recovery
+  contract; disclosure and destructive policy decisions remain pending.
+
 ## Verification and its limits
 
 | Check | Current evidence |
@@ -148,6 +155,7 @@ This checkpoint publishes the completed review fixes directly to
 | Strict SQL and flatfile production builds | Passed for `cfb42c8ec`; all 1,210 native source files match its committed tree. Recipe gameplay remains separately qualified at `9fd3b77b1` for flatfile and `ad5bc52bf` for SQL. |
 | Recipe SQL receipts and fault recovery | Passed on disposable MySQL 8.0 and MariaDB 10.11 before the latest upstream integration. |
 | Integrated focused runtime checks | All 16 selected checks passed after the first upstream integration, including the ASan/UBSan prompt fixture. |
+| Frozen broad regression | The `8be8b55c0` snapshot completed all 822 scripts in 7,221.31 seconds; the runner reported 818 successes and four failures. Property reload, formatting, newborn grants and terminal-death entrypoints fail on that snapshot and pass their separately recorded focused repairs. Optional checks are included in the runner's success total: the MariaDB combat journey skipped because `TEST_DB_HOST` was not configured. This is not an all-green current-head or SQL gameplay qualification. |
 | Null-output publication regression | Passed using the actual native movement module after `0464613a1`. |
 | Combat continuation and quarantine restore | Passed after integrating the upstream recovery evidence. Quarantine archives retain both original component frames and keep recovery fenced on conflicting evidence. |
 | Writer census | Refreshed for `cfb42c8ec`: 2,809 lexical occurrences, 2,751 unique sites, 863 routes, zero unmapped sites. The four added temporary material-probe cleanup sites are explicitly classified in the recipe route. The 51 unaffected coverage checks and corrected enhancement check pass, as does artifact freshness; enhancement assertions now resolve their unique current source calls. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
@@ -169,10 +177,12 @@ matrix describes that gap; a complete census alone cannot close it.
 Recipe flatfile restore and mortal Craft/Forge restart qualification are
 published, along with mini-mode startup and save-admission fixes. Broader recipe
 variants and active accounting journeys still need qualification. Current
-strict builds pass. The full 822-test regression run uses a frozen `8be8b55c0`
-snapshot and is in progress. The subsequent enhancement price, material, and
-stat bounds fixes have separate native sanitizer and production-build evidence. Earlier full-suite failures
-have not yet been superseded by a complete passing run.
+strict builds pass. The full 822-test regression run finished on the frozen
+`8be8b55c0` snapshot, with the four failures and optional-check limit described
+above. Each failed check has a passing focused repair. Subsequent enhancement
+and recipe bounds, probe cleanup and lifecycle protections have separate native
+sanitizer, production-build or policy-fault evidence. A complete current-head
+regression and integrated accounting qualification remain outstanding.
 
 Paid same-UID superior enhancement, remaining pouch writers, day-one quest and
 loot paths, audit completeness, activation/recovery/backup/retention gates, and
