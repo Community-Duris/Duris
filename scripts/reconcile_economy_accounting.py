@@ -1793,13 +1793,18 @@ class Reconciler:
         created = origin["origin"] == "baseline"
         retired = origin.get("state") == "tombstone"
         for event in events:
-            if event.get("action") == "create":
+            action = event.get("action")
+            if ((action == "create" and event.get("state") != "live") or
+                    (action == "destroy" and event.get("state") != "tombstone")):
+                self.emit("invalid_item_supply_state", uid=uid,
+                          operation_id=event.get("operation_id"))
+            if action == "create":
                 if created:
                     self.emit("duplicate_uid", uid=uid, operation_id=event.get("operation_id"))
                 created = True
             if retired and event.get("state") == "live":
                 self.emit("resurrected_item_uid", uid=uid, operation_id=event.get("operation_id"))
-            retired = retired or event.get("state") == "tombstone"
+            retired = retired or action == "destroy" or event.get("state") == "tombstone"
         if not created:
             self.emit("missing_item_creation", uid=uid)
 

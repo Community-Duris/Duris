@@ -487,6 +487,15 @@ try:
             duplicate_uid_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
             assert duplicate_uid_report["exception_counts"] == {
                 **expected_exceptions, "duplicate_uid": 1}, duplicate_uid_report
+            # A destruction reason with live custody is corrupt even when the
+            # reference, revisions and final native state agree. The independent
+            # reader must diagnose it and recover after a valid retirement.
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_ownership_ledger SET reason_type=3 "
+                               "WHERE operation_id=%s", (duplicate_uid_root,))
+            supply_state_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert supply_state_report["exception_counts"] == {
+                **expected_exceptions, "invalid_item_supply_state": 1}, supply_state_report
             with setup.cursor() as writer:
                 writer.execute("UPDATE economic_accounting_operation SET reason=34 "
                                "WHERE operation_id=%s", (duplicate_uid_root,))
