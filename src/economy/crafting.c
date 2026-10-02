@@ -816,6 +816,10 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 			      (matLowest == NULL) ? "NULL" : matLowest->short_description,
 			      (matHighest == NULL) ? "NULL" : matHighest->short_description,
 			      tobj->short_description, selected);
+			if (matLowest != NULL)
+				extract_obj(matLowest);
+			if (matHighest != NULL)
+				extract_obj(matHighest);
 			extract_obj(tobj);
 			return;
 		}
@@ -934,6 +938,10 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 			      (matLowest == NULL) ? "NULL" : matLowest->short_description,
 			      (matHighest == NULL) ? "NULL" : matHighest->short_description,
 			      tobj->short_description, selected);
+			if (matLowest != NULL)
+				extract_obj(matLowest);
+			if (matHighest != NULL)
+				extract_obj(matHighest);
 			extract_obj(tobj);
 			return;
 		}

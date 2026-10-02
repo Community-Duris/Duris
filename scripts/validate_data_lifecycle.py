@@ -108,6 +108,10 @@ REQUIRED_NON_DATABASE_STORES = {
     "file:flatfile-accounts": ("recovery_state", "FLATFILE_ROOT/identities/accounts/*.acct"),
     "file:flatfile-identity-catalog": ("recovery_state", "FLATFILE_ROOT/identities/names/catalog.identity"),
     "file:flatfile-item-ownership": ("recovery_state", "FLATFILE_ROOT/domains/item_ownership"),
+    "file:flatfile-player-domains": ("recovery_state", "FLATFILE_ROOT/domains/player-*.domain"),
+    "file:flatfile-bank-domains": ("recovery_state", "FLATFILE_ROOT/domains/bank-*.domain"),
+    "file:flatfile-player-domain-journal": ("recovery_state", "FLATFILE_ROOT/domains/.player-domain-transaction"),
+    "file:flatfile-legacy-currency-journal": ("recovery_state", "FLATFILE_ROOT/domains/.currency-transaction"),
     "file:player-deaths": ("recovery_state", "FLATFILE_ROOT/player-deaths/*.death"),
     "file:player-spell-receipts": ("recovery_state", "FLATFILE_ROOT/players/*.spell"),
     "file:player-craft-receipts": ("recovery_state", "FLATFILE_ROOT/players/*.craft"),
@@ -150,6 +154,10 @@ NATIVE_FLATFILE_AUTHORITY_STORES = {
     "file:flatfile-accounts",
     "file:flatfile-identity-catalog",
     "file:flatfile-item-ownership",
+    "file:flatfile-player-domains",
+    "file:flatfile-bank-domains",
+    "file:flatfile-player-domain-journal",
+    "file:flatfile-legacy-currency-journal",
 }
 MAX_MANIFEST_BYTES = 2 * 1024 * 1024
 MAX_SCHEMA_BYTES = 8 * 1024 * 1024
