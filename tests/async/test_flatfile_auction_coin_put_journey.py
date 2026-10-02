@@ -4,7 +4,6 @@
 import argparse
 import os
 import pathlib
-import subprocess
 import tempfile
 from unittest.mock import patch
 
@@ -101,10 +100,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix=f"auction-coin-put-{os.getpid()}-",
                                      dir=journey.ROOT / "bin/tests") as build_tmp:
         inspector = pathlib.Path(build_tmp) / "coin-death-inspector"
-        subprocess.run([
-            "python3", "tests/async/test_flatfile_player_repository.py",
-            "--build-inspector", str(inspector),
-        ], cwd=journey.ROOT, check=True, timeout=180)
+        journey.build_inspector(inspector)
         binary = (args.server.resolve() if args.server else
                   journey.build_flatfile_server(pathlib.Path(build_tmp)))
 

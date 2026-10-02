@@ -235,6 +235,15 @@ This checkpoint publishes the completed review fixes directly to
 
 ## Verification and its limits
 
+The completed frozen `63309643c` run isolates its single failure to native
+inspector compilation: the auction fixture's 180-second budget expired before
+server startup. Auction, combat and static quest entrypoints now share the
+600-second compilation budget already used by the server build; gameplay
+deadlines remain unchanged. The actual auction listing/immediate coin put,
+round-trip, save and full-reload journey passes with the current `c5ea78c95`
+flatfile artifact recorded below. Its fresh inspector compiled in 62.820 seconds.
+This focused pass does not turn the earlier frozen run into a current-head pass.
+
 Ordinary salvage now preflights the selected material and, for an eligible
 recipe target, its recipe-scroll template (`c5ea78c95`). The actual command
 reproduces a null dereference before the repair. Native ASan/UBSan checks now
