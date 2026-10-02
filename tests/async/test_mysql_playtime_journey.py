@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Issue #259: real login/save/quit/restart playtime on a disposable MariaDB.
+"""Issue #259: real login/save/quit/restart playtime on disposable SQL.
 
 Requires TEST_DB_HOST=127.0.0.1, TEST_DB_USER, TEST_DB_PASSWORD and --server.
 TEST_DB_PORT optionally selects the owned disposable instance (default 3306).
@@ -240,7 +240,7 @@ def run(server):
                     stop()
                     process = None
                     print(json.dumps(rows, indent=2))
-                    print("[PASS] MariaDB elapsed/quiet/repeated saves, link loss, quit/restart, death/reload, crash recovery and live copyover")
+                    print("[PASS] SQL elapsed/quiet/repeated saves, link loss, quit/restart, death/reload, crash recovery and live copyover")
                     subprocess.run(
                         ["python3", "tests/async/test_player_save_item_reconcile_mysql.py"],
                         cwd=ROOT, env=environment, check=True,
