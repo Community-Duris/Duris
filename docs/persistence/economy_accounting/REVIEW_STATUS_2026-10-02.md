@@ -411,7 +411,7 @@ The opt-in item-provenance test failed at link time: it omitted function/data
 sections, garbage collection, the maintained fail-closed legacy escape stub, and
 the real-query wrapper used by its included native harness. Its compile/run now
 matches that maintained SQL driver, including the 64 MiB stack needed for bounded
-item payloads. Both engines then exposed an outdated duplicate-source assertion: 
+item payloads. Both engines then exposed an outdated duplicate-source assertion:
 a new command reusing a committed logical event is correctly a terminal `EEXIST`
 refusal, rather than a retryable raw SQL 1062. Native policy is unchanged.
 
@@ -445,3 +445,20 @@ the final native provenance runs use private daemon temporary directories and
 complete with zero failed checks on both engines. Docker `make test-db`, full
 backup/restore, actual active-accounting gameplay and integrated workload gates
 remain open. Focused passes do not rewrite the frozen broad-suite outcome.
+
+## Duplicate UID retirement audit
+
+A second destruction of an already retired UID previously passed the audit when
+its event revisions, references, owner and final tombstone all agreed. Two new
+regressions reproduce that omission in lineage history and in an epoch opening
+that already contains a tombstone. The lifetime audit now reports
+`duplicate_item_retirement` for an explicit destruction after retirement.
+
+All 53 reconciler tests pass. On both disposable SQL engines, the SELECT-only
+exporter observes a new, otherwise consistent root/event/reference attempting
+to destroy the same tombstone again and reports the new exception. Removing
+only the fixture corruption and restoring its original native row returns to
+the exact baseline exception set. Existing creation, movement, one retirement,
+UID-reuse, supply-state and deep topology checks continue to pass. This closes
+that bounded R4/R7 audit omission; it does not make the partial exporter or
+unqualified routes complete, and activation/release remain blocked.

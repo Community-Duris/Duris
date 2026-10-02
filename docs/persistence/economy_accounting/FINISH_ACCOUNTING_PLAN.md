@@ -24,9 +24,10 @@ Independent reconciliation now checks every native item's parent edge even when
 lineage history replaces its epoch-local history or its opening origin is
 missing. Corruption/recovery probes pass through the read-only SQL exporter on
 both engines. Lineage and epoch-local history also share creation and irreversible
-UID-retirement checks; memoized native topology bounds ancestor work, and 51
+UID-retirement checks; memoized native topology bounds ancestor work, and 53
 reconciler tests pass. Explicit creation/destruction must also match live/tombstone
-custody, and a corrupt destruction cannot erase the UID retirement fence. Complete native source/origin
+custody, a corrupt destruction cannot erase the UID retirement fence, and
+a second destruction of an already retired UID is reported. Complete native source/origin
 and writer qualification remain open. See the October 2 review status for scope.
 
 The frozen candidate `fbd9f5035` completed `make test-all`: 822 passed, 11
