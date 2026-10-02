@@ -9,6 +9,8 @@
 #include <math.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <climits>
+#include <cstdint>
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
@@ -582,7 +584,15 @@ static bool perform_superior_enhancement(P_char ch, P_obj source, P_obj pouch,
 {
 	char buf[MAX_STRING_LENGTH];
 	int i;
-	int cost = enhance_stat_platinum_base + itemvalue(source) * enhance_stat_platinum_per_ival;
+	const int64_t quoted_cost =
+		static_cast<int64_t>(enhance_stat_platinum_base) +
+		static_cast<int64_t>(itemvalue(source)) * enhance_stat_platinum_per_ival;
+	if (quoted_cost < 0 || quoted_cost > INT_MAX)
+	{
+		send_to_char("The enhancement price is outside the supported range.\r\n", ch);
+		return FALSE;
+	}
+	const int cost = static_cast<int>(quoted_cost);
 
 	if (!superior_plan_has_materials(ch, pouch, plan))
 		return FALSE;

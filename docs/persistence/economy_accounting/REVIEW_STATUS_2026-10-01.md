@@ -44,6 +44,13 @@ This checkpoint publishes the completed review fixes directly to
 - Upstream artifact lifetime repair and master migration verifier files are
   integrated. Both production profiles rebuild successfully, and the native
   canonical/staging/master history matrix passes again on both SQL engines.
+- Superior enhancement now computes its configured quote with checked 64-bit
+  arithmetic and refuses negative or unrepresentable prices before mutation.
+  The production payment function reproduces signed overflow before the fix
+  and passes under ASan/UBSan afterward, covering physical/pouch materials,
+  exact ordinary and boundary debits, free valid quotes, and insufficient funds.
+  Both strict production profiles pass. Compound enhancement accounting and
+  same-UID durable mutation remain outstanding.
 
 ## Verification and its limits
 
