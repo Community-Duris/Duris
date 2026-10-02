@@ -23825,3 +23825,182 @@ or other ailments outside those handled by these cures.
 Usage: cast 'mass purification'
 
 See also: Remove Poison, Cure Blind, Cure Disease
+
+#
+"NAMED EQUIPMENT"
+&+W==Syntax==&N
+  namedreport
+
+&+W==What named equipment provides==&N
+Named random equipment includes the zone's name in its description. Items
+can carry extra effects such as detect invisible, ultravision, infravision,
+water breathing, levitation, haste, barkskin, shields, or protections.
+The effects are rolled when the item is created; each named item has its
+own selection. An individual item can also have random stat bonuses.
+
+Wearing pieces from the same named zone can grant named-set spell benefits.
+Type NAMEDREPORT for the current zone list, spells, and pieces required.
+The report explains its cooldown colors. Additional pieces can increase
+the granted spell's casting level; zones without a listed spell can still
+grant hit points. These are set benefits, separate from an item's own
+bonuses and any random weapon spell proc.
+
+&+W==Example==&N
+  namedreport
+Read the row for the zone named on your equipment before assembling a set.
+
+&+W==See also==&N
+Namedreport, Random Equipment, Equipment, Identify
+#
+"NAMEDREPORT"
+&+W==Syntax==&N
+  namedreport
+
+&+W==What happens==&N
+Lists spells granted by named equipment sets, grouped by zone, together
+with the number of pieces required. The report is generated from current
+zone data, or served from the named-report cache when available.
+The report's notes explain the cooldown colors and how extra set pieces
+affect casting level. It describes set benefits rather than every rolled
+bonus on an individual item.
+
+&+W==Example==&N
+  namedreport
+Find your equipment's zone name and check each spell's piece requirement.
+
+&+W==See also==&N
+Named Equipment, Random Equipment
+#
+"RACEWAR"
+&+W==Syntax==&N
+  help racewar
+  help races
+  help rules
+
+&+W==What happens==&N
+Duris groups player characters into opposing racewar sides. Characters
+on different sides can be enemies even when their personal alignment or
+appearance seems similar. Disguises can change how another character's
+side is perceived, so appearance alone is not a reliable guide.
+
+HELP RACES shows the current creation roster and its factions. A race's
+own help entry shows its current creation class choices and racial facts.
+Read HELP RULES for the rules governing player combat and conduct.
+
+&+W==Example==&N
+  help racewar
+  help races
+
+&+W==See also==&N
+Racewars, Races, Rules
+#
+"INTRODUCE"
+&+W==Syntax==&N
+  introduce <player>
+
+&+W==Availability==&N
+Introductions depend on the game's build configuration. Builds without
+the introduction system answer "Pardon?" instead of performing this action.
+
+&+W==What happens when enabled==&N
+Introduces your name to another player in the same room. The other player
+must be able to see you and must not be treated as a racewar enemy.
+This tells them your name; it does not introduce their name to you.
+
+&+W==Feedback==&N
+"They now know your name." means the introduction succeeded.
+You may be told that the player is absent, already knows you, cannot see
+you, or is not a valid introduction target. Introducing yourself to
+yourself does not create an introduction.
+
+&+W==Example==&N
+  introduce <name of a nearby allied player>
+
+&+W==See also==&N
+Racewar, Toggle
+#
+"REFINE"
+&+W==Syntax==&N
+  refine <salvaged material>
+
+&+W==Availability and requirements==&N
+Refining is unavailable while economic accounting is active. In the
+legacy mode, carry at least two pieces of the same salvaged material and
+quality. The highest-quality material cannot be refined further.
+Carry exactly one mined ore as the refining input, or the command requires
+50 platinum. Use exactly one ore for the ore route, or no ore for the
+platinum route. Carrying multiple ores can consume those ores as well as
+the platinum.
+
+&+W==What happens==&N
+The attempt consumes two matching salvaged pieces and its refining inputs
+before the success roll. Success creates one material of the next quality;
+failure destroys the inputs without producing the upgraded material.
+
+&+W==Feedback==&N
+The command reports missing inventory materials, an invalid material,
+highest quality, insufficient matching pieces, or a missing refining input.
+When accounting is active it reports that refining is unavailable.
+
+&+W==Example==&N
+  refine <keyword of two matching salvaged pieces>
+Check your inventory and carry exactly one ore before choosing this route.
+
+&+W==See also==&N
+Salvage
+#
+"SOULBIND"
+&+W==Syntax==&N
+  soulbind <item>
+  soulbind
+
+&+W==Requirements==&N
+To create your first soulbind, you need at least 2,000 frags and must carry
+the item in your inventory. A character can bind one item. Containers,
+storage, treasure, potions, teleport items, wands, keys, food, items with
+contents, store items, existing soulbound items, no-sell items, and
+artifacts are rejected.
+
+&+W==What happens==&N
+Binding records the item's base type and marks the item as soulbound. It
+bears your name and cannot be sold or repaired; it is marked to crumble
+when looted and is not retained as normal rented equipment.
+Once a soulbind exists, SOULBIND requests restoration of that bound item
+rather than choosing a replacement. It recreates the recorded base item;
+do not expect restoration of every custom or random bonus.
+
+&+W==Feedback==&N
+The command reports insufficient frags, a missing carried item, an invalid
+item type, or a bind/restore failure. Restoration is unavailable while
+economic accounting is active. A restore failure keeps the existing item.
+
+&+W==Example==&N
+  soulbind <keyword of an eligible carried item>
+  soulbind
+
+&+W==See also==&N
+Frag, Equipment
+#
+"PRESTIGE"
+&+W==Syntax==&N
+  prestige
+
+&+W==What happens==&N
+Lists prestigious associations in descending prestige order, using
+association ID to break ties. The configured visibility threshold controls
+which associations ordinary players see; the default threshold is 500.
+Ordinary players see names. Staff also see association IDs, prestige
+values, and construction points.
+
+&+W==Feedback==&N
+If no associations are available, the command reports that there are no
+prestigious associations. A populated list can still have no visible names
+when every association is below the visibility threshold. Database-backed
+builds can report "Disabled." when the ranking query is unavailable.
+
+&+W==Example==&N
+  prestige
+
+&+W==See also==&N
+Guilds
+#

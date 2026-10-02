@@ -13,13 +13,35 @@ static void require(bool condition, const std::string &message)
 	}
 }
 
+static void dump_hex(const std::string &value)
+{
+	const char hex[] = "0123456789abcdef";
+	for (unsigned char character : value)
+	{
+		std::cout.put(hex[character >> 4]);
+		std::cout.put(hex[character & 15]);
+	}
+}
+
 int main(int argc, char **argv)
 {
-	require(argc == 2, "project root argument required");
+	require(argc == 2 || (argc == 3 && std::string(argv[2]) == "--dump"),
+		"project root and optional --dump argument required");
 	flatfile_help_catalog catalog;
 	std::string error;
 	require(flatfile_help_catalog_load(argv[1], &catalog, &error),
 		"catalog load failed: " + error);
+	if (argc == 3)
+	{
+		for (const auto &entry : catalog.entries)
+		{
+			dump_hex(entry.title);
+			std::cout.put('\t');
+			dump_hex(entry.text);
+			std::cout.put('\n');
+		}
+		return 0;
+	}
 	require(catalog.entries.size() > 1500, "catalog did not load the complete help sources");
 
 	const flatfile_help_entry *charisma = flatfile_help_catalog_find(catalog, "cHaRiSmA");

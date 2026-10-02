@@ -4344,6 +4344,8 @@ int process_output(P_desc t)
 		}
 
 		AnsiString abuf(buf);
+		if (t->term_type == TERM_GENERIC)
+			abuf.colorize(0);
 		abuf.term(buf, t->character && PLR3_FLAGGED(t->character, PLR3_UNDERLINE) ?
 				       TL_UNDERLINE :
 				       TL_BLINK);
