@@ -744,3 +744,50 @@ The 14 accounting fixtures and generated matrix --check also pass. Native
 source remains `2fa0d98...`; coverage remains incomplete and release BLOCKED.
 This closes a bounded R4/R7 input-validation and native-range mismatch, without
 claiming complete sources/origins, active gameplay or release qualification.
+
+## Independent money revision evidence repair
+
+A separate clean snapshot probe reported no exceptions when current native
+wallet and bank revisions were JSON booleans equal to revision one. Ordinary
+opening/effect counters could also exceed the native uint64 range. Conversely,
+pile mapping and prior-epoch retirement-root checks imposed a signed revision
+limit despite the unsigned native schema. These are evidence-validation gaps;
+coin denominations and copper totals retain their signed checked arithmetic.
+
+The independent audit now uses exact integer 0..UINT64_MAX checks for native
+money holdings, ordinary account origins/effects, retained creation/retirement
+effect counters and pile mappings. The bounded holdings view enforces the same
+range. Invalid types/overflow refuse; valid high retirement/pile revisions
+remain admissible. Existing account history, posting and balance mismatch
+checks remain intact. The item revision helper shares the range check and its
+one-step item lifetime invariant is unchanged.
+
+All 59 reconciliation tests and ten exporter/origin tests pass. The SQL cut
+fixture uses native unsigned money revision types and passes on both engines:
+a witnessed wallet effect to UINT64_MAX, witnessed pile/item authority at that
+revision, stale wallet-revision detection, and exact original snapshot recovery.
+The previous UID high-revision/missing-reference and full partial-cut corruption
+suite also pass. The 14 accounting fixtures and generated matrix --check pass.
+QA source: `/opt/duris-accounting-money-revision-review/source`; reconciler
+SHA-256 `38865bccd189de7577502575348589dc4bd88c927a45369016e1677646027f7a`,
+SQL probe SHA-256 `40771ee67a2dba6f9fdaad8eb0c3b69706cafdfbe2d8d45e7b9fa863dcd7428e`.
+Logs: `tmp/audit-money-revision-red.local.log`,
+`tmp/audit-money-revision-green.local.log`, and
+`tmp/money-revision-dual-sql.local.log` (SHA-256
+`1317197130e94591beab1297019b13eef376eb0b4a0fe1f8c15b67c2e3b90898`).
+This closes a bounded R2/R7 audit mismatch. Native source remains `2fa0d98...`;
+no transaction, inactive gameplay or activation gate changes. SQL export
+remains partial, full native-source qualification incomplete and release BLOCKED.
+
+## Native item-source baseline qualification refresh
+
+The existing durable item-source snapshot and baseline fixture also passes on
+MySQL 8.0.46 and MariaDB 10.11.14 at native source `2fa0d98...`: pet/shop/siege
+ancestry includes nine cycle/depth-exhausted refusals, 99 valid chain items,
+rerun/reopened repaired quarantine, duplicate/cross-owner source handling and
+missing-source table refusal without durable ownership state changes. Native
+capture is compiled against the actual repository implementation. QA source:
+`/opt/duris-accounting-item-source-acb1-review/source`; local log:
+`tmp/item-source-acb1-dual-sql.local.log`. These bounded native/component probes
+do not attest complete native classes or source identities for all gameplay
+writers, captured-clone authority or active-epoch release.

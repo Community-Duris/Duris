@@ -52,7 +52,7 @@ TABLES = (
     "CREATE TABLE economic_accounting_account_effect (operation_id BINARY(16),account_index INT,"
     "account_key BINARY(40),before_copper BIGINT,before_silver BIGINT,before_gold BIGINT,"
     "before_platinum BIGINT,after_copper BIGINT,after_silver BIGINT,after_gold BIGINT,"
-    "after_platinum BIGINT,before_revision BIGINT,after_revision BIGINT) ENGINE=InnoDB",
+    "after_platinum BIGINT,before_revision BIGINT UNSIGNED,after_revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_coin_posting (operation_id BINARY(16),line_index INT,"
     "account_index INT,child_index INT,delta_copper BIGINT,delta_silver BIGINT,delta_gold BIGINT,"
     "delta_platinum BIGINT,copper_value BIGINT) ENGINE=InnoDB",
@@ -74,14 +74,14 @@ TABLES = (
     "lineage BINARY(16),claim_mapping_id BIGINT,beneficiary_pid BIGINT,amount BIGINT,"
     "claim_operation_id BINARY(16)) ENGINE=InnoDB",
     "CREATE TABLE player_data (pid BIGINT,copper BIGINT,silver BIGINT,gold BIGINT,platinum BIGINT,"
-    "wallet_revision BIGINT) ENGINE=InnoDB",
+    "wallet_revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE account_banks (id BIGINT,bank_copper BIGINT,bank_silver BIGINT,bank_gold BIGINT,"
-    "bank_platinum BIGINT,bank_revision BIGINT) ENGINE=InnoDB",
+    "bank_platinum BIGINT,bank_revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE auctions (id BIGINT,status VARCHAR(16),cur_price BIGINT,"
     "auction_revision BIGINT,winning_bidder_pid BIGINT) ENGINE=InnoDB",
     "CREATE TABLE auction_money_pickups (pid BIGINT,money BIGINT,"
-    "claim_revision BIGINT) ENGINE=InnoDB",
-    "CREATE TABLE shopkeepers (id BIGINT,cash BIGINT,shop_revision BIGINT) ENGINE=InnoDB",
+    "claim_revision BIGINT UNSIGNED) ENGINE=InnoDB",
+    "CREATE TABLE shopkeepers (id BIGINT,cash BIGINT,shop_revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE item_current_owner (item_uid BIGINT,root_item_uid BIGINT,parent_item_uid BIGINT,"
     "owner_type INT,owner_id BIGINT,owner_context_id BIGINT,item_revision BIGINT UNSIGNED,state INT,"
     "vnum INT,coin_payload MEDIUMBLOB) ENGINE=InnoDB",
@@ -448,6 +448,51 @@ try:
             assert report["exception_counts"] == expected_exceptions, report
             # Aggregate owner revisions count changes to many UIDs. They may
             # differ from this UID's revision without changing its history.
+            # Money and pile item revisions are unsigned independently of
+            # signed coin denominations. Retain that distinction at the SQL cut.
+            money_maximum = 2**64 - 1
+            money_blob = bytearray(blob)
+            wallet_revision_offset = 192 + 72
+            pile_revision_offset = 192 + 2 * 112 + 72
+            first_item_offset = 192 + struct.unpack_from("<I", money_blob, 184)[0] * 112
+            pile_item_revision_offset = first_item_offset + 88 + 48
+            assert struct.unpack_from("<Q", money_blob, wallet_revision_offset)[0] == 4
+            assert struct.unpack_from("<Q", money_blob, pile_revision_offset)[0] == 1
+            assert struct.unpack_from("<Q", money_blob, first_item_offset + 88)[0] == 82
+            struct.pack_into("<Q", money_blob, wallet_revision_offset, money_maximum - 1)
+            struct.pack_into("<Q", money_blob, pile_revision_offset, money_maximum)
+            struct.pack_into("<Q", money_blob, pile_item_revision_offset, money_maximum)
+            with setup.cursor() as writer:
+                writer.execute("UPDATE economic_baseline_witness SET witness_digest=%s,"
+                               "canonical_witness=%s WHERE operation_id=%s",
+                               (hashlib.sha256(money_blob).digest(), bytes(money_blob), OP))
+                writer.execute("UPDATE player_data SET wallet_revision=%s WHERE pid=7",
+                               (money_maximum,))
+                writer.execute("UPDATE item_current_owner SET item_revision=%s WHERE item_uid=82",
+                               (money_maximum,))
+                writer.execute("UPDATE economic_accounting_account_effect SET before_revision=%s,"
+                               "after_revision=%s WHERE operation_id=%s AND account_index=0",
+                               (money_maximum - 1, money_maximum, root))
+            money_snapshot = capture(audit, LINEAGE, EPOCH)
+            assert Reconciler().audit(money_snapshot)["exception_counts"] == expected_exceptions
+            pile = money_snapshot["native"]["coin_piles"][0]
+            assert pile["uid"] == 82 and pile["revision"] == money_maximum
+            with setup.cursor() as writer:
+                writer.execute("UPDATE player_data SET wallet_revision=%s WHERE pid=7",
+                               (money_maximum - 1,))
+            stale_high_money = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert stale_high_money["exception_counts"]["stale_native_balance"] == 1
+            with setup.cursor() as writer:
+                writer.execute("UPDATE player_data SET wallet_revision=5 WHERE pid=7")
+                writer.execute("UPDATE item_current_owner SET item_revision=1 WHERE item_uid=82")
+                writer.execute("UPDATE economic_accounting_account_effect SET before_revision=4,"
+                               "after_revision=5 WHERE operation_id=%s AND account_index=0", (root,))
+                writer.execute("UPDATE economic_baseline_witness SET witness_digest=%s,"
+                               "canonical_witness=%s WHERE operation_id=%s",
+                               (hashlib.sha256(blob).digest(), blob, OP))
+            assert capture(audit, LINEAGE, EPOCH) == snapshot
+            print("SQL money uint64 boundary: wallet/pile authority, stale-revision refusal "
+                  "and baseline recovery passed", flush=True)
             # The native schema uses uint64 revisions. Qualify a complete
             # witnessed move at UINT64_MAX, separately from owner counters.
             maximum_revision = 2**64 - 1

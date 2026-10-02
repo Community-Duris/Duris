@@ -26,6 +26,13 @@ and `receipts`. Every collection is required and limited to 100,000 rows. A
 source snapshot larger than either limit needs a reviewed partitioning method;
 truncating and setting `complete: true` is prohibited.
 
+Native money and item revisions are exact JSON integers in 0..UINT64_MAX,
+matching their unsigned native schema and wire fields. Boolean, negative or
+larger values are malformed evidence. This differs from signed denomination
+and copper-total ranges. Item events advance one revision; money effects retain
+their native before/after revision chain. Origins, current authority and retained
+creation/retirement roots must agree across the complete unsigned range.
+
 The partial SQL exporter also supplies `native_mapping_coverage`. It counts
 all `player_data` and `account_banks` rows, rows with no active SQL mapping in
 any lineage, native rows with multiple active mappings in the selected lineage,
