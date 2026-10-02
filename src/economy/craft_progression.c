@@ -23,6 +23,7 @@ struct progression_attempt
 	player_craft_receipt_snapshot receipt = {};
 	bool applied = false;
 	bool acknowledged = false;
+	bool save_pending = false;
 	std::chrono::steady_clock::time_point next_save = {};
 };
 
@@ -87,7 +88,10 @@ void save_completed(uint32_t pid, bool committed, const player_craft_receipt_sna
 		if (committed)
 			found->second.acknowledged = true;
 		else
+		{
+			found->second.save_pending = false;
 			found->second.next_save = {};
+		}
 	}
 }
 
@@ -210,11 +214,16 @@ craft_progression_publication_result publish(const critical_operation_id &operat
 					 EXP_BOON);
 		}
 		const auto now = std::chrono::steady_clock::now();
-		if (now >= attempt.next_save)
+		if (!attempt.save_pending && now >= attempt.next_save)
 		{
 			attempt.next_save = now + std::chrono::milliseconds(500);
-			(void)player_save_pipeline_request(actor, CRAFT_PROGRESSION_COMPONENTS,
-							   RENT_CRASH, ROOM_VNUM(actor->in_room));
+			const auto result =
+				player_save_pipeline_request(actor, CRAFT_PROGRESSION_COMPONENTS,
+							     RENT_CRASH, ROOM_VNUM(actor->in_room));
+			// Keep the admitted revision stable until its exact completion. Repeated
+			// publication pulses must not supersede it before the worker can admit it.
+			attempt.save_pending = result == player_save_pipeline_result::queued ||
+					       result == player_save_pipeline_result::coalesced;
 		}
 		return craft_progression_publication_result::waiting;
 	}

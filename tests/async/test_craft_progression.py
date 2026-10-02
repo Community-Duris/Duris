@@ -20,9 +20,11 @@ HARNESS = r'''
 #include <cassert>
 #include <climits>
 #include <cstdarg>
+#include <thread>
 P_room world = nullptr;
 int top_of_world = -1;
 int notches = 0, xp = 0, saves = 0;
+player_save_pipeline_result save_result = player_save_pipeline_result::capture_failed;
 bool notch_skill(P_char, int skill, float chance) {
  assert((skill == SKILL_CRAFT || skill == SKILL_FORGE) && chance == 50); ++notches; return true;
 }
@@ -33,7 +35,7 @@ int panic_corruption_int(const char *, const char *, ...) { std::abort(); }
 player_save_pipeline_result player_save_pipeline_request(P_char ch,
  player_component_mask_t mask, int, int) {
  assert(GET_PID(ch) == 7 && mask == CRAFT_PROGRESSION_COMPONENTS); ++saves;
- return player_save_pipeline_result::capture_failed;
+ return save_result;
 }
 critical_operation_id id(uint8_t value) { critical_operation_id op = {}; op.bytes[0]=value; return op; }
 int main() {
@@ -67,6 +69,24 @@ int main() {
   assert(craft_progression_hooks.publish(id(1), &actor, terms)==craft_progression_publication_result::ready);
   assert(notches==1 && xp==7000 && saves==2);
  }
+ // A slow admitted save must keep its revision rather than be superseded on
+ // every 500ms publication pulse. A failed exact completion rearms capture.
+ craft_progression_initialize(); notches=xp=saves=0;
+ save_result=player_save_pipeline_result::queued;
+ assert(craft_progression_hooks.publish(id(2),&actor,terms)==craft_progression_publication_result::waiting);
+ std::this_thread::sleep_for(std::chrono::milliseconds(550));
+ assert(craft_progression_hooks.publish(id(2),&actor,terms)==craft_progression_publication_result::waiting);
+ assert(saves==1 && notches==1 && xp==7000);
+ std::vector<player_craft_receipt_snapshot> admitted;
+ assert(craft_progression_hooks.pending(7,&admitted) && admitted.size()==1);
+ craft_progression_hooks.saved(7,false,admitted.data(),admitted.size());
+ save_result=player_save_pipeline_result::coalesced;
+ assert(craft_progression_hooks.publish(id(2),&actor,terms)==craft_progression_publication_result::waiting);
+ std::this_thread::sleep_for(std::chrono::milliseconds(550));
+ assert(craft_progression_hooks.publish(id(2),&actor,terms)==craft_progression_publication_result::waiting);
+ assert(saves==2 && notches==1 && xp==7000);
+ craft_progression_hooks.saved(7,true,admitted.data(),admitted.size());
+ assert(craft_progression_hooks.publish(id(2),&actor,terms)==craft_progression_publication_result::ready);
  craft_progression_initialize();
  assert(craft_progression_hooks.publish({},&actor,terms)==craft_progression_publication_result::failed);
  auto receipt=player_craft_receipt_snapshot{id(3),1,10};
