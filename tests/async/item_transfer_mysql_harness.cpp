@@ -2163,9 +2163,6 @@ void check_craft_conservation(MYSQL *connection)
 	assert(obsolete.outcome == player_save_apply_outcome::stale_revision &&
 	       obsolete.durable_revision == 2 && obsolete.operation_receipts_verified);
 	assert(scalar(connection, "SELECT exp FROM player_data WHERE pid=551") == awarded_xp);
-	char replay_directory[] = "/tmp/duris-obsolete-craft-XXXXXX";
-	assert(mkdtemp(replay_directory));
-	assert(player_save_journal_init(replay_directory));
 	assert(player_save_journal_append(progression) == player_save_journal_result::ok);
 	assert(player_save_journal_replay(
 		       [](const player_snapshot &snapshot, void *context) {
@@ -2175,8 +2172,6 @@ void check_craft_conservation(MYSQL *connection)
 		       connection) == player_save_journal_result::ok);
 	assert(!player_save_journal_pid_quarantined(551));
 	assert(player_save_journal_health_copy().records == 0);
-	player_save_journal_shutdown();
-	std::filesystem::remove_all(replay_directory);
 	progression.craft_receipts[0].experience = 7001;
 	assert(player_snapshot_repository_apply(connection, progression).outcome ==
 	       player_save_apply_outcome::terminal_failure);
@@ -2419,6 +2414,9 @@ void check_accounted_pouch_conservation(MYSQL *connection)
 int main()
 {
 	assert(mysql_library_init(0, nullptr, nullptr) == 0);
+	char replay_directory[] = "/tmp/duris-item-transfer-XXXXXX";
+	assert(mkdtemp(replay_directory));
+	assert(player_save_journal_init(replay_directory));
 	MYSQL *connection = mysql_init(nullptr);
 	assert(connection);
 	assert(mysql_real_connect(
@@ -2843,6 +2841,8 @@ int main()
 	check_craft_conservation(connection);
 	check_accounted_craft_conservation(connection);
 	check_accounted_pouch_conservation(connection);
+	player_save_journal_shutdown();
+	std::filesystem::remove_all(replay_directory);
 	mysql_close(connection);
 	return 0;
 }
