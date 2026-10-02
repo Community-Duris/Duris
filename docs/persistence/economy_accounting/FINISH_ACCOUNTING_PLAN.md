@@ -43,6 +43,14 @@ and writer qualification remain open. Restore qualification also rejects
 unwitnessed epic revisions and gaps that conserve aggregate value; both SQL
 component probes and the nine-case native recovery suite pass this repair. See the October 2 review status for scope.
 
+The independent reconciler now also refuses weighted copper overflow in parsed
+native, opening and effect denomination vectors, even if their values agree and
+all postings balance. The consistent malformed snapshot reproduced a false
+zero-exception result; 61 reconciler tests and both SELECT-only SQL probes pass
+overflow refusal, exact repair and unchanged authority. The CLI refuses the same
+malformed input with a zero detail limit. These are bounded R2/R7 format checks,
+not complete holding/source, workload or active-gameplay qualification.
+
 Native isolated SQL restore now supports an explicit `restore_database_engine`
 policy choice, retaining MariaDB by default and admitting an installed MySQL 8.0
 executable only after a version check. All ten native recovery cases pass,

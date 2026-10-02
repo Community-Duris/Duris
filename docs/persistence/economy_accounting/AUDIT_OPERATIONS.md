@@ -33,6 +33,13 @@ and copper-total ranges. Item events advance one revision; money effects retain
 their native before/after revision chain. Origins, current authority and retained
 creation/retirement roots must agree across the complete unsigned range.
 
+Each parsed denomination vector must have signed 64-bit fields and a checked
+signed 64-bit copper total using weights 1/10/100/1000. This includes native
+holdings, opening origins and account-effect before/after vectors, even if they
+match each other and the postings balance. An overflowing vector is malformed
+evidence: the CLI refuses with status 2 and copper overflow, including with
+`--limit 0`; it never wraps values or changes the input to make it reconcile.
+
 The partial SQL exporter also supplies `native_mapping_coverage`. It counts
 all `player_data` and `account_banks` rows, rows with no active SQL mapping in
 any lineage, native rows with multiple active mappings in the selected lineage,

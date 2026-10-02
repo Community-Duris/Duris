@@ -1025,3 +1025,46 @@ coverage_complete=False and release BLOCKED.
 Final `native-shop-money-restore-latest.local.log` SHA-256 `55a304880c6b71091d7cd0a55d2abf5ac168a30cac9464207407cb7edd00c98d`.
 
 Final `native-shop-money-full-trade.local.log` SHA-256 `d694e8c77a9bc5248167c5063b36067e0876fc517fefc5580ef7d277a2d631fd`.
+
+
+## Independent audit checked copper totals
+
+The read-only reconciler accepted a consistent wallet, opening and before/after
+history whose platinum field was INT64_MAX. Each individual denomination fit
+its field and the postings still summed to zero, yet the actual weighted copper
+holding could not exist in the native money range. The RED snapshot reported
+zero exceptions. The new regression fails before the repair; the published
+`29d922ac6` reconciler also fails the new SQL effect-vector overflow probe.
+
+Parsed denomination vectors now check their weighted copper total in addition
+to every signed 64-bit field. Native holdings, openings and account-effect
+before/after images refuse positive and negative overflow; representable upper
+boundary values remain admitted. The CLI refuses malformed vectors with status
+2 even at zero output-detail limit, leaves the input bytes unchanged, and passes
+again only after exact external fixture repair. No mutable authority, native
+operation, gameplay decision, price, activation or declined spell path changes.
+
+All 61 reconciler tests pass in 0.786 seconds; ten exporter/origin tests, 16 audit
+invariant tests and 14 accounting fixtures also pass. Both engines pass the
+complete SELECT-only partial SQL snapshot probe, including independent native
+and effect corruption, exact restored snapshot equality, full uint64 wallet/pile
+and UID boundaries, history/reference refusal and the existing source/custody
+checks. The component uses synthetic rows and widened native coin columns to
+exercise the audit vector range; it does not establish that a real player wallet
+can hold those injected values. The canonical evidence columns remain BIGINT.
+The exporter still reports sql_partial/complete=false. These are bounded R2/R7
+malformed-evidence refusals, not full independent reconciliation or gameplay,
+flatfile parity, captured-clone, lifecycle or measured workload qualification.
+Native source stays `5d6cf93...`; coverage_complete=False and release BLOCKED.
+
+QA: `/opt/duris-accounting-audit-checked-copper-review/source`.
+RED logs: `tmp/audit-checked-copper-red.local.log` and
+`tmp/audit-checked-copper-sql-red.local.log`. GREEN logs:
+`tmp/audit-checked-copper-final.local.log` and
+`tmp/audit-checked-copper-sql-green.local.log`.
+
+`scripts/reconcile_economy_accounting.py` SHA-256 `78a097fd2ebf0fd8e8dddb000cfff8d47d3892a204fa772705573e3a6ce99a66`.
+
+`tests/async/run_economic_sql_audit_snapshot_mysql.py` SHA-256 `3245046af108dcbddce05fde82829c461f012edf274e5b3430ffd1efe4bb3e9c`.
+
+`tmp/audit-checked-copper-sql-green.local.log` SHA-256 `b0301057fb9ee46bf95c9c8e266478e845d0d47ed50f8f872fb294ec3c0e51db`.

@@ -55,7 +55,11 @@ def vector(value: object) -> tuple[int, int, int, int]:
     if (not isinstance(value, list) or len(value) != 4 or
             any(type(part) is not int or not -(2**63) <= part < 2**63 for part in value)):
         raise SnapshotError("invalid denomination vector")
-    return tuple(value)
+    checked = tuple(value)
+    # Matching native/opening/effect vectors can still exceed the native money
+    # range. Validate their weighted value, not only each denomination field.
+    copper(checked)
+    return checked
 
 
 def copper(value: tuple[int, int, int, int]) -> int:
