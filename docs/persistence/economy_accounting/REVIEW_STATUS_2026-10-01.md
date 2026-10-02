@@ -75,6 +75,11 @@ This checkpoint publishes the completed review fixes directly to
   initialize/set/revert/save/reload journey passes on SQL and flatfile again;
   the full regression run remains in progress.
 
+- Four files identified by the full formatting check now match the repository
+  style with unchanged C++ tokens and comments. The whole-tree formatter, ten
+  runtime-compatibility contracts, and the native read-transaction cleanup fault
+  harness pass. Both strict production profiles rebuild successfully.
+
 ## Verification and its limits
 
 | Check | Current evidence |
