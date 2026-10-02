@@ -659,3 +659,49 @@ erasure propagation, remote backup custody or workload budgets. Inactive
 accounting, activation/refusal gates and the declined spell path are preserved.
 R1-R8 and release remain incomplete. The completed 79540e65d broad run stays
 826 passed / 11 skipped / 2 failed; the frozen 8c997b00d run remains underway.
+
+## Nested locker cold-reload and exact transfer receipts
+
+The original manual SQL locker journey passed on both engines but stopped after
+saving the withdrawal, before its cold reload. It also did not check exact item
+revisions or immutable transfer receipt stability. The maintained journey now
+checks original root UID 880000000101 and child UID 880000000102, revisions
+5 -> 6 -> 7, exactly two UID events per deposit/withdrawal operation, distinct
+operation IDs, exact reverse owner/context identities, and successful durable
+critical inbox receipts. Saves and cold reloads preserve those events verbatim.
+A fourth boot loads the withdrawn backpack and its original child through the
+real game client; native nesting, extra descriptions and affects still match.
+Accounting is explicitly inactive before and after the journey.
+
+The strengthened run passes on MariaDB 10.11.14 and MySQL 8.0.46 using the
+unchanged strict SQL artifact `abfc8124335fc7dbe95540db9582307b587cd7a8087268a7f214a5d441d1cec1`
+and native source tree `2fa0d98...`. The daemon logs verify both versions.
+QA source: `/opt/duris-accounting-locker-recovery-review/source`; maintained
+journey SHA-256 `526e521da14991f4739ed7ce1a81a977e02ea3acc5efe96f45b0eb3a965282f1`.
+The frozen generated full-world inputs come from the 79540e65d QA checkout;
+`world.mob` SHA-256 is `34853f86b0e6b7c33503ab6874df1689ecd7b6fe8f0a86bdb91427f9dd1c6558`.
+Local successful log: `tmp/locker-recovery-dual-sql.local.log`, SHA-256
+`ad0c0c9259b21f2ca9e1a60cd30e4234787f397afccc09f32df7d4d44556e936`.
+The initial environment attempt lacked generated world.mob and refused boot;
+no native fix was needed. Both original and strengthened journeys pass after
+supplying their documented generated-area prerequisite.
+
+This closes a bounded R4/R8 locker qualification omission. The synthetic
+character/items in a disposable full world do not certify captured-clone
+recovery, process-crash publication, active epochs or flatfile parity. Active
+locker-fee refusal remains intact. No production mutation or activation occurs.
+
+## Bounded combat repeats retain the unexplained failure
+
+Five further MariaDB development-profile boon journeys pass: healthy death
+returns 12 original items through one corpse-create command, with attack-to-menu
+6.465, 6.074, 6.101, 6.099 and 6.133 seconds. Retained conflict recovery passes
+durable ACK before the account menu, self-scoped list/detail, cold entry refusal
+and restart stability, with `manual_fixture_repair=False`. Evidence remains in
+`/opt/duris-accounting-combat-b401-review/evidence/boon-repeat-{3,4}/mariadb/`
+under five distinct disposable schema IDs; the directory number reflects the
+readiness-loop counter, not chronological repetition order. The full diagnostic
+fixture SHA remains `1e5e87a2b8b204cebeeab3aeada5e4c6d2ab57fe53c047fae0b6b11bda8c4327`.
+These repeats do not explain the first MariaDB owner-revision RED. Keep that
+finding and the production-profile TEST_MUD-only release-selector RED open;
+no assertion, selector or inactive behavior is weakened.

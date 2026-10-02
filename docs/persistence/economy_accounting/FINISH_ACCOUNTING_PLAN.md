@@ -60,8 +60,8 @@ This is a failed broad run plus a separate focused repair pass; a current-head
 integrated run and skipped external-service checks remain qualification gates.
 The skipped help-import fixture now honors a validated disposable connection;
 its rollback, atomic publication and nontransactional refusal test passes on
-both SQL engines. A fresh 839-test full run is underway on exact published
-candidate `79540e65d`; later fixture fixes retain separate focused evidence.
+both SQL engines. The 79540e65d run completed with the failure totals above; later fixture fixes
+retain separate focused evidence.
 The optional native item-provenance fixture now links and honors terminal
 source-reuse refusal; its full transaction/replay/epoch/concurrency probe passes
 on both engines. Native load/recovery and telemetry schema/factory checks also
@@ -70,13 +70,15 @@ real telemetry-role grants and Docker integration gates open.
 Guarded development combat has bounded variant passes on both engines,
 but the first MariaDB boon attempt has an unexplained owner-revision failure.
 The fixture now retains exact acknowledged source rows before assertions for
-that investigation. Production conflict-release attempts remain RED; no gate
+that investigation. Five more MariaDB boon repeats pass with durable ACK,
+self-scoped conflict readback and restart stability, without explaining the
+original RED. Production conflict-release attempts remain RED; no gate
 or inactive selector is changed.
-All nine native disposable backup/restore integration cases now pass on the
-same strict SQL/flatfile source, including real MariaDB dump/import, journal
-recovery, isolated server boot and corruption refusals. Restore also preflights
-the Linux socket byte bound before initialization. Captured-clone/full-world,
-MySQL restore, remote custody and active-accounting lifecycle gates remain open.
+The current ten-case native disposable backup/restore suite passes on the
+same strict SQL/flatfile source, including both SQL engines, journal recovery,
+isolated server boot and corruption refusals, with direct daemon version
+readbacks. Captured-clone/full-world, erasure propagation, remote custody and
+active-accounting lifecycle gates remain open.
 
 The disposable playtime journey now honors a validated `TEST_DB_PORT` in both
 native connections and SQL clients. Its outdated temporary-table probe is
@@ -149,6 +151,14 @@ roll boundaries. Both production profiles pass; compound salvage remains open.
 Quest XP receipts make progression replay-safe; they are not ledger postings.
 A logged-out character cannot join a live quest group. A linkdead character
 remaining in the game can participate and is paid without a descriptor check.
+
+The nested SQL locker journey now also passes a cold reload after withdrawal
+on both supported engines. Original root/child UIDs, exact item revisions
+5 -> 6 -> 7, immutable transfer operations and successful durable inbox receipts
+survive both reloads and the following saves. Native nesting, extra descriptions
+and affects are preserved. This is inactive-accounting gameplay qualification
+with a synthetic player and seeded items; active locker fees remain guarded,
+and crash-point, active-epoch and flatfile parity gates remain open.
 
 ## Work order
 
