@@ -19,7 +19,7 @@ assert "ITEM2_QUESTITEM" in crafting
 # but never compared anything against it, so its copy was removed as dead.
 assert "minval = itemvalue(source) - enhance_material_ival_delta;" in enhance
 assert "if (!pouch_material && itemvalue(material) < minval)" in enhance
-assert "SUB_MONEY(ch, cost, 0);" in enhance  # `cost` must be the same amount gated and reported.
+assert "SUB_MONEY(ch, cost, 0) != 0" in enhance  # `cost` must be the same amount gated and reported.
 assert "cost = 20000;" in enhance
 assert "cost = 100000;" in enhance
 print("crafting and enhancement regression contract passed")
