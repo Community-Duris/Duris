@@ -79,9 +79,8 @@ void enhance(P_char ch, P_obj source, P_obj material)
 {
 	char buf[MAX_STRING_LENGTH];
 	P_obj robj;
-	int cost, searchcount, maxsearch, sval;
-	int newval, minval, chluck, wearflags;
-	int cascade_dir, cascade_step, cascade_ival;
+	int cost, sval, chluck, wearflags, cascade_dir;
+	int64_t searchcount, maxsearch, newval, minval, cascade_step, cascade_ival;
 	struct enhance_index_entry *entry;
 
 	if (!ch || !source || !material)
@@ -105,7 +104,7 @@ void enhance(P_char ch, P_obj source, P_obj material)
 
 	chluck = (GET_C_LUK(ch));
 	sval = itemvalue(source);
-	minval = itemvalue(source) - enhance_material_ival_delta;
+	minval = static_cast<int64_t>(sval) - enhance_material_ival_delta;
 	searchcount = 0;
 	maxsearch = enhance_search_max_attempts;
 	// Only search matching wear flags unless none matching, then just search source wear flags.
@@ -146,8 +145,8 @@ void enhance(P_char ch, P_obj source, P_obj material)
 		snprintf(source_description, MAX_STRING_LENGTH, "%s", source->short_description);
 		checked_snprintf(
 			buf, MAX_STRING_LENGTH,
-			"&+REnhancing %s requires an item with at least an &+Witem value of: %d&n\r\n",
-			source_description, minval);
+			"&+REnhancing %s requires an item with at least an &+Witem value of: %lld&n\r\n",
+			source_description, static_cast<long long>(minval));
 		send_to_char(buf, ch);
 		return;
 	}
@@ -178,25 +177,25 @@ void enhance(P_char ch, P_obj source, P_obj material)
 
 	if (number(1, enhance_luck_extreme_range) < chluck)
 	{
-		newval = sval + enhance_ival_gain_extreme;
+		newval = static_cast<int64_t>(sval) + enhance_ival_gain_extreme;
 		maxsearch *= 4;
 		send_to_char("&+YYou feel &+MEXTREMELY Lucky&+Y!\r\n", ch);
 	}
 	else if (number(1, enhance_luck_very_range) < chluck)
 	{
-		newval = sval + enhance_ival_gain_very;
+		newval = static_cast<int64_t>(sval) + enhance_ival_gain_very;
 		maxsearch *= 3;
 		send_to_char("&+YYou feel &+MVery Lucky&+Y!\r\n", ch);
 	}
 	else if (number(1, enhance_luck_lucky_range) < chluck)
 	{
-		newval = sval + enhance_ival_gain_lucky;
+		newval = static_cast<int64_t>(sval) + enhance_ival_gain_lucky;
 		maxsearch *= 2;
 		send_to_char("&+YYou feel &+MLucky&+Y!\r\n", ch);
 	}
 	else
 	{
-		newval = sval + enhance_ival_gain_normal;
+		newval = static_cast<int64_t>(sval) + enhance_ival_gain_normal;
 	}
 
 	/* Cascade search through the ival hash table.
@@ -229,13 +228,15 @@ void enhance(P_char ch, P_obj source, P_obj material)
 								    (newval - cascade_step);
 			}
 
-			if (cascade_ival < 1 ||
-			    cascade_ival > enhance_ival_cap + enhance_original_max_roll)
+			if (cascade_ival < 1 || cascade_ival > INT_MAX ||
+			    cascade_ival > static_cast<int64_t>(enhance_ival_cap) +
+						   enhance_original_max_roll)
 				continue;
 
 			/* Look up in hash table */
-			for (entry = enhance_ival_table[enhance_hash(cascade_ival)]; entry;
-			     entry = entry->next)
+			for (entry = enhance_ival_table[enhance_hash(
+				     static_cast<int>(cascade_ival))];
+			     entry; entry = entry->next)
 			{
 				if (entry->ival != cascade_ival)
 					continue;
