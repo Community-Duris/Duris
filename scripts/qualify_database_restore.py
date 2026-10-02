@@ -24,6 +24,21 @@ def require_completed_history(rows):
     raise RuntimeError("restore_migration_history_incomplete_or_unknown")
 
 
+def require_epic_revision_history(executor):
+    """A conserved balance must also have every post-opening native revision."""
+    query = (
+        "SELECT COUNT(*) FROM player_data p JOIN epic_balance_baseline b ON b.pid=p.pid "
+        "LEFT JOIN (SELECT b.pid,COUNT(l.operation_id) event_count,MAX(l.epic_revision) last_revision "
+        "FROM epic_balance_baseline b LEFT JOIN epic_ledger l ON l.pid=b.pid "
+        "AND l.epic_revision>b.opening_revision GROUP BY b.pid) h ON h.pid=p.pid "
+        "WHERE p.epic_revision<>COALESCE(h.last_revision,b.opening_revision) OR "
+        "CAST(p.epic_revision AS DECIMAL(20,0))-CAST(b.opening_revision AS DECIMAL(20,0))"
+        "<>h.event_count;"
+    )
+    if executor.sql(query) != "0":
+        raise RuntimeError("restore_epic_revision_history_mismatch")
+
+
 def main():
     if os.environ.get("DB_NAME") != "duris_restore" or not os.environ.get("DB_SOCKET"):
         raise RuntimeError("isolated_restore_connection_required")
@@ -67,6 +82,7 @@ def main():
         for query in queries:
             if executor.sql(query) != "0":
                 raise RuntimeError("restore_reconciliation_failed")
+        require_epic_revision_history(executor)
         print('{"history":"ok","reconciliation":"ok"}')
     finally:
         executor.release_lock()

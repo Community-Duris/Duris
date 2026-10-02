@@ -555,3 +555,37 @@ and safety gates are unchanged. The exporter remains `sql_partial` with
 `complete=false`, and activation/release remain blocked. The frozen 79540e65d
 839-test run and the exact 8c997b00d 841-test run remain in progress; neither yet
 qualifies this later audit repair or supplies the missing external-service gates.
+
+
+## Restore qualification retains complete epic revision history
+
+A native MariaDB restore regression reproduced a false qualification: changing
+only a saved player's epic revision from zero to nine with no ledger events
+still passed every restore check. Aggregate value and the last-event balance
+comparison alone cannot establish recoverable revision authority.
+
+The read-only restore qualifier now requires the saved revision to equal the
+latest post-opening ledger revision (or its opening revision when no event
+exists), and the event count to cover that entire revision interval. Checked
+DECIMAL subtraction covers the full unsigned range without underflow. The
+native regression also removes two cancelling events from a four-event history:
+its balance and latest event stay correct, but qualification now refuses. Exact
+fixture repair restores qualification and the original baseline values.
+
+The production SELECT is independently exercised through a separate read-only
+connection on disposable MySQL 8.0.46 and MariaDB 10.11.14: opening-only and
+contiguous histories, future/stale revisions, missing interior events, a later
+opening cut, repair/re-read and UINT64_MAX boundaries pass. The focused runner
+is `tests/async/run_restore_epic_history_mysql.py`. All nine native recovery
+integration cases pass in 229.673 seconds with the repaired qualifier, including
+the full MariaDB dump/import, retained values and isolated SQL server boot.
+All 24 migration-runner tests and 39 backup policy tests pass on Linux. The
+initial Windows migration-runner attempt emitted errors without a retained
+final diagnostic; qualification uses the completed native Linux run. Contract and generated
+matrix checks pass. Native source remains `2fa0d98dac56a1687e4af4314da7ac9b327a670d`.
+
+This closes the bounded R8 epic revision qualification omission. These synthetic
+fixtures are separate from complete accounting, captured-clone/player workload
+qualification, MySQL candidate restore, erasure propagation and remote backup
+custody. Both frozen broad suites remain unfinished. R1-R8, activation and
+release remain open; production data and runtime safety gates are unchanged.

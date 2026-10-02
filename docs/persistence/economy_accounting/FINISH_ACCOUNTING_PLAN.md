@@ -31,7 +31,9 @@ a second destruction of an already retired UID is reported. SQL lineage
 references and history cuts now derive prior UID revisions from the immutable
 item revision, independently of aggregate owner counters; impossible revision
 zero refuses before filtering. Ten exporter tests and both SQL probes pass. Complete native source/origin
-and writer qualification remain open. See the October 2 review status for scope.
+and writer qualification remain open. Restore qualification also rejects
+unwitnessed epic revisions and gaps that conserve aggregate value; both SQL
+component probes and the nine-case native recovery suite pass this repair. See the October 2 review status for scope.
 
 The frozen candidate `fbd9f5035` completed `make test-all`: 822 passed, 11
 skipped and one live Redis fixture failed because its Unix socket path exceeded

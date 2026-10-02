@@ -30,7 +30,7 @@ there are no staging/trash remnants, and the previous `status.json` is a valid
 `ok` receipt for the immediately preceding generation. It then uses the normal
 replication, capacity, retention, and completion path under the existing job
 lock. Any uncertainty remains a refusal. `blocked_retry_seconds` defaults to
-3600 and accepts 60–604800 seconds; it limits repeated full content verification
+3600 and accepts 60â€“604800 seconds; it limits repeated full content verification
 for an unchanged protected refusal. Its metadata fingerprint can only defer the
 same refusal: it never establishes integrity or authorizes capture, rotation,
 replication, or a healthy status. A metadata change or expiry triggers a fresh
@@ -86,7 +86,7 @@ service template preserves the expected root mapping. Custom user services must
 qualify the backup under their actual service restrictions before cutover.
 
 Flatfile capture preserves identity
-ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ critical authority ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ account locking, pending-transaction evidence, and the
+ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ critical authority ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ account locking, pending-transaction evidence, and the
 complete durable file tree.
 
 Journal trees are copied before the authority snapshot and compared again after
@@ -257,7 +257,10 @@ Never bypass the compatibility check or edit backup metadata.
 MariaDB restore initializes a new private datadir with networking disabled,
 imports through a schema-only account with no global/FILE privileges, validates
 the runtime schema, recomputes the complete migration history, and reconciles
-account/character, wallet, bank, and epic evidence. Runtime boot uses only the
+account/character, wallet, bank, and epic evidence. Epic qualification also
+requires the saved revision to match the last immutable event and every
+revision after its opening baseline to be present; cancelling missing events
+cannot qualify from an unchanged aggregate balance. Runtime boot uses only the
 new socket. Flatfile restore verifies copied bytes before mutation, runs native
 authority replay, and validates existing account, snapshot, and world catalog bytes.
 Full player/domain loads run after WAL replay, allowing a durable first snapshot
