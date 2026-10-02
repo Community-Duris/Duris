@@ -46,6 +46,10 @@ Its native MariaDB refusal and rollback checks pass, but the successful retry
 ends in reconciliation after player deletion because `-s` skips the zone-story
 tracker's special-procedure bootstrap. That lifecycle dependency remains open;
 the port repair does not qualify successful deletion or erasure.
+The fixture's long schema name also exceeded MySQL's named-lock limit; its
+shortened random namespace now fits the unchanged native exclusion lock and
+passes the scoped regression. The accompanying native boot repair is qualified
+on both SQL engines and is being recorded as a separate milestone.
 
 Stopped quarantine recovery from upstream `5c157f693` is integrated with the
 review fixes. Version-2 archives retain original frames and frozen grant

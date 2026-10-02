@@ -21,7 +21,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def run(server):
-    database = 'deletion_journey_test_' + uuid.uuid4().hex[:12]
+    # The unchanged native exclusion prefix plus this schema must fit MySQL's
+    # 64-byte named-lock limit (MariaDB accepts the older 65-byte fixture name).
+    database = 'deletion_test_' + uuid.uuid4().hex[:12]
     host = os.environ['TEST_DB_HOST']
     assert host in ('127.0.0.1', 'localhost'), 'use a disposable loopback database'
     port_text = os.environ.get('TEST_DB_PORT', '3306')

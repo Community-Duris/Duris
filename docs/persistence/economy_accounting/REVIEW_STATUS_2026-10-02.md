@@ -244,3 +244,15 @@ under the journey's `-s` boot. Its bootstrap currently lives in mobile special-
 procedure assignment, which that option skips. This is a separate R8 lifecycle
 dependency to repair and requalify; neither successful SQL deletion nor economic
 identity/alias erasure is qualified by the port fix. No production rows changed.
+
+## MySQL deletion fixture lock-name repair
+
+The old `deletion_journey_test_<12 hex>` schema produces a 65-character native
+exclusion-lock name. MariaDB accepts it, while actual MySQL 8.0.46 refuses it
+with error 4163 before boot. A connection-free regression reproduces that bound;
+the fixture now uses `deletion_test_<12 hex>`, retaining random isolation while
+keeping the unchanged native lock name at 57 characters. All three deletion
+port/scope tests pass. The direct disposable MySQL probe reproduces the old
+named-lock refusal. With the accompanying boot-owner candidate repair, the
+complete refusal/rollback/retry/restart journey passes on both SQL engines.
+Production exclusion-lock names, credentials and authority rules are unchanged.
