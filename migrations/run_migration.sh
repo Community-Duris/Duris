@@ -3019,7 +3019,6 @@ run_sql_file "apply item ownership ledger schema" "$SCRIPT_DIR/item_ownership_le
 run_sql_file "permit shopkeeper item custody" "$SCRIPT_DIR/shopkeeper_item_owner.sql"
 run_sql_file "permit collector item custody" "$SCRIPT_DIR/collector_item_owner.sql"
 run_check "verify collector item custody" "$SCRIPT_DIR/verify_collector_item_owner.sh"
-run_check "verify item ownership ledger schema" "$SCRIPT_DIR/verify_item_ownership_schema.sh"
 run_sql_file "apply epic ledger and balance schema" "$SCRIPT_DIR/epic_ledger_balance.sql"
 run_check "verify epic ledger and balance schema" "$SCRIPT_DIR/verify_epic_ledger_schema.sh"
 run_sql_file "apply currency ledger schema" "$SCRIPT_DIR/currency_ledger.sql"
@@ -3135,6 +3134,10 @@ ALTER TABLE ship_cargo_prices ENGINE=InnoDB;
 ALTER TABLE ship_cargo_market_mods ENGINE=InnoDB;"
 
 run_check "adopt verified legacy migration baseline" "$SCRIPT_DIR/adopt_migration_baseline.sh"
+# The current item contract includes columns installed by immutable migrations.
+# Verify it after that owner reaches its head, rather than against the earlier
+# legacy baseline, which intentionally lacks those later columns.
+run_check "verify item ownership ledger schema" "$SCRIPT_DIR/verify_item_ownership_schema.sh"
 
 # Delete only Duris Redis keys when the configured integration is active.
 STEP=$((STEP + 1))

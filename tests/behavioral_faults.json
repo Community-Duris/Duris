@@ -66,7 +66,7 @@
       "migrated": false,
       "compiled_marker": "POOL-NATIVE compiled",
       "positive_marker": "PASS: real SQL pool retires",
-      "failure_marker": "FAIL:"
+      "failure_marker": "FAIL: waiting borrower"
     },
     {
       "id": "currency-replay-ack",
@@ -107,7 +107,7 @@
       "migrated": false,
       "compiled_marker": "POOL-NATIVE compiled",
       "positive_marker": "PASS: real SQL pool retires",
-      "failure_marker": "FAIL:"
+      "failure_marker": "FAIL: waiting borrower"
     }
   ]
 }

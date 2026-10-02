@@ -154,35 +154,25 @@ PLAYER_LOAD_DISPOSABLE_SCHEMA=1 GAME_ACCOUNT_NAME=coin_matrix_account GAME_ACCOU
 DB_NAME="$DB_NAME" "$ROOT/migrations/verify_collector_item_owner.sh"
 DB_NAME="$DB_NAME" "$ROOT/migrations/verify_item_ownership_schema.sh"
 export ITEM_TRANSFER_TEST_DB_NAME="$DB_NAME"
-g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
+SQL_DISPATCH_SOURCES_TEXT="$(python3 tests/async/_sql_dispatch_sources.py)"
+read -r -a SQL_DISPATCH_SOURCES <<< "$SQL_DISPATCH_SOURCES_TEXT"
+g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fdata-sections -Wl,--gc-sections -Isrc \
     "${MYSQL_CFLAGS[@]}" tests/async/item_transfer_mysql_harness.cpp \
-    src/persistence/critical_command.c src/world/epic_command.c src/economy/currency_command.c \
-    src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/item/item_transfer_repository.c \
-    src/item/economic_accounting_item_reference.c \
-    src/economy/auction_command.c src/economy/auction_repository.c \
-    src/combat/combat_outcome_command.c src/combat/combat_outcome_repository.c \
-    src/guild/artifact_guild_command.c src/guild/artifact_guild_repository.c \
-    src/economy/boon_reward_command.c src/economy/boon_reward_repository.c \
-    src/world/zone_touch_command.c src/world/zone_touch_repository.c \
-    src/account/session_audit_command.c src/account/session_audit_repository.c \
-    src/item/item_uid_allocator.c src/flatfile/flatfile_item_uid_allocator.c src/flatfile/flatfile_store.c \
+    "${SQL_DISPATCH_SOURCES[@]}" \
+    src/persistence/critical_command.c \
+    src/world/epic_command.c \
+    src/economy/currency_command.c \
+    src/sql/item_extra_descr_codec.c \
+    src/combat/combat_outcome_command.c \
+    src/item/item_uid_allocator.c \
+    src/flatfile/flatfile_item_uid_allocator.c \
+    src/flatfile/flatfile_store.c \
     src/persistence/persistence_mode.c \
-    src/economy/coin_transfer_command.c src/player/player_snapshot_codec.c \
-    src/economy/collector_command.c src/economy/collector_codec.c \
-    src/economy/collector_policy.c src/economy/collector_repository.c \
-    src/persistence/corpse_lifecycle_command.c src/persistence/corpse_lifecycle_repository.c \
-    src/persistence/player_death_restitution_command.c \
-    src/persistence/player_death_restitution_repository.c \
-    src/persistence/economic_accounting_repository.c \
-    src/persistence/economic_sql_bank_transaction.c \
-    src/persistence/economic_sql_item_transfer_transaction.c \
-    src/economy/economic_currency_adapter.c \
-    src/economy/item_transfer_accounting.c \
-    src/economy/coin_transfer_accounting.c \
-    src/economy/economic_accounting_types.c \
-    src/economy/economic_accounting_plan.c \
-    src/economy/economic_accounting_intent.c src/economy/economic_command_admission.c \
-    src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
-    src/persistence/critical_command_journal.c src/persistence/critical_command_coordinator.c \
-    "${MYSQL_LIBS[@]}" -lcrypto -lz -o "$ROOT/bin/tests/item_transfer_mysql_harness"
+    src/player/player_snapshot_repository.c \
+    src/player/player_quarantine_recovery.c \
+    src/persistence/critical_command_journal.c \
+    src/persistence/critical_command_coordinator.c \
+    -Wl,--wrap=mysql_real_query "${MYSQL_LIBS[@]}" -lcrypto -lz -o "$ROOT/bin/tests/item_transfer_mysql_harness"
+# Match the dedicated owner's stack budget for its retained item fixtures.
+ulimit -s 65536
 "$ROOT/bin/tests/item_transfer_mysql_harness"
