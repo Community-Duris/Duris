@@ -42,13 +42,34 @@ int main(int argc, char **argv)
 		std::puts("Transport parent stop/init race: PASS");
 		return 0;
 	}
-	bind_and_init(config(4U, 1U, 2U));
+	const bool prepare_writer = std::strcmp(argv[1], "worker-init") != 0 &&
+				    std::strcmp(argv[1], "startup-admission") != 0 &&
+				    std::strcmp(argv[1], "cancelled-empty-start") != 0;
+	bind_and_init(config(4U, 1U, 2U), prepare_writer);
 	if (std::strcmp(argv[1], "worker-init") == 0)
 	{
 		CHECK(repository_state.init_calls == 0U);
 		std::thread worker([] { (void)telemetry_transport_pulse(1000U); });
 		worker.join();
 		CHECK(repository_state.init_calls == 1U);
+	}
+	else if (std::strcmp(argv[1], "startup-admission") == 0)
+	{
+		CHECK(telemetry_transport_enqueue(detail_record(1U)).admission ==
+		      telemetry_queue_admission::rejected_not_ready);
+		CHECK(telemetry_transport_enqueue(control_record(2U)).admission ==
+		      telemetry_queue_admission::rejected_not_ready);
+		CHECK(telemetry_transport_health_copy().queue_depth == 0U);
+		CHECK(repository_state.init_calls == 0U);
+		repository_state.init_failures_left = 1U;
+		CHECK(telemetry_transport_pulse(1000U).outcome ==
+		      telemetry_transport_outcome::unavailable);
+		CHECK(telemetry_transport_enqueue(detail_record(3U)).admission ==
+		      telemetry_queue_admission::rejected_not_ready);
+		(void)telemetry_transport_pulse(2000U);
+		CHECK(repository_state.init_calls == 2U);
+		CHECK(telemetry_transport_enqueue(detail_record(4U)).admission ==
+		      telemetry_queue_admission::accepted_detail);
 	}
 	else if (std::strcmp(argv[1], "control-reserve") == 0)
 	{
@@ -113,6 +134,7 @@ int main(int argc, char **argv)
 			      telemetry_transport_outcome::started);
 			CHECK(telemetry_transport_init(config(4U, 1U, 2U)) ==
 			      telemetry_transport_outcome::started);
+			(void)telemetry_transport_pulse(0U);
 		}
 		CHECK(telemetry_transport_enqueue(detail_record(1U)).admission ==
 		      telemetry_queue_admission::accepted_detail);
@@ -180,6 +202,7 @@ int main(int argc, char **argv)
 		      telemetry_transport_outcome::started);
 		CHECK(telemetry_transport_init(config(4U, 1U, 2U)) ==
 		      telemetry_transport_outcome::started);
+		(void)telemetry_transport_pulse(0U);
 		CHECK(telemetry_transport_enqueue(detail_record(1U)).admission ==
 		      telemetry_queue_admission::accepted_detail);
 		CHECK(telemetry_transport_enqueue(detail_record(2U)).admission ==
@@ -240,18 +263,18 @@ int main(int argc, char **argv)
 		CHECK(telemetry_transport_init(config(4U, 1U, 2U)) ==
 		      telemetry_transport_outcome::started);
 		CHECK(telemetry_transport_enqueue(detail_record(1U)).admission ==
-		      telemetry_queue_admission::accepted_detail);
+		      telemetry_queue_admission::rejected_not_ready);
 		CHECK(telemetry_transport_enqueue(control_record(2U)).admission ==
-		      telemetry_queue_admission::accepted_control_reserve);
+		      telemetry_queue_admission::rejected_not_ready);
 		CHECK(telemetry_transport_pulse(1000U).outcome ==
 		      telemetry_transport_outcome::flatfile_disabled);
-		CHECK(telemetry_transport_health_copy().queue_depth == 2U);
+		CHECK(telemetry_transport_health_copy().queue_depth == 0U);
 		CHECK(repository_state.calls == 0U);
 		telemetry_transport_shutdown();
 		const auto health = telemetry_transport_health_copy();
-		CHECK(health.queue_depth == 0U && health.dropped_detail == 1U &&
-		      health.dropped_control == 1U);
-		CHECK(health.unclosed_tail_count == 1U);
+		CHECK(health.queue_depth == 0U && health.dropped_detail == 0U &&
+		      health.dropped_control == 0U);
+		CHECK(health.unclosed_tail_count == 0U);
 	}
 	else
 		CHECK(false);

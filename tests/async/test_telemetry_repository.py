@@ -42,7 +42,7 @@ def function_body(source: str, start: str, end: str) -> str:
 def mapped_columns(source: str) -> list[str]:
     columns = []
     for line in source.splitlines():
-        explicit = re.search(r'number\(values, "([a-z0-9_]+)"', line)
+        explicit = re.search(r'number\(values, telemetry_column_id::([a-z0-9_]+)', line)
         inferred = re.search(r'FIELD\(values, [^,]+, ([a-z0-9_]+)\)', line)
         if explicit:
             columns.append(explicit.group(1))
@@ -58,6 +58,15 @@ def migration_columns(name: str) -> list[str]:
 
 def repository_mapping_contract() -> None:
     repository = (ROOT / "src" / "telemetry" / "telemetry_repository.c").read_text()
+    descriptor = (ROOT / "src/telemetry/telemetry_columns.inc").read_text()
+    names = set(re.findall(r"TELEMETRY_COLUMN\(([a-z0-9_]+),", descriptor))
+    serializer = "\n".join(line for line in repository.splitlines()
+                           if not line.startswith("#define FIELD"))
+    mapped = set(re.findall(r"telemetry_column_id::([a-z0-9_]+)", serializer))
+    assert mapped <= names, f"serializer columns lack canonical descriptors: {mapped - names}"
+    assert 'const char *name, T value' not in repository, "untyped serializer bypass"
+    assert 'validate_writer_schema();' in repository
+    assert 'SELECT * FROM ' not in repository, "incomplete startup table probe"
     encounter = function_body(repository, "void encounter_fields", "void combat_summary_fields")
     combat = function_body(repository, "void combat_summary_fields", "fields counter_fields")
     progression = function_body(

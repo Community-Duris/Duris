@@ -320,7 +320,8 @@ telemetry_record control_record(std::uint64_t sequence)
 	return record;
 }
 
-void bind_and_init(const telemetry_transport_config &transport_config = config())
+void bind_and_init(const telemetry_transport_config &transport_config = config(),
+		   bool prepare_writer = true)
 {
 	const auto repository = repository_binding();
 	const auto clock = clock_binding();
@@ -329,6 +330,8 @@ void bind_and_init(const telemetry_transport_config &transport_config = config()
 	const auto outcome = telemetry_transport_init(transport_config);
 	CHECK(outcome == telemetry_transport_outcome::started ||
 	      outcome == telemetry_transport_outcome::unavailable);
+	if (prepare_writer && outcome == telemetry_transport_outcome::started)
+		CHECK(telemetry_transport_pulse(0U).examined == 0U);
 }
 
 void finish()
@@ -364,7 +367,7 @@ void row_and_age_flush_tests()
 	CHECK(admitted.last_admitted_record_seq == 1U);
 	CHECK(admitted.last_committed_record_seq == 0U);
 	CHECK(admitted.queue_depth == 1U);
-	CHECK(admitted.advisory_lock_state == telemetry_advisory_lock_state::unavailable);
+	CHECK(admitted.advisory_lock_state == telemetry_advisory_lock_state::held);
 	CHECK(telemetry_transport_pulse(150U).examined == 0U);
 	CHECK(telemetry_transport_enqueue(detail_record(2U)).admission ==
 	      telemetry_queue_admission::accepted_detail);
@@ -610,6 +613,7 @@ void circuit_breaker_tests()
 	repository_state = {};
 	CHECK(telemetry_transport_init(config(4U, 1U, 1U, 1U)) ==
 	      telemetry_transport_outcome::started);
+	(void)telemetry_transport_pulse(0U);
 	CHECK(telemetry_transport_enqueue(detail_record(1U)).admission ==
 	      telemetry_queue_admission::accepted_detail);
 	CHECK(telemetry_transport_pulse(200U).examined == 1U);
@@ -641,10 +645,10 @@ void circuit_breaker_tests()
 	repository_state = {};
 
 	case_name = "permanent repository initialization failure does not reconnect";
-	bind_and_init(config(4U, 1U, 2U, 1U));
+	bind_and_init(config(4U, 1U, 2U, 1U), false);
 	repository_state.init_permanent = true;
 	CHECK(telemetry_transport_enqueue(detail_record(100U)).admission ==
-	      telemetry_queue_admission::accepted_detail);
+	      telemetry_queue_admission::rejected_not_ready);
 	CHECK(telemetry_transport_pulse(101U).outcome == telemetry_transport_outcome::unavailable);
 	CHECK(repository_state.init_calls == 1U);
 	CHECK(telemetry_transport_health_copy().state == telemetry_health_state::circuit_open);

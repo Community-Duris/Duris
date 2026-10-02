@@ -14,6 +14,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include "telemetry_test_runtime.h"
 #include <unistd.h>
 
 P_room world = nullptr;
@@ -139,7 +140,7 @@ struct fake_repository
 		unavailable,
 	};
 
-	mode init_mode = mode::ready;
+	std::atomic<mode> init_mode{ mode::ready };
 	std::uint32_t init_calls = 0U;
 	std::uint32_t apply_calls = 0U;
 	std::uint32_t applied_records = 0U;
@@ -248,6 +249,13 @@ telemetry_apply_batch_result fake_apply(void *context, const telemetry_record *r
 {
 	auto *fake = static_cast<fake_repository *>(context);
 	++fake->apply_calls;
+	if (fake->init_mode == fake_repository::mode::unavailable)
+	{
+		telemetry_apply_batch_result unavailable{};
+		unavailable.outcome = telemetry_batch_outcome::unavailable;
+		unavailable.failure_class = telemetry_failure_class::transient_connection;
+		return unavailable;
+	}
 	if (fake->block_apply)
 		fake->apply_callback.call();
 	fake->applied_records += static_cast<std::uint32_t>(count);
@@ -514,7 +522,7 @@ void check_enabled_lifecycle()
 	       telemetry_transport_outcome::started);
 
 	const telemetry_runtime_options options = make_enabled_options();
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	const telemetry_session_enter enter = make_enter(options.producer, options.config);
 	const telemetry_capture_result entered = telemetry_runtime_session_enter(enter);
 	assert(entered.outcome == telemetry_runtime_outcome::accepted);
@@ -572,7 +580,7 @@ void check_game_context_and_copyover_handoff()
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
 	const telemetry_runtime_options options = make_enabled_options();
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 
 	room_data rooms[1]{};
 	zone_data zones[1]{};
@@ -645,7 +653,7 @@ void check_game_context_and_copyover_handoff()
 	telemetry_runtime_options resumed_options = make_enabled_options();
 	resumed_options.producer.boot_id = options.producer.boot_id + 1U;
 	resumed_options.producer.process_id = options.producer.process_id + 1U;
-	assert(telemetry_runtime_init(resumed_options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(resumed_options);
 
 	char_data resumed_player{};
 	pc_only_data resumed_pc{};
@@ -688,7 +696,7 @@ void check_game_context_and_copyover_handoff()
 	telemetry_runtime_options absent_options = make_enabled_options();
 	absent_options.producer.boot_id = resumed_options.producer.boot_id + 1U;
 	absent_options.producer.process_id = resumed_options.producer.process_id + 1U;
-	assert(telemetry_runtime_init(absent_options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(absent_options);
 	char_data absent_player{};
 	pc_only_data absent_pc{};
 	absent_player.only.pc = &absent_pc;
@@ -737,8 +745,6 @@ void check_copyover_durability_barrier(bool blocked, bool rejected, bool unavail
 {
 	fake_repository fake{};
 	fake.block_apply = blocked;
-	if (unavailable)
-		fake.init_mode = fake_repository::mode::unavailable;
 	const telemetry_transport_repository_binding repository = {
 		fake_init, rejected ? reject_copyover_batch : fake_apply, fake_request_stop,
 		fake_shutdown, &fake
@@ -747,7 +753,9 @@ void check_copyover_durability_barrier(bool blocked, bool rejected, bool unavail
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
 	const auto options = make_enabled_options();
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
+	if (unavailable)
+		fake.init_mode = fake_repository::mode::unavailable;
 	const auto enter = make_enter(options.producer, options.config);
 	assert(telemetry_runtime_session_enter(enter).outcome ==
 	       telemetry_runtime_outcome::accepted);
@@ -845,7 +853,7 @@ void check_producer_reuse_rejected()
 		       telemetry_runtime_outcome::accepted);
 		assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
 	};
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	finish();
 	assert(fake.required_fresh_producer.boot_id == options.producer.boot_id);
 	assert(fake.required_fresh_producer.process_id == options.producer.process_id);
@@ -855,7 +863,7 @@ void check_producer_reuse_rejected()
 	const auto fresh = make_enabled_options();
 	assert(fresh.producer.boot_id != options.producer.boot_id ||
 	       fresh.producer.process_id != options.producer.process_id);
-	assert(telemetry_runtime_init(fresh) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(fresh);
 	finish();
 	telemetry_transport_unbind_for_tests();
 	std::printf("runtime producer reuse: outcome=%u fresh=accepted\n",
@@ -874,7 +882,7 @@ void check_classifier_counter_ownership()
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
 	const auto options = make_enabled_options();
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	const auto enter = make_enter(options.producer, options.config);
 	assert(telemetry_runtime_session_enter(enter).outcome ==
 	       telemetry_runtime_outcome::accepted);
@@ -933,7 +941,7 @@ void check_effective_property_reload()
 	reload_property_values values{ 0.0F, 10.0F, 1.0F, 0.2F, 0.15F, 1.0F };
 	reload_property_catalog catalog{};
 	const telemetry_runtime_options options = make_property_reload_options(values, catalog);
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	const telemetry_config_snapshot initial = telemetry_config_snapshot_copy();
 	assert(telemetry_config_is_valid(initial));
 	assert(initial.property_version == 1001U);
@@ -1043,7 +1051,7 @@ void check_bounded_shutdown_request_and_final_reap()
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
 	const telemetry_runtime_options options = make_enabled_options();
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	const telemetry_session_enter enter = make_enter(options.producer, options.config);
 	const telemetry_capture_result entered = telemetry_runtime_session_enter(enter);
 	assert(entered.outcome == telemetry_runtime_outcome::accepted);
@@ -1101,8 +1109,7 @@ void check_bounded_shutdown_request_and_final_reap()
 	assert(telemetry_transport_bind_for_tests(&resumed_repository, &clock) ==
 	       telemetry_transport_outcome::started);
 	// A new runtime after final reap requires a new producer incarnation.
-	assert(telemetry_runtime_init(make_enabled_options()) ==
-	       telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(make_enabled_options());
 	assert(telemetry_runtime_now(&now, &ignored_utc));
 	shutdown.deadline_monotonic_usec = now + 5'000'000U;
 	assert(telemetry_runtime_shutdown(shutdown) == telemetry_runtime_outcome::accepted);

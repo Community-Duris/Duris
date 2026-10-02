@@ -40,8 +40,17 @@ Accounting-specific reconciliation/reward projection remains #487, not this PR.
   session tail is not a normal exit. Reconstructed observations require distinct
   provenance; absent or unreliable authoritative logs cannot supply missing facts.
 
-Implementation details and final execution evidence are added after integration.
+Current implementation and execution evidence are recorded in
+[IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md). The shared column contract,
+startup schema/permission validation and admission gate have passed local
+MariaDB/MySQL qualification. Durable outage and incident coverage work remains.
 The presence of a specification, draft PR or fixture does not satisfy acceptance.
+
+The owner has authorized a personal local test setup as the technical acceptance
+environment for this expansion. Production or staging access is not required.
+The production inspection/activation guidance below applies only to a later,
+separately authorized deployment; it is not a blocker for local implementation
+qualification or issue completion backed by that evidence.
 
 ## Non-mutating evidence assessment
 
@@ -100,5 +109,7 @@ this repository. Publish only sanitized aggregate blockers and evidence limits.
   session/progression records, advancing health and normal login/save/gameplay.
   Use `world telemetry` and payload-free `telemetry_health` status events.
 - Record the first trustworthy post-fix observation, classify the historical backlog,
-  and keep incident gaps distinct from zero activity. Close #258 only after its
-  operational acceptance passes. Automatic balance application remains excluded.
+  and keep incident gaps distinct from zero activity. The expansion's #258
+  acceptance is the documented local observational journey and qualification
+  gate; a production rollout is a separate operational decision. Automatic balance
+  application remains excluded.

@@ -4,6 +4,7 @@
 #include "core/structs.h"
 
 #include "telemetry/telemetry_session.h"
+#include "telemetry_test_runtime.h"
 #include <memory>
 #include <atomic>
 #include <cassert>
@@ -174,7 +175,7 @@ void check_enabled_game_path()
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
 	const telemetry_runtime_options options = enabled_options();
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 
 	room_data rooms[1]{};
 	zone_data zones[1]{};
@@ -277,7 +278,7 @@ void check_staggered_checkpoint_cut()
 						    sizeof(options.config.fingerprint)));
 	options.config.config_id = telemetry_config_id_from_fingerprint(
 		options.config.fingerprint, sizeof(options.config.fingerprint));
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	char_data player{};
 	pc_only_data pc{};
 	pc.pid = 704;
@@ -328,7 +329,7 @@ void check_combat_and_afk_context()
 						    sizeof(options.config.fingerprint)));
 	options.config.config_id = telemetry_config_id_from_fingerprint(
 		options.config.fingerprint, sizeof(options.config.fingerprint));
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	char_data player{}, opponent{};
 	pc_only_data pc{};
 	player.only.pc = &pc;
@@ -412,7 +413,7 @@ void check_resume_capacity_rollback()
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
 	auto options = enabled_options();
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	constexpr auto count = TELEMETRY_SESSION_STATE_MAX_SLOTS + 1;
 	auto players = std::make_unique<char_data[]>(count);
 	auto pcs = std::make_unique<pc_only_data[]>(count);
@@ -475,7 +476,7 @@ void check_resume_queue_pressure()
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
 	auto options = enabled_options();
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
 	while (!worker_entered.load() && std::chrono::steady_clock::now() < deadline)
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));

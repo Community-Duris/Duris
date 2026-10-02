@@ -63,6 +63,21 @@ connection before activation, using the same database endpoint/TLS/session polic
 as the authority connection. No gameplay credentials or gameplay connection pool
 may serve as a telemetry fallback.
 
+The writer now validates its complete canonical storage contract on its own
+worker before accepting records: columns, SQL types and signedness, fixed widths,
+nullable and default semantics, InnoDB engines, and replay/projection indexes.
+Zero-row SELECT/INSERT/session UPDATE probes verify required effective permissions
+without creating synthetic observations. Probes always roll back. A schema or
+permission refusal is distinguishable in payload-free health diagnostics and
+leaves gameplay available. Initial admission waits for qualification; buffering
+through a later transient outage remains supported. See
+[implementation and local qualification status](IMPLEMENTATION_STATUS.md).
+
+Configuration and quarantine rows are append-only. Their identity checks use the
+repository advisory lock and unique keys; they do not require UPDATE grants for
+locking reads on MySQL. Session projections retain their SELECT FOR UPDATE and
+the dedicated session UPDATE permission.
+
 | Role | Allowed table operations |
 | --- | --- |
 | Telemetry writer | SELECT and INSERT on `telemetry_interval`, `telemetry_config` and `telemetry_quarantine`; SELECT, INSERT and UPDATE on `telemetry_session`. No quarantine UPDATE/DELETE, aggregate writes or gameplay-table privileges. |

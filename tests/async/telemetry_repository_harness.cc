@@ -136,8 +136,8 @@ extern "C" int __wrap_mysql_real_query(MYSQL *connection, const char *query, uns
 	++query_calls;
 	injected_error = 0;
 	const std::string sql(query, length);
-	if (fault == fault_kind::startup_permission &&
-	    sql == "SELECT * FROM telemetry_interval LIMIT 0")
+	if (fault == fault_kind::startup_permission && sql.starts_with("SELECT `ingest_id`,") &&
+	    sql.ends_with(" LIMIT 0"))
 	{
 		fault = fault_kind::none;
 		injected_handle = connection;
@@ -1038,6 +1038,119 @@ static void startup_fencing_tests()
 	      telemetry_repository_outcome::ready);
 }
 
+static void startup_contract_tests()
+{
+	reset_fixture();
+	shutdown_fixture();
+	auto refuses_schema = []()
+	{
+		CHECK(telemetry_repository_init(repository_config()) ==
+		      telemetry_repository_outcome::permanent_failure);
+		CHECK(telemetry_repository_health_copy().last_failure_class ==
+		      telemetry_failure_class::permanent_schema);
+		CHECK(scalar("SELECT GET_LOCK(CONCAT('duris.telemetry.',MD5(DATABASE())),2)") ==
+		      1U);
+		CHECK(scalar("SELECT RELEASE_LOCK(CONCAT('duris.telemetry.',MD5(DATABASE())))") ==
+		      1U);
+		shutdown_fixture();
+	};
+	case_name = "startup validates a missing combat column, not just base tables";
+	execute("ALTER TABLE telemetry_interval CHANGE COLUMN combat_healing_attempted "
+		"combat_healing_attempted_fixture_hidden BIGINT UNSIGNED NULL");
+	refuses_schema();
+	execute("ALTER TABLE telemetry_interval CHANGE COLUMN combat_healing_attempted_fixture_hidden "
+		"combat_healing_attempted BIGINT UNSIGNED NULL");
+	case_name = "startup rejects unsigned XP deltas that cannot store death losses";
+	execute("ALTER TABLE telemetry_interval MODIFY COLUMN progression_applied_xp BIGINT UNSIGNED NULL");
+	refuses_schema();
+	execute("ALTER TABLE telemetry_interval MODIFY COLUMN progression_applied_xp BIGINT NULL");
+	case_name = "startup rejects a changed discriminator width";
+	execute("ALTER TABLE telemetry_interval MODIFY COLUMN combat_actor_kind SMALLINT UNSIGNED NULL");
+	refuses_schema();
+	execute("ALTER TABLE telemetry_interval MODIFY COLUMN combat_actor_kind TINYINT UNSIGNED NULL");
+	case_name = "startup rejects a tagged nullable field made required";
+	execute("ALTER TABLE telemetry_interval MODIFY COLUMN encounter_outcome TINYINT UNSIGNED NOT NULL");
+	refuses_schema();
+	execute("ALTER TABLE telemetry_interval MODIFY COLUMN encounter_outcome TINYINT UNSIGNED NULL");
+	case_name = "startup rejects a shortened configuration digest";
+	execute("ALTER TABLE telemetry_config MODIFY COLUMN fingerprint BINARY(16) NOT NULL");
+	refuses_schema();
+	execute("ALTER TABLE telemetry_config MODIFY COLUMN fingerprint BINARY(32) NOT NULL");
+	case_name = "startup rejects projection defaults that invent played time";
+	execute("ALTER TABLE telemetry_session ALTER COLUMN active_usec SET DEFAULT 99");
+	refuses_schema();
+	execute("ALTER TABLE telemetry_session ALTER COLUMN active_usec SET DEFAULT 0");
+	case_name = "startup rejects a tagged fact default that invents absent XP";
+	execute("ALTER TABLE telemetry_interval ALTER COLUMN progression_applied_xp SET DEFAULT 1");
+	refuses_schema();
+	execute("ALTER TABLE telemetry_interval ALTER COLUMN progression_applied_xp SET DEFAULT NULL");
+	case_name = "startup rejects a missing replay key";
+	execute("ALTER TABLE telemetry_interval DROP INDEX uq_telemetry_replay");
+	refuses_schema();
+	case_name = "startup rejects a reordered replay key";
+	execute("ALTER TABLE telemetry_interval ADD UNIQUE KEY uq_telemetry_replay (record_seq,boot_id,process_id)");
+	refuses_schema();
+	execute("ALTER TABLE telemetry_interval DROP INDEX uq_telemetry_replay, "
+		"ADD UNIQUE KEY uq_telemetry_replay (boot_id,process_id,record_seq)");
+	case_name = "startup rejects an unrecognized uniqueness constraint";
+	execute("ALTER TABLE telemetry_interval ADD UNIQUE KEY uq_fixture_unreviewed (record_seq)");
+	refuses_schema();
+	execute("ALTER TABLE telemetry_interval DROP INDEX uq_fixture_unreviewed");
+	case_name = "startup refuses a new required field that would break INSERT";
+	execute("ALTER TABLE telemetry_interval ADD COLUMN fixture_required INT NOT NULL");
+	refuses_schema();
+	execute("ALTER TABLE telemetry_interval DROP COLUMN fixture_required");
+	case_name = "nullable additive fields remain compatible and readiness writes no facts";
+	execute("ALTER TABLE telemetry_interval ADD COLUMN fixture_optional INT NULL");
+	CHECK(telemetry_repository_init(repository_config()) ==
+	      telemetry_repository_outcome::ready);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval") == 0U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_session") == 0U);
+	shutdown_fixture();
+	execute("ALTER TABLE telemetry_interval DROP COLUMN fixture_optional");
+
+	case_name = "a SELECT-only writer cannot publish useful records";
+	const std::string writer =
+		"telemetry_fixture_" + fixture_database.substr(fixture_database.size() - 12U);
+	execute("DROP USER IF EXISTS '" + writer + "'@'%'");
+	execute("CREATE USER '" + writer + "'@'%' IDENTIFIED BY 'telemetry-fixture-writer-only'");
+	const auto owner_user = fixture_user;
+	const auto owner_password = fixture_password;
+	fixture_user = writer;
+	fixture_password = "telemetry-fixture-writer-only";
+	for (const char *table : { "telemetry_interval", "telemetry_config", "telemetry_session",
+				   "telemetry_quarantine" })
+		execute("GRANT SELECT ON `" + fixture_database + "`." + table + " TO '" + writer +
+			"'@'%'");
+	CHECK(telemetry_repository_init(repository_config()) ==
+	      telemetry_repository_outcome::permanent_failure);
+	CHECK(telemetry_repository_health_copy().last_failure_class ==
+	      telemetry_failure_class::permanent_permission);
+	shutdown_fixture();
+	case_name = "missing session UPDATE is detected before admission";
+	for (const char *table : { "telemetry_interval", "telemetry_config", "telemetry_session",
+				   "telemetry_quarantine" })
+		execute("GRANT INSERT ON `" + fixture_database + "`." + table + " TO '" + writer +
+			"'@'%'");
+	CHECK(telemetry_repository_init(repository_config()) ==
+	      telemetry_repository_outcome::permanent_failure);
+	CHECK(telemetry_repository_health_copy().last_failure_class ==
+	      telemetry_failure_class::permanent_permission);
+	shutdown_fixture();
+	case_name = "the documented least privilege writer is sufficient";
+	execute("GRANT UPDATE ON `" + fixture_database + "`.telemetry_session TO '" + writer +
+		"'@'%'");
+	CHECK(telemetry_repository_init(repository_config()) ==
+	      telemetry_repository_outcome::ready);
+	seed_config();
+	expect_one(interval_record(), telemetry_apply_outcome::applied);
+	shutdown_fixture();
+	fixture_user = owner_user;
+	fixture_password = owner_password;
+	execute("DROP USER '" + writer + "'@'%'");
+	std::puts("Canonical writer startup schema and effective permission cases: PASS");
+}
+
 static void fresh_producer_tests()
 {
 	case_name = "existing producer is refused for a new repository lifetime";
@@ -1249,6 +1362,7 @@ int main()
 	fault_tests();
 	failure_taxonomy_tests();
 	startup_fencing_tests();
+	startup_contract_tests();
 	fresh_producer_tests();
 	bounds_and_lifecycle_tests();
 	shutdown_fixture();

@@ -347,6 +347,8 @@ enum class telemetry_queue_admission : std::uint8_t
 	rejected_control_full = 6,
 	rejected_oversize = 7,
 	rejected_circuit_open = 8,
+	/* Worker startup has not yet validated the storage contract. */
+	rejected_not_ready = 9,
 };
 
 /*

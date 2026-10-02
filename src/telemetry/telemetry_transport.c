@@ -59,6 +59,9 @@ std::atomic<bool> RESTART_ALLOWED{ false };
 std::atomic<bool> SHUTDOWN_REQUESTED{ false };
 std::atomic<std::uint64_t> ADMISSION_STATE{ 0U };
 std::atomic<bool> REPOSITORY_READY{ false };
+/* Initial validation is required before admission. Once qualified, a later
+ * transient outage may buffer records while the worker reconnects. */
+std::atomic<bool> ADMISSION_READY{ false };
 std::atomic<bool> CIRCUIT_OPEN{ false };
 /* Set only after init reports an owned writer.  DB-down/disabled paths must
  * not synchronously call a borrowed shutdown callback that has no live writer. */
@@ -683,6 +686,7 @@ bool ensure_repository(telemetry_monotonic_usec now) noexcept
 	{
 		REPOSITORY_STARTED.store(true, std::memory_order_release);
 		REPOSITORY_READY.store(true, std::memory_order_release);
+		ADMISSION_READY.store(true, std::memory_order_release);
 		REPOSITORY_RETRY_ATTEMPTS = 0U;
 		REPOSITORY_RETRY_NOT_BEFORE = 0U;
 		HEALTH.repository_retry_attempts.store(0U, std::memory_order_release);
@@ -1339,6 +1343,7 @@ telemetry_transport_outcome telemetry_transport_init(telemetry_transport_config 
 	SHUTDOWN_REQUESTED.store(false, std::memory_order_release);
 	REPOSITORY_READY.store(false, std::memory_order_release);
 	REPOSITORY_STARTED.store(false, std::memory_order_release);
+	ADMISSION_READY.store(false, std::memory_order_release);
 	CIRCUIT_OPEN.store(false, std::memory_order_release);
 
 	if (config.backend == telemetry_storage_backend::flatfile_disabled)
@@ -1422,6 +1427,12 @@ telemetry_enqueue_result telemetry_transport_enqueue(telemetry_record record)
 
 	telemetry_monotonic_usec now = 0U;
 	const bool now_valid = clock_now(now);
+	if (!ADMISSION_READY.load(std::memory_order_acquire))
+	{
+		result.admission = telemetry_queue_admission::rejected_not_ready;
+		update_admission_result(result);
+		return result;
+	}
 	const telemetry_queue_private::push_result pushed =
 		telemetry_queue_private::try_push(&QUEUE, record, now, now_valid, control);
 	if (!pushed.accepted)

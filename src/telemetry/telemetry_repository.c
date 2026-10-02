@@ -1,5 +1,6 @@
 #include "telemetry/telemetry_repository.h"
 #include "telemetry/telemetry_failure.h"
+#include "telemetry/telemetry_schema_private.h"
 #include "persistence/persistence_mode.h"
 #include "sql/sql_telemetry_connection.h"
 
@@ -8,6 +9,7 @@
 #include <atomic>
 #include <chrono>
 #include <cerrno>
+#include <cctype>
 #include <new>
 #include <limits>
 #include <memory>
@@ -99,6 +101,8 @@ void disconnect()
 	connection = nullptr;
 }
 
+void validate_writer_schema();
+
 bool open_connection()
 {
 	last_open_failure_class = telemetry_failure_class::none;
@@ -122,9 +126,7 @@ bool open_connection()
 			disconnect();
 			return false;
 		}
-		for (const char *table : { "telemetry_interval", "telemetry_session",
-					   "telemetry_config", "telemetry_quarantine" })
-			query("SELECT * FROM " + std::string(table) + " LIMIT 0");
+		validate_writer_schema();
 		return true;
 	}
 	catch (const sql_failure &failure)
@@ -172,12 +174,12 @@ fresh_producer_check check_fresh_producer()
 	}
 }
 
-template <typename T> void number(fields &values, const char *name, T value)
+template <typename T> void number(fields &values, telemetry_column_id column, T value)
 {
 	if constexpr (std::is_enum_v<T>)
-		number(values, name, static_cast<std::underlying_type_t<T>>(value));
+		number(values, column, static_cast<std::underlying_type_t<T>>(value));
 	else
-		values.emplace_back(name, std::to_string(value));
+		values.emplace_back(telemetry_column(column).name, std::to_string(value));
 }
 
 std::string hex(const unsigned char *bytes, std::size_t count)
@@ -193,23 +195,23 @@ std::string hex(const unsigned char *bytes, std::size_t count)
 	return value;
 }
 
-#define FIELD(values, object, name) number(values, #name, (object).name)
+#define FIELD(values, object, name) number(values, telemetry_column_id::name, (object).name)
 
 void session_fields(fields &values, const telemetry_session_ref &session)
 {
 	FIELD(values, session, environment_id);
 	FIELD(values, session, season_id);
-	number(values, "session_boot_id", session.id.producer.boot_id);
-	number(values, "session_process_id", session.id.producer.process_id);
-	number(values, "session_seq", session.id.session_seq);
+	number(values, telemetry_column_id::session_boot_id, session.id.producer.boot_id);
+	number(values, telemetry_column_id::session_process_id, session.id.producer.process_id);
+	number(values, telemetry_column_id::session_seq, session.id.session_seq);
 	FIELD(values, session, subject_id);
 	FIELD(values, session, pid);
 }
 
 void connection_fields(fields &values, const telemetry_connection_id &id)
 {
-	number(values, "connection_boot_id", id.producer.boot_id);
-	number(values, "connection_process_id", id.producer.process_id);
+	number(values, telemetry_column_id::connection_boot_id, id.producer.boot_id);
+	number(values, telemetry_column_id::connection_process_id, id.producer.process_id);
 	FIELD(values, id, connection_seq);
 }
 
@@ -225,75 +227,92 @@ void dimension_fields(fields &values, const telemetry_dimensions &dimensions)
 
 void encounter_fields(fields &values, const telemetry_encounter_payload &encounter)
 {
-	number(values, "encounter_boot_id", encounter.encounter.producer.boot_id);
-	number(values, "encounter_process_id", encounter.encounter.producer.process_id);
-	number(values, "encounter_seq", encounter.encounter.sequence);
-	number(values, "encounter_event", encounter.kind);
-	number(values, "encounter_mode", encounter.mode);
-	number(values, "encounter_outcome", encounter.outcome);
-	number(values, "encounter_revision", encounter.revision);
-	number(values, "encounter_environment_id", encounter.source.environment_id);
-	number(values, "encounter_season_id", encounter.source.season_id);
-	number(values, "encounter_config_id", encounter.source.config_id);
-	number(values, "encounter_classifier_version", encounter.source.classifier_version);
-	number(values, "encounter_policy_version", encounter.source.policy_version);
-	number(values, "encounter_zone_vnum", encounter.source.zone_vnum);
-	number(values, "encounter_group_key", encounter.source.group_key);
-	number(values, "encounter_participant_subject_id", encounter.participant.subject_id);
-	number(values, "encounter_participant_pid", encounter.participant.pid);
+	number(values, telemetry_column_id::encounter_boot_id,
+	       encounter.encounter.producer.boot_id);
+	number(values, telemetry_column_id::encounter_process_id,
+	       encounter.encounter.producer.process_id);
+	number(values, telemetry_column_id::encounter_seq, encounter.encounter.sequence);
+	number(values, telemetry_column_id::encounter_event, encounter.kind);
+	number(values, telemetry_column_id::encounter_mode, encounter.mode);
+	number(values, telemetry_column_id::encounter_outcome, encounter.outcome);
+	number(values, telemetry_column_id::encounter_revision, encounter.revision);
+	number(values, telemetry_column_id::encounter_environment_id,
+	       encounter.source.environment_id);
+	number(values, telemetry_column_id::encounter_season_id, encounter.source.season_id);
+	number(values, telemetry_column_id::encounter_config_id, encounter.source.config_id);
+	number(values, telemetry_column_id::encounter_classifier_version,
+	       encounter.source.classifier_version);
+	number(values, telemetry_column_id::encounter_policy_version,
+	       encounter.source.policy_version);
+	number(values, telemetry_column_id::encounter_zone_vnum, encounter.source.zone_vnum);
+	number(values, telemetry_column_id::encounter_group_key, encounter.source.group_key);
+	number(values, telemetry_column_id::encounter_participant_subject_id,
+	       encounter.participant.subject_id);
+	number(values, telemetry_column_id::encounter_participant_pid, encounter.participant.pid);
 	FIELD(values, encounter, at_monotonic_usec);
 	FIELD(values, encounter, at_utc_usec);
-	number(values, "encounter_start_monotonic_usec", encounter.start_monotonic_usec);
-	number(values, "encounter_start_utc_usec", encounter.start_utc_usec);
+	number(values, telemetry_column_id::encounter_start_monotonic_usec,
+	       encounter.start_monotonic_usec);
+	number(values, telemetry_column_id::encounter_start_utc_usec, encounter.start_utc_usec);
 	FIELD(values, encounter, elapsed_usec);
 	FIELD(values, encounter, participant_usec);
 	FIELD(values, encounter, participant_count);
 	FIELD(values, encounter, expected_credit_count);
-	number(values, "encounter_quality_flags", encounter.quality_flags);
+	number(values, telemetry_column_id::encounter_quality_flags, encounter.quality_flags);
 }
 
 void combat_summary_fields(fields &values, const telemetry_combat_summary_payload &summary)
 {
-	number(values, "combat_encounter_boot_id", summary.encounter.producer.boot_id);
-	number(values, "combat_encounter_process_id", summary.encounter.producer.process_id);
-	number(values, "combat_encounter_seq", summary.encounter.sequence);
-	number(values, "combat_mode", summary.mode);
-	number(values, "combat_outcome", summary.outcome);
-	number(values, "combat_revision", summary.revision);
-	number(values, "combat_environment_id", summary.source.environment_id);
-	number(values, "combat_season_id", summary.source.season_id);
-	number(values, "combat_config_id", summary.source.config_id);
-	number(values, "combat_classifier_version", summary.source.classifier_version);
-	number(values, "combat_policy_version", summary.source.policy_version);
-	number(values, "combat_zone_vnum", summary.source.zone_vnum);
-	number(values, "combat_group_key", summary.source.group_key);
-	number(values, "combat_actor_id", summary.actor_id);
-	number(values, "combat_actor_pid", summary.actor_pid);
-	number(values, "combat_owner_subject_id", summary.owner_subject_id);
-	number(values, "combat_actor_kind", summary.actor_kind);
-	number(values, "combat_unique_player_count", summary.unique_player_count);
-	number(values, "combat_participant_count", summary.participant_count);
-	number(values, "combat_dropped_participant_count", summary.dropped_participant_count);
-	number(values, "combat_power_band", summary.power_band);
-	number(values, "combat_opponent_power_band", summary.opponent_power_band);
-	number(values, "combat_opponent_count", summary.opponent_count);
-	number(values, "combat_modifier_flags", summary.modifier_flags);
-	number(values, "combat_start_monotonic_usec", summary.start_monotonic_usec);
-	number(values, "combat_end_monotonic_usec", summary.end_monotonic_usec);
-	number(values, "combat_start_utc_usec", summary.start_utc_usec);
-	number(values, "combat_end_utc_usec", summary.end_utc_usec);
-	number(values, "combat_damage_dealt", summary.damage_dealt);
-	number(values, "combat_damage_taken", summary.damage_taken);
-	number(values, "combat_healing_attempted", summary.healing_attempted);
-	number(values, "combat_effective_healing", summary.effective_healing);
-	number(values, "combat_overhealing", summary.overhealing);
-	number(values, "combat_control_applications", summary.control_applications);
-	number(values, "combat_casting_attempts", summary.casting_attempts);
-	number(values, "combat_casting_completions", summary.casting_completions);
-	number(values, "combat_casting_aborts", summary.casting_aborts);
-	number(values, "combat_casting_elapsed_usec", summary.casting_elapsed_usec);
-	number(values, "combat_tanking_usec", summary.tanking_usec);
-	number(values, "combat_quality_flags", summary.quality_flags);
+	number(values, telemetry_column_id::combat_encounter_boot_id,
+	       summary.encounter.producer.boot_id);
+	number(values, telemetry_column_id::combat_encounter_process_id,
+	       summary.encounter.producer.process_id);
+	number(values, telemetry_column_id::combat_encounter_seq, summary.encounter.sequence);
+	number(values, telemetry_column_id::combat_mode, summary.mode);
+	number(values, telemetry_column_id::combat_outcome, summary.outcome);
+	number(values, telemetry_column_id::combat_revision, summary.revision);
+	number(values, telemetry_column_id::combat_environment_id, summary.source.environment_id);
+	number(values, telemetry_column_id::combat_season_id, summary.source.season_id);
+	number(values, telemetry_column_id::combat_config_id, summary.source.config_id);
+	number(values, telemetry_column_id::combat_classifier_version,
+	       summary.source.classifier_version);
+	number(values, telemetry_column_id::combat_policy_version, summary.source.policy_version);
+	number(values, telemetry_column_id::combat_zone_vnum, summary.source.zone_vnum);
+	number(values, telemetry_column_id::combat_group_key, summary.source.group_key);
+	number(values, telemetry_column_id::combat_actor_id, summary.actor_id);
+	number(values, telemetry_column_id::combat_actor_pid, summary.actor_pid);
+	number(values, telemetry_column_id::combat_owner_subject_id, summary.owner_subject_id);
+	number(values, telemetry_column_id::combat_actor_kind, summary.actor_kind);
+	number(values, telemetry_column_id::combat_unique_player_count,
+	       summary.unique_player_count);
+	number(values, telemetry_column_id::combat_participant_count, summary.participant_count);
+	number(values, telemetry_column_id::combat_dropped_participant_count,
+	       summary.dropped_participant_count);
+	number(values, telemetry_column_id::combat_power_band, summary.power_band);
+	number(values, telemetry_column_id::combat_opponent_power_band,
+	       summary.opponent_power_band);
+	number(values, telemetry_column_id::combat_opponent_count, summary.opponent_count);
+	number(values, telemetry_column_id::combat_modifier_flags, summary.modifier_flags);
+	number(values, telemetry_column_id::combat_start_monotonic_usec,
+	       summary.start_monotonic_usec);
+	number(values, telemetry_column_id::combat_end_monotonic_usec, summary.end_monotonic_usec);
+	number(values, telemetry_column_id::combat_start_utc_usec, summary.start_utc_usec);
+	number(values, telemetry_column_id::combat_end_utc_usec, summary.end_utc_usec);
+	number(values, telemetry_column_id::combat_damage_dealt, summary.damage_dealt);
+	number(values, telemetry_column_id::combat_damage_taken, summary.damage_taken);
+	number(values, telemetry_column_id::combat_healing_attempted, summary.healing_attempted);
+	number(values, telemetry_column_id::combat_effective_healing, summary.effective_healing);
+	number(values, telemetry_column_id::combat_overhealing, summary.overhealing);
+	number(values, telemetry_column_id::combat_control_applications,
+	       summary.control_applications);
+	number(values, telemetry_column_id::combat_casting_attempts, summary.casting_attempts);
+	number(values, telemetry_column_id::combat_casting_completions,
+	       summary.casting_completions);
+	number(values, telemetry_column_id::combat_casting_aborts, summary.casting_aborts);
+	number(values, telemetry_column_id::combat_casting_elapsed_usec,
+	       summary.casting_elapsed_usec);
+	number(values, telemetry_column_id::combat_tanking_usec, summary.tanking_usec);
+	number(values, telemetry_column_id::combat_quality_flags, summary.quality_flags);
 }
 
 fields counter_fields(const telemetry_cumulative_counters &counters)
@@ -315,14 +334,16 @@ fields config_fields(const telemetry_config_snapshot &config, bool fact)
 	FIELD(values, config, config_id);
 	if (!fact)
 		FIELD(values, config, schema_version);
-	number(values, fact ? "config_revision" : "revision", config.revision);
+	number(values, fact ? telemetry_column_id::config_revision : telemetry_column_id::revision,
+	       config.revision);
 	FIELD(values, config, build_version);
 	FIELD(values, config, content_version);
 	FIELD(values, config, property_version);
 	FIELD(values, config, classifier_version);
 	FIELD(values, config, policy_version);
 	FIELD(values, config, season_id);
-	values.emplace_back("fingerprint", hex(config.fingerprint, sizeof(config.fingerprint)));
+	values.emplace_back(telemetry_column(telemetry_column_id::fingerprint).name,
+			    hex(config.fingerprint, sizeof(config.fingerprint)));
 	FIELD(values, config, effective_utc_usec);
 	FIELD(values, config, interval_usec);
 	FIELD(values, config, checkpoint_interval_usec);
@@ -370,7 +391,7 @@ fields record_fields(const telemetry_record &record)
 	FIELD(values, header.key.producer, process_id);
 	FIELD(values, header.key, record_seq);
 	FIELD(values, header, schema_version);
-	number(values, "record_kind", header.kind);
+	number(values, telemetry_column_id::record_kind, header.kind);
 	FIELD(values, header, occurrence_utc_usec);
 	switch (header.kind)
 	{
@@ -415,7 +436,7 @@ fields record_fields(const telemetry_record &record)
 		const auto &p = record.payload.checkpoint;
 		session_fields(values, p.session);
 		connection_fields(values, p.connection);
-		number(values, "checkpoint_revision", p.revision);
+		number(values, telemetry_column_id::checkpoint_revision, p.revision);
 		FIELD(values, p, at_monotonic_usec);
 		FIELD(values, p, at_utc_usec);
 		const auto counters = counter_fields(p.cumulative);
@@ -431,19 +452,20 @@ fields record_fields(const telemetry_record &record)
 		connection_fields(values, p.connection);
 		FIELD(values, p, at_monotonic_usec);
 		FIELD(values, p, at_utc_usec);
-		number(values, "progression_kind", p.kind);
-		number(values, "progression_source", p.source);
-		number(values, "progression_reason", p.reason);
-		number(values, "progression_observation_status", p.observation_status);
-		number(values, "progression_modifier_flags", p.modifier_flags);
-		number(values, "progression_requested_xp", p.requested_xp);
-		number(values, "progression_computed_xp", p.computed_xp);
-		number(values, "progression_applied_xp", p.applied_xp);
-		number(values, "progression_before_exp", p.before_exp);
-		number(values, "progression_after_exp", p.after_exp);
-		number(values, "progression_before_level", p.before_level);
-		number(values, "progression_after_level", p.after_level);
-		number(values, "progression_threshold_xp", p.threshold_xp);
+		number(values, telemetry_column_id::progression_kind, p.kind);
+		number(values, telemetry_column_id::progression_source, p.source);
+		number(values, telemetry_column_id::progression_reason, p.reason);
+		number(values, telemetry_column_id::progression_observation_status,
+		       p.observation_status);
+		number(values, telemetry_column_id::progression_modifier_flags, p.modifier_flags);
+		number(values, telemetry_column_id::progression_requested_xp, p.requested_xp);
+		number(values, telemetry_column_id::progression_computed_xp, p.computed_xp);
+		number(values, telemetry_column_id::progression_applied_xp, p.applied_xp);
+		number(values, telemetry_column_id::progression_before_exp, p.before_exp);
+		number(values, telemetry_column_id::progression_after_exp, p.after_exp);
+		number(values, telemetry_column_id::progression_before_level, p.before_level);
+		number(values, telemetry_column_id::progression_after_level, p.after_level);
+		number(values, telemetry_column_id::progression_threshold_xp, p.threshold_xp);
 		dimension_fields(values, p.dimensions);
 		FIELD(values, p, config_id);
 		FIELD(values, p, classifier_version);
@@ -462,7 +484,7 @@ fields record_fields(const telemetry_record &record)
 		const auto &p = record.payload.gap;
 		session_fields(values, p.session);
 		connection_fields(values, p.connection);
-		number(values, "gap_reason", p.reason);
+		number(values, telemetry_column_id::gap_reason, p.reason);
 		FIELD(values, p, start_monotonic_usec);
 		FIELD(values, p, end_monotonic_usec);
 		FIELD(values, p, start_utc_usec);
@@ -504,7 +526,10 @@ std::string names(const fields &values, bool select = false)
 
 std::string literal(const field &item)
 {
-	return item.first == "fingerprint" ? "UNHEX('" + item.second + "')" : item.second;
+	return item.first == "fingerprint" || item.first == "payload_sha256" ||
+			       item.first == "record_payload" ?
+		       "UNHEX('" + item.second + "')" :
+		       item.second;
 }
 
 std::string where(const fields &values)
@@ -604,7 +629,7 @@ void quarantine_record(const telemetry_record &record, telemetry_failure_class f
 				     " AND record_seq=" + std::to_string(key.record_seq);
 	auto existing =
 		query("SELECT HEX(payload_sha256),record_kind FROM telemetry_quarantine WHERE " +
-		      identity + " FOR UPDATE");
+		      identity);
 	if (auto row = mysql_fetch_row(existing.get()))
 	{
 		if (!row[0] || !row[1] || digest_hex != row[0] ||
@@ -614,18 +639,20 @@ void quarantine_record(const telemetry_record &record, telemetry_failure_class f
 	}
 
 	const auto *raw = reinterpret_cast<const unsigned char *>(&record);
-	query("INSERT INTO telemetry_quarantine "
-	      "(boot_id,process_id,record_seq,schema_version,record_kind,failure_class,"
-	      "sql_error_code,gap_reason,quality_flags,payload_sha256,record_payload) VALUES (" +
-	      std::to_string(key.producer.boot_id) + ',' + std::to_string(key.producer.process_id) +
-	      ',' + std::to_string(key.record_seq) + ',' +
-	      std::to_string(record.header.schema_version) + ',' +
-	      std::to_string(static_cast<std::uint8_t>(record.header.kind)) + ',' +
-	      std::to_string(static_cast<std::uint8_t>(failure_class)) + ',' +
-	      std::to_string(error_code) + ',' +
-	      std::to_string(static_cast<std::uint8_t>(telemetry_gap_reason::record_quarantined)) +
-	      ',' + std::to_string(TELEMETRY_QUALITY_SEQUENCE_GAP) + ",UNHEX('" + digest_hex +
-	      "'),UNHEX('" + hex(raw, sizeof(record)) + "'))");
+	fields values;
+	number(values, telemetry_column_id::boot_id, key.producer.boot_id);
+	number(values, telemetry_column_id::process_id, key.producer.process_id);
+	number(values, telemetry_column_id::record_seq, key.record_seq);
+	number(values, telemetry_column_id::schema_version, record.header.schema_version);
+	number(values, telemetry_column_id::record_kind, record.header.kind);
+	number(values, telemetry_column_id::failure_class, failure_class);
+	number(values, telemetry_column_id::sql_error_code, error_code);
+	number(values, telemetry_column_id::gap_reason, telemetry_gap_reason::record_quarantined);
+	number(values, telemetry_column_id::quality_flags, TELEMETRY_QUALITY_SEQUENCE_GAP);
+	values.emplace_back(telemetry_column(telemetry_column_id::payload_sha256).name, digest_hex);
+	values.emplace_back(telemetry_column(telemetry_column_id::record_payload).name,
+			    hex(raw, sizeof(record)));
+	insert("telemetry_quarantine", values);
 }
 
 const telemetry_session_ref *session_of(const telemetry_record &record)
@@ -668,6 +695,184 @@ std::uint64_t unsigned_cell(const char *value)
 	return number;
 }
 
+void validate_writer_schema()
+{
+	constexpr const char *tables[] = { "telemetry_interval", "telemetry_config",
+					   "telemetry_session", "telemetry_quarantine" };
+	auto schema_failure = []()
+	{ throw sql_failure{ 1054U, telemetry_failure_class::permanent_schema }; };
+	for (const char *table : tables)
+	{
+		std::string columns;
+		std::size_t expected_count = 0U;
+		for (const auto &mapping : TELEMETRY_TABLE_COLUMNS)
+			if (std::string(mapping.table) == table)
+			{
+				if (!columns.empty())
+					columns += ',';
+				columns += '`' +
+					   std::string(telemetry_column(mapping.column).name) + '`';
+				++expected_count;
+			}
+		// SELECT distinguishes a missing table from a missing writer permission
+		// before visibility rules on information_schema can obscure the cause.
+		query("SELECT " + columns + " FROM " + table + " LIMIT 0");
+		auto engine = query("SELECT ENGINE FROM information_schema.tables WHERE "
+				    "table_schema=DATABASE() AND table_name='" +
+				    std::string(table) + "'");
+		auto engine_row = mysql_fetch_row(engine.get());
+		if (!engine_row || !engine_row[0] || std::string(engine_row[0]) != "InnoDB")
+			schema_failure();
+
+		auto metadata =
+			query("SELECT COLUMN_NAME,DATA_TYPE,COLUMN_TYPE,IS_NULLABLE,"
+			      "CHARACTER_MAXIMUM_LENGTH,DATETIME_PRECISION,EXTRA,COLUMN_DEFAULT "
+			      "FROM information_schema.columns WHERE table_schema=DATABASE() "
+			      "AND table_name='" +
+			      std::string(table) + "' LIMIT 513");
+		if (mysql_num_rows(metadata.get()) > 512U)
+			schema_failure();
+		std::size_t matched = 0U;
+		while (auto row = mysql_fetch_row(metadata.get()))
+		{
+			if (!row[0] || !row[1] || !row[2] || !row[3] || !row[6])
+				schema_failure();
+			const telemetry_table_column_descriptor *mapping = nullptr;
+			for (const auto &candidate : TELEMETRY_TABLE_COLUMNS)
+				if (std::string(candidate.table) == table &&
+				    std::string(telemetry_column(candidate.column).name) == row[0])
+				{
+					mapping = &candidate;
+					break;
+				}
+			const std::string extra(row[6]);
+			const bool auto_increment = extra.find("auto_increment") !=
+						    std::string::npos;
+			if (!mapping)
+			{
+				// An additive nullable/defaulted field is compatible. A new
+				// required field without a default would break every INSERT.
+				if (std::string(row[3]) == "NO" && !row[7] && !auto_increment &&
+				    extra.find("STORED GENERATED") == std::string::npos &&
+				    extra.find("VIRTUAL GENERATED") == std::string::npos)
+					schema_failure();
+				continue;
+			}
+			const auto &column = telemetry_column(mapping->column);
+			const bool is_unsigned = std::string(row[2]).find("unsigned") !=
+						 std::string::npos;
+			if (column.sql_type != std::string(row[1]) ||
+			    column.is_unsigned != is_unsigned ||
+			    mapping->nullable != (std::string(row[3]) == "YES") ||
+			    mapping->auto_increment != auto_increment ||
+			    (extra.find("STORED GENERATED") != std::string::npos ||
+			     extra.find("VIRTUAL GENERATED") != std::string::npos))
+				schema_failure();
+			if (column.width != 0U)
+			{
+				const char *width = std::string(column.sql_type) == "timestamp" ?
+							    row[5] :
+							    row[4];
+				if (!width || unsigned_cell(width) != column.width)
+					schema_failure();
+			}
+			if (mapping->default_kind == telemetry_column_default::zero &&
+			    (!row[7] || std::string(row[7]) != "0"))
+				schema_failure();
+			if (mapping->default_kind == telemetry_column_default::null_value &&
+			    row[7] && std::string(row[7]) != "NULL")
+				schema_failure();
+			if (mapping->default_kind == telemetry_column_default::current_timestamp)
+			{
+				std::string default_value(row[7] ? row[7] : "");
+				std::transform(default_value.begin(), default_value.end(),
+					       default_value.begin(), [](unsigned char value)
+					       { return std::tolower(value); });
+				if (default_value != "current_timestamp(6)")
+					schema_failure();
+			}
+			++matched;
+		}
+		if (matched != expected_count)
+			schema_failure();
+
+		struct observed_index
+		{
+			std::string name;
+			std::string columns;
+			bool unique;
+			std::uint64_t sequence;
+		};
+		std::vector<observed_index> indexes;
+		auto index_rows = query(
+			"SELECT INDEX_NAME,NON_UNIQUE,SEQ_IN_INDEX,COLUMN_NAME,SUB_PART,INDEX_TYPE "
+			"FROM information_schema.statistics WHERE table_schema=DATABASE() "
+			"AND table_name='" +
+			std::string(table) + "' ORDER BY INDEX_NAME,SEQ_IN_INDEX LIMIT 257");
+		if (mysql_num_rows(index_rows.get()) > 256U)
+			schema_failure();
+		while (auto row = mysql_fetch_row(index_rows.get()))
+		{
+			if (!row[0] || !row[1] || !row[2] || !row[3] || !row[5] || row[4] ||
+			    std::string(row[5]) != "BTREE")
+				schema_failure();
+			const bool unique = unsigned_cell(row[1]) == 0U;
+			const auto sequence = unsigned_cell(row[2]);
+			if (indexes.empty() || indexes.back().name != row[0])
+				indexes.push_back({ row[0], {}, unique, 0U });
+			auto &index = indexes.back();
+			if (sequence != index.sequence + 1U || unique != index.unique)
+				schema_failure();
+			if (!index.columns.empty())
+				index.columns += ',';
+			index.columns += row[3];
+			index.sequence = sequence;
+		}
+		for (const auto &expected : TELEMETRY_INDEXES)
+			if (std::string(expected.table) == table)
+			{
+				const auto found =
+					std::find_if(indexes.begin(), indexes.end(),
+						     [&expected](const observed_index &index)
+						     { return index.name == expected.name; });
+				if (found == indexes.end() || found->unique != expected.unique ||
+				    found->columns != expected.columns)
+					schema_failure();
+			}
+		for (const auto &index : indexes)
+			if (index.unique &&
+			    std::none_of(std::begin(TELEMETRY_INDEXES), std::end(TELEMETRY_INDEXES),
+					 [&](const telemetry_index_descriptor &expected) {
+						 return std::string(expected.table) == table &&
+							index.name == expected.name;
+					 }))
+				schema_failure();
+
+		// Zero-row statements exercise actual effective SELECT/INSERT/UPDATE
+		// permissions (including active roles and column grants). They create
+		// no synthetic facts, consume no producer IDs and always roll back.
+		// Any failure disconnects in open_connection(), rolling back an open probe.
+		query("START TRANSACTION");
+		query("INSERT INTO " + std::string(table) + " (" + columns + ") SELECT " + columns +
+		      " FROM " + table + " WHERE 1=0");
+		if (std::string(table) == "telemetry_session")
+		{
+			std::string assignments;
+			for (const auto &mapping : TELEMETRY_TABLE_COLUMNS)
+				if (std::string(mapping.table) == table)
+				{
+					if (!assignments.empty())
+						assignments += ',';
+					const std::string name(
+						telemetry_column(mapping.column).name);
+					assignments += '`' + name + "`=`" + name + '`';
+				}
+			query("UPDATE telemetry_session SET " + assignments + " WHERE 1=0");
+		}
+		query("ROLLBACK");
+	}
+}
+
 bool record_producer_matches_fresh_identity(const telemetry_record &record)
 {
 	const auto &fresh = settings.fresh_producer;
@@ -702,8 +907,11 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 		for (const auto &column : columns)
 			if (column.first != "revision" && column.first != "effective_utc_usec")
 				identity_columns.push_back(column);
+		// Append-only tables are fenced by the repository advisory lock and
+		// their unique identities. FOR UPDATE would require an unnecessary
+		// UPDATE grant for the immutable configuration on MySQL.
 		auto existing = query("SELECT " + names(identity_columns, true) +
-				      " FROM telemetry_config WHERE " + where(key) + " FOR UPDATE");
+				      " FROM telemetry_config WHERE " + where(key));
 		if (auto row = mysql_fetch_row(existing.get()))
 		{
 			if (!equal_row(row, identity_columns))
@@ -716,9 +924,10 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 	{
 		const auto &p = record.payload.encounter;
 		fields expected;
-		number(expected, "season_id", p.source.season_id);
-		number(expected, "classifier_version", p.source.classifier_version);
-		number(expected, "policy_version", p.source.policy_version);
+		number(expected, telemetry_column_id::season_id, p.source.season_id);
+		number(expected, telemetry_column_id::classifier_version,
+		       p.source.classifier_version);
+		number(expected, telemetry_column_id::policy_version, p.source.policy_version);
 		auto config = query("SELECT " + names(expected, true) +
 				    " FROM telemetry_config WHERE environment_id=" +
 				    std::to_string(p.source.environment_id) +
@@ -731,9 +940,10 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 	{
 		const auto &p = record.payload.combat_summary;
 		fields expected;
-		number(expected, "season_id", p.source.season_id);
-		number(expected, "classifier_version", p.source.classifier_version);
-		number(expected, "policy_version", p.source.policy_version);
+		number(expected, telemetry_column_id::season_id, p.source.season_id);
+		number(expected, telemetry_column_id::classifier_version,
+		       p.source.classifier_version);
+		number(expected, telemetry_column_id::policy_version, p.source.policy_version);
 		auto config = query("SELECT " + names(expected, true) +
 				    " FROM telemetry_config WHERE environment_id=" +
 				    std::to_string(p.source.environment_id) +
@@ -748,28 +958,31 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 	if (scoped && record.header.kind != telemetry_record_kind::coverage_gap)
 	{
 		fields expected;
-		number(expected, "season_id", session->season_id);
+		number(expected, telemetry_column_id::season_id, session->season_id);
 		telemetry_id config_id = 0;
 		if (record.header.kind == telemetry_record_kind::interval)
 		{
 			const auto &p = record.payload.interval;
 			config_id = p.config_id;
-			number(expected, "classifier_version", p.classifier_version);
-			number(expected, "policy_version", p.policy_version);
+			number(expected, telemetry_column_id::classifier_version,
+			       p.classifier_version);
+			number(expected, telemetry_column_id::policy_version, p.policy_version);
 		}
 		else if (record.header.kind == telemetry_record_kind::session_lifecycle)
 		{
 			const auto &p = record.payload.lifecycle;
 			config_id = p.config_id;
-			number(expected, "classifier_version", p.classifier_version);
-			number(expected, "policy_version", p.policy_version);
+			number(expected, telemetry_column_id::classifier_version,
+			       p.classifier_version);
+			number(expected, telemetry_column_id::policy_version, p.policy_version);
 		}
 		else if (record.header.kind == telemetry_record_kind::progression)
 		{
 			const auto &p = record.payload.progression;
 			config_id = p.config_id;
-			number(expected, "classifier_version", p.classifier_version);
-			number(expected, "policy_version", p.policy_version);
+			number(expected, telemetry_column_id::classifier_version,
+			       p.classifier_version);
+			number(expected, telemetry_column_id::policy_version, p.policy_version);
 		}
 		else
 			config_id = record.payload.checkpoint.config_id;
@@ -835,7 +1048,8 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 						    unsigned_cell(row[8 + i]))
 							return telemetry_apply_outcome::
 								duplicate_conflict;
-				number(projection, "latest_revision", p.revision);
+				number(projection, telemetry_column_id::latest_revision,
+				       p.revision);
 				projection.insert(projection.end(), counters.begin(),
 						  counters.end());
 			}
@@ -846,14 +1060,14 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 			const auto &p = record.payload.lifecycle;
 			if (p.lifecycle == telemetry_lifecycle_kind::session_entered)
 			{
-				number(projection, "entered", 1);
+				number(projection, telemetry_column_id::entered, 1);
 				if (!row)
 					quality = 0;
 			}
 			if (p.lifecycle == telemetry_lifecycle_kind::session_exited)
 			{
-				number(projection, "exited", 1);
-				number(projection, "end_reason", p.end_reason);
+				number(projection, telemetry_column_id::exited, 1);
+				number(projection, telemetry_column_id::end_reason, p.end_reason);
 			}
 			quality |= p.quality_flags;
 		}
@@ -864,7 +1078,7 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 		else
 			quality |= record.payload.gap.quality_flags |
 				   TELEMETRY_QUALITY_SEQUENCE_GAP;
-		number(projection, "quality_flags", quality);
+		number(projection, telemetry_column_id::quality_flags, quality);
 		if (!row)
 			insert("telemetry_session", scope);
 	}
@@ -872,12 +1086,13 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 	fields fact = values;
 	// The sole writer's transaction defines the committed ingest prefix. UTC
 	// is assigned by the database, never copied from the occurrence label.
-	fact.emplace_back("ingested_utc_usec",
+	fact.emplace_back(telemetry_column(telemetry_column_id::ingested_utc_usec).name,
 			  "CAST(UNIX_TIMESTAMP(CURRENT_TIMESTAMP(6))*1000000 AS SIGNED)");
 	insert("telemetry_interval", fact);
 	if (scoped)
 	{
-		number(projection, "last_ingest_id", mysql_insert_id(connection));
+		number(projection, telemetry_column_id::last_ingest_id,
+		       mysql_insert_id(connection));
 		update("telemetry_session", projection, identity);
 	}
 	return outcome;
