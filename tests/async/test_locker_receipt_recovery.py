@@ -86,4 +86,4 @@ with tempfile.TemporaryDirectory(prefix='locker-recovery-') as temporary:
         finally:
             sql('DROP DATABASE ' + database)
     else:
-        print('MariaDB receipt recovery skipped: TEST_DB_HOST is not set')
+        print('SKIP: MariaDB receipt recovery requires TEST_DB_HOST for a disposable fixture')

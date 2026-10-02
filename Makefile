@@ -5,6 +5,8 @@ SHELL := /bin/sh
 PYTHON ?= python3
 TEST_JOBS ?= 0
 TEST_MATCH ?=
+TEST_TIMEOUT ?=
+TEST_REPORT ?= bin/test-results.json
 PACKAGE_DIR := bin/packages
 BUILD_DEPS_PACKAGE := $(PACKAGE_DIR)/duris-build-deps_1.0_all.deb
 
@@ -138,7 +140,7 @@ world: build-area-tools
 	fi
 
 test-python: world
-	$(PYTHON) tests/run_regression_tests.py --jobs "$(TEST_JOBS)" $(if $(strip $(TEST_MATCH)),--match "$(TEST_MATCH)",)
+	$(PYTHON) tests/run_regression_tests.py --jobs "$(TEST_JOBS)" $(if $(strip $(TEST_MATCH)),--match "$(TEST_MATCH)",) $(if $(strip $(TEST_TIMEOUT)),--timeout "$(TEST_TIMEOUT)",) --report "$(TEST_REPORT)"
 
 test-native:
 	tests/async/run_signal_handlers.sh

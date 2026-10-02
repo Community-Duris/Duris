@@ -9,10 +9,10 @@ developer and CI gate while retaining fast commands for focused work.
 ```
 tests/
 ├── async/                       # focused regression + source-contract tests
-│   ├── test_*.py                # plain python3 regressions; no framework
+│   ├── test_*.py, *_test.py      # standalone scripts and unittest regressions
 │   ├── run_*.sh                 # special-purpose and legacy thin wrappers
 │   └── run_*_mysql.sh           # MySQL-backed schema-contract tests (need a live DB)
-├── run_regression_tests.py      # discovery, bounded parallelism, failure summary
+├── run_regression_tests.py      # discovery, deadlines, outcomes and timing reports
 ├── compare_bootstrap_mud_schema.sh   # diff live schema vs bootstrap baseline
 ├── test_migration_replay_safety.sh   # migration re-run safety
 └── test_run_migration_persistence_schema.sh
@@ -21,14 +21,28 @@ tests/
 ## Test styles
 
 **Source-contract tests** — read the C sources as text and assert structural
-invariants (a guard exists, a call site was not reintroduced, an ordering
-holds). Example (`tests/async/test_sql_pool_shutdown.py`): slices out
-`sql_pool_acquire`/`sql_pool_shutdown` from `src/sql/sql_pool.c` and asserts the
-closing-pool checks are present. These need no database and no build.
+invariants (a registration exists, a call site was not reintroduced, an ordering
+holds). These need no database and no build. Their evidence is structural:
+text presence cannot prove runtime reachability, a branch's effect, or transaction
+atomicity. Prefer an executable fixture for a behavioral requirement.
 
-**Behavioral tests** — boot or exercise server logic where feasible; most
-regression coverage for past crashes is contract-style because full boots are
-expensive.
+The shared `contract_text` helpers normalize formatting whitespace while retaining
+identifier/number boundaries and lexical states. Code-shaped expectations cannot be satisfied
+by a comment or a string containing the same statement. Use `literal=True` when
+SQL, log or user-facing text intentionally contains code punctuation or control
+keywords. Slice complete lexical regions; starting in the middle of a quoted
+message changes how the remainder parses. `_source_contract` and `_paths`
+extract definitions using braces in code, skipping prototypes and quoted braces.
+
+**Behavioral tests** — exercise linked or extracted production functions, Python
+tools, or complete server journeys with private fixtures. For example,
+`tests/async/test_sql_pool_discard_recovery.py` exercises the real pool's acquisition
+deadline, waiting borrower wake-up, lease ownership during shutdown, replenishment
+and exclusion gates. It uses a fake connection factory and real synchronization;
+`test_sql_pool_discard_mysql.py` separately requires real disposable SQL sessions.
+An extracted-function test has the integration limits of its stubs. A synthetic
+accounting fixture validates the auditor, rather than proving gameplay produced
+that evidence.
 
 **Schema tests** - verify migrations/persistence contracts against disposable
 MySQL or MariaDB instances (development databases only).
@@ -46,6 +60,7 @@ make test
 # Limit concurrency, filter by filename, or inspect discovery:
 make test TEST_JOBS=1
 make test-python TEST_MATCH=wear
+make test-python TEST_TIMEOUT=120 TEST_REPORT=bin/fast-results.json
 make test-list
 
 # Single test (preferred while iterating):
@@ -65,12 +80,35 @@ RUNTIME_DB_IMAGE=mariadb:10.11 tests/async/run_runtime_compatibility_mysql.sh
 ```
 
 `TEST_JOBS=0` is the default and selects up to eight workers based on available
-CPUs. Test output is buffered per process so parallel failures remain readable.
-The runner executes every discovered `test_*.py` in a separate process and
-returns nonzero if any test fails. Tests that build a complete isolated
+CPUs. The runner discovers both `test_*.py` and `*_test.py`, deduplicates paths,
+and excludes its explicit manual-only list. Each script runs in a separate
+interpreter. Failure diagnostics print as soon as that script finishes; a
+30-second heartbeat names active tests when none finishes. Tests that build a complete isolated
 flat-file server or a large sanitizer harness run serially after the parallel
 phase so their inner compiler workers cannot starve one another and exhaust
 per-build timeouts.
+
+Each ordinary script has a 900-second outer deadline; serialized resource tests
+have 1,800 seconds. `TEST_TIMEOUT` (or the runner's `--timeout`) overrides both.
+Timeouts terminate the test's process group on POSIX, then kill resistant members;
+Windows uses `taskkill /T /F`. Ctrl+C cancels running and queued work and exits 130.
+Processes that deliberately detach into a different session are outside the
+POSIX group; the deadline still bounds draining inherited output pipes.
+
+The gate exits nonzero for failures, signals, execution errors and timeouts.
+Explicit whole-script skips and unittest skips are reported separately. Some
+SQL scripts compile successfully and then skip their runtime check unless a
+disposable DB is supplied; a passing core gate therefore does not establish SQL
+integration coverage. The default `bin/test-results.json` records each script's
+status, exit code, elapsed seconds and skipped-check count, plus total elapsed
+time and interruption state. It omits captured output and environment values.
+The footer lists the ten slowest scripts. `TEST_REPORT` or `--report` selects a
+different report path. Build/world generation time precedes the Python report.
+
+Do not invoke a discovered sibling test from another test merely to run it again.
+Import helpers without executing their test body, and give a unique fixture a
+focused owner. See the [suite audit](../testing/TEST_SUITE_AUDIT.md) for per-entry
+decisions and the limits of the evidence.
 
 `make test-all` deliberately excludes Docker and externally provisioned
 database checks. `make test-db` creates and destroys isolated MySQL containers;
@@ -119,7 +157,10 @@ the effective compiler, Make, assembler, linker, compiler internals, installed
 headers and libraries. Standard GNU compiler search directories and explicit
 `CPATH`, `CPLUS_INCLUDE_PATH`, `C_INCLUDE_PATH` and `LIBRARY_PATH` directories,
 plus explicit include/library paths in Make's effective flags, are fingerprinted
-by content. Keep external build inputs in these declared paths;
+by content. Header search paths are recursive. Library search paths fingerprint
+directly searchable libraries, objects and linker scripts; the linker does not
+recursively search unrelated Python/data subdirectories. An explicitly selected
+nested `-L`/`LIBRARY_PATH` directory is still fingerprinted. Keep external build inputs in these declared paths;
 use `DURIS_REGRESSION_BUILD_CACHE=off` for toolchains with hidden inputs or
 wrappers that do not support GNU compiler discovery. Runtime-only full-world
 diagnostics and shell working-directory variables do not invalidate a build.

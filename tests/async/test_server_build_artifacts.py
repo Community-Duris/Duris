@@ -12,6 +12,51 @@ from unittest.mock import patch
 
 import server_build_artifacts as artifacts
 
+# Fingerprint actual bytes in an isolated installed-toolchain layout. Unrelated
+# nested Python/data files are not linker inputs; explicit headers and libraries
+# remain content-sensitive, even when their timestamps have not changed.
+with tempfile.TemporaryDirectory() as tmp:
+    root = Path(tmp)
+    for directory in ("src", "include", "lib", "lib/python/site-packages", "custom-headers", "custom-libs", "tools"):
+        (root / directory).mkdir(parents=True, exist_ok=True)
+    header = root / "include/system.h"
+    custom_header = root / "custom-headers/feature.h"
+    library = root / "lib/libexample.so"
+    custom_library = root / "custom-libs/libcustom.a"
+    compiler = root / "tools/compiler"
+    internal = root / "tools/cc1plus"
+    unused = root / "lib/python/site-packages/unrelated.so"
+    for path in (header, custom_header, library, custom_library, compiler, internal, unused):
+        path.write_bytes(b"original")
+
+    def tool_output(command, **kwargs):
+        if "-print-search-dirs" in command:
+            return f"libraries: ={root / 'lib'}\n"
+        if any(arg.startswith("-print-prog-name=") for arg in command):
+            return str(internal)
+        return b"isolated compiler version\n"
+
+    with (patch.object(artifacts, "ROOT", root),
+          patch.object(artifacts, "SYSTEM_HEADER_DIRECTORIES", (str(root / "include"),)),
+          patch.object(artifacts, "SYSTEM_LIBRARY_DIRECTORIES", (str(root / "lib"),)),
+          patch.object(artifacts, "compiler_configuration", return_value="g++\n-I../custom-headers -L../custom-libs"),
+          patch.object(artifacts.shutil, "which", return_value=str(compiler)),
+          patch.object(artifacts.subprocess, "check_output", side_effect=tool_output)):
+        original = artifacts.toolchain_key({})
+        unused.write_bytes(b"unrelated package update")
+        assert original == artifacts.toolchain_key({}), "unsearched nested package invalidated the server"
+        for path in (header, custom_header, library, custom_library, compiler, internal):
+            timestamp = path.stat()
+            path.write_bytes(b"modified")
+            os.utime(path, ns=(timestamp.st_atime_ns, timestamp.st_mtime_ns))
+            assert original != artifacts.toolchain_key({}), f"changed input was missed: {path}"
+            path.write_bytes(b"original")
+        nested_library_dir = unused.parent
+        baseline = artifacts.toolchain_key({"LIBRARY_PATH": str(nested_library_dir)})
+        unused.write_bytes(b"now a selected link input")
+        assert baseline != artifacts.toolchain_key({"LIBRARY_PATH": str(nested_library_dir)})
+
+
 # Recursive/parallel Make may prepend directory or progress lines. They are
 # not compiler names, and must not reach shutil.which / Path(None).
 with patch.object(artifacts.subprocess, 'check_output', return_value=

@@ -14,6 +14,8 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 CACHE_ENV = "DURIS_REGRESSION_BUILD_CACHE"
+SYSTEM_HEADER_DIRECTORIES = ("/usr/include", "/usr/lib/gcc", "/usr/local/include")
+SYSTEM_LIBRARY_DIRECTORIES = ("/usr/local/lib",)
 # Only observation/runtime controls are excluded; build variables remain inputs.
 IGNORED_ENV = {
     CACHE_ENV, "PWD", "OLDPWD", "SHLVL", "_", "HOSTNAME",
@@ -95,11 +97,15 @@ def toolchain_key(environment):
     add(search)
     # Hash actual installed inputs, not package versions: locally edited headers
     # and libraries must invalidate the artifact too.
-    directories = {"/usr/include", "/usr/lib/gcc", "/usr/local/include", "/usr/local/lib"}
-    for variable in ("CPATH", "CPLUS_INCLUDE_PATH", "C_INCLUDE_PATH", "LIBRARY_PATH"):
+    directories = set(SYSTEM_HEADER_DIRECTORIES)
+    library_directories = {source_path(path) for path in SYSTEM_LIBRARY_DIRECTORIES}
+    for variable in ("CPATH", "CPLUS_INCLUDE_PATH", "C_INCLUDE_PATH"):
         if variable in environment:
             directories.update(str(source_path(p or "."))
                                for p in environment[variable].split(os.pathsep))
+    if "LIBRARY_PATH" in environment:
+        library_directories.update(source_path(p or ".")
+                                   for p in environment["LIBRARY_PATH"].split(os.pathsep))
     # Include paths supplied by feature/hardening overrides are inputs too.
     # Resolve relative paths exactly as Make's recipes do, from src/.
     flags = iter(shlex.split(" ".join(lines[1:])))
@@ -115,7 +121,10 @@ def toolchain_key(environment):
         if path_value:
             path = source_path(path_value)
             if path.is_dir():
-                directories.add(str(path))
+                if option == "-L":
+                    library_directories.add(path)
+                else:
+                    directories.add(str(path))
             elif path.is_file():
                 add((str(path), file_hash(path)))
     for directory in sorted(directories):
@@ -130,9 +139,14 @@ def toolchain_key(environment):
     libraries = re.search(r"^libraries: =(.+)$", search, re.MULTILINE)
     if not libraries:
         raise RuntimeError("compiler did not report library search directories")
-    for directory in sorted({source_path(p) for p in libraries[1].split(os.pathsep)}):
+    library_directories.update(source_path(p) for p in libraries[1].split(os.pathsep))
+    # Linker search directories are not recursive. An unrelated Python package
+    # below /usr/local/lib cannot be a link input unless its own directory is
+    # explicitly selected with -L/LIBRARY_PATH. Keep content hashes for every
+    # directly searchable library, object and linker script.
+    for directory in sorted(library_directories):
         for path in sorted(directory.glob("*")):
-            if path.is_file() and (".so" in path.name or path.suffix in (".a", ".o")):
+            if path.is_file() and (".so" in path.name or path.suffix in (".a", ".o", ".ld", ".lds")):
                 add((str(path), file_hash(path)))
     for name in ("cc1plus", "collect2", "lto1"):
         path = Path(subprocess.check_output(compiler + [f"-print-prog-name={name}"],

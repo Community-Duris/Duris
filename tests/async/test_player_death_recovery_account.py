@@ -201,7 +201,7 @@ with tempfile.TemporaryDirectory(prefix='death-recovery-account-') as directory:
     flags = shlex.split(subprocess.check_output(['mysql_config', '--cflags'], text=True))
     libs = shlex.split(subprocess.check_output(['mysql_config', '--libs'], text=True))
     binary = directory / 'account'
-    subprocess.run([os.environ.get('CXX', 'g++-14'), '-std=c++20', '-Wall', '-Wextra', '-Werror',
+    subprocess.run([os.environ.get('CXX', 'g++'), '-std=c++20', '-Wall', '-Wextra', '-Werror',
                     '-Wno-use-after-free', '-g', '-fsanitize=address,undefined', '-fno-omit-frame-pointer',
                     '-ffunction-sections', '-fdata-sections', '-Isrc', *flags, str(source),
                     'src/player/player_death_recovery_query.c', 'src/persistence/critical_command.c',

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Qualify actual recipe root and save receipts through the native restore decoder."""
-import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -10,22 +9,12 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 import build_restore_qualifier as native
+from _restore_fixture import build as build_fixture
 
 with tempfile.TemporaryDirectory(prefix="duris-craft-restore-") as directory:
     base = Path(directory)
     qualifier = native.build(base / "qualify")
-    fixture = base / "fixture"
-    sources = []
-    fixture_sources = list(dict.fromkeys(native.SOURCES + ["economic_accounting_intent", "economic_accounting_plan", "item_transfer_accounting", "flatfile_accounting_authority", "flatfile_accounting_store", "flatfile_collector_repository", "collector_command", "collector_codec", "collector_policy", "collector_accounting"]))
-    for name in fixture_sources:
-        found = list((ROOT / "src").rglob(name + ".c"))
-        assert len(found) == 1
-        sources.append(str(found[0]))
-    subprocess.run([os.environ.get("CXX", "g++"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
-                    "-D__NO_MYSQL__", "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST", "-DDURIS_FLATFILE_TRANSACTION_FAULT_TEST",
-                    "-Isrc", "-Isrc/no_mysql", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
-                    "tests/async/persistence_restore_fixture.cpp", *sources, "-lcrypto", "-lz", "-pthread",
-                    "-o", str(fixture)], cwd=ROOT, check=True)
+    fixture = build_fixture(base / "fixture")
     seed = base / "seed"
     seed.mkdir(mode=0o700)
     (seed / "ISOLATED_RESTORE").write_text("synthetic disposable candidate\n")

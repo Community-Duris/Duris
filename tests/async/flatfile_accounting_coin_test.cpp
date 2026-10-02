@@ -324,8 +324,7 @@ coin_transfer_endpoint room_pile(const std::string &root, uint64_t uid,
 	uint64_t item_revision = ITEM_TRANSFER_ABSENT_REVISION;
 	if (!created)
 	{
-		const auto found = std::find_if(owned.begin(), owned.end(),
-						[uid](const auto &item)
+		const auto found = std::find_if(owned.begin(), owned.end(), [uid](const auto &item)
 						{ return item.item_uid == uid; });
 		assert(found != owned.end());
 		item_revision = found->item_revision;
@@ -731,14 +730,14 @@ void lifecycle_native_capture(const fs::path &path)
 	std::optional<economic_prepared_baseline> prepared;
 	assert(economic_baseline_prepare(baseline, &prepared) == economic_accounting_error::ok);
 	assert(prepared && prepared->witness().holdings.size() == 2);
-	const auto wallet_witness = std::find_if(
-		prepared->witness().holdings.begin(), prepared->witness().holdings.end(),
-		[](const auto &holding)
-		{ return holding.account.kind == economic_account_kind::wallet; });
-	const auto bank_witness = std::find_if(
-		prepared->witness().holdings.begin(), prepared->witness().holdings.end(),
-		[](const auto &holding)
-		{ return holding.account.kind == economic_account_kind::bank; });
+	const auto wallet_witness =
+		std::find_if(prepared->witness().holdings.begin(),
+			     prepared->witness().holdings.end(), [](const auto &holding)
+			     { return holding.account.kind == economic_account_kind::wallet; });
+	const auto bank_witness =
+		std::find_if(prepared->witness().holdings.begin(),
+			     prepared->witness().holdings.end(), [](const auto &holding)
+			     { return holding.account.kind == economic_account_kind::bank; });
 	assert(wallet_witness != prepared->witness().holdings.end() &&
 	       wallet_witness->native_revision == captured.wallets[0].native_revision &&
 	       wallet_witness->source_digest == captured.wallets[0].source_digest);
