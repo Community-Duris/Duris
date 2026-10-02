@@ -589,3 +589,25 @@ fixtures are separate from complete accounting, captured-clone/player workload
 qualification, MySQL candidate restore, erasure propagation and remote backup
 custody. Both frozen broad suites remain unfinished. R1-R8, activation and
 release remain open; production data and runtime safety gates are unchanged.
+
+
+## Frozen 79540e65d broad result and NPC cash contract repair
+
+The exact published `79540e65d03b4735bdf790b057e59e1492a38ebb` candidate completed
+strict production SQL, area-editor and world-generator builds, then all 839
+automatic scripts: 826 passed, 11 skipped and two failed in 6,127.39 seconds.
+The 25 manual checks remain separate. Input root tree is
+`9950b102324a023c806c81e1249e979970011e92`, native source
+`2fa0d98dac56a1687e4af4314da7ac9b327a670d`, tests
+`73f8f000b74be1e14f792ecee5c26bd1815f9a52` and scripts
+`81acd1715fc13ec1fc96017650b1710e3ae61755`. The result remains failed; later
+focused repairs do not rewrite that report or qualify an untested exact head.
+
+`test_economy_writer_coverage_contract.py` retained eight old NPC cash-assignment
+line numbers after native boot integration shifted their locations. Inspection
+confirms the same four-denomination parsing in each of the two mobile formats,
+matching the already-updated registry and current census. Refreshing only the
+test's expected locations makes all 52 writer contracts pass. Route counts and
+coverage/activation policy remain unchanged. The second failure is the stale
+help-document assertion in `test_supported_server_build_contract.py`; its
+repair is tracked separately. The frozen 8c997b00d run remains in progress.

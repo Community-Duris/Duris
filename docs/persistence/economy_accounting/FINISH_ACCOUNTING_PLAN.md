@@ -35,6 +35,13 @@ and writer qualification remain open. Restore qualification also rejects
 unwitnessed epic revisions and gaps that conserve aggregate value; both SQL
 component probes and the nine-case native recovery suite pass this repair. See the October 2 review status for scope.
 
+The later frozen `79540e65d` broad run also finished: 826 passed, 11 skipped
+and two stale source-contract assertions failed in 6,127.39 seconds. NPC cash
+assignments still match the classified registry; their expected locations in
+the test now match the boot-integration source, and all 52 writer contracts
+pass. The help-build wording check is the other reported failure. This remains
+a failed full run plus a focused repair; the frozen `8c997b00d` run continues.
+
 The frozen candidate `fbd9f5035` completed `make test-all`: 822 passed, 11
 skipped and one live Redis fixture failed because its Unix socket path exceeded
 the platform limit under a long qualification TMPDIR. The repaired fixture
