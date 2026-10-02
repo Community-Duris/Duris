@@ -45,15 +45,15 @@
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2811,
-    "current_unique_path_line_family_sites": 2752,
+    "current_occurrences": 2815,
+    "current_unique_path_line_family_sites": 2756,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "d4af6fac3d5946fafe2ee60caf2429671d2e01a1",
+    "draft_source_commit": "bd894ea6665aba02439579bbb01bce363fce9085",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2752,
+    "draft_unique_sites": 2756,
     "family_occurrences": {
-      "coin_assignment": 160,
+      "coin_assignment": 164,
       "coin_bulk_mutation": 16,
       "direct_cash_assignment": 12,
       "economic_submit": 187,
@@ -63,9 +63,9 @@
       "ship_coffer_assignment": 6,
       "sql_economy": 55
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 864-row registry maps 2752 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
-    "mapped_sites_still_present": 2752,
-    "mapped_unique_sites_from_draft_rows": 2752,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 864-row registry maps 2756 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2756,
+    "mapped_unique_sites_from_draft_rows": 2756,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "d4af6fac3d5946fafe2ee60caf2429671d2e01a1",
+  "repository_head": "bd894ea6665aba02439579bbb01bce363fce9085",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -5716,7 +5716,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          177
+          218
         ],
         "file": "src/economy/coin_transfer_command.c",
         "function": "coin_transfer_command_build",
@@ -6278,7 +6278,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           971,
-          1042
+          1043
         ],
         "file": "src/economy/coin_transfer_accounting.c",
         "function": "coin_transfer_accounting_record",
@@ -6339,7 +6339,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          563
+          640
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_coin",
@@ -9147,7 +9147,7 @@
       "blocking_policy_after_activation": {
         "decision": "allow_projection_only_with_committed_identity",
         "must_block_on_activation": false,
-        "required_policy": "Publishes an already committed shared-bank balance into connected player views; no account_banks row or source balance changes here. Require the selected account/racewar mapping and a non-stale native bank revision before publication; emit no new posting."
+        "required_policy": "Publishes validated bank authority into retained endpoint and connected shared-account player views; no account_banks row or source balance changes here. Require the selected account/racewar mapping and a non-stale native bank revision before publication; emit no new posting."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
@@ -9184,14 +9184,14 @@
       "id": "currency.bank_live_projection",
       "native_effects": {
         "custody_effect": "None",
-        "holding_effect": "Copies an existing bank balance into connected PC/GMCP projections after a native read or committed result; no native debit, credit, or issuance.",
+        "holding_effect": "Copies existing bank authority from a native load, committed completion, or validated stale receipt into retained and connected PC/GMCP projections; no native debit, credit, or issuance.",
         "native_state_targets": [
           "in-memory PC bank balance and bank revision projection",
           "GMCP vitals"
         ]
       },
-      "projection_rule": "Publishes an already committed shared-bank balance into connected player views; no account_banks row or source balance changes here.",
-      "reachability_evidence": "currency_transaction.c calls the revisioned publisher after a committed bank result; core/files.c calls it after flatfile authority load for player creation.",
+      "projection_rule": "Publishes validated bank authority into retained endpoint and connected shared-account player views; no account_banks row or source balance changes here.",
+      "reachability_evidence": "currency_transaction.c:publish_bank updates the retained wallet endpoint and calls the shared-bank revisioned publisher from currency completions and classified stale bank repairs; core/files.c calls the revisioned publisher after flatfile authority load for player creation.",
       "reason": "bank_transfer",
       "source": {
         "anchor_status": "function_definition_verified",
@@ -9202,7 +9202,7 @@
         "function": "publish_account_bank_balances_revision",
         "original_draft_symbol": "publish_account_bank_balances_revision"
       },
-      "source_classification": "Copies a retained shared-bank balance into connected player in-memory and GMCP views after a committed result or authority load; no native bank mutation.",
+      "source_classification": "Copies validated bank authority into retained endpoint and connected shared-account PC/GMCP views after a committed completion, classified stale receipt, or authority load; no native bank mutation.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -9260,7 +9260,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          918
+          995
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_bank_payment",
@@ -9324,7 +9324,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          828
+          905
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_bank_reward",
@@ -9882,7 +9882,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          879
+          956
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_prepare_identify",
@@ -10255,7 +10255,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          704
+          781
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_prepared",
@@ -10398,7 +10398,7 @@
       "blocking_policy_after_activation": {
         "decision": "allow_projection_only_with_committed_identity",
         "must_block_on_activation": false,
-        "required_policy": "Publishes a committed wallet result to live PC and GMCP state with a stale-revision check; no new native value is created here. Require selected native identity, complete read/receipt and non-stale revision before publication; emit no new posting."
+        "required_policy": "Publishes a committed wallet result or validated stale authority to live PC and GMCP state with a monotonic revision check; no new native value is created here. Require selected native identity, complete read/receipt and non-stale revision before publication; emit no new posting."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
@@ -10441,19 +10441,19 @@
           "GMCP vitals where published"
         ]
       },
-      "projection_rule": "Publishes a committed wallet result to live PC and GMCP state with a stale-revision check; no new native value is created here.",
+      "projection_rule": "Publishes a committed wallet result or validated stale authority to live PC and GMCP state with a monotonic revision check; no new native value is created here.",
       "reachability_evidence": "currency_transaction_publish_balances calls this wallet publisher after transaction completion, and world/handler.c calls it after a coin command result.",
       "reason": "wallet_transfer",
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          378
+          455
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_publish_wallet",
         "original_draft_symbol": "currency_transaction_publish_wallet"
       },
-      "source_classification": "Post-commit or re-entry publication copies a wallet result to the connected PC and GMCP; it does not write native wallet authority. A later runtime revision prevents stale callback rollback.",
+      "source_classification": "Copies a committed wallet result or validated stale currency authority into retained PC/GMCP views without writing native wallet authority; monotonic revisions prevent an older receipt from overwriting newer state.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -10572,7 +10572,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          799
+          876
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_wallet_value",
