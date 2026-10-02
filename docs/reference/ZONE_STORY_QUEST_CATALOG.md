@@ -13,9 +13,9 @@ named stories without changing native receipt IDs. Twin Towers replaces 84
 contracts with 10 achievement units and 3 daily groups, excluding 40 returned
 offerings and displaying 24 supporting contracts as 12 non-achievement services.
 The global projection now has
-2,359 achievement units and 1,962 daily candidate units after adding all 27
-starter/town mappings and eight further journals, equipment/crafting services,
-intermediate outcomes, and explicit missing-item exclusions. There are 36
+2,358 achievement units and 1,961 daily candidate units after adding starter/town
+mappings and deeper journals, equipment/crafting services,
+intermediate outcomes, and explicit missing-item exclusions. There are 37
 area sidecars and 2,509 projected units including services and administrative
 content. Other areas
 retain native-contract fallback; these counts do not claim full semantic review.
@@ -45,7 +45,11 @@ competing ingredient copies and two-scroll reward are explained. Its dossier
 records thirteen scenery routes, loaded door/falling behavior, Valin/miner
 availability, ordinary mouse pickup and an invalid inn assignment target.
 Three mixed fees remain unavailable; item-only coin rewards retain native
-accounting. Twelve source-comprehensive areas remain distinct from played
+accounting. Winterhaven adds 135 requests, 84 services and two exclusions with
+full source/key/timer/recipe guidance. Smokeveil adds ten achievements and one
+bottle service, simultaneous hearts, independent trophy consumers and optional
+helm history. Its Tezcat/Alatorin/Raxthan links retain foreign ownership.
+Fourteen source-comprehensive areas remain distinct from played
 active-world qualification.
 All raw definitions, receipt identities, zone registry and source fingerprint
 remain unchanged. Comprehensive source dossiers for these areas are tracked in

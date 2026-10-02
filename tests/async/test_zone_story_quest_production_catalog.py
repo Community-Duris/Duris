@@ -187,7 +187,41 @@ for response in solonar["dialogue"]:
     assert set(response["body"][0].rstrip("~").split()) & set(solonar_contacts[response["giver_vnum"]]["topics"])
 for vnum, contact in solonar_contacts.items():
     assert contact["keyword"] in solonar["mobs"][vnum]["keywords"]
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh"):
+smokev = inventory_module.area_evidence(ROOT, "smokev")
+assert len(smokev["requests"]) == 11 and len(smokev["dialogue"]) == 32
+assert len(smokev["reset_commands"]) == 435 and not smokev["special_assignments"]
+assert len(smokev["mobs"]) == 74 and len(smokev["items"]) == 59
+smokev_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "smokev")
+smokev_contacts = {c["mob_vnum"]: c for c in smokev_mapping["contacts"]}
+assert len(smokev_contacts) == 9 and sum(len(c["topics"]) for c in smokev_contacts.values()) == 32
+for response in smokev["dialogue"]:
+    assert set(response["body"][0].rstrip("~").split()) & set(smokev_contacts[response["giver_vnum"]]["topics"])
+for vnum, contact in smokev_contacts.items():
+    assert contact["keyword"] in smokev["mobs"][vnum]["keywords"]
+assert any(r["command"] == "O" and r["arguments"][1:5] == [20211, 1, 20216, 100] for r in smokev["reset_commands"])
+# These proofs are existing NPC stock, not inferred births from their trophy names.
+parent = None
+proof_parents = {}
+for reset in smokev["reset_commands"]:
+    command, values = reset["command"], reset["arguments"]
+    if command in ("M", "F"):
+        parent = values[1]
+    elif command == "G" and values[1] in {20200, 20209, 20244, 20253}:
+        proof_parents[values[1]] = parent
+        assert values[2] == 1 and values[4] == 100
+assert proof_parents == {20200: 20233, 20209: 20235, 20244: 20237, 20253: 20224}
+tezcat = inventory_module.area_evidence(ROOT, "tezcat")
+parent = None
+foreign_head_sources = []
+for reset in tezcat["reset_commands"]:
+    command, values = reset["command"], reset["arguments"]
+    if command in ("M", "F"):
+        parent = values[1]
+    elif command == "G" and values[1] == 20255:
+        foreign_head_sources.append((parent, values[2], values[4]))
+assert foreign_head_sources == [(98961, 1, 100)]
+assert "diabolus" in tezcat["mobs"][98961]["keywords"]
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

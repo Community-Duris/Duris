@@ -153,10 +153,9 @@ int main(int argc, char **argv)
 		service tracker(catalog);
 		for (const auto &mapping : catalog.story_mappings)
 		{
-			const auto &zone =
-				*std::find_if(catalog.zones.begin(), catalog.zones.end(),
-					      [&](const auto &z)
-					      { return z.source_area == mapping.source_area; });
+			const auto &zone = *std::find_if(
+				catalog.zones.begin(), catalog.zones.end(), [&](const auto &z)
+				{ return z.source_area == mapping.source_area; });
 			require(tracker.discover_zone(7, 42, zone.zone_number,
 						      std::max(1, zone.first_vnum), 100,
 						      "arrival") == result::applied,
@@ -178,8 +177,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 36 &&
-				tracker.summary_for(7, 42).total == 2359,
+		require(catalog.story_mappings.size() == 37 &&
+				tracker.summary_for(7, 42).total == 2358,
 			"native story projection disagreed with the complete source audit");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -738,9 +737,9 @@ int main(int argc, char **argv)
 		const auto &cosmos = story_for("wh", "request-55103-0e8b41819618");
 		const auto &dagger_marks = story_for("wh", "request-55116-e78a927f5454");
 		const auto &chief_key = story_for("wh", "request-55229-23f9768a6235");
-		const auto &winter =
-			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
-				      [](const auto &m) { return m.source_area == "wh"; });
+		const auto &winter = *std::find_if(catalog.story_mappings.begin(),
+						   catalog.story_mappings.end(), [](const auto &m)
+						   { return m.source_area == "wh"; });
 		service supplied_winter(catalog);
 		require(supplied_winter.discover_zone(7, 42, 550, 55125, 100, "arrival") ==
 				result::applied,
@@ -824,6 +823,89 @@ int main(int argc, char **argv)
 				restored_winter.progress_for_zone(7, 42, 306).completed == 0 &&
 				restored_winter.progress_for_zone(7, 42, 831).completed == 0,
 			"Winterhaven reload changed local receipts or invented foreign completion");
+		const auto &smoke = *std::find_if(catalog.story_mappings.begin(),
+						  catalog.story_mappings.end(), [](const auto &m)
+						  { return m.source_area == "smokev"; });
+		const auto &ivar_hearts = story_for("smokev", "the-two-dragon-hearts");
+		const auto &ivar_talon = story_for("smokev", "ivars-talon-reward");
+		const auto &tarlator = story_for("smokev", "tarlators-humanity-request");
+		const auto &raltron = story_for("smokev", "raltrons-helm-delivery");
+		const auto &ilvorntas = story_for("smokev", "ilvorntas-trophy-reward");
+		const auto &meal = story_for("smokev", "a-meal-for-azcatlipoca");
+		const auto &forvos = story_for("smokev", "forvos-bottle-exchange");
+		service supplied_smoke(catalog);
+		require(supplied_smoke.discover_zone(7, 42, 202, 20266, 100, "arrival") ==
+				result::applied,
+			"Smokeveil discovery failed");
+		for (const auto &contact : smoke.contacts)
+			require(supplied_smoke.meet_npc(7, 42, contact.mob_vnum, 20266, 101) ==
+					result::applied,
+				"Smokeveil fixture encounter failed");
+		const auto before_smoke_read = supplied_smoke.serialize_state();
+		supplies.carried.clear();
+		supplies.carried[20252] = supplies.carried[20209] = supplies.carried[20210] = 1;
+		journal = supplied_smoke.render_journal(7, 42, 202, 10, 1, 102, false, false,
+							&supplies);
+		require(journal.find("Next: " + raltron.steps.back().text) != std::string::npos &&
+				journal.find("Next: " + raltron.steps.front().text) ==
+					std::string::npos &&
+				journal.find("Next: " + ivar_hearts.steps.front().text) !=
+					std::string::npos &&
+				journal.find("Next: " + meal.steps.front().text) !=
+					std::string::npos,
+			"supplied helm required producer history or wrong trophies satisfied a request");
+		supplies.carried[20200] = supplies.carried[20211] = 1;
+		journal = supplied_smoke.render_journal(7, 42, 202, 10, 1, 102, false, false,
+							&supplies);
+		require(journal.find("Next: " + ivar_hearts.steps.back().text) !=
+					std::string::npos &&
+				journal.find("Next: " + meal.steps.back().text) !=
+					std::string::npos &&
+				supplied_smoke.serialize_state() == before_smoke_read &&
+				supplied_smoke.progress_for_zone(7, 42, 202).completed == 0,
+			"exact Smokeveil proofs failed or reading/possession created history");
+		record(supplied_smoke, raltron.contracts.front(), "supplied-helm", 202, 20272);
+		record(supplied_smoke, forvos.contracts.front(), "bottle-supply", 202, 20279);
+		require(supplied_smoke.progress_for_zone(7, 42, 202).completed == 1 &&
+				supplied_smoke.progress_for_zone(7, 42, 202).total == 10,
+			"Forvos service added an achievement or supplied Raltron helm needed Tarlator");
+		record(supplied_smoke, ivar_talon.contracts.front(), "ivar-talon", 202, 20269);
+		require(supplied_smoke.progress_for_zone(7, 42, 202).completed == 2,
+			"Ivar talon receipt also completed the heart-pair request");
+
+		service prepared_smoke(catalog);
+		require(prepared_smoke.deserialize_state(before_smoke_read, &error),
+			"Smokeveil encounter fixture reload failed");
+		supplies.carried.clear();
+		supplies.carried[20244] = supplies.carried[20253] = 1;
+		journal = prepared_smoke.render_journal(7, 42, 202, 10, 1, 102, false, false,
+							&supplies);
+		require(journal.find("Next: " + tarlator.steps.back().text) != std::string::npos &&
+				journal.find("Next: " + ilvorntas.steps.back().text) !=
+					std::string::npos,
+			"same-input requests were not independently ready before consumption");
+		record(prepared_smoke, tarlator.contracts.front(), "tarlator-route", 202, 20267);
+		supplies.carried.clear();
+		journal = prepared_smoke.render_journal(7, 42, 202, 10, 1, 122, false, false,
+							&supplies);
+		require(prepared_smoke.progress_for_zone(7, 42, 202).completed == 1 &&
+				journal.find("Next: " + raltron.steps[1].text) !=
+					std::string::npos &&
+				journal.find("Next: " + ilvorntas.steps.front().text) !=
+					std::string::npos,
+			"producer history recreated spent helm/trophies or completed the other recipient");
+		for (const auto &request : smoke.stories)
+			if (request.category != "service" && request.id != raltron.id &&
+			    request.id != ivar_talon.id)
+				record(supplied_smoke, request.contracts.front(),
+				       request.id.c_str(), 202, 20266);
+		service restored_smoke(catalog);
+		require(restored_smoke.deserialize_state(supplied_smoke.serialize_state(),
+							 &error) &&
+				restored_smoke.progress_for_zone(7, 42, 202).completed == 10 &&
+				restored_smoke.progress_for_zone(7, 42, 202).total == 10 &&
+				restored_smoke.progress_for_zone(7, 42, 831).completed == 0,
+			"Smokeveil reload changed receipts or invented Ravi's foreign completion");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 36 authored journals, accounting-gated player surfaces, starter/town
+**Status: 37 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -8,9 +8,9 @@ Deeper objective and provenance integration is incremental.**
 The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
 source dossiers, shipped changes, newly found dependencies, and verification.
 Twin Towers, Plains of Life, Ailvio, Braddistock, Breale, Abandoned Elven
-Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus, Torg and Vast Hidden
-Grove now have complete source story maps; their active-world journeys remain
-unqualified. Schema 3 adds
+Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus, Torg, Vast Hidden
+Grove, Winterhaven and Shairak/Smokeveil now have complete source story maps;
+their active-world journeys remain unqualified. Schema 3 adds
 optional preparation. Ailvio's 78 pair recipes project one family-feeding story;
 Braddistock's pet rescue is displayed as an intermediate service. Breale preserves
 its deliberate drawing riddle and five independent Triad stages. The Homestead
@@ -35,6 +35,12 @@ and buckskin consumers, two-scroll output and an omitted-in-dialogue pickaxe.
 Unavailable mixed fees, inaccessible/holding NPC episodes, ordinary mouse
 recovery, missing special targets, loaded door state and falling hazards
 now have explicit repair and qualification proposals in the execution register.
+
+Smokeveil adds simultaneous heart proof, separate disappearing-giver rewards,
+three talon consumers, the shaman-to-healer helm route, exact ground-animal
+recovery and foreign Tezcat/Alatorin/Raxthan ownership. Table-driven Dorno/Keebo
+services, cap-one replenishment and narrated cure/reunion boundaries extend
+qualification without adding unsupported historical objectives.
 
 Maintain this plan as zones are reviewed. Keep static contract classification,
 historical objective coverage, economic support, and gameplay qualification
@@ -522,7 +528,12 @@ GMCP support, current versus historical status, and no writes/rewards on read.
 - [ ] Qualify recipe consumers and multiple identical outputs with exact UID
   lineage/current stock. Review ordinary recovery flags, wandering availability
   and narrated versus loaded access before declaring a source route playable.
-- [ ] Complete comprehensive source dossiers for the other 207 roadmap areas.
+- [x] Complete Smokeveil source dossier: eleven exchanges, all 32 topic families,
+  ordinary access, exact trophy/animal sources, disappearing recipients,
+  competing talons/hearts, optional helm history and owned foreign continuations.
+  Record table-driven services, inactive legacy menu/custody defects and stale
+  coral-golem ownership before any gameplay restoration.
+- [ ] Complete comprehensive source dossiers for the other 206 roadmap areas.
 - [ ] Add district/family authoring and shared presentation for large zones.
   Winterhaven's 219 rows fit existing story/objective limits but need a bounded
   512 KiB source-sidecar allowance for detailed guidance. Preserve receipt IDs;
@@ -549,6 +560,7 @@ contract classification; it does not claim complete objective coverage.
 | Winterhaven | 2 | Complete: 135 request rows, 84 service rows and two exclusions across 221 Q/QA contracts | [Source-comprehensive dossier](zone-stories/WINTERHAVEN.md); 92 contacts, all 152 nonempty addressable families, 38 optional preparation checks, exact colors/marks/quantities, consumed-key and timed-heart guidance | Active reset generation, 49 mixed payments and custom birth/decay/random multi-output transforms remain unqualified; native item-only receipts retain accounting | Native projection/receipt checks; full access/timer/source/foreign journeys and selected content/service repairs pending |
 | All 27 starter/town areas | 1–2 | Complete static Q classification; detailed counts and evidence in starter/town register | Orientation, encountered people, concrete delivery counts and native receipt checklists; selected multi-step routes | Existing offering limits; reviewed crafting and equipment services do not create story/daily units | All maps pass source/native validation; isolated native guided journey; individual full-world routes pending |
 | Eight additional quest areas | 2 | Complete: 86 contracts → 80 named story/request/service entries | Verified Q/M guidance, distinct material counts, optional preparation hints and receipts; deeper dialogue/lineage/branches pending | Mixed item-and-coin grove recipes remain unavailable; preparation services do not earn story/daily units | Source/native parser and encounter visibility checks; each full-world journey remains pending in the priority roadmap |
+| Shairak and Smokeveil Forest | 1 | Complete: ten achievements plus one bottle service across eleven contracts | [Source-comprehensive dossier](zone-stories/SHAIRAK_AND_SMOKEVEIL_FOREST.md); nine contacts/all 32 topic families, simultaneous hearts, exact sources, optional helm producer and independent trophies | Active local/foreign reset and shop supply need durable generation; legacy smith/teacher purchases deliberately refuse | Native projection checks; active source/cap/recipient availability, owned foreign, teaching/forge and cure/reunion journeys pending |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
 
 ## Twin Towers evidence and decisions

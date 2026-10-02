@@ -38,10 +38,11 @@ neither every branch nor every historical prerequisite.
 | 11 | Torg | [Comprehensive source dossier](zone-stories/TORG.md): 15 Q contracts, 15 M families, three literal assignments, table-driven teacher/forge reachability, two shops, 597 resets, complete local death specials and bounded foreign continuations | Revision 2: twelve achievements plus two services; optional hide/rose/locket preparation, twelve contacts/all topics, exact rings/relics/chisels and access guidance | Active resets; holding/cap availability; confirmed invasion; committed random scroll/heart lineage and expiry intent; service/unused-content decisions; owned foreign journeys |
 | 12 | Vast Hidden Grove | [Comprehensive source dossier](zone-stories/VAST_HIDDEN_GROVE.md): 15 Q contracts, 12 M families, 100 rooms, 41 mobiles, 72 objects, seven shops, 152 resets and thirteen scenery teleports | Revision 2: three equipment stories, two bird requests and ten services; optional recipe history, fourteen contacts/all topics, exact inputs/rewards and shared-material guidance | Active resets; three mixed fees; Valin/miner roaming/holding; ordinary dead-mouse pickup; invalid inn target; loaded access versus prose; confirmed source/travel/recipe lineage |
 | 13 | Winterhaven | [Comprehensive source dossier](zone-stories/WINTERHAVEN.md): all 221 Q/QA contracts, 350 M/MA responses, 599 rooms, 314 mobiles, 483 objects, thirteen shops, 1,284 resets, 92 literal assignment candidates and bounded foreign continuations | Revision 2: 135 requests, 84 services, two exclusions, 92 contacts/152 nonempty topic families, 38 optional preparation checks and exact source/key/timer/recipe guidance | Active resets; 49 mixed fees; foreign sources/recipient availability; timed births/decay; random scroll/gift lineage; physical access, source gaps and selected prose/power/service repairs |
-| 14–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 14 | Shairak and Smokeveil Forest | [Comprehensive source dossier](zone-stories/SHAIRAK_AND_SMOKEVEIL_FOREST.md): eleven Q/QA contracts, 32 M families, 100 rooms, 74 mobiles, 59 objects, one shop, 435 resets, table-driven support roles and bounded Tezcat/Alatorin/Raxthan continuations | Revision 1: ten achievements plus one service, nine contacts/all topics; exact simultaneous hearts, competing trophies, ordinary animal recovery and optional helm route | Active reset/shop supply; cap-one/recipient availability; committed source versus gift; owned foreign journeys; all-stage cure/reunion and supported forge/teaching |
+| 15–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Shairak and Smokeveil Forest, followed by the Twin Keeps of
-Devastated Tharnadia. Their earlier native bindings do not establish comprehensive
+The next area is the Twin Keeps of Devastated Tharnadia, followed by Bloodstone
+Keep. Their earlier native bindings do not establish comprehensive
 source review. Do not advance a zone's status
 merely because the map parses, the Q denominator matches, or a candidate item
 graph was extracted.
@@ -100,6 +101,10 @@ graph was extracted.
 | ZSQ-WINTER-SOURCES | Torg memory exists without a found ambassador reset; the city-roof/key route and several artifact inputs have no confirmed ordinary static producer. Volo and Adryv are placed abroad; cap-one Chibbleniffle has two competing placements. | Review computed/foreign/recovered sources and live location/custody. Builder chooses restore/retire/clarify without guessed exits, key rewards or personal-credit assumptions. |
 | ZSQ-WINTER-TERMS / POWERS | Prose differs from actual cloak count, egg/blueprint reward, helmet metal and Incarnate output count. Several advertised powers are commented/unassigned; a Living Legend combat-periodic branch follows an unconditional return. | Propose targeted content corrections/restoration and separately qualify intended effects. Keep native receipts valid; no inactive power, discussion or lore-only king/vault becomes a completed objective. |
 | ZSQ-WINTER-CAPACITY / FAMILIES | 219 detailed rows exceed the old 256 KiB authoring limit. 49 memory requests, competing supplies and 49 mixed payments need distinct family/service treatment. | Raise the guarded source bound to 512 KiB with boundary regression; add district/family projection, conditional recipe/ingredient allocation and committed multi-output settlement before collapsing campaigns. |
+| ZSQ-SMOKEVEIL-EPISODES / TERMS | Ivar consumes both hearts together despite sequential prose; Ivar and Dorno disappear after either of two independent rewards. Talon/heart sources have cap one and multiple consumers. | Keep exact delivery receipts; clarify journal now. Builder decides retained disappearance, persistent follow-up or explicit replacement episodes before prose/behavior changes. Qualify current stock, source generation and actual recipient presence. |
+| ZSQ-SMOKEVEIL-SOURCE / OWNERSHIP | Grishnak's head is F-carried by Diabolus in Tezcat; Azcatlipoca's animal is O stock at 20216, distinct from scenery. Ravi in Alatorin also consumes the Tentabeast heart with Raxthan's Bloodbeast heart. | Bind actual carrier/ground/source kind and exact item UID, distinguish gifts, starter grants and personal recovery, and preserve foreign receipt ownership. Confirm carrier intent before moving the trophy; no generic animal kill or reunion is inferred. |
+| ZSQ-SMOKEVEIL-SERVICES / LEGACY | Normal boot attaches Dorno's smith table; Keebo is an epic teacher. Their active purchases refuse. Shared smith choice uses table index and searches NPC ore; unassigned coral-golem code references stale local identities. | Qualify complete menu/player-owned ore/payment/result recovery and successful teaching. Builder resolves the dormant golem's owner/item/slot/destination before assignment. Preserve explicit economic refusals; findings are source-level, not observed player-loss incidents. |
+| ZSQ-SMOKEVEIL-CLOSURE | Tarlator's narrated cure/message/reunion is two native deliveries; Raltron accepts a supplied helm. No typed letter, transformation or reunion event is implemented. | Optional producer history is shipped. Add explicitly owned all-stage/closure events and shared projection only after builder intent and committed episode evidence; neither receipt alone represents the entire cure. |
 | Evidence extractor gaps | Fixed chained/multiline literal assignment detection and ignored commented assignments. Object/mobile membership follows source prototypes rather than room bounds. | Continue review for aliases, computed VNUMs, preprocessor branches, table-driven teacher/smith assignments, F-selected parents, and foreign reset sources; extraction remains a lead list, not execution proof. |
 
 ## Verification record
@@ -476,3 +481,47 @@ qualification plans; mixed fees, fresh active sources and full played/recovery
 journeys remain pending. No accounting activation, DB operation, migration or
 merge occurred. The queue is thirteen of 220 source-comprehensive areas, with
 207 pending; continue with Shairak and Smokeveil Forest, then the Twin Keeps.
+
+### Shairak and Smokeveil Forest checkpoint — October 2, 2026
+
+Completed the full source review of 43 native blocks, 100 rooms, 74 mobiles,
+59 objects, one shop and 435 resets. All eleven Q/QA contracts now have authored
+guidance, with ten achievement rows and one repeatable bottle service. Nine
+contacts cover all 32 nonempty addressable topic families. No literal assignment
+belongs to the local prototypes/span; Dorno's smith and Keebo's teacher tables
+were checked separately. Bounded foreign review resolves Diabolus's F-carried
+head in Tezcat and Ravi's Alatorin request with the Raxthan Bloodbeast source.
+
+Revision 1 explains the simultaneous heart pair, independent disappearing-giver
+rewards, three local talon consumers, two local and one foreign Tentabeast-heart
+consumers, actual dead-animal ground stock, ordinary access and optional
+Tarlator history for Raltron's supplied helm. The dossier records unsupported
+cure/reunion semantics, source/recipient episodes, inactive forge choice/custody
+defects, deliberate service refusals and stale unassigned golem ownership.
+The builder guide now consistently describes shipped schema-3 optional history.
+
+Focused checks passed:
+
+- `test_zone_story_quest_production_catalog.py`: checked-in catalog and generated
+  inventory, fourteen reproducible indices, complete contact/topic alias coverage,
+  cap-one actual trophy parents and the foreign F-selected head source.
+- `test_zone_story_quest_story.py`: all 37 maps and schemas 1/2/3, exact live
+  materials, optional supplied helm route, simultaneous hearts, independent
+  same-input recipients, spent helm/trophies remaining missing, service exclusion
+  and ten recovered achievements without invented Ravi completion.
+- `test_zone_story_quest_production.py`: production/bootstrap native coverage.
+- Maintained SQL build completed with the existing matched hiredis/TLS path;
+  no dependency installation was needed. Formatting and whitespace checks pass.
+
+All 2,668 native definitions, fingerprint/content revision, zone registry and
+the other 36 mappings remain unchanged. There are now 37 authored journals;
+projection is 2,358 achievements, 1,961 potential daily units and 2,509 rows
+including services/administrative content. The single denominator change is
+Forvos's reviewed service classification. Local documentation links resolve.
+
+Player journals and new discovery/encounter/daily eligibility still require
+actual active accounting. This batch performed no accounting activation,
+database operation, migration or merge. Fresh active sources and actual played
+failure/reconnect/recovery journeys remain pending. The queue is fourteen of
+220 source-comprehensive areas, with 206 pending; the Twin Keeps and Bloodstone
+Keep are next.

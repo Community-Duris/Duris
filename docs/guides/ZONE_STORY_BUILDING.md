@@ -176,12 +176,12 @@ returned item as rejection feedback. Bastine promotions and Breale's successive
 mixtures remain distinct accepted requests until an all-stage family can be
 authored. Native receipt checklists are historical evidence; inventory is live.
 
-The current schema has no optional historical-step or conditional-subrecipe
-field. Do not use an obligatory-looking preparation checklist when possessing
-the terminal material already satisfies the native request. Document the
-reviewed progression in the roadmap and use separate service entries instead.
-The future event/schema plan adds these capabilities after accounting-backed
-evidence and client projections are qualified.
+Schema 3 supports optional preparation, including historical native receipts.
+Use it when a reviewed producer route helps explain a request that also accepts
+supplied terminal materials. Optional history cannot replace live stock or
+impose an earlier exchange. Conditional subrecipes and all-stage family
+completion remain planned capabilities; retain separate native exchanges until
+their accounting-backed evidence and shared presentation are qualified.
 
 ## The gardener dependency
 
@@ -197,7 +197,7 @@ C++ specials cannot reliably be discovered by parsing commands or dialogue.
 
 ## Later schema capabilities
 
-Both versions reject dialogue milestones, personal recovery, kills, arbitrary scripted events,
+All three versions reject dialogue milestones, personal recovery, kills, arbitrary scripted events,
 coin objectives, and new reward fields. Do not deploy placeholders claiming those
 events are tracked. The integration plan specifies the durable adapters and
 credit policies needed before those kinds can enter a versioned schema.

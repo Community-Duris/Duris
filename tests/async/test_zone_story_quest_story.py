@@ -15,7 +15,7 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1962
+assert report["daily_unit_count"] == 1961
 assert mapping["schema_version"] == 3 and mapping["stories"][0]["steps"][0]["optional"]
 assert sum(s["category"] == "service" for s in mapping["stories"]) == 12
 assert len(mapping["exclusions"]) == 1 and len(mapping["exclusions"][0]["contracts"]) == 40
@@ -25,6 +25,20 @@ assert "arrows" in next(c for c in mapping["contacts"] if c["mob_vnum"] == 13501
 assert "backpack" in next(c for c in mapping["contacts"] if c["mob_vnum"] == 13503)["topics"]
 
 new_areas = {"breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar"}
+smokev = next(m for m in catalog["story_mappings"] if m["source_area"] == "smokev")
+assert smokev["schema_version"] == 3 and smokev["revision"] == 1
+assert report["eligible_by_zone"]["202"] == 10 and len(smokev["stories"]) == 11
+assert sum(s["category"] == "service" for s in smokev["stories"]) == 1
+assert not smokev["exclusions"] and all(len(s["contracts"]) == 1 for s in smokev["stories"])
+smokev_stories = {s["id"]: s for s in smokev["stories"]}
+helm = smokev_stories["raltrons-helm-delivery"]
+assert helm["steps"][0]["optional"] and helm["steps"][0]["contracts"] == smokev_stories["tarlators-humanity-request"]["contracts"]
+assert helm["steps"][1]["item_vnums"] == [20252]
+assert smokev_stories["forvos-bottle-exchange"]["category"] == "service"
+assert all(smokev_stories[s]["category"] == "request" for s in ("dargast-scales-for-boots", "dolgars-scale-for-a-warvisor"))
+assert [t["item_vnums"] for t in smokev_stories["the-two-dragon-hearts"]["steps"][:-1]] == [[20200], [20209]]
+assert [t["item_vnums"] for t in smokev_stories["a-meal-for-azcatlipoca"]["steps"][:-1]] == [[20211]]
+assert all(s["steps"][-1]["contracts"] == s["contracts"] for s in smokev["stories"])
 new_mappings = {m["source_area"]: m for m in catalog["story_mappings"] if m["source_area"] in new_areas}
 assert set(new_mappings) == new_areas and all(m["coverage"] == "complete" for m in new_mappings.values())
 assert sum(d["source_area"] in new_areas for d in catalog["definitions"]) == 86
