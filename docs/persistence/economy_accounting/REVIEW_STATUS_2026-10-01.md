@@ -235,6 +235,23 @@ This checkpoint publishes the completed review fixes directly to
 
 ## Verification and its limits
 
+Salvage's configurable rolls now reject non-finite or invalid settings before
+mutation (`d4af6fac3`). Luck and chance thresholds are bounded to their certain
+outcomes before integer conversion; recipe scores use wide arithmetic and
+bounds before comparison. The actual command reproduces an out-of-range
+floating-point conversion before the fix and passes afterward under address,
+undefined-behavior and float-cast sanitizers. Cases include huge finite factors,
+maximum integer Luck/tool factors, fractional Luck/chance boundaries, zero rare
+chance and invalid factors. The original item and tools survive invalid-setting
+refusal. Existing prototype, downgrade, configuration and all 29 item-admission
+checks pass. Both strict production profiles pass with all 1,212 source blobs
+matching that tree. SQL SHA-256:
+`e14d9693a545c694cf6d6bf37833ad62a207bde93ae48c7d077d8b2a8eb2edac`;
+flatfile: `f67105ff0a3f347e22c022368f05faa1652d7fa96ef4ac572438ee1625d2b320`.
+The earlier gameplay artifacts below retain their original source pins; this
+numeric repair adds focused command/build evidence without claiming a new
+three-backend journey or current-head broad regression pass.
+
 The completed frozen `63309643c` run isolates its single failure to native
 inspector compilation: the auction fixture's 180-second budget expired before
 server startup. Auction, combat and static quest entrypoints now share the
@@ -309,7 +326,7 @@ essence and UID allocator repairs together.
 | Frozen broad regression | The `8be8b55c0` snapshot completed 822 scripts in 7,221.31 seconds with 818 runner successes and four failures; all four have separately passing focused repairs. The later frozen `63309643c` snapshot completed 828 scripts in 6,549.69 seconds with 827 runner successes and one failure. Its auction/coin-put journey timed out after 180 seconds while compiling the native player inspector, before starting the server. The same actual journey passes on the integrated `5c157f693` artifact. These success totals include optional checks: the MariaDB combat journey skipped without `TEST_DB_HOST`. Both snapshots predate subsequent source repairs and neither qualifies current-head integrated accounting. |
 | Null-output publication regression | Passed using the actual native movement module after `0464613a1`. |
 | Combat continuation and quarantine restore | Native stopped quarantine protocol, flatfile repository and restore checks pass after integrating upstream #676; the current save pipeline and 21 lifecycle, seven erasure and six export checks also pass. Native SQL recovery passes on both disposable engines, including actual pre/post-COMMIT SIGKILL and later-save restart. Flatfile server preflight refuses missing/stale UID allocator authority, retains evidence, boots after exact restoration and shuts down normally. Quarantine archives retain both original component frames and keep recovery fenced on conflicting evidence. |
-| Writer census | Refreshed for `c5ea78c95`: 2,811 lexical occurrences, 2,752 unique sites, 864 routes, zero unmapped sites. The new atomic downgrade is classified separately from ordinary salvage, with its detached-candidate allocation and refusal cleanup explicit; the provisional enhancement-output cleanup is explicitly classified; both moved wallet call sites retain their existing route ownership. The four temporary material-probe cleanup sites are explicitly classified in the recipe route. All 52 writer coverage checks pass on the salvage-template repair source in 114.245 seconds, along with 14 accounting fixtures and matrix freshness; the essence fix reanchors the same route set and passes its 14-fixture validation, matrix freshness and corrected focused enhancement check; enhancement assertions now resolve their unique current source calls. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
+| Writer census | Refreshed for `d4af6fac3`: 2,811 lexical occurrences, 2,752 unique sites, 864 routes, zero unmapped sites. The new atomic downgrade is classified separately from ordinary salvage, with its detached-candidate allocation and refusal cleanup explicit; the provisional enhancement-output cleanup is explicitly classified; both moved wallet call sites retain their existing route ownership. The four temporary material-probe cleanup sites are explicitly classified in the recipe route. All 52 writer coverage checks pass on the salvage numeric repair source in 103.308 seconds, along with 14 accounting fixtures and matrix freshness; the essence fix reanchors the same route set and passes its 14-fixture validation, matrix freshness and corrected focused enhancement check; enhancement assertions now resolve their unique current source calls. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
 | Recipe flatfile restore | Passed through the actual native restore decoder: complete recovery, checksum damage, missing obligation/root, future revision, and invalid receipt filename. |
 | Mortal recipe gameplay | Physical and retained-pouch Craft/Forge passed on the `0cd04f40b` flatfile binary with exact XP, output UIDs and counters through copyover and two cold restarts. Both disposable SQL engines now pass the same physical and retained-pouch journey on the verified `0cd04f40b` SQL binary, preserving inputs, output UIDs, XP and counters through copyover and two cold restarts. This remains one frozen leather recipe with accounting inactive. |
 | Death/resurrection accounting acceptance | **RED** on disposable MariaDB 10.11.14 and MySQL 8.0.46 using the verified `49f76401c` SQL binary. Real combat/death and resurrection returned all 12 original fixture item UIDs, restored the exact wallet, and retired the new death coin pile. The inactive-accounting journey still reports 27 uncovered item events and two currency operations missing accounting roots/postings. It does not qualify active accounting or subsequent restart. |
@@ -334,7 +351,7 @@ inspector compilation timeout before gameplay, not an observed auction refusal. 
 and recipe bounds, probe cleanup and lifecycle protections have separate native
 sanitizer, production-build or policy-fault evidence. A complete current-head
 regression and integrated accounting qualification remain outstanding. The
-current runner discovers 834 scripts; the completed 828-script run used an
+current runner discovers 835 scripts; the completed 828-script run used an
 earlier frozen source snapshot.
 
 Paid same-UID superior enhancement, remaining pouch writers, day-one quest and

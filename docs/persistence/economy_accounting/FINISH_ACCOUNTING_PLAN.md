@@ -44,6 +44,12 @@ regression now preserves source and tools on those refusals, retains successful
 salvage and ineligible-recipe behavior, and both production profiles pass. This
 does not couple ordinary salvage's independent grants, retirement or progression.
 
+Salvage reward thresholds and tool-assisted recipe scores are also bounded
+(`d4af6fac3`). Very large finite multipliers preserve certain outcomes without
+out-of-range casts or signed score overflow; invalid settings refuse before
+mutation. Native whole-command sanitizers cover large values and fractional
+roll boundaries. Both production profiles pass; compound salvage remains open.
+
 ## Delivery gates
 
 | Gate | Required outcome |
