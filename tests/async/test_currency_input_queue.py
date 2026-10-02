@@ -1532,6 +1532,24 @@ int main()
 	actor.next = nullptr;
 	character_list = &actor;
 	currency_transaction_reset_for_tests();
+	// Shared bank publication follows a morphed descriptor to the original PC.
+	npc_only_data morphed_player = {};
+	char_data morphed = {};
+	SET_BIT(morphed.specials.act, ACT_ISNPC);
+	morphed.only.npc = &morphed_player;
+	morphed_player.orig_char = &actor;
+	descriptor.character = &morphed;
+	descriptor.original = nullptr;
+	player.bank_revision = 10;
+	const AccountBankBalances morph_bank = {1, 2, 3, 4};
+	publish_account_bank_balances_revision(account_name, 1, &morph_bank, 11);
+	assert(GET_BALANCE_COPPER(&actor) == 1 && GET_BALANCE_SILVER(&actor) == 2 &&
+	       GET_BALANCE_GOLD(&actor) == 3 && GET_BALANCE_PLATINUM(&actor) == 4 &&
+	       player.bank_revision == 11);
+	const AccountBankBalances old_bank = {5, 6, 7, 8};
+	publish_account_bank_balances_revision(account_name, 1, &old_bank, 10);
+	assert(GET_BALANCE_COPPER(&actor) == 1 && player.bank_revision == 11);
+	descriptor.character = &actor;
 	printf("currency input queue runtime: ok\n");
 	return 0;
 }
@@ -1542,6 +1560,7 @@ def main(flatfile: bool = False) -> int:
     """Compile and execute the held-currency queue regression."""
     harness = "\n".join([
         PRELUDE,
+        extract(SRC / "utility.c", "int IS_MORPH(P_char ch)"),
         BANK_PUBLICATION,
         COIN_GIVE,
         COIN_PILES,
