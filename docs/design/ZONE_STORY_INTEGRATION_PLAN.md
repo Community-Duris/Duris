@@ -8,8 +8,8 @@ Deeper objective and provenance integration is incremental.**
 The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
 source dossiers, shipped changes, newly found dependencies, and verification.
 Twin Towers, Plains of Life, Ailvio, Braddistock, Breale, Abandoned Elven
-Homestead, Krimeneha's Mansion, Bastine and Pine Hollow now have complete source
-story maps; their active-world journeys remain unqualified. Schema 3 adds
+Homestead, Krimeneha's Mansion, Bastine, Pine Hollow and Quietus now have
+complete source story maps; their active-world journeys remain unqualified. Schema 3 adds
 optional preparation. Ailvio's 78 pair recipes project one family-feeding story;
 Braddistock's pet rescue is displayed as an intermediate service. Breale preserves
 its deliberate drawing riddle and five independent Triad stages. The Homestead
@@ -19,7 +19,11 @@ staff source and competing consumer. Bastine maps narrated commission order,
 exact external trophies, prince access and the owned Morlanthra continuation.
 Pine Hollow adds competing dragon materials, roaming source/holding-room
 availability, exact clothing counts and a two-skin/one-cap supply conflict,
-shared mine hazards and the owned Skelenak eye continuation.
+shared mine hazards and the owned Skelenak eye continuation. Quietus adds
+optional officer briefings, exact proof sources, rare-load availability,
+container-credential replacement and distinct world-quest/ship services.
+Confirmed active cash refusal gaps expand the service-settlement plan without
+replacing the existing committed world-quest reward and epic hull adapters.
 
 Maintain this plan as zones are reviewed. Keep static contract classification,
 historical objective coverage, economic support, and gameplay qualification
@@ -121,8 +125,18 @@ Implement and qualify the remaining additions in this order:
    access must distinguish blocked, triggered, survived, opened and arrived states.
    Qualify roaming-source holding/dead-end behavior and a reviewed return/barrier
    policy; source-file ownership cannot promise current NPC availability.
-5. **Mixed offerings and larger pilot.** Commit materials/payment/rewards and
-   stage evidence together, then qualify Twin Towers clothing and grove recipes.
+   Quietus's captain/pirate/bat loads deliberately include a trap route. Qualify
+   episodes and builder intent before removing rarity. Badge offerings consume
+   the full tree and supply an empty replacement: preserve or reject contents
+   through an explicit credential policy. Current closed/locked bits, rather
+   than chest descriptions, determine access.
+5. **Mixed offerings, service settlement and larger pilot.** Commit materials/
+   payment/rewards and stage evidence together, then qualify Twin Towers clothing
+   and grove recipes. Port active world-quest fee admission, refunds and exact-attempt payment
+   context. Ship coin debits/credits currently fail under active accounting
+   while several services mutate assets; coordinate coins/epics with recoverable
+   ship publication before tracking paid services. Preserve the hull's existing
+   committed epic callback and the inn's terminal-save handling.
 6. **Expand through the priority roadmap.** Review one story family at a time,
    qualify an actual player journey, and update semantic coverage independently
    from static contract classification.
@@ -302,6 +316,11 @@ every individual world journey or the future dialogue/provenance/client adapters
 - [ ] Add reviewed adapters for specials that provide stable semantic events;
   text/source references alone are not objective evidence.
 
+- [ ] Keep random world-quest generation/reward/target history in its native
+  namespace. A bartender encounter or random-task completion does not add an
+  officer mission or duplicate zone daily credit. Use the existing player/start
+  generation and committed item-grant adapters for any future projection.
+
 Proof: aliases, failed interactions, repeated dialogue, branch choices, groups,
 store failure, reconnect, replay, and cold restart.
 
@@ -351,6 +370,10 @@ read-only journal projection, and spoiler/reveal choices for both clients.
 - [ ] Keep a roaming source's prototype owner, reset source, live room and
   encounter episode distinct. Qualify competing consumers of one exact item
   across zone boundaries; a source lead is not a promised present location.
+- [ ] Define nonempty-container offering policy. Quietus's badge is consumed
+  with its child tree and replaced empty despite return prose. Qualify safe
+  original-tree return, child transfer or admission refusal with exact UIDs;
+  do not duplicate contents after retirement.
 - [ ] Emit Twin Towers animal source evidence using the special's actor context;
   link fresh animal retirement to resulting hide/meat UIDs through a confirmed
   tanning exchange, including freshness and decay.
@@ -377,6 +400,31 @@ and restart recovery.
 Proof: duplicate material requirements, denominations, insufficient funds,
 interleaved offerings, interrupted ACKs, both stores, and two cold restarts
 with unchanged input/reward identities.
+
+### Paid services and recoverable external state
+
+- [ ] Port identified world-quest service fee admission: generic `wallet_spend`
+  is refused by active authority before its existing callback. Preserve the
+  callback's commit ordering while adding service/attempt source identity.
+- [ ] Tie world-quest map/abandon operations to the exact original quest start/
+  target, not only current boolean state. Recover a failed-creation/stale-state
+  refund from the committed debit; active `ADD_MONEY` refusal cannot be hidden
+  behind success prose. Decide and test configured zero-fee support explicitly.
+- [ ] Extend existing epic hull admission to coordinated coin/epic terms and
+  recoverable ship creation/change/refund. Freeze stable owner/ship identity,
+  expected revision, old/new hull, port, cargo conditions and cost.
+- [ ] Port crew/chief hire, repairs, reload, summon, slot/cargo/equipment/weapon
+  sale/purchase and rename without ignoring debit/credit outcome. Stage ship
+  changes, timers, market effects and save together before publishing success.
+  Preserve deliberate whole-ship-sale and ordinary active shop refusals.
+- [ ] Define confirmed service/arrival events only after actual settlement,
+  including rejected, pending and compensated states. Mere `list`, `hire`,
+  `summon` or rent command submission is not a completed objective.
+
+Proof: active debit/credit denial, insufficient or changed funds, lost/replaced
+quest or ship, frozen quote, duplicate command, mixed epic/coin outcomes,
+refund failure/retry, ship publication/save interruption, queued summon arrival,
+reconnect/restart, both stores, no event or asset mutation after rejected payment.
 
 ### Dynamic presentation
 
@@ -426,7 +474,10 @@ GMCP support, current versus historical status, and no writes/rewards on read.
 - [x] Complete Pine Hollow source dossier, including all seven requests, roaming
   carriers, competing consumers, source-cap and holding concerns, mine hazards
   and the bounded Skelenak eye continuation.
-- [ ] Complete comprehensive source dossiers for the other 211 roadmap areas.
+- [x] Complete Quietus source dossier: all four missions, credential/proof
+  services, accepted topic leads, rare-load and nested-container routes, world-
+  quest namespace/refunds and reachable ship service/epic settlement.
+- [ ] Complete comprehensive source dossiers for the other 210 roadmap areas.
 
 ## Per-zone integration register
 
@@ -442,6 +493,7 @@ contract classification; it does not claim complete objective coverage.
 | Krimeneha's Mansion | 2 | Complete: eight achievements and one staff service | Source-comprehensive dossier; optional access/staff/family receipts; seven rescues and independent final keepsake exchange | Active local/roaming NPC equipment and nested treasure sources need generation authority; competing staff consumption requires exact identity | Source/native checks; roaming/replacement/full-household live journeys pending |
 | Bastine Castle | 2 | Complete: twelve commissions, prince request and Victor trust exchange | Source-comprehensive dossier; narrated order and optional earlier commissions; exact trophy/lock sources and Highway continuation | Active local/foreign item sources need generation authority; coin rewards retain native accounting | Source/native checks; all-stage ranks, source evidence and owned cross-zone journey pending |
 | Pine Hollow | 2 | Complete: two dragon stories and five clothing commissions | Source-comprehensive dossier; exact skins/rewards, roaming/competing materials, mine keys/hazards and Skelenak eye | Active reset sources require generation; two-skin/one-cap conflict needs a reviewed source repair | Native projection checks; live source capacity, holding/branch availability, hazards and foreign journey pending |
+| Quietus Quay | 2 | Complete: four independent missions and seven service rows, covering all 16 Q contracts | Source-comprehensive dossier; optional briefings, ten contacts/all M families, exact sources/rewards, rare availability and supporting exploration | Active reset generation, container-offering policy, world-quest refunds and ship coin settlement remain open | Native projection checks; active source/ship/refund/rare-load journeys pending |
 | All 27 starter/town areas | 1–2 | Complete static Q classification; detailed counts and evidence in starter/town register | Orientation, encountered people, concrete delivery counts and native receipt checklists; selected multi-step routes | Existing offering limits; reviewed crafting and equipment services do not create story/daily units | All maps pass source/native validation; isolated native guided journey; individual full-world routes pending |
 | Eight additional quest areas | 1–2 | Complete: 86 contracts → 80 named story/request/service entries | Verified Q/M guidance, distinct material counts, optional preparation hints and receipts; deeper dialogue/lineage/branches pending | Mixed item-and-coin grove recipes remain unavailable; preparation services do not earn story/daily units | Source/native parser and encounter visibility checks; each full-world journey remains pending in the priority roadmap |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |

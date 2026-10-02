@@ -1,6 +1,6 @@
 {
-  "schema_version": 2,
-  "revision": 1,
+  "schema_version": 3,
+  "revision": 2,
   "source_area": "quietus",
   "coverage": "complete",
   "stories": [
@@ -8,7 +8,7 @@
       "id": "show-membership-credentials-1728",
       "title": "Show Membership Credentials",
       "category": "service",
-      "summary": "Present either accepted credential to hear this briefing. The credential is returned; this is guidance for the mission rather than a completed mission.",
+      "summary": "Show either accepted credential to the thin duergar for the Darvanu introduction. He returns the credential and directs you to the officers; each mission is a separate accomplishment.",
       "contracts": [
         {
           "giver_vnum": 1728,
@@ -24,7 +24,7 @@
           "id": "material-1701",
           "text": "Carry a badge of the Darvanu or a blackened steel longsword",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Darvanu guards carry badges. The blackened steel longsword carried by Ceothian guards is another accepted credential. Empty a badge before offering it; its contents are not returned. Supplied credentials are accepted.",
           "item_vnums": [
             1701,
             80808
@@ -33,9 +33,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Show an empty badge or accepted longsword to the thin duergar",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Find him along the path by the barracks. The returned credential can be used for officer briefings.",
           "contracts": [
             {
               "giver_vnum": 1728,
@@ -53,7 +53,7 @@
       "id": "obtain-the-drow-mission-note-1734",
       "title": "Obtain the Drow Mission Note",
       "category": "service",
-      "summary": "Present either accepted credential to hear this briefing. The credential is returned; this is guidance for the mission rather than a completed mission.",
+      "summary": "Show either accepted credential to Gr'Zz'Lien, the drow lieutenant, for the note naming Aresliean. Keep the note for her separate mission delivery.",
       "contracts": [
         {
           "giver_vnum": 1734,
@@ -69,7 +69,7 @@
           "id": "material-1701",
           "text": "Carry a badge of the Darvanu or a blackened steel longsword",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Darvanu guards carry badges. The blackened steel longsword carried by Ceothian guards is another accepted credential. Empty a badge before offering it; its contents are not returned. Supplied credentials are accepted.",
           "item_vnums": [
             1701,
             80808
@@ -78,9 +78,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Show the credential to the drow lieutenant for her note",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "She returns the credential and supplies the short note. Ask about duty and Aresliean for context.",
           "contracts": [
             {
               "giver_vnum": 1734,
@@ -98,7 +98,7 @@
       "id": "the-drow-lieutenant-s-contract-1734",
       "title": "The Drow Lieutenant's Contract",
       "category": "story",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Return Gr'Zz'Lien's note and Aresliean's head together for the sleek mithril dagger. Pirate rumors provide leads; supplied note and proof are accepted.",
       "contracts": [
         {
           "giver_vnum": 1734,
@@ -107,10 +107,27 @@
       ],
       "steps": [
         {
+          "id": "optional-mission-note",
+          "text": "Obtain the drow lieutenant's mission note",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional preparation if you already have the note. Her credential exchange supplies it.",
+          "contracts": [
+            {
+              "giver_vnum": 1734,
+              "completion_key": "give=I:1701;receive=I:1701,I:1732;disappear=0"
+            },
+            {
+              "giver_vnum": 1734,
+              "completion_key": "give=I:80808;receive=I:1732,I:80808;disappear=0"
+            }
+          ]
+        },
+        {
           "id": "material-1732",
           "text": "Carry 1 x a short note",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The drow lieutenant supplies this note when shown either accepted credential. Keep it with Aresliean's head; both are required together. A supplied note is accepted.",
           "item_vnums": [
             1732
           ],
@@ -120,7 +137,7 @@
           "id": "material-1746",
           "text": "Carry 1 x the bloody head of Aresliean",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Aresliean carries this head. Rakshasa pirates discuss him, but their foreign-port rumors do not establish his current location. He can be hard to locate around Quietus. A supplied head is accepted.",
           "item_vnums": [
             1746
           ],
@@ -128,9 +145,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Bring the note and Aresliean's head to the drow lieutenant",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "She awards a sleek mithril dagger and remains available. The captain also accepts that dagger as optional mission proof.",
           "contracts": [
             {
               "giver_vnum": 1734,
@@ -144,7 +161,7 @@
       "id": "hear-the-orcish-mission-1735",
       "title": "Hear the Orcish Mission",
       "category": "service",
-      "summary": "Present either accepted credential to hear this briefing. The credential is returned; this is guidance for the mission rather than a completed mission.",
+      "summary": "Show either accepted credential to hear the orcish lieutenant's contract against King Rodev. He returns the credential; deliver Rodev's exact sword for the mission reward.",
       "contracts": [
         {
           "giver_vnum": 1735,
@@ -160,7 +177,7 @@
           "id": "material-1701",
           "text": "Carry a badge of the Darvanu or a blackened steel longsword",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Darvanu guards carry badges. The blackened steel longsword carried by Ceothian guards is another accepted credential. Empty a badge before offering it; its contents are not returned. Supplied credentials are accepted.",
           "item_vnums": [
             1701,
             80808
@@ -169,9 +186,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Show the credential to the orcish lieutenant",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Meet him in the Officers' Quarters. This briefing does not complete his sword contract.",
           "contracts": [
             {
               "giver_vnum": 1735,
@@ -189,7 +206,7 @@
       "id": "the-orcish-lieutenant-s-contract-1735",
       "title": "The Orcish Lieutenant's Contract",
       "category": "story",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Deliver Rodev's doubling sword of Chaos for a massive mithril sword, obsidian necklace and obsidian bracer. The lieutenant leaves after rewarding you; supplied proof is accepted.",
       "contracts": [
         {
           "giver_vnum": 1735,
@@ -198,10 +215,27 @@
       ],
       "steps": [
         {
+          "id": "optional-rodev-briefing",
+          "text": "Hear the orcish lieutenant's mission",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional context when you already have Rodev's sword.",
+          "contracts": [
+            {
+              "giver_vnum": 1735,
+              "completion_key": "give=I:1701;receive=I:1701;disappear=0"
+            },
+            {
+              "giver_vnum": 1735,
+              "completion_key": "give=I:80808;receive=I:80808;disappear=0"
+            }
+          ]
+        },
+        {
           "id": "material-9436",
           "text": "Carry 1 x the doubling sword of Chaos",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "King Rodev in Sarmiz carries the doubling sword of Chaos when that equipment is available. His load point is in Sarmiz's royal area; another similarly named sword does not qualify. A supplied sword is accepted.",
           "item_vnums": [
             9436
           ],
@@ -209,9 +243,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver the doubling sword of Chaos to the orcish lieutenant",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "He awards the massive mithril sword, obsidian necklace and obsidian bracer, then leaves.",
           "contracts": [
             {
               "giver_vnum": 1735,
@@ -222,46 +256,10 @@
       ]
     },
     {
-      "id": "the-angry-lieutenant-s-contract-1736",
-      "title": "The Angry Lieutenant's Contract",
-      "category": "story",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
-      "contracts": [
-        {
-          "giver_vnum": 1736,
-          "completion_key": "give=I:16450;receive=I:1751;disappear=0"
-        }
-      ],
-      "steps": [
-        {
-          "id": "material-16450",
-          "text": "Carry 1 x Eckraldu's staff",
-          "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
-          "item_vnums": [
-            16450
-          ],
-          "count": 1
-        },
-        {
-          "id": "turn-in",
-          "text": "Complete the exchange",
-          "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
-          "contracts": [
-            {
-              "giver_vnum": 1736,
-              "completion_key": "give=I:16450;receive=I:1751;disappear=0"
-            }
-          ]
-        }
-      ]
-    },
-    {
       "id": "hear-the-angry-lieutenant-s-mission-1736",
       "title": "Hear the Angry Lieutenant's Mission",
       "category": "service",
-      "summary": "Present either accepted credential to hear this briefing. The credential is returned; this is guidance for the mission rather than a completed mission.",
+      "summary": "Show either accepted credential to hear the angry duergar lieutenant's contract against Lord Eckraldu. He returns the credential; the separate delivery accepts Eckraldu's staff.",
       "contracts": [
         {
           "giver_vnum": 1736,
@@ -277,7 +275,7 @@
           "id": "material-1701",
           "text": "Carry a badge of the Darvanu or a blackened steel longsword",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Darvanu guards carry badges. The blackened steel longsword carried by Ceothian guards is another accepted credential. Empty a badge before offering it; its contents are not returned. Supplied credentials are accepted.",
           "item_vnums": [
             1701,
             80808
@@ -286,9 +284,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Show the credential to the angry duergar lieutenant",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Find him on the path past the officers. His requested proof is the staff, even though the briefing describes a killing.",
           "contracts": [
             {
               "giver_vnum": 1736,
@@ -303,10 +301,108 @@
       ]
     },
     {
+      "id": "the-angry-lieutenant-s-contract-1736",
+      "title": "The Angry Lieutenant's Contract",
+      "category": "story",
+      "summary": "Deliver Eckraldu's staff to the angry duergar lieutenant for a long silk cloak. The mansion's spirit route also consumes this staff, so choose how to use the material you have.",
+      "contracts": [
+        {
+          "giver_vnum": 1736,
+          "completion_key": "give=I:16450;receive=I:1751;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "optional-eckraldu-briefing",
+          "text": "Hear the angry lieutenant's mission",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional context when you already have the staff.",
+          "contracts": [
+            {
+              "giver_vnum": 1736,
+              "completion_key": "give=I:1701;receive=I:1701;disappear=0"
+            },
+            {
+              "giver_vnum": 1736,
+              "completion_key": "give=I:80808;receive=I:80808;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-16450",
+          "text": "Carry 1 x Eckraldu's staff",
+          "kind": "carried_item",
+          "hint": "Lord Eckraldu carries the staff and can roam beyond Krimeneha's Mansion into the surrounding world. The mansion's fragment preparation also accepts it. A supplied staff is accepted.",
+          "item_vnums": [
+            16450
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Deliver Eckraldu's staff to the angry lieutenant",
+          "kind": "completion",
+          "hint": "He awards a long silk cloak and remains available. This exchange accepts the staff without a recorded personal kill.",
+          "contracts": [
+            {
+              "giver_vnum": 1736,
+              "completion_key": "give=I:16450;receive=I:1751;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hear-the-captain-s-mission-1749",
+      "title": "Hear the Captain's Mission",
+      "category": "service",
+      "summary": "Show either accepted credential to hear the captain's request for proof of your skills. His seal and dagger briefings lead toward the separate bloodstone mission.",
+      "contracts": [
+        {
+          "giver_vnum": 1749,
+          "completion_key": "give=I:1701;receive=I:1701;disappear=0"
+        },
+        {
+          "giver_vnum": 1749,
+          "completion_key": "give=I:80808;receive=I:80808;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-1701",
+          "text": "Carry a badge of the Darvanu or a blackened steel longsword",
+          "kind": "carried_item",
+          "hint": "Darvanu guards carry badges. The blackened steel longsword carried by Ceothian guards is another accepted credential. Empty a badge before offering it; its contents are not returned. Supplied credentials are accepted.",
+          "item_vnums": [
+            1701,
+            80808
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Show the credential to the mercenary captain",
+          "kind": "completion",
+          "hint": "The captain returns the credential and asks for Lord Krimeneha's seal or other mission proof. He can be difficult to locate around the officers' paths.",
+          "contracts": [
+            {
+              "giver_vnum": 1749,
+              "completion_key": "give=I:1701;receive=I:1701;disappear=0"
+            },
+            {
+              "giver_vnum": 1749,
+              "completion_key": "give=I:80808;receive=I:80808;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "show-the-captain-a-seal-1749",
       "title": "Show the Captain a Seal",
       "category": "service",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Offer Lord Krimeneha's Seal to hear the captain's secret mission against Quietus. The seal is consumed; this briefing provides no item reward.",
       "contracts": [
         {
           "giver_vnum": 1749,
@@ -318,7 +414,7 @@
           "id": "material-16429",
           "text": "Carry 1 x Lord Krimeneha's Seal",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The seal is in the ornate desk in Lord Krimeneha's Mansion. It is distinct from the haunted boy's gold ring. The captain consumes the seal; the drow mission's dagger provides another briefing route. A supplied seal is accepted.",
           "item_vnums": [
             16429
           ],
@@ -326,9 +422,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Offer Lord Krimeneha's Seal to the captain for his secret briefing",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "The seal is consumed. Carry Quietus' bloodstone for the separate final reward; this briefing itself is not a completed mission.",
           "contracts": [
             {
               "giver_vnum": 1749,
@@ -339,91 +435,10 @@
       ]
     },
     {
-      "id": "hear-the-captain-s-mission-1749",
-      "title": "Hear the Captain's Mission",
-      "category": "service",
-      "summary": "Present either accepted credential to hear this briefing. The credential is returned; this is guidance for the mission rather than a completed mission.",
-      "contracts": [
-        {
-          "giver_vnum": 1749,
-          "completion_key": "give=I:1701;receive=I:1701;disappear=0"
-        },
-        {
-          "giver_vnum": 1749,
-          "completion_key": "give=I:80808;receive=I:80808;disappear=0"
-        }
-      ],
-      "steps": [
-        {
-          "id": "material-1701",
-          "text": "Carry a badge of the Darvanu or a blackened steel longsword",
-          "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
-          "item_vnums": [
-            1701,
-            80808
-          ],
-          "count": 1
-        },
-        {
-          "id": "turn-in",
-          "text": "Complete the exchange",
-          "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
-          "contracts": [
-            {
-              "giver_vnum": 1749,
-              "completion_key": "give=I:1701;receive=I:1701;disappear=0"
-            },
-            {
-              "giver_vnum": 1749,
-              "completion_key": "give=I:80808;receive=I:80808;disappear=0"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "proof-against-quietus-1749",
-      "title": "Proof Against Quietus",
-      "category": "story",
-      "summary": "Deliver the bloodstone requested as proof against Quietus. This records the native exchange; it does not prove a personal kill or require earlier membership dialogue.",
-      "contracts": [
-        {
-          "giver_vnum": 1749,
-          "completion_key": "give=I:1730;receive=I:1752,I:1753,I:1754;disappear=1"
-        }
-      ],
-      "steps": [
-        {
-          "id": "material-1730",
-          "text": "Carry 1 x Quietus' bloodstone",
-          "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
-          "item_vnums": [
-            1730
-          ],
-          "count": 1
-        },
-        {
-          "id": "turn-in",
-          "text": "Complete the exchange",
-          "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
-          "contracts": [
-            {
-              "giver_vnum": 1749,
-              "completion_key": "give=I:1730;receive=I:1752,I:1753,I:1754;disappear=1"
-            }
-          ]
-        }
-      ]
-    },
-    {
       "id": "show-the-captain-a-mission-reward-1749",
       "title": "Show the Captain a Mission Reward",
       "category": "service",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Show the sleek mithril dagger to hear the captain's secret mission. He returns the dagger; its delivery is a supporting briefing rather than another mission reward.",
       "contracts": [
         {
           "giver_vnum": 1749,
@@ -435,7 +450,7 @@
           "id": "material-1747",
           "text": "Carry 1 x a sleek mithril dagger",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The drow lieutenant awards this exact dagger for her note-and-head mission. A supplied dagger is also accepted; earlier mission history is not required.",
           "item_vnums": [
             1747
           ],
@@ -443,9 +458,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Show the sleek mithril dagger to the captain",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "He returns the dagger and explains the bloodstone mission. The seal route is an alternative briefing.",
           "contracts": [
             {
               "giver_vnum": 1749,
@@ -454,20 +469,94 @@
           ]
         }
       ]
+    },
+    {
+      "id": "proof-against-quietus-1749",
+      "title": "Proof Against Quietus",
+      "category": "story",
+      "summary": "Deliver Quietus' bloodstone to the captain for his three-item reward. Credential and seal/dagger briefings explain the conspiracy; supplied proof works without replaying them.",
+      "contracts": [
+        {
+          "giver_vnum": 1749,
+          "completion_key": "give=I:1730;receive=I:1752,I:1753,I:1754;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "optional-captain-introduction",
+          "text": "Hear the captain's credential briefing",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional context; it is not required when you already have the bloodstone.",
+          "contracts": [
+            {
+              "giver_vnum": 1749,
+              "completion_key": "give=I:1701;receive=I:1701;disappear=0"
+            },
+            {
+              "giver_vnum": 1749,
+              "completion_key": "give=I:80808;receive=I:80808;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "optional-secret-briefing",
+          "text": "Hear the secret mission through the seal or dagger route",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Either briefing supplies context. The seal is consumed; the dagger is returned. Both are optional for a supplied bloodstone.",
+          "contracts": [
+            {
+              "giver_vnum": 1749,
+              "completion_key": "give=I:16429;receive=;disappear=0"
+            },
+            {
+              "giver_vnum": 1749,
+              "completion_key": "give=I:1747;receive=I:1747;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-1730",
+          "text": "Carry 1 x Quietus' bloodstone",
+          "kind": "carried_item",
+          "hint": "Quietus carries the bloodstone in his estate and has a personal bodyguard. The nearby vampire woman does not carry this proof. Supplied bloodstones are accepted.",
+          "item_vnums": [
+            1730
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Deliver Quietus' bloodstone to the mercenary captain",
+          "kind": "completion",
+          "hint": "He awards a pulsating amulet, gold horn earring and smooth black ring, then leaves to report. Secure any other captain materials you need beforehand.",
+          "contracts": [
+            {
+              "giver_vnum": 1749,
+              "completion_key": "give=I:1730;receive=I:1752,I:1753,I:1754;disappear=1"
+            }
+          ]
+        }
+      ]
     }
   ],
   "exclusions": [],
-  "introduction": "Explore the docks and meet the people offering local missions.",
+  "introduction": "Investigate the Darvanu's hold over Quietus Quay through officer contracts and pirate accounts. Follow the suggested mission route or deliver proof you already have.",
   "orientation": [
-    "Use look and exits to explore. Meet visible people to reveal their requests.",
-    "Talk to the people you meet to learn about local requests. The checklist shows your current supplies and completed exchanges."
+    "Meet the thin duergar on the barracks path and the officers farther along the paths. Credentials unlock briefings; the four mission deliveries earn separate accomplishments.",
+    "The drow mission needs its note and Aresliean's head together. Rodev's sword and Eckraldu's staff have separate lieutenants. The captain's seal and dagger routes explain his bloodstone mission.",
+    "Empty badges before offering them. A badge is a container, and its contents are not returned by a briefing. Secure any captain materials you need before his final delivery.",
+    "Pirate rumors are leads; Aresliean and the captain may be difficult to locate. Supplied proof items are accepted without a recorded briefing or personal kill.",
+    "The one-eyed bartender has a separate random world-quest service. New paid requests are currently unavailable; use quest to view an existing task. The shipwright, crew hall, inn and shops have their own availability rules.",
+    "Optional exploration includes the estate's containers, hidden Golden Lyre instrument shop and bat shrine. These routes do not complete an officer mission."
   ],
   "contacts": [
     {
       "mob_vnum": 1728,
       "name": "a thin duergar",
-      "keyword": "darvanu",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "keyword": "duergar",
+      "description": "Begin on the barracks path. Ask about Darvanu membership, then show an accepted credential for the introduction.",
       "topics": [
         "darvanu"
       ]
@@ -476,7 +565,7 @@
       "mob_vnum": 1734,
       "name": "a drow lieutenant",
       "keyword": "drow",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Gr'Zz'Lien waits along the officers' paths. Ask about duty or Aresliean; her note and the exact head belong to one delivery.",
       "topics": [
         "duty",
         "aresliean"
@@ -486,23 +575,74 @@
       "mob_vnum": 1735,
       "name": "an orcish lieutenant",
       "keyword": "orc",
-      "description": "Review the local requests below.",
+      "description": "Show a credential in the Officers' Quarters for Rodev's briefing, or deliver his sword if you already have it.",
       "topics": []
     },
     {
       "mob_vnum": 1736,
       "name": "an angry lieutenant",
       "keyword": "angry",
-      "description": "Review the local requests below.",
+      "description": "This duergar officer accepts Eckraldu's staff. His briefing is optional when you already carry the proof.",
       "topics": []
     },
     {
       "mob_vnum": 1749,
       "name": "a mercenary captain",
       "keyword": "captain",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Ask about Krimeneha, review the seal/dagger briefings, or deliver the bloodstone. His current location can vary.",
       "topics": [
         "krimeneha"
+      ]
+    },
+    {
+      "mob_vnum": 1704,
+      "name": "a rakshasa pirate",
+      "keyword": "graceful",
+      "description": "This graceful pirate offers rumors about Aresliean and his conflict with the Darvanu.",
+      "topics": [
+        "aresliean"
+      ]
+    },
+    {
+      "mob_vnum": 1709,
+      "name": "a rakshasa bartender",
+      "keyword": "one-eyed",
+      "description": "The one-eyed bartender at the orcish dockhouse discusses Aresliean. Her separate world-quest service has its own eligibility; new paid requests are currently unavailable. View existing tasks with quest.",
+      "topics": [
+        "aresliean",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 1732,
+      "name": "a rakshasa",
+      "keyword": "pirate",
+      "description": "The wealthy pirate in Quietus' estate discusses Aresliean and Darvanu control of the port.",
+      "topics": [
+        "aresliean",
+        "darvanu"
+      ]
+    },
+    {
+      "mob_vnum": 1737,
+      "name": "a drunken rakshasa",
+      "keyword": "drunk",
+      "description": "At the Golden Lyre, ask about Aresliean, despair and her god. Her failed divine task supplies lore rather than a local rescue request.",
+      "topics": [
+        "aresliean",
+        "despair",
+        "god"
+      ]
+    },
+    {
+      "mob_vnum": 1751,
+      "name": "Aresliean",
+      "keyword": "aresliean",
+      "description": "If you find this elusive pirate, ask his name, about Aresliean or about the Darvanu. His head is the drow lieutenant's exact proof.",
+      "topics": [
+        "name",
+        "aresliean",
+        "darvanu"
       ]
     }
   ]

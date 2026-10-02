@@ -28,6 +28,10 @@ two spider keys, while retaining two achievements and two services.
 Pine Hollow retains seven independent achievements with exact source/material
 guidance; its source dossier records roaming proof availability, competing
 consumers, the coat supply-cap conflict and the foreign eye route.
+Quietus now has optional briefing receipts and exact proof/reward guidance,
+four mission achievements and seven supporting services. Its comprehensive
+dossier records all topic families, rare-load availability, filled-badge
+replacement and distinct world-quest/ship service settlement gaps.
 All raw definitions, receipt identities, zone registry and source fingerprint
 remain unchanged. Comprehensive source dossiers for these areas are tracked in
 the [execution register](../design/ZONE_STORY_ROADMAP_EXECUTION.md).

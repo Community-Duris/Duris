@@ -34,10 +34,11 @@ neither every branch nor every historical prerequisite.
 | 7 | Lord Krimeneha's Mansion | [Comprehensive source dossier](zone-stories/KRIMENEHAS_MANSION.md): nine Q contracts, nine M responses, 176 resets, all fragment rescues, roaming staff source and exact key/container targets | Revision 2: eight achievements plus staff service; optional access/preparation/family receipts; distinct gardener guidance | Active reset sources; replacement fragment lineage; roaming NPC/competing staff consumers; all-stage household and servants' blessing decision |
 | 8 | Bastine Castle | [Comprehensive source dossier](zone-stories/BASTINE_CASTLE.md): 14 Q contracts, four M responses, 428 resets, twelve promotion sources, prince/tower key and complete bounded Morlanthra continuation | Revision 2: twelve independent commissions in narrated order, prince and Victor requests; optional promotion/tower history; precise external sources and rewards | Active local/foreign sources; replacement hide lineage; all-stage rank campaign; owned cross-zone rescue; term/concealment decisions |
 | 9 | Pine Hollow | [Comprehensive source dossier](zone-stories/PINE_HOLLOW.md): seven Q contracts, ten M responses, 352 resets, roaming dragon sources, both mine keys, shared hazards and three external consumers | Revision 2: seven independent achievements; exact skin counts/types, source/availability guidance, real rewards and mine exploration | Active source generation; two-skin/one-cap conflict; holding-room availability; explicit branch attempts; hazard/access and owned foreign journeys |
-| 10–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 10 | Quietus Quay | [Comprehensive source dossier](zone-stories/QUIETUS_QUAY.md): 16 Q contracts, 14 M families, four special assignments, five shops, 216 resets; reachable world-quest/ship/shared money execution | Revision 2: four missions plus seven services; optional briefings, ten contacts/all native topic families, exact proof/rewards and rare-source guidance | Active resets; filled-badge tree/parent policy; rare episode availability; world-quest refunds/exact attempts; coordinated ship coin/epic settlement |
+| 11–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Quietus Quay, followed by Torg. Their earlier native bindings
-do not establish comprehensive source review. Do not advance a zone's status
+The next area is Torg, followed by Vast Hidden Grove (Solonar). Their earlier
+native bindings do not establish comprehensive source review. Do not advance a zone's status
 merely because the map parses, the Q denominator matches, or a candidate item
 graph was extracted.
 
@@ -74,6 +75,11 @@ graph was extracted.
 | ZSQ-RESET-SUPPLY-CAP | Pine Hollow's coat requires two huge skins, but the only active producer has an ordinary live item cap of one. Forced repopulation or existing stock can differ. | Reproduce fresh-world accumulation after reset admission; review raising the cap or adding a source. Exact count and stock capacity need separate static checks; preserve the two-skin Q pending a balance decision. |
 | ZSQ-BRANCH-AVAILABILITY / HOLDING-ROOM | Pine's dragon contracts are independent but remove their giver's remaining materials; three roaming proof carriers can enter a one-way holding room. | Qualify both completion orders and live source episodes. Author branch/attempt policy explicitly; reproduce the holding path and review barrier, return or placement repair without guessing a missing trophy. |
 | ZSQ-DATA-HAZARDS / FOREIGN-EYE | Pine's mine movement trap prevents that move; opening the trapped desk differs from retrieving the eye for Skelenak. The duergar liberation and fountain-death narrative has no local completion. | Add confirmed access/movement/open/retrieval with hazard outcome, source identity and owned foreign terminal; builders decide liberation/investigation intent before durable objectives are added. |
+| ZSQ-CONTAINER-OFFERING | Quietus credential input captures/destructs the full badge tree and creates an empty replacement; filled badges can lose the captain's key or other contents. | Journal warns to empty badges. Reproduce exact child UID outcomes, then author original-tree return, safe contents transfer or pre-submission refusal; preserve receipt policy and prevent duplication. |
+| ZSQ-RARE-SOURCE-AVAILABILITY | Quietus captain/Aresliean share a chance-load room with four trap exits and one home exit; bat has its own rare-load route. Prose explicitly describes intentional chance. | Qualify load/wander/trap/cap/reset episodes and live availability. Builder reviews shared pirate placement or lifecycle repair without blanket-removing intended rarity; unused negative-exit room is not a foreign source. |
+| ZSQ-QUIETUS-CONTAINER-STATE | Two treasure chests have locked/pickproof bits but no closed bit, unlike the captain's closed chest. | Use executable live state in access hints; reproduce initial get versus close/reopen and review flags/prose deliberately. A named key is not automatically required for already-open treasure. |
+| ZSQ-WORLD-QUEST-SERVICE | Existing fee callback and committed item rewards are present, but generic wallet_spend is refused before active fee admission. Downstream failed/stale refunds use active-refused ADD_MONEY; map/abandon context lacks original quest generation. | Port identified fee admission together with compensation from the original debit and exact attempt/target. Test failed creation, replaced task, retained payments across activation, refunds/restart and zero-fee policy; preserve separate namespace and existing reward generation. |
+| ZSQ-SHIP-SERVICE-SETTLEMENT | Crew/service handlers ignore active-refused SUB_MONEY or ADD_MONEY. Reachable hull callback waits for epic commit, but coin outcome is ignored; sale assets can clear without credit. | Extend existing epic hull adapter and port services to coordinated coins/epics/ship revision/publication/save with compensation. Qualify rejection/replay/changed owner/ship/timers/market before service objectives. Preserve inn save ordering and deliberate shop/whole-ship-sale refusals. |
 | Evidence extractor gaps | Fixed chained literal assignment detection and ignored commented assignments. Object/mobile membership follows source prototypes rather than room bounds. | Continue review for aliases, computed VNUMs, preprocessor branches, dynamic assignments, and foreign reset sources; extraction remains a lead list, not execution proof. |
 
 ## Verification record
@@ -246,3 +252,53 @@ The source queue is now nine of 220 complete, with 211 areas pending. Continue
 with Quietus Quay, then Torg. Fresh active-world source capacity, roaming/holding
 availability, branch attempts, exact replacement lineage, shared hazard/access
 events and owned cross-zone journeys remain implementation/qualification work.
+
+### Sixth comprehensive mapping batch — October 2, 2026
+
+Quietus's complete source dossier and reproducible audit index cover all 16 Q
+contracts, 14 native M families, 95 rooms, 54 mobiles, 55 objects, five shops,
+216 resets and four special assignments. Shared execution review includes
+reachable ship services/hull completion, world-quest admission/rewards/refunds,
+ordinary shop refusals, inn terminal save, container offerings, locks/liquids,
+reset parent selection and mobile availability. Bounded foreign sources establish
+Rodev's sword, Ceothian credentials and the mansion's seal/staff; those reads
+do not comprehensively qualify the other areas.
+
+Revision 2 retains four mission achievements and seven supporting service rows.
+Optional briefing receipts do not change native admission or require membership,
+personal kills or all earlier missions. Exact note/head delivery, foreign proof
+leads, named rewards, consumed seal versus returned dagger, all topic families,
+empty-badge advice and source availability are represented in the journal.
+
+Native C++20 warnings-as-errors regressions passed for all 36 maps and schemas
+1/2/3. New cases prove that a supplied head alone is incomplete, note/head
+together suffice, all four supplied mission sets reach their delivery without
+optional history, services never add achievements, reads never write, and
+reload retains four independent receipts without invented Sarmiz/mansion
+accomplishments. The source regression checks every native M family has a valid
+representative topic/contact alias, exact source counts/assignments, actual
+captain/Aresliean placement and nested badge key data.
+
+Production catalog/snapshot, generated world inventory and all ten reproducible
+source indices passed. All 27 required home maps are present. The maintained
+SQL `make -C src` completed from existing artifacts; no production C/C++ source
+changed. Complete touched-file and changed-line formatting, whitespace checks
+and 311 local document links passed.
+
+All 2,668 raw definitions, source fingerprint, content revision, zone registry,
+native bindings/classifications and other 35 maps remain unchanged as parsed
+objects. Global projection remains 2,359 achievements, 1,962 daily candidates
+and 2,509 rows including services/administrative content. No database operation,
+migration, accounting activation or merge occurred.
+
+New findings have explicit repair/qualification plans: container inputs that
+retire children despite return prose; intentional rare-source/trap availability;
+open-but-locked treasure flags; refused active world-quest fee admission and its
+downstream refund/attempt gaps; and ship service coin denial despite subsequent
+asset mutation. Existing committed item rewards, epic hull ordering, active
+shop refusal and inn save handling remain acknowledged. Source findings do not
+claim an observed production loss or a completed economic repair.
+
+The source queue is now ten of 220 complete, with 210 areas pending. Continue
+with Torg, then Vast Hidden Grove (Solonar). Full active-world source generation,
+semantic events, service settlement and played/recovery journeys remain open.

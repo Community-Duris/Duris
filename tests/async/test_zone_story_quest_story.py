@@ -59,6 +59,23 @@ assert all(len(s["contracts"]) == 1 and s["steps"][-1]["contracts"] == s["contra
 assert all(s["category"] == "service" for s in new_mappings["quietus"]["stories"] if "Credentials" in s["title"] or s["title"].startswith("Hear ") or s["title"].startswith("Obtain "))
 credentials = [s for s in new_mappings["quietus"]["stories"] if s["steps"][0].get("item_vnums") == [1701, 80808]]
 assert len(credentials) == 5 and all("badge" in s["steps"][0]["text"] and "longsword" in s["steps"][0]["text"] for s in credentials)
+quietus = new_mappings["quietus"]
+assert quietus["schema_version"] == 3 and quietus["revision"] == 2
+assert report["eligible_by_zone"]["17"] == 4
+assert len(quietus["stories"]) == 11 and sum(s["category"] == "service" for s in quietus["stories"]) == 7
+assert sum(len(s["contracts"]) for s in quietus["stories"]) == 16 and not quietus["exclusions"]
+quietus_missions = [s for s in quietus["stories"] if s["category"] == "story"]
+assert len(quietus_missions) == 4 and all(len(s["contracts"]) == 1 for s in quietus_missions)
+assert [sum(t.get("optional", False) for t in s["steps"]) for s in quietus_missions] == [1, 1, 1, 2]
+assert [t["item_vnums"] for t in quietus_missions[0]["steps"] if t["kind"] == "carried_item"] == [[1732], [1746]]
+assert all(s["steps"][-1]["contracts"] == s["contracts"] for s in quietus_missions)
+secret_briefing = quietus_missions[-1]["steps"][1]
+assert secret_briefing["optional"] and len(secret_briefing["contracts"]) == 2
+assert {c["completion_key"] for c in secret_briefing["contracts"]} == {
+    "give=I:16429;receive=;disappear=0", "give=I:1747;receive=I:1747;disappear=0"}
+assert len(quietus["contacts"]) == 10
+assert next(c for c in quietus["contacts"] if c["mob_vnum"] == 1709)["topics"] == ["aresliean", "quest"]
+assert next(c for c in quietus["contacts"] if c["mob_vnum"] == 1751)["topics"] == ["name", "aresliean", "darvanu"]
 chisel = next(s for s in new_mappings["torg"]["stories"] if s["id"] == "a-fine-chisel-for-the-craftsman")
 assert {c["giver_vnum"] for c in chisel["contracts"]} == {29023, 29024}
 assert len(chisel["steps"]) == 2 and chisel["steps"][0]["count"] == 1

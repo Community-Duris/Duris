@@ -101,7 +101,24 @@ assert len(pineholl["mobs"]) == 88 and len(pineholl["items"]) == 86
 # the coat needs two huge skins while its only ordinary producer caps live skins at one.
 huge_skin_sources = [r for r in pineholl["reset_commands"] if r["command"] in ("O", "P", "G", "E") and r["arguments"][1] == 16021]
 assert len(huge_skin_sources) == 1 and huge_skin_sources[0]["arguments"][:3] == [1, 16021, 1]
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl"):
+quietus = inventory_module.area_evidence(ROOT, "quietus")
+assert len(quietus["requests"]) == 16 and len(quietus["dialogue"]) == 14
+assert len(quietus["reset_commands"]) == 216 and len(quietus["mobs"]) == 54 and len(quietus["items"]) == 55
+assert {(a["kind"], a["vnum"], a["function"]) for a in quietus["special_assignments"]} == {
+    ("mob", 1709, "world_quest"), ("room", 1719, "ship_shop_proc"),
+    ("room", 1736, "inn"), ("room", 1734, "crew_shop_proc")}
+# Preserve rare-source placement as a reviewed content decision, rather than guessing
+# a missing head source from foreign-port rumors or the unused Aresliean load room.
+assert {r["arguments"][3] for r in quietus["reset_commands"] if r["command"] == "M" and r["arguments"][1] in (1749, 1751)} == {1784}
+assert any(r["command"] == "G" and r["arguments"][1] == 1746 for r in quietus["reset_commands"])
+assert any(r["command"] == "P" and r["arguments"][1:4] == [1742, 1, 1701] for r in quietus["reset_commands"])
+quietus_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "quietus")
+quietus_contacts = {c["mob_vnum"]: c for c in quietus_mapping["contacts"]}
+for response in quietus["dialogue"]:
+    assert set(response["body"][0].rstrip("~").split()) & set(quietus_contacts[response["giver_vnum"]]["topics"])
+for vnum, contact in quietus_contacts.items():
+    assert contact["keyword"] in quietus["mobs"][vnum]["keywords"]
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

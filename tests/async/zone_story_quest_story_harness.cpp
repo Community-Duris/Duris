@@ -458,8 +458,83 @@ int main(int argc, char **argv)
 				restored_skins.progress_for_zone(7, 42, 40).completed == 0 &&
 				restored_dragons.progress_for_zone(7, 42, 163).completed == 0,
 			"Pine receipts changed on restart or fabricated other clothing/foreign accomplishments");
+		const auto &drow_mission =
+			story_for("quietus", "the-drow-lieutenant-s-contract-1734");
+		const auto &orc_mission =
+			story_for("quietus", "the-orcish-lieutenant-s-contract-1735");
+		const auto &staff_mission =
+			story_for("quietus", "the-angry-lieutenant-s-contract-1736");
+		const auto &bloodstone_mission = story_for("quietus", "proof-against-quietus-1749");
+		service supplied_quietus(catalog);
+		require(supplied_quietus.discover_zone(7, 42, 17, 1758, 100, "arrival") ==
+				result::applied,
+			"Quietus discovery failed");
+		const int officers[][2] = { { 1728, 1758 },
+					    { 1734, 1768 },
+					    { 1735, 1770 },
+					    { 1736, 1782 },
+					    { 1749, 1783 } };
+		for (const auto &officer : officers)
+			require(supplied_quietus.meet_npc(7, 42, officer[0], officer[1], 101) ==
+					result::applied,
+				"Quietus officer encounter failed");
+		supplies.carried.clear();
+		supplies.carried[1746] = 1;
+		journal = supplied_quietus.render_journal(7, 42, 17, 10, 1, 102, false, false,
+							  &supplies);
+		require(journal.find("Next: " + drow_mission.steps[1].text) != std::string::npos &&
+				journal.find("Next: " + drow_mission.steps.back().text) ==
+					std::string::npos,
+			"Aresliean's head alone satisfied the required note-and-head delivery");
+		supplies.carried[1732] = 1;
+		supplies.carried[9436] = 1;
+		supplies.carried[16450] = 1;
+		supplies.carried[1730] = 1;
+		const auto before_quietus_read = supplied_quietus.serialize_state();
+		journal = supplied_quietus.render_journal(7, 42, 17, 10, 1, 102, false, false,
+							  &supplies);
+		for (const auto *mission :
+		     { &drow_mission, &orc_mission, &staff_mission, &bloodstone_mission })
+		{
+			require(journal.find("Next: " + mission->steps.back().text) !=
+					std::string::npos,
+				"supplied Quietus proof required optional briefing, membership or personal kill history");
+			for (const auto &step : mission->steps)
+				if (step.optional)
+					require(journal.find("Next: " + step.text) ==
+							std::string::npos,
+						"optional Quietus briefing displaced required delivery");
+		}
+		require(supplied_quietus.serialize_state() == before_quietus_read &&
+				supplied_quietus.progress_for_zone(7, 42, 17).total == 4 &&
+				supplied_quietus.progress_for_zone(7, 42, 17).completed == 0,
+			"Quietus read/possession fabricated mission completion or counted support services");
+		const auto &credential_intro =
+			story_for("quietus", "show-membership-credentials-1728");
+		const auto &seal_briefing = story_for("quietus", "show-the-captain-a-seal-1749");
+		const auto &dagger_briefing =
+			story_for("quietus", "show-the-captain-a-mission-reward-1749");
+		record(supplied_quietus, credential_intro.contracts[0], "badge-intro", 17, 1758);
+		record(supplied_quietus, credential_intro.contracts[1], "longsword-intro", 17,
+		       1758);
+		record(supplied_quietus, seal_briefing.contracts[0], "seal-briefing", 17, 1783);
+		record(supplied_quietus, dagger_briefing.contracts[0], "dagger-briefing", 17, 1783);
+		require(supplied_quietus.progress_for_zone(7, 42, 17).completed == 0,
+			"credential/proof briefings were counted as completed missions");
+		for (const auto *mission :
+		     { &drow_mission, &orc_mission, &staff_mission, &bloodstone_mission })
+			record(supplied_quietus, mission->contracts.front(), mission->id.c_str(),
+			       17, 1770);
+		service restored_quietus(catalog);
+		require(restored_quietus.deserialize_state(supplied_quietus.serialize_state(),
+							   &error) &&
+				restored_quietus.progress_for_zone(7, 42, 17).completed == 4 &&
+				restored_quietus.progress_for_zone(7, 42, 17).total == 4 &&
+				restored_quietus.progress_for_zone(7, 42, 94).completed == 0 &&
+				restored_quietus.progress_for_zone(7, 42, 164).completed == 0,
+			"Quietus reload changed mission receipts or invented foreign source accomplishments");
 		std::cout
-			<< "All mappings, optional preparation, independent family/commission/dragon journeys, exact skin counts, and receipt recovery passed.\n";
+			<< "All mappings, optional preparation, independent family/commission/dragon/Quietus journeys, exact materials, service exclusion, and receipt recovery passed.\n";
 		return 0;
 	}
 	const bool applied = zone_story_quest_story::apply(read(argv[2]), "twin_towers_forest",
