@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "d4af6fac3d5946fafe2ee60caf2429671d2e01a1",
+  "source_commit": "bd894ea6665aba02439579bbb01bce363fce9085",
   "census_complete": true,
   "writers": [
     {
@@ -4795,17 +4795,17 @@
       "sites": [
         [
           "src/economy/coin_transfer_command.c",
-          177,
+          218,
           "economic_submit"
         ],
         [
           "src/economy/coin_transfer_command.c",
-          240,
+          281,
           "economic_submit"
         ],
         [
           "src/economy/coin_transfer_command.c",
-          337,
+          378,
           "economic_submit"
         ]
       ],
@@ -5282,17 +5282,17 @@
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          536,
+          613,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          563,
+          640,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          575,
+          652,
           "economic_submit"
         ]
       ],
@@ -7927,9 +7927,9 @@
       "integration_issue": 480,
       "owner": "primary / #480",
       "coverage": "legacy",
-      "classification": "Copies a retained shared-bank balance into connected player in-memory and GMCP views after a committed result or authority load; no native bank mutation.",
-      "authority_boundary": "Selected account/racewar and non-stale bank revision before live publication; no account_banks row is written",
-      "current_support": "Read-only native-bank projection; source-order review only, backend gameplay qualification unverified",
+      "classification": "Copies validated bank authority into retained endpoint and connected shared-account PC/GMCP views after a committed completion, classified stale receipt, or authority load; no native bank mutation.",
+      "authority_boundary": "Command-identified wallet endpoint and selected account/racewar, with a non-stale native bank revision before live publication; no account_banks row is written",
+      "current_support": "Revision-gated live projection with focused completion/reconnect regression coverage; broader backend gameplay qualification unverified",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -7945,7 +7945,9 @@
         }
       },
       "test_candidates": [
-        "tests/async/test_economy_writer_coverage_contract.py"
+        "tests/async/test_economy_writer_coverage_contract.py",
+        "tests/async/test_currency_completion_retention.py",
+        "tests/async/test_currency_input_queue.py"
       ],
       "sites": [
         [
@@ -7967,10 +7969,30 @@
           "src/core/utility.c",
           3252,
           "coin_assignment"
+        ],
+        [
+          "src/economy/currency_transaction.c",
+          134,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/currency_transaction.c",
+          135,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/currency_transaction.c",
+          136,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/currency_transaction.c",
+          137,
+          "coin_assignment"
         ]
       ],
       "evidence": [],
-      "reachability_evidence": "currency_transaction.c calls the revisioned publisher after a committed bank result; core/files.c calls it after flatfile authority load for player creation."
+      "reachability_evidence": "currency_transaction.c:publish_bank updates the retained wallet endpoint and calls the shared-bank revisioned publisher from currency completions and classified stale bank repairs; core/files.c calls the revisioned publisher after flatfile authority load for player creation."
     },
     {
       "id": "currency.bank_payment",
@@ -8008,12 +8030,12 @@
         ],
         [
           "src/economy/currency_transaction.c",
-          918,
+          995,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          928,
+          1005,
           "economic_submit"
         ]
       ],
@@ -8050,12 +8072,12 @@
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          828,
+          905,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          837,
+          914,
           "economic_submit"
         ]
       ],
@@ -8446,7 +8468,7 @@
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          903,
+          980,
           "economic_submit"
         ]
       ],
@@ -8723,32 +8745,32 @@
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          637,
+          714,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          646,
+          723,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          652,
+          729,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          692,
+          769,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          700,
+          777,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          704,
+          781,
           "economic_submit"
         ]
       ],
@@ -8922,9 +8944,9 @@
       "integration_issue": 480,
       "owner": "primary / #480",
       "coverage": "legacy",
-      "classification": "Post-commit or re-entry publication copies a wallet result to the connected PC and GMCP; it does not write native wallet authority. A later runtime revision prevents stale callback rollback.",
-      "authority_boundary": "Committed currency result or verified native load, with non-stale wallet revision before live publication",
-      "current_support": "Revision-gated live projection; backend gameplay qualification unverified",
+      "classification": "Copies a committed wallet result or validated stale currency authority into retained PC/GMCP views without writing native wallet authority; monotonic revisions prevent an older receipt from overwriting newer state.",
+      "authority_boundary": "Committed currency result, verified native load, or classified and validated stale receipt, with non-stale wallet revision before live publication",
+      "current_support": "Revision-gated live projection with focused completion/reconnect regression coverage; broader backend gameplay qualification unverified",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -8940,27 +8962,29 @@
         }
       },
       "test_candidates": [
-        "tests/async/test_economy_writer_coverage_contract.py"
+        "tests/async/test_economy_writer_coverage_contract.py",
+        "tests/async/test_currency_completion_retention.py",
+        "tests/async/test_currency_input_queue.py"
       ],
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          390,
+          467,
           "coin_assignment"
         ],
         [
           "src/economy/currency_transaction.c",
-          391,
+          468,
           "coin_assignment"
         ],
         [
           "src/economy/currency_transaction.c",
-          392,
+          469,
           "coin_assignment"
         ],
         [
           "src/economy/currency_transaction.c",
-          393,
+          470,
           "coin_assignment"
         ]
       ],
@@ -9054,22 +9078,22 @@
       "sites": [
         [
           "src/economy/currency_transaction.c",
-          799,
+          876,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          809,
+          886,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          814,
+          891,
           "economic_submit"
         ],
         [
           "src/economy/currency_transaction.c",
-          822,
+          899,
           "economic_submit"
         ],
         [
@@ -22694,7 +22718,7 @@
         ],
         [
           "src/economy/coin_transfer_command.h",
-          38,
+          53,
           "economic_submit"
         ],
         [
@@ -51175,25 +51199,25 @@
     },
     {
       "path": "src/economy/coin_transfer_command.c",
-      "line": 177,
+      "line": 218,
       "family": "economic_submit",
       "excerpt": "bool coin_transfer_command_build(critical_command *command,"
     },
     {
       "path": "src/economy/coin_transfer_command.c",
-      "line": 240,
+      "line": 281,
       "family": "economic_submit",
       "excerpt": "if (!coin_transfer_command_build(&expected, command.operation_id, decoded,"
     },
     {
       "path": "src/economy/coin_transfer_command.c",
-      "line": 337,
+      "line": 378,
       "family": "economic_submit",
       "excerpt": "if (!item_transfer_command_build(destination, payload.destination.change.operation_id,"
     },
     {
       "path": "src/economy/coin_transfer_command.h",
-      "line": 38,
+      "line": 53,
       "family": "economic_submit",
       "excerpt": "bool coin_transfer_command_build(critical_command *command,"
     },
@@ -51691,133 +51715,157 @@
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 536,
+      "line": 613,
       "family": "economic_submit",
       "excerpt": "!currency_command_build("
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 563,
+      "line": 640,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload &payload,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 575,
+      "line": 652,
       "family": "economic_submit",
       "excerpt": "if (!coin_transfer_command_build(&command, id, payload, critical_source_site::command,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 637,
+      "line": 714,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit(P_char character, const currency_vector &wallet_delta,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 646,
+      "line": 723,
       "family": "economic_submit",
       "excerpt": "currency_transaction_submit_identified(character, operation_id, wallet_delta,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 652,
+      "line": 729,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_identified("
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 692,
+      "line": 769,
       "family": "economic_submit",
       "excerpt": "if (!currency_command_build(&command, operation_id, payload, expected_wallet_revision,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 700,
+      "line": 777,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit_prepared(character, command, completion, context,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 704,
+      "line": 781,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_prepared(P_char character, const critical_command &command,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 799,
+      "line": 876,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_wallet_value(P_char character, int64_t value_delta,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 809,
+      "line": 886,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit(character, wallet_delta, {}, reason, reason_id,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 814,
+      "line": 891,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_wallet_value_identified("
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 822,
+      "line": 899,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit_identified(character, operation_id,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 828,
+      "line": 905,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_bank_reward(P_char character, int64_t value,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 837,
+      "line": 914,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit(character, {}, canonical_value(value), reason, reason_id,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 903,
+      "line": 980,
       "family": "economic_submit",
       "excerpt": "!currency_command_build(command, id, payload, character->only.pc->wallet_revision,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 918,
+      "line": 995,
       "family": "economic_submit",
       "excerpt": "bool currency_transaction_submit_bank_payment(P_char character, int64_t value,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 928,
+      "line": 1005,
       "family": "economic_submit",
       "excerpt": "return currency_transaction_submit(character, wallet_delta, bank_delta, reason, reason_id,"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 390,
+      "line": 134,
+      "family": "coin_assignment",
+      "excerpt": "GET_BALANCE_COPPER(character) = balances.copper;"
+    },
+    {
+      "path": "src/economy/currency_transaction.c",
+      "line": 135,
+      "family": "coin_assignment",
+      "excerpt": "GET_BALANCE_SILVER(character) = balances.silver;"
+    },
+    {
+      "path": "src/economy/currency_transaction.c",
+      "line": 136,
+      "family": "coin_assignment",
+      "excerpt": "GET_BALANCE_GOLD(character) = balances.gold;"
+    },
+    {
+      "path": "src/economy/currency_transaction.c",
+      "line": 137,
+      "family": "coin_assignment",
+      "excerpt": "GET_BALANCE_PLATINUM(character) = balances.platinum;"
+    },
+    {
+      "path": "src/economy/currency_transaction.c",
+      "line": 467,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(character) = static_cast<int>(wallet.amount[0]);"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 391,
+      "line": 468,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(character) = static_cast<int>(wallet.amount[1]);"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 392,
+      "line": 469,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(character) = static_cast<int>(wallet.amount[2]);"
     },
     {
       "path": "src/economy/currency_transaction.c",
-      "line": 393,
+      "line": 470,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(character) = static_cast<int>(wallet.amount[3]);"
     },
