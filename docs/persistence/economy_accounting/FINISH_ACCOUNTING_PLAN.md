@@ -35,10 +35,11 @@ establish a passing broad regression result; the later bounded-topology repair
 has separate focused evidence in the October 2 review status.
 
 The disposable playtime journey now honors a validated `TEST_DB_PORT` in both
-native connections and SQL clients. Connection-free routing/refusal tests pass;
-an actual MariaDB run reaches the selected owned instance but exposes an
-outdated temporary-table fixture at the runtime-state foreign key. Full save,
-death, crash and copyover requalification remains pending that fixture repair.
+native connections and SQL clients. Its outdated temporary-table probe is
+repaired to retain the migrated runtime-state foreign key. The complete native
+save/death/crash/copyover journey and item/spell/XP receipt probes now pass on
+both SQL engines using the strict frozen-candidate executable. These qualify
+the measured inactive-accounting routes, not complete economic accounting.
 
 Stopped quarantine recovery from upstream `5c157f693` is integrated with the
 review fixes. Version-2 archives retain original frames and frozen grant

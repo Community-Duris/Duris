@@ -199,5 +199,31 @@ and default routing plus invalid-port refusal. They failed before repair without
 opening a connection. The actual native repository probe now connects to the
 owned MariaDB instance on 34667, but its first item save fails with foreign-key
 error 1452: temporary item projections cannot satisfy the migrated permanent
-runtime-state table. That separate fixture repair and the complete dual-engine
-save/death/crash/copyover run remain pending. No gameplay completion is claimed.
+runtime-state table. The repair and bounded qualification below close that
+fixture blocker; full accounting qualification remains open.
+
+## Migrated SQL save/recovery journey fixture repair
+
+The playtime repository probe now uses the real migrated tables, with their
+runtime-state and custody foreign keys intact. It refuses targets outside the
+fresh loopback journey namespace, checks synthetic PID/UID collisions before
+insertion, and deletes only its own rows in foreign-key order. Three scope tests
+pass, including refusal before compilation or connection. The native SQL probe
+passes status saves, duplicate acknowledgements, stale revisions, rollback-safe
+missing-custody refusal, inline coin omission, and retained runtime-state rows.
+
+The complete `test_mysql_playtime_journey.py --server <qualified SQL executable>`
+run passes on disposable MySQL 8.0.46 and MariaDB 10.11.14. It exercises real
+elapsed, quiet and repeated saves, link-loss reconnect, quit/restart without
+offline credit, death/reload, process kill and journal recovery, and live
+copyover. The following native item-reconciliation and exact spell/quest-XP
+receipt probes also pass on both engines. The executable is the frozen candidate
+artifact above, SHA-256 `34f0302d01deefa1f953c841e15b7250857004988135f556b92a12997f7adf04`;
+the fixture repairs affect tests only and the production source tree remains
+`c8804d6bc84b2f779c43030c5986fe92ceb0a245`.
+
+This qualifies these inactive-accounting save/recovery routes with synthetic
+characters on an actual native server and database. It does not qualify active
+economic roots, all item/currency routes, database interruption, full-world
+clone login, flatfile parity, or complete R1-R8 acceptance. The automatic frozen
+candidate suite remains in progress and is separate evidence.
