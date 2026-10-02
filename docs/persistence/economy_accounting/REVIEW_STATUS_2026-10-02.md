@@ -277,10 +277,35 @@ The actual deletion journey passes both injected rollback refusals, playable
 reconnect, successful retry exactly once and usable account after cold restart
 on disposable MySQL 8.0.46 and MariaDB 10.11.14 using that SQL executable.
 
-An additional real flatfile account-menu journey remains RED: character authority
-deletion refuses before quest-state erasure with an unspecified authority failure.
-This separate backend refusal is being traced; the passing SQL journey and
-flatfile build do not qualify flatfile deletion, retained economic identity,
-all alias-erasure paths or full R8. The frozen broader candidate suite remains
+The first additional flatfile account-menu journey was RED: character authority
+deletion refused before quest-state erasure. Native diagnostic instrumentation
+localized the refusal to the missing account-reward summon catalog in the new
+mini-world fixture. This was a required authority baseline, not evidence that
+production deletion should accept missing stores. The repaired fixture below
+closes that bounded journey gap. The frozen broader candidate suite remains
 separate and in progress. Writer anchors are refreshed without adding writers;
 normal validation passes with release still blocked.
+
+## Native flatfile deletion and alias-erasure journey
+
+The deletion inspector now establishes the empty fixture catalogs through real
+native repositories, refusing a repeated seed before changing existing bytes.
+The real account-menu journey first removes the owned summon catalog and proves
+an accurate refusal with byte-identical character snapshot and retained quest
+alias. Restoring that catalog permits playable reconnect, save and a successful
+deletion exactly once. The original alias is decoded from the checksummed native
+quest-state envelope before deletion; it is absent afterward and the erased state
+remains byte-identical after cold restart. The account remains usable and its
+deleted character cannot be selected. The native character/account deletion
+component suite also passes its interruption, recovery and idempotency scenarios.
+
+The full journey passes against the clean strict flatfile executable recorded
+above, SHA-256 `de5f8c1089e143dc27aaa8329d78227af1d86986812c677af87cc8fc7eadcc8b`;
+production source is unchanged from `b401a8521`. No refusal fence is weakened.
+To reproduce on an isolated native build, first run
+`python3 tests/async/test_flatfile_character_delete.py`, then
+`python3 tests/async/run_flatfile_deletion_journey.py --server <flatfile binary> --inspector bin/tests/flatfile-character-delete-inspector`.
+The journey owns all temporary runtime/state files and loopback listeners.
+These are inactive-accounting character/quest-alias lifecycle checks; retained
+non-personal economic identity, all personal-data domains, active accounting and
+the remaining R8 qualification are still open.

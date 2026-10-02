@@ -404,6 +404,42 @@ static void establish_minimal_account(const fs::path &root, bool owns_empty_lock
 /* Exercise interruption recovery and atomic character/account erasure. */
 int main(int argc, char **argv)
 {
+	if (argc == 3 && std::string(argv[2]) == "seed-empty-deletion")
+	{
+		const fs::path empty_root(argv[1]);
+		require(fs::is_directory(empty_root) && fs::is_empty(empty_root / "domains"),
+			"deletion seed requires a fresh owned state directory");
+		std::string error;
+		require(flatfile_account_reward_summon_establish(argv[1], {}, &error) ==
+				flatfile_account_reward_summon_result::ok,
+			"empty reward summon baseline: " + error);
+		require(flatfile_artifact_establish(argv[1], {}, &error) ==
+				flatfile_artifact_result::ok,
+			"empty artifact baseline: " + error);
+		require(flatfile_frag_leaderboard_establish(argv[1], {}, &error) ==
+				flatfile_frag_leaderboard_result::ok,
+			"empty frag leaderboard baseline: " + error);
+		require(flatfile_locker_establish(argv[1], {}, {}, &error) ==
+				flatfile_locker_result::ok,
+			"empty locker baseline: " + error);
+		require(flatfile_association_establish(argv[1], {}, &error) ==
+				flatfile_association_result::ok,
+			"empty association baseline: " + error);
+		require(flatfile_ship_establish(argv[1], {}, &error) == flatfile_ship_result::ok,
+			"empty ship baseline: " + error);
+		require(flatfile_world_item_establish(argv[1], {}, {}, &error) ==
+				flatfile_world_item_result::ok,
+			"empty world item baseline: " + error);
+		require(flatfile_boon_establish(argv[1], {}, &error) == flatfile_boon_result::ok,
+			"empty boon baseline: " + error);
+		require(flatfile_recipe_establish(argv[1], {}, &error) ==
+				flatfile_recipe_result::ok,
+			"empty recipe baseline: " + error);
+		require(flatfile_spellbook_establish(argv[1], {}, &error) ==
+				flatfile_spellbook_result::ok,
+			"empty spellbook baseline: " + error);
+		return 0;
+	}
 	require(argc == 2, "state root argument required");
 	const fs::path root = fs::path(argv[1]) / "recover";
 	establish(root, true);

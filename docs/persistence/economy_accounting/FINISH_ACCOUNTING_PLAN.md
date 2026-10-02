@@ -41,15 +41,12 @@ save/death/crash/copyover journey and item/spell/XP receipt probes now pass on
 both SQL engines using the strict frozen-candidate executable. These qualify
 the measured inactive-accounting routes, not complete economic accounting.
 
-The character-deletion journey also honors its selected disposable SQL port.
-Its native MariaDB refusal and rollback checks pass, but the successful retry
-ends in reconciliation after player deletion because `-s` skips the zone-story
-tracker's special-procedure bootstrap. That lifecycle dependency remains open;
-the port repair does not qualify successful deletion or erasure.
-The fixture's long schema name also exceeded MySQL's named-lock limit; its
-shortened random namespace now fits the unchanged native exclusion lock and
-passes the scoped regression. The accompanying native boot repair is qualified
-on both SQL engines and is being recorded as a separate milestone.
+The character-deletion journey honors its selected disposable SQL port. Its
+shortened random namespace fits MySQL's named-lock limit without changing native
+exclusion locks. The no-specials quest-state boot dependency is repaired in
+`b401a8521`; real refusal/rollback/playable-retry/deletion/cold-restart journeys
+pass on both SQL engines. These bounded results leave economic identity and
+complete alias-erasure qualification open.
 
 Stopped quarantine recovery from upstream `5c157f693` is integrated with the
 review fixes. Version-2 archives retain original frames and frozen grant
@@ -153,11 +150,12 @@ see the [October 2 evidence](REVIEW_STATUS_2026-10-02.md).
 
 The no-specials quest-state boot dependency is repaired and the native SQL
 deletion refusal/rollback/retry/cold-restart journey passes on both engines for
-the combined source including help PR #679. A real flatfile account-menu
-deletion still refuses in its authority transaction before quest cleanup;
-trace and repair that separate backend failure without weakening deletion
-fences. These bounded results leave retained economic identity, complete alias
-erasure and the wider R8 gates open; see the October 2 review status for hashes.
+the combined source including help PR #679. The real flatfile account-menu
+journey also passes after establishing its empty authority catalogs through
+native repository APIs. Missing authority retains the saved character and quest
+alias; playable retry, deletion once, quest-alias erasure and cold restart pass
+without changing production fences. Retained economic identity, all other alias
+paths and the wider R8 gates remain open; the October 2 status records hashes.
 
 ## Nonnegotiable invariants
 

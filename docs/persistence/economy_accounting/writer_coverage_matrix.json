@@ -48,7 +48,7 @@
     "current_occurrences": 2815,
     "current_unique_path_line_family_sites": 2756,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "05f3293ae5df0c2b1f4655f7ae55955127db3a77",
+    "draft_source_commit": "b401a85219572eadae6cf1c91ae9488eb8bb419e",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
     "draft_unique_sites": 2756,
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "05f3293ae5df0c2b1f4655f7ae55955127db3a77",
+  "repository_head": "b401a85219572eadae6cf1c91ae9488eb8bb419e",
   "routes": [
     {
       "blocking_policy_after_activation": {
