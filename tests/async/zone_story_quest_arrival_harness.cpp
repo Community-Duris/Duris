@@ -5,6 +5,7 @@
 #include <iostream>
 
 P_room world = nullptr;
+P_index obj_index = nullptr;
 struct zone_data *zone_table = nullptr;
 namespace
 {
@@ -141,7 +142,56 @@ int main()
 		definition.daily_eligible = true;
 	definition.content_revision = 2;
 	catalog.definitions.push_back(definition);
+	zone_story_quest_catalog::story_mapping mapping;
+	mapping.source_area = "alatorin";
+	mapping.revision = 1;
+	zone_story_quest_catalog::story_definition story;
+	story.id = "zone-story:story:alatorin:garden";
+	story.zone_number = 831;
+	story.title = "Garden access";
+	story.category = "story";
+	story.summary = "Wear the belt to enter the garden.";
+	story.contracts = { definition.definition_id };
+	story.steps = { { .id = "belt",
+			  .text = "Wear the belt",
+			  .kind = "equipped_item",
+			  .hint = "Wear it at your waist.",
+			  .item_vnums = { 13521 },
+			  .count = 1,
+			  .slot = WEAR_WAIST },
+			{ .id = "plant",
+			  .text = "Carry a plant",
+			  .kind = "carried_item",
+			  .hint = "Find a plant.",
+			  .item_vnums = { 13553 },
+			  .count = 1 } };
+	mapping.stories.push_back(story);
+	catalog.story_mappings.push_back(mapping);
 	tracker = zone_story_quest_feature::service(catalog);
+	assert(tracker.discover_zone(7, 42, 831, 83450, 864000, "arrival") ==
+	       zone_story_quest_feature::result::applied);
+	index_data indices[2] = {};
+	indices[0].virtual_number = 13521;
+	indices[1].virtual_number = 13553;
+	obj_index = indices;
+	obj_data belt = {}, plant = {};
+	belt.R_num = 0;
+	plant.R_num = 1;
+	belt.next_content = &plant;
+	player.carrying = &belt;
+	const int writes_before_journal = writes;
+	const auto history_before_journal = tracker.serialize_state();
+	std::string journal = render_journal(&player, 831, false, false);
+	assert(journal.find("[Missing now] Wear the belt") != std::string::npos &&
+	       journal.find("[Ready now] Carry a plant") != std::string::npos);
+	player.carrying = &plant;
+	player.equipment[WEAR_WAIST] = &belt;
+	journal = render_journal(&player, 831, false, false);
+	assert(journal.find("[Ready now] Wear the belt") != std::string::npos &&
+	       writes == writes_before_journal &&
+	       tracker.serialize_state() == history_before_journal);
+	player.carrying = nullptr;
+	player.equipment[WEAR_WAIST] = nullptr;
 	frozen_daily_context frozen{ 7, 2, 1, { 42 } };
 	const auto before = tracker.serialize_state();
 	save_ok = false;

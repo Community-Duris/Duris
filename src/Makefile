@@ -501,6 +501,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/shop_trade_accounting.o \
 				 world/zone_story_quest_tracking.o \
 				 world/zone_story_quest_catalog.o \
+				 world/zone_story_quest_story.o \
 				 world/zone_story_quest_repository.o \
 				 world/zone_story_quest_feature.o \
 				 world/zone_story_quest_production.o \

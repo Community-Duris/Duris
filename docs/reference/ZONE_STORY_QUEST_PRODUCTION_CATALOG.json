@@ -40031,6 +40031,814 @@
     "fingerprint_sha256": "6dc2ff999ea330c3665c393bc3ec061da54ca03ace0a8be3b4a3d90aa83f1857",
     "kind": "legacy_static_qst"
   },
+  "story_mappings": [
+    {
+      "coverage": "complete",
+      "exclusions": [
+        {
+          "contracts": [
+            {
+              "completion_key": "give=I:13552;receive=I:13552;disappear=0",
+              "giver_vnum": 13500
+            },
+            {
+              "completion_key": "give=I:13554;receive=I:13554;disappear=0",
+              "giver_vnum": 13500
+            },
+            {
+              "completion_key": "give=I:13556;receive=I:13556;disappear=0",
+              "giver_vnum": 13500
+            },
+            {
+              "completion_key": "give=I:13558;receive=I:13558;disappear=0",
+              "giver_vnum": 13500
+            },
+            {
+              "completion_key": "give=I:13560;receive=I:13560;disappear=0",
+              "giver_vnum": 13500
+            },
+            {
+              "completion_key": "give=I:13562;receive=I:13562;disappear=0",
+              "giver_vnum": 13500
+            },
+            {
+              "completion_key": "give=I:13564;receive=I:13564;disappear=0",
+              "giver_vnum": 13500
+            },
+            {
+              "completion_key": "give=I:13566;receive=I:13566;disappear=0",
+              "giver_vnum": 13500
+            },
+            {
+              "completion_key": "give=I:13543;receive=I:13543;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=I:13544;receive=I:13544;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=I:13545;receive=I:13545;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=I:13546;receive=I:13546;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=I:13547;receive=I:13547;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=I:13548;receive=I:13548;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=I:13549;receive=I:13549;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=I:13550;receive=I:13550;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=I:13543;receive=I:13543;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=I:13544;receive=I:13544;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=I:13545;receive=I:13545;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=I:13546;receive=I:13546;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=I:13547;receive=I:13547;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=I:13548;receive=I:13548;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=I:13549;receive=I:13549;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=I:13550;receive=I:13550;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=I:13505;receive=I:13505;disappear=0",
+              "giver_vnum": 13503
+            },
+            {
+              "completion_key": "give=I:13508;receive=I:13508;disappear=0",
+              "giver_vnum": 13503
+            },
+            {
+              "completion_key": "give=I:13511;receive=I:13511;disappear=0",
+              "giver_vnum": 13503
+            },
+            {
+              "completion_key": "give=I:13513;receive=I:13513;disappear=0",
+              "giver_vnum": 13503
+            },
+            {
+              "completion_key": "give=I:13515;receive=I:13515;disappear=0",
+              "giver_vnum": 13503
+            },
+            {
+              "completion_key": "give=I:13516;receive=I:13516;disappear=0",
+              "giver_vnum": 13503
+            },
+            {
+              "completion_key": "give=I:13517;receive=I:13517;disappear=0",
+              "giver_vnum": 13503
+            },
+            {
+              "completion_key": "give=I:13518;receive=I:13518;disappear=0",
+              "giver_vnum": 13503
+            },
+            {
+              "completion_key": "give=I:13519;receive=I:13519;disappear=0",
+              "giver_vnum": 13503
+            },
+            {
+              "completion_key": "give=I:13522;receive=I:13522;disappear=0",
+              "giver_vnum": 13503
+            },
+            {
+              "completion_key": "give=I:13523;receive=I:13523;disappear=0",
+              "giver_vnum": 13503
+            },
+            {
+              "completion_key": "give=I:13524;receive=I:13524;disappear=0",
+              "giver_vnum": 13503
+            },
+            {
+              "completion_key": "give=I:13525;receive=I:13525;disappear=0",
+              "giver_vnum": 13503
+            },
+            {
+              "completion_key": "give=I:13526;receive=I:13526;disappear=0",
+              "giver_vnum": 13503
+            },
+            {
+              "completion_key": "give=I:13527;receive=I:13527;disappear=0",
+              "giver_vnum": 13503
+            },
+            {
+              "completion_key": "give=I:13551;receive=I:13551;disappear=0",
+              "giver_vnum": 13503
+            }
+          ],
+          "reason": "Rejected offering or reminder: the NPC returns the submitted item."
+        },
+        {
+          "contracts": [
+            {
+              "completion_key": "give=C:100,I:13511;receive=I:13532,I:13546;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=C:100,I:13513;receive=I:13534,I:13548;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=C:200,I:13505;receive=I:13535,I:13550;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=C:300,I:13508;receive=I:13536,I:13549;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=C:300,I:13516;receive=I:13531,I:13531,I:13544;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=C:300,I:13517;receive=I:13531,I:13545;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=C:300,I:13518;receive=I:13533,I:13533,I:13547;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=C:500,I:13515;receive=I:13531,I:13531,I:13543;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=I:13519;receive=C:1000;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=I:13569;receive=C:100;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=I:13570;receive=C:100;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=I:13571;receive=C:100;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=C:100,I:13511;receive=I:13532,I:13546;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=C:100,I:13513;receive=I:13534,I:13548;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=C:100,I:13518;receive=I:13533,I:13533,I:13547;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=C:200,I:13505;receive=I:13535,I:13550;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=C:200,I:13517;receive=I:13531,I:13545;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=C:300,I:13508;receive=I:13536,I:13549;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=C:300,I:13516;receive=I:13531,I:13531,I:13544;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=C:500,I:13515;receive=I:13531,I:13531,I:13543;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=I:13519;receive=C:2000;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=I:13569;receive=C:100;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=I:13570;receive=C:100;disappear=0",
+              "giver_vnum": 13502
+            },
+            {
+              "completion_key": "give=I:13571;receive=C:100;disappear=0",
+              "giver_vnum": 13502
+            }
+          ],
+          "reason": "Tanning service or ordinary arrow/game trade; supports stories without a separate story achievement."
+        }
+      ],
+      "revision": 1,
+      "schema_version": 1,
+      "source_area": "twin_towers_forest",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:13553;receive=I:13572;disappear=0",
+              "giver_vnum": 13500
+            },
+            {
+              "completion_key": "give=I:13555;receive=I:13572;disappear=0",
+              "giver_vnum": 13500
+            },
+            {
+              "completion_key": "give=I:13557;receive=I:13572;disappear=0",
+              "giver_vnum": 13500
+            },
+            {
+              "completion_key": "give=I:13559;receive=I:13572;disappear=0",
+              "giver_vnum": 13500
+            },
+            {
+              "completion_key": "give=I:13561;receive=I:13572;disappear=0",
+              "giver_vnum": 13500
+            },
+            {
+              "completion_key": "give=I:13563;receive=I:13572;disappear=0",
+              "giver_vnum": 13500
+            },
+            {
+              "completion_key": "give=I:13565;receive=I:13572;disappear=0",
+              "giver_vnum": 13500
+            },
+            {
+              "completion_key": "give=I:13567;receive=I:13572;disappear=0",
+              "giver_vnum": 13500
+            }
+          ],
+          "id": "flowers-for-alvinar",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The gardener wears this belt. Carrying it alone does not open the barrier.",
+              "id": "garden-access",
+              "item_vnums": [
+                13521
+              ],
+              "kind": "equipped_item",
+              "slot": 13,
+              "text": "Wear the gardener's belt at your waist to enter the magical garden"
+            },
+            {
+              "count": 1,
+              "hint": "Recover a plant, bulb, or sprout from the towers' garden.",
+              "id": "plant",
+              "item_vnums": [
+                13553,
+                13555,
+                13557,
+                13559,
+                13561,
+                13563,
+                13565,
+                13567
+              ],
+              "kind": "carried_item",
+              "text": "Carry a plant suitable for Alvinar's garden"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:13553;receive=I:13572;disappear=0",
+                  "giver_vnum": 13500
+                },
+                {
+                  "completion_key": "give=I:13555;receive=I:13572;disappear=0",
+                  "giver_vnum": 13500
+                },
+                {
+                  "completion_key": "give=I:13557;receive=I:13572;disappear=0",
+                  "giver_vnum": 13500
+                },
+                {
+                  "completion_key": "give=I:13559;receive=I:13572;disappear=0",
+                  "giver_vnum": 13500
+                },
+                {
+                  "completion_key": "give=I:13561;receive=I:13572;disappear=0",
+                  "giver_vnum": 13500
+                },
+                {
+                  "completion_key": "give=I:13563;receive=I:13572;disappear=0",
+                  "giver_vnum": 13500
+                },
+                {
+                  "completion_key": "give=I:13565;receive=I:13572;disappear=0",
+                  "giver_vnum": 13500
+                },
+                {
+                  "completion_key": "give=I:13567;receive=I:13572;disappear=0",
+                  "giver_vnum": 13500
+                }
+              ],
+              "hint": "The journal records the successful native exchange.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the original turn-in"
+            }
+          ],
+          "summary": "Alvinar wants a plant he can grow. A cut flower will not do.",
+          "title": "Flowers for Alvinar"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:13530;receive=C:300;disappear=0",
+              "giver_vnum": 13501
+            },
+            {
+              "completion_key": "give=I:13530;receive=C:200;disappear=0",
+              "giver_vnum": 13502
+            }
+          ],
+          "id": "lost-arrows",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The sprites hide the arrows in underbrush and piles of leaves.",
+              "id": "arrow",
+              "item_vnums": [
+                13530
+              ],
+              "kind": "carried_item",
+              "text": "Carry one of the brothers' missing arrows"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:13530;receive=C:300;disappear=0",
+                  "giver_vnum": 13501
+                },
+                {
+                  "completion_key": "give=I:13530;receive=C:200;disappear=0",
+                  "giver_vnum": 13502
+                }
+              ],
+              "hint": "The journal records the successful native exchange.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the original turn-in"
+            }
+          ],
+          "summary": "Recover an arrow with a green shaft and blue feathers. Either brother can accept it.",
+          "title": "The Archers' Lost Arrows"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:13582,I:13583,I:13584,I:13585,I:13586,I:13587;receive=E:10000,I:13581;disappear=1",
+              "giver_vnum": 13520
+            },
+            {
+              "completion_key": "give=I:13582,I:13584,I:13585,I:13586,I:13587,I:13589;receive=E:10000,I:13588;disappear=1",
+              "giver_vnum": 13520
+            },
+            {
+              "completion_key": "give=I:13582,I:13584,I:13585,I:13586,I:13587,I:13591;receive=E:10000,I:13590;disappear=1",
+              "giver_vnum": 13520
+            }
+          ],
+          "id": "glor-linda-magic",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The pixies stole her dust and wands.",
+              "id": "dust",
+              "item_vnums": [
+                13582
+              ],
+              "kind": "carried_item",
+              "text": "Carry Glor-Linda's fairy dust"
+            },
+            {
+              "count": 1,
+              "hint": "",
+              "id": "wand",
+              "item_vnums": [
+                13583,
+                13589,
+                13591
+              ],
+              "kind": "carried_item",
+              "text": "Carry one of Glor-Linda's wands"
+            },
+            {
+              "count": 1,
+              "hint": "Glor-Linda describes the magical birds when asked about them.",
+              "id": "feather-1",
+              "item_vnums": [
+                13584
+              ],
+              "kind": "carried_item",
+              "text": "Carry magical feather 1 of four different kinds"
+            },
+            {
+              "count": 1,
+              "hint": "Glor-Linda describes the magical birds when asked about them.",
+              "id": "feather-2",
+              "item_vnums": [
+                13585
+              ],
+              "kind": "carried_item",
+              "text": "Carry magical feather 2 of four different kinds"
+            },
+            {
+              "count": 1,
+              "hint": "Glor-Linda describes the magical birds when asked about them.",
+              "id": "feather-3",
+              "item_vnums": [
+                13586
+              ],
+              "kind": "carried_item",
+              "text": "Carry magical feather 3 of four different kinds"
+            },
+            {
+              "count": 1,
+              "hint": "Glor-Linda describes the magical birds when asked about them.",
+              "id": "feather-4",
+              "item_vnums": [
+                13587
+              ],
+              "kind": "carried_item",
+              "text": "Carry magical feather 4 of four different kinds"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:13582,I:13583,I:13584,I:13585,I:13586,I:13587;receive=E:10000,I:13581;disappear=1",
+                  "giver_vnum": 13520
+                },
+                {
+                  "completion_key": "give=I:13582,I:13584,I:13585,I:13586,I:13587,I:13589;receive=E:10000,I:13588;disappear=1",
+                  "giver_vnum": 13520
+                },
+                {
+                  "completion_key": "give=I:13582,I:13584,I:13585,I:13586,I:13587,I:13591;receive=E:10000,I:13590;disappear=1",
+                  "giver_vnum": 13520
+                }
+              ],
+              "hint": "The journal records the successful native exchange.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the original turn-in"
+            }
+          ],
+          "summary": "Return her fairy dust, one wand, and four different magical feathers. The wand determines the reward.",
+          "title": "Restore Glor-Linda's Magic"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=C:3000,I:13543,I:13543,I:13543,I:13543,I:13546,I:13546;receive=I:13522;disappear=0",
+              "giver_vnum": 13503
+            }
+          ],
+          "id": "marja-jacket",
+          "steps": [
+            {
+              "count": 4,
+              "hint": "The hunters can prepare fresh game into hides and pelts.",
+              "id": "material-13543",
+              "item_vnums": [
+                13543
+              ],
+              "kind": "carried_item",
+              "text": "Carry 4 tanned buckskins"
+            },
+            {
+              "count": 2,
+              "hint": "The hunters can prepare fresh game into hides and pelts.",
+              "id": "material-13546",
+              "item_vnums": [
+                13546
+              ],
+              "kind": "carried_item",
+              "text": "Carry 2 rabbit pelts"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:3000,I:13543,I:13543,I:13543,I:13543,I:13546,I:13546;receive=I:13522;disappear=0",
+                  "giver_vnum": 13503
+                }
+              ],
+              "hint": "The journal records the successful native exchange.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the original turn-in"
+            }
+          ],
+          "summary": "Bring Marja the prepared hides and 30 gold for her work. The fee follows the actual exchange contract.",
+          "title": "A Jacket from Marja"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=C:3000,I:13544,I:13544,I:13546,I:13546,I:13546,I:13546;receive=I:13523;disappear=0",
+              "giver_vnum": 13503
+            }
+          ],
+          "id": "marja-boots",
+          "steps": [
+            {
+              "count": 2,
+              "hint": "The hunters can prepare fresh game into hides and pelts.",
+              "id": "material-13544",
+              "item_vnums": [
+                13544
+              ],
+              "kind": "carried_item",
+              "text": "Carry 2 tanned deerskins"
+            },
+            {
+              "count": 4,
+              "hint": "The hunters can prepare fresh game into hides and pelts.",
+              "id": "material-13546",
+              "item_vnums": [
+                13546
+              ],
+              "kind": "carried_item",
+              "text": "Carry 4 rabbit pelts"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:3000,I:13544,I:13544,I:13546,I:13546,I:13546,I:13546;receive=I:13523;disappear=0",
+                  "giver_vnum": 13503
+                }
+              ],
+              "hint": "The journal records the successful native exchange.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the original turn-in"
+            }
+          ],
+          "summary": "Bring Marja the prepared hides and 30 gold for her work. The fee follows the actual exchange contract.",
+          "title": "Deerskin Boots from Marja"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=C:2000,I:13545,I:13545,I:13545,I:13545;receive=I:13524;disappear=0",
+              "giver_vnum": 13503
+            }
+          ],
+          "id": "marja-pants",
+          "steps": [
+            {
+              "count": 4,
+              "hint": "The hunters can prepare fresh game into hides and pelts.",
+              "id": "material-13545",
+              "item_vnums": [
+                13545
+              ],
+              "kind": "carried_item",
+              "text": "Carry 4 tanned doeskins"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:2000,I:13545,I:13545,I:13545,I:13545;receive=I:13524;disappear=0",
+                  "giver_vnum": 13503
+                }
+              ],
+              "hint": "The journal records the successful native exchange.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the original turn-in"
+            }
+          ],
+          "summary": "Bring Marja the prepared hides and 20 gold for her work. The fee follows the actual exchange contract.",
+          "title": "Doeskin Pants from Marja"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=C:1000,I:13547,I:13547;receive=I:13525;disappear=0",
+              "giver_vnum": 13503
+            }
+          ],
+          "id": "marja-belt",
+          "steps": [
+            {
+              "count": 2,
+              "hint": "The hunters can prepare fresh game into hides and pelts.",
+              "id": "material-13547",
+              "item_vnums": [
+                13547
+              ],
+              "kind": "carried_item",
+              "text": "Carry 2 snakeskins"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:1000,I:13547,I:13547;receive=I:13525;disappear=0",
+                  "giver_vnum": 13503
+                }
+              ],
+              "hint": "The journal records the successful native exchange.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the original turn-in"
+            }
+          ],
+          "summary": "Bring Marja the prepared hides and 10 gold for her work. The fee follows the actual exchange contract.",
+          "title": "A Snakeskin Belt from Marja"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=C:10000,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550;receive=I:13526;disappear=0",
+              "giver_vnum": 13503
+            }
+          ],
+          "id": "marja-cape",
+          "steps": [
+            {
+              "count": 10,
+              "hint": "The hunters can prepare fresh game into hides and pelts.",
+              "id": "material-13550",
+              "item_vnums": [
+                13550
+              ],
+              "kind": "carried_item",
+              "text": "Carry 10 fox furs"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:10000,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550;receive=I:13526;disappear=0",
+                  "giver_vnum": 13503
+                }
+              ],
+              "hint": "The journal records the successful native exchange.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the original turn-in"
+            }
+          ],
+          "summary": "Bring Marja the prepared hides and 100 gold for her work. The fee follows the actual exchange contract.",
+          "title": "A Fox Fur Cape from Marja"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=C:1000,I:13548;receive=I:13527;disappear=0",
+              "giver_vnum": 13503
+            }
+          ],
+          "id": "marja-cap",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The hunters can prepare fresh game into hides and pelts.",
+              "id": "material-13548",
+              "item_vnums": [
+                13548
+              ],
+              "kind": "carried_item",
+              "text": "Carry 1 coonskins"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:1000,I:13548;receive=I:13527;disappear=0",
+                  "giver_vnum": 13503
+                }
+              ],
+              "hint": "The journal records the successful native exchange.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the original turn-in"
+            }
+          ],
+          "summary": "Bring Marja the prepared hides and 10 gold for her work. The fee follows the actual exchange contract.",
+          "title": "A Coonskin Cap from Marja"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=C:1000,I:13549,I:13549;receive=I:13551;disappear=0",
+              "giver_vnum": 13503
+            }
+          ],
+          "id": "marja-backpack",
+          "steps": [
+            {
+              "count": 2,
+              "hint": "The hunters can prepare fresh game into hides and pelts.",
+              "id": "material-13549",
+              "item_vnums": [
+                13549
+              ],
+              "kind": "carried_item",
+              "text": "Carry 2 wolf hides"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:1000,I:13549,I:13549;receive=I:13551;disappear=0",
+                  "giver_vnum": 13503
+                }
+              ],
+              "hint": "The journal records the successful native exchange.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the original turn-in"
+            }
+          ],
+          "summary": "Bring Marja the prepared hides and 10 gold for her work. The fee follows the actual exchange contract.",
+          "title": "A Wolfhide Backpack from Marja"
+        }
+      ]
+    }
+  ],
   "zones": [
     {
       "discoverable": false,

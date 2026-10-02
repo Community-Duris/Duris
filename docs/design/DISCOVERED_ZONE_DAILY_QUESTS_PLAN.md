@@ -13,6 +13,13 @@ below explain the design choices and refer to the pre-feature checkout.
 Measured validation and the remaining engine coverage limitation are in the
 [qualification record](DISCOVERED_ZONE_DAILY_QUESTS_QUALIFICATION.md).
 
+The subsequent [universal zone story integration plan](ZONE_STORY_INTEGRATION_PLAN.md)
+tracks per-area mappings, the Twin Towers pilot, and remaining dialogue,
+provenance, economic, and presentation work. Its
+[builder guide](../guides/ZONE_STORY_BUILDING.md) defines the implemented optional
+sidecar. Update the integration register as zones are reviewed; this original
+plan does not claim that every custom quest journey is already mapped.
+
 Discovering an area should earn that area's discovery achievement and unlock its
 quest journal. When daily quests are enabled, every reviewed repeatable quest in
 that discovered area should be available each day. Completing the original quest

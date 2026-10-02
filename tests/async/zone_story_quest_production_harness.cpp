@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <iostream>
 #include <string>
+#include <filesystem>
+#include <fstream>
 
 P_index mob_index;
 P_index obj_index = nullptr;
@@ -28,7 +30,7 @@ void require(bool condition, const char *message)
 }
 } // namespace
 
-int main()
+int main(int argc, char **argv)
 {
 	index_data mobs[1] = {};
 	mob_index = mobs;
@@ -125,6 +127,44 @@ int main()
 			[](const auto &definition)
 			{ return definition.daily_exclusion == "Unsupported durable offering"; }),
 		"oversized native offering contract became a daily");
+	// The isolated working directory exercises real bootstrap loading without
+	// changing the checkout's authored area files.
+	require(argc == 2, "expected isolated fixture directory");
+	std::filesystem::current_path(argv[1]);
+	std::filesystem::create_directories("areas/story");
+	first.give = &give;
+	const char *story_path = "areas/story/runtime-zone.story.json";
+	{
+		std::ofstream file(story_path);
+		file << R"({"schema_version":1,"revision":1,"source_area":"runtime-zone",
+"coverage":"partial","stories":[{"id":"archivist","title":"The archivist",
+"category":"story","summary":"Bring the lost item.","contracts":[
+{"giver_vnum":17,"completion_key":"give=I:24402;receive=I:24403;disappear=0"}],
+"steps":[{"id":"item","text":"Carry the lost item","kind":"carried_item",
+"hint":"Look nearby.","item_vnums":[24402],"count":1}]}],"exclusions":[]})";
+	}
+	require(!zone_story_quest_production::bootstrap(2, &error) &&
+			!zone_story_quest_production::ready() &&
+			error.find("unknown item prototype") != std::string::npos,
+		"missing booted object prototype did not fail closed");
+	index_data objects[1] = {};
+	objects[0].virtual_number = 24402;
+	obj_index = objects;
+	top_of_objt = 0;
+	require(zone_story_quest_production::bootstrap(2, &error) &&
+			zone_story_quest_production::runtime_catalog().story_mappings.size() == 1,
+		"valid optional sidecar failed bootstrap");
+	{
+		std::ofstream file(story_path);
+		file << "{}";
+	}
+	require(!zone_story_quest_production::bootstrap(2, &error) &&
+			!zone_story_quest_production::ready(),
+		"malformed present sidecar silently fell back");
+	std::filesystem::remove(story_path);
+	require(zone_story_quest_production::bootstrap(2, &error) &&
+			zone_story_quest_production::runtime_catalog().story_mappings.empty(),
+		"absent optional sidecar broke native fallback");
 	std::cout << "zone-story runtime production catalog regression passed\n";
 	return 0;
 }

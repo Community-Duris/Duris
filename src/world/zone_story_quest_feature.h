@@ -199,9 +199,10 @@ class service
 	bool
 	existing_transaction(std::string_view id,
 			     zone_story_quest_tracking::completion_transaction *transaction) const;
-	std::string render_journal(uint32_t season_id, uint32_t pid, int32_t zone_number, int level,
-				   int racewar, int64_t now, bool daily_only,
-				   bool colors = true) const;
+	std::string render_journal(
+		uint32_t season_id, uint32_t pid, int32_t zone_number, int level, int racewar,
+		int64_t now, bool daily_only, bool colors = true,
+		const zone_story_quest_catalog::journal_inventory *inventory = nullptr) const;
 
 	result record_completion(const completion_event &event, std::string *error = nullptr);
 	result record_telemetry(const telemetry_observation &observation,
@@ -276,6 +277,7 @@ class service
 	};
 
 	zone_story_quest_catalog::catalog catalog_;
+	std::vector<zone_story_quest_catalog::quest_unit> quest_units_;
 	daily_policy daily_policy_;
 	std::map<std::pair<uint32_t, uint32_t>, character_state> characters_;
 	std::set<std::pair<uint32_t, uint32_t>> deleted_characters_;
@@ -291,6 +293,8 @@ class service
 
 	character_state &state_for(uint32_t season_id, uint32_t pid);
 	const character_state *find_state(uint32_t season_id, uint32_t pid) const;
+	const std::set<std::string> &daily_completed_ids(uint32_t season_id, uint32_t pid,
+							 int64_t now) const;
 	std::set<std::string> completed_definition_ids(uint32_t season_id, uint32_t pid,
 						       int64_t completed_before) const;
 	zone_progress progress_for_zone_at(uint32_t season_id, uint32_t pid, int32_t zone_number,

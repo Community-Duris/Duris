@@ -1,4 +1,5 @@
 #include "world/zone_story_quest_production.h"
+#include "world/zone_story_quest_story.h"
 
 #include "core/structs.h"
 
@@ -336,6 +337,31 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 	std::sort(result.definitions.begin(), result.definitions.end(),
 		  [](const auto &left, const auto &right)
 		  { return left.definition_id < right.definition_id; });
+	std::string mapping_error;
+	if (!zone_story_quest_story::load(&result, &mapping_error))
+	{
+		if (error)
+			*error = mapping_error;
+		return result;
+	}
+	for (const auto &mapping : result.story_mappings)
+		for (const auto &story : mapping.stories)
+			for (const auto &step : story.steps)
+				for (const int vnum : step.item_vnums)
+				{
+					bool found = false;
+					for (int index = 0; obj_index && index <= top_of_objt;
+					     ++index)
+						found = found ||
+							obj_index[index].virtual_number == vnum;
+					if (!found)
+					{
+						if (error)
+							*error =
+								"story mapping refers to an unknown item prototype";
+						return result;
+					}
+				}
 	std::vector<zone_story_quest_catalog::diagnostic> diagnostics;
 	if (!zone_story_quest_catalog::validate(result, &diagnostics) && error)
 		*error = diagnostics.empty() ?
@@ -350,7 +376,7 @@ bool bootstrap(uint32_t content_revision, std::string *error)
 	zone_story_quest_catalog::catalog candidate =
 		build_runtime_catalog(content_revision, &build_error);
 	std::vector<zone_story_quest_catalog::diagnostic> diagnostics;
-	if (!zone_story_quest_catalog::validate(candidate, &diagnostics))
+	if (!build_error.empty() || !zone_story_quest_catalog::validate(candidate, &diagnostics))
 	{
 		catalog_ready = false;
 		if (error)

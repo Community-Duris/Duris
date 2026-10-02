@@ -42,6 +42,8 @@ bool remember_character(struct char_data *player, std::string *error = nullptr);
 bool erase_character(uint32_t pid, std::string *error = nullptr);
 std::string render_daily(struct char_data *player, bool colors, std::string *error = nullptr);
 std::string render_daily_score(struct char_data *player, bool colors, std::string *error = nullptr);
+std::string render_journal(struct char_data *player, int32_t zone_number, bool daily_only,
+			   bool colors);
 
 /* The caller supplies the exact recipient set captured at the completion
  * boundary.  This function never scans the room or group later. */

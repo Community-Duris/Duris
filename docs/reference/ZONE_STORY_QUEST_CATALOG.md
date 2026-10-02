@@ -7,6 +7,15 @@ compiler's Q-block boundary. Revision 2 contains 2,668 stable contracts, of whic
 Its area registry has 350 entries, with 349 discoverable playable areas; empty
 areas can award discovery without contributing a quest denominator.
 
+Optional `areas/story/<area>.story.json` mappings project raw contracts into
+named stories without changing native receipt IDs. Twin Towers replaces 84
+contracts with 10 achievement units and 3 daily groups, excluding 40 returned
+offerings and 24 supporting services/trades. The global projection now has
+2,585 achievement units and 2,115 daily candidate units. Other areas retain
+native-contract fallback; these counts do not claim full semantic review.
+See the [builder guide](../guides/ZONE_STORY_BUILDING.md) and
+[integration register](../design/ZONE_STORY_INTEGRATION_PLAN.md).
+
 ## Ownership and identity
 
 Area ownership follows sorted active zone header ranges (`previous.top + 1`

@@ -642,12 +642,9 @@ void do_quest(P_char ch, char *args, int /*cmd*/)
 		if (*who)
 		{
 			const int32_t zone = tracker->resolve_zone(who, &error);
-			output = zone < 0 ?
-					 error + "\r\n" :
-					 tracker->render_journal(
-						 zone_story_quest_runtime::current_season_id(),
-						 GET_PID(ch), zone, GET_LEVEL(ch), GET_RACEWAR(ch),
-						 static_cast<int64_t>(time(NULL)), daily, colors);
+			output = zone < 0 ? error + "\r\n" :
+					    zone_story_quest_runtime::render_journal(ch, zone,
+										     daily, colors);
 		}
 		else if (daily)
 		{

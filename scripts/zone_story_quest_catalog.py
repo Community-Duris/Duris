@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import math
 import pathlib
 import re
 import sys
@@ -182,7 +183,7 @@ def production_catalog(source_root, content_revision=2):
 
     definitions.sort(key=lambda item: (item["zone_number"], item["definition_id"]))
     fingerprint_payload = json.dumps(definitions, sort_keys=True, separators=(",", ":")).encode()
-    return {
+    result = {
         "schema_version": 1,
         "content_revision": content_revision,
         "source": {
@@ -194,6 +195,155 @@ def production_catalog(source_root, content_revision=2):
         "zones": [zone for zone in zones if zone["zone_number"] >= 0],
         "definitions": definitions,
     }
+    result["story_mappings"] = []
+    for zone in zones:
+        path = source_root / "areas/story" / f"{zone['source_area']}.story.json"
+        if not path.exists():
+            continue
+        if not path.is_file():
+            raise ValueError(f"{path}: unreadable story mapping")
+        if path.stat().st_size > 256 * 1024:
+            raise ValueError(f"{path}: story mapping exceeds 256 KiB")
+        mapping = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=unique_fields)
+        if not isinstance(mapping, dict) or mapping.get("source_area") != zone["source_area"]:
+            raise ValueError(f"{path}: source_area must match its filename")
+        result["story_mappings"].append(mapping)
+    items = set()
+    for zone in zones:
+        path = source_root / "areas/obj" / f"{zone['source_area']}.obj"
+        if path.is_file():
+            items.update(int(match[1]) for line in path.read_text(errors="replace").splitlines()
+                         if (match := QUEST_BLOCK_RE.fullmatch(line.strip())) and int(match[1]) > 0)
+    story_units(result, items)
+    return result
+
+
+def unique_fields(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON field: {key}")
+        result[key] = value
+    return result
+
+
+def story_units(catalog, item_vnums=None):
+    """Validate sidecars and project native receipts without changing their IDs."""
+    definitions = {d["definition_id"]: d for d in catalog["definitions"]}
+    references = {(d["giver_vnum"], d["completion_key"]): d for d in catalog["definitions"]}
+    areas = {z["source_area"]: z for z in catalog.get("zones", []) if z["discoverable"]}
+    units, bound, mapped_areas, story_ids = [], set(), set(), set()
+
+    def fields(obj, keys):
+        if not isinstance(obj, dict) or set(obj) != set(keys):
+            raise ValueError("story mapping: unknown, duplicate, or missing fields")
+
+    def text(obj, key, empty=False):
+        value = obj[key]
+        if (not isinstance(value, str) or (not empty and not value) or len(value.encode("utf-8")) > 1024
+                or any(ord(c) < 32 or ord(c) == 127 or c == "$" for c in value)):
+            raise ValueError(f"story mapping: invalid text {key}")
+        return value
+
+    def number(value, low, high):
+        if (isinstance(value, bool) or not isinstance(value, (int, float))
+                or not low <= value <= high or (isinstance(value, float) and not math.isfinite(value))
+                or value != int(value)):
+            raise ValueError("story mapping: integer outside supported range")
+        return int(value)
+
+    def array(value, low, high):
+        if not isinstance(value, list) or not low <= len(value) <= high:
+            raise ValueError("story mapping: array outside supported bounds")
+        return value
+
+    def refs(value, zone=None):
+        result = []
+        for ref in array(value, 1, 4096):
+            fields(ref, {"giver_vnum", "completion_key"})
+            giver = number(ref["giver_vnum"], 1, 2**31 - 1)
+            key = text(ref, "completion_key").encode().hex()
+            definition = references.get((giver, key))
+            if not definition or not definition["active"] or (zone is not None and definition["zone_number"] != zone):
+                raise ValueError("story mapping: unknown or wrong-area native contract")
+            if definition["definition_id"] in result:
+                raise ValueError("story mapping: duplicate native contract")
+            result.append(definition["definition_id"])
+        return result
+
+    def bind(ids):
+        for id in ids:
+            if id in bound:
+                raise ValueError("story mapping: multiply bound native contract")
+            bound.add(id)
+
+    for mapping in array(catalog.get("story_mappings", []), 0, 350):
+        fields(mapping, {"schema_version", "revision", "source_area", "coverage", "stories", "exclusions"})
+        number(mapping["schema_version"], 1, 1)
+        number(mapping["revision"], 1, 2**31 - 1)
+        area = text(mapping, "source_area")
+        if not re.fullmatch(r"[a-z0-9_-]{1,64}", area) or area not in areas or area in mapped_areas:
+            raise ValueError("story mapping: invalid or duplicate source_area")
+        mapped_areas.add(area)
+        zone = areas[area]["zone_number"]
+        if text(mapping, "coverage") not in {"partial", "complete"}:
+            raise ValueError("story mapping: coverage must be partial or complete")
+        for story in array(mapping["stories"], 0, 256):
+            fields(story, {"id", "title", "category", "summary", "contracts", "steps"})
+            slug = text(story, "id")
+            id = f"zone-story:story:{area}:{slug}"
+            if not re.fullmatch(r"[a-z0-9_-]{1,64}", slug) or id in story_ids:
+                raise ValueError("story mapping: invalid or duplicate story id")
+            story_ids.add(id)
+            text(story, "title")
+            text(story, "summary")
+            if text(story, "category") not in {"story", "request", "service"}:
+                raise ValueError("story mapping: unsupported category")
+            ids = refs(story["contracts"], zone)
+            bind(ids)
+            steps = set()
+            for step in array(story["steps"], 1, 32):
+                kind = step.get("kind") if isinstance(step, dict) else None
+                keys = {"id", "text", "kind", "hint"}
+                if kind == "completion":
+                    keys |= {"contracts"}
+                elif kind in {"carried_item", "equipped_item"}:
+                    keys |= {"item_vnums", "count"}
+                    if kind == "equipped_item":
+                        keys.add("slot")
+                else:
+                    raise ValueError("story mapping: unsupported step kind")
+                fields(step, keys)
+                step_id = text(step, "id")
+                if not re.fullmatch(r"[a-z0-9_-]{1,64}", step_id) or step_id in steps:
+                    raise ValueError("story mapping: invalid or duplicate step id")
+                steps.add(step_id)
+                text(step, "text")
+                text(step, "hint", empty=True)
+                if kind == "completion":
+                    refs(step["contracts"])
+                else:
+                    number(step["count"], 1, 3000)
+                    if kind == "equipped_item":
+                        number(step["slot"], -1, 42)
+                    items = [number(v, 1, 2**31 - 1) for v in array(step["item_vnums"], 1, 64)]
+                    if len(set(items)) != len(items) or (item_vnums is not None and not set(items) <= item_vnums):
+                        raise ValueError("story mapping: duplicate or unknown item prototype")
+            native = [definitions[id] for id in ids]
+            units.append({"id": id, "zone_number": zone, "contracts": ids,
+                          "achievement": story["category"] != "service" and any(d["eligible_for_zone_completion"] for d in native),
+                          "daily_candidate": story["category"] != "service" and any(d["daily_eligible"] for d in native)})
+        for exclusion in array(mapping["exclusions"], 0, 256):
+            fields(exclusion, {"reason", "contracts"})
+            text(exclusion, "reason")
+            bind(refs(exclusion["contracts"], zone))
+        if mapping["coverage"] == "complete" and any(d["active"] and d["source_area"] == area and d["definition_id"] not in bound for d in definitions.values()):
+            raise ValueError("complete story mapping leaves a native contract unclassified")
+    for id, d in definitions.items():
+        if d["active"] and id not in bound:
+            units.append({"id": id, "zone_number": d["zone_number"], "contracts": [id],
+                          "achievement": d["eligible_for_zone_completion"], "daily_candidate": d.get("daily_eligible", False)})
+    return units
 
 
 def diagnostic(index, code, message):
@@ -263,6 +413,11 @@ def validate_catalog(catalog):
         if definition.get("daily_eligible") and (not definition["repeatable"] or not definition["active"]):
             diagnostics.append(diagnostic(index, "invalid_daily_eligibility", definition_id))
 
+    if not diagnostics and "story_mappings" in catalog:
+        try:
+            story_units(catalog)
+        except (ValueError, KeyError, TypeError) as error:
+            diagnostics.append(diagnostic(-1, "invalid_story_mapping", str(error)))
     return diagnostics
 
 
@@ -288,6 +443,13 @@ def report_for(catalog):
             zone = str(definition.get("zone_number"))
             eligible_by_zone[zone] = eligible_by_zone.get(zone, 0) + 1
 
+    units = story_units(catalog) if not diagnostics else []
+    if not diagnostics:
+        eligible_by_zone = {}
+        for unit in units:
+            if unit["achievement"]:
+                zone = str(unit["zone_number"])
+                eligible_by_zone[zone] = eligible_by_zone.get(zone, 0) + 1
     ordered_definitions = sorted(
         definitions,
         key=lambda item: (
@@ -304,6 +466,9 @@ def report_for(catalog):
         "definition_count": len(definitions),
         "eligible_by_zone": dict(sorted(eligible_by_zone.items())),
         "repeatable_definition_count": repeatable_count,
+        "story_unit_count": len(units),
+        "daily_unit_count": sum(unit["daily_candidate"] for unit in units),
+        "mapped_area_count": len(catalog.get("story_mappings", [])) if not diagnostics else 0,
         "diagnostics": diagnostics,
         "definitions": ordered_definitions,
     }
@@ -319,27 +484,44 @@ def main():
     parser.add_argument("--content-revision", type=int, default=2)
     parser.add_argument("--json", action="store_true", dest="as_json")
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--story-inventory", metavar="AREA",
+                        help="export readable native contract bindings for an area; no inferred story dependencies")
     args = parser.parse_args()
     if bool(args.catalog) == bool(args.source_root):
         parser.error("provide exactly one of --catalog or --source-root")
     if args.content_revision <= 0:
         parser.error("--content-revision must be positive")
-    catalog = (
-        production_catalog(args.source_root.resolve(), args.content_revision)
-        if args.source_root
-        else load_catalog(args.catalog)
-    )
+    try:
+        catalog = (
+            production_catalog(args.source_root.resolve(), args.content_revision)
+            if args.source_root
+            else load_catalog(args.catalog)
+        )
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        report = {"valid": False, "diagnostics": [diagnostic(-1, "invalid_story_mapping", str(error))]}
+        print(json.dumps(report) if args.as_json else f"invalid: {error}")
+        return 1
     if args.production_output:
         args.production_output.parent.mkdir(parents=True, exist_ok=True)
         args.production_output.write_text(json.dumps(catalog, indent=2, sort_keys=True) + "\n",
-                                           encoding="utf-8")
+                                           encoding="utf-8", newline="\n")
     report = report_for(catalog)
-    if args.as_json:
+    if args.story_inventory:
+        if not report["valid"] or not any(z["source_area"] == args.story_inventory for z in catalog.get("zones", [])):
+            print("invalid: unknown area or invalid catalog", file=sys.stderr)
+            return 1
+        entries = [d for d in catalog["definitions"] if d["source_area"] == args.story_inventory]
+        print(json.dumps({"source_area": args.story_inventory, "contracts": [
+            {"binding": {"giver_vnum": d["giver_vnum"], "completion_key": bytes.fromhex(d["completion_key"]).decode()},
+             "daily_eligible": d.get("daily_eligible", False), "daily_exclusion": d.get("daily_exclusion", "")}
+            for d in entries]}, indent=2))
+    elif args.as_json:
         print(json.dumps(report, indent=2, sort_keys=True))
     else:
         print(f"valid: {report['valid']}")
         print(f"definitions: {report['definition_count']}")
         print(f"eligible_by_zone: {report['eligible_by_zone']}")
+        print(f"mapped areas: {report['mapped_area_count']}; daily quest units: {report['daily_unit_count']}")
         for item in report["diagnostics"]:
             print(f"{item['code']}: {item['message']}")
     if args.check and not report["valid"]:

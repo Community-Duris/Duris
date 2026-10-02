@@ -37,6 +37,15 @@ request explains that dailies are disabled.
 
 ## Content and evidence
 
+Builders can supply optional [per-area story mappings](../guides/ZONE_STORY_BUILDING.md).
+Mapped alternatives count once in story achievements and daily checklists;
+reviewed exclusions/services retain native gameplay without contributing
+story/daily totals. Raw receipts are preserved. Live item/equipment steps
+describe current possession, not personal acquisition history. Unsupported
+native offering shapes display an explicit turn-in-unavailable message.
+The [integration plan](../design/ZONE_STORY_INTEGRATION_PLAN.md) tracks later
+dialogue, provenance, mixed-offering, and client presentation capabilities.
+
 Every daily-suitable definition in a discovered area is considered each UTC day;
 there is no random assignment or rotation. The original quest giver, offering,
 rewards, item sources, and zone reset rules supply the gameplay. The journal is

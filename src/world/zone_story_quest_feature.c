@@ -19,6 +19,32 @@ namespace zone_story_quest_feature
 {
 namespace
 {
+bool contains_any(const std::vector<std::string> &contracts, const std::set<std::string> &completed)
+{
+	return std::any_of(contracts.begin(), contracts.end(),
+			   [&](const auto &id) { return completed.count(id); });
+}
+
+uint64_t item_step_count(const zone_story_quest_catalog::story_step &step,
+			 const zone_story_quest_catalog::journal_inventory &inventory)
+{
+	uint64_t count = 0;
+	if (step.kind == "carried_item")
+		for (const int32_t item : step.item_vnums)
+		{
+			const auto found = inventory.carried.find(item);
+			if (found != inventory.carried.end())
+				count += found->second;
+		}
+	else
+		for (const auto &[slot, vnum] : inventory.equipped)
+			if ((step.slot == -1 || slot == step.slot) &&
+			    std::find(step.item_vnums.begin(), step.item_vnums.end(), vnum) !=
+				    step.item_vnums.end())
+				++count;
+	return std::min<uint64_t>(count, step.count);
+}
+
 bool fail(std::string *error, std::string message)
 {
 	if (error)
@@ -442,12 +468,24 @@ bool service::set_catalog(zone_story_quest_catalog::catalog catalog, std::string
 		return false;
 	}
 	catalog_ = std::move(catalog);
+	quest_units_ = zone_story_quest_catalog::quest_units(catalog_);
 	return true;
 }
 
 const zone_story_quest_catalog::catalog &service::catalog() const
 {
 	return catalog_;
+}
+
+const std::set<std::string> &service::daily_completed_ids(uint32_t season, uint32_t pid,
+							  int64_t now) const
+{
+	static const std::set<std::string> empty;
+	const auto *state = find_state(season, pid);
+	if (!state)
+		return empty;
+	const auto found = state->daily_completions.find(period_for(now));
+	return found == state->daily_completions.end() ? empty : found->second;
 }
 
 void service::set_daily_policy(daily_policy policy)
@@ -815,17 +853,20 @@ zone_progress service::progress_for_zone_at(uint32_t season_id, uint32_t pid, in
 	const auto *discovery_state = find_state(season_id, pid);
 	if (progress.discovered)
 		progress.discovered_at = discovery_state->discoveries.at(zone_number).visited_at;
-	for (const auto &definition : catalog_.definitions)
+	for (const auto &unit : quest_units_)
 	{
-		if (definition.zone_number != zone_number)
+		if (unit.zone_number != zone_number)
 			continue;
-		if (progress.zone_name.empty() && !definition.zone_name.empty())
-			progress.zone_name = definition.zone_name;
-		if (!definition.active || !definition.eligible_for_zone_completion ||
-		    definition.content_revision != catalog_.content_revision)
+		if (progress.zone_name.empty())
+		{
+			const auto *definition = find_definition(unit.contracts.front());
+			if (definition && !definition->zone_name.empty())
+				progress.zone_name = definition->zone_name;
+		}
+		if (!unit.achievement)
 			continue;
 		progress.total++;
-		if (completed_ids.find(definition.definition_id) != completed_ids.end())
+		if (contains_any(unit.contracts, completed_ids))
 			progress.completed++;
 	}
 	progress.available = progress.total > 0;
@@ -857,23 +898,21 @@ personal_summary service::summary_for_at(uint32_t season_id, uint32_t pid,
 	const std::set<std::string> all_completed_ids =
 		completed_definition_ids(season_id, pid, completed_before);
 	std::set<std::string> completed_ids;
-	for (const auto &definition : catalog_.definitions)
+	for (const auto &unit : quest_units_)
 	{
-		if (!definition.active || !definition.eligible_for_zone_completion ||
-		    definition.content_revision != catalog_.content_revision)
+		if (!unit.achievement)
 			continue;
 		++summary.total;
-		if (all_completed_ids.find(definition.definition_id) != all_completed_ids.end())
-			completed_ids.insert(definition.definition_id);
+		if (contains_any(unit.contracts, all_completed_ids))
+			completed_ids.insert(unit.id);
 	}
 	summary.completed = completed_ids.size();
 	if (state)
 		summary.renown = static_cast<uint32_t>(state->reward_keys.size());
 	std::set<int32_t> zones;
-	for (const auto &definition : catalog_.definitions)
-		if (definition.active && definition.eligible_for_zone_completion &&
-		    definition.content_revision == catalog_.content_revision)
-			zones.insert(definition.zone_number);
+	for (const auto &unit : quest_units_)
+		if (unit.achievement)
+			zones.insert(unit.zone_number);
 	if (state)
 		for (const auto &[zone, discovery] : state->discoveries)
 		{
@@ -1176,6 +1215,14 @@ bool service::daily_eligible_for(uint32_t season, uint32_t pid, std::string_view
 				 int racewar, int strongest, int64_t now) const
 {
 	const auto *definition = find_definition(id);
+	if (zone_story_quest_catalog::excluded_contract(catalog_, id))
+		return false;
+	const auto *story = zone_story_quest_catalog::story_for_contract(catalog_, id);
+	const auto &daily_done = daily_completed_ids(season, pid, now);
+	if ((story &&
+	     (story->category == "service" || contains_any(story->contracts, daily_done))) ||
+	    (!story && daily_done.count(std::string(id))))
+		return false;
 	if (!daily_policy_.enabled || !season || !pid || now <= 0 || now < checklist_starts_at_ ||
 	    !definition || !definition->active || !definition->repeatable ||
 	    !definition->daily_eligible ||
@@ -1245,8 +1292,10 @@ void service::project_daily(const zone_story_quest_tracking::completion_transact
 	}
 }
 
-std::string service::render_journal(uint32_t season, uint32_t pid, int32_t number, int level,
-				    int racewar, int64_t now, bool daily_only, bool colors) const
+std::string
+service::render_journal(uint32_t season, uint32_t pid, int32_t number, int level, int racewar,
+			int64_t now, bool daily_only, bool colors,
+			const zone_story_quest_catalog::journal_inventory *inventory) const
 {
 	const auto *zone = find_zone(number);
 	if (!zone || !zone->discoverable)
@@ -1264,38 +1313,87 @@ std::string service::render_journal(uint32_t season, uint32_t pid, int32_t numbe
 		out << "  Resets at 00:00 UTC in "
 		    << display_remaining((period_for(now) + 1) * 86400 - now)
 		    << ". First qualifying completion earns 1 renown today.\r\n";
-	const auto *state = find_state(season, pid);
-	const int64_t period = period_for(now);
+	if (std::any_of(catalog_.story_mappings.begin(), catalog_.story_mappings.end(),
+			[&](const auto &mapping)
+			{
+				return std::any_of(mapping.stories.begin(), mapping.stories.end(),
+						   [&](const auto &story)
+						   { return story.zone_number == number; });
+			}))
+		out << "  Item checks show what you have now. Recorded steps show earned progress.\r\n";
+	const auto completed = completed_definition_ids(season, pid, no_completion_cutoff);
+	const auto &today = daily_completed_ids(season, pid, now);
 	size_t count = 0;
-	for (const auto &definition : catalog_.definitions)
+	for (const auto &unit : quest_units_)
 	{
-		if (definition.zone_number != number || !definition.active)
+		if (unit.zone_number != number)
 			continue;
-		if (daily_only && !definition.daily_eligible)
+		if (daily_only && !unit.daily_candidate)
 			continue;
+		const auto *definition = find_definition(unit.contracts.front());
+		const auto *story = zone_story_quest_catalog::story_for_contract(
+			catalog_, unit.contracts.front());
 		++count;
-		bool daily_done =
-			state && state->daily_completions.count(period) &&
-			state->daily_completions.at(period).count(definition.definition_id);
-		bool story_done = state && state->credit_masks.count(definition.definition_id);
-		std::string status =
-			daily_only ? (daily_done ? "Done today" :
-				      daily_eligible_for(season, pid, definition.definition_id,
-							 level, racewar, level, now) ?
-						   "Available" :
-						   "Locked") :
-				     (story_done ? "Story complete" : "Story incomplete");
-		if (!daily_only && definition.daily_eligible && daily_policy_.enabled)
+		const bool daily_done = contains_any(unit.contracts, today);
+		const bool story_done = contains_any(unit.contracts, completed);
+		const bool available =
+			std::any_of(unit.contracts.begin(), unit.contracts.end(),
+				    [&](const auto &id) {
+					    return daily_eligible_for(season, pid, id, level,
+								      racewar, level, now);
+				    });
+		std::string status = daily_only ?
+					     (daily_done ? "Done today" :
+					      available	 ? "Available" :
+							   "Locked") :
+					     (story_done ? "Story complete" : "Story incomplete");
+		if (story && story->category == "service" && !daily_only)
+			status = story_done ? "Service used" : "Service";
+		if (!daily_only && unit.daily_candidate && daily_policy_.enabled)
 			status += daily_done ? "; Done today" :
-				  daily_eligible_for(season, pid, definition.definition_id, level,
-						     racewar, level, now) ?
-					       "; Available today" :
+				  available  ? "; Available today" :
 					       "; Locked today";
-		out << "  [" << status << "] " << display_quest_name(&definition) << "\r\n";
-		if (!definition.objective.empty())
-			out << "    " << definition.objective << "\r\n";
-		if (!daily_only && !definition.daily_eligible)
-			out << "    Story only: " << definition.daily_exclusion << "\r\n";
+		out << "  [" << status << "] "
+		    << (story ? story->title : display_quest_name(definition)) << "\r\n";
+		if (story)
+		{
+			out << "    " << story->summary << "\r\n";
+			for (const auto &step : story->steps)
+			{
+				bool satisfied = false;
+				if (step.kind == "completion")
+				{
+					satisfied = contains_any(step.contracts, completed);
+					out << "    [" << (satisfied ? "Recorded" : "Pending")
+					    << "] " << step.text << "\r\n";
+				}
+				else if (inventory)
+				{
+					const uint64_t have = item_step_count(step, *inventory);
+					satisfied = have == step.count;
+					out << "    [" << (satisfied ? "Ready now" : "Missing now")
+					    << "] " << step.text << " (" << have << "/"
+					    << step.count << ")\r\n";
+				}
+				else
+					out << "    [Check inventory] " << step.text << "\r\n";
+				if (!satisfied && !step.hint.empty())
+					out << "      " << step.hint << "\r\n";
+			}
+		}
+		else if (!definition->objective.empty())
+			out << "    " << definition->objective << "\r\n";
+		const bool unsupported =
+			std::all_of(unit.contracts.begin(), unit.contracts.end(),
+				    [&](const auto &id) {
+					    return find_definition(id)->daily_exclusion ==
+						   "Unsupported durable offering";
+				    });
+		if (unsupported)
+			out << "    Turn-in currently unavailable: this offering is not supported by the accounting service.\r\n";
+		else if (!daily_only && !unit.daily_candidate &&
+			 (!story || story->category != "service"))
+			out << "    Story only: " << definition->daily_exclusion << "\r\n";
 		if ((daily_only && status == "Locked") ||
 		    status.find("Locked today") != std::string::npos)
 			out << "    Not currently available. Complete earlier requests or return after more progress.\r\n";
@@ -1347,16 +1445,16 @@ std::string service::render_zone(uint32_t season_id, uint32_t pid, int32_t zone_
 		return output.str() + "  Visit this area to unlock its private quest progress.\r\n";
 	if (daily_policy_.enabled)
 	{
-		const auto *state = find_state(season_id, pid);
-		const auto period = period_for(static_cast<int64_t>(std::time(nullptr)));
-		size_t done = 0;
-		if (state && state->daily_completions.count(period))
-			for (const auto &id : state->daily_completions.at(period))
-			{
-				const auto *definition = find_definition(id);
-				if (definition && definition->zone_number == zone_number)
-					++done;
-			}
+		const auto &today = daily_completed_ids(season_id, pid,
+							static_cast<int64_t>(std::time(nullptr)));
+		const size_t done =
+			std::count_if(quest_units_.begin(), quest_units_.end(),
+				      [&](const auto &unit)
+				      {
+					      return unit.zone_number == zone_number &&
+						     unit.daily_candidate &&
+						     contains_any(unit.contracts, today);
+				      });
 		output << "  Daily quests completed today: " << done << "\r\n";
 	}
 	if (!progress.available)
@@ -1480,11 +1578,10 @@ std::string service::render_daily(uint32_t season, uint32_t pid, int level, int 
 	    << "  First daily completion earns 1 renown; original quest rewards are unchanged.\r\n"
 	    << "  Resets at 00:00 UTC in " << display_remaining((period_for(now) + 1) * 86400 - now)
 	    << ".\r\n";
-	const auto *state = find_state(season, pid);
-	const auto period = period_for(now);
-	size_t completed = state && state->daily_completions.count(period) ?
-				   state->daily_completions.at(period).size() :
-				   0;
+	const auto &today = daily_completed_ids(season, pid, now);
+	const size_t completed = std::count_if(
+		quest_units_.begin(), quest_units_.end(), [&](const auto &unit)
+		{ return unit.daily_candidate && contains_any(unit.contracts, today); });
 	out << "  Completed today: " << completed << "; renown: " << summary_for(season, pid).renown
 	    << "\r\n";
 	if (now < checklist_starts_at_)
@@ -1496,16 +1593,18 @@ std::string service::render_daily(uint32_t season, uint32_t pid, int level, int 
 			continue;
 		any = true;
 		size_t available = 0, done = 0;
-		for (const auto &definition : catalog_.definitions)
+		for (const auto &unit : quest_units_)
 		{
-			if (definition.zone_number != zone.zone_number ||
-			    !definition.daily_eligible)
+			if (unit.zone_number != zone.zone_number || !unit.daily_candidate)
 				continue;
-			if (state && state->daily_completions.count(period) &&
-			    state->daily_completions.at(period).count(definition.definition_id))
+			if (contains_any(unit.contracts, today))
 				++done;
-			else if (daily_eligible_for(season, pid, definition.definition_id, level,
-						    racewar, level, now))
+			else if (std::any_of(unit.contracts.begin(), unit.contracts.end(),
+					     [&](const auto &id) {
+						     return daily_eligible_for(season, pid, id,
+									       level, racewar,
+									       level, now);
+					     }))
 				++available;
 		}
 		out << "  " << display_zone_name(catalog_, zone) << ": " << done << " done today, "
@@ -1524,11 +1623,10 @@ std::string service::render_daily_score(uint32_t season, uint32_t pid, int level
 	(void)racewar;
 	if (!daily_policy_.enabled)
 		return {};
-	const auto *state = find_state(season, pid);
-	const auto period = period_for(now);
-	const size_t done = state && state->daily_completions.count(period) ?
-				    state->daily_completions.at(period).size() :
-				    0;
+	const auto &today = daily_completed_ids(season, pid, now);
+	const size_t done = std::count_if(
+		quest_units_.begin(), quest_units_.end(), [&](const auto &unit)
+		{ return unit.daily_candidate && contains_any(unit.contracts, today); });
 	return "\r\n" + std::string(color(colors, "&+L")) + "Daily: " + color(colors, "&n") +
 	       std::to_string(done) + " completed today; renown " +
 	       std::to_string(summary_for(season, pid).renown) +

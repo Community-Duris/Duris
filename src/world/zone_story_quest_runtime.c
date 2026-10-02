@@ -156,6 +156,22 @@ bool daily_eligible(P_char player, std::string_view id, int strongest, int64_t n
 					  GET_LEVEL(player), GET_RACEWAR(player), strongest, now);
 }
 
+std::string render_journal(P_char player, int32_t zone_number, bool daily_only, bool colors)
+{
+	if (!ready() || !player || !IS_PC(player))
+		return "The quest journal is unavailable.\r\n";
+	zone_story_quest_catalog::journal_inventory inventory;
+	for (P_obj item = player->carrying; item; item = item->next_content)
+		++inventory.carried[OBJ_VNUM(item)];
+	for (int slot = 0; slot < MAX_WEAR; ++slot)
+		if (player->equipment[slot])
+			inventory.equipped.emplace(slot, OBJ_VNUM(player->equipment[slot]));
+	return tracker.render_journal(current_season_id(), GET_PID(player), zone_number,
+				      GET_LEVEL(player), GET_RACEWAR(player),
+				      static_cast<int64_t>(time(nullptr)), daily_only, colors,
+				      &inventory);
+}
+
 void arrived(P_char player)
 {
 	if (!ready() || temporary_placement_depth || !player || !IS_ALIVE(player) ||
@@ -332,8 +348,7 @@ bool record_authoritative_completion(std::string_view definition_id, int32_t zon
 			return true;
 		}
 	}
-	const auto *definition = tracker.catalog().definitions.empty() ? nullptr :
-									 [&]()
+	const auto *definition = tracker.catalog().definitions.empty() ? nullptr : [&]()
 	{
 		for (const auto &candidate : tracker.catalog().definitions)
 			if (candidate.definition_id == definition_id)
