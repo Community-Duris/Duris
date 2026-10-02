@@ -250,7 +250,7 @@ SCHEMA1_IDS = {
     "auction.flat_apply", "boon.cash_completion", "crafting.recipe",
     "crafting.forge", "crafting.smith", "crafting.refine",
     "crafting.epic_store", "kingdom.store_purchase", "kingdom.store_refund",
-    "item.creation_completion",
+    "item.creation_completion", "item.salvage_material_downgrade",
     "combat.sql_outcome", "collector.sql_apply", "item.sql_custody_apply",
     "death.corpse_sql_apply", "death.restitution_sql_apply",
 }

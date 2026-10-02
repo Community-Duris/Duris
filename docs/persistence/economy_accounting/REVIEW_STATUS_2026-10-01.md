@@ -235,6 +235,25 @@ This checkpoint publishes the completed review fixes directly to
 
 ## Verification and its limits
 
+Material downgrading now uses one native craft batch (`0cd04f40b`). Previously,
+refusing one separately submitted output still retired the original material.
+The production-branch regression reproduces that loss before the fix. Afterward,
+missing either prototype or refusing admission preserves the input and frees
+only detached candidates. Publication follows the committed two-output result.
+ASan/UBSan, admission/refusal checks, existing native craft conservation and both
+strict production profiles pass. All 1,212 native source files match that tree.
+The exact binaries are recorded in the build row below.
+
+The real mortal material-downgrade journey passes on flatfile, MariaDB 10.11.14
+and MySQL 8.0.46. It retires the original UID once, admits exactly two distinct
+lower-tier UIDs, refuses a repeated command without another mutation, and retains
+the output identities through copyover and two cold restarts. The SQL check also
+verifies the original UID's native tombstone. The extended recipe journey keeps
+its physical/pouch Craft/Forge, exact XP and counter assertions. Accounting is
+inactive in these journeys; ordinary salvage, active accounting and further
+material families remain unqualified. The inventory now separates downgrade
+admission from ordinary salvage, retaining all prior route classifications.
+
 The stopped-player quarantine recovery integration from upstream PR #676 is
 retained alongside these review fixes. Its native archive protocol, flatfile
 player authority and restore tests pass, as do the current save-pipeline check
@@ -259,15 +278,15 @@ essence and UID allocator repairs together.
 
 | Check | Current evidence |
 | --- | --- |
-| Strict SQL and flatfile production builds | Passed on integrated native source through `5c157f693`; all 1,212 native source files match the merged index. SQL binary SHA-256: `e132ab902ca96d8093855a881e05e6c5bfcba9f768ade7060a88f725279d5d76`; flatfile: `5847ac9d1c623f608599d0170a94a8bdb30b452fae89cd915ec946e836843463`. Recipe gameplay also passes on these exact artifacts. Recipe gameplay does not execute the enhancement payment repair. |
+| Strict SQL and flatfile production builds | Passed on the `0cd04f40b` native source; all 1,212 native source files match its tree. SQL binary SHA-256: `a16dde85ad5446fc27528643ebd37d076b428195ecf79cafbcaaa6c5767616e3`; flatfile: `f8ac4fdf34e19bc7aa7c86a03eae6e398e01a6bb639e5cae66f38ab934f68b27`. Recipe and material-downgrade gameplay also pass on these exact artifacts. Recipe gameplay does not execute the enhancement payment repair. |
 | Recipe SQL receipts and fault recovery | Passed on disposable MySQL 8.0 and MariaDB 10.11 before the latest upstream integration. |
 | Integrated focused runtime checks | All 16 selected checks passed after the first upstream integration, including the ASan/UBSan prompt fixture. |
-| Frozen broad regression | The `8be8b55c0` snapshot completed all 822 scripts in 7,221.31 seconds; the runner reported 818 successes and four failures. Property reload, formatting, newborn grants and terminal-death entrypoints fail on that snapshot and pass their separately recorded focused repairs. Optional checks are included in the runner's success total: the MariaDB combat journey skipped because `TEST_DB_HOST` was not configured. This is not an all-green current-head or SQL gameplay qualification. A fresh 828-script run is in progress on frozen `63309643c`; it predates the enhancement payment fix and has no final result yet. |
+| Frozen broad regression | The `8be8b55c0` snapshot completed all 822 scripts in 7,221.31 seconds; the runner reported 818 successes and four failures. Property reload, formatting, newborn grants and terminal-death entrypoints fail on that snapshot and pass their separately recorded focused repairs. Optional checks are included in the runner's success total: the MariaDB combat journey skipped because `TEST_DB_HOST` was not configured. This is not an all-green current-head or SQL gameplay qualification. A fresh 828-script run is in progress on frozen `63309643c`; it predates the enhancement payment fix and has no final result yet. It has reported an auction/coin-put failure; that same journey passes on the integrated `5c157f693` flatfile artifact. The frozen failure output is pending, so it is not classified as a repaired gameplay defect. |
 | Null-output publication regression | Passed using the actual native movement module after `0464613a1`. |
 | Combat continuation and quarantine restore | Native stopped quarantine protocol, flatfile repository and restore checks pass after integrating upstream #676; the current save pipeline and 21 lifecycle, seven erasure and six export checks also pass. Native SQL recovery passes on both disposable engines, including actual pre/post-COMMIT SIGKILL and later-save restart. Flatfile server preflight refuses missing/stale UID allocator authority, retains evidence, boots after exact restoration and shuts down normally. Quarantine archives retain both original component frames and keep recovery fenced on conflicting evidence. |
-| Writer census | Refreshed for integrated source `5c157f693`: 2,811 lexical occurrences, 2,753 unique sites, 863 routes, zero unmapped sites. The new provisional enhancement-output cleanup is explicitly classified; both moved wallet call sites retain their existing route ownership. The four temporary material-probe cleanup sites are explicitly classified in the recipe route. All 52 writer coverage checks pass on the frozen `508912dd2` source in 236.014 seconds, along with 14 accounting fixtures and matrix freshness; the essence fix reanchors the same route set and passes its 14-fixture validation, matrix freshness and corrected focused enhancement check; enhancement assertions now resolve their unique current source calls. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
+| Writer census | Refreshed for `0cd04f40b`: 2,811 lexical occurrences, 2,752 unique sites, 864 routes, zero unmapped sites. The new atomic downgrade is classified separately from ordinary salvage, with its detached-candidate allocation and refusal cleanup explicit; the provisional enhancement-output cleanup is explicitly classified; both moved wallet call sites retain their existing route ownership. The four temporary material-probe cleanup sites are explicitly classified in the recipe route. All 52 writer coverage checks pass on the current material-downgrade source in 121.159 seconds, along with 14 accounting fixtures and matrix freshness; the essence fix reanchors the same route set and passes its 14-fixture validation, matrix freshness and corrected focused enhancement check; enhancement assertions now resolve their unique current source calls. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
 | Recipe flatfile restore | Passed through the actual native restore decoder: complete recovery, checksum damage, missing obligation/root, future revision, and invalid receipt filename. |
-| Mortal recipe gameplay | Physical and retained-pouch Craft/Forge passed on the integrated `5c157f693` flatfile binary with exact XP, output UIDs and counters through copyover and two cold restarts. Both disposable SQL engines now pass the same physical and retained-pouch journey on the verified integrated `5c157f693` SQL binary, preserving inputs, output UIDs, XP and counters through copyover and two cold restarts. This remains one frozen leather recipe with accounting inactive. |
+| Mortal recipe gameplay | Physical and retained-pouch Craft/Forge passed on the `0cd04f40b` flatfile binary with exact XP, output UIDs and counters through copyover and two cold restarts. Both disposable SQL engines now pass the same physical and retained-pouch journey on the verified `0cd04f40b` SQL binary, preserving inputs, output UIDs, XP and counters through copyover and two cold restarts. This remains one frozen leather recipe with accounting inactive. |
 | Death/resurrection accounting acceptance | **RED** on disposable MariaDB 10.11.14 and MySQL 8.0.46 using the verified `49f76401c` SQL binary. Real combat/death and resurrection returned all 12 original fixture item UIDs, restored the exact wallet, and retired the new death coin pile. The inactive-accounting journey still reports 27 uncovered item events and two currency operations missing accounting roots/postings. It does not qualify active accounting or subsequent restart. |
 | Latest migration integration | Runtime manifest validator and all 34 native boot/migration contract tests passed with head 0053 and 225 tables. All three histories converge on the pinned schema on disposable MySQL 8.0.46 and MariaDB 10.11.14, including preserved master receipts/runtime payloads, append/replay, shell/compiled boot, restore selection, and tamper refusal. The fixture uses the current sealed baseline with the master prefix; a captured production clone remains outside this proof. |
 
@@ -277,7 +296,7 @@ logs and disposable binaries are not published as production artifacts.
 
 ## Remaining work
 
-The accounting release validator remains **blocked**: 750 runtime/projection
+The accounting release validator remains **blocked**: 751 runtime/projection
 writer routes still lack the required qualification. The generated coverage
 matrix describes that gap; a complete census alone cannot close it.
 
@@ -289,7 +308,9 @@ strict builds pass. The full 822-test regression run finished on the frozen
 above. Each failed check has a passing focused repair. Subsequent enhancement
 and recipe bounds, probe cleanup and lifecycle protections have separate native
 sanitizer, production-build or policy-fault evidence. A complete current-head
-regression and integrated accounting qualification remain outstanding.
+regression and integrated accounting qualification remain outstanding. The
+current runner discovers 833 scripts; the ongoing 828-script run is an earlier
+frozen source snapshot.
 
 Paid same-UID superior enhancement, remaining pouch writers, day-one quest and
 loot paths, audit completeness, activation/recovery/backup/retention gates, and

@@ -16,7 +16,7 @@ master-prefix histories now retain 53 receipts. The staging fork preserves its
 first 45 and appends eight; the master fork preserves its first 31 and appends
 22, retaining the existing runtime-state payloads. All three converge on the
 pinned 225-table schema on disposable MySQL 8.0.46 and MariaDB 10.11.14 targets.
-The writer inventory covers 863 routes, 2,811 occurrences and 2,753 unique sites
+The writer inventory covers 864 routes, 2,811 occurrences and 2,752 unique sites
 with zero unmapped sites. These counts do not replace route qualification.
 
 Stopped quarantine recovery from upstream `5c157f693` is integrated with the
@@ -27,6 +27,15 @@ on disposable MySQL 8.0.46 and MariaDB 10.11.14 pass. This does not establish
 recoverability of historical live PIDs. The stopped recovery restrictions and
 proof requirements are in the [recovery contract](../PLAYER_QUARANTINE_RECOVERY.md);
 the captured-clone gameplay and integrated workload gates below remain open.
+
+Material downgrade now freezes one original input and two lower-tier outputs in
+one native craft operation (`0cd04f40b`). Missing prototypes and refused admission
+preserve the original. Its real mortal journey passes on flatfile, MySQL 8.0.46
+and MariaDB 10.11.14 through copyover and two cold restarts with exact output
+UIDs and one original retirement. The enclosing active-accounting refusal is
+retained; ordinary salvage and further material families remain open. The writer
+inventory separates this batch from the remaining ordinary salvage grants and
+direct retirement rather than qualifying the entire salvage command from it.
 
 ## Delivery gates
 
