@@ -92,18 +92,28 @@ This checkpoint publishes the completed review fixes directly to
   including held grants to the actor and to another recipient, release after
   the save clears, and exact once-only publication after duplicate completion.
 
+- Craft/Forge material planning now widens item-value arithmetic, checks finite
+  positive scaling and integer limits before conversion, and leaves the caller's
+  plan untouched on refusal. A shared wide required-level calculation also
+  removes overflow from recipe availability, both command gates, and level
+  messages. The production planner reproduces signed overflow before the fix
+  and passes under address, undefined-behavior and float-cast sanitizers afterward.
+  Both production builds pass for source tree `7360003fa`. Its real flatfile
+  mortal physical and pouch Craft/Forge journey preserves exact inputs, output
+  UIDs, XP and counters through copyover and two cold restarts.
+
 ## Verification and its limits
 
 | Check | Current evidence |
 | --- | --- |
-| Strict SQL and flatfile production builds | Passed for `cdbd4022f`; all 1,210 native source files match its committed tree after the formatting-only header repair. Recipe gameplay uses the separately qualified `ad5bc52bf` builds. |
+| Strict SQL and flatfile production builds | Passed for `7360003fa`; all 1,210 native source files match its committed tree. Current flatfile recipe gameplay uses that binary; SQL recipe gameplay remains separately qualified at `ad5bc52bf`. |
 | Recipe SQL receipts and fault recovery | Passed on disposable MySQL 8.0 and MariaDB 10.11 before the latest upstream integration. |
 | Integrated focused runtime checks | All 16 selected checks passed after the first upstream integration, including the ASan/UBSan prompt fixture. |
 | Null-output publication regression | Passed using the actual native movement module after `0464613a1`. |
 | Combat continuation and quarantine restore | Passed after integrating the upstream recovery evidence. Quarantine archives retain both original component frames and keep recovery fenced on conflicting evidence. |
-| Writer census | Refreshed for `49f76401c`: 2,805 lexical occurrences, 2,747 unique sites, 863 routes, zero unmapped sites. Coverage contracts and artifact freshness pass after reanchoring the affected enhancement check. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
+| Writer census | Refreshed for `7360003fa`: 2,805 lexical occurrences, 2,747 unique sites, 863 routes, zero unmapped sites. Coverage contracts and artifact freshness pass after reanchoring the affected enhancement check. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
 | Recipe flatfile restore | Passed through the actual native restore decoder: complete recovery, checksum damage, missing obligation/root, future revision, and invalid receipt filename. |
-| Mortal recipe gameplay | Physical and retained-pouch Craft/Forge passed on flatfile and both SQL engines with exact XP, output UIDs and counters through copyover and two cold restarts. |
+| Mortal recipe gameplay | Physical and retained-pouch Craft/Forge passed on the current `7360003fa` flatfile binary with exact XP, output UIDs and counters through copyover and two cold restarts. Both SQL engines retain the earlier separately qualified `ad5bc52bf` journey. |
 | Death/resurrection accounting acceptance | **RED** on disposable MariaDB 10.11.14 and MySQL 8.0.46 using the verified `49f76401c` SQL binary. Real combat/death and resurrection returned all 12 original fixture item UIDs, restored the exact wallet, and retired the new death coin pile. The inactive-accounting journey still reports 27 uncovered item events and two currency operations missing accounting roots/postings. It does not qualify active accounting or subsequent restart. |
 | Latest migration integration | Runtime manifest validator and all 34 native boot/migration contract tests passed with head 0053 and 225 tables. All three histories converge on the pinned schema on disposable MySQL 8.0.46 and MariaDB 10.11.14, including preserved master receipts/runtime payloads, append/replay, shell/compiled boot, restore selection, and tamper refusal. The fixture uses the current sealed baseline with the master prefix; a captured production clone remains outside this proof. |
 
