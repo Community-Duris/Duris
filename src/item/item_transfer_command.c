@@ -1434,6 +1434,21 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 			  });
 }
 
+bool item_transfer_command_replay_publication(const critical_command &command, bool *retain)
+{
+	if (!retain)
+		return false;
+	*retain = command.publication_required;
+	if (command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
+	    command.type != critical_command_type::item_transfer)
+		return true;
+	item_transfer_payload payload = {};
+	if (!item_transfer_command_decode_payload(command, &payload))
+		return false;
+	*retain = payload.continuation.kind == item_transfer_continuation_kind::craft_recipe;
+	return true;
+}
+
 bool item_transfer_command_encode_result(const item_transfer_result &result,
 					 std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> *encoded)
 {

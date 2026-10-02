@@ -3264,7 +3264,10 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 
 bool item_movement_transaction_restore_replayed_command(const critical_command &command)
 {
-	if (command.type != critical_command_type::item_transfer || !command.publication_required)
+	bool retain = false;
+	if (!item_transfer_command_replay_publication(command, &retain))
+		return false;
+	if (command.type != critical_command_type::item_transfer || !retain)
 		return true;
 	const std::string key = operation_key(command.operation_id);
 	if (pending.find(key) != pending.end())
@@ -3391,9 +3394,10 @@ bool item_movement_transaction_restore_replayed_publication(
 	const critical_command &command, item_movement_publication_fn publication,
 	const void *context, size_t context_size)
 {
-	if (command.type != critical_command_type::item_transfer || !command.publication_required ||
-	    !publication || context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES ||
-	    (context_size && !context))
+	bool retain = false;
+	if (!item_transfer_command_replay_publication(command, &retain) ||
+	    command.type != critical_command_type::item_transfer || !retain || !publication ||
+	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context))
 		return false;
 	const std::string key = operation_key(command.operation_id);
 	if (pending.find(key) != pending.end() || pending.size() >= ITEM_MOVEMENT_PENDING_MAX)

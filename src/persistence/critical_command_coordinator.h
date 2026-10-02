@@ -113,6 +113,11 @@ struct critical_coordinator_health
 using critical_apply_fn = critical_apply_result (*)(const critical_command &command, void *context);
 using critical_drain_observer_fn = void (*)(const critical_completion *completions, size_t count);
 using critical_replay_observer_fn = bool (*)(const critical_command &command, void *context);
+// Recover publication obligations encoded inside legacy domain payloads, whose
+// schema-1 envelope has no publication bit. Pure, bounded, and independent of
+// current authority; false rejects replay and preserves the journal record.
+// Runs under the coordinator mutex and must not call coordinator APIs.
+using critical_replay_retention_fn = bool (*)(const critical_command &, bool *retain);
 
 // Optional support for canonical schema-2 commands. The validator must be pure,
 // bounded and noexcept; it verifies typed immutable evidence, never current
@@ -125,7 +130,8 @@ bool critical_command_coordinator_init(
 	const char *journal_directory, critical_apply_fn apply, void *context,
 	unsigned int workers = CRITICAL_COORDINATOR_DEFAULT_WORKERS,
 	critical_replay_observer_fn replay_observer = nullptr, void *replay_context = nullptr,
-	critical_extension_validator_fn extension_validator = nullptr);
+	critical_extension_validator_fn extension_validator = nullptr,
+	critical_replay_retention_fn replay_retention = nullptr);
 // Atomically reserves an owner-free application lifecycle boundary without
 // stopping workers or discarding accepted operations. False leaves the active
 // owner untouched. Keep the guard through shutdown/copyover dependencies, then

@@ -51,6 +51,10 @@ static bool publication_malloc_fail = false;
 static uint16_t expected_craft_inputs = 1;
 static bool recipe_progression_ready = false;
 static int recipe_publications = 0, recipe_acknowledgements = 0;
+static critical_command recipe_command = {};
+bool restore_replay(const critical_command &command, void *) {
+    return item_movement_transaction_restore_replayed_command(command);
+}
 craft_progression_publication_result publish_recipe(const critical_operation_id &, P_char actor,
                                                     const craft_recipe_continuation &terms) {
     assert(actor && terms.player_pid == 1001 && terms.experience == 7000 && terms.output_uid == 5030);
@@ -132,6 +136,15 @@ bool item_ownership_runtime_apply(const item_transfer_payload &, const item_tran
 
 bool currency_transaction_coin_item_busy(uint64_t) { return false; }
 bool spell_component_retirement_waiting_for_effect(const critical_operation_id &) { return false; }
+bool spell_component_retirement_restore_context(const item_transfer_payload &,
+    std::array<uint8_t,ITEM_MOVEMENT_CONTEXT_MAX_BYTES> *,size_t *,uint32_t *,uint32_t *) { assert(false); return false; }
+bool spell_component_retirement_restore_replayed_effect(const critical_operation_id &,uint32_t,uint32_t,uint32_t) { assert(false); return false; }
+bool spell_component_retirement_replayed_publication(const critical_operation_id &,P_char,bool,
+    const item_transfer_result &,unsigned int,const uint8_t *,size_t) { assert(false); return false; }
+bool account_reward_retirement_publication(const critical_operation_id &,P_char,bool,
+    const item_transfer_result &,unsigned int,const uint8_t *,size_t) { assert(false); return false; }
+bool account_reward_duplicate_promotion_publication(const critical_operation_id &,P_char,bool,
+    const item_transfer_result &,unsigned int,const uint8_t *,size_t) { assert(false); return false; }
 bool collector_transaction_item_busy(uint64_t) { return false; }
 bool economic_gameplay_authority::active() { return accounting_active; }
 economic_accounting_error economic_gameplay_authority::prepare_item_transfer(
@@ -177,8 +190,12 @@ critical_apply_result apply_transfer(const critical_command &command, void *)
     item_transfer_payload payload = {};
     assert(item_transfer_command_decode_payload(command, &payload));
     if (payload.reason == item_transfer_reason::craft) {
-        assert(command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION);
-        assert(item_transfer_accounting_command_supported(command));
+        if (accounting_active) {
+            assert(command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION);
+            assert(item_transfer_accounting_command_supported(command));
+        }
+        if (payload.continuation.kind == item_transfer_continuation_kind::craft_recipe)
+            recipe_command = command;
     }
     item_transfer_result result = {};
     result.root_item_uid = payload.selected_item_uid;
@@ -468,6 +485,69 @@ int main(int argc, char **argv)
     assert(item_movement_transaction_health_copy().pending==0);
     assert(item_movement_transaction_pending_craft_progression(1001,&pending_recipes) && pending_recipes.empty());
     character_list = &actor;
+    // Cold replay of the unchanged legacy wire format must infer the recipe's
+    // publication obligation from its validated continuation. No envelope bit
+    // existed in schema 1, but an unapplied progression receipt still needs ACK.
+    assert(critical_command_coordinator_shutdown());
+    item_movement_transaction_reset_for_tests();
+    accounting_active = false;
+    recipe_command.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+    recipe_command.accounting_intent.clear();
+    recipe_command.publication_required = false;
+    assert(critical_operation_id_generate(&recipe_command.operation_id));
+    std::vector<uint8_t> legacy_bytes;
+    assert(critical_command_encode(recipe_command, &legacy_bytes) == critical_command_codec_result::ok);
+    critical_command legacy_recipe = {};
+    assert(critical_command_decode(legacy_bytes.data(),legacy_bytes.size(),&legacy_recipe) == critical_command_codec_result::ok);
+    assert(!legacy_recipe.publication_required);
+    bool retain_recipe = false;
+    assert(item_transfer_command_replay_publication(legacy_recipe,&retain_recipe) && retain_recipe);
+    auto malformed_recipe = legacy_recipe;
+    malformed_recipe.payload.pop_back();
+    assert(!item_transfer_command_replay_publication(malformed_recipe,&retain_recipe));
+    item_transfer_payload unrelated_payload = {};
+    assert(item_transfer_command_decode_payload(legacy_recipe,&unrelated_payload));
+    unrelated_payload.continuation = {};
+    critical_command unrelated_command = {};
+    assert(item_transfer_command_build(&unrelated_command,legacy_recipe.operation_id,unrelated_payload,
+        critical_source_site::command,critical_deadline_class::interactive));
+    assert(item_transfer_command_replay_publication(unrelated_command,&retain_recipe) && !retain_recipe);
+    assert(critical_command_journal_init(argv[1]));
+    assert(critical_command_journal_append(legacy_recipe) == critical_command_journal_result::ok);
+    assert(critical_command_journal_sync() == critical_command_journal_result::ok);
+    critical_command_journal_shutdown();
+    recipe_progression_ready = false;
+    recipe_output.next = nullptr; object_list = &recipe_output;
+    for (int restart=0;restart<2;++restart) {
+        character_list = nullptr;
+        assert(critical_command_coordinator_init(argv[1],apply_transfer,nullptr,1,restore_replay,nullptr,
+            item_transfer_accounting_command_supported,item_transfer_command_replay_publication));
+        assert(item_movement_transaction_pending_craft_progression(1001,&pending_recipes) && pending_recipes.size()==1);
+        craft_completed=false;
+        for(int spin=0;spin<1000&&!craft_completed;++spin) {
+            const size_t count=critical_command_coordinator_pulse(completions,8);
+            item_movement_transaction_handle_completions(completions,count);
+            craft_completed=count>0;
+            if(!craft_completed) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+        assert(craft_completed && critical_command_coordinator_health_copy().publication_pending==1);
+        assert(critical_command_journal_health_copy().records==1);
+        character_list=&actor;
+        item_movement_transaction_handle_completions(nullptr,0);
+        assert(extractions==3 && recipe_acknowledgements==1 && craft_callbacks==3);
+        assert(item_movement_transaction_health_copy().pending==1);
+        if (!restart) {
+            assert(critical_command_coordinator_shutdown());
+            item_movement_transaction_reset_for_tests();
+            forced_outcome = critical_apply_outcome::already_applied;
+        }
+    }
+    recipe_progression_ready=true;
+    item_movement_transaction_handle_completions(nullptr,0);
+    assert(recipe_acknowledgements==2 && extractions==3 && craft_callbacks==3);
+    assert(critical_command_journal_health_copy().records==0);
+    assert(item_movement_transaction_health_copy().pending==0);
+    assert(!critical_command_coordinator_is_fenced({critical_entity_type::player,1001},nullptr));
     craft_progression_hooks={};
     accounting_active = false;
     // Restore the independent movement fixture for the uncertainty scenario.
