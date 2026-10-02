@@ -2,6 +2,7 @@
 
 from _paths import rel
 import pathlib
+import shutil
 import subprocess
 import tempfile
 
@@ -113,4 +114,17 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-character-delete-test-") as 
     )
     if run_result.returncode:
         raise SystemExit(run_result.stdout)
+    seed_root = temporary_path / "journey-seed"
+    (seed_root / "domains").mkdir(parents=True, mode=0o700)
+    subprocess.run([str(binary), str(seed_root), "seed-empty-deletion"], check=True)
+    before = {path.relative_to(seed_root): path.read_bytes()
+              for path in seed_root.rglob("*") if path.is_file()}
+    retry = subprocess.run([str(binary), str(seed_root), "seed-empty-deletion"],
+                           text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    assert retry.returncode != 0 and "fresh owned state directory" in retry.stdout
+    assert before == {path.relative_to(seed_root): path.read_bytes()
+                      for path in seed_root.rglob("*") if path.is_file()}
+    inspector = ROOT / "bin/tests/flatfile-character-delete-inspector"
+    inspector.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(binary, inspector)
     print(run_result.stdout.strip())

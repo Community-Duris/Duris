@@ -244,3 +244,251 @@ under the journey's `-s` boot. Its bootstrap currently lives in mobile special-
 procedure assignment, which that option skips. This is a separate R8 lifecycle
 dependency to repair and requalify; neither successful SQL deletion nor economic
 identity/alias erasure is qualified by the port fix. No production rows changed.
+
+## MySQL deletion fixture lock-name repair
+
+The old `deletion_journey_test_<12 hex>` schema produces a 65-character native
+exclusion-lock name. MariaDB accepts it, while actual MySQL 8.0.46 refuses it
+with error 4163 before boot. A connection-free regression reproduces that bound;
+the fixture now uses `deletion_test_<12 hex>`, retaining random isolation while
+keeping the unchanged native lock name at 57 characters. All three deletion
+port/scope tests pass. The direct disposable MySQL probe reproduces the old
+named-lock refusal. With the accompanying boot-owner candidate repair, the
+complete refusal/rollback/retry/restart journey passes on both SQL engines.
+Production exclusion-lock names, credentials and authority rules are unchanged.
+
+## No-specials quest-state boot repair
+
+The native quest-state bootstrap now runs after world/special initialization,
+outside the `no_specials` conditional. Normal boot retains its existing quest
+catalog load; `-s` boot loads the catalog before decoding retained quest state.
+A failed bootstrap still leaves the quest service disabled and logs its failure.
+The ASan/UBSan native helper regression passes normal, no-specials and failed-load
+cases. Quest feature, production catalog and account-delete runtime regressions
+pass. Incoming help repair PR #679 is preserved; its catalog, cache and nine
+audit tests also pass on the combined source.
+
+The combined native source tree is `2fa0d98dac56a1687e4af4314da7ac9b327a670d`.
+Both strict production builds pass. SQL executable SHA-256 is
+`abfc8124335fc7dbe95540db9582307b587cd7a8087268a7f214a5d441d1cec1`;
+flatfile executable SHA-256 is
+`de5f8c1089e143dc27aaa8329d78227af1d86986812c677af87cc8fc7eadcc8b`.
+The actual deletion journey passes both injected rollback refusals, playable
+reconnect, successful retry exactly once and usable account after cold restart
+on disposable MySQL 8.0.46 and MariaDB 10.11.14 using that SQL executable.
+
+The first additional flatfile account-menu journey was RED: character authority
+deletion refused before quest-state erasure. Native diagnostic instrumentation
+localized the refusal to the missing account-reward summon catalog in the new
+mini-world fixture. This was a required authority baseline, not evidence that
+production deletion should accept missing stores. The repaired fixture below
+closes that bounded journey gap. The frozen broader candidate suite remains
+separate and in progress. Writer anchors are refreshed without adding writers;
+normal validation passes with release still blocked.
+
+## Native flatfile deletion and alias-erasure journey
+
+The deletion inspector now establishes the empty fixture catalogs through real
+native repositories, refusing a repeated seed before changing existing bytes.
+The real account-menu journey first removes the owned summon catalog and proves
+an accurate refusal with byte-identical character snapshot and retained quest
+alias. Restoring that catalog permits playable reconnect, save and a successful
+deletion exactly once. The original alias is decoded from the checksummed native
+quest-state envelope before deletion; it is absent afterward and the erased state
+remains byte-identical after cold restart. The account remains usable and its
+deleted character cannot be selected. The native character/account deletion
+component suite also passes its interruption, recovery and idempotency scenarios.
+
+The full journey passes against the clean strict flatfile executable recorded
+above, SHA-256 `de5f8c1089e143dc27aaa8329d78227af1d86986812c677af87cc8fc7eadcc8b`;
+production source is unchanged from `b401a8521`. No refusal fence is weakened.
+To reproduce on an isolated native build, first run
+`python3 tests/async/test_flatfile_character_delete.py`, then
+`python3 tests/async/run_flatfile_deletion_journey.py --server <flatfile binary> --inspector bin/tests/flatfile-character-delete-inspector`.
+The journey owns all temporary runtime/state files and loopback listeners.
+These are inactive-accounting character/quest-alias lifecycle checks; retained
+non-personal economic identity, all personal-data domains, active accounting and
+the remaining R8 qualification are still open.
+
+## Frozen full-suite outcome and Redis socket fixture repair
+
+The exact frozen `fbd9f5035` run has finished: **822 passed, 11 skipped, one
+failed**, in 5,924.75 seconds. It exits nonzero; no full passing result is claimed.
+The skipped entries require external SQL/telemetry, backup or other documented
+opt-ins. SQL combat/death qualification is now running separately on owned
+MySQL/MariaDB instances against the combined current source; it has no result yet.
+
+The lone failure is `test_redis_connection_security_live.py`: its inherited
+qualification TMPDIR generates a 109-byte Unix socket pathname. The owned Redis
+server refuses that pathname and never opens its TCP listener. A standalone
+repeat under the same TMPDIR reproduces the refusal. The test now retains its
+other artifacts under TMPDIR and creates its socket in a separate private short
+directory. It passes the actual native ASan/UBSan TCP password/ACL/database,
+verified TLS, invalid peer-name refusal, Unix-socket authentication/database and
+invalid socket/TLS configuration assertions under the previously failing long
+TMPDIR. Runtime Redis configuration and authentication rules are unchanged.
+
+This focused repair does not rewrite the frozen suite report into a pass or
+qualify the later source/test changes. The full report and console transcript
+remain local ignored evidence; current-head and external-service gates remain.
+
+## Disposable help-import qualification connection repair
+
+The skipped atomic help-import fixture hardcoded port 3306, the root user and a
+fixed password, so it could not qualify a caller-selected isolated server. It now
+uses explicit `TEST_DB_USER`/`TEST_DB_PASSWORD`, validates `TEST_DB_PORT` before
+SQL, routes the native importer and SQL observer through the same TCP port, and
+requires `TEST_DB_DISPOSABLE=1` on a loopback host. The fresh random fixture schema
+and cleanup remain owned by the test. Missing credentials, invalid ports and
+unapproved/remote targets refuse before connection or schema creation.
+
+Four connection-free regressions reproduce 13 pre-repair failures and now pass.
+The full actual importer test passes on disposable MySQL 8.0.46 and MariaDB
+10.11.14 at selected ports: a rejected entry rolls back the existing pages/news,
+concurrent reads see only the complete old or complete new set, and a MyISAM
+destination refuses before deleting content. The fixture copies the maintained
+importer into its own temporary runtime with no checkout `.env`; no production
+help or game rows change. This qualifies the bounded tooling fixture, not the
+complete skipped SQL/backup matrix or accounting release.
+
+## Real SQL deletion/retention and connection-fault checks
+
+Three checks skipped in the frozen broad run now pass against fresh owned schemas
+on actual MySQL 8.0.46 and MariaDB 10.11.14:
+
+- The exact production deletion guard and `sql_delete_player` refuse missing
+  authority, unresolved retained evidence and read failure, preserve caller
+  transaction rollback, and commit a clean deletion without evicting revisions.
+- Two real connections prove retention-first evidence remains visible after the
+  observed deletion lock wait, and deletion-first commit prevents a later
+  publisher from finding the deleted identity. This exercises the production
+  deletion functions and retention's row-lock/evidence boundary, not a full
+  concurrent gameplay save.
+- The actual SQL pool retires open or killed sessions, rolls back their rows,
+  and commits successfully from replacement borrowers.
+
+These checked source files are unchanged in native tree
+`2fa0d98dac56a1687e4af4314da7ac9b327a670d`. Each test owns a fresh namespace;
+no production tables, credentials or rows are involved. The production-profile
+combat fixture reaches healthy death with 12 captured item identities and one
+corpse-create operation, but its later dispute remains held: unassisted recovery
+uses a `TEST_MUD`-only owner, and the default fixture-side payload removal also
+does not release the sealed terminal request. Both production-profile attempts
+remain RED at that later acceptance boundary on MariaDB; no complete passing
+production conflict journey or dual-engine result is claimed.
+
+The same source builds a separate strict development executable, SHA-256
+`8b3556f6e1417c23645883e0e03e19ab9632ca71faf716825753d3373b649b26`.
+Its default-coin MariaDB unassisted journey passes durable acknowledgement before
+the account menu, original item evidence, self-scoped recovery list/detail,
+cold-entry refusal and restart without manual fixture repair. The reset-coin MariaDB variant also passed. The first boon variant failed
+its byte-exact unrelated-owner revision check; that RED result is retained.
+Later diagnostic qualification passes all three MySQL variants and the MariaDB
+boon repeat, as detailed below. The production selector and safety gates
+remain unchanged; these development results do not qualify production release.
+
+## Item supply-state audit consistency
+
+The independent reconciler previously accepted a destruction event whose
+custody state remained live when its revisions, reference and native row agreed.
+It also did not flag a creation event claiming tombstone custody. Five failing
+subcases reproduce these omissions across epoch-local and lineage history and
+show that a corrupt live destruction could mask later UID reuse.
+
+The shared lifetime audit now reports `invalid_item_supply_state` for those
+contradictions and treats an explicit destruction as irreversible retirement
+even if its state is corrupt. All 51 reconciler tests pass. The SELECT-only SQL
+export corruption/recovery probe passes on disposable MySQL 8.0.46 and MariaDB
+10.11.14: changing an existing live event's reason to destruction produces the
+new exception, and restoring a valid retirement returns to the exact previous
+exception set. No source rows are repaired by the exporter or reconciler.
+
+This is bounded R4/R7 audit evidence. The export remains `sql_partial` with
+`complete=false`; native origin/source completeness, runtime writer coverage,
+active-accounting journeys and full lifecycle/workload qualification remain open.
+
+## Optional native item-provenance fixture restored
+
+The opt-in item-provenance test failed at link time: it omitted function/data
+sections, garbage collection, the maintained fail-closed legacy escape stub, and
+the real-query wrapper used by its included native harness. Its compile/run now
+matches that maintained SQL driver, including the 64 MiB stack needed for bounded
+item payloads. Both engines then exposed an outdated duplicate-source assertion:
+a new command reusing a committed logical event is correctly a terminal `EEXIST`
+refusal, rather than a retryable raw SQL 1062. Native policy is unchanged.
+
+The corrected test checks the refusal twice and proves there is still exactly
+one source claim, no duplicate item/custody event, and no root, item reference,
+inbox or outbox for the refused command. The complete probe passes on disposable
+MySQL 8.0.46 and MariaDB 10.11.14 with the migrated canonical schema: sourced
+creation, nested transfers, pet/locker rows, duplicate quest/world sources, theft,
+retirement, exact replay and epoch transition; simultaneous first claimants
+retain one owner, native row, event, reference and source; batch retirement
+preserves source/event/reference identity and child tombstones. These are native
+repository transactions, not full active-accounting player journeys.
+
+Two more frozen-suite opt-ins now pass on both engines against unchanged native
+source tree `2fa0d98dac56a1687e4af4314da7ac9b327a670d`:
+
+- The native load/query/archive stack checks 30 ordered retained cases, full and
+  metadata-only PID/name refusal, self-scoped detail/list, sanitization, hash and
+  schema failures, borrowed transactions, exact source preservation, eight real
+  two-connection retention/load orderings, and name-reassignment refusal.
+- The four telemetry schema tests check replay/session uniqueness, signed/unsigned
+  endpoints, repeated migration verification and deliberate schema-damage
+  refusal. The native connection factory checks target/credential selection,
+  UTC/strict/charset/deadlines, allocation cleanup, failed-exec continuity, exec
+  socket closure and advisory-lock release. Its credential I/O spy forwards to
+  the disposable root account; this does not qualify real ingest-role grants.
+
+All targets and damaged/restored rows are owned disposable fixtures. A diagnostic
+run also hit an unavailable MariaDB global temporary file during provisioning;
+the final native provenance runs use private daemon temporary directories and
+complete with zero failed checks on both engines. Docker `make test-db`, full
+backup/restore, actual active-accounting gameplay and integrated workload gates
+remain open. Focused passes do not rewrite the frozen broad-suite outcome.
+
+## Duplicate UID retirement audit
+
+A second destruction of an already retired UID previously passed the audit when
+its event revisions, references, owner and final tombstone all agreed. Two new
+regressions reproduce that omission in lineage history and in an epoch opening
+that already contains a tombstone. The lifetime audit now reports
+`duplicate_item_retirement` for an explicit destruction after retirement.
+
+All 53 reconciler tests pass. On both disposable SQL engines, the SELECT-only
+exporter observes a new, otherwise consistent root/event/reference attempting
+to destroy the same tombstone again and reports the new exception. Removing
+only the fixture corruption and restoring its original native row returns to
+the exact baseline exception set. Existing creation, movement, one retirement,
+UID-reuse, supply-state and deep topology checks continue to pass. This closes
+that bounded R4/R7 audit omission; it does not make the partial exporter or
+unqualified routes complete, and activation/release remain blocked.
+
+## Retained-conflict failure readbacks and development variants
+
+The first development MariaDB boon run failed because an unrelated item-owner
+revision row changed during the wallet-conversion window. Its assertion ran
+before the acknowledged source readback was attached to retained evidence,
+leaving no exact after-row set to diagnose. The fixture now stores that complete
+readback immediately after observation and reports exact before/after revision
+rows on failure. No native selector or assertion is relaxed.
+
+With that diagnostic test, SHA-256
+`1e5e87a2b8b204cebeeab3aeada5e4c6d2ab57fe53c047fae0b6b11bda8c4327`,
+the complete default/reset-coin/boon MySQL run and a MariaDB boon repeat pass on
+the strict development executable recorded above. The initial default/reset-coin
+MariaDB passes used the earlier diagnostic-free test. These actual player
+journeys prove healthy death with 12 original item identities, one corpse-create
+operation, retained-conflict acknowledgement before the account menu, exact
+wallet/source evidence, self-scoped recovery list/detail, cold-entry refusal and
+restart without manual fixture repair. The fixture checkout is exact
+`d3135428207aef41407434849dadf922780cb151` plus only the diagnostic test changes;
+native source remains `2fa0d98dac56a1687e4af4314da7ac9b327a670d`.
+
+The later passes do not explain or erase the original owner-revision failure.
+Its intermittent cause remains an open qualification finding, now with exact
+failure capture for further investigation. These TEST_MUD-only fixture results
+do not promote production conflict release or active accounting. Both original
+production-profile attempts remain RED, and the broad 839-test frozen run is
+still in progress.

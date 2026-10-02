@@ -24,15 +24,33 @@ Independent reconciliation now checks every native item's parent edge even when
 lineage history replaces its epoch-local history or its opening origin is
 missing. Corruption/recovery probes pass through the read-only SQL exporter on
 both engines. Lineage and epoch-local history also share creation and irreversible
-UID-retirement checks; memoized native topology bounds ancestor work, and 49
-reconciler tests pass. Complete native source/origin
+UID-retirement checks; memoized native topology bounds ancestor work, and 53
+reconciler tests pass. Explicit creation/destruction must also match live/tombstone
+custody, a corrupt destruction cannot erase the UID retirement fence, and
+a second destruction of an already retired UID is reported. Complete native source/origin
 and writer qualification remain open. See the October 2 review status for scope.
 
-A complete `make test-all` run is in progress on frozen candidate `fbd9f5035`
-after its full archived Git tree was verified. The strict SQL server, area
-editor and world generators have built successfully. This run does not yet
-establish a passing broad regression result; the later bounded-topology repair
-has separate focused evidence in the October 2 review status.
+The frozen candidate `fbd9f5035` completed `make test-all`: 822 passed, 11
+skipped and one live Redis fixture failed because its Unix socket path exceeded
+the platform limit under a long qualification TMPDIR. The repaired fixture
+passes the same native authentication/TLS/database checks under that TMPDIR.
+The strict SQL server, area editor and world generators built successfully.
+This is a failed broad run plus a separate focused repair pass; a current-head
+integrated run and skipped external-service checks remain qualification gates.
+The skipped help-import fixture now honors a validated disposable connection;
+its rollback, atomic publication and nontransactional refusal test passes on
+both SQL engines. A fresh 839-test full run is underway on exact published
+candidate `79540e65d`; later fixture fixes retain separate focused evidence.
+The optional native item-provenance fixture now links and honors terminal
+source-reuse refusal; its full transaction/replay/epoch/concurrency probe passes
+on both engines. Native load/recovery and telemetry schema/factory checks also
+pass separately on both engines. These leave player-journey, backup/restore,
+real telemetry-role grants and Docker integration gates open.
+Guarded development combat has bounded variant passes on both engines,
+but the first MariaDB boon attempt has an unexplained owner-revision failure.
+The fixture now retains exact acknowledged source rows before assertions for
+that investigation. Production conflict-release attempts remain RED; no gate
+or inactive selector is changed.
 
 The disposable playtime journey now honors a validated `TEST_DB_PORT` in both
 native connections and SQL clients. Its outdated temporary-table probe is
@@ -41,11 +59,12 @@ save/death/crash/copyover journey and item/spell/XP receipt probes now pass on
 both SQL engines using the strict frozen-candidate executable. These qualify
 the measured inactive-accounting routes, not complete economic accounting.
 
-The character-deletion journey also honors its selected disposable SQL port.
-Its native MariaDB refusal and rollback checks pass, but the successful retry
-ends in reconciliation after player deletion because `-s` skips the zone-story
-tracker's special-procedure bootstrap. That lifecycle dependency remains open;
-the port repair does not qualify successful deletion or erasure.
+The character-deletion journey honors its selected disposable SQL port. Its
+shortened random namespace fits MySQL's named-lock limit without changing native
+exclusion locks. The no-specials quest-state boot dependency is repaired in
+`b401a8521`; real refusal/rollback/playable-retry/deletion/cold-restart journeys
+pass on both SQL engines. These bounded results leave economic identity and
+complete alias-erasure qualification open.
 
 Stopped quarantine recovery from upstream `5c157f693` is integrated with the
 review fixes. Version-2 archives retain original frames and frozen grant
@@ -146,6 +165,15 @@ see the [October 2 evidence](REVIEW_STATUS_2026-10-02.md).
    fault matrix on one build, record its hash and schema, and finish equivalent
    flatfile journeys. Production migration and deployment require separate
    owner authorization.
+
+The no-specials quest-state boot dependency is repaired and the native SQL
+deletion refusal/rollback/retry/cold-restart journey passes on both engines for
+the combined source including help PR #679. The real flatfile account-menu
+journey also passes after establishing its empty authority catalogs through
+native repository APIs. Missing authority retains the saved character and quest
+alias; playable retry, deletion once, quest-alias erasure and cold restart pass
+without changing production fences. Retained economic identity, all other alias
+paths and the wider R8 gates remain open; the October 2 status records hashes.
 
 ## Nonnegotiable invariants
 
