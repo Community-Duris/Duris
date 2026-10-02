@@ -42,13 +42,11 @@ for token in (
     "parent_item_uid",
     "item.vnum",
     "item_current_owner",
-    "owner_type=",
-    "owner_id=",
-    "owner_context_id=0",
-    "state=",
     "ORDER BY item_uid FOR UPDATE",
 ):
     assert contains(verify, token), token
+for sql_fragment in ("owner_type=", "owner_id=", "owner_context_id=0", "state="):
+    assert contains(verify, sql_fragment, literal=True), sql_fragment
 assert contains(function(repository, "query_result custody_payload_mismatch("),
                 "PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH")
 assert contains(verify, "coin_payload IS NOT NULL")
@@ -106,9 +104,9 @@ assert contains(worker_header, "custody_payload_mismatches")
 assert contains(worker, "health.custody_payload_mismatches")
 assert contains(diagnostics, '"custody_payload_mismatch=%llu')
 assert contains(pipeline, '"custody_payload_mismatch_rejected"')
-assert contains(pipeline, "destructive_write=0")
+assert contains(pipeline, "destructive_write=0", literal=True)
 assert contains(pipeline, '"custody-mismatch-recapture"')
-assert contains(pipeline, "recapture_scheduled=%d")
+assert contains(pipeline, "recapture_scheduled=%d", literal=True)
 assert contains(pipeline, "custody_recapture_armed.insert")
 assert contains(pipeline, "custody_recapture_armed.erase")
 assert contains(pipeline, "custody_recapture_allowed")

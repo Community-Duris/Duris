@@ -17,6 +17,7 @@ Usage:
 from __future__ import annotations
 
 import re
+from contract_text import code_text
 
 
 def strip_comments(text: str) -> str:
@@ -27,13 +28,7 @@ def strip_comments(text: str) -> str:
     prose describing it -- a comment mentioning a call is not a call.
     """
 
-    def blank(match: re.Match) -> str:
-        """The matched comment with every character but newline replaced by a
-        space, so offsets and line numbers survive the strip."""
-        return re.sub(r"[^\n]", " ", match.group(0))
-
-    text = re.sub(r"/\*.*?\*/", blank, text, flags=re.S)
-    return re.sub(r"//[^\n]*", blank, text)
+    return code_text(text, keep_literals=True)
 
 
 def function_bodies(text: str, signature: str) -> list:
@@ -50,7 +45,8 @@ def function_bodies(text: str, signature: str) -> list:
     the head and the body, so a ';' or a '}' in that gap means the match was a
     declaration and this brace belongs to something else.
     """
-    code = strip_comments(text)
+    code = code_text(text)
+    uncommented = strip_comments(text)
     bodies = []
     for match in re.finditer(signature, code):
         start = code.find("{", match.end())
@@ -66,7 +62,7 @@ def function_bodies(text: str, signature: str) -> list:
             elif code[index] == "}":
                 depth -= 1
                 if depth == 0:
-                    bodies.append(code[start : index + 1])
+                    bodies.append(uncommented[start : index + 1])
                     break
     return bodies
 
@@ -85,6 +81,7 @@ def block_start(code: str, pos: int) -> int:
     """Index just past the '{' that opens the innermost block containing
     `pos`, or 0 when `pos` is not inside one.  `code` must already be
     comment-stripped."""
+    code = code_text(code)
     depth = 0
     for index in range(pos - 1, -1, -1):
         if code[index] == "}":
@@ -102,7 +99,7 @@ def top_level_definitions(text: str) -> list:
     the block's head (a function's own name) or None for a block that is not
     a function -- a struct or an array initialiser.  Used to answer "which
     function is this call site in?" without hard-coding line numbers."""
-    code = strip_comments(text)
+    code = code_text(text)
     defs = []
     depth = 0
     head_start = 0

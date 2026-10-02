@@ -20,6 +20,8 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.artifact = json.loads(MATRIX.read_text(encoding="utf-8"))
         cls.routes = {route["id"]: route for route in cls.artifact["routes"]}
+        # All cases inspect the same immutable checkout; scan it once.
+        cls.census = coverage.load_validator().scan_sources(ROOT)
 
     def test_machine_counts_reconcile_to_route_rows(self) -> None:
         routes = self.artifact["routes"]
@@ -47,7 +49,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         for route in registry["writers"]:
             for site in route.get("sites", []):
                 owners.setdefault(tuple(site), set()).add(route["id"])
-        checked = [row for row in coverage.load_validator().scan_sources(ROOT)
+        checked = [row for row in self.census
                    if row["family"] == "item_publication" and
                    "obj_to_char_checked(" in row["excerpt"]]
         self.assertEqual(len({(row["path"], row["line"]) for row in checked}), 9)
@@ -92,7 +94,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         for route_id in ("ship.hydration", "ship.sql_hydration"):
             self.assertEqual(self.routes[route_id]["disposition"], "runtime_projection_route")
         self.assertEqual(self.routes["ship.zero_initialization"]["disposition"], "non_writer_candidate")
-        census = coverage.load_validator().scan_sources(ROOT)
+        census = self.census
         ship_sites = [row for row in census if row["family"] == "ship_coffer_assignment"]
         self.assertEqual(len(ship_sites), 6)
         self.assertTrue(any(row["path"] == "src/sql/sql_player.c" and
@@ -330,7 +332,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertEqual(route["disposition"], "non_writer_candidate")
         self.assertEqual(route["source"]["function"], "load_bank")
         self.assertIn("account_banks", route["exclusion_reason"])
-        census = coverage.load_validator().scan_sources(ROOT)
+        census = self.census
         direct = [row for row in census if row["family"] == "direct_cash_assignment"]
         self.assertFalse(any(row["path"] == "src/economy/collector_repository.c" and
                              "uint64_t bank[6]" in row["excerpt"] for row in direct))
@@ -366,7 +368,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertEqual(len(sites["currency.wallet_live_projection"]), 4)
         self.assertEqual(len(sites["player.load_economy_projection"]), 8)
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)}
+                   for row in self.census}
         for route_id in ("currency.wallet_credit", "currency.wallet_debit",
                          "currency.bank_live_projection", "currency.bank_single_projection",
                          "currency.wallet_live_projection", "player.load_economy_projection"):
@@ -381,7 +383,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
             "world.generated_npc_hydration": ("src/world/generated_npc_runtime.c", {106, 107, 108, 109}),
         }
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)}
+                   for row in self.census}
         for route_id, (path, lines) in expected.items():
             self.assertEqual({tuple(site) for site in sites[route_id]
                               if site[2] == "coin_assignment"},
@@ -408,7 +410,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
             "recovery.copyover_npc_gold_projection": ("src/persistence/copyover.c", {1633, 2144}),
         }
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)}
+                   for row in self.census}
         for route_id, (path, lines) in expected.items():
             self.assertEqual({tuple(site) for site in sites[route_id]
                               if site[2] == "coin_assignment"},
@@ -436,7 +438,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_direct_coin_sites_and_clear_money_calls_are_classified(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)}
+                   for row in self.census}
         mapped = {tuple(site) for route in registry["writers"] for site in route.get("sites", [])}
         for family in ("coin_assignment", "direct_cash_assignment",
                        "coin_bulk_mutation", "ship_coffer_assignment"):
@@ -480,7 +482,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_direct_sql_economy_sites_have_named_routes(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["family"] == "sql_economy"}
         owners = {}
         for route in registry["writers"]:
@@ -576,7 +578,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_money_helpers_are_linked_without_reviving_legacy_definitions(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["family"] == "money_helper"}
         linked = {tuple(site) for row in registry["writers"] for site in row.get("sites", [])}
         self.assertTrue(current)
@@ -591,7 +593,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_typed_submit_sites_are_linked_without_counting_builders_as_writers(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["family"] == "economic_submit"}
         linked = {tuple(site) for row in registry["writers"] for site in row.get("sites", [])}
         self.assertTrue(current)
@@ -612,7 +614,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         path = "src/item/salvage.c"
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == path}
         owners = {}
         for route in registry["writers"]:
@@ -655,7 +657,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         path = "src/kingdom/kingdom_harvest.c"
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == path}
         owners = {}
         for route in registry["writers"]:
@@ -687,7 +689,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_coin_pile_and_scrap_calls_have_source_classifications(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         sites = {(row["path"], row["line"], row["family"])
-                 for row in coverage.load_validator().scan_sources(ROOT)
+                 for row in self.census
                  if row["family"] == "item_lifecycle" and
                  any(name in row["excerpt"] for name in
                      ("create_money(", "MakeScrap(", "instantiate_object_template("))}
@@ -709,7 +711,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_object_command_item_calls_separate_legacy_effects_from_publication(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == "src/cmd/actobj.c" and
                    row["family"] in ("item_lifecycle", "item_publication")}
         linked = {tuple(site) for row in registry["writers"] for site in row.get("sites", [])}
@@ -744,7 +746,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_world_handler_item_sites_distinguish_cleanup_projection_and_retirement(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == "src/world/handler.c" and
                    row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
@@ -782,7 +784,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_other_commands_item_sites_keep_foraging_and_steal_fallback_visible(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == "src/cmd/actoth.c" and
                    row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
@@ -814,7 +816,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_sql_player_item_loads_separate_restore_stage_from_new_stock(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == "src/sql/sql_player.c" and
                    row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
@@ -854,7 +856,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_zone_reset_item_sites_separate_unpublished_rejection_from_grant(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == "src/world/db.c" and
                    row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
@@ -880,7 +882,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_alchemist_item_sites_separate_recipe_probes_from_consumption(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == "src/classes/salchemist.c" and
                    row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
@@ -921,7 +923,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_artifact_item_sites_separate_display_boot_restore_and_live_replacement(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == "src/guild/artifact.c" and
                    row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
@@ -954,7 +956,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_mob_behavior_item_sites_separate_world_creation_from_equipment_relink(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == "src/mob/mobact.c" and
                    row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
@@ -978,7 +980,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_random_zone_item_sites_distinguish_coin_issuance_and_reset(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == "src/world/random.zone.c" and
                    row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
@@ -1013,7 +1015,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         paths = {"src/world/world_recovery_pipeline.c", "src/world/world_recovery_npc_items.c",
                  "src/world/world_singletons.c", "src/flatfile/flatfile_corpse_restore.c"}
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] in paths and row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
         for route in registry["writers"]:
@@ -1051,7 +1053,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_corpse_spell_item_sites_keep_legacy_npc_paths_visible(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == "src/magic/spell_corpse_lifecycle.c" and
                    row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
@@ -1082,7 +1084,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
 
     def test_enhancement_item_sites_link_fees_to_transforms_and_materials(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
-        current_rows = [row for row in coverage.load_validator().scan_sources(ROOT)
+        current_rows = [row for row in self.census
                         if row["path"] == "src/item/enhance.c" and
                         row["family"] in ("item_lifecycle", "item_publication")]
         current = {(row["path"], row["line"], row["family"]) for row in current_rows}
@@ -1120,7 +1122,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
     def test_legacy_file_item_sites_separate_save_unload_restore_and_dead_code(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == "src/core/files.c" and
                    row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
@@ -1162,7 +1164,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         path = "src/cmd/actmove.c"
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == path and row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
         for route in registry["writers"]:
@@ -1196,7 +1198,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         path = "src/item/storage_lockers.c"
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == path and row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
         for route in registry["writers"]:
@@ -1240,7 +1242,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         path = "src/cmd/actnew.c"
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == path and row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
         for route in registry["writers"]:
@@ -1271,7 +1273,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         path = "src/magic/spell_conjuration.c"
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == path and row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
         for route in registry["writers"]:
@@ -1305,7 +1307,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         path = "src/combat/range.c"
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == path and row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
         for route in registry["writers"]:
@@ -1331,7 +1333,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         path = "src/guild/guildhall_rooms.c"
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == path and row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
         for route in registry["writers"]:
@@ -1359,7 +1361,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         path = "src/classes/necromancy.c"
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == path and row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
         for route in registry["writers"]:
@@ -1395,7 +1397,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
         path = "src/specs/specs.heavens.c"
         current = {(row["path"], row["line"], row["family"])
-                   for row in coverage.load_validator().scan_sources(ROOT)
+                   for row in self.census
                    if row["path"] == path and row["family"] in ("item_lifecycle", "item_publication")}
         owners = {}
         for route in registry["writers"]:

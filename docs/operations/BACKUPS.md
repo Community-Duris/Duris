@@ -256,13 +256,19 @@ new socket. Flatfile restore verifies copied bytes before mutation, runs native
 authority replay, and validates existing account, snapshot, and world catalog bytes.
 Full player/domain loads run after WAL replay, allowing a durable first snapshot
 to materialize its missing projection. These loads reject lossy topology repair.
-Before boot, both journal types are scanned with the production codecs. Any
-corrupt/unsupported frame, quarantine evidence, or interrupted temporary journal
-blocks qualification. Both modes then boot the matching server against copied mini-world assets in a
+Before boot, both journal types are scanned with the production codecs. A
+corrupt/unsupported frame or interrupted temporary journal blocks qualification.
+Validated quarantine archives and admission fences are preserved. An unreplayable
+player save may move from the active WAL into that archive during boot; qualification
+does not release its player's fence or claim that the save was applied. Both modes
+then boot the matching server against copied mini-world assets in a
 new user/network/PID namespace, exercise HTTP readiness, reject persistence startup
 failure messages, wait for both journals to drain, and require clean shutdown.
-Native postflight requires zero remaining records and no corruption/quarantine;
-authority reconciliation runs again after replay. Namespaces must be available;
+Native postflight requires zero active records, valid protected archive/policy bytes,
+and native proof for resolved flat-file recovery records. Authority reconciliation
+runs again after replay. Recovering a fenced player remains a separate stopped
+operation described in [PLAYER_QUARANTINE_RECOVERY.md](../persistence/PLAYER_QUARANTINE_RECOVERY.md).
+Namespaces must be available;
 there is no fallback to a host-network boot.
 The server executable and qualification script are copied into the private
 candidate before entering the namespace, so recovery also works from a checkout

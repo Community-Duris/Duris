@@ -75,9 +75,9 @@ assert contains(source, "grant_id")
 
 # Trusted command UX: exact item shorthand, explicit lifetimes, global listing,
 # stable-ID removal, and backward-compatible vnum form.
-assert contains(source, "permanent|days <count>|wipes <count>")
+assert contains(source, "permanent|days <count>|wipes <count>", literal=True)
 assert contains(source, "divineclaim list [account]")
-assert contains(source, "divineclaim remove <claim-id>")
+assert contains(source, "divineclaim remove <claim-id>", literal=True)
 assert contains(source, "The source item remains in your inventory")
 assert contains(source, "Each character on that account may summon one copy")
 assert contains(source, "canonical_account(first,&first_account) && (!*second || parse_positive(second,&legacy_vnum))")
@@ -106,11 +106,11 @@ assert contains(manifest, '"account_bound_reward_pwipe_state"')
 assert contains(manifest, '"remaining_pwipes"')
 assert contains(manifest, '"last_processed_at"')
 assert pwipe_hook.replace("()", "") in header
-assert contains(source, "remaining_pwipes = remaining_pwipes - 1")
+assert contains(source, "remaining_pwipes = remaining_pwipes - 1", literal=True)
 assert contains(source, "DELETE FROM account_bound_reward_summons")
 lock_pos = index(source, "FOR UPDATE", source.index("bool account_bound_rewards_on_successful_pwipe"))
 delete_pos = index(source, "DELETE FROM account_bound_reward_summons", lock_pos)
-stamp_pos = index(source, "SET last_processed_at=NOW()", delete_pos)
+stamp_pos = index(source, "SET last_processed_at=NOW()", delete_pos, literal=True)
 assert lock_pos < delete_pos < stamp_pos
 assert contains(source, "INTERVAL 28 DAY")
 assert "account_bound_reward_pwipe_state" in verifier

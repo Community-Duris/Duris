@@ -17,7 +17,7 @@ assert not contains(loader, "LIMIT 1")
 # One physical instance per grant and character; instances on other account
 # characters are deliberately left in place.
 instance = source[source.index("static P_obj existing_character_instance"):source.index("static uint32_t reward_retirement_u32")]
-assert contains(instance, "constboolcharacter_owned=reward_item_owner(obj)==ch")
+assert contains(instance, "const bool character_owned = reward_item_owner(obj) == ch")
 assert contains(instance, "reward_item_in_character_corpse(ch,obj)")
 assert contains(instance, "retire_empty_duplicates&&character_owned")
 assert contains(instance, "if (!keep) keep=obj")
@@ -27,7 +27,7 @@ assert contains(instance, "submit_accounted_reward_promotion(ch,grant,obj)")
 assert not contains(source, "previous_owner")
 assert not contains(source, "clear_saved_rewards(account, 0)")
 assert contains(source, "account_bound_reward_summons")
-assert contains(source, "ON DUPLICATE KEY UPDATE last_summoned_at=NOW()")
+assert contains(source, "ON DUPLICATE KEY UPDATE last_summoned_at=NOW()", literal=True)
 assert contains(source, "grant_marker_matches")
 corpse_start = source.index(
     "static bool reward_item_in_character_corpse(P_char ch, P_obj obj)\n{"
@@ -67,7 +67,7 @@ assert contains(retirement, "expected_uid ? expected_uid : result.root_item_uid"
 assert contains(retirement, "(!expected_uid && !result.root_item_uid)")
 assert contains(source, "continuation.data.resize(28)")
 assert contains(source, "instance->obj_uid")
-assert not contains(dismiss, "cannot be dismissed while item accounting is active")
+assert not contains(dismiss, "cannot be dismissed while item accounting is active", literal=True)
 assert index(dismiss, "if(accounting_active)") < index(
     dismiss, "retire_saved_reward_instance(ch,instance)"
 )
@@ -81,11 +81,11 @@ assert not contains(summon, "OBJ_CARRIED(obj)")
 
 # Stable IDs allow multiple exact rewards sharing a vnum and precise removal;
 # the old account/vnum and account/all forms remain as compatibility paths.
-assert contains(source, "divineclaim remove <claim-id>")
-assert contains(source, "divineclaim remove <account> <reward vnum|all>")
+assert contains(source, "divineclaim remove <claim-id>", literal=True)
+assert contains(source, "divineclaim remove <account> <reward vnum|all>", literal=True)
 assert contains(source, "divineclaim list [account]")
-assert contains(source, "WHERE id=%llu")
-assert contains(source, "template_version=0 ORDER BY id LIMIT 1")
+assert contains(source, "WHERE id=%llu", literal=True)
+assert contains(source, "template_version=0 ORDER BY id LIMIT 1", literal=True)
 assert "primary key (id)" in migration
 assert "primary key (grant_id, pid)" in migration or "primary key(grant_id,pid)" in migration
 assert "primary key (id)" in bootstrap
