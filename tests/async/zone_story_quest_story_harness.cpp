@@ -153,9 +153,10 @@ int main(int argc, char **argv)
 		service tracker(catalog);
 		for (const auto &mapping : catalog.story_mappings)
 		{
-			const auto &zone = *std::find_if(
-				catalog.zones.begin(), catalog.zones.end(), [&](const auto &z)
-				{ return z.source_area == mapping.source_area; });
+			const auto &zone =
+				*std::find_if(catalog.zones.begin(), catalog.zones.end(),
+					      [&](const auto &z)
+					      { return z.source_area == mapping.source_area; });
 			require(tracker.discover_zone(7, 42, zone.zone_number,
 						      std::max(1, zone.first_vnum), 100,
 						      "arrival") == result::applied,
@@ -177,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 42 &&
-				tracker.summary_for(7, 42).total == 2294,
+		require(catalog.story_mappings.size() == 43 &&
+				tracker.summary_for(7, 42).total == 2277,
 			"native story projection disagreed with the complete source audit");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -737,9 +738,9 @@ int main(int argc, char **argv)
 		const auto &cosmos = story_for("wh", "request-55103-0e8b41819618");
 		const auto &dagger_marks = story_for("wh", "request-55116-e78a927f5454");
 		const auto &chief_key = story_for("wh", "request-55229-23f9768a6235");
-		const auto &winter = *std::find_if(catalog.story_mappings.begin(),
-						   catalog.story_mappings.end(), [](const auto &m)
-						   { return m.source_area == "wh"; });
+		const auto &winter =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "wh"; });
 		service supplied_winter(catalog);
 		require(supplied_winter.discover_zone(7, 42, 550, 55125, 100, "arrival") ==
 				result::applied,
@@ -823,9 +824,9 @@ int main(int argc, char **argv)
 				restored_winter.progress_for_zone(7, 42, 306).completed == 0 &&
 				restored_winter.progress_for_zone(7, 42, 831).completed == 0,
 			"Winterhaven reload changed local receipts or invented foreign completion");
-		const auto &smoke = *std::find_if(catalog.story_mappings.begin(),
-						  catalog.story_mappings.end(), [](const auto &m)
-						  { return m.source_area == "smokev"; });
+		const auto &smoke =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "smokev"; });
 		const auto &ivar_hearts = story_for("smokev", "the-two-dragon-hearts");
 		const auto &ivar_talon = story_for("smokev", "ivars-talon-reward");
 		const auto &tarlator = story_for("smokev", "tarlators-humanity-request");
@@ -913,9 +914,9 @@ int main(int argc, char **argv)
 		const auto &figurine = story_for("caertannad", "hindiss-figurine-exchange");
 		const auto &head = story_for("caertannad", "hindiss-thel-samar-proof");
 		const auto &remedy = story_for("caertannad", "mungirs-silverleaf-remedy");
-		const auto &keeps = *std::find_if(catalog.story_mappings.begin(),
-						  catalog.story_mappings.end(), [](const auto &m)
-						  { return m.source_area == "caertannad"; });
+		const auto &keeps =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "caertannad"; });
 		service supplied_keeps(catalog);
 		require(supplied_keeps.discover_zone(7, 42, 784, 78504, 100, "arrival") ==
 				result::applied,
@@ -1151,9 +1152,9 @@ int main(int argc, char **argv)
 		const auto &claw_blue = story_for("clwcvrn", "blue-shield");
 		const auto &claw_violet = story_for("clwcvrn", "violet-collar");
 		const auto &claw_sage = story_for("clwcvrn", "the-sages-paid-secret");
-		const auto &claw = *std::find_if(catalog.story_mappings.begin(),
-						 catalog.story_mappings.end(), [](const auto &m)
-						 { return m.source_area == "clwcvrn"; });
+		const auto &claw =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "clwcvrn"; });
 		service supplied_claw(catalog);
 		require(supplied_claw.discover_zone(7, 42, 807, 80700, 100, "arrival") ==
 				result::applied,
@@ -1221,9 +1222,9 @@ int main(int argc, char **argv)
 		const auto &long_viper = story_for("long", "vipers-delight");
 		const auto &long_boots = story_for("long", "four-skins-for-snakeskin-boots");
 		const auto &long_fish = story_for("long", "the-fishscale-potion-experiment");
-		const auto &long_map = *std::find_if(catalog.story_mappings.begin(),
-						     catalog.story_mappings.end(), [](const auto &m)
-						     { return m.source_area == "long"; });
+		const auto &long_map =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "long"; });
 		service supplied_long(catalog);
 		require(supplied_long.discover_zone(7, 42, 344, 34401, 100, "arrival") ==
 				result::applied,
@@ -1322,6 +1323,140 @@ int main(int argc, char **argv)
 				restored_long.progress_for_zone(7, 42, 344).completed == 9 &&
 				restored_long.progress_for_zone(7, 42, 344).total == 9,
 			"Longhollow recovery changed independent story/request credit");
+		const auto &pearl_rebuild =
+			story_for("blackpearl", "reconstruct-warthehrs-dragonslayer");
+		const auto &pearl_skin =
+			story_for("blackpearl", "ghalasaxs-skin-and-warthehrs-reward");
+		const auto &pearl_horns =
+			story_for("blackpearl", "four-distinct-horns-for-derimous");
+		const auto &pearl_reply = story_for("blackpearl", "abals-reply-for-lyles-fragment");
+		const auto &pearl_cash =
+			story_for("blackpearl", "the-gartham-report-and-travel-funds");
+		const auto &pearl_gadget = story_for("blackpearl", "the-patrons-gadget-purchase");
+		const auto &pearl_map =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "blackpearl"; });
+		service supplied_pearl(catalog);
+		supplies.carried.clear();
+		require(supplied_pearl.discover_zone(7, 42, 135, 13556, 100, "arrival") ==
+					result::applied &&
+				supplied_pearl.meet_npc(7, 42, 142215, 13556, 101) ==
+					result::applied &&
+				!supplied_pearl.has_discovered(7, 42, 1422),
+			"foreign campaign contact falsely discovered the owned wreck");
+		require(supplied_pearl.discover_zone(7, 42, 1422, 142201, 102, "arrival") ==
+				result::applied,
+			"Black Pearl synthetic discovery failed");
+		journal = supplied_pearl.render_journal(7, 42, 1422, 10, 1, 103, false, false,
+							&supplies);
+		require(journal.find("] " + pearl_skin.title + "\r\n") != std::string::npos &&
+				journal.find("] " + pearl_rebuild.title + "\r\n") ==
+					std::string::npos,
+			"persisted foreign encounter was lost or exposed an unseen steelsmith");
+		// Synthetic encounters qualify projection only; ordinary placements remain blocked.
+		for (const auto &contact : pearl_map.contacts)
+		{
+			const auto met =
+				supplied_pearl.meet_npc(7, 42, contact.mob_vnum, 142201, 104);
+			require(met == result::applied || met == result::already_applied,
+				"Black Pearl synthetic encounter failed");
+		}
+		const auto pearl_section = [&](const auto &story)
+		{
+			const auto at = journal.find("] " + story.title + "\r\n");
+			require(at != std::string::npos, "Black Pearl journal row missing");
+			const auto next = journal.find("\r\n  [", at);
+			return journal.substr(at, next == std::string::npos ? next : next - at);
+		};
+		for (const auto &trade : pearl_map.stories)
+			if (trade.category == "service")
+				record(supplied_pearl, trade.contracts.front(), trade.id.c_str(),
+				       1422, 142200);
+		require(supplied_pearl.progress_for_zone(7, 42, 1422).completed == 0 &&
+				supplied_pearl.progress_for_zone(7, 42, 1422).total == 14,
+			"briefings, returned fragments or hunter trades added quest achievements");
+		const auto before_pearl_read = supplied_pearl.serialize_state();
+		supplies.carried[142204] = 8;
+		for (const auto item : { 142207, 142210, 142211 })
+			supplies.carried[item] = 1;
+		supplies.carried[142220] = 4;
+		supplies.carried[142213] = 2;
+		journal = supplied_pearl.render_journal(7, 42, 1422, 10, 1, 121, false, false,
+							&supplies);
+		require(pearl_section(pearl_rebuild).find("Next: " + pearl_rebuild.steps[8].text) !=
+					std::string::npos &&
+				pearl_section(pearl_horns)
+						.find("Next: " + pearl_horns.steps[1].text) !=
+					std::string::npos &&
+				pearl_section(pearl_reply)
+						.find("Next: " + pearl_reply.steps[1].text) !=
+					std::string::npos,
+			"same-named fragment, horn or letter copies replaced distinct required kinds");
+		supplies.carried.clear();
+		for (const auto item : { 142204, 142205, 142206, 142208, 142209, 142224 })
+			supplies.carried[item] = 1;
+		for (const auto item : { 142207, 142210, 142211 })
+			supplies.carried[item] = 1;
+		journal = supplied_pearl.render_journal(7, 42, 1422, 10, 1, 122, false, false,
+							&supplies);
+		require(pearl_section(pearl_rebuild).find("Next: " + pearl_rebuild.steps[13].text) !=
+				std::string::npos,
+			"unexchanged original fragments satisfied the replacement-piece recipe");
+		for (const auto item :
+		     { 142226, 142227, 142228, 142218, 142219, 142220, 142221, 142222, 142223 })
+			supplies.carried[item] = 1;
+		journal = supplied_pearl.render_journal(7, 42, 1422, 10, 1, 123, false, false,
+							&supplies);
+		require(pearl_section(pearl_rebuild)
+						.find("Next: " + pearl_rebuild.steps.back().text) !=
+					std::string::npos &&
+				pearl_section(pearl_skin)
+						.find("Next: " + pearl_skin.steps.back().text) !=
+					std::string::npos &&
+				pearl_section(pearl_horns)
+						.find("Next: " + pearl_horns.steps.back().text) !=
+					std::string::npos &&
+				pearl_section(pearl_reply)
+						.find("Next: " + pearl_reply.steps.back().text) !=
+					std::string::npos &&
+				supplied_pearl.serialize_state() == before_pearl_read,
+			"supplied exact pieces/proofs required personal preparation or mutated history");
+		require(pearl_section(pearl_cash).find("100,000 copper") != std::string::npos &&
+				pearl_section(pearl_cash).find("Turn-in currently unavailable:") ==
+					std::string::npos &&
+				pearl_section(pearl_gadget)
+						.find("unavailable under active accounting") !=
+					std::string::npos &&
+				journal.find("exitless holding room") != std::string::npos,
+			"cash reward, unsupported purchase or campaign source blockers were misrepresented");
+		record(supplied_pearl, pearl_skin.contracts.front(), "pearl-supplied-skin", 1422,
+		       142200);
+		require(supplied_pearl.progress_for_zone(7, 42, 1422).completed == 1,
+			"supplied skin required reconstruction or completed the whole campaign");
+		record(supplied_pearl, pearl_rebuild.contracts.front(), "pearl-supplied-pieces",
+		       1422, 142200);
+		service restored_pearl(catalog);
+		require(restored_pearl.deserialize_state(supplied_pearl.serialize_state(),
+							 &error) &&
+				restored_pearl.progress_for_zone(7, 42, 1422).completed == 2 &&
+				restored_pearl.progress_for_zone(7, 42, 1422).total == 14,
+			"Black Pearl recovery changed independent finales or credited services");
+		service prepared_pearl(catalog);
+		require(prepared_pearl.discover_zone(7, 42, 1422, 142201, 100, "arrival") ==
+					result::applied &&
+				prepared_pearl.meet_npc(7, 42, 142216, 142201, 101) ==
+					result::applied,
+			"Black Pearl preparation fixture failed");
+		for (size_t i = 0; i < 7; ++i)
+			record(prepared_pearl, pearl_rebuild.steps[i].contracts.front(),
+			       pearl_rebuild.steps[i].id.c_str(), 1422, 142200);
+		supplies.carried.clear();
+		journal = prepared_pearl.render_journal(7, 42, 1422, 10, 1, 124, false, false,
+							&supplies);
+		require(pearl_section(pearl_rebuild).find("Next: " + pearl_rebuild.steps[7].text) !=
+					std::string::npos &&
+				prepared_pearl.progress_for_zone(7, 42, 1422).completed == 7,
+			"producer receipts replaced spent physical pieces or completed reconstruction");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

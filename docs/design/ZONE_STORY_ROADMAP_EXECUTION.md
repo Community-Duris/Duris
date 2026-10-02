@@ -44,9 +44,10 @@ neither every branch nor every historical prerequisite.
 | 17 | Neverwinter Woods | [Comprehensive source dossier](zone-stories/NEVERWINTER_WOODS.md): seven Q/M blocks, 335 rooms, 38 mobiles, 75 objects, three shops, 424 resets, all 28 assigned routines and complete mirror-maze topology | Revision 1: five native bindings → one story/achievement/daily unit; seven contacts/both topic families; optional bridge wand, exact runes and current ruby-eyepatch reward | Active sources, cap-one/current recipient, selected-reward terms, checked maze topology, confirmed passage, source/gift history and orphan endpoints |
 | 18 | The Clawed Caverns | [Comprehensive source dossier](zone-stories/THE_CLAWED_CAVERNS.md): twenty Q/eight M, 89 rooms, forty mobiles, 55 objects, 171 resets/all 106 grouped families; all five specials, 26 mobile/one object binding including computed range | Revision 1: one rainbow-delivery story, six services/thirteen excluded returns, ten contacts/all topics; optional keys and complete custom switch/death/mage/access guidance | Active stock, target-safe damage/recipient parsing, committed death-container and key/output/recipient retirement, confirmed travel and paid-clue wallet settlement |
 | 19 | Defense of Longhollow | [Comprehensive source dossier](zone-stories/DEFENSE_OF_LONGHOLLOW.md): fifteen Q/63 M, 100 rooms, 77 mobiles, 74 objects, one shop, 213 resets/all 150 grouped families; zero literal assignments, one computed epic teacher and shared execution reviewed | Revision 1: four stories/five requests, five clothing services/one empty exclusion, forty-one contacts/all sixty addressed families and six optional producer receipts; exact source/access/quantity/reward guidance | Active reset supply; three cap/quantity conflicts; four mixed payments and epic teaching; fixed powers versus prose; absent rescue/healing/siege/title outcomes; confirmed source/gift and all-stage history |
-| 20–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 20 | The Black Pearl | [Comprehensive source dossier](zone-stories/THE_BLACK_PEARL.md): 31 Q/QA and fourteen M, 84 rooms, 63 mobs, 98 objects, 391 resets/all 187 families, no local shops/literal specials; disabled ship and foreign keys/procedures/topology reviewed | Revision 1: two stories/twelve requests, seventeen services, 26 contacts/all topics and 25 optional checks; complete exact fragment/courier/hilt/skin/gem guidance | All campaign NPCs and entrance-key spirits held; missing invitation/sewer/scepter/chests; no reciprocal entry/disabled mobile ship; paid gadget and active generation; owned campaign discovery/reveal, replacement lineage and fixed party reward terms |
+| 21–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is the Black Pearl, followed by the Ravenloft Catacombs.
+The next area is the Ravenloft Catacombs, followed by the Realm of Barovia.
 Their earlier native bindings do not establish comprehensive
 source review. Do not advance a zone's status
 merely because the map parses, the Q denominator matches, or a candidate item
@@ -56,6 +57,10 @@ graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-PEARL-PLACEMENT / MISSING-SOURCES | All twenty campaign NPCs and four entrance-key spirits load only in exitless 142200. Invitation, sewer fragment, scepter and several chest/key prototypes lack ordinary placement; a matching key does not seed its chest or contents. | Builder chooses restored permanent expedition versus retired staff-event content. Select exact named-zone placements/reset owners/caps, add complete item/container sources and preserve native IDs, balance and supplied stock. Qualify directed first-copy/recipient journeys and disappearance/recovery before promising availability. |
+| ZSQ-PEARL-ENTRY / SHIP / ACCESS | Static exit goes outward to surface mountains without a reviewed reciprocal entrance. Mobile hunter ship/linking is disabled; early keys are held, later key-zero doors need approved routes, and 82 room descriptions are empty. | Choose static entry or coordinated mobile restoration; resolve loaded map/interior topology, key/source/lock policy and critical navigation text. Keep Ghalasax separate from the wreck's skeletal dragon; qualify confirmed arrival, traps/secret doors and recovery without inventing a personal kill. |
+| ZSQ-PEARL-OWNERSHIP / TRANSFORMS / REVEAL | Foreign contact encounters can persist under physical discovery, but hints link the current area's journal while the owned Black Pearl journal remains locked until wreck discovery. Three same-named fragment replacements and two letters to Lyle have distinct recipe roles; nine returns are meaningful guidance. | Add explicit owned campaign introductions/reveal and correct journal hints, retaining physical discovery and discovered-zone daily gating. Capture exact transform UID lineage; qualify supplied/spent pieces, nine-root allocation, all-stage attempts and pre/post-discovery receipt replay. |
+| ZSQ-PEARL-REWARD-TERMS / GADGET | Final skin yields fixed six large/six small gems to the actor, rather than party allocation. Six class-themed hunter trades have no giving class check and empty success strings. Travel cash reward already works; gadget coin-only purchase is separately unavailable. | Builder confirms fixed versus per-recipient terms and adds truthful hunter text. Qualify selected item/XP rewards, capacity/frozen party/replay; add recoverable coin purchase without confusing reward coins with fees or awarding extra service achievements. |
 | ZSQ-LONG-SUPPLY / PHYSICAL-RECIPES | Boots need four cap-one skins, scarf needs two cap-one furs and Viper's Delight needs two cap-one sacs. Bracer/moonstone, five heads, three vials, raw/filled outputs and rooted/loose plants are distinct; personal producer receipts cannot replace spent stock. | Builder chooses bounded cap/source repair preserving chance, price and difficulty. Qualify held first copies, competing consumers, live/recovered/forced reset episodes, distinct UID allocation and supplied higher outputs without producer history. |
 | ZSQ-LONG-TERMS / POWERS / ORPHANS | Boots dialogue says 15 gold versus native 20. Green potion lacks narrated darkvision; poison outputs are fixed potions or take-only armor without local dipping/randomization. Wife rescue, templar aid, Rolane's empty Q and siege/title closure have no reviewed endpoint. | Decide approved prose/price/powers and endpoints with builder; implement durable confirmed effect or rescue/aid/world outcome before credit. Preserve exact current delivery rewards; do not silently add gloves, title flags or personal kills. |
 | ZSQ-LONG-CURRENCY / TEACHING | Witch's 25,000-copper plus vial reward already uses native committed item/wallet recovery; four paid clothing offerings and computed summon-familiar teaching are separately unavailable under active accounting. Three qc_action lessons are timed ambient speech. | Preserve and qualify cash reward replay with the vial. Add coordinated paid item/coin settlement and epic/copper/skill publication; record committed teaching or accepted topics only after actual outcomes, never from ambient speech. |
@@ -750,3 +755,70 @@ unchanged. Accounting remains mandatory; no activation, migration, DB/server
 operation or merge occurred. Eighteen of 220 roadmap areas are source-comprehensive,
 with 202 pending. Continue with the Defense of Longhollow, then the Black Pearl;
 active-world source/transform/access qualification remains open.
+
+### Black Pearl checkpoint — October 2, 2026
+
+Priority 20 is now source-comprehensive with
+[its dossier](zone-stories/THE_BLACK_PEARL.md) and
+[reproducible index](../reference/zone-story-audits/blackpearl.md).
+Reviewed all 31 Q/QA and fourteen addressed M families, 84 rooms, 63 mobile
+and 98 object prototypes, 391 resets/all 187 grouped families, zero local shops
+and literal specials, disabled mobile-ship implementation/linking and relevant
+foreign key/procedure/topology and shared execution. The checked-in optional
+world trigger file is absent; no local data procedure binding was found.
+
+Revision 1 preserves all native terms and explains the complete intended
+fragment/courier/hilt/reconstruction/skin/gem route. Two finales and twelve
+requests contribute fourteen achievements and six potential dailies.
+Seventeen services include nine meaningful returned-piece briefings, the
+invitation, paid gadget and six hunter trades. Twenty-six contacts cover all
+fourteen topic families; 25 optional checks preserve supplied physical pieces,
+letters, skin and gems. Three original fragments must become Warthehr's exact
+replacements; four horn kinds and nine reconstruction roots are distinct despite
+shared names. The two letters to Lyle feed different exchanges. A final skin
+receipt does not prove personal combat, sword use or the whole expedition.
+
+The significant source findings are all twenty campaign NPCs and four entrance-key
+spirits loading only in exitless 142200; missing ordinary invitation, sewer
+fragment, royal scepter and chest sources; an outward mountain exit without a
+reviewed reciprocal entry; and the disabled mobile hunter ship. Named foreign
+destinations remain intended placements rather than available sources. The
+source/recipient restoration proposal preserves stable identities, balance,
+supplied stock and explicit reset ownership. Ghalasax differs from the wreck's
+skeletal dragon, whose skull is not the required skin. Holding-room sources,
+recovered stock, normal boot and mode-zero recurring availability remain distinct.
+
+Foreign NPC encounters can persist under physical-area discovery while the owned
+Black Pearl journal remains gated by wreck discovery and hints use the physical
+area. The plan adds explicit owned campaign introduction/reveal and correct links
+without falsely granting discovery or bypassing discovered-zone daily eligibility.
+Same-name transform lineage, fixed twelve-gem actor payout versus party prose,
+six empty hunter success strings and 82 empty room descriptions have balanced
+repair/qualification proposals. The supported 100,000-copper travel reward is
+separate from the unavailable coin-only gadget purchase and fresh reset generation.
+
+Validation completed:
+
+- `test_zone_story_quest_production_catalog.py`: exact catalog/inventory agreement,
+  all twenty source indices, Black Pearl identities/topics, holding-only campaign
+  placements, absent ordinary item/chest sources and native repeatability/reward
+  direction. All 2,668 native definitions, registry, fingerprint/revision and the
+  other 42 journals are unchanged.
+- `test_zone_story_quest_story.py`: all 43 maps and schemas 1/2/3, native C++20
+  warnings as errors, foreign contact without false wreck discovery, unseen-giver
+  visibility, exact replacement pieces/four horns/two letters, supplied higher
+  inputs without producer history, spent pieces despite receipts, source blockers,
+  service exclusion, read-only readiness and independent finale recovery.
+  The initial new four-horn fixture omitted one kind; its complete-set setup was
+  corrected and the full focused regression rerun passed.
+- `test_zone_story_quest_production.py`, actual runtime arrival/accounting-gate
+  regression, harness formatting/check, whitespace, all 551 reviewed local
+  document links and cached SQL server build passed. The fixtures qualify
+  projection/receipt behavior, not restored placements or a played expedition.
+
+The catalog has 43 journals, 2,277 achievement units, 1,913 potential daily units
+and 2,489 projected rows. Accounting remains mandatory; no accounting activation,
+migration, DB/server operation or merge occurred. Twenty of 220 roadmap areas
+are source-comprehensive, with 200 pending. Continue with Ravenloft Catacombs,
+then the Realm of Barovia. Active source, access, foreign campaign reveal and
+full player-journey qualification remain open.

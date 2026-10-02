@@ -13,9 +13,9 @@ named stories without changing native receipt IDs. Twin Towers replaces 84
 contracts with 10 achievement units and 3 daily groups, excluding 40 returned
 offerings and displaying 24 supporting contracts as 12 non-achievement services.
 The global projection now has
-2,294 achievement units and 1,920 daily candidate units after adding starter/town
+2,277 achievement units and 1,913 daily candidate units after adding starter/town
 mappings and deeper journals, equipment/crafting services,
-intermediate outcomes, and explicit missing-item exclusions. There are 42
+intermediate outcomes, and explicit missing-item exclusions. There are 43
 area sidecars and 2,489 projected units including services and administrative
 content. Other areas
 retain native-contract fallback; these counts do not claim full semantic review.
@@ -65,7 +65,15 @@ moonstone versus bracer, loose versus rooted bloom and reward coins versus
 unsupported payment coins have native/source regression coverage. Three stock
 conflicts, fixed powers versus prose and missing rescue/aid/closure endpoints
 remain explicit repair and qualification work.
-Nineteen source-comprehensive areas remain distinct from played
+The Black Pearl adds fourteen independent achievements and seventeen services
+across 31 exchanges, with six potential daily candidates. Nine returned-piece
+briefings remain meaningful guidance without extra credit. Exact replacement
+fragments, four distinct horns, two letters to Lyle and the nine-root reconstruction
+have source/native regression coverage. Twenty-six contacts and 25 optional checks
+explain the intended campaign while documenting holding/missing sources, absent
+reciprocal entrance, disabled mobile ship, fixed gem terms and foreign journal
+ownership. These counts do not imply a currently playable expedition.
+Twenty source-comprehensive areas remain distinct from played
 active-world qualification.
 All raw definitions, receipt identities, zone registry and source fingerprint
 remain unchanged. Comprehensive source dossiers for these areas are tracked in

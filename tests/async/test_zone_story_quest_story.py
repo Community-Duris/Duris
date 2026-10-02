@@ -15,7 +15,7 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1920
+assert report["daily_unit_count"] == 1913
 assert mapping["schema_version"] == 3 and mapping["stories"][0]["steps"][0]["optional"]
 assert sum(s["category"] == "service" for s in mapping["stories"]) == 12
 assert len(mapping["exclusions"]) == 1 and len(mapping["exclusions"][0]["contracts"]) == 40
@@ -120,6 +120,21 @@ blend = long_stories["the-kiss-of-talona-blend"]
 assert all(t["optional"] for t in blend["steps"][:2])
 assert [t["item_vnums"] for t in blend["steps"][2:-1]] == [[34449], [34447], [34438]]
 assert all(s["steps"][-1]["contracts"] == s["contracts"] for s in long["stories"])
+pearl = next(m for m in catalog["story_mappings"] if m["source_area"] == "blackpearl")
+assert pearl["schema_version"] == 3 and pearl["revision"] == 1
+assert len(pearl["stories"]) == 31 and not pearl["exclusions"]
+assert {category: sum(s["category"] == category for s in pearl["stories"]) for category in ("story", "request", "service")} == {"story": 2, "request": 12, "service": 17}
+assert report["eligible_by_zone"]["1422"] == 14
+assert sum(t.get("optional", False) for s in pearl["stories"] for t in s["steps"]) == 25
+pearl_stories = {s["id"]: s for s in pearl["stories"]}
+reconstruction = pearl_stories["reconstruct-warthehrs-dragonslayer"]
+assert all(t["optional"] for t in reconstruction["steps"][:7])
+assert [t["item_vnums"] for t in reconstruction["steps"][7:-1]] == [[n] for n in (142204, 142205, 142206, 142208, 142209, 142224, 142226, 142227, 142228)]
+assert [t["item_vnums"] for t in pearl_stories["four-distinct-horns-for-derimous"]["steps"][:-1]] == [[n] for n in range(142220, 142224)]
+assert pearl_stories["warthehrs-letter-to-lyle"]["steps"][1]["item_vnums"] == [142213]
+assert pearl_stories["abals-reply-for-lyles-fragment"]["steps"][1]["item_vnums"] == [142219]
+assert all(s["steps"][-1]["contracts"] == s["contracts"] for s in pearl["stories"])
+assert all(s["category"] == "service" for s in pearl["stories"] if s["contracts"][0]["giver_vnum"] in (142232, 142233, 142234))
 new_mappings = {m["source_area"]: m for m in catalog["story_mappings"] if m["source_area"] in new_areas}
 assert set(new_mappings) == new_areas and all(m["coverage"] == "complete" for m in new_mappings.values())
 assert sum(d["source_area"] in new_areas for d in catalog["definitions"]) == 86

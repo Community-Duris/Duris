@@ -72412,6 +72412,1806 @@
           "title": "Deliver 1 x a bone key"
         }
       ]
+    },
+    {
+      "contacts": [
+        {
+          "description": "Warthehr narrates the shattered-sword expedition, exchanges three original fragments for replacements, provides meaningful returned-piece guidance and accepts the exact dragon skin. His intended Tharnadia placement has not been implemented in the reviewed ordinary resets.",
+          "keyword": "warthehr",
+          "mob_vnum": 142215,
+          "name": "Warthehr Ngolahn",
+          "topics": [
+            "turopolis",
+            "sewers"
+          ]
+        },
+        {
+          "description": "Telrar needs eight different fragments plus the humming hilt. The intended Kimodril steelsmith is currently in the holding room and disappears after reconstruction.",
+          "keyword": "telrar",
+          "mob_vnum": 142216,
+          "name": "Telrar",
+          "topics": []
+        },
+        {
+          "description": "The frail thief carries the first exact fragment as equipped stock. The intended Caer Tannad prison placement is currently only holding-room stock.",
+          "keyword": "thief",
+          "mob_vnum": 142217,
+          "name": "a frail thief",
+          "topics": []
+        },
+        {
+          "description": "Ask the patron about the gadget. The intended Tharnadia purchase costs five platinum and is unavailable under active accounting; the patron currently has only a holding-room placement.",
+          "keyword": "patron",
+          "mob_vnum": 142218,
+          "name": "an auction house patron",
+          "topics": [
+            "gadget"
+          ]
+        },
+        {
+          "description": "Ask the farmer's son about Warthehr, the sword or the gadget. He exchanges a gadget for his fragment and disappears. The intended Twin Towers placement is still a holding-room declaration.",
+          "keyword": "young",
+          "mob_vnum": 142219,
+          "name": "a young man",
+          "topics": [
+            "warthehr",
+            "sword",
+            "shard",
+            "piece",
+            "swordpiece",
+            "fragment"
+          ]
+        },
+        {
+          "description": "This goblin carries the dirt-covered chest's brittle key. Both the intended source route and chest placement need repair; the goblin is currently held outside ordinary access.",
+          "keyword": "spider",
+          "mob_vnum": 142220,
+          "name": "a gigantic spider",
+          "topics": []
+        },
+        {
+          "description": "The Gartham tinkerer carries the original Pharr Valley fragment, which Warthehr replaces with a different fragment and travel funds. Its declared placement is still the holding room.",
+          "keyword": "tinkerer",
+          "mob_vnum": 142221,
+          "name": "a gartham tinkerer",
+          "topics": []
+        },
+        {
+          "description": "Ask Milerg about the fragment, Urd or the wolf. He trades the exact great white wolf head for his fragment and disappears. The intended Evermeet placement remains unimplemented.",
+          "keyword": "milerg",
+          "mob_vnum": 142222,
+          "name": "Milerg",
+          "topics": [
+            "warthehr",
+            "quest",
+            "sword",
+            "fragment",
+            "shard",
+            "piece",
+            "urd",
+            "urds",
+            "wolf",
+            "hideous"
+          ]
+        },
+        {
+          "description": "The great white wolf carries the exact bloody head requested by Milerg. Its source declaration places it in the holding room, rather than an ordinary Evermeet hunting route.",
+          "keyword": "wolf",
+          "mob_vnum": 142223,
+          "name": "a great white wolf",
+          "topics": []
+        },
+        {
+          "description": "Ask the half-ogre, half-gnome about the fragment, yo-yo or leper. He trades the leper's yo-yo for his fragment and disappears; the circus placement still needs repair.",
+          "keyword": "ogre",
+          "mob_vnum": 142224,
+          "name": "An Ogre-Gnome",
+          "topics": [
+            "warthehr",
+            "sword",
+            "fragment",
+            "piece",
+            "shard",
+            "quest",
+            "yoyo",
+            "yo-yo",
+            "leper",
+            "lepers"
+          ]
+        },
+        {
+          "description": "The leper carries the exact yo-yo as equipped stock. It is intended for the circus route but currently has only a holding-room placement.",
+          "keyword": "leper",
+          "mob_vnum": 142225,
+          "name": "a leper",
+          "topics": []
+        },
+        {
+          "description": "Ask Derimous about the fragment, antelope and his search. He requires four different horn kinds together and disappears after rewarding a fragment. His Verspin placement remains unimplemented.",
+          "keyword": "derimous",
+          "mob_vnum": 142226,
+          "name": "Derimous",
+          "topics": [
+            "warthehr",
+            "quest",
+            "piece",
+            "shard",
+            "fragment",
+            "sword",
+            "antelope",
+            "giant",
+            "horned",
+            "horn",
+            "four-horned",
+            "seek"
+          ]
+        },
+        {
+          "description": "The giant four-horned antelope carries one of each exact horn kind. Their shared printed name does not make them interchangeable. The source is still in the holding room.",
+          "keyword": "antelope",
+          "mob_vnum": 142227,
+          "name": "a giant four-horned antelope",
+          "topics": []
+        },
+        {
+          "description": "Ask Lyle about Abal or the king. Warthehr's letter yields a letter to Abal; Abal's different reply yields the fragment and removes Lyle. The intended Ffolk placement needs repair.",
+          "keyword": "lyle",
+          "mob_vnum": 142228,
+          "name": "Lyle",
+          "topics": [
+            "abal",
+            "message",
+            "king",
+            "revenge"
+          ]
+        },
+        {
+          "description": "Ask Abal about Lyle or the king. Lyle's letter yields two distinct keys; the royal scepter yields a reply to Lyle and removes Abal. Scepter/chest placement and the Ffolk contact need repair.",
+          "keyword": "abal",
+          "mob_vnum": 142229,
+          "name": "Abal",
+          "topics": [
+            "lyle",
+            "king",
+            "revenge"
+          ]
+        },
+        {
+          "description": "Jyarl exchanges his addressed letter for the humming hilt and disappears. His intended Newhaven placement is currently a holding-room declaration.",
+          "keyword": "jyarl",
+          "mob_vnum": 142230,
+          "name": "Jyarl Truesteel",
+          "topics": []
+        },
+        {
+          "description": "Ghalasax, daughter of Aghalhassax, carries the exact skin for Warthehr's final delivery. She is currently in the holding room; the wreck's skeletal dragon is a different creature.",
+          "keyword": "ghalasax",
+          "mob_vnum": 142231,
+          "name": "Ghalasax, daughter of Aghalhassax",
+          "topics": []
+        },
+        {
+          "description": "The barbarian hunter offers two physical gemstone trades. Class-themed guidance does not enforce a class condition on giving. The hunter is currently in the holding room.",
+          "keyword": "barbarian",
+          "mob_vnum": 142232,
+          "name": "a barbarian warrior hunter",
+          "topics": []
+        },
+        {
+          "description": "The gnome hunter offers separate large/small gemstone trades. The large-gem heart is the same kind offered by the dwarf. The hunter is currently in the holding room.",
+          "keyword": "gnomish",
+          "mob_vnum": 142233,
+          "name": "a gnomish mage hunter",
+          "topics": []
+        },
+        {
+          "description": "The dwarf hunter offers separate large/small gemstone trades. Equipment eligibility and native experience caps differ from a class prerequisite on giving. The hunter is currently in the holding room.",
+          "keyword": "dwarven",
+          "mob_vnum": 142234,
+          "name": "a dwarven priest hunter",
+          "topics": []
+        },
+        {
+          "description": "Undead Long John Silver is in the wreck's secluded chambers with a ribcage and scimitar. No reviewed native exchange accepts these remains as the campaign's dragon skin.",
+          "keyword": "soul",
+          "mob_vnum": 142235,
+          "name": "the undead soul of Long John Silver",
+          "topics": []
+        },
+        {
+          "description": "The undead captain of the guards carries the small bone key for the northern secured route. Current access readiness does not record unlocking or passage.",
+          "keyword": "captain",
+          "mob_vnum": 142237,
+          "name": "the skeletal remains of the captain of the guard",
+          "topics": []
+        },
+        {
+          "description": "The undead alchemist inhabits the wreck's cargo room. The summoning rod and ingredient chest are ordinary equipment/scenery here; no reviewed local quest or summoning completion is attached.",
+          "keyword": "alchemist",
+          "mob_vnum": 142244,
+          "name": "the spirit of an overworked alchemist",
+          "topics": []
+        },
+        {
+          "description": "The wreck's huge skeletal dragon carries a skull. It is not Ghalasax and does not supply the baby-dragon skin required by Warthehr.",
+          "keyword": "dragon",
+          "mob_vnum": 142246,
+          "name": "a huge skeletal dragon",
+          "topics": []
+        },
+        {
+          "description": "The long-dead navigator carries a broken compass. It is optional wreck loot without a reviewed repair or journey completion.",
+          "keyword": "navigator",
+          "mob_vnum": 142256,
+          "name": "the spirit of the navigator",
+          "topics": []
+        },
+        {
+          "description": "Four key-carrying undead spirits are declared only in the holding room. Their rusty, heavy wooden, bent and small steel keys fit the initial wreck route but are not ordinary accessible sources.",
+          "keyword": "pirate",
+          "mob_vnum": 142261,
+          "name": "a ghostly pirate",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "The Black Pearl owns a scattered dragonslayer expedition as well as a wreck full of undead. Its intended campaign travels from Tharnadia through Caer Tannad, Twin Towers, Turopolis, Pharr Valley, Evermeet, the circus, Verspin, the Moonshaes, Newhaven and Kimodril. The reviewed source currently leaves the campaign contacts and several supplies in an exitless holding room; deeper placement repairs are required before a complete ordinary journey is available.",
+      "orientation": [
+        "The intended expedition begins with Warthehr's scrawled invitation at Tharnadia's Tower of the Cleric. That invitation and the lost Turopolis sewer fragment currently have no ordinary source. The campaign's named contacts, animal proofs and first four wreck keys are currently declared only in an exitless holding room.",
+        "The fragment leads are: thief in Caer Tannad; farmer's son in Twin Towers; Turopolis sewer recovery; Gartham in Pharr Valley; Milerg's white wolf request on Evermeet; ogre-gnome's yo-yo request at the circus; Derimous's four different horns in Verspin; Lyle and Abal's Moonshae letters and scepter. These are intended destinations, awaiting placement and source repair.",
+        "Warthehr replaces the original Gartham, hunter and Ffolk fragments with three different pieces bearing the same name. The Gartham report also awards 100,000 copper through the supported item-and-wallet reward path. The hunter report provides a letter to Lyle; the Ffolk report provides a letter to Jyarl.",
+        "Warthehr's letter to Lyle produces the letter to Abal. Abal supplies a heavy iron chest key and a separate shimmering key for the Moonshae king's secret door. The royal scepter and trapped chest have no ordinary source in the reviewed data. Abal's later reply to Lyle is a different letter and produces Lyle's fragment. No recorded theft, royal vengeance or restored hunting title follows from delivery prose.",
+        "Jyarl's addressed letter produces the humming hilt. Telrar needs nine distinct pieces together: thief, farmer, sewer, Milerg and circus fragments; the three Warthehr replacement fragments; and the hilt. Eight copies of one fragment cannot substitute. Optional producer history helps explain sources without replacing spent pieces or excluding a supplied complete set.",
+        "Showing each recovered piece to Warthehr supplies recorded guidance. These returns preserve the item kind while replacing the offered object. They remain visible services without extra quest achievements. The native exchanges are independent; their narrated order does not enforce every earlier stage.",
+        "The intended dragon finale is Ghalasax's baby-dragon skin for six large and six small gems. The reviewed Ghalasax is still in the holding room; the huge skeletal dragon aboard the wreck is different. The final delivery accepts supplied skin without proving personal sword construction, weapon use or a kill. The fixed gems go to the offering actor rather than being allocated by current party size.",
+        "The barbarian, gnome and dwarf hunters offer separate large/small gem equipment trades. Giving has no class prerequisite, though equipment restrictions and experience caps still apply. The patron's five-platinum gadget purchase is unavailable under active accounting; a supplied gadget can feed the farmer's independent request. Services do not add quest achievements.",
+        "The wreck has an outward exit to the surface mountains, but no reciprocal ordinary entrance was found. Its permanent mobile hunter-ship entrance is disabled. Early grating and door keys come from spirits currently in the holding room; several later doors are locked without a matching key, so access needs explicit repair and live qualification.",
+        "Inside the wreck, cargo rooms lead up to cabins and guard quarters. Two concealed side closets reset locked. The guard captain's small bone key fits the northern secured route despite its unusual object type. The roof trapdoor resets closed and must be opened. Long John Silver, the alchemist, navigator and skeletal dragon are separate encounters; their remains, rod and broken compass have no reviewed campaign finale.",
+        "Carry all offering items directly, outside containers and equipment. A committed hand-in records that exact delivery once. Inventory readiness and optional earlier receipts award nothing. Mode-zero disappearing contacts have limited shared availability; a daily candidate count does not promise a currently reachable contact, a stock refresh or a completed campaign."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "blackpearl",
+      "stories": [
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:142225;receive=;disappear=0",
+              "giver_vnum": 142215
+            }
+          ],
+          "id": "the-shattered-sword-briefing",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "This is the invitation calling adventurers to the Tower of the Cleric in Tharnadia. The crumpled scroll found aboard the wreck is different. No ordinary reset or native quest producer for the invitation was found.",
+              "id": "item-142225",
+              "item_vnums": [
+                142225
+              ],
+              "kind": "carried_item",
+              "text": "Carry Warthehr's scrawled invitation"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142225;receive=;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. The intended first lead is a thief in Caer Tannad's prisons. Accepting this briefing does not require or prove the later expedition.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Present the invitation to Warthehr"
+            }
+          ],
+          "summary": "Present Warthehr with the scrawled invitation to hear his expedition. The exact note currently has no ordinary source. Its level advice is narrative; this hand-in has no player-level prerequisite. The briefing provides context without another quest achievement.",
+          "title": "The Shattered Sword Briefing"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:142204;receive=I:142204;disappear=0",
+              "giver_vnum": 142215
+            }
+          ],
+          "id": "the-thiefs-fragment-guidance",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The thief is intended for Caer Tannad's prison but is currently placed only in the holding room. His exact equipped fragment is distinct from every other sword fragment.",
+              "id": "item-142204",
+              "item_vnums": [
+                142204
+              ],
+              "kind": "carried_item",
+              "text": "Carry the fragment carried by the frail thief"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142204;receive=I:142204;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. Seek the farmer's son in Twin Towers Forest. The exchange consumes the offered object and creates its replacement; it does not preserve that object's identity.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Show the exact piece to Warthehr"
+            }
+          ],
+          "summary": "Show Warthehr the fragment carried by the frail thief for the next lead. This meaningful guidance returns the same item kind, without another achievement or proof of personal collection.",
+          "title": "The Thief's Fragment: Twin Towers Lead"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:142205;receive=I:142205;disappear=0",
+              "giver_vnum": 142215
+            }
+          ],
+          "id": "the-farmers-fragment-guidance",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The farmer's son exchanges the exact strange gadget for this fragment. A prior gadget receipt does not replace the physical fragment.",
+              "id": "item-142205",
+              "item_vnums": [
+                142205
+              ],
+              "kind": "carried_item",
+              "text": "Carry the fragment awarded for the gadget"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142205;receive=I:142205;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. Seek the lost fragment in Turopolis's sewers; that required sewer fragment currently has no ordinary source. The exchange consumes the offered object and creates its replacement; it does not preserve that object's identity.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Show the exact piece to Warthehr"
+            }
+          ],
+          "summary": "Show Warthehr the fragment awarded for the gadget for the next lead. This meaningful guidance returns the same item kind, without another achievement or proof of personal collection.",
+          "title": "The Farmer's Fragment: Sewer Lead"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:142206;receive=I:142206;disappear=0",
+              "giver_vnum": 142215
+            }
+          ],
+          "id": "the-sewer-fragment-guidance",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The dialogue locates this fragment in Turopolis's sewers, but no ordinary reset or different native producer was found. Warthehr's return cannot create the first copy.",
+              "id": "item-142206",
+              "item_vnums": [
+                142206
+              ],
+              "kind": "carried_item",
+              "text": "Carry the lost sewer fragment"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142206;receive=I:142206;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. Seek the Gartham tinkerer in Pharr Valley. The exchange consumes the offered object and creates its replacement; it does not preserve that object's identity.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Show the exact piece to Warthehr"
+            }
+          ],
+          "summary": "Show Warthehr the lost sewer fragment for the next lead. This meaningful guidance returns the same item kind, without another achievement or proof of personal collection.",
+          "title": "The Sewer Fragment: Pharr Valley Lead"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:142208;receive=I:142208;disappear=0",
+              "giver_vnum": 142215
+            }
+          ],
+          "id": "milergs-fragment-guidance",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Milerg exchanges the exact great white wolf head for this fragment. Other fragments and other wolf heads do not substitute.",
+              "id": "item-142208",
+              "item_vnums": [
+                142208
+              ],
+              "kind": "carried_item",
+              "text": "Carry the fragment awarded by Milerg"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142208;receive=I:142208;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. Seek the half-ogre, half-gnome in Jindonium's circus on Khomani Kahn. The exchange consumes the offered object and creates its replacement; it does not preserve that object's identity.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Show the exact piece to Warthehr"
+            }
+          ],
+          "summary": "Show Warthehr the fragment awarded by Milerg for the next lead. This meaningful guidance returns the same item kind, without another achievement or proof of personal collection.",
+          "title": "Milerg's Fragment: Circus Lead"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:142226;receive=I:142226;disappear=0",
+              "giver_vnum": 142215
+            }
+          ],
+          "id": "the-evermeet-reminder",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Warthehr replaces the Gartham's fragment with this different, identically named fragment and pays travel funds. Telrar needs this replacement; the original Gartham fragment will not qualify.",
+              "id": "item-142226",
+              "item_vnums": [
+                142226
+              ],
+              "kind": "carried_item",
+              "text": "Carry the replacement fragment from the Gartham report"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142226;receive=I:142226;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. Find Milerg on Evermeet. This return is a reminder and recreates the same item kind. The exchange consumes the offered object and creates its replacement; it does not preserve that object's identity.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Show the exact piece to Warthehr"
+            }
+          ],
+          "summary": "Show Warthehr the replacement fragment from the Gartham report for the next lead. This meaningful guidance returns the same item kind, without another achievement or proof of personal collection.",
+          "title": "The Evermeet Reminder"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:142209;receive=I:142209;disappear=0",
+              "giver_vnum": 142215
+            }
+          ],
+          "id": "the-circus-fragment-guidance",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The ogre-gnome trades this exact fragment for the leper's yo-yo. Personal recovery history is not required.",
+              "id": "item-142209",
+              "item_vnums": [
+                142209
+              ],
+              "kind": "carried_item",
+              "text": "Carry the fragment awarded by the ogre-gnome"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142209;receive=I:142209;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. Seek Derimous, the king's master hunter, in Verspin on the Tundra. The exchange consumes the offered object and creates its replacement; it does not preserve that object's identity.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Show the exact piece to Warthehr"
+            }
+          ],
+          "summary": "Show Warthehr the fragment awarded by the ogre-gnome for the next lead. This meaningful guidance returns the same item kind, without another achievement or proof of personal collection.",
+          "title": "The Circus Fragment: Tundra Lead"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:142227;receive=I:142227;disappear=0",
+              "giver_vnum": 142215
+            }
+          ],
+          "id": "the-ffolk-reminder",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Warthehr exchanges Derimous's original fragment for this different, identically named fragment plus a letter to Lyle. Keep this replacement for Telrar.",
+              "id": "item-142227",
+              "item_vnums": [
+                142227
+              ],
+              "kind": "carried_item",
+              "text": "Carry the replacement fragment from the hunter report"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142227;receive=I:142227;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. Head to the Ffolk settlement and find Lyle. This reminder neither creates the first fragment nor sends a new letter. The exchange consumes the offered object and creates its replacement; it does not preserve that object's identity.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Show the exact piece to Warthehr"
+            }
+          ],
+          "summary": "Show Warthehr the replacement fragment from the hunter report for the next lead. This meaningful guidance returns the same item kind, without another achievement or proof of personal collection.",
+          "title": "The Ffolk Reminder"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:142224;receive=I:142224;disappear=0",
+              "giver_vnum": 142215
+            }
+          ],
+          "id": "the-hilt-guidance",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Jyarl accepts the exact letter addressed to him and awards the hilt. The hilt is distinct from all eight required fragment kinds.",
+              "id": "item-142224",
+              "item_vnums": [
+                142224
+              ],
+              "kind": "carried_item",
+              "text": "Carry Jyarl's humming sword hilt"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142224;receive=I:142224;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. Take the eight exact fragments and hilt to Telrar in Kimodril, at Tuktukr's weaponsmith shop. The exchange consumes the offered object and creates its replacement; it does not preserve that object's identity.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Show the exact piece to Warthehr"
+            }
+          ],
+          "summary": "Show Warthehr Jyarl's humming sword hilt for the next lead. This meaningful guidance returns the same item kind, without another achievement or proof of personal collection.",
+          "title": "The Hilt: Steelsmith Lead"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:142249;receive=I:142249;disappear=0",
+              "giver_vnum": 142215
+            }
+          ],
+          "id": "the-dragonslayer-guidance",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Telrar produces this exact sword from nine distinct physical pieces. A supplied sword can receive Warthehr's guidance without a personal reconstruction receipt.",
+              "id": "item-142249",
+              "item_vnums": [
+                142249
+              ],
+              "kind": "carried_item",
+              "text": "Carry the rebuilt dragonslayer broadsword"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142249;receive=I:142249;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. The intended next lead is Ghalasax aboard the ghost ship. The reviewed dragon placement is still in the holding room; showing the sword does not prove a kill or weapon use. The exchange consumes the offered object and creates its replacement; it does not preserve that object's identity.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Show the exact piece to Warthehr"
+            }
+          ],
+          "summary": "Show Warthehr the rebuilt dragonslayer broadsword for the next lead. This meaningful guidance returns the same item kind, without another achievement or proof of personal collection.",
+          "title": "Dragonslayer: Ghost Ship Lead"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:142207;receive=C:100000,I:142226;disappear=0",
+              "giver_vnum": 142215
+            }
+          ],
+          "id": "the-gartham-report-and-travel-funds",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The intended source is the Gartham in Pharr Valley, currently placed only in the holding room with the exact fragment.",
+              "id": "item-142207",
+              "item_vnums": [
+                142207
+              ],
+              "kind": "carried_item",
+              "text": "Carry the Gartham tinkerer's original fragment"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142207;receive=C:100000,I:142226;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. Keep the replacement fragment for Telrar. The original no longer qualifies for reconstruction; the travel payout is a reward, not a required fee.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Report the Gartham fragment to Warthehr"
+            }
+          ],
+          "summary": "Warthehr replaces the Gartham fragment with a different same-named fragment and awards 100,000 copper for travel. This item-plus-cash reward has a supported accounting path. The hand-in does not buy a ship or confirm travel to Evermeet.",
+          "title": "The Gartham Report and Travel Funds"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:142210;receive=I:142213,I:142227;disappear=0",
+              "giver_vnum": 142215
+            }
+          ],
+          "id": "the-hunter-report-and-lyles-letter",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142220,I:142221,I:142222,I:142223;receive=I:142210;disappear=1",
+                  "giver_vnum": 142226
+                }
+              ],
+              "hint": "His four-horn exchange is one source. A supplied exact fragment qualifies without this receipt.",
+              "id": "derimous-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain Derimous's fragment"
+            },
+            {
+              "count": 1,
+              "hint": "This is the fragment awarded for four different antelope horns. The later replacement has the same name but a different identity.",
+              "id": "item-142210",
+              "item_vnums": [
+                142210
+              ],
+              "kind": "carried_item",
+              "text": "Carry Derimous's original fragment"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142210;receive=I:142213,I:142227;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. The output letter is Warthehr's letter to Lyle; Abal later produces a different letter to Lyle. Neither the letter nor the original hunter fragment replaces the output fragment required by Telrar.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Report the hunter fragment to Warthehr"
+            }
+          ],
+          "summary": "Report Derimous's fragment to receive a different replacement fragment and Warthehr's letter to Lyle. Keep the replacement for Telrar and deliver the letter on its own courier route.",
+          "title": "The Hunter Report and Lyle's Letter"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:142211;receive=I:142212,I:142228;disappear=0",
+              "giver_vnum": 142215
+            }
+          ],
+          "id": "the-ffolk-report-and-jyarls-letter",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142219;receive=I:142211;disappear=1",
+                  "giver_vnum": 142228
+                }
+              ],
+              "hint": "Lyle trades this exact fragment for Abal's reply. A supplied fragment qualifies without the earlier courier route.",
+              "id": "lyle-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain Lyle's fragment"
+            },
+            {
+              "count": 1,
+              "hint": "The fragment from Lyle is different from Warthehr's later replacement, despite sharing its name.",
+              "id": "item-142211",
+              "item_vnums": [
+                142211
+              ],
+              "kind": "carried_item",
+              "text": "Carry Lyle's original fragment"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142211;receive=I:142212,I:142228;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. Keep the replacement fragment and take the exact letter to Jyarl in the intended Newhaven route. This hand-in alone does not reconstruct the sword.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Report the Ffolk fragment to Warthehr"
+            }
+          ],
+          "summary": "Report Lyle's fragment to receive a different replacement fragment and the letter to Jyarl. The replacement remains needed for Telrar; the letter purchases the hilt through a separate exchange.",
+          "title": "The Ffolk Report and Jyarl's Letter"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:142215;receive=I:142205;disappear=1",
+              "giver_vnum": 142219
+            }
+          ],
+          "id": "a-gadget-for-the-farmers-son",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:5000;receive=I:142215;disappear=0",
+                  "giver_vnum": 142218
+                }
+              ],
+              "hint": "The intended Tharnadia auction patron asks five platinum. His coin-only offering is currently unavailable under active accounting; obtaining a supplied exact gadget remains a valid route.",
+              "id": "gadget-purchase",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain the patron's gadget"
+            },
+            {
+              "count": 1,
+              "hint": "Use the exact gadget offered by the patron. The donor and son both currently have holding-room placements, awaiting the intended Tharnadia and Twin Towers integration.",
+              "id": "item-142215",
+              "item_vnums": [
+                142215
+              ],
+              "kind": "carried_item",
+              "text": "Carry the strange looking gadget"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142215;receive=I:142205;disappear=1",
+                  "giver_vnum": 142219
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. He awards his exact fragment and disappears. A recorded purchase cannot replace a spent gadget.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the gadget to the farmer's son"
+            }
+          ],
+          "summary": "The farmer's son trades his fragment for the strange gadget. The patron's purchase is optional preparation; a supplied gadget qualifies. The son disappears after the hand-in.",
+          "title": "A Gadget for the Farmer's Son"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:142216;receive=I:142208;disappear=1",
+              "giver_vnum": 142222
+            }
+          ],
+          "id": "milergs-white-wolf-request",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The great white wolf carries this exact head in the source declarations, but is currently placed only in the holding room. The intended route is near Milerg on Evermeet; unrelated wolf heads do not qualify.",
+              "id": "item-142216",
+              "item_vnums": [
+                142216
+              ],
+              "kind": "carried_item",
+              "text": "Carry the great white wolf's bloody head"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142216;receive=I:142208;disappear=1",
+                  "giver_vnum": 142222
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. Keep Milerg's fragment for Telrar. Warthehr can also show the next circus lead.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Bring the exact wolf head to Milerg"
+            }
+          ],
+          "summary": "Milerg asks for the exact great white wolf head in exchange for his fragment, then disappears. The delivery accepts supplied proof and does not record a personal kill.",
+          "title": "Milerg's White Wolf Request"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:142217;receive=I:142209;disappear=1",
+              "giver_vnum": 142224
+            }
+          ],
+          "id": "a-yo-yo-for-the-ogre-gnome",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The leper carries this exact yo-yo as equipped stock, currently in the holding room. The intended location is Jindonium's circus; other toys do not substitute.",
+              "id": "item-142217",
+              "item_vnums": [
+                142217
+              ],
+              "kind": "carried_item",
+              "text": "Carry the leper's yo-yo"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142217;receive=I:142209;disappear=1",
+                  "giver_vnum": 142224
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. Keep this fragment for Telrar; Warthehr's next lead points to Derimous in Verspin.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the yo-yo to the ogre-gnome"
+            }
+          ],
+          "summary": "The half-ogre, half-gnome trades his fragment for the leper's yo-yo, then disappears. The circus story supplies context without requiring personal combat.",
+          "title": "A Yo-Yo for the Ogre-Gnome"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:142220,I:142221,I:142222,I:142223;receive=I:142210;disappear=1",
+              "giver_vnum": 142226
+            }
+          ],
+          "id": "four-distinct-horns-for-derimous",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The giant four-horned antelope has one of each of four exact horn kinds in its declared carried stock, currently in the holding room. Each horn kind must be directly carried together; a receipt or duplicate cannot replace another horn.",
+              "id": "item-142220",
+              "item_vnums": [
+                142220
+              ],
+              "kind": "carried_item",
+              "text": "Carry antelope horn 1"
+            },
+            {
+              "count": 1,
+              "hint": "The giant four-horned antelope has one of each of four exact horn kinds in its declared carried stock, currently in the holding room. Each horn kind must be directly carried together; a receipt or duplicate cannot replace another horn.",
+              "id": "item-142221",
+              "item_vnums": [
+                142221
+              ],
+              "kind": "carried_item",
+              "text": "Carry antelope horn 2"
+            },
+            {
+              "count": 1,
+              "hint": "The giant four-horned antelope has one of each of four exact horn kinds in its declared carried stock, currently in the holding room. Each horn kind must be directly carried together; a receipt or duplicate cannot replace another horn.",
+              "id": "item-142222",
+              "item_vnums": [
+                142222
+              ],
+              "kind": "carried_item",
+              "text": "Carry antelope horn 3"
+            },
+            {
+              "count": 1,
+              "hint": "The giant four-horned antelope has one of each of four exact horn kinds in its declared carried stock, currently in the holding room. Each horn kind must be directly carried together; a receipt or duplicate cannot replace another horn.",
+              "id": "item-142223",
+              "item_vnums": [
+                142223
+              ],
+              "kind": "carried_item",
+              "text": "Carry antelope horn 4"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142220,I:142221,I:142222,I:142223;receive=I:142210;disappear=1",
+                  "giver_vnum": 142226
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. Derimous disappears after accepting the complete set. Take the original fragment to Warthehr for the replacement fragment and letter needed later.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the complete four-horn set to Derimous"
+            }
+          ],
+          "summary": "Derimous requests the four different horns of the giant four-horned antelope. All four share the same printed name, but four copies of one kind do not qualify. His fragment reward is real; reinstatement with King Ramous is narrated, without a separate recorded world outcome.",
+          "title": "Four Distinct Horns for Derimous"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:142213;receive=I:142214;disappear=0",
+              "giver_vnum": 142228
+            }
+          ],
+          "id": "warthehrs-letter-to-lyle",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142210;receive=I:142213,I:142227;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "Warthehr produces this letter when shown Derimous's original fragment. A supplied exact letter qualifies.",
+              "id": "warthehr-letter-source",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain Warthehr's letter"
+            },
+            {
+              "count": 1,
+              "hint": "Keep the letter from Warthehr separate from Abal's later reply. Their names and aliases are similar, but their destinations in the courier sequence differ.",
+              "id": "item-142213",
+              "item_vnums": [
+                142213
+              ],
+              "kind": "carried_item",
+              "text": "Carry Warthehr's letter to Lyle"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142213;receive=I:142214;disappear=0",
+                  "giver_vnum": 142228
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. Take the resulting letter to Abal. This delivery neither produces Lyle's fragment nor proves the royal revenge story.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver Warthehr's letter to Lyle"
+            }
+          ],
+          "summary": "Deliver Warthehr's letter to Lyle for the letter addressed to Abal. Lyle's later fragment exchange needs Abal's reply, a different letter also addressed to Lyle.",
+          "title": "Warthehr's Letter to Lyle"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:142214;receive=I:26201,I:142234;disappear=0",
+              "giver_vnum": 142229
+            }
+          ],
+          "id": "lyles-letter-and-abals-keys",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142213;receive=I:142214;disappear=0",
+                  "giver_vnum": 142228
+                }
+              ],
+              "hint": "Lyle produces this letter for Warthehr's invitation. Supplied letters remain acceptable.",
+              "id": "lyle-letter-source",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain Lyle's letter to Abal"
+            },
+            {
+              "count": 1,
+              "hint": "The letter awarded by Lyle is the exact offering. A letter addressed to Lyle or Jyarl does not qualify.",
+              "id": "item-142214",
+              "item_vnums": [
+                142214
+              ],
+              "kind": "carried_item",
+              "text": "Carry the letter addressed to Abal"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142214;receive=I:26201,I:142234;disappear=0",
+                  "giver_vnum": 142229
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. The shimmering key belongs to the Moonshae king's secret door. The heavy iron key fits the unplaced trapped iron chest. Keys open routes; they do not prove personal recovery or replace the royal scepter.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the letter to Abal"
+            }
+          ],
+          "summary": "Deliver the letter addressed to Abal to obtain the heavy iron key and a separate shimmering key. The intended route leads to the royal scepter; the exact scepter and chest currently lack ordinary placement.",
+          "title": "Lyle's Letter and Abal's Keys"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:142235;receive=I:142219;disappear=1",
+              "giver_vnum": 142229
+            }
+          ],
+          "id": "the-royal-scepter-for-abals-reply",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142214;receive=I:26201,I:142234;disappear=0",
+                  "giver_vnum": 142229
+                }
+              ],
+              "hint": "This earlier delivery awards two distinct keys, without producing the scepter or proving the king was robbed.",
+              "id": "abals-key-source",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain Abal's keys"
+            },
+            {
+              "count": 1,
+              "hint": "This key fits the Moonshae king's secret door, not the heavy iron chest. A supplied scepter skips this access preparation.",
+              "id": "item-26201",
+              "item_vnums": [
+                26201
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the shimmering key"
+            },
+            {
+              "count": 1,
+              "hint": "This brittle key fits the trapped iron chest prototype, which currently has no ordinary placement. Obtaining or using it is not a required personal-history event.",
+              "id": "item-142234",
+              "item_vnums": [
+                142234
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the heavy iron key"
+            },
+            {
+              "count": 1,
+              "hint": "No ordinary reset or native quest producer for this exact scepter was found. The keys and a printed chest description do not make the scepter available.",
+              "id": "item-142235",
+              "item_vnums": [
+                142235
+              ],
+              "kind": "carried_item",
+              "text": "Carry the royal scepter"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142235;receive=I:142219;disappear=1",
+                  "giver_vnum": 142229
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. Abal disappears and awards his letter to Lyle. His spoken vengeance is narrative; this exchange does not change the king's state or record theft.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the royal scepter to Abal"
+            }
+          ],
+          "summary": "Bring Abal the royal scepter for his reply to Lyle. His keys offer intended access preparation, but the reviewed scepter and its trapped chest have no ordinary source. A supplied exact scepter qualifies without the earlier courier chain.",
+          "title": "The Royal Scepter for Abal's Reply"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:142219;receive=I:142211;disappear=1",
+              "giver_vnum": 142228
+            }
+          ],
+          "id": "abals-reply-for-lyles-fragment",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142235;receive=I:142219;disappear=1",
+                  "giver_vnum": 142229
+                }
+              ],
+              "hint": "Abal awards the reply for the royal scepter. A supplied reply qualifies without a personal scepter or key receipt.",
+              "id": "abal-reply-source",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain Abal's reply"
+            },
+            {
+              "count": 1,
+              "hint": "This letter comes from Abal after the scepter hand-in. Warthehr's similarly named letter starts the courier route and cannot replace it.",
+              "id": "item-142219",
+              "item_vnums": [
+                142219
+              ],
+              "kind": "carried_item",
+              "text": "Carry Abal's reply to Lyle"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142219;receive=I:142211;disappear=1",
+                  "giver_vnum": 142228
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. Take Lyle's original fragment to Warthehr for its replacement and the letter to Jyarl.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver Abal's reply to Lyle"
+            }
+          ],
+          "summary": "Lyle trades her fragment for Abal's reply and disappears. Warthehr's earlier letter to Lyle is a different offering and earns a different response.",
+          "title": "Abal's Reply for Lyle's Fragment"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:142212;receive=I:142224;disappear=1",
+              "giver_vnum": 142230
+            }
+          ],
+          "id": "jyarls-letter-for-the-hilt",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142211;receive=I:142212,I:142228;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "Warthehr produces this letter when shown Lyle's original fragment. Supplied letters qualify without that history.",
+              "id": "jyarl-letter-source",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain Warthehr's letter to Jyarl"
+            },
+            {
+              "count": 1,
+              "hint": "This is the final letter from Warthehr, distinct from the two letters to Lyle and the letter to Abal.",
+              "id": "item-142212",
+              "item_vnums": [
+                142212
+              ],
+              "kind": "carried_item",
+              "text": "Carry the letter addressed to Jyarl"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142212;receive=I:142224;disappear=1",
+                  "giver_vnum": 142230
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. The intended contact is Jyarl in Newhaven. Keep his humming hilt alongside the eight exact fragments for reconstruction.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give Jyarl his letter"
+            }
+          ],
+          "summary": "Jyarl trades the exact letter addressed to him for the humming sword hilt, then disappears. This supplies the ninth physical piece for Telrar.",
+          "title": "Jyarl's Letter for the Hilt"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:142204,I:142205,I:142206,I:142208,I:142209,I:142224,I:142226,I:142227,I:142228;receive=I:142249;disappear=1",
+              "giver_vnum": 142216
+            }
+          ],
+          "id": "reconstruct-warthehrs-dragonslayer",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142215;receive=I:142205;disappear=1",
+                  "giver_vnum": 142219
+                }
+              ],
+              "hint": "The farmer's son exchanges this fragment for the gadget. This history cannot replace a spent piece, and a supplied exact piece qualifies.",
+              "id": "producer-142205",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain the farmer's fragment"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142216;receive=I:142208;disappear=1",
+                  "giver_vnum": 142222
+                }
+              ],
+              "hint": "Milerg awards this exact fragment for the great white wolf head. This history cannot replace a spent piece, and a supplied exact piece qualifies.",
+              "id": "producer-142208",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain Milerg's fragment"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142217;receive=I:142209;disappear=1",
+                  "giver_vnum": 142224
+                }
+              ],
+              "hint": "The ogre-gnome awards this exact fragment for the yo-yo. This history cannot replace a spent piece, and a supplied exact piece qualifies.",
+              "id": "producer-142209",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain the circus fragment"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142212;receive=I:142224;disappear=1",
+                  "giver_vnum": 142230
+                }
+              ],
+              "hint": "Jyarl awards this distinct hilt for the letter addressed to him. This history cannot replace a spent piece, and a supplied exact piece qualifies.",
+              "id": "producer-142224",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain Jyarl's humming hilt"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142207;receive=C:100000,I:142226;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "Use Warthehr's replacement after the Gartham report; the original Gartham fragment does not qualify. This history cannot replace a spent piece, and a supplied exact piece qualifies.",
+              "id": "producer-142226",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain the replacement Gartham fragment"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142210;receive=I:142213,I:142227;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "Use Warthehr's replacement after the Derimous report; the original hunter fragment does not qualify. This history cannot replace a spent piece, and a supplied exact piece qualifies.",
+              "id": "producer-142227",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain the replacement hunter fragment"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142211;receive=I:142212,I:142228;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "Use Warthehr's replacement after the Lyle report; the original Ffolk fragment does not qualify. This history cannot replace a spent piece, and a supplied exact piece qualifies.",
+              "id": "producer-142228",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain the replacement Ffolk fragment"
+            },
+            {
+              "count": 1,
+              "hint": "The frail thief's equipped stock is its only reviewed ordinary source, currently in the holding room. All fragments share a printed name; one kind cannot replace another. The campaign sources and contacts need placement repairs.",
+              "id": "item-142204",
+              "item_vnums": [
+                142204
+              ],
+              "kind": "carried_item",
+              "text": "Carry the thief's fragment"
+            },
+            {
+              "count": 1,
+              "hint": "The farmer's son exchanges this fragment for the gadget. All fragments share a printed name; one kind cannot replace another. The campaign sources and contacts need placement repairs.",
+              "id": "item-142205",
+              "item_vnums": [
+                142205
+              ],
+              "kind": "carried_item",
+              "text": "Carry the farmer's fragment"
+            },
+            {
+              "count": 1,
+              "hint": "The Turopolis sewer lead has no ordinary source for this exact fragment. All fragments share a printed name; one kind cannot replace another. The campaign sources and contacts need placement repairs.",
+              "id": "item-142206",
+              "item_vnums": [
+                142206
+              ],
+              "kind": "carried_item",
+              "text": "Carry the lost sewer fragment"
+            },
+            {
+              "count": 1,
+              "hint": "Milerg awards this exact fragment for the great white wolf head. All fragments share a printed name; one kind cannot replace another. The campaign sources and contacts need placement repairs.",
+              "id": "item-142208",
+              "item_vnums": [
+                142208
+              ],
+              "kind": "carried_item",
+              "text": "Carry Milerg's fragment"
+            },
+            {
+              "count": 1,
+              "hint": "The ogre-gnome awards this exact fragment for the yo-yo. All fragments share a printed name; one kind cannot replace another. The campaign sources and contacts need placement repairs.",
+              "id": "item-142209",
+              "item_vnums": [
+                142209
+              ],
+              "kind": "carried_item",
+              "text": "Carry the circus fragment"
+            },
+            {
+              "count": 1,
+              "hint": "Jyarl awards this distinct hilt for the letter addressed to him. All fragments share a printed name; one kind cannot replace another. The campaign sources and contacts need placement repairs.",
+              "id": "item-142224",
+              "item_vnums": [
+                142224
+              ],
+              "kind": "carried_item",
+              "text": "Carry Jyarl's humming hilt"
+            },
+            {
+              "count": 1,
+              "hint": "Use Warthehr's replacement after the Gartham report; the original Gartham fragment does not qualify. All fragments share a printed name; one kind cannot replace another. The campaign sources and contacts need placement repairs.",
+              "id": "item-142226",
+              "item_vnums": [
+                142226
+              ],
+              "kind": "carried_item",
+              "text": "Carry the replacement Gartham fragment"
+            },
+            {
+              "count": 1,
+              "hint": "Use Warthehr's replacement after the Derimous report; the original hunter fragment does not qualify. All fragments share a printed name; one kind cannot replace another. The campaign sources and contacts need placement repairs.",
+              "id": "item-142227",
+              "item_vnums": [
+                142227
+              ],
+              "kind": "carried_item",
+              "text": "Carry the replacement hunter fragment"
+            },
+            {
+              "count": 1,
+              "hint": "Use Warthehr's replacement after the Lyle report; the original Ffolk fragment does not qualify. All fragments share a printed name; one kind cannot replace another. The campaign sources and contacts need placement repairs.",
+              "id": "item-142228",
+              "item_vnums": [
+                142228
+              ],
+              "kind": "carried_item",
+              "text": "Carry the replacement Ffolk fragment"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142204,I:142205,I:142206,I:142208,I:142209,I:142224,I:142226,I:142227,I:142228;receive=I:142249;disappear=1",
+                  "giver_vnum": 142216
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. The intended contact is Telrar in Kimodril. Supplied complete sets qualify without the seven optional producer receipts. Telrar disappears after awarding the sword. This does not prove travel, the royal errand or killing Ghalasax.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver all nine exact pieces to Telrar"
+            }
+          ],
+          "summary": "Telrar reconstructs dragonslayer from eight different fragments and the humming hilt, all directly carried together. Three original fragments must first be exchanged for Warthehr's replacements. This hand-in records reconstruction, without claiming every expedition stage was personally completed.",
+          "title": "Reconstruct Warthehr's Dragonslayer"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:142218;receive=I:142229,I:142229,I:142229,I:142229,I:142229,I:142229,I:142230,I:142230,I:142230,I:142230,I:142230,I:142230;disappear=0",
+              "giver_vnum": 142215
+            }
+          ],
+          "id": "ghalasaxs-skin-and-warthehrs-reward",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142204,I:142205,I:142206,I:142208,I:142209,I:142224,I:142226,I:142227,I:142228;receive=I:142249;disappear=1",
+                  "giver_vnum": 142216
+                }
+              ],
+              "hint": "This is the intended earlier chapter, not a required personal receipt for the skin hand-in.",
+              "id": "reconstruction-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: reconstruct dragonslayer"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142249;receive=I:142249;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "This return provides the narrated ghost-ship lead without proving passage or combat.",
+              "id": "ghost-ship-guidance",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: show dragonslayer to Warthehr"
+            },
+            {
+              "count": 1,
+              "hint": "Ghalasax carries this skin in the reset declaration, but is currently placed only in the exitless holding room. The skeletal dragon aboard the wreck is a different creature and carries a skull, not this skin.",
+              "id": "item-142218",
+              "item_vnums": [
+                142218
+              ],
+              "kind": "carried_item",
+              "text": "Carry Ghalasax's exact baby-dragon skin"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142218;receive=I:142229,I:142229,I:142229,I:142229,I:142229,I:142229,I:142230,I:142230,I:142230,I:142230,I:142230,I:142230;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. The twelve gems are awarded to the offering continuation's actor, rather than distributed by party size. Choose hunter trades using physical gems; this final delivery does not certify the whole campaign or a personal dragon kill.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Bring the exact dragon skin to Warthehr"
+            }
+          ],
+          "summary": "Return the exact baby-dragon skin to Warthehr for six large and six small gemstones. The fixed payout does not adapt to party size. Personal reconstruction, weapon use and killing the dragon are not prerequisites of this native delivery; supplied skin qualifies.",
+          "title": "Ghalasax's Skin and Warthehr's Reward"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:5000;receive=I:142215;disappear=0",
+              "giver_vnum": 142218
+            }
+          ],
+          "id": "the-patrons-gadget-purchase",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:5000;receive=I:142215;disappear=0",
+                  "giver_vnum": 142218
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. The paid offering is currently unavailable under active accounting. A supplied exact gadget can still satisfy the farmer's son's independent request.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Purchase the strange gadget from the patron"
+            }
+          ],
+          "summary": "The intended Tharnadia auction patron sells the strange gadget for five platinum, or 5,000 copper. This coin-only turn-in is currently unavailable under active accounting. It is an optional purchase, without a quest achievement.",
+          "title": "The Patron's Gadget Purchase"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:142229;receive=E:1000,I:142236,I:142242;disappear=0",
+              "giver_vnum": 142232
+            }
+          ],
+          "id": "barbarian-large-gem",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142218;receive=I:142229,I:142229,I:142229,I:142229,I:142229,I:142229,I:142230,I:142230,I:142230,I:142230,I:142230,I:142230;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "The skin hand-in provides six of each size. A supplied gem qualifies without this history.",
+              "id": "gem-source",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain Warthehr's gemstones"
+            },
+            {
+              "count": 1,
+              "hint": "Large and small gems are distinct kinds. Keep the selected gem directly carried; an earlier receipt cannot replace a spent gem or create another choice.",
+              "id": "item-142229",
+              "item_vnums": [
+                142229
+              ],
+              "kind": "carried_item",
+              "text": "Carry one large gemstone"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142229;receive=E:1000,I:142236,I:142242;disappear=0",
+                  "giver_vnum": 142232
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. The chosen hunter determines the exact equipment reward. Experience follows native level/cap rules; the trade has empty source success prose and does not require personal dragon combat.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Trade the gem with the selected hunter"
+            }
+          ],
+          "summary": "Trade one large gemstone for the thick dragonbone ring, bloody dragon fang and native experience reward. These class-themed hunter trades have no class prerequisite in their native offering; equipment restrictions remain separate. Each physical gem is spent on one trade, without another quest achievement.",
+          "title": "Barbarian Hunter: Large Gem"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:142230;receive=E:500,I:142237;disappear=0",
+              "giver_vnum": 142232
+            }
+          ],
+          "id": "barbarian-small-gem",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142218;receive=I:142229,I:142229,I:142229,I:142229,I:142229,I:142229,I:142230,I:142230,I:142230,I:142230,I:142230,I:142230;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "The skin hand-in provides six of each size. A supplied gem qualifies without this history.",
+              "id": "gem-source",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain Warthehr's gemstones"
+            },
+            {
+              "count": 1,
+              "hint": "Large and small gems are distinct kinds. Keep the selected gem directly carried; an earlier receipt cannot replace a spent gem or create another choice.",
+              "id": "item-142230",
+              "item_vnums": [
+                142230
+              ],
+              "kind": "carried_item",
+              "text": "Carry one small gemstone"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142230;receive=E:500,I:142237;disappear=0",
+                  "giver_vnum": 142232
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. The chosen hunter determines the exact equipment reward. Experience follows native level/cap rules; the trade has empty source success prose and does not require personal dragon combat.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Trade the gem with the selected hunter"
+            }
+          ],
+          "summary": "Trade one small gemstone for the dragonskin boots and native experience reward. These class-themed hunter trades have no class prerequisite in their native offering; equipment restrictions remain separate. Each physical gem is spent on one trade, without another quest achievement.",
+          "title": "Barbarian Hunter: Small Gem"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:142229;receive=E:1000,I:142238,I:142243;disappear=0",
+              "giver_vnum": 142233
+            }
+          ],
+          "id": "gnome-large-gem",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142218;receive=I:142229,I:142229,I:142229,I:142229,I:142229,I:142229,I:142230,I:142230,I:142230,I:142230,I:142230,I:142230;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "The skin hand-in provides six of each size. A supplied gem qualifies without this history.",
+              "id": "gem-source",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain Warthehr's gemstones"
+            },
+            {
+              "count": 1,
+              "hint": "Large and small gems are distinct kinds. Keep the selected gem directly carried; an earlier receipt cannot replace a spent gem or create another choice.",
+              "id": "item-142229",
+              "item_vnums": [
+                142229
+              ],
+              "kind": "carried_item",
+              "text": "Carry one large gemstone"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142229;receive=E:1000,I:142238,I:142243;disappear=0",
+                  "giver_vnum": 142233
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. The chosen hunter determines the exact equipment reward. Experience follows native level/cap rules; the trade has empty source success prose and does not require personal dragon combat.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Trade the gem with the selected hunter"
+            }
+          ],
+          "summary": "Trade one large gemstone for the dragon heart, dragonbone bracelet and native experience reward. These class-themed hunter trades have no class prerequisite in their native offering; equipment restrictions remain separate. Each physical gem is spent on one trade, without another quest achievement.",
+          "title": "Gnome Hunter: Large Gem"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:142230;receive=E:500,I:142239;disappear=0",
+              "giver_vnum": 142233
+            }
+          ],
+          "id": "gnome-small-gem",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142218;receive=I:142229,I:142229,I:142229,I:142229,I:142229,I:142229,I:142230,I:142230,I:142230,I:142230,I:142230,I:142230;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "The skin hand-in provides six of each size. A supplied gem qualifies without this history.",
+              "id": "gem-source",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain Warthehr's gemstones"
+            },
+            {
+              "count": 1,
+              "hint": "Large and small gems are distinct kinds. Keep the selected gem directly carried; an earlier receipt cannot replace a spent gem or create another choice.",
+              "id": "item-142230",
+              "item_vnums": [
+                142230
+              ],
+              "kind": "carried_item",
+              "text": "Carry one small gemstone"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142230;receive=E:500,I:142239;disappear=0",
+                  "giver_vnum": 142233
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. The chosen hunter determines the exact equipment reward. Experience follows native level/cap rules; the trade has empty source success prose and does not require personal dragon combat.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Trade the gem with the selected hunter"
+            }
+          ],
+          "summary": "Trade one small gemstone for the dragonscale spellbook and native experience reward. These class-themed hunter trades have no class prerequisite in their native offering; equipment restrictions remain separate. Each physical gem is spent on one trade, without another quest achievement.",
+          "title": "Gnome Hunter: Small Gem"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:142229;receive=E:1000,I:142238,I:142244;disappear=0",
+              "giver_vnum": 142234
+            }
+          ],
+          "id": "dwarf-large-gem",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142218;receive=I:142229,I:142229,I:142229,I:142229,I:142229,I:142229,I:142230,I:142230,I:142230,I:142230,I:142230,I:142230;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "The skin hand-in provides six of each size. A supplied gem qualifies without this history.",
+              "id": "gem-source",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain Warthehr's gemstones"
+            },
+            {
+              "count": 1,
+              "hint": "Large and small gems are distinct kinds. Keep the selected gem directly carried; an earlier receipt cannot replace a spent gem or create another choice.",
+              "id": "item-142229",
+              "item_vnums": [
+                142229
+              ],
+              "kind": "carried_item",
+              "text": "Carry one large gemstone"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142229;receive=E:1000,I:142238,I:142244;disappear=0",
+                  "giver_vnum": 142234
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. The chosen hunter determines the exact equipment reward. Experience follows native level/cap rules; the trade has empty source success prose and does not require personal dragon combat.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Trade the gem with the selected hunter"
+            }
+          ],
+          "summary": "Trade one large gemstone for the dragon heart, thin dragonbone ring and native experience reward. These class-themed hunter trades have no class prerequisite in their native offering; equipment restrictions remain separate. Each physical gem is spent on one trade, without another quest achievement.",
+          "title": "Dwarf Hunter: Large Gem"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:142230;receive=E:500,I:142241;disappear=0",
+              "giver_vnum": 142234
+            }
+          ],
+          "id": "dwarf-small-gem",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142218;receive=I:142229,I:142229,I:142229,I:142229,I:142229,I:142229,I:142230,I:142230,I:142230,I:142230,I:142230,I:142230;disappear=0",
+                  "giver_vnum": 142215
+                }
+              ],
+              "hint": "The skin hand-in provides six of each size. A supplied gem qualifies without this history.",
+              "id": "gem-source",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain Warthehr's gemstones"
+            },
+            {
+              "count": 1,
+              "hint": "Large and small gems are distinct kinds. Keep the selected gem directly carried; an earlier receipt cannot replace a spent gem or create another choice.",
+              "id": "item-142230",
+              "item_vnums": [
+                142230
+              ],
+              "kind": "carried_item",
+              "text": "Carry one small gemstone"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:142230;receive=E:500,I:142241;disappear=0",
+                  "giver_vnum": 142234
+                }
+              ],
+              "hint": "This campaign contact currently has only an exitless holding-room placement in the reviewed world data. Its named destination is the intended route, awaiting a placement repair. Keep the exact offering directly carried, outside equipment and containers. Supplied stock qualifies without personal recovery history. The chosen hunter determines the exact equipment reward. Experience follows native level/cap rules; the trade has empty source success prose and does not require personal dragon combat.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Trade the gem with the selected hunter"
+            }
+          ],
+          "summary": "Trade one small gemstone for the dragonscale mask and native experience reward. These class-themed hunter trades have no class prerequisite in their native offering; equipment restrictions remain separate. Each physical gem is spent on one trade, without another quest achievement.",
+          "title": "Dwarf Hunter: Small Gem"
+        }
+      ]
     }
   ],
   "zones": [

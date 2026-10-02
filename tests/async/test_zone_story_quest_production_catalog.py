@@ -358,7 +358,44 @@ for reset in long["reset_commands"]:
 assert duplicate_sources == {34406: (34452, 34435, 1, 75), 34413: (34451, 34410, 1, 80), 34418: (34466, 34419, 1, 80)}
 assert sum(r["command"] == "D" for r in long["reset_commands"]) == 14
 assert all(r["arguments"][3] == 0 for r in long["reset_commands"] if r["command"] == "D")
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long"):
+pearl = inventory_module.area_evidence(ROOT, "blackpearl")
+assert len(pearl["requests"]) == 31 and len(pearl["dialogue"]) == 14
+assert len(pearl["reset_commands"]) == 391 and len(pearl["mobs"]) == 63 and len(pearl["items"]) == 98
+assert pearl["zone"]["reset_mode"] == 0 and not pearl["special_assignments"]
+pearl_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "blackpearl")
+pearl_contacts = {c["mob_vnum"]: c for c in pearl_mapping["contacts"]}
+assert len(pearl_contacts) == 26
+for response in pearl["dialogue"]:
+    assert set(response["body"][0].rstrip("~").split()) & set(pearl_contacts[response["giver_vnum"]]["topics"])
+for vnum, contact in pearl_contacts.items():
+    assert contact["keyword"] in pearl["mobs"][vnum]["keywords"]
+pearl_stories = {s["id"]: s for s in pearl_mapping["stories"]}
+assert pearl_stories["reconstruct-warthehrs-dragonslayer"]["contracts"] == [{"giver_vnum": 142216, "completion_key": "give=I:142204,I:142205,I:142206,I:142208,I:142209,I:142224,I:142226,I:142227,I:142228;receive=I:142249;disappear=1"}]
+assert pearl_stories["lyles-letter-and-abals-keys"]["contracts"] == [{"giver_vnum": 142229, "completion_key": "give=I:142214;receive=I:26201,I:142234;disappear=0"}]
+pearl_givers = {r["block"]["giver_vnum"] for r in pearl["requests"]}
+placements = [r["arguments"] for r in pearl["reset_commands"] if r["command"] == "M" and r["arguments"][1] in pearl_givers]
+assert len(placements) == len(pearl_givers) == 13 and all(v[3] == 142200 for v in placements)
+source_ids = set()
+for row in rows:
+    area = row["zone"]["source_area"]
+    reset_path = ROOT / "areas/zon" / f"{area}.zon"
+    for raw in reset_path.read_text(errors="replace").splitlines():
+        match = re.match(r"^([MOGEPF])\s+((?:-?\d+\s*)+)", raw)
+        if not match:
+            continue
+        command, values = match[1], list(map(int, match[2].split()))
+        if area != "blackpearl" and command in ("M", "F"):
+            assert not 142215 <= values[1] <= 142234
+        if command in ("O", "G", "E", "P"):
+            source_ids.add(values[1])
+assert {142204, 142207, 142216, 142217, 142218} <= source_ids
+assert not source_ids & {142206, 142225, 142231, 142233, 142235}
+pearl_candidates = [r for r in pearl["requests"] if r["definition"]["daily_eligible"]]
+assert len(pearl_candidates) == 13
+assert all(not r["definition"]["repeatable"] for r in pearl["requests"] if r["block"]["disappear"])
+travel = next(r for r in pearl["requests"] if ("I", 142207) in r["block"]["give"])
+assert ("C", 100000) in travel["block"]["receive"] and travel["definition"]["daily_eligible"]
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

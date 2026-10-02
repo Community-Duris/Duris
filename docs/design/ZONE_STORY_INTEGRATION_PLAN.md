@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 42 authored journals, accounting-gated player surfaces, starter/town
+**Status: 43 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -9,7 +9,7 @@ The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
 source dossiers, shipped changes, newly found dependencies, and verification.
 Twin Towers, Plains of Life, Ailvio, Braddistock, Breale, Abandoned Elven
 Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus, Torg, Vast Hidden
-Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter Woods, the Clawed Caverns and Defense of Longhollow now have complete source story maps;
+Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter Woods, the Clawed Caverns, Defense of Longhollow and the Black Pearl now have complete source story maps;
 their active-world journeys remain unqualified. Schema 3 adds
 optional preparation. Ailvio's 78 pair recipes project one family-feeding story;
 Braddistock's pet rescue is displayed as an intermediate service. Breale preserves
@@ -93,6 +93,23 @@ closure have no reviewed endpoints. Bounded supply, terms, powers and missing
 outcome proposals expand the plan. Native item-plus-cash rewards already have a
 committed path; four paid clothing offerings and table-driven epic teaching still
 need settlement qualification. Do not treat reward coins as an unsupported fee.
+
+The Black Pearl adds two finales, twelve requests and seventeen services across
+all 31 native exchanges. Nine same-kind returns remain meaningful guidance;
+three other reports replace fragment identities required by the nine-root sword
+recipe. Twenty-six contacts and 25 optional checks explain distinct letters,
+four horn kinds, physical pieces, fixed gems and the separate wreck. All twenty
+campaign NPCs and four entrance-key spirits have only exitless holding placements;
+the invitation, sewer fragment, royal scepter and several chests lack ordinary
+sources. The outward mountain exit has no reviewed reciprocal entry, and the
+mobile hunter-ship entrance is disabled. Restoring source/recipient/reset-owner
+placement is a builder decision, separate from accounting reset authority.
+Foreign encounters need an explicit owned-campaign introduction and journal link
+without falsely discovering the wreck or bypassing discovered-zone daily gating.
+Fixed gems versus party prose, six empty hunter success strings, 82 empty room
+descriptions, same-name transform lineage and all-stage/reveal policy now have
+concrete repair/qualification plans. Preserve the supported 100,000-copper reward;
+the patron's coin-only gadget purchase remains separately unavailable.
 
 Maintain this plan as zones are reviewed. Keep static contract classification,
 historical objective coverage, economic support, and gameplay qualification
@@ -610,7 +627,12 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   services, one empty exclusion, forty-one contacts and six optional producers.
   Record cap/quantity conflicts, actual reward-versus-payment direction, fixed
   output powers, computed teaching and missing rescue/healing/closure endpoints.
-- [ ] Complete comprehensive source dossiers for the other 201 roadmap areas.
+- [x] Complete Black Pearl source dossier: all 31 Q/QA and fourteen M families,
+  full fragment/transformation/courier/hilt/reconstruction/skin route, seventeen
+  services, 26 contacts and 25 optional checks. Record holding/missing sources,
+  entrance/ship/key blockers, campaign ownership/discovery, fixed party rewards,
+  empty descriptions/success text and fair placement/terms repair proposals.
+- [ ] Complete comprehensive source dossiers for the other 200 roadmap areas.
 - [ ] Add district/family authoring and shared presentation for large zones.
   Winterhaven's 219 rows fit existing story/objective limits but need a bounded
   512 KiB source-sidecar allowance for detailed guidance. Preserve receipt IDs;
@@ -643,6 +665,7 @@ contract classification; it does not claim complete objective coverage.
 | Neverwinter Woods | 1 | Complete: five Q bindings → one recovery achievement/daily family | [Source-comprehensive dossier](zone-stories/NEVERWINTER_WOODS.md); seven contacts/both topic families, five distinct live runes, optional bridge wand and actual fixed native reward | Active sources, current Malchor and cap-one replenishment remain unqualified | Native projection/receipt checks; selected-reward terms, checked maze topology, source/gift/arrival and orphan endpoint decisions pending |
 | The Clawed Caverns | 1 | Complete: one story, six services and thirteen excluded returns across twenty Q contracts | [Source-comprehensive dossier](zone-stories/THE_CLAWED_CAVERNS.md); ten contacts/all eight topics, optional spire/rainbow keys, exact final shards and full custom switch/death/transform/access routes | Active stock, custom container/key transformation and coin-only clue remain unqualified | Native projection/receipt checks; target-safe effects, recoverable nested death/transform/recipient retirement, confirmed travel and paid-clue settlement pending |
 | Defense of Longhollow | 1 | Complete: four stories, five requests, five clothing services and one empty exclusion across fifteen Q contracts | [Source-comprehensive dossier](zone-stories/DEFENSE_OF_LONGHOLLOW.md); forty-one contacts/all sixty topics, six optional producers, exact five heads, bracer, potion/poison outputs and source/access guidance | Active stock, three cap/quantity conflicts, four mixed fees and epic teaching remain unqualified | Native projection/receipt checks; committed source/lineage, paid services/teaching, confirmed powers and builder-approved rescue/healing/closure pending; cash reward path already supported |
+| The Black Pearl | 1 | Complete: two stories, twelve requests and seventeen services across 31 Q/QA; no exclusions | [Source-comprehensive dossier](zone-stories/THE_BLACK_PEARL.md); 26 contacts/all fourteen topics, 25 optional checks, three fragment replacements, exact nine-root sword and courier/skin/gem routes | All campaign contacts/entrance-key spirits held; missing source items/chests, no reciprocal wreck entry, disabled mobile entrance, coin-only gadget and active generation pending | Native projection/receipt checks; restore approved placements and owned campaign introduction, qualify source/access/lineage/party/reveal policies before active gameplay |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
 
 ## Twin Towers evidence and decisions
