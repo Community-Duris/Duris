@@ -9,6 +9,7 @@
 #include <mutex>
 #include <openssl/crypto.h>
 #include <openssl/sha.h>
+#include <sys/stat.h>
 #include <type_traits>
 #include <vector>
 
@@ -19,6 +20,8 @@ constexpr std::array<uint8_t, 8> allocator_magic = { 'D', 'U', 'R', 'U', 'I', 'D
 constexpr size_t allocator_file_size =
 	allocator_magic.size() + sizeof(uint32_t) * 2 + sizeof(uint64_t) * 2 + SHA256_DIGEST_LENGTH;
 constexpr const char *allocator_filename = "item_uid_allocator";
+constexpr const char *initialized_filename = "item_uid_allocator.initialized";
+constexpr std::array<uint8_t, 8> initialized_magic = { 'D', 'U', 'R', 'U', 'I', 'D', 1, 0 };
 constexpr const char *allocator_lock_filename = ".item-uid-allocator.lock";
 std::mutex allocator_mutex;
 
@@ -69,15 +72,50 @@ std::string metadata_directory(const std::string &root)
 }
 
 flatfile_item_uid_result load_allocator(const std::string &root, uint64_t *next_uid,
-					uint64_t *revision, std::string *error)
+					uint64_t *revision, std::string *error,
+					bool *initialized = nullptr)
 {
 	if (!next_uid || !revision)
 		return flatfile_item_uid_result::invalid;
+	std::vector<uint8_t> marker;
+	const flatfile_read_result marker_read =
+		flatfile_read(metadata_directory(root), initialized_filename,
+			      initialized_magic.size(), &marker, error);
+	if (marker_read == flatfile_read_result::invalid ||
+	    (marker_read == flatfile_read_result::ok &&
+	     marker != std::vector<uint8_t>(initialized_magic.begin(), initialized_magic.end())))
+	{
+		if (error)
+			*error = "invalid item UID initialization evidence";
+		return flatfile_item_uid_result::invalid;
+	}
+	if (marker_read == flatfile_read_result::io_error)
+		return flatfile_item_uid_result::io_error;
+	const bool has_marker = marker_read == flatfile_read_result::ok;
+	if (initialized)
+		*initialized = has_marker;
 	std::vector<uint8_t> bytes;
 	const flatfile_read_result read = flatfile_read(
 		metadata_directory(root), allocator_filename, allocator_file_size, &bytes, error);
 	if (read == flatfile_read_result::not_found)
 	{
+		// New roots start at one. An initialized root must recover its exact
+		// allocator; scanning live items cannot reconstruct previously issued IDs.
+		struct stat custody_info;
+		const int custody_stat =
+			lstat((root + "/domains/item_ownership").c_str(), &custody_info);
+		if (has_marker || custody_stat == 0)
+		{
+			if (error)
+				*error = "missing item UID allocator for initialized custody";
+			return flatfile_item_uid_result::invalid;
+		}
+		if (errno != ENOENT)
+		{
+			if (error)
+				*error = "cannot verify fresh item UID custody";
+			return flatfile_item_uid_result::io_error;
+		}
 		*next_uid = 1;
 		*revision = 0;
 		return flatfile_item_uid_result::ok;
@@ -144,7 +182,9 @@ flatfile_item_uid_result flatfile_item_uid_reserve(const std::string &root, uint
 				   error))
 		return flatfile_item_uid_result::io_error;
 	uint64_t next_uid = 0, revision = 0;
-	const flatfile_item_uid_result loaded = load_allocator(root, &next_uid, &revision, error);
+	bool initialized = false;
+	const flatfile_item_uid_result loaded =
+		load_allocator(root, &next_uid, &revision, error, &initialized);
 	if (loaded != flatfile_item_uid_result::ok)
 		return loaded;
 	if (next_uid > std::numeric_limits<uint64_t>::max() - count ||
@@ -152,6 +192,13 @@ flatfile_item_uid_result flatfile_item_uid_reserve(const std::string &root, uint
 		return flatfile_item_uid_result::exhausted;
 	const uint64_t end = next_uid + count;
 	if (!publish_allocator(root, end, revision + 1, error))
+		return flatfile_item_uid_result::io_error;
+	// Persist the high-water mark first, then its permanent initialization witness,
+	// before releasing any ID. Marker failure burns this range without issuing it.
+	if (!initialized && !flatfile_atomic_write(metadata_directory(root), initialized_filename,
+						   std::vector<uint8_t>(initialized_magic.begin(),
+									initialized_magic.end()),
+						   error))
 		return flatfile_item_uid_result::io_error;
 	*first = next_uid;
 	return flatfile_item_uid_result::ok;

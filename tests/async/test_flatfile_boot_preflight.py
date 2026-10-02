@@ -2,6 +2,8 @@
 
 import server_build_artifacts
 
+import argparse
+import hashlib
 import json
 import os
 import pathlib
@@ -48,9 +50,18 @@ def available_websocket_port(game_port: int) -> int:
     raise AssertionError("could not reserve an available WebSocket port")
 
 
+parser = argparse.ArgumentParser(description="Qualify client-free boot on a disposable root")
+parser.add_argument("--server", type=pathlib.Path, help="use an already qualified flatfile binary")
+args = parser.parse_args()
+
 with tempfile.TemporaryDirectory(prefix="duris-flatfile-build-") as build_tmp:
     build_root = pathlib.Path(build_tmp)
-    binary = server_build_artifacts.build_flatfile_server(build_root)
+    if args.server:
+        binary = args.server.resolve(strict=True)
+        require(binary.is_file() and os.access(binary, os.X_OK), "server must be an executable file")
+        print("Supplied flatfile server sha256=" + hashlib.sha256(binary.read_bytes()).hexdigest())
+    else:
+        binary = server_build_artifacts.build_flatfile_server(build_root)
 
     with tempfile.TemporaryDirectory(prefix="duris-flatfile-state-") as state_tmp:
         with tempfile.TemporaryDirectory(prefix="duris-flatfile-run-") as run_tmp:
@@ -168,6 +179,28 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-build-") as build_tmp:
                         except subprocess.TimeoutExpired:
                             process.kill()
                             process.wait(timeout=5)
+
+            allocator = state_root / "metadata/item_uid_allocator"
+            marker = state_root / "metadata/item_uid_allocator.initialized"
+            require(allocator.is_file() and marker.is_file(),
+                    "healthy boot did not retain both UID allocator authority files")
+            marker_bytes = marker.read_bytes()
+            preserved_allocator = run_root / "preserved-item-uid-allocator"
+            allocator.rename(preserved_allocator)
+            try:
+                missing_allocator = subprocess.run(
+                    [str(binary), "--minimal", "-d", str(run_root), str(port)],
+                    cwd=run_root, env=environment, text=True,
+                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=30,
+                )
+                require(missing_allocator.returncode == 1 and
+                        "Could not reserve a collision-free flat item UID range" in missing_allocator.stdout,
+                        "missing initialized allocator did not fail at boot admission:\n" +
+                        missing_allocator.stdout)
+                require(not allocator.exists() and marker.read_bytes() == marker_bytes,
+                        "failed boot recreated allocator authority or changed initialization evidence")
+            finally:
+                preserved_allocator.rename(allocator)
 
             # A normal install may be started before `make world` has generated
             # the full-world files.  That is a configuration error, but it must
