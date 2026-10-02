@@ -35,6 +35,10 @@ passes the same native authentication/TLS/database checks under that TMPDIR.
 The strict SQL server, area editor and world generators built successfully.
 This is a failed broad run plus a separate focused repair pass; a current-head
 integrated run and skipped external-service checks remain qualification gates.
+The skipped help-import fixture now honors a validated disposable connection;
+its rollback, atomic publication and nontransactional refusal test passes on
+both SQL engines. A fresh 839-test full run is underway on exact published
+candidate `79540e65d`; later fixture fixes retain separate focused evidence.
 
 The disposable playtime journey now honors a validated `TEST_DB_PORT` in both
 native connections and SQL clients. Its outdated temporary-table probe is

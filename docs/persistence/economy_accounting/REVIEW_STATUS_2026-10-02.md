@@ -331,3 +331,22 @@ TMPDIR. Runtime Redis configuration and authentication rules are unchanged.
 This focused repair does not rewrite the frozen suite report into a pass or
 qualify the later source/test changes. The full report and console transcript
 remain local ignored evidence; current-head and external-service gates remain.
+
+## Disposable help-import qualification connection repair
+
+The skipped atomic help-import fixture hardcoded port 3306, the root user and a
+fixed password, so it could not qualify a caller-selected isolated server. It now
+uses explicit `TEST_DB_USER`/`TEST_DB_PASSWORD`, validates `TEST_DB_PORT` before
+SQL, routes the native importer and SQL observer through the same TCP port, and
+requires `TEST_DB_DISPOSABLE=1` on a loopback host. The fresh random fixture schema
+and cleanup remain owned by the test. Missing credentials, invalid ports and
+unapproved/remote targets refuse before connection or schema creation.
+
+Four connection-free regressions reproduce 13 pre-repair failures and now pass.
+The full actual importer test passes on disposable MySQL 8.0.46 and MariaDB
+10.11.14 at selected ports: a rejected entry rolls back the existing pages/news,
+concurrent reads see only the complete old or complete new set, and a MyISAM
+destination refuses before deleting content. The fixture copies the maintained
+importer into its own temporary runtime with no checkout `.env`; no production
+help or game rows change. This qualifies the bounded tooling fixture, not the
+complete skipped SQL/backup matrix or accounting release.
