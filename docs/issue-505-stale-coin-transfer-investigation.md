@@ -2,13 +2,35 @@
 
 ## Conclusion
 
-No causal source/destination publication defect was proven from the available source,
-SQL fixture, or prior incident evidence. The change in this branch is therefore a
-preventive diagnostic, not a claim that it recreates or fixes the historical failure.
-It records a bounded revision-gate stage on future `coin_transfer` ESTALE receipts
-without recording operation IDs, entity IDs, amounts, or command payloads.
+The initiating gameplay path for the historical incident cannot honestly be recovered
+from the retained evidence, but the current code exposed a concrete mechanism that
+could turn one wallet/bank conflict into repeated `ESTALE` failures. Standalone
+currency commands preserve the authoritative balances and revisions read under lock
+and publish them on a terminal conflict. The enclosing `coin_transfer` path instead
+discarded that same result and returned an empty receipt. The live character therefore
+kept the rejected expected revision and could build the next transfer from the same
+stale state.
 
-The historical acceptance criterion cannot honestly close from this evidence alone:
+This change closes that recurrence mechanism without weakening optimistic concurrency.
+The original transfer is still rejected and both endpoint mutations are still rolled
+back. For a classified wallet/bank revision conflict only, the durable receipt retains
+the versioned 83-byte currency authority already read under the failed endpoint's row
+locks. The game thread publishes only the stale wallet and/or bank domain, with the
+existing monotonic-revision guards. It does not automatically retry the transfer.
+Item, owner, parent, payload, rebase, and unknown conflicts remain diagnostic-only.
+
+The expanded fix also prevents a reproduced initiating mechanism: a coin transfer
+can commit after a player disconnects, while the game retains their character for
+reconnect. Descriptor-only publication skipped that body and retired the completion.
+Reconnect reused its old wallet and bank revisions, so the next transfer could be
+rejected even though no competing gameplay operation occurred. Publication now finds
+retained player wallets (including morph originals), updates the endpoint's bank
+directly, and continues broadcasting the shared bank to connected account members.
+Neither an older committed receipt nor an older stale repair can overwrite a newer
+wallet or bank revision. This establishes a current-code cause, not attribution of
+the historical incident.
+
+The historical initiating path remains unresolved:
 the prior incident record has no failed command payload or binary provenance, and no
 currency loss was established. A subsequent authorized read-only check matched 889
 historical ESTALE coin-transfer receipts in a fresh production-derived clone. The
@@ -21,7 +43,25 @@ evidence. The diagnostic change does not backfill or infer a historical failure 
 
 The relevant path has three authority boundaries. Admission prepares an immutable
 command; persistence is the only place that mutates durable wallet/item state; live
-objects are published only from a committed completion.
+objects are published from committed completions or from a validated terminal
+stale-authority completion that changes no durable state.
+
+### Disconnect and reconnect
+
+`close_socket()` detaches a playing descriptor without extracting its character.
+`prepare_account_reconnect()` subsequently reuses that character and invokes the
+currency ready hook; it does not reload its currency authority. Previously,
+`publish_coin()` looked up wallet endpoints only through `find_player_by_pid()`,
+which searches playing descriptors. It could therefore skip a retained sender or
+recipient, mark the wallets published, and remove the pending transfer before the
+ready hook ran. That hook then had no receipt left to publish.
+
+The coin publication lookup now also searches retained characters, resolving a
+morphed body to its original player. The callback still receives the ordinary
+connected actor lookup. The bank publisher writes the command-identified endpoint
+directly because a linkdead body has no descriptor from which to recover its account
+name. Shared bank broadcasting also resolves morph originals. Truly unloaded
+players still read the authority on their next load.
 
 ### Wallet endpoint preparation
 
@@ -78,8 +118,9 @@ For a `coin_transfer`, the repository:
 4. applies child mutations and ledger/item events only after the corresponding
    fences pass;
 5. on a terminal `ESTALE`, rolls back the savepoint so an earlier source mutation
-   is not retained, finishes the inbox with the error and bounded stage, and commits
-   the receipt with an empty result payload; and
+   is not retained, then preserves a current currency result only when the bounded
+   stage proves that one wallet endpoint's wallet and/or bank revision was stale;
+   all non-currency stale receipts remain payload-free;
 6. on replay, returns the stored command-hash-matched receipt without reapplying
    the mutation.
 
@@ -105,20 +146,32 @@ critical-command migration and schema verifier before compiling the harness.
 The harness uses a fresh schema in the task-owned MySQL container; it does not use
 the parent #504/#507 database.
 
-The regression covers two distinct stale gates:
+The SQL and game-thread regressions cover the refusal and repair boundaries:
 
 - a destination coin-payload mismatch returns terminal `ESTALE`, persists
   `coin_destination_coin_payload_revision`, leaves the wallet and pile unchanged,
   leaves `result_payload` empty, and replays with the same stage/error;
 - a source wallet revision mismatch returns terminal `ESTALE`, persists
-  `coin_source_wallet_revision`, leaves the wallet/ledger unchanged, leaves
-  `result_payload` empty, and replays with the same stage/error.
+  `coin_source_wallet_revision`, leaves the wallet/ledger unchanged, persists exactly
+  the current locked currency authority, and replays byte-for-byte with the same
+  stage/error/result; and
+- source wallet+bank and destination-wallet completion tests repair only the stale
+  live endpoint, do not debit or credit the rejected transfer, do not auto-submit a
+  second operation, and prove that a later command is built from the repaired state.
+
+The expansion extends the existing completion-retention harness with sender and
+recipient disconnects before committed and rejected completions, bank-only repairs,
+morph originals, genuinely unloaded endpoints, and receipts older than the retained
+body's wallet/bank state. It calls the production reconnect-ready hook and builds
+the next transfer through the production adapter, asserting the current before-vector
+and both revisions. The input-queue harness additionally exercises the production
+shared-bank publisher on a morphed descriptor and verifies its revision guard.
 
 The same harness also retains the existing SQL fault/rollback and interrupted
 transaction probe. A race where the pause finishes before `KILL CONNECTION` is
 now treated as an assertion outcome rather than an unrelated fixture SQL abort.
 
-Executed checks on this branch:
+The original receipt change was validated with:
 
 - `python3 tests/async/test_coin_command_transaction_contract.py` — passed.
 - `python3 tests/async/test_currency_transaction_contract.py` — 10 tests passed.
@@ -134,16 +187,39 @@ Executed checks on this branch:
   disposable MariaDB wrapper, including schema migration, coin SQL matrix, and
   player-load companion harness.
 
+The disconnect expansion was validated on October 2, 2026 with:
+
+- `python3 tests/async/test_currency_completion_retention.py` — 74 ASan/UBSan
+  scenarios passed across MySQL and flatfile builds.
+- `python3 tests/async/test_currency_input_queue.py` — both builds passed,
+  including retained publication, reconnect admission, and morph bank guards.
+- The coin-command, currency-transaction (10 tests), and critical-transaction
+  contract tests — passed.
+- `CURRENCY_TEST_COIN_ONLY=1 ./tests/async/run_currency_transaction_schema_mysql.sh`
+  — passed using a disposable MariaDB 10.11 server. The fixture now explicitly
+  removes the materialized legacy coin row before simulating a missing projection,
+  rather than accidentally creating duplicate physical rows.
+- `make -C src -j2` in the existing Docker build toolchain — passed.
+- `./scripts/format.sh --check --file ...` for every changed C/C++ file and
+  `git diff --check` — passed. Explicit files avoid Windows executable-mode noise
+  in WSL's Git comparison.
+
+The default SQL wrapper completed the coin matrix, then failed its unchanged
+player-loader companion at the invalid trophy expectation (request 811): that test
+expects `component_failure` while the loader returns a degraded load. The focused
+coin selector leaves the default companion enabled and avoids changing unrelated
+loader behavior or fixtures in this fix. No live game database was used.
+
 ## Historical evidence and limits
 
 The prior local #505 result records ESTALE observations during the cited incident
 window, no auction activity in the examined period, and no established currency
 loss. It also records that the available dump did not contain the failed command
 payload or binary provenance. The local issue corpus does not contain an independent
-#505 issue payload. Those facts support instrumentation and prevention, but do not
-identify whether the historical refusal was a source wallet fence, destination
-wallet fence, item owner fence, item revision, parent revision, payload mismatch,
-or an upstream admission/publication problem.
+#505 issue payload. Those facts support the recurrence repair and future
+classification, but do not identify whether the historical refusal was a source wallet
+fence, destination wallet fence, item owner fence, item revision, parent revision,
+payload mismatch, or an upstream admission/publication problem.
 
 The new stage is only populated when this code path executes after the migration;
 it cannot reconstruct a pre-migration failure. It also cannot distinguish a failure
