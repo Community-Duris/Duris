@@ -357,6 +357,31 @@ int main()
 			!tracker.daily_eligible_for(7, 42, "zone-story:901:002", 10, 1, 25,
 						    daily_now),
 		"daily access ignored discovery, exact faction, or carry protection");
+	require(tracker.render_journal(7, 42, 901, 10, 1, daily_now, false, false)
+				.find("dusk message") == std::string::npos,
+		"discovery revealed an unseen NPC's quest");
+	require(tracker.meet_npc(7, 42, 90101, 90110, daily_now - 9) == result::applied &&
+			tracker.meet_npc(7, 42, 90101, 90110, daily_now - 8) ==
+				result::already_applied,
+		"NPC encounter was not idempotent");
+	service upgrade(catalog);
+	const std::string legacy_state = "ZSQF|2\nK|0\nV|7|42|901|90110|100|arrival\n";
+	require(upgrade.deserialize_state(legacy_state) && !upgrade.has_met_npc(7, 42, 90101),
+		"legacy zone visit fabricated an NPC encounter");
+	upgrade.mark_persisted();
+	require(upgrade.meet_npc(7, 42, 90101, 90110, 101) == result::applied,
+		"legacy player could not meet an NPC");
+	auto buckets = zone_story_quest_state::split_document(legacy_state);
+	zone_story_quest_state::apply(&buckets, upgrade.changes_for_persistence());
+	service upgraded(catalog);
+	require(upgraded.deserialize_state(zone_story_quest_state::document(buckets)) &&
+			upgraded.has_met_npc(7, 42, 90101),
+		"first delta failed to upgrade the domain header atomically");
+	const auto stable_encounter = upgraded.serialize_state();
+	require(!upgraded.deserialize_state(stable_encounter + "M|7|42|90101|90110|102\n") &&
+			upgraded.serialize_state() == stable_encounter &&
+			!upgraded.deserialize_state(legacy_state + "M|7|42|90101|90110|101\n"),
+		"duplicate or old-version encounters were accepted");
 	const std::string before_view = tracker.serialize_state();
 	require(tracker.render_daily(7, 42, 10, 1, daily_now, false).find("The Dusk Archive") !=
 				std::string::npos &&

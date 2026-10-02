@@ -6,10 +6,15 @@
 
 P_room world = nullptr;
 P_index obj_index = nullptr;
+P_index mob_index = nullptr;
+int top_of_mobt = 0;
+P_char character_list = nullptr;
 struct zone_data *zone_table = nullptr;
 namespace
 {
 bool save_ok = true;
+bool npc_visible = true;
+int vision = 1;
 int writes = 0;
 std::string published;
 std::string durable;
@@ -50,6 +55,14 @@ void send_to_char(const char *message, P_char)
 	published += message;
 }
 void logit(const char *, const char *, ...) {}
+bool ac_can_see(P_char, P_char, bool)
+{
+	return npc_visible;
+}
+int get_vis_mode(P_char, int)
+{
+	return vision;
+}
 int panic_corruption_int(const char *, const char *, ...)
 {
 	std::abort();
@@ -166,10 +179,51 @@ int main()
 			  .item_vnums = { 13553 },
 			  .count = 1 } };
 	mapping.stories.push_back(story);
+	mapping.introduction = "Explore this garden.";
+	mapping.contacts.push_back(
+		{ 83101, "The gardener", "gardener", "Ask about plants.", { "plants" } });
 	catalog.story_mappings.push_back(mapping);
 	tracker = zone_story_quest_feature::service(catalog);
 	assert(tracker.discover_zone(7, 42, 831, 83450, 864000, "arrival") ==
 	       zone_story_quest_feature::result::applied);
+	player.in_room = 0;
+	char_data npc = {};
+	npc.specials.act = ACT_ISNPC;
+	npc.specials.position = STAT_NORMAL;
+	npc.in_room = 0;
+	npc_only_data npc_data = {};
+	npc.only.npc = &npc_data;
+	char long_description[] = "A gardener is here.";
+	npc.player.long_descr = long_description;
+	index_data mobs[1] = {};
+	mobs[0].virtual_number = 83101;
+	mob_index = mobs;
+	rooms[0].people = &npc;
+	published.clear();
+	assert(render_journal(&player, 831, false, false).find("gardener") == std::string::npos);
+	npc_visible = false;
+	encountered(&player, &npc);
+	assert(!tracker.has_met_npc(7, 42, 83101));
+	npc_visible = true;
+	vision = 3;
+	encountered(&player, &npc);
+	assert(!tracker.has_met_npc(7, 42, 83101));
+	vision = 1;
+	{
+		temporary_placement remote;
+		encountered(&player, &npc);
+	}
+	assert(!tracker.has_met_npc(7, 42, 83101));
+	save_ok = false;
+	encountered(&player, &npc);
+	assert(!tracker.has_met_npc(7, 42, 83101) && published.empty());
+	save_ok = true;
+	encountered(&player, &npc);
+	assert(tracker.has_met_npc(7, 42, 83101) &&
+	       published.find("quest zone Alatorin") != std::string::npos);
+	assert(render_journal(&player, 831, false, false).find("ask gardener plants") !=
+	       std::string::npos);
+	assert(restored.deserialize_state(durable) && restored.has_met_npc(7, 42, 83101));
 	index_data indices[2] = {};
 	indices[0].virtual_number = 13521;
 	indices[1].virtual_number = 13553;

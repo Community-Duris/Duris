@@ -90,6 +90,12 @@ bool validate(const catalog &catalog, std::vector<diagnostic> *diagnostics)
 		if (!mapping.revision || zone_number <= 0 ||
 		    !mapped_areas.insert(mapping.source_area).second)
 			bad("story mapping has an invalid/duplicate area or revision");
+		std::unordered_set<int32_t> contacts;
+		for (const auto &contact : mapping.contacts)
+			if (contact.mob_vnum <= 0 || !contacts.insert(contact.mob_vnum).second ||
+			    contact.name.empty() || contact.keyword.empty() ||
+			    contact.description.empty())
+				bad("story mapping has an invalid or duplicate contact");
 		auto bind = [&](const std::string &id)
 		{
 			const auto found = definitions.find(id);

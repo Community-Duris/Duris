@@ -36,20 +36,24 @@ void fields(const cJSON *object, std::initializer_list<std::string_view> expecte
 			throw std::runtime_error(path + ": missing field " + std::string(key));
 }
 
+std::string text_value(const cJSON *value, const std::string &path, bool allow_empty = false)
+{
+	if (!cJSON_IsString(value) || !value->valuestring)
+		throw std::runtime_error(path + ": expected string");
+	std::string result = value->valuestring;
+	if ((!allow_empty && result.empty()) || result.size() > 1024)
+		throw std::runtime_error(path + ": empty or oversized string");
+	for (const unsigned char c : result)
+		if (c < 32 || c == 127 || c == '$')
+			throw std::runtime_error(path + ": control/substitution character");
+	return result;
+}
+
 std::string text(const cJSON *object, const char *key, const std::string &path,
 		 bool allow_empty = false)
 {
-	const auto *value = cJSON_GetObjectItemCaseSensitive(object, key);
-	if (!cJSON_IsString(value) || !value->valuestring)
-		throw std::runtime_error(path + ": expected string " + key);
-	std::string result = value->valuestring;
-	if ((!allow_empty && result.empty()) || result.size() > 1024)
-		throw std::runtime_error(path + ": empty or oversized string " + key);
-	for (const unsigned char c : result)
-		if (c < 32 || c == 127 || c == '$')
-			throw std::runtime_error(path + ": control/substitution character in " +
-						 key);
-	return result;
+	return text_value(cJSON_GetObjectItemCaseSensitive(object, key), path + "." + key,
+			  allow_empty);
 }
 
 int32_t integer(const cJSON *value, int32_t low, int32_t high, const std::string &path)
@@ -132,12 +136,19 @@ bool apply(const std::string &json, std::string_view source_area,
 		std::unique_ptr<cJSON, decltype(&cJSON_Delete)> root(
 			cJSON_ParseWithLengthOpts(json.c_str(), json.size() + 1, nullptr, 1),
 			cJSON_Delete);
-		fields(root.get(),
-		       { "schema_version", "revision", "source_area", "coverage", "stories",
-			 "exclusions" },
-		       "story mapping");
-		integer(cJSON_GetObjectItemCaseSensitive(root.get(), "schema_version"), 1, 1,
-			"schema_version");
+		const int schema =
+			integer(cJSON_GetObjectItemCaseSensitive(root.get(), "schema_version"), 1,
+				2, "schema_version");
+		if (schema == 1)
+			fields(root.get(),
+			       { "schema_version", "revision", "source_area", "coverage", "stories",
+				 "exclusions" },
+			       "story mapping");
+		else
+			fields(root.get(),
+			       { "schema_version", "revision", "source_area", "coverage", "stories",
+				 "exclusions", "introduction", "orientation", "contacts" },
+			       "story mapping");
 		zone_story_quest_catalog::story_mapping mapping;
 		mapping.source_area = text(root.get(), "source_area", "story mapping");
 		if (mapping.source_area != source_area || !identifier(source_area))
@@ -156,6 +167,46 @@ bool apply(const std::string &json, std::string_view source_area,
 		if (zone <= 0)
 			throw std::runtime_error(
 				"story mapping: area is not a playable catalog area");
+		if (schema == 2)
+		{
+			mapping.introduction = text(root.get(), "introduction", "story mapping");
+			for (auto *action =
+				     array(root.get(), "orientation", 0, 16, "orientation")->child;
+			     action; action = action->next)
+				mapping.orientation.push_back(text_value(action, "orientation"));
+			std::set<int32_t> contacts;
+			for (auto *entry = array(root.get(), "contacts", 0, 256, "contacts")->child;
+			     entry; entry = entry->next)
+			{
+				fields(entry,
+				       { "mob_vnum", "name", "keyword", "description", "topics" },
+				       "contact");
+				zone_story_quest_catalog::story_contact contact;
+				contact.mob_vnum =
+					integer(cJSON_GetObjectItemCaseSensitive(entry, "mob_vnum"),
+						1, INT32_MAX, "contact.mob_vnum");
+				contact.name = text(entry, "name", "contact");
+				contact.keyword = text(entry, "keyword", "contact");
+				contact.description = text(entry, "description", "contact");
+				if (!contacts.insert(contact.mob_vnum).second ||
+				    !identifier(contact.keyword))
+					throw std::runtime_error(
+						"contact: duplicate NPC or invalid command keyword");
+				std::set<std::string> topics;
+				for (auto *topic =
+					     array(entry, "topics", 0, 32, "contact.topics")->child;
+				     topic; topic = topic->next)
+				{
+					const std::string value =
+						text_value(topic, "contact.topics");
+					if (!identifier(value) || !topics.insert(value).second)
+						throw std::runtime_error(
+							"contact: invalid or duplicate topic");
+					contact.topics.push_back(value);
+				}
+				mapping.contacts.push_back(std::move(contact));
+			}
+		}
 		std::set<std::string> story_ids;
 		for (auto *entry = array(root.get(), "stories", 0, 256, "stories")->child; entry;
 		     entry = entry->next)

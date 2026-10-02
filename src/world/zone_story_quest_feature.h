@@ -192,6 +192,15 @@ class service
 			     std::string *error = nullptr);
 	bool has_discovered(uint32_t season_id, uint32_t pid, int32_t zone_number,
 			    int64_t before = INT64_MAX) const;
+	bool tracks_npc(int32_t mob_vnum) const;
+	result meet_npc(uint32_t season_id, uint32_t pid, int32_t mob_vnum, int32_t room_vnum,
+			int64_t encountered_at, std::string *error = nullptr);
+	bool has_met_npc(uint32_t season_id, uint32_t pid, int32_t mob_vnum) const;
+	std::string zone_command(int32_t zone_number) const;
+	std::string encounter_hint(uint32_t season_id, uint32_t pid, int32_t zone_number,
+				   int32_t mob_vnum) const;
+	std::string completion_hint(uint32_t season_id, uint32_t pid,
+				    std::string_view definition_id) const;
 	int32_t resolve_zone(std::string_view name, std::string *error = nullptr) const;
 	bool daily_eligible_for(uint32_t season_id, uint32_t pid, std::string_view definition_id,
 				int level, int racewar, int strongest_party_level,
@@ -268,6 +277,12 @@ class service
 		std::map<std::string, std::string> reward_keys;
 		std::map<int32_t, discovery> discoveries;
 		std::map<int64_t, std::set<std::string>> daily_completions;
+		struct encounter
+		{
+			int32_t room_vnum = 0;
+			int64_t encountered_at = 0;
+		};
+		std::map<int32_t, encounter> met_npcs;
 	};
 
 	struct stored_transaction
@@ -278,6 +293,7 @@ class service
 
 	zone_story_quest_catalog::catalog catalog_;
 	std::vector<zone_story_quest_catalog::quest_unit> quest_units_;
+	std::set<int32_t> tracked_npcs_;
 	daily_policy daily_policy_;
 	std::map<std::pair<uint32_t, uint32_t>, character_state> characters_;
 	std::set<std::pair<uint32_t, uint32_t>> deleted_characters_;
@@ -295,6 +311,8 @@ class service
 	const character_state *find_state(uint32_t season_id, uint32_t pid) const;
 	const std::set<std::string> &daily_completed_ids(uint32_t season_id, uint32_t pid,
 							 int64_t now) const;
+	bool unit_encountered(uint32_t season_id, uint32_t pid,
+			      const zone_story_quest_catalog::quest_unit &unit) const;
 	std::set<std::string> completed_definition_ids(uint32_t season_id, uint32_t pid,
 						       int64_t completed_before) const;
 	zone_progress progress_for_zone_at(uint32_t season_id, uint32_t pid, int32_t zone_number,

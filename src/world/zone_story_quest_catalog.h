@@ -48,6 +48,15 @@ struct story_definition
 	std::vector<story_step> steps;
 };
 
+struct story_contact
+{
+	int32_t mob_vnum = 0;
+	std::string name;
+	std::string keyword;
+	std::string description;
+	std::vector<std::string> topics;
+};
+
 struct story_mapping
 {
 	std::string source_area;
@@ -55,6 +64,9 @@ struct story_mapping
 	bool complete = false;
 	std::vector<story_definition> stories;
 	std::map<std::string, std::string> exclusions;
+	std::string introduction = {};
+	std::vector<std::string> orientation = {};
+	std::vector<story_contact> contacts = {};
 };
 
 struct journal_inventory

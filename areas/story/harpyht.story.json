@@ -1,0 +1,145 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "harpyht",
+  "coverage": "complete",
+  "introduction": "Explore The Mountain Settlement of the Harpies and meet its people to uncover local requests.",
+  "orientation": [
+    "Start with look and exits to learn your surroundings.",
+    "Use help home to learn about hometowns and help quest for quest commands."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 31109,
+      "name": "the harpy queen",
+      "keyword": "queen",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31118,
+      "name": "a chained dwarf",
+      "keyword": "dwarf",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31124,
+      "name": "a harpy khan",
+      "keyword": "khan",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "request-31109-3aca032b3d85",
+      "title": "Deliver 1 x some prisoner shackles",
+      "category": "request",
+      "summary": "Bring 1 x some prisoner shackles. Reward: the requested offering.",
+      "contracts": [
+        {
+          "giver_vnum": 31109,
+          "completion_key": "give=I:31111;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x some prisoner shackles",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            31111
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 31109,
+              "completion_key": "give=I:31111;receive=;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-31118-06670a8aa1a2",
+      "title": "Deliver 1 x a rusted key",
+      "category": "request",
+      "summary": "Bring 1 x a rusted key. Reward: 1 x some prisoner shackles.",
+      "contracts": [
+        {
+          "giver_vnum": 31118,
+          "completion_key": "give=I:31104;receive=I:31111;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a rusted key",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            31104
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 31118,
+              "completion_key": "give=I:31104;receive=I:31111;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-31124-011f01d2e1b7",
+      "title": "Deliver 1 x a storm crow feather",
+      "category": "request",
+      "summary": "Bring 1 x a storm crow feather. Reward: the requested offering.",
+      "contracts": [
+        {
+          "giver_vnum": 31124,
+          "completion_key": "give=I:31112;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a storm crow feather",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            31112
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 31124,
+              "completion_key": "give=I:31112;receive=;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

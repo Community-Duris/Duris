@@ -1,0 +1,161 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "shady",
+  "coverage": "complete",
+  "introduction": "Explore Shady Grove and meet its people to uncover local requests.",
+  "orientation": [
+    "Start with look and exits to learn your surroundings.",
+    "Use help home to learn about hometowns and help quest for quest commands."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 97510,
+      "name": "T'Zoul Mhembryl",
+      "keyword": "high",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "god"
+      ]
+    },
+    {
+      "mob_vnum": 97537,
+      "name": "an old orcish woman",
+      "keyword": "old",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "cry"
+      ]
+    },
+    {
+      "mob_vnum": 97545,
+      "name": "a troll slave",
+      "keyword": "troll",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "free"
+      ]
+    },
+    {
+      "mob_vnum": 97548,
+      "name": "Lyren",
+      "keyword": "lyren",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "think",
+        "amulet"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "request-97510-4963db257809",
+      "title": "Deliver 1 x a diamond-studded collar",
+      "category": "request",
+      "summary": "Bring 1 x a diamond-studded collar. Reward: 10,000 copper, 1 x the blood sword of the ancients.",
+      "contracts": [
+        {
+          "giver_vnum": 97510,
+          "completion_key": "give=I:97514;receive=C:10000,I:97570;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a diamond-studded collar",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            97514
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 97510,
+              "completion_key": "give=I:97514;receive=C:10000,I:97570;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-97545-85d3fa59aeaf",
+      "title": "Deliver 1 x a golden skeleton key",
+      "category": "request",
+      "summary": "Bring 1 x a golden skeleton key. Reward: 2,100 experience.",
+      "contracts": [
+        {
+          "giver_vnum": 97545,
+          "completion_key": "give=I:97582;receive=E:2100;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a golden skeleton key",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            97582
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 97545,
+              "completion_key": "give=I:97582;receive=E:2100;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-97548-13949b297677",
+      "title": "Deliver 1 x an old bloodied amulet",
+      "category": "request",
+      "summary": "Bring 1 x an old bloodied amulet. Reward: 5,200 experience.",
+      "contracts": [
+        {
+          "giver_vnum": 97548,
+          "completion_key": "give=I:97572;receive=E:5200;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x an old bloodied amulet",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            97572
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 97548,
+              "completion_key": "give=I:97572;receive=E:5200;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

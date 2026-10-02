@@ -54,12 +54,18 @@ coin, skill, and XP rewards continue through the accounting reward obligation.
 
 ## Durable state
 
-Feature state `ZSQF|2` persists completion facts, identities, credit masks, first
+Feature state `ZSQF|3` persists completion facts, identities, credit masks, first
 completion times, discovery, daily-period projections, reward keys, telemetry,
-and deletion/exclusion markers. A single cutover marker bounds legacy daily
+NPC encounter records, and deletion/exclusion markers. A single cutover marker bounds legacy daily
 conversion. V1 documents load into a candidate service, preserve stable credit,
 backfill only proven completion-room visits, and start dailies next UTC day.
 Parsing or semantic failure leaves live state unchanged.
+
+V2 documents still load without manufactured NPC meetings. Encounter `M`
+records retain season, character, prototype VNUM, physical room, and first
+time. The first delta writes the V3 header in the same atomic batch. SQL bucket
+schema and flat-file framing versions remain unchanged; an older binary needs
+its pre-upgrade state restored for a planned rollback.
 
 Changed records are persisted atomically through SQL bucket transactions or
 flat-file journal frames. Completion and discovery mutate bounded recipient

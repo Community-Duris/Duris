@@ -10,6 +10,7 @@ import signal
 import subprocess
 import tempfile
 import time
+import json
 
 import server_build_artifacts
 import test_flatfile_combat_journey as journey
@@ -17,6 +18,12 @@ import test_flatfile_combat_journey as journey
 
 ROOT = Path(__file__).resolve().parents[2]
 REWARD_VNUM = 22805
+
+
+def finish_journal(client):
+    matched, _ = client.expect_any(("Return to continue", "Pos: standing"), timeout=15)
+    if matched == "Return to continue":
+        client.send("q")
 
 
 def quest_fixture(run_root: Path, xp_reward: int = 0, *, daily: bool = False) -> None:
@@ -90,6 +97,38 @@ S
         reset += "O 0 22806 1 22800 100 0 0 0 * flower\n"
     assert content.count("\nS\n") == 1
     zone.write_text(content.replace("\nS\n", "\n" + reset + "S\n"))
+    if daily:
+        # Keep authored fixture content local: never write through the shared
+        # areas symlink or mutate production story mappings.
+        areas = run_root / "areas"
+        areas.unlink()
+        areas.mkdir()
+        for child in (ROOT / "areas").iterdir():
+            if child.name != "story":
+                (areas / child.name).symlink_to(child, target_is_directory=child.is_dir())
+        stories = areas / "story"
+        stories.mkdir()
+        quests = []
+        for slug, title, inputs, reward_key in (
+            ("supplies", "Gather forest supplies", [(22802, "acorn"), (22803, "branch"), (22804, "feather")], "C:1000,I:22805"),
+            ("flower", "Deliver a flower", [(22806, "flower")], "C:500"),
+        ):
+            key = "give=" + ",".join(f"I:{v}" for v, _ in inputs) + ";receive=" + reward_key + ";disappear=0"
+            binding = {"giver_vnum": 22801, "completion_key": key}
+            steps = [{"id": name, "text": f"Carry {'an' if name == 'acorn' else 'a'} {name}", "kind": "carried_item", "hint": "Gather this from the entrance.",
+                      "item_vnums": [v], "count": 1} for v, name in inputs]
+            steps.append({"id": "turn-in", "text": "Complete the exchange", "kind": "completion", "hint": "Give an offering to the request giver.", "contracts": [binding]})
+            quests.append({"id": slug, "title": title, "category": "request", "summary": "Gather the supplies and return them.", "contracts": [binding], "steps": steps})
+        mapping = {"schema_version": 2, "revision": 1, "source_area": "minimal-world", "coverage": "partial",
+                   "introduction": "Explore the entrance and follow the eastern path.", "orientation": ["Use look and exits."],
+                   "contacts": [{"mob_vnum": 22801, "name": "Lapney", "keyword": "lapney", "description": "Collect the requested materials below.", "topics": []}],
+                   "stories": quests, "exclusions": []}
+        (stories / "minimal-world.story.json").write_text(json.dumps(mapping))
+        zone.write_text(zone.read_text().replace("minimal world~", "minimal-world~").replace("M 0 22801 1 22800", "M 0 22801 1 22801"))
+        world = mini / "mini.wld"
+        content = world.read_text().replace("1 0 0\nS\n$~", "1 0 0\nD1\n~\n~\n0 -1 22801\nS\n$~")
+        content = content.replace("$~", "#22801\nThe Garden Path~\nA quiet path leads back west.\n~\n1 0 0\nD3\n~\n~\n0 -1 22800\nS\n$~")
+        world.write_text(content)
 
 
 def seed_daily_evidence(state_root: Path, xp_reward: int = 0) -> None:
@@ -186,36 +225,60 @@ def run(binary: Path, *, daily: bool = False) -> None:
                     client.send("look")
                     client.expect("The Regression Arena", timeout=15)
                     if daily:
+                        transcript = bytes(client.transcript).decode(errors="replace")
+                        assert "You just discovered a new zone called Minimal World" in transcript
+                        assert "Type 'quest zone Minimal World'" in transcript
                         client.send("quest zone Minimal World")
+                        client.expect("Explore and meet the people here", timeout=15)
+                        finish_journal(client)
+                        assert "[Met] Lapney" not in bytes(client.transcript).decode(errors="replace")
+                        client.send("east")
+                        client.expect("Your journal now includes Lapney", timeout=15)
+                        client.send("quest zone Minimal World")
+                        client.expect("[Met] Lapney", timeout=15)
                         client.expect("Story incomplete", timeout=15)
-                        client.expect("Return to continue", timeout=15)
-                        client.send("q")
+                        client.expect("Next: Carry an acorn", timeout=15)
+                        finish_journal(client)
+                        client.send("west")
+                        client.expect("The Regression Arena", timeout=15)
                         client.send("quest daily Minimal World")
                         client.expect("Available", timeout=15)
-                        client.expect("Return to continue", timeout=15)
-                        client.send("q")
+                        finish_journal(client)
                     client.send("drop all")
                     client.expect("You drop", timeout=20)
                     for name in ("acorn", "branch", "feather"):
                         client.send(f"get {name}")
                         client.expect("You get", timeout=15)
+                    if daily:
+                        client.send("east")
+                        client.expect("The Garden Path", timeout=15)
                     client.send("give acorn lapney")
                     client.expect("Your quest offering is being accepted.", timeout=15)
                     client.expect_any(("a quest reward blade", "Your committed quest reward is being recovered."), timeout=30)
                     client.send("save")
                     client.expect(f"Save complete for {journey.CHARACTER}.", timeout=30)
                 else:
-                    client = journey.reconnect_character(port)
+                    client = journey.reconnect_character(port, expected_room="The Garden Path" if daily else "The Regression Arena")
+                    if daily:
+                        transcript = bytes(client.transcript).decode(errors="replace")
+                        assert "You just discovered a new zone" not in transcript
+                        assert "Your journal now includes Lapney" not in transcript
+                        client.send("quest zone Minimal World")
+                        client.expect("[Met] Lapney", timeout=15)
+                        finish_journal(client)
                 if daily:
                     client.send("score")
                     client.expect("renown 1", timeout=15)
                     client.send("quest daily Minimal World")
                     client.expect("Done today", timeout=15)
-                    client.expect("Return to continue", timeout=15)
-                    client.send("q")
+                    finish_journal(client)
                     if phase == "initial":
+                        client.send("west")
+                        client.expect("The Regression Arena", timeout=15)
                         client.send("get flower")
                         client.expect("You get", timeout=15)
+                        client.send("east")
+                        client.expect("The Garden Path", timeout=15)
                         client.send("give flower lapney")
                         client.expect("Lapney accepts the flower", timeout=30)
                         client.send("quest daily")

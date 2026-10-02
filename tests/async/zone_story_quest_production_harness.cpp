@@ -13,6 +13,7 @@ P_index obj_index = nullptr;
 FILE *mob_f = nullptr;
 FILE *obj_f = nullptr;
 int top_of_objt = -1;
+int top_of_mobt = 0;
 int number_of_quests = 0;
 struct quest_data quest_index[1];
 struct zone_data *zone_table = nullptr;
@@ -36,6 +37,8 @@ int main(int argc, char **argv)
 	mob_index = mobs;
 	mobs[0].virtual_number = 17;
 	char mob_name[] = "the archivist";
+	char mob_keywords[] = "archivist";
+	mobs[0].keys = mob_keywords;
 	mobs[0].desc2 = mob_name;
 	zone_data zones[1] = {};
 	char area_name[] = "&+WThe First Heavens&n";
@@ -136,7 +139,10 @@ int main(int argc, char **argv)
 	const char *story_path = "areas/story/runtime-zone.story.json";
 	{
 		std::ofstream file(story_path);
-		file << R"({"schema_version":1,"revision":1,"source_area":"runtime-zone",
+		file << R"({"schema_version":2,"revision":1,"source_area":"runtime-zone",
+"introduction":"Explore the archive.","orientation":["Use look and exits."],
+"contacts":[{"mob_vnum":17,"name":"The archivist","keyword":"archivist",
+"description":"Ask about the archive.","topics":["archive"]}],
 "coverage":"partial","stories":[{"id":"archivist","title":"The archivist",
 "category":"story","summary":"Bring the lost item.","contracts":[
 {"giver_vnum":17,"completion_key":"give=I:24402;receive=I:24403;disappear=0"}],
@@ -154,6 +160,26 @@ int main(int argc, char **argv)
 	require(zone_story_quest_production::bootstrap(2, &error) &&
 			zone_story_quest_production::runtime_catalog().story_mappings.size() == 1,
 		"valid optional sidecar failed bootstrap");
+	std::ifstream valid_file(story_path);
+	const std::string valid_mapping{ std::istreambuf_iterator<char>(valid_file),
+					 std::istreambuf_iterator<char>() };
+	for (const auto &replacement :
+	     { std::pair<std::string, std::string>{ "\"mob_vnum\":17", "\"mob_vnum\":99999" },
+	       std::pair<std::string, std::string>{ "\"keyword\":\"archivist\"",
+						    "\"keyword\":\"unknown\"" } })
+	{
+		std::string invalid_mapping = valid_mapping;
+		invalid_mapping.replace(invalid_mapping.find(replacement.first),
+					replacement.first.size(), replacement.second);
+		{
+			std::ofstream file(story_path);
+			file << invalid_mapping;
+		}
+		require(!zone_story_quest_production::bootstrap(2, &error) &&
+				error.find("unknown NPC prototype or command alias") !=
+					std::string::npos,
+			"invalid contact did not fail closed against booted prototypes");
+	}
 	{
 		std::ofstream file(story_path);
 		file << "{}";

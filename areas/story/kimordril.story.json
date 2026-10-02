@@ -1,0 +1,201 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "kimordril",
+  "coverage": "complete",
+  "introduction": "Explore Kimordril and meet its people to uncover local requests.",
+  "orientation": [
+    "Start with look and exits to learn your surroundings.",
+    "Use help home to learn about hometowns and help quest for quest commands."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 95508,
+      "name": "a busy dwarven mother",
+      "keyword": "busy",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "help",
+        "vegetables"
+      ]
+    },
+    {
+      "mob_vnum": 95512,
+      "name": "a dirty dwarf",
+      "keyword": "dirty",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "skin"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "request-95508-58bfef7fc357",
+      "title": "Deliver 1 x a potato, 1 x a cutting knife, 1 x a carrot",
+      "category": "request",
+      "summary": "Bring 1 x a potato, 1 x a cutting knife, 1 x a carrot. Reward: 60 copper, 100 experience.",
+      "contracts": [
+        {
+          "giver_vnum": 95508,
+          "completion_key": "give=I:95506,I:95507,I:95508;receive=C:60,E:100;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a potato",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            95506
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a cutting knife",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            95507
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a carrot",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            95508
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 95508,
+              "completion_key": "give=I:95506,I:95507,I:95508;receive=C:60,E:100;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-95512-17faf4eac94d",
+      "title": "Deliver 1 x some goatskin",
+      "category": "request",
+      "summary": "Bring 1 x some goatskin. Reward: 30 copper.",
+      "contracts": [
+        {
+          "giver_vnum": 95512,
+          "completion_key": "give=I:95512;receive=C:30;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x some goatskin",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            95512
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 95512,
+              "completion_key": "give=I:95512;receive=C:30;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-95512-6d0c1a6c969d",
+      "title": "Deliver 1 x some black boarskin",
+      "category": "request",
+      "summary": "Bring 1 x some black boarskin. Reward: 35 copper.",
+      "contracts": [
+        {
+          "giver_vnum": 95512,
+          "completion_key": "give=I:95513;receive=C:35;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x some black boarskin",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            95513
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 95512,
+              "completion_key": "give=I:95513;receive=C:35;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-95512-64ea923287af",
+      "title": "Deliver 1 x some brown boarskin",
+      "category": "request",
+      "summary": "Bring 1 x some brown boarskin. Reward: 20 copper.",
+      "contracts": [
+        {
+          "giver_vnum": 95512,
+          "completion_key": "give=I:95514;receive=C:20;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x some brown boarskin",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            95514
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 95512,
+              "completion_key": "give=I:95514;receive=C:20;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

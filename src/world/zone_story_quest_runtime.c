@@ -21,6 +21,9 @@
 
 extern P_room world;
 extern struct zone_data *zone_table;
+extern P_index mob_index;
+extern int top_of_mobt;
+extern P_char character_list;
 
 namespace zone_story_quest_runtime
 {
@@ -172,18 +175,37 @@ std::string render_journal(P_char player, int32_t zone_number, bool daily_only, 
 				      &inventory);
 }
 
+namespace
+{
+bool physical_player(P_char player)
+{
+	return ready() && !temporary_placement_depth && player && IS_ALIVE(player) &&
+	       IS_PC(player) && !IS_TRUSTED(player) && GET_PID(player) > 0 && player->desc &&
+	       player->desc->connected == CON_PLAYING && player->desc->character == player &&
+	       player->in_room >= 0 && !IS_SHIP_ROOM(player->in_room) &&
+	       !IS_ROOM(player->in_room, ROOM_ARENA);
+}
+
+bool can_meet(P_char player, P_char npc)
+{
+	if (!physical_player(player) || !npc || !IS_NPC(npc) || !IS_ALIVE(npc) ||
+	    npc->in_room != player->in_room || !npc->player.long_descr || !mob_index ||
+	    GET_RNUM(npc) < 0 || GET_RNUM(npc) > top_of_mobt ||
+	    !tracker.tracks_npc(mob_index[GET_RNUM(npc)].virtual_number) || !IS_AWAKE(player) ||
+	    IS_AFFECTED5(npc, AFF5_ENH_HIDE) || !CAN_SEE_Z_CORD(player, npc) ||
+	    !CAN_SEE(player, npc))
+		return false;
+	const int vision = get_vis_mode(player, player->in_room);
+	return vision != 3 && vision != 5 && vision != 6;
+}
+}
+
 void arrived(P_char player)
 {
-	if (!ready() || temporary_placement_depth || !player || !IS_ALIVE(player) ||
-	    !IS_PC(player) || IS_TRUSTED(player) || GET_PID(player) <= 0 || !player->desc ||
-	    player->desc->connected != CON_PLAYING || player->desc->character != player ||
-	    player->in_room < 0 || IS_SHIP_ROOM(player->in_room) ||
-	    IS_ROOM(player->in_room, ROOM_ARENA))
+	if (!physical_player(player))
 		return;
 	const int index = world[player->in_room].zone;
 	const int32_t number = zone_table[index].number;
-	if (tracker.has_discovered(current_season_id(), GET_PID(player), number))
-		return;
 	const auto undo = tracker.checkpoint_for(current_season_id(),
 						 { static_cast<uint32_t>(GET_PID(player)) });
 	std::string error;
@@ -191,7 +213,19 @@ void arrived(P_char player)
 						      world[player->in_room].number,
 						      static_cast<int64_t>(time(NULL)), "arrival",
 						      &error);
-	if (discovered != zone_story_quest_feature::result::applied)
+	if (discovered != zone_story_quest_feature::result::applied &&
+	    discovered != zone_story_quest_feature::result::already_applied)
+		return;
+	std::vector<int32_t> met;
+	for (P_char npc = world[player->in_room].people; npc; npc = npc->next_in_room)
+		if (can_meet(player, npc) &&
+		    tracker.meet_npc(current_season_id(), GET_PID(player),
+				     mob_index[GET_RNUM(npc)].virtual_number,
+				     world[player->in_room].number,
+				     static_cast<int64_t>(time(nullptr))) ==
+			    zone_story_quest_feature::result::applied)
+			met.push_back(mob_index[GET_RNUM(npc)].virtual_number);
+	if (discovered != zone_story_quest_feature::result::applied && met.empty())
 		return;
 	if (!save_persisted_state(&error))
 	{
@@ -205,9 +239,52 @@ void arrived(P_char player)
 		}
 		return;
 	}
-	send_to_char("Discovery achievement: ", player);
-	send_to_char(zone_table[index].name, player);
-	send_to_char(". Use 'quest zone <area>' to view its journal.\r\n", player);
+	if (discovered == zone_story_quest_feature::result::applied)
+	{
+		send_to_char("You just discovered a new zone called ", player);
+		send_to_char(zone_table[index].name, player);
+		const std::string introduction =
+			".\r\nDiscovery achievement earned. Type '" + tracker.zone_command(number) +
+			"' to open its journal.\r\n"
+			"People and their stories appear after you have had a chance to meet them.\r\n";
+		send_to_char(introduction.c_str(), player);
+	}
+	if (!met.empty())
+		send_to_char(tracker.encounter_hint(current_season_id(), GET_PID(player), number,
+						    met.front())
+				     .c_str(),
+			     player);
+}
+
+void encountered(P_char player, P_char npc)
+{
+	if (!can_meet(player, npc))
+		return;
+	const int32_t number = zone_table[world[player->in_room].zone].number;
+	if (!tracker.has_discovered(current_season_id(), GET_PID(player), number))
+	{
+		arrived(player);
+		return;
+	}
+	const int32_t vnum = mob_index[GET_RNUM(npc)].virtual_number;
+	if (!tracker.tracks_npc(vnum) ||
+	    tracker.has_met_npc(current_season_id(), GET_PID(player), vnum))
+		return;
+	const auto undo = tracker.checkpoint_for(current_season_id(),
+						 { static_cast<uint32_t>(GET_PID(player)) });
+	if (tracker.meet_npc(current_season_id(), GET_PID(player), vnum,
+			     world[player->in_room].number, static_cast<int64_t>(time(nullptr))) !=
+	    zone_story_quest_feature::result::applied)
+		return;
+	std::string error;
+	if (!save_persisted_state(&error))
+	{
+		undo();
+		return;
+	}
+	send_to_char(
+		tracker.encounter_hint(current_season_id(), GET_PID(player), number, vnum).c_str(),
+		player);
 }
 
 uint32_t current_season_id()
@@ -388,6 +465,10 @@ bool record_authoritative_completion(std::string_view definition_id, int32_t zon
 	event.strongest_party_level = strongest_party_level;
 	const auto undo = tracker.checkpoint_for(event.transaction.season_id, credited_pids,
 						 event.transaction.transaction_id);
+	std::map<uint32_t, std::string> previous_hints;
+	for (const auto pid : credited_pids)
+		previous_hints.emplace(pid, tracker.completion_hint(event.transaction.season_id,
+								    pid, definition_id));
 	const auto recorded = tracker.record_completion(event, error);
 	if (recorded != zone_story_quest_feature::result::applied &&
 	    recorded != zone_story_quest_feature::result::already_applied)
@@ -397,6 +478,17 @@ bool record_authoritative_completion(std::string_view definition_id, int32_t zon
 		undo();
 		return false;
 	}
+	if (recorded == zone_story_quest_feature::result::applied &&
+	    event.transaction.season_id == current_season_id())
+		for (P_char player = character_list; player; player = player->next)
+			if (physical_player(player) && previous_hints.contains(GET_PID(player)))
+			{
+				const auto hint =
+					tracker.completion_hint(event.transaction.season_id,
+								GET_PID(player), definition_id);
+				if (!hint.empty() && hint != previous_hints.at(GET_PID(player)))
+					send_to_char(hint.c_str(), player);
+			}
 	return true;
 }
 

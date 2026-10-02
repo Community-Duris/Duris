@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "newbie2",
+  "coverage": "complete",
+  "introduction": "Welcome to the Plains of Life. Follow the signs to learn the basics before entering the world.",
+  "orientation": [
+    "Use look sign when you find a tutorial sign, and use help newbie and help equipment.",
+    "Follow the signs and meet the people along the path. Their guidance appears here after you see them."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 22801,
+      "name": "a solemn paladin",
+      "keyword": "paladin",
+      "description": "Ask about racewars to finish the introduction. Then use enter stream at the Stream of Life to travel to Ailvio. This tutorial conversation does not award a tracked item-delivery achievement.",
+      "topics": [
+        "racewars"
+      ]
+    }
+  ],
+  "stories": [],
+  "exclusions": []
+}

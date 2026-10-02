@@ -1,0 +1,271 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "brad",
+  "coverage": "complete",
+  "introduction": "Explore Braddistock Mansion and meet its people to uncover local requests.",
+  "orientation": [
+    "Start with look and exits to learn your surroundings.",
+    "Use help home to learn about hometowns and help quest for quest commands."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 134146,
+      "name": "Azlion the planetar",
+      "keyword": "huge",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 134150,
+      "name": "Jenifer",
+      "keyword": "jenifer",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 134162,
+      "name": "Father Darrin",
+      "keyword": "father",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 134167,
+      "name": "Danthas, the elven scout",
+      "keyword": "scout",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 134169,
+      "name": "Isabia, the elven noble",
+      "keyword": "noble",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "request-134146-a4f6aa87c7b1",
+      "title": "Deliver 1 x a long cold-iron staff",
+      "category": "request",
+      "summary": "Bring 1 x a long cold-iron staff. Reward: 1 x a broadsword of glowing light.",
+      "contracts": [
+        {
+          "giver_vnum": 134146,
+          "completion_key": "give=I:134105;receive=I:134106;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a long cold-iron staff",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            134105
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 134146,
+              "completion_key": "give=I:134105;receive=I:134106;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-134150-cc22370abf33",
+      "title": "Deliver 1 x the decapitated head of Joseph Hammerson",
+      "category": "request",
+      "summary": "Bring 1 x the decapitated head of Joseph Hammerson. Reward: 100,000 experience.",
+      "contracts": [
+        {
+          "giver_vnum": 134150,
+          "completion_key": "give=I:134006;receive=E:100000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x the decapitated head of Joseph Hammerson",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            134006
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 134150,
+              "completion_key": "give=I:134006;receive=E:100000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-134162-0aa9fcadf7a5",
+      "title": "Deliver 1 x the first piece of the Star Stone, 1 x the second piece of the Star Stone, 1 x the third piece of the Star Stone, 1 x the fourth piece of the Star Stone, 1 x the last piece of the Star Stone",
+      "category": "request",
+      "summary": "Bring 1 x the first piece of the Star Stone, 1 x the second piece of the Star Stone, 1 x the third piece of the Star Stone, 1 x the fourth piece of the Star Stone, 1 x the last piece of the Star Stone. Reward: 1 x the Star Key.",
+      "contracts": [
+        {
+          "giver_vnum": 134162,
+          "completion_key": "give=I:134131,I:134132,I:134133,I:134134,I:134135;receive=I:134125;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x the first piece of the Star Stone",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            134131
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x the second piece of the Star Stone",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            134132
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x the third piece of the Star Stone",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            134133
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-4",
+          "text": "Carry 1 x the fourth piece of the Star Stone",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            134134
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-5",
+          "text": "Carry 1 x the last piece of the Star Stone",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            134135
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 134162,
+              "completion_key": "give=I:134131,I:134132,I:134133,I:134134,I:134135;receive=I:134125;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-134167-d86a832b706b",
+      "title": "Deliver 1 x a ring of elven nobility",
+      "category": "request",
+      "summary": "Bring 1 x a ring of elven nobility. Reward: 1 x the leggings of the bladesingers.",
+      "contracts": [
+        {
+          "giver_vnum": 134167,
+          "completion_key": "give=I:134144;receive=I:134145;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a ring of elven nobility",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            134144
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 134167,
+              "completion_key": "give=I:134144;receive=I:134145;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-134169-05c42346bab0",
+      "title": "Deliver 1 x a bone key",
+      "category": "request",
+      "summary": "Bring 1 x a bone key. Reward: 1 x a ring of elven nobility.",
+      "contracts": [
+        {
+          "giver_vnum": 134169,
+          "completion_key": "give=I:134048;receive=I:134144;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a bone key",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            134048
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 134169,
+              "completion_key": "give=I:134048;receive=I:134144;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

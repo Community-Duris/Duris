@@ -50,6 +50,10 @@ make zone story bootstrap fail closed; they are never silently ignored.
 
 ## Schema version 1
 
+Version 1 remains supported. Use version 2 for new starter and hometown
+integrations; it adds the required `introduction`, `orientation`, and `contacts`
+fields below. Story bindings and step kinds retain the same meanings.
+
 Every shown field is required. Unknown/duplicate fields are rejected. Files
 are bounded to 256 KiB. Plain-text strings are at most 1,024 UTF-8 bytes,
 without controls or `$` substitution tokens. IDs use lowercase letters,
@@ -165,7 +169,74 @@ C++ specials cannot reliably be discovered by parsing commands or dialogue.
 
 ## Later schema capabilities
 
-Version 1 rejects dialogue, personal recovery, kills, arbitrary scripted events,
+Both versions reject dialogue milestones, personal recovery, kills, arbitrary scripted events,
 coin objectives, and new reward fields. Do not deploy placeholders claiming those
 events are tracked. The integration plan specifies the durable adapters and
 credit policies needed before those kinds can enter a versioned schema.
+
+## Schema version 2: orientation and encountered people
+
+Add these fields to the version 1 root and set `schema_version` to 2:
+
+```json
+{
+  "introduction": "Explore the forest and the towers to uncover local requests.",
+  "orientation": ["Start with look and exits."],
+  "contacts": [
+    {
+      "mob_vnum": 13500,
+      "name": "Alvinar",
+      "keyword": "alvinar",
+      "description": "Ask about his garden, then follow the flower checklist.",
+      "topics": ["garden", "flowers"]
+    }
+  ]
+}
+```
+
+The introduction and up to 16 orientation lines appear once the area is
+discovered. **Do not name unrevealed NPCs in these fields.** Each contact
+appears only after a saved physical encounter with that NPC prototype. The
+root permits up to 256 distinct contacts. Keywords must be real NPC aliases;
+the source audit and native bootstrap verify them. Choose a distinctive alias
+so another NPC in the room is unlikely to intercept the suggested command.
+Topics are up to 32 distinct command words. Verify each against native `M`
+responses or the actual special procedure. A keyword is guidance, not a
+learned-topic achievement. Empty topics are valid for item-only request givers.
+
+Native quest givers are tracked even without authored contacts. An area visit
+or group quest credit never manufactures an encounter. The player must be
+awake and see an identifiable living NPC in the same physical room.
+Invisible/undetectable NPCs, anonymous infravision shapes, remote viewing,
+temporary placement, ships, arenas, staff, and disconnected characters do not
+reveal contacts. Room arrival, visible room/detail inspection, accepted native
+dialogue, and an NPC arriving beside a player can record an encounter.
+
+A story becomes visible after meeting a terminal giver. When alternatives
+use several givers, one meeting reveals the shared request, while only met
+contacts are listed. Keep story prose free of unseen NPC names; use phrases
+such as “the request giver” for unresolved people. Introductions, contacts,
+and hints are authored prose, so this spoiler discipline is a builder duty.
+
+Encounter records include character, season, NPC VNUM, room, and first time.
+They persist in the existing SQL/flat-file bucket authority using domain
+header `ZSQF|3` and `M` records. The first write upgrades older headers
+atomically; versions 1 and 2 still load without guessed encounters. SQL bucket
+schema and flat-file framing are unchanged. Older binaries cannot read the
+new domain state; preserve a pre-upgrade snapshot for a planned rollback.
+
+Discovery publishes the zone name and its exact selectable `quest zone`
+command after saving succeeds. First meetings point to new guidance; first
+recorded completion progress points back to the journal. Repeats do not
+repeat those prompts. The ordered checklist marks the first outstanding step
+with `Next:`. Item checks remain current possession and completion steps
+remain durable receipts; no new gameplay prerequisites are enforced.
+
+Audit required starter/town coverage with:
+
+```bash
+python3 scripts/zone_story_quest_home_coverage.py --check
+```
+
+See the [coverage register](../reference/ZONE_STORY_STARTER_HOMETOWN_COVERAGE.md)
+for mapped areas, exclusions, and the remaining qualification work.

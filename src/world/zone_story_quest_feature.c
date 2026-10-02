@@ -469,6 +469,13 @@ bool service::set_catalog(zone_story_quest_catalog::catalog catalog, std::string
 	}
 	catalog_ = std::move(catalog);
 	quest_units_ = zone_story_quest_catalog::quest_units(catalog_);
+	tracked_npcs_.clear();
+	for (const auto &definition : catalog_.definitions)
+		if (definition.active)
+			tracked_npcs_.insert(definition.giver_vnum);
+	for (const auto &mapping : catalog_.story_mappings)
+		for (const auto &contact : mapping.contacts)
+			tracked_npcs_.insert(contact.mob_vnum);
 	return true;
 }
 
@@ -1211,6 +1218,107 @@ int32_t service::resolve_zone(std::string_view name, std::string *error) const
 	return -1;
 }
 
+bool service::tracks_npc(int32_t vnum) const
+{
+	return tracked_npcs_.contains(vnum);
+}
+
+bool service::has_met_npc(uint32_t season, uint32_t pid, int32_t vnum) const
+{
+	const auto *state = find_state(season, pid);
+	return state && state->met_npcs.contains(vnum);
+}
+
+result service::meet_npc(uint32_t season, uint32_t pid, int32_t vnum, int32_t room, int64_t at,
+			 std::string *error)
+{
+	if (!season || !pid || !tracks_npc(vnum) || room <= 0 || at <= 0 ||
+	    deleted_characters_.contains({ season, pid }))
+		return fail(error, "invalid NPC encounter"), result::rejected;
+	bool visited = false;
+	for (const auto &zone : catalog_.zones)
+		if (zone.discoverable && room >= zone.first_vnum && room <= zone.last_vnum &&
+		    has_discovered(season, pid, zone.zone_number, at))
+			visited = true;
+	if (!visited)
+		return fail(error, "NPC encounter requires a discovered physical room"),
+		       result::rejected;
+	if (has_met_npc(season, pid, vnum))
+		return result::already_applied;
+	dirty_characters_.insert({ season, pid });
+	state_for(season, pid).met_npcs.emplace(vnum, character_state::encounter{ room, at });
+	return result::applied;
+}
+
+bool service::unit_encountered(uint32_t season, uint32_t pid,
+			       const zone_story_quest_catalog::quest_unit &unit) const
+{
+	return std::any_of(unit.contracts.begin(), unit.contracts.end(),
+			   [&](const auto &id)
+			   {
+				   const auto *definition = find_definition(id);
+				   return definition &&
+					  has_met_npc(season, pid, definition->giver_vnum);
+			   });
+}
+
+std::string service::zone_command(int32_t number) const
+{
+	const auto *zone = find_zone(number);
+	return zone ? "quest zone " + display_zone_name(catalog_, *zone) : "quest zone";
+}
+
+std::string service::encounter_hint(uint32_t season, uint32_t pid, int32_t number,
+				    int32_t vnum) const
+{
+	if (!has_met_npc(season, pid, vnum))
+		return {};
+	std::string name;
+	const auto *zone = find_zone(number);
+	for (const auto &mapping : catalog_.story_mappings)
+		if (zone && mapping.source_area == zone->source_area)
+			for (const auto &contact : mapping.contacts)
+				if (contact.mob_vnum == vnum)
+					name = contact.name;
+	if (name.empty())
+		for (const auto &definition : catalog_.definitions)
+			if (definition.zone_number == number && definition.giver_vnum == vnum)
+			{
+				name = definition.giver_name;
+				break;
+			}
+	return "Your journal now includes " + (name.empty() ? "someone you have met" : name) +
+	       ". Type '" + zone_command(number) + "' to see their guidance.\r\n";
+}
+
+std::string service::completion_hint(uint32_t season, uint32_t pid, std::string_view id) const
+{
+	const auto completed = completed_definition_ids(season, pid, no_completion_cutoff);
+	for (const auto &unit : quest_units_)
+	{
+		if (!has_discovered(season, pid, unit.zone_number) ||
+		    !unit_encountered(season, pid, unit))
+			continue;
+		const auto *story = zone_story_quest_catalog::story_for_contract(
+			catalog_, unit.contracts.front());
+		const bool terminal = std::find(unit.contracts.begin(), unit.contracts.end(), id) !=
+				      unit.contracts.end();
+		const std::string command = " Type '" + zone_command(unit.zone_number) +
+					    "' to see your next action.\r\n";
+		if (terminal && contains_any(unit.contracts, completed))
+			return "Progress recorded: " +
+			       (story ? story->title : display_quest_name(find_definition(id))) +
+			       "." + command;
+		if (story)
+			for (const auto &step : story->steps)
+				if (std::find(step.contracts.begin(), step.contracts.end(), id) !=
+					    step.contracts.end() &&
+				    contains_any(step.contracts, completed))
+					return "Progress recorded: " + step.text + "." + command;
+	}
+	return {};
+}
+
 bool service::daily_eligible_for(uint32_t season, uint32_t pid, std::string_view id, int level,
 				 int racewar, int strongest, int64_t now) const
 {
@@ -1323,13 +1431,41 @@ service::render_journal(uint32_t season, uint32_t pid, int32_t number, int level
 		out << "  Item checks show what you have now. Recorded steps show earned progress.\r\n";
 	const auto completed = completed_definition_ids(season, pid, no_completion_cutoff);
 	const auto &today = daily_completed_ids(season, pid, now);
+	bool contacts_shown = false;
+	for (const auto &mapping : catalog_.story_mappings)
+		if (mapping.source_area == zone->source_area)
+		{
+			if (!daily_only)
+			{
+				if (!mapping.introduction.empty())
+					out << "  " << mapping.introduction << "\r\n";
+				for (const auto &action : mapping.orientation)
+					out << "  " << action << "\r\n";
+				for (const auto &contact : mapping.contacts)
+					if (has_met_npc(season, pid, contact.mob_vnum))
+					{
+						contacts_shown = true;
+						out << "  [Met] " << contact.name << "\r\n    "
+						    << contact.description << "\r\n";
+						for (const auto &topic : contact.topics)
+							out << "    Try: ask " << contact.keyword
+							    << " " << topic << "\r\n";
+					}
+			}
+		}
 	size_t count = 0;
+	size_t hidden = 0;
 	for (const auto &unit : quest_units_)
 	{
 		if (unit.zone_number != number)
 			continue;
 		if (daily_only && !unit.daily_candidate)
 			continue;
+		if (!unit_encountered(season, pid, unit))
+		{
+			++hidden;
+			continue;
+		}
 		const auto *definition = find_definition(unit.contracts.front());
 		const auto *story = zone_story_quest_catalog::story_for_contract(
 			catalog_, unit.contracts.front());
@@ -1358,6 +1494,7 @@ service::render_journal(uint32_t season, uint32_t pid, int32_t number, int level
 		if (story)
 		{
 			out << "    " << story->summary << "\r\n";
+			bool next_shown = story_done;
 			for (const auto &step : story->steps)
 			{
 				bool satisfied = false;
@@ -1377,6 +1514,11 @@ service::render_journal(uint32_t season, uint32_t pid, int32_t number, int level
 				}
 				else
 					out << "    [Check inventory] " << step.text << "\r\n";
+				if (!satisfied && !next_shown)
+				{
+					out << "    Next: " << step.text << "\r\n";
+					next_shown = true;
+				}
 				if (!satisfied && !step.hint.empty())
 					out << "      " << step.hint << "\r\n";
 			}
@@ -1398,7 +1540,9 @@ service::render_journal(uint32_t season, uint32_t pid, int32_t number, int level
 		    status.find("Locked today") != std::string::npos)
 			out << "    Not currently available. Complete earlier requests or return after more progress.\r\n";
 	}
-	if (!count)
+	if (hidden || (!count && !contacts_shown))
+		out << "  Explore and meet the people here. Their stories appear after you encounter them.\r\n";
+	if (!count && !hidden && !contacts_shown)
 		out << "  This area has no " << (daily_only ? "daily-suitable" : "tracked")
 		    << " quests.\r\n";
 	return out.str();
@@ -1599,7 +1743,8 @@ std::string service::render_daily(uint32_t season, uint32_t pid, int level, int 
 				continue;
 			if (contains_any(unit.contracts, today))
 				++done;
-			else if (std::any_of(unit.contracts.begin(), unit.contracts.end(),
+			else if (unit_encountered(season, pid, unit) &&
+				 std::any_of(unit.contracts.begin(), unit.contracts.end(),
 					     [&](const auto &id) {
 						     return daily_eligible_for(season, pid, id,
 									       level, racewar,
@@ -1674,6 +1819,8 @@ zone_story_quest_state::changes service::changes_for_persistence() const
 				"E|" + hex_encode(id) + "|" +
 					hex_encode(serialize_observation(found->second)) + "\n";
 	}
+	if (!updates.values.empty())
+		updates.values["meta"] = "ZSQF|3\nK|" + std::to_string(checklist_starts_at_) + "\n";
 	return updates;
 }
 
@@ -1749,7 +1896,7 @@ std::string service::serialize_state(std::string *error) const
 {
 	(void)error;
 	std::ostringstream output;
-	output << "ZSQF|2\nK|" << checklist_starts_at_ << "\n";
+	output << "ZSQF|3\nK|" << checklist_starts_at_ << "\n";
 	for (const auto &[id, stored] : transactions_)
 	{
 		bool includes_deleted_pid = false;
@@ -1785,6 +1932,9 @@ std::string service::serialize_state(std::string *error) const
 			output << "V|" << state.season_id << "|" << state.pid << "|" << zone << "|"
 			       << discovery.room_vnum << "|" << discovery.visited_at << "|"
 			       << discovery.source << "\n";
+		for (const auto &[mob, encounter] : state.met_npcs)
+			output << "M|" << state.season_id << "|" << state.pid << "|" << mob << "|"
+			       << encounter.room_vnum << "|" << encounter.encountered_at << "\n";
 		for (const auto &[period, assignment] : state.daily_assignments)
 			output << "D|" << state.season_id << "|" << state.pid << "|" << period
 			       << "|" << hex_encode(assignment.quest_definition_id) << "|"
@@ -1834,6 +1984,7 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 		discoveries;
 	std::vector<std::tuple<uint32_t, uint32_t, int64_t, std::string>> daily_projections;
 	std::vector<std::tuple<uint32_t, uint32_t, std::string, int64_t>> first_completions;
+	std::map<std::tuple<uint32_t, uint32_t, int32_t>, character_state::encounter> encounters;
 	int version = 0;
 	int64_t cutover = 0;
 	bool header_seen = false;
@@ -1850,21 +2001,21 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 			continue;
 		const auto fields = split(line);
 		if (fields.size() == 2 && fields[0] == "ZSQF" &&
-		    (fields[1] == "1" || fields[1] == "2") && !header_seen)
+		    (fields[1] == "1" || fields[1] == "2" || fields[1] == "3") && !header_seen)
 		{
-			version = fields[1] == "1" ? 1 : 2;
+			version = fields[1] == "1" ? 1 : fields[1] == "2" ? 2 : 3;
 			header_seen = true;
 			continue;
 		}
 		if (!header_seen)
 			return fail(error, "zone-story state header is missing");
-		if (fields[0] == "K" && fields.size() == 2 && version == 2)
+		if (fields[0] == "K" && fields.size() == 2 && version >= 2)
 		{
 			if (cutover_seen || !parse_integer(fields[1], &cutover) || cutover < 0)
 				return fail(error, "invalid checklist cutover");
 			cutover_seen = true;
 		}
-		else if (fields[0] == "F" && fields.size() == 5 && version == 2)
+		else if (fields[0] == "F" && fields.size() == 5 && version >= 2)
 		{
 			uint32_t season = 0, pid = 0;
 			int64_t completed_at = 0;
@@ -1876,7 +2027,7 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 				return fail(error, "invalid first completion time");
 			first_completions.emplace_back(season, pid, id, completed_at);
 		}
-		else if (fields[0] == "P" && fields.size() == 5 && version == 2)
+		else if (fields[0] == "P" && fields.size() == 5 && version >= 2)
 		{
 			uint32_t season = 0, pid = 0;
 			int64_t period = 0;
@@ -1887,7 +2038,7 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 				return fail(error, "invalid daily projection");
 			daily_projections.emplace_back(season, pid, period, id);
 		}
-		else if (fields[0] == "V" && fields.size() == 7 && version == 2)
+		else if (fields[0] == "V" && fields.size() == 7 && version >= 2)
 		{
 			uint32_t season = 0, pid = 0;
 			int32_t zone = 0, room = 0;
@@ -1938,6 +2089,21 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 			    definition_id.empty() || !credit_mask)
 				return fail(error, "invalid character credit record");
 			credits.emplace_back(season, pid, std::move(definition_id), credit_mask);
+		}
+		else if (fields[0] == "M" && fields.size() == 6 && version == 3)
+		{
+			uint32_t season = 0, pid = 0;
+			int32_t mob = 0, room = 0;
+			int64_t at = 0;
+			if (!parse_integer(fields[1], &season) || !parse_integer(fields[2], &pid) ||
+			    !parse_integer(fields[3], &mob) || !parse_integer(fields[4], &room) ||
+			    !parse_integer(fields[5], &at) || !season || !pid || mob <= 0 ||
+			    room <= 0 || at <= 0 ||
+			    !encounters
+				     .emplace(std::make_tuple(season, pid, mob),
+					      character_state::encounter{ room, at })
+				     .second)
+				return fail(error, "invalid or duplicate NPC encounter");
 		}
 		else if (fields[0] == "D" && fields.size() == 11)
 		{
@@ -2002,7 +2168,7 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 	}
 	if (!header_seen)
 		return fail(error, "zone-story state header is missing");
-	if (version == 2 && !cutover_seen)
+	if (version >= 2 && !cutover_seen)
 		return fail(error, "checklist cutover is missing");
 	service candidate(catalog_);
 	candidate.set_daily_policy(daily_policy_);
@@ -2092,6 +2258,12 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 	for (const auto &[season, pid, period, id] : daily_projections)
 		if (!candidate.deleted_characters_.count({ season, pid }))
 			candidate.state_for(season, pid).daily_completions[period].insert(id);
+	for (const auto &[key, encounter] : encounters)
+	{
+		const auto &[season, pid, mob] = key;
+		if (!candidate.deleted_characters_.contains({ season, pid }))
+			candidate.state_for(season, pid).met_npcs.emplace(mob, encounter);
+	}
 	*this = std::move(candidate);
 	return true;
 }

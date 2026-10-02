@@ -30,6 +30,7 @@ class temporary_placement
 	temporary_placement &operator=(const temporary_placement &) = delete;
 };
 void arrived(struct char_data *player);
+void encountered(struct char_data *player, struct char_data *npc);
 bool daily_eligible(struct char_data *player, std::string_view definition_id,
 		    int strongest_party_level, int64_t completed_at);
 bool bootstrap(std::string *error = nullptr);

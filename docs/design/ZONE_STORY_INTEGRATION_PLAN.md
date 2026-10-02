@@ -1,7 +1,8 @@
 # Universal zone story integration plan
 
-**Status: per-area mapping foundation implemented on
-`codex/discovered-zone-dailies`; deeper journey integration is incremental.**
+**Status: builder mappings, starter/town coverage, encountered-NPC visibility,
+and first-journey guidance implemented on `codex/discovered-zone-dailies`.
+Deeper objective and provenance integration is incremental.**
 
 Maintain this plan as zones are reviewed. Keep static contract classification,
 historical objective coverage, economic support, and gameplay qualification
@@ -38,9 +39,21 @@ Candidate links need source review and appropriate gameplay qualification.
 - [x] Builder binding export and checked-in catalog regeneration.
 - [x] Twin Towers classification, belt/access hint, plant/arrow/wand alternatives,
   distinct feathers, clothing material counts, and unsupported-offering warnings.
+- [x] Schema 2 area introductions, orientation, verified NPC command aliases,
+  authored conversation topics, and first outstanding `Next:` checklist action.
+- [x] Physical identifiable NPC encounters persisted per character and season;
+  unseen contacts and their quest rows stay hidden. Discovery, first meetings,
+  and newly recorded receipt progress publish exact journal commands after saving.
+- [x] All 27 native starter/town areas have sidecars; creation-room and town-flag
+  audit, full Q classification, explicit services and missing-item exclusions,
+  mansion rescue grouping, and known Ailvio ingredient routes.
 
-No player objective history or new persistence schema is introduced in this
-phase. Live inventory is deliberately separate from earned accomplishments.
+Live inventory remains separate from earned accomplishments. NPC encounter
+history uses domain header `ZSQF|3` and existing SQL/flat-file buckets; old
+domain versions load without guessed meetings. No SQL schema migration is
+needed. Learned topics, source provenance, and scripted objective history remain
+future work. See the [starter/town register](../reference/ZONE_STORY_STARTER_HOMETOWN_COVERAGE.md)
+for the current baseline and its qualification limits.
 
 ### Foundation verification — October 2, 2026
 
@@ -69,6 +82,34 @@ The following focused regressions passed:
 These are executable mapping/adapter and persistence checks. A full live Twin
 Towers journey, including custom dialogue and animal source/decay behavior,
 remains pending the adapters below. No production operations were performed.
+
+## Starter/town guidance verification — October 2, 2026
+
+Both maintained server builds passed with the commands above. The actual
+isolated native journey passed:
+
+```bash
+python3 tests/async/test_discovered_zone_daily_journey.py \
+  bin/server/dms_zone_story_builder_flatfile
+```
+
+It verifies first discovery and its exact command, an unseen giver omitted
+from the journal, a later physical meeting revealing the giver and `Next:`
+checklist, two real item offerings with one daily bonus, saved reward identity,
+and a cold reconnect retaining encounters and progress without repeated prompts.
+
+The story, feature, production/bootstrap, production-catalog, arrival, catalog,
+tracking, repository, flat-file state, and daily-report regressions passed.
+`test_zone_story_quest_story.py` parses every shipped mapping in native C++,
+checks all 27 required areas, verifies visibility, and covers both sidecar
+versions. Feature tests verify V2-to-V3 delta upgrade and duplicate/corrupt
+encounter rejection. Arrival tests verify visibility, remote-view suppression,
+save rollback, and restart. The existing 25-character/60-day/6,000-completion
+flat-file capacity fixture also passed.
+
+No production operations or migrations were run. These checks qualify the
+universal guidance and persistence paths; complete individual world journeys
+remain tracked in the area register.
 
 ## Implementation backlog
 
@@ -133,6 +174,11 @@ with unchanged input/reward identities.
 - [ ] Add compact tracking, current stage/next action, concrete blocked reasons,
   source-aware hints, branches, and updates after inventory/equipment/decay,
   dialogue, and confirmed outcomes.
+
+Delivered portion: plain/ANSI journals now show the first outstanding step,
+encountered contacts and conversation commands, live material counts, receipt
+progress, and post-save first-time prompts. Structured client projection,
+source-aware updates, and durable dialogue/stage events remain open.
 - [ ] Derive costs/rewards from executable metadata. Distinguish story/daily
   completion and optional personal/lore achievements. Current counts can
   decrease while earned history persists.
@@ -159,8 +205,9 @@ contract classification; it does not claim complete objective coverage.
 
 | Area | Mapping revision | Native classification | Journey/event coverage | Economics | Qualification |
 | --- | ---: | --- | --- | --- | --- |
-| Twin Towers Forest | 1 | Complete: 84 contracts → 10 stories; 40 rejections and 24 supporting services/trades excluded | Live belt/plant/material checks and existing receipts; dialogue/provenance pending | Supported flowers/arrows/sprite; clothing/tanning mixed offerings unavailable with active accounting | Focused mapping/projection/native adapter/build checks; complete journey pending deeper adapters |
-| Other active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
+| Twin Towers Forest | 2 | Complete: 84 contracts → 10 stories; 40 rejections and 24 supporting services/trades excluded | Encountered contacts, conversation guidance, live belt/plant/material checks, existing receipts; dialogue/provenance pending | Supported flowers/arrows/sprite; clothing/tanning mixed offerings unavailable with active accounting | Focused mapping/projection/native adapter/build checks; complete journey pending deeper adapters |
+| All 27 starter/town areas | 1 | Complete static Q classification; detailed counts and evidence in starter/town register | Orientation, encountered people, concrete delivery counts and native receipt checklists; selected multi-step routes | Existing offering limits; reviewed crafting and equipment services do not create story/daily units | All maps pass source/native validation; isolated native guided journey; individual full-world routes pending |
+| Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
 
 ## Twin Towers evidence and decisions
 

@@ -4,15 +4,21 @@ The checked-in [production catalog](ZONE_STORY_QUEST_PRODUCTION_CATALOG.json) is
 built from active static quest files listed in `areas/AREA`, following the area
 compiler's Q-block boundary. Revision 2 contains 2,668 stable contracts, of which
 2,659 are eligible for zone achievements and 2,133 are daily content candidates.
-Its area registry has 350 entries, with 349 discoverable playable areas; empty
-areas can award discovery without contributing a quest denominator.
+Its area registry has 350 entries, with 349 positive area headers. Actual
+playable rooms can award discovery without contributing a quest denominator;
+the end-of-world sentinel has no playable room and earns no discovery.
 
 Optional `areas/story/<area>.story.json` mappings project raw contracts into
 named stories without changing native receipt IDs. Twin Towers replaces 84
 contracts with 10 achievement units and 3 daily groups, excluding 40 returned
 offerings and 24 supporting services/trades. The global projection now has
-2,585 achievement units and 2,115 daily candidate units. Other areas retain
-native-contract fallback; these counts do not claim full semantic review.
+2,464 achievement units and 2,055 daily candidate units after adding all 27
+starter/town mappings, equipment/crafting services, intermediate outcomes,
+and explicit missing-item exclusions. There are 28 area sidecars and 2,579
+projected units including services and administrative content. Other areas
+retain native-contract fallback; these counts do not claim full semantic review.
+The [starter/town register](ZONE_STORY_STARTER_HOMETOWN_COVERAGE.md) identifies
+the native selection sources, exact mapped areas, and remaining journey work.
 See the [builder guide](../guides/ZONE_STORY_BUILDING.md) and
 [integration register](../design/ZONE_STORY_INTEGRATION_PLAN.md).
 

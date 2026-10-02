@@ -1,6 +1,6 @@
 {
-  "schema_version": 1,
-  "revision": 1,
+  "schema_version": 2,
+  "revision": 2,
   "source_area": "twin_towers_forest",
   "coverage": "complete",
   "stories": [
@@ -800,6 +800,89 @@
           "giver_vnum": 13502,
           "completion_key": "give=I:13571;receive=C:100;disappear=0"
         }
+      ]
+    }
+  ],
+  "introduction": "Explore the forest and the towers to uncover local stories and requests.",
+  "orientation": [
+    "Start with look and exits. People appear in this journal once you have had a chance to meet them."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 13500,
+      "name": "a farmer",
+      "keyword": "farmer",
+      "description": "Ask about local requests and follow the checklist below.",
+      "topics": [
+        "hello",
+        "farm",
+        "flowers",
+        "towers",
+        "woods",
+        "sons"
+      ]
+    },
+    {
+      "mob_vnum": 13501,
+      "name": "Farlindel the archer",
+      "keyword": "farlindel",
+      "description": "Ask about local requests and follow the checklist below.",
+      "topics": [
+        "hello",
+        "woods",
+        "game",
+        "mage",
+        "archer",
+        "practice"
+      ]
+    },
+    {
+      "mob_vnum": 13502,
+      "name": "Hanson the archer",
+      "keyword": "hanson",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hello",
+        "woods",
+        "game",
+        "hide",
+        "archer",
+        "father"
+      ]
+    },
+    {
+      "mob_vnum": 13503,
+      "name": "a woman",
+      "keyword": "wife",
+      "description": "Ask about local requests and follow the checklist below.",
+      "topics": [
+        "hello",
+        "father",
+        "son",
+        "husband",
+        "clothing",
+        "jacket"
+      ]
+    },
+    {
+      "mob_vnum": 13504,
+      "name": "a gardener",
+      "keyword": "tryve",
+      "description": "This gardener carries the belt used at the magical garden barrier.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13520,
+      "name": "a beautiful sprite",
+      "keyword": "sprite",
+      "description": "Ask about local requests and follow the checklist below.",
+      "topics": [
+        "hi",
+        "name",
+        "crying",
+        "wand",
+        "fairy",
+        "magical"
       ]
     }
   ]

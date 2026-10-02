@@ -1239,6 +1239,10 @@ bool char_to_room(P_char ch, int room, int dir)
 				zone_story_quest_runtime::arrived(present);
 				break;
 			}
+	if (placed && !player)
+		for (P_char present = world[ch->in_room].people; present;
+		     present = present->next_in_room)
+			zone_story_quest_runtime::encountered(present, ch);
 	return placed;
 }
 static bool char_to_room_impl(P_char ch, int room, int dir)

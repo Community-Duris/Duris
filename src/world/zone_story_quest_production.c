@@ -17,6 +17,7 @@ extern P_index obj_index;
 extern FILE *mob_f;
 extern FILE *obj_f;
 extern int top_of_objt;
+extern int top_of_mobt;
 extern int number_of_quests;
 extern struct quest_data quest_index[];
 extern struct zone_data *zone_table;
@@ -138,11 +139,13 @@ std::string zone_name_for_number(int zone_number)
 	return {};
 }
 
-std::string prototype_label(P_index index, int number, FILE *file)
+std::string prototype_text(P_index index, int number, FILE *file, int requested_field)
 {
 	if (!index || number < 0)
 		return {};
-	if (index[number].desc2)
+	if (requested_field == 0 && index[number].keys)
+		return index[number].keys;
+	if (requested_field == 1 && index[number].desc2)
 		return compact_player_text(index[number].desc2);
 	// Prototype text is lazy in db.c. Read just the keyword/short-description
 	// fields without instantiating an NPC/item or minting an ownership UID.
@@ -152,7 +155,7 @@ std::string prototype_label(P_index index, int number, FILE *file)
 	if (previous < 0 || fseek(file, index[number].pos, SEEK_SET))
 		return {};
 	std::string label;
-	for (int field = 0; field < 2; ++field)
+	for (int field = 0; field <= requested_field; ++field)
 	{
 		std::string text;
 		int character;
@@ -163,12 +166,17 @@ std::string prototype_label(P_index index, int number, FILE *file)
 			label.clear();
 			break;
 		}
-		if (field == 1)
+		if (field == requested_field)
 			label = std::move(text);
 	}
 	if (fseek(file, previous, SEEK_SET))
 		return {};
-	return compact_player_text(label.c_str());
+	return requested_field == 0 ? label : compact_player_text(label.c_str());
+}
+
+std::string prototype_label(P_index index, int number, FILE *file)
+{
+	return prototype_text(index, number, file, 1);
 }
 
 std::string giver_name_for_index(int quester_rnum)
@@ -345,6 +353,33 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 		return result;
 	}
 	for (const auto &mapping : result.story_mappings)
+	{
+		for (const auto &contact : mapping.contacts)
+		{
+			bool found = false;
+			for (int index = 0; mob_index && index <= top_of_mobt; ++index)
+				if (mob_index[index].virtual_number == contact.mob_vnum)
+				{
+					std::istringstream keywords(
+						prototype_text(mob_index, index, mob_f, 0));
+					std::string keyword;
+					while (keywords >> keyword)
+					{
+						std::transform(keyword.begin(), keyword.end(),
+							       keyword.begin(), [](unsigned char c)
+							       { return std::tolower(c); });
+						found = found || keyword == contact.keyword;
+					}
+					break;
+				}
+			if (!found)
+			{
+				if (error)
+					*error =
+						"story contact refers to an unknown NPC prototype or command alias";
+				return result;
+			}
+		}
 		for (const auto &story : mapping.stories)
 			for (const auto &step : story.steps)
 				for (const int vnum : step.item_vnums)
@@ -362,6 +397,7 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 						return result;
 					}
 				}
+	}
 	std::vector<zone_story_quest_catalog::diagnostic> diagnostics;
 	if (!zone_story_quest_catalog::validate(result, &diagnostics) && error)
 		*error = diagnostics.empty() ?

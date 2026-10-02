@@ -2,6 +2,7 @@
 #include "world/zone_story_quest_story.h"
 
 #include <cjson/cJSON.h>
+#include <algorithm>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -112,6 +113,57 @@ int main(int argc, char **argv)
 	require(zone_story_quest_catalog::eligible_definition_count(catalog, 135, 2) == 84,
 		"raw Twin Towers count changed");
 	std::string error;
+	if (argc > 3 && std::string(argv[3]) == "all")
+	{
+		std::unique_ptr<cJSON, decltype(&cJSON_Delete)> snapshot(
+			cJSON_Parse(read(argv[1]).c_str()), cJSON_Delete);
+		for (auto *mapping =
+			     cJSON_GetObjectItemCaseSensitive(snapshot.get(), "story_mappings")
+				     ->child;
+		     mapping; mapping = mapping->next)
+		{
+			char *json = cJSON_PrintUnformatted(mapping);
+			const bool ok = zone_story_quest_story::apply(
+				json, text(mapping, "source_area"), &catalog, &error);
+			cJSON_free(json);
+			if (!ok)
+				std::cerr << error << '\n';
+			require(ok, "a starter/town mapping failed native validation");
+		}
+		service tracker(catalog);
+		for (const auto &mapping : catalog.story_mappings)
+		{
+			const auto &zone = *std::find_if(
+				catalog.zones.begin(), catalog.zones.end(), [&](const auto &z)
+				{ return z.source_area == mapping.source_area; });
+			require(tracker.discover_zone(7, 42, zone.zone_number,
+						      std::max(1, zone.first_vnum), 100,
+						      "arrival") == result::applied,
+				"mapped area did not unlock discovery");
+			const auto unseen = tracker.render_journal(7, 42, zone.zone_number, 10, 1,
+								   101, false, false);
+			for (const auto &contact : mapping.contacts)
+			{
+				require(unseen.find("[Met] " + contact.name) == std::string::npos,
+					"unseen NPC was listed");
+				require(tracker.meet_npc(7, 42, contact.mob_vnum,
+							 std::max(1, zone.first_vnum),
+							 101) == result::applied,
+					"mapped contact was not tracked");
+			}
+			const auto journal = tracker.render_journal(7, 42, zone.zone_number, 10, 1,
+								    102, false, false);
+			for (const auto &contact : mapping.contacts)
+				require(journal.find("[Met] " + contact.name) != std::string::npos,
+					"met NPC was missing");
+		}
+		require(catalog.story_mappings.size() == 28 &&
+				tracker.summary_for(7, 42).total == 2464,
+			"native story projection disagreed with the complete source audit");
+		std::cout
+			<< "All starter/town mappings and encounter visibility passed native projection.\n";
+		return 0;
+	}
 	const bool applied = zone_story_quest_story::apply(read(argv[2]), "twin_towers_forest",
 							   &catalog, &error);
 	if (argc > 3 && std::string(argv[3]) == "invalid")
@@ -149,6 +201,11 @@ int main(int argc, char **argv)
 	require(tracker.discover_zone(7, 42, 135, 13556, now - 10, "arrival") == result::applied,
 		"discovery failed");
 	zone_story_quest_catalog::journal_inventory inventory;
+	require(tracker.render_journal(7, 42, 135, 10, 1, now, false, false).find(flowers.title) ==
+			std::string::npos,
+		"zone discovery exposed an unseen giver's story");
+	require(tracker.meet_npc(7, 42, 13500, 13556, now - 9) == result::applied,
+		"physical encounter failed");
 	inventory.carried[13521] = 1;
 	inventory.carried[flowers.steps[1].item_vnums.front()] = 1;
 	auto journal = tracker.render_journal(7, 42, 135, 10, 1, now, false, false, &inventory);

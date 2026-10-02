@@ -208,13 +208,17 @@ def production_catalog(source_root, content_revision=2):
         if not isinstance(mapping, dict) or mapping.get("source_area") != zone["source_area"]:
             raise ValueError(f"{path}: source_area must match its filename")
         result["story_mappings"].append(mapping)
-    items = set()
+    items, mobs = set(), {}
     for zone in zones:
         path = source_root / "areas/obj" / f"{zone['source_area']}.obj"
         if path.is_file():
             items.update(int(match[1]) for line in path.read_text(errors="replace").splitlines()
                          if (match := QUEST_BLOCK_RE.fullmatch(line.strip())) and int(match[1]) > 0)
-    story_units(result, items)
+        path = source_root / "areas/mob" / f"{zone['source_area']}.mob"
+        if path.is_file():
+            for match in re.finditer(r"^#(\d+)\s*\n([^~]*)~", path.read_text(errors="replace"), re.M):
+                mobs[int(match[1])] = match[2].lower().split()
+    story_units(result, items, mobs)
     return result
 
 
@@ -227,7 +231,7 @@ def unique_fields(pairs):
     return result
 
 
-def story_units(catalog, item_vnums=None):
+def story_units(catalog, item_vnums=None, mob_keywords=None):
     """Validate sidecars and project native receipts without changing their IDs."""
     definitions = {d["definition_id"]: d for d in catalog["definitions"]}
     references = {(d["giver_vnum"], d["completion_key"]): d for d in catalog["definitions"]}
@@ -278,8 +282,13 @@ def story_units(catalog, item_vnums=None):
             bound.add(id)
 
     for mapping in array(catalog.get("story_mappings", []), 0, 350):
-        fields(mapping, {"schema_version", "revision", "source_area", "coverage", "stories", "exclusions"})
-        number(mapping["schema_version"], 1, 1)
+        if not isinstance(mapping, dict):
+            raise ValueError("story mapping: expected object")
+        schema = number(mapping.get("schema_version"), 1, 2)
+        keys = {"schema_version", "revision", "source_area", "coverage", "stories", "exclusions"}
+        if schema == 2:
+            keys |= {"introduction", "orientation", "contacts"}
+        fields(mapping, keys)
         number(mapping["revision"], 1, 2**31 - 1)
         area = text(mapping, "source_area")
         if not re.fullmatch(r"[a-z0-9_-]{1,64}", area) or area not in areas or area in mapped_areas:
@@ -288,6 +297,28 @@ def story_units(catalog, item_vnums=None):
         zone = areas[area]["zone_number"]
         if text(mapping, "coverage") not in {"partial", "complete"}:
             raise ValueError("story mapping: coverage must be partial or complete")
+        if schema == 2:
+            text(mapping, "introduction")
+            for action in array(mapping["orientation"], 0, 16):
+                text({"action": action}, "action")
+            contacts = set()
+            for contact in array(mapping["contacts"], 0, 256):
+                fields(contact, {"mob_vnum", "name", "keyword", "description", "topics"})
+                vnum = number(contact["mob_vnum"], 1, 2**31 - 1)
+                keyword = text(contact, "keyword")
+                text(contact, "name")
+                text(contact, "description")
+                if vnum in contacts or not re.fullmatch(r"[a-z0-9_-]{1,64}", keyword):
+                    raise ValueError("contact: duplicate NPC or invalid command keyword")
+                if mob_keywords is not None and (vnum not in mob_keywords or keyword not in mob_keywords[vnum]):
+                    raise ValueError("contact: unknown NPC prototype or command alias")
+                contacts.add(vnum)
+                topics = set()
+                for topic in array(contact["topics"], 0, 32):
+                    text({"topic": topic}, "topic")
+                    if not re.fullmatch(r"[a-z0-9_-]{1,64}", topic) or topic in topics:
+                        raise ValueError("contact: invalid or duplicate topic")
+                    topics.add(topic)
         for story in array(mapping["stories"], 0, 256):
             fields(story, {"id", "title", "category", "summary", "contracts", "steps"})
             slug = text(story, "id")

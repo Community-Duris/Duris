@@ -1372,6 +1372,8 @@ void show_char_to_char(P_char i, P_char ch, int mode, const OutputContext &conte
 	}
 
 	// Show char info shown in list of people in room
+	if (mode != 0 || !get_linking_char(i, LNK_RIDING))
+		zone_story_quest_runtime::encountered(ch, i);
 	if (mode == 0)
 	{
 		// Mounts are strung to riders description, so don't show them.

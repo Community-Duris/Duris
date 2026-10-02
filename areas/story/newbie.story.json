@@ -1,0 +1,5446 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "newbie",
+  "coverage": "complete",
+  "introduction": "Welcome to Ailvio. Learn the commands, meet your class teacher, and follow their local requests.",
+  "orientation": [
+    "Start with look, exits, help newbie, and help commands.",
+    "Speak with people you encounter. A map and the local teachers can help you find work."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 29201,
+      "name": "Burbul the halfling",
+      "keyword": "burbul",
+      "description": "Learn how to play, obtain a map, and find your class teacher for local tasks.",
+      "topics": [
+        "hello",
+        "info",
+        "quest",
+        "map",
+        "home"
+      ]
+    },
+    {
+      "mob_vnum": 29216,
+      "name": "Chyron, the centaur alchemist",
+      "keyword": "chyron",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "search"
+      ]
+    },
+    {
+      "mob_vnum": 29217,
+      "name": "Mier Sadev the pimp",
+      "keyword": "mier",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 29218,
+      "name": "Maerg, an old herb woman",
+      "keyword": "hag",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "jar"
+      ]
+    },
+    {
+      "mob_vnum": 29226,
+      "name": "Brodi, an old fisherman",
+      "keyword": "brodi",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 29232,
+      "name": "Saelryn, the elven sorceress",
+      "keyword": "sorc",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "quest",
+        "spell",
+        "casting",
+        "circles",
+        "innate"
+      ]
+    },
+    {
+      "mob_vnum": 29233,
+      "name": "Red, the human alchemist",
+      "keyword": "red",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hhhhhhhhh",
+        "fffffff",
+        "ttttttt",
+        "ssssss",
+        "xxxx",
+        "xxxxxx"
+      ]
+    },
+    {
+      "mob_vnum": 29234,
+      "name": "Drinnan, the halfling illusionist",
+      "keyword": "drinnan",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "quest",
+        "innates",
+        "spell",
+        "casting",
+        "circles"
+      ]
+    },
+    {
+      "mob_vnum": 29235,
+      "name": "Llerrad, the centaur ranger",
+      "keyword": "ranger",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "quest",
+        "spell",
+        "casting",
+        "circles",
+        "innate"
+      ]
+    },
+    {
+      "mob_vnum": 29236,
+      "name": "Creyset, the minotaur shaman",
+      "keyword": "mino",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "quest",
+        "spell",
+        "casting",
+        "circles",
+        "innate"
+      ]
+    },
+    {
+      "mob_vnum": 29237,
+      "name": "Lapney, the centaur druid",
+      "keyword": "druid",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "quest",
+        "spell",
+        "casting",
+        "circles",
+        "innate"
+      ]
+    },
+    {
+      "mob_vnum": 29238,
+      "name": "Roshenbly, the gnomish cleric",
+      "keyword": "cleric",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "quest",
+        "innate",
+        "spell",
+        "pray",
+        "circles"
+      ]
+    },
+    {
+      "mob_vnum": 29239,
+      "name": "Nalk, the thri-kreen warrior",
+      "keyword": "nalk",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "quest",
+        "skill",
+        "spec",
+        "innate"
+      ]
+    },
+    {
+      "mob_vnum": 29240,
+      "name": "Agare, the half-elf paladin",
+      "keyword": "half",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "quest",
+        "mount",
+        "innate",
+        "spell",
+        "align"
+      ]
+    },
+    {
+      "mob_vnum": 29241,
+      "name": "Grinda, the Ship Master",
+      "keyword": "grinda",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi",
+        "undock",
+        "speed",
+        "contact"
+      ]
+    },
+    {
+      "mob_vnum": 29242,
+      "name": "Eian, the Collector",
+      "keyword": "eian",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 29243,
+      "name": "Deline, the Beast Mistress",
+      "keyword": "deline",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "help"
+      ]
+    },
+    {
+      "mob_vnum": 29249,
+      "name": "Tor, the Chief Guardsman",
+      "keyword": "tor",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 29250,
+      "name": "Vaugh, a tired adventurer",
+      "keyword": "vaugh",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 29252,
+      "name": "Victa, the Hawk Master",
+      "keyword": "hawk",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "help"
+      ]
+    },
+    {
+      "mob_vnum": 29257,
+      "name": "Kord, the barbarian mercenary",
+      "keyword": "kord",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "quest",
+        "innate",
+        "specialization",
+        "skill",
+        "headbutt"
+      ]
+    },
+    {
+      "mob_vnum": 29258,
+      "name": "Quek, the halfling Rogue",
+      "keyword": "quek",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "help",
+        "quest",
+        "specialization",
+        "innate",
+        "skill"
+      ]
+    },
+    {
+      "mob_vnum": 29259,
+      "name": "Risp, the dwarf assassin",
+      "keyword": "risp",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "quest",
+        "skill",
+        "innate",
+        "spec",
+        "weapons"
+      ]
+    },
+    {
+      "mob_vnum": 29260,
+      "name": "Perr, the Githzerai monk",
+      "keyword": "perr",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "quest",
+        "innate",
+        "chant",
+        "spec",
+        "skill"
+      ]
+    },
+    {
+      "mob_vnum": 29261,
+      "name": "Foet, the grey elf bard",
+      "keyword": "foet",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "quest",
+        "innate",
+        "spec",
+        "spell",
+        "casting"
+      ]
+    },
+    {
+      "mob_vnum": 29262,
+      "name": "Osule, the human ethermancer",
+      "keyword": "osule",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "quest",
+        "innate",
+        "spell",
+        "circles",
+        "specialization"
+      ]
+    },
+    {
+      "mob_vnum": 29263,
+      "name": "Esera, the gnome conjurer",
+      "keyword": "esera",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "quest",
+        "spell",
+        "casting",
+        "circles",
+        "innate"
+      ]
+    },
+    {
+      "mob_vnum": 29264,
+      "name": "Taiz, the half-elf theurgist",
+      "keyword": "taiz",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "quest",
+        "spell",
+        "casting",
+        "circles",
+        "pet"
+      ]
+    },
+    {
+      "mob_vnum": 29266,
+      "name": "a tired father",
+      "keyword": "father",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "fish"
+      ]
+    },
+    {
+      "mob_vnum": 29269,
+      "name": "a frail grandmother",
+      "keyword": "grandma",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 29284,
+      "name": "a sick child",
+      "keyword": "sick",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "sick"
+      ]
+    },
+    {
+      "mob_vnum": 29304,
+      "name": "A beautiful half-elf woman",
+      "keyword": "beautiful",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "request-29201-b3b227fb1c39",
+      "title": "Starter equipment exchange",
+      "category": "service",
+      "summary": "Bring 1 x the torn-off arm of an insane snow ogre. Reward: 1 x a small map of the newbie area.",
+      "contracts": [
+        {
+          "giver_vnum": 29201,
+          "completion_key": "give=I:87700;receive=I:29201;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x the torn-off arm of an insane snow ogre",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            87700
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29201,
+              "completion_key": "give=I:87700;receive=I:29201;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29216-4199f2ad9903",
+      "title": "Deliver 1 x a salt box, 1 x a vial of basilisk tears",
+      "category": "request",
+      "summary": "Bring 1 x a salt box, 1 x a vial of basilisk tears. Reward: 1 x a swirling potion of marbled red and white.",
+      "contracts": [
+        {
+          "giver_vnum": 29216,
+          "completion_key": "give=I:29220,I:29221;receive=I:29222;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a salt box",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29220
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a vial of basilisk tears",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29221
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29216,
+              "completion_key": "give=I:29220,I:29221;receive=I:29222;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29218-c6701a3f237f",
+      "title": "Deliver 1 x spores of the giant mushroom",
+      "category": "request",
+      "summary": "Bring 1 x spores of the giant mushroom. Reward: 1 x a small magical jar.",
+      "contracts": [
+        {
+          "giver_vnum": 29218,
+          "completion_key": "give=I:88502;receive=I:29291;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x spores of the giant mushroom",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            88502
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29218,
+              "completion_key": "give=I:88502;receive=I:29291;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29232-a241a868d7f1",
+      "title": "Deliver 1 x mysterious dark stones",
+      "category": "request",
+      "summary": "Bring 1 x mysterious dark stones. Reward: 2,500 experience, 1 x a dark magical tome.",
+      "contracts": [
+        {
+          "giver_vnum": 29232,
+          "completion_key": "give=I:29238;receive=E:2500,I:29293;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x mysterious dark stones",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29238
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29232,
+              "completion_key": "give=I:29238;receive=E:2500,I:29293;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29232-4a618d504eb0",
+      "title": "Starter equipment exchange",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a shabby alligator skin jerkin, 2 x a light blue scarf, 1 x an amber-colored rod, 1 x a quill, 1 x a spellbook, 1 x a pair of tight black slippers.",
+      "contracts": [
+        {
+          "giver_vnum": 29232,
+          "completion_key": "give=I:29319;receive=I:706,I:731,I:731,I:735,I:1114,I:1115,I:1131;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29232,
+              "completion_key": "give=I:29319;receive=I:706,I:731,I:731,I:735,I:1114,I:1115,I:1131;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29233-266a3514c35d",
+      "title": "Deliver 1 x a wing of a dragon fly, 1 x the eyes of a bullfrog, 1 x a vine stalk",
+      "category": "request",
+      "summary": "Bring 1 x a wing of a dragon fly, 1 x the eyes of a bullfrog, 1 x a vine stalk. Reward: 1 x a bubbling vial of liquid.",
+      "contracts": [
+        {
+          "giver_vnum": 29233,
+          "completion_key": "give=I:29271,I:29272,I:29333;receive=I:29255;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a wing of a dragon fly",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29271
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x the eyes of a bullfrog",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29272
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a vine stalk",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29333
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29233,
+              "completion_key": "give=I:29271,I:29272,I:29333;receive=I:29255;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29233-391905414f3c",
+      "title": "Starter equipment exchange",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a small recipe book, 1 x a large leather backpack, 1 x a stone warhammer.",
+      "contracts": [
+        {
+          "giver_vnum": 29233,
+          "completion_key": "give=I:29319;receive=I:52,I:377,I:676;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29233,
+              "completion_key": "give=I:29319;receive=I:52,I:377,I:676;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29233-c4126338692d",
+      "title": "Deliver 1 x a mandrake root, 1 x some faerie dust, 1 x a few drops of dragons blood, 1 x a green herb, 1 x eyes of a bullfrog",
+      "category": "request",
+      "summary": "Bring 1 x a mandrake root, 1 x some faerie dust, 1 x a few drops of dragons blood, 1 x a green herb, 1 x eyes of a bullfrog. Reward: 5,000 experience, 1 x a ceramic chillum, 1 x a hefty bag.",
+      "contracts": [
+        {
+          "giver_vnum": 29233,
+          "completion_key": "give=I:822,I:824,I:825,I:826,I:29241;receive=E:5000,I:835,I:29310;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a mandrake root",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            822
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x some faerie dust",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            824
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a few drops of dragons blood",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            825
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-4",
+          "text": "Carry 1 x a green herb",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            826
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-5",
+          "text": "Carry 1 x eyes of a bullfrog",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29241
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29233,
+              "completion_key": "give=I:822,I:824,I:825,I:826,I:29241;receive=E:5000,I:835,I:29310;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29234-70c299204aaa",
+      "title": "Deliver 1 x mysterious dark stones",
+      "category": "request",
+      "summary": "Bring 1 x mysterious dark stones. Reward: 2,500 experience, 1 x veil of shadows.",
+      "contracts": [
+        {
+          "giver_vnum": 29234,
+          "completion_key": "give=I:29238;receive=E:2500,I:29239;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x mysterious dark stones",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29238
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29234,
+              "completion_key": "give=I:29238;receive=E:2500,I:29239;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29234-4a618d504eb0",
+      "title": "Starter equipment exchange",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a shabby alligator skin jerkin, 2 x a light blue scarf, 1 x an amber-colored rod, 1 x a quill, 1 x a spellbook, 1 x a pair of tight black slippers.",
+      "contracts": [
+        {
+          "giver_vnum": 29234,
+          "completion_key": "give=I:29319;receive=I:706,I:731,I:731,I:735,I:1114,I:1115,I:1131;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29234,
+              "completion_key": "give=I:29319;receive=I:706,I:731,I:731,I:735,I:1114,I:1115,I:1131;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29235-07f520288dfd",
+      "title": "Deliver 1 x a bleeding ear, 1 x a recently severed scalp, 1 x a grubby toe",
+      "category": "request",
+      "summary": "Bring 1 x a bleeding ear, 1 x a recently severed scalp, 1 x a grubby toe. Reward: 2,500 experience, 1 x the bow of the ranger, 3 x a handmade ranger arrow, 1 x a quiver.",
+      "contracts": [
+        {
+          "giver_vnum": 29235,
+          "completion_key": "give=I:29262,I:29263,I:29264;receive=E:2500,I:29273,I:29311,I:29311,I:29311,I:29312;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a bleeding ear",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29262
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a recently severed scalp",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29263
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a grubby toe",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29264
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29235,
+              "completion_key": "give=I:29262,I:29263,I:29264;receive=E:2500,I:29273,I:29311,I:29311,I:29311,I:29312;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29235-c95e695ebe0a",
+      "title": "Starter equipment exchange",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a pair of studded leather sleeves, 1 x a pair of studded leather leggings, 1 x a pair of studded leather boots, 1 x some thick leather gloves, 2 x a thick spiked leather bracer, 1 x a bronze skull cap, 1 x a suit of spiked leather armor, 1 x a thick short sword, 1 x a quill, 1 x a spellbook, 1 x a small quiver, 2 x a thin arrow, 1 x a reed longbow.",
+      "contracts": [
+        {
+          "giver_vnum": 29235,
+          "completion_key": "give=I:29319;receive=I:1101,I:1102,I:1103,I:1104,I:1105,I:1105,I:1106,I:1107,I:1113,I:1114,I:1115,I:1116,I:1117,I:1117,I:1118;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29235,
+              "completion_key": "give=I:29319;receive=I:1101,I:1102,I:1103,I:1104,I:1105,I:1105,I:1106,I:1107,I:1113,I:1114,I:1115,I:1116,I:1117,I:1117,I:1118;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29236-b68152c4d345",
+      "title": "Deliver 1 x the Charity Seal",
+      "category": "request",
+      "summary": "Bring 1 x the Charity Seal. Reward: 2,500 experience, 1 x a wooden earth totem.",
+      "contracts": [
+        {
+          "giver_vnum": 29236,
+          "completion_key": "give=I:29223;receive=E:2500,I:29224;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x the Charity Seal",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29223
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29236,
+              "completion_key": "give=I:29223;receive=E:2500,I:29224;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29236-a5b5a1890296",
+      "title": "Starter equipment exchange",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a small pinewood raven totem, 1 x a small limestone totem, 1 x a small ivory totem, 1 x a large stone warhammer, 1 x a smelly fur hat, 1 x a suit of smelly animal furs, 1 x a pair of fur boots.",
+      "contracts": [
+        {
+          "giver_vnum": 29236,
+          "completion_key": "give=I:29319;receive=I:105,I:106,I:107,I:1127,I:1144,I:1145,I:1146;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29236,
+              "completion_key": "give=I:29319;receive=I:105,I:106,I:107,I:1127,I:1144,I:1145,I:1146;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29237-fdd9fe063a15",
+      "title": "Deliver 1 x an acorn, 1 x a broken tree branch, 1 x a red feather",
+      "category": "request",
+      "summary": "Bring 1 x an acorn, 1 x a broken tree branch, 1 x a red feather. Reward: 2,500 experience, 1 x a gnarly walking stick.",
+      "contracts": [
+        {
+          "giver_vnum": 29237,
+          "completion_key": "give=I:29282,I:29283,I:29284;receive=E:2500,I:29286;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x an acorn",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29282
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a broken tree branch",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29283
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a red feather",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29284
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29237,
+              "completion_key": "give=I:29282,I:29283,I:29284;receive=E:2500,I:29286;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29237-958531668fce",
+      "title": "Starter equipment exchange",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a pair of bark sleeves, 1 x a pair of bark leggings, 1 x a pair of bark lined boots, 1 x a bark and leaf cap, 1 x a suit of bark coated armor, 1 x a hardwood cudgel.",
+      "contracts": [
+        {
+          "giver_vnum": 29237,
+          "completion_key": "give=I:29319;receive=I:1135,I:1136,I:1137,I:1138,I:1139,I:1140;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29237,
+              "completion_key": "give=I:29319;receive=I:1135,I:1136,I:1137,I:1138,I:1139,I:1140;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29238-c2cf98d3f50e",
+      "title": "Deliver 1 x a note",
+      "category": "request",
+      "summary": "Bring 1 x a note. Reward: 2,500 experience, 1 x an emblem of healing.",
+      "contracts": [
+        {
+          "giver_vnum": 29238,
+          "completion_key": "give=I:29287;receive=E:2500,I:29302;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a note",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29287
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29238,
+              "completion_key": "give=I:29287;receive=E:2500,I:29302;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29238-8ea47992a50f",
+      "title": "Starter equipment exchange",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a pair of thin cloth sleeves, 1 x a pair of thin cloth pants, 1 x a pair of wormskin boots, 1 x some holy beads, 1 x a holy priest cap, 1 x a thin priest gown, 1 x a large stone warhammer.",
+      "contracts": [
+        {
+          "giver_vnum": 29238,
+          "completion_key": "give=I:29319;receive=I:1119,I:1120,I:1121,I:1122,I:1124,I:1126,I:1127;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29238,
+              "completion_key": "give=I:29319;receive=I:1119,I:1120,I:1121,I:1122,I:1124,I:1126,I:1127;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29239-ae3e13cfc529",
+      "title": "Deliver 1 x a piece of stoned skin",
+      "category": "request",
+      "summary": "Bring 1 x a piece of stoned skin. Reward: 2,500 experience, 1 x a warrior's sword of strength.",
+      "contracts": [
+        {
+          "giver_vnum": 29239,
+          "completion_key": "give=I:29267;receive=E:2500,I:29270;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a piece of stoned skin",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29267
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29239,
+              "completion_key": "give=I:29267;receive=E:2500,I:29270;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29239-36e835443fe6",
+      "title": "Starter equipment exchange",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a pair of studded leather sleeves, 1 x a pair of studded leather leggings, 1 x a pair of studded leather boots, 1 x some thick leather gloves, 2 x a thick spiked leather bracer, 1 x a bronze skull cap, 1 x a suit of spiked leather armor, 1 x a long steel sword, 1 x a small round wooden shield.",
+      "contracts": [
+        {
+          "giver_vnum": 29239,
+          "completion_key": "give=I:29319;receive=I:1101,I:1102,I:1103,I:1104,I:1105,I:1105,I:1106,I:1107,I:1108,I:1109;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29239,
+              "completion_key": "give=I:29319;receive=I:1101,I:1102,I:1103,I:1104,I:1105,I:1105,I:1106,I:1107,I:1108,I:1109;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29240-e63d8a301b35",
+      "title": "Deliver 1 x a bleeding ear, 1 x a recently severed scalp, 1 x a grubby toe",
+      "category": "request",
+      "summary": "Bring 1 x a bleeding ear, 1 x a recently severed scalp, 1 x a grubby toe. Reward: 2,500 experience, 1 x the two hands of justice, 1 x a beacon of courage.",
+      "contracts": [
+        {
+          "giver_vnum": 29240,
+          "completion_key": "give=I:29262,I:29263,I:29264;receive=E:2500,I:29265,I:29266;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a bleeding ear",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29262
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a recently severed scalp",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29263
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a grubby toe",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29264
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29240,
+              "completion_key": "give=I:29262,I:29263,I:29264;receive=E:2500,I:29265,I:29266;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29240-395f8dcac62f",
+      "title": "Starter equipment exchange",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a pair of studded leather sleeves, 1 x a pair of studded leather leggings, 1 x a pair of studded leather boots, 1 x a suit of spiked leather armor, 1 x a large two-handed sword.",
+      "contracts": [
+        {
+          "giver_vnum": 29240,
+          "completion_key": "give=I:29319;receive=I:1101,I:1102,I:1103,I:1107,I:1110;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29240,
+              "completion_key": "give=I:29319;receive=I:1101,I:1102,I:1103,I:1107,I:1110;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29257-6c4e54c1a3f9",
+      "title": "Deliver 1 x a bleeding ear, 1 x a recently severed scalp, 1 x a grubby toe",
+      "category": "request",
+      "summary": "Bring 1 x a bleeding ear, 1 x a recently severed scalp, 1 x a grubby toe. Reward: 3,000 copper, 2,500 experience, 1 x dagger of the bounty hunter.",
+      "contracts": [
+        {
+          "giver_vnum": 29257,
+          "completion_key": "give=I:29262,I:29263,I:29264;receive=C:3000,E:2500,I:29237;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a bleeding ear",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29262
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a recently severed scalp",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29263
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a grubby toe",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29264
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29257,
+              "completion_key": "give=I:29262,I:29263,I:29264;receive=C:3000,E:2500,I:29237;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29257-b632f5b9c160",
+      "title": "Starter equipment exchange",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a pair of studded leather sleeves, 1 x a pair of studded leather leggings, 1 x a pair of studded leather boots, 1 x some thick leather gloves, 1 x a bronze skull cap, 1 x a suit of spiked leather armor, 1 x a long steel sword, 1 x a thin steel dagger.",
+      "contracts": [
+        {
+          "giver_vnum": 29257,
+          "completion_key": "give=I:29319;receive=I:1101,I:1102,I:1103,I:1104,I:1106,I:1107,I:1108,I:1112;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29257,
+              "completion_key": "give=I:29319;receive=I:1101,I:1102,I:1103,I:1104,I:1106,I:1107,I:1108,I:1112;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29258-522b3c801186",
+      "title": "Deliver 1 x a broken half of an amulet",
+      "category": "request",
+      "summary": "Bring 1 x a broken half of an amulet. Reward: 2,500 experience, 1 x the dagger of thieves.",
+      "contracts": [
+        {
+          "giver_vnum": 29258,
+          "completion_key": "give=I:29294;receive=E:2500,I:29295;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a broken half of an amulet",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29294
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29258,
+              "completion_key": "give=I:29294;receive=E:2500,I:29295;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29258-cca6c848c3c4",
+      "title": "Starter equipment exchange",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 2 x a set of lockpicks, 1 x a thin steel dagger, 1 x a pair of tight black sleeves, 1 x a pair of tight black pants, 1 x a pair of tight black gloves, 1 x a pair of tight black slippers, 1 x a black leather mask.",
+      "contracts": [
+        {
+          "giver_vnum": 29258,
+          "completion_key": "give=I:29319;receive=I:412,I:412,I:1112,I:1128,I:1129,I:1130,I:1131,I:1132;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29258,
+              "completion_key": "give=I:29319;receive=I:412,I:412,I:1112,I:1128,I:1129,I:1130,I:1131,I:1132;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29259-446cbbbc0c79",
+      "title": "Deliver 1 x a bleeding ear, 1 x a recently severed scalp, 1 x a grubby toe",
+      "category": "request",
+      "summary": "Bring 1 x a bleeding ear, 1 x a recently severed scalp, 1 x a grubby toe. Reward: 2,500 experience, 1 x a painful dagger.",
+      "contracts": [
+        {
+          "giver_vnum": 29259,
+          "completion_key": "give=I:29262,I:29263,I:29264;receive=E:2500,I:29300;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a bleeding ear",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29262
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a recently severed scalp",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29263
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a grubby toe",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29264
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29259,
+              "completion_key": "give=I:29262,I:29263,I:29264;receive=E:2500,I:29300;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29259-9efdc91e2b60",
+      "title": "Starter equipment exchange",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 2 x a thin steel dagger, 1 x a pair of tight black sleeves, 1 x a pair of tight black pants, 1 x a pair of tight black gloves, 1 x a pair of tight black slippers.",
+      "contracts": [
+        {
+          "giver_vnum": 29259,
+          "completion_key": "give=I:29319;receive=I:1112,I:1112,I:1128,I:1129,I:1130,I:1131;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29259,
+              "completion_key": "give=I:29319;receive=I:1112,I:1112,I:1128,I:1129,I:1130,I:1131;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29260-5f675d3c1def",
+      "title": "Deliver 1 x a black wolf paw, 1 x a spotted wolfskin, 1 x a sharp wolf tooth",
+      "category": "request",
+      "summary": "Bring 1 x a black wolf paw, 1 x a spotted wolfskin, 1 x a sharp wolf tooth. Reward: 2,500 experience, 1 x some apprentice monk robes.",
+      "contracts": [
+        {
+          "giver_vnum": 29260,
+          "completion_key": "give=I:29274,I:29275,I:29276;receive=E:2500,I:29277;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a black wolf paw",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29274
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a spotted wolfskin",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29275
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a sharp wolf tooth",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29276
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29260,
+              "completion_key": "give=I:29274,I:29275,I:29276;receive=E:2500,I:29277;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29260-93ac92a18cd8",
+      "title": "Starter equipment exchange",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a set of loose fitting robes, 1 x a set of loose fitting leggings, 1 x a set of loose fitting sleeves, 1 x some thin leather sandals, 1 x a whisper-thin helm.",
+      "contracts": [
+        {
+          "giver_vnum": 29260,
+          "completion_key": "give=I:29319;receive=I:1147,I:1148,I:1149,I:1150,I:1151;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29260,
+              "completion_key": "give=I:29319;receive=I:1147,I:1148,I:1149,I:1150,I:1151;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29261-dd855811a340",
+      "title": "Deliver 1 x a small magical jar",
+      "category": "request",
+      "summary": "Bring 1 x a small magical jar. Reward: 2,500 experience, 1 x a delicate bard's flute.",
+      "contracts": [
+        {
+          "giver_vnum": 29261,
+          "completion_key": "give=I:29291;receive=E:2500,I:29292;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-29291",
+          "text": "Record the ingredient exchange for a small magical jar",
+          "kind": "completion",
+          "hint": "This is one known way to obtain the requested material. An item obtained another way can still satisfy the delivery.",
+          "contracts": [
+            {
+              "giver_vnum": 29218,
+              "completion_key": "give=I:88502;receive=I:29291;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a small magical jar",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29291
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29261,
+              "completion_key": "give=I:29291;receive=E:2500,I:29292;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29261-00b4555d2dbb",
+      "title": "Starter equipment exchange",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a thin steel dagger, 1 x a pair of tight black sleeves, 2 x a pair of tight black pants, 1 x a pair of tight black gloves, 1 x a pair of tight black slippers, 1 x a plain silver flute.",
+      "contracts": [
+        {
+          "giver_vnum": 29261,
+          "completion_key": "give=I:29319;receive=I:1112,I:1128,I:1129,I:1129,I:1130,I:1131,I:1134;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29261,
+              "completion_key": "give=I:29319;receive=I:1112,I:1128,I:1129,I:1129,I:1130,I:1131,I:1134;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29262-25eb5e965699",
+      "title": "Deliver 1 x a meteor fragment",
+      "category": "request",
+      "summary": "Bring 1 x a meteor fragment. Reward: 2,500 experience, 1 x an incomplete suit of chainmail of the elements.",
+      "contracts": [
+        {
+          "giver_vnum": 29262,
+          "completion_key": "give=I:29330;receive=E:2500,I:29331;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a meteor fragment",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29330
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29262,
+              "completion_key": "give=I:29330;receive=E:2500,I:29331;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29263-59668520256b",
+      "title": "Deliver 1 x a broken half of an amulet",
+      "category": "request",
+      "summary": "Bring 1 x a broken half of an amulet. Reward: 2,500 experience, 1 x a glowing black tome with a bone splint spine.",
+      "contracts": [
+        {
+          "giver_vnum": 29263,
+          "completion_key": "give=I:29294;receive=E:2500,I:29206;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a broken half of an amulet",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29294
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29263,
+              "completion_key": "give=I:29294;receive=E:2500,I:29206;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29263-4a618d504eb0",
+      "title": "Starter equipment exchange",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a shabby alligator skin jerkin, 2 x a light blue scarf, 1 x an amber-colored rod, 1 x a quill, 1 x a spellbook, 1 x a pair of tight black slippers.",
+      "contracts": [
+        {
+          "giver_vnum": 29263,
+          "completion_key": "give=I:29319;receive=I:706,I:731,I:731,I:735,I:1114,I:1115,I:1131;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29263,
+              "completion_key": "give=I:29319;receive=I:706,I:731,I:731,I:735,I:1114,I:1115,I:1131;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29264-0eb2ff00c7db",
+      "title": "Deliver 1 x a pile of bones of an acolyte",
+      "category": "request",
+      "summary": "Bring 1 x a pile of bones of an acolyte. Reward: 2,500 experience, 1 x death skull.",
+      "contracts": [
+        {
+          "giver_vnum": 29264,
+          "completion_key": "give=I:29296;receive=E:2500,I:29297;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a pile of bones of an acolyte",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29296
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29264,
+              "completion_key": "give=I:29296;receive=E:2500,I:29297;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29264-fce0bf8aae1b",
+      "title": "Starter equipment exchange",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a thin steel dagger, 1 x a quill, 1 x a spellbook, 1 x an evil looking helm, 1 x a dark black robe, 1 x a pair of dark black boots.",
+      "contracts": [
+        {
+          "giver_vnum": 29264,
+          "completion_key": "give=I:29319;receive=I:1112,I:1114,I:1115,I:1141,I:1142,I:1143;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29264,
+              "completion_key": "give=I:29319;receive=I:1112,I:1114,I:1115,I:1141,I:1142,I:1143;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-54c4f8e1916a",
+      "title": "Deliver 2 x a large bass",
+      "category": "request",
+      "summary": "Bring 2 x a large bass. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:293;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 2 x a large bass",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            293
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:293;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-92450aa7ec9a",
+      "title": "Deliver 1 x a large bass, 1 x a piranha",
+      "category": "request",
+      "summary": "Bring 1 x a large bass, 1 x a piranha. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:294;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large bass",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            293
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a piranha",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            294
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:294;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-5a8f15893154",
+      "title": "Deliver 1 x a large bass, 1 x a medium sized cod",
+      "category": "request",
+      "summary": "Bring 1 x a large bass, 1 x a medium sized cod. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:295;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large bass",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            293
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a medium sized cod",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            295
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:295;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-34aecf8ba349",
+      "title": "Deliver 1 x a large bass, 1 x a large pike fish",
+      "category": "request",
+      "summary": "Bring 1 x a large bass, 1 x a large pike fish. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:318;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large bass",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            293
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large pike fish",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            318
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:318;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-6166d9d60e90",
+      "title": "Deliver 1 x a large bass, 1 x an impressive lobster",
+      "category": "request",
+      "summary": "Bring 1 x a large bass, 1 x an impressive lobster. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:319;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large bass",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            293
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x an impressive lobster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:319;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-bc1e29221d99",
+      "title": "Deliver 1 x a large bass, 1 x a large hairy crab",
+      "category": "request",
+      "summary": "Bring 1 x a large bass, 1 x a large hairy crab. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:330;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large bass",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            293
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large hairy crab",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            330
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:330;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-4791a90b8163",
+      "title": "Deliver 1 x a large bass, 1 x a large shrimp",
+      "category": "request",
+      "summary": "Bring 1 x a large bass, 1 x a large shrimp. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:332;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large bass",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            293
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large shrimp",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            332
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:332;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-a48f6b24a18c",
+      "title": "Deliver 1 x a large bass, 1 x a large flat oyster",
+      "category": "request",
+      "summary": "Bring 1 x a large bass, 1 x a large flat oyster. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:333;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large bass",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            293
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large flat oyster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            333
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:333;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-5d1ccdc1d983",
+      "title": "Deliver 1 x a large bass, 1 x a small clam",
+      "category": "request",
+      "summary": "Bring 1 x a large bass, 1 x a small clam. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:334;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large bass",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            293
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a small clam",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            334
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:334;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-cb8018b88541",
+      "title": "Deliver 1 x a large bass, 1 x a large mussel",
+      "category": "request",
+      "summary": "Bring 1 x a large bass, 1 x a large mussel. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:335;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large bass",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            293
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large mussel",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            335
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:335;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-280eb3e5e162",
+      "title": "Deliver 1 x a large bass, 1 x a rainbow trout",
+      "category": "request",
+      "summary": "Bring 1 x a large bass, 1 x a rainbow trout. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:355;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large bass",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            293
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a rainbow trout",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            355
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:355;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-a71a26363a5a",
+      "title": "Deliver 1 x a large bass, 1 x a speckled perch",
+      "category": "request",
+      "summary": "Bring 1 x a large bass, 1 x a speckled perch. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:356;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large bass",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            293
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a speckled perch",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            356
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:356;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-e49cca28487e",
+      "title": "Deliver 2 x a piranha",
+      "category": "request",
+      "summary": "Bring 2 x a piranha. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:294;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 2 x a piranha",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            294
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:294;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-1489270877ae",
+      "title": "Deliver 1 x a piranha, 1 x a medium sized cod",
+      "category": "request",
+      "summary": "Bring 1 x a piranha, 1 x a medium sized cod. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:295;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a piranha",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            294
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a medium sized cod",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            295
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:295;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-727d5fdd33bb",
+      "title": "Deliver 1 x a piranha, 1 x a large pike fish",
+      "category": "request",
+      "summary": "Bring 1 x a piranha, 1 x a large pike fish. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:318;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a piranha",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            294
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large pike fish",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            318
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:318;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-acff0cc06bed",
+      "title": "Deliver 1 x a piranha, 1 x an impressive lobster",
+      "category": "request",
+      "summary": "Bring 1 x a piranha, 1 x an impressive lobster. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:319;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a piranha",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            294
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x an impressive lobster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:319;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-332e60bfd98d",
+      "title": "Deliver 1 x a piranha, 1 x a large hairy crab",
+      "category": "request",
+      "summary": "Bring 1 x a piranha, 1 x a large hairy crab. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:330;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a piranha",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            294
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large hairy crab",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            330
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:330;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-0b3976c80ff9",
+      "title": "Deliver 1 x a piranha, 1 x a large shrimp",
+      "category": "request",
+      "summary": "Bring 1 x a piranha, 1 x a large shrimp. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:332;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a piranha",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            294
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large shrimp",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            332
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:332;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-5bb79d9581eb",
+      "title": "Deliver 1 x a piranha, 1 x a large flat oyster",
+      "category": "request",
+      "summary": "Bring 1 x a piranha, 1 x a large flat oyster. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:333;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a piranha",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            294
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large flat oyster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            333
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:333;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-037d410c3a84",
+      "title": "Deliver 1 x a piranha, 1 x a small clam",
+      "category": "request",
+      "summary": "Bring 1 x a piranha, 1 x a small clam. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:334;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a piranha",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            294
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a small clam",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            334
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:334;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-df933f6f03f8",
+      "title": "Deliver 1 x a piranha, 1 x a large mussel",
+      "category": "request",
+      "summary": "Bring 1 x a piranha, 1 x a large mussel. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:335;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a piranha",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            294
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large mussel",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            335
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:335;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-d36071e9dd7f",
+      "title": "Deliver 1 x a piranha, 1 x a rainbow trout",
+      "category": "request",
+      "summary": "Bring 1 x a piranha, 1 x a rainbow trout. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:355;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a piranha",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            294
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a rainbow trout",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            355
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:355;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-429d57d50982",
+      "title": "Deliver 1 x a piranha, 1 x a speckled perch",
+      "category": "request",
+      "summary": "Bring 1 x a piranha, 1 x a speckled perch. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:356;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a piranha",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            294
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a speckled perch",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            356
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:356;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-e31d06d3c656",
+      "title": "Deliver 2 x a medium sized cod",
+      "category": "request",
+      "summary": "Bring 2 x a medium sized cod. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:295;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 2 x a medium sized cod",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            295
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:295;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-86bd84c7ab97",
+      "title": "Deliver 1 x a medium sized cod, 1 x a large pike fish",
+      "category": "request",
+      "summary": "Bring 1 x a medium sized cod, 1 x a large pike fish. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:318;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a medium sized cod",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            295
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large pike fish",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            318
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:318;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-5e21538a4a32",
+      "title": "Deliver 1 x a medium sized cod, 1 x an impressive lobster",
+      "category": "request",
+      "summary": "Bring 1 x a medium sized cod, 1 x an impressive lobster. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:319;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a medium sized cod",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            295
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x an impressive lobster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:319;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-513af535bbe5",
+      "title": "Deliver 1 x a medium sized cod, 1 x a large hairy crab",
+      "category": "request",
+      "summary": "Bring 1 x a medium sized cod, 1 x a large hairy crab. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:330;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a medium sized cod",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            295
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large hairy crab",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            330
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:330;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-73983b755cdd",
+      "title": "Deliver 1 x a medium sized cod, 1 x a large shrimp",
+      "category": "request",
+      "summary": "Bring 1 x a medium sized cod, 1 x a large shrimp. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:332;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a medium sized cod",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            295
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large shrimp",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            332
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:332;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-e3e101d7d5b5",
+      "title": "Deliver 1 x a medium sized cod, 1 x a large flat oyster",
+      "category": "request",
+      "summary": "Bring 1 x a medium sized cod, 1 x a large flat oyster. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:333;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a medium sized cod",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            295
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large flat oyster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            333
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:333;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-73c7fd2bb5f0",
+      "title": "Deliver 1 x a medium sized cod, 1 x a small clam",
+      "category": "request",
+      "summary": "Bring 1 x a medium sized cod, 1 x a small clam. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:334;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a medium sized cod",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            295
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a small clam",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            334
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:334;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-af836022a8b1",
+      "title": "Deliver 1 x a medium sized cod, 1 x a large mussel",
+      "category": "request",
+      "summary": "Bring 1 x a medium sized cod, 1 x a large mussel. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:335;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a medium sized cod",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            295
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large mussel",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            335
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:335;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-5c22216f2fc7",
+      "title": "Deliver 1 x a medium sized cod, 1 x a rainbow trout",
+      "category": "request",
+      "summary": "Bring 1 x a medium sized cod, 1 x a rainbow trout. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:355;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a medium sized cod",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            295
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a rainbow trout",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            355
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:355;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-0b4b2636354e",
+      "title": "Deliver 1 x a medium sized cod, 1 x a speckled perch",
+      "category": "request",
+      "summary": "Bring 1 x a medium sized cod, 1 x a speckled perch. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:356;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a medium sized cod",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            295
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a speckled perch",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            356
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:356;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-76698e255428",
+      "title": "Deliver 2 x a large pike fish",
+      "category": "request",
+      "summary": "Bring 2 x a large pike fish. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:318;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 2 x a large pike fish",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            318
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:318;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-2799344fce2e",
+      "title": "Deliver 1 x a large pike fish, 1 x an impressive lobster",
+      "category": "request",
+      "summary": "Bring 1 x a large pike fish, 1 x an impressive lobster. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:319;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large pike fish",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            318
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x an impressive lobster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:319;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-c4b729f834b7",
+      "title": "Deliver 1 x a large pike fish, 1 x a large hairy crab",
+      "category": "request",
+      "summary": "Bring 1 x a large pike fish, 1 x a large hairy crab. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:330;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large pike fish",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            318
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large hairy crab",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            330
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:330;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-2f4635c5de66",
+      "title": "Deliver 1 x a large pike fish, 1 x a large shrimp",
+      "category": "request",
+      "summary": "Bring 1 x a large pike fish, 1 x a large shrimp. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:332;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large pike fish",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            318
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large shrimp",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            332
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:332;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-c52f1e16cb3e",
+      "title": "Deliver 1 x a large pike fish, 1 x a large flat oyster",
+      "category": "request",
+      "summary": "Bring 1 x a large pike fish, 1 x a large flat oyster. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:333;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large pike fish",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            318
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large flat oyster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            333
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:333;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-ebc3413083ae",
+      "title": "Deliver 1 x a large pike fish, 1 x a small clam",
+      "category": "request",
+      "summary": "Bring 1 x a large pike fish, 1 x a small clam. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:334;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large pike fish",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            318
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a small clam",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            334
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:334;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-4fa61500b0b3",
+      "title": "Deliver 1 x a large pike fish, 1 x a large mussel",
+      "category": "request",
+      "summary": "Bring 1 x a large pike fish, 1 x a large mussel. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:335;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large pike fish",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            318
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large mussel",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            335
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:335;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-a7735183e355",
+      "title": "Deliver 1 x a large pike fish, 1 x a rainbow trout",
+      "category": "request",
+      "summary": "Bring 1 x a large pike fish, 1 x a rainbow trout. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:355;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large pike fish",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            318
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a rainbow trout",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            355
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:355;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-abe03f118cad",
+      "title": "Deliver 1 x a large pike fish, 1 x a speckled perch",
+      "category": "request",
+      "summary": "Bring 1 x a large pike fish, 1 x a speckled perch. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:356;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large pike fish",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            318
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a speckled perch",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            356
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:356;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-1cbd2f06a7e5",
+      "title": "Deliver 2 x an impressive lobster",
+      "category": "request",
+      "summary": "Bring 2 x an impressive lobster. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:319,I:319;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 2 x an impressive lobster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            319
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:319;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-86075e0b9b89",
+      "title": "Deliver 1 x an impressive lobster, 1 x a large hairy crab",
+      "category": "request",
+      "summary": "Bring 1 x an impressive lobster, 1 x a large hairy crab. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:319,I:330;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x an impressive lobster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            319
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large hairy crab",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            330
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:330;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-485be625883d",
+      "title": "Deliver 1 x an impressive lobster, 1 x a large shrimp",
+      "category": "request",
+      "summary": "Bring 1 x an impressive lobster, 1 x a large shrimp. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:319,I:332;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x an impressive lobster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            319
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large shrimp",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            332
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:332;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-12e9a55b9d7b",
+      "title": "Deliver 1 x an impressive lobster, 1 x a large flat oyster",
+      "category": "request",
+      "summary": "Bring 1 x an impressive lobster, 1 x a large flat oyster. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:319,I:333;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x an impressive lobster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            319
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large flat oyster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            333
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:333;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-ad39f64dda2a",
+      "title": "Deliver 1 x an impressive lobster, 1 x a small clam",
+      "category": "request",
+      "summary": "Bring 1 x an impressive lobster, 1 x a small clam. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:319,I:334;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x an impressive lobster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            319
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a small clam",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            334
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:334;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-d5116e61e547",
+      "title": "Deliver 1 x an impressive lobster, 1 x a large mussel",
+      "category": "request",
+      "summary": "Bring 1 x an impressive lobster, 1 x a large mussel. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:319,I:335;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x an impressive lobster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            319
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large mussel",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            335
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:335;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-b3904b5fe043",
+      "title": "Deliver 1 x an impressive lobster, 1 x a rainbow trout",
+      "category": "request",
+      "summary": "Bring 1 x an impressive lobster, 1 x a rainbow trout. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:319,I:355;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x an impressive lobster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            319
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a rainbow trout",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            355
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:355;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-4af19df859f4",
+      "title": "Deliver 1 x an impressive lobster, 1 x a speckled perch",
+      "category": "request",
+      "summary": "Bring 1 x an impressive lobster, 1 x a speckled perch. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:319,I:356;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x an impressive lobster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            319
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a speckled perch",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            356
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:356;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-9729b18b0d4e",
+      "title": "Deliver 2 x a large hairy crab",
+      "category": "request",
+      "summary": "Bring 2 x a large hairy crab. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:330,I:330;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 2 x a large hairy crab",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            330
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:330;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-15b84ca19da0",
+      "title": "Deliver 1 x a large hairy crab, 1 x a large shrimp",
+      "category": "request",
+      "summary": "Bring 1 x a large hairy crab, 1 x a large shrimp. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:330,I:332;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large hairy crab",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            330
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large shrimp",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            332
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:332;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-fd386f9df7b5",
+      "title": "Deliver 1 x a large hairy crab, 1 x a large flat oyster",
+      "category": "request",
+      "summary": "Bring 1 x a large hairy crab, 1 x a large flat oyster. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:330,I:333;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large hairy crab",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            330
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large flat oyster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            333
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:333;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-85aeaf863308",
+      "title": "Deliver 1 x a large hairy crab, 1 x a small clam",
+      "category": "request",
+      "summary": "Bring 1 x a large hairy crab, 1 x a small clam. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:330,I:334;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large hairy crab",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            330
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a small clam",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            334
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:334;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-fa1841111884",
+      "title": "Deliver 1 x a large hairy crab, 1 x a large mussel",
+      "category": "request",
+      "summary": "Bring 1 x a large hairy crab, 1 x a large mussel. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:330,I:335;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large hairy crab",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            330
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large mussel",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            335
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:335;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-67dee2281295",
+      "title": "Deliver 1 x a large hairy crab, 1 x a rainbow trout",
+      "category": "request",
+      "summary": "Bring 1 x a large hairy crab, 1 x a rainbow trout. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:330,I:355;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large hairy crab",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            330
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a rainbow trout",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            355
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:355;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-c64eb10a17fe",
+      "title": "Deliver 1 x a large hairy crab, 1 x a speckled perch",
+      "category": "request",
+      "summary": "Bring 1 x a large hairy crab, 1 x a speckled perch. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:330,I:356;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large hairy crab",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            330
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a speckled perch",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            356
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:356;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-d6f764422127",
+      "title": "Deliver 2 x a large shrimp",
+      "category": "request",
+      "summary": "Bring 2 x a large shrimp. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:332,I:332;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 2 x a large shrimp",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            332
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:332;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-44d448059c09",
+      "title": "Deliver 1 x a large shrimp, 1 x a large flat oyster",
+      "category": "request",
+      "summary": "Bring 1 x a large shrimp, 1 x a large flat oyster. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:332,I:333;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large shrimp",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            332
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large flat oyster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            333
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:333;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-0bec8502cbee",
+      "title": "Deliver 1 x a large shrimp, 1 x a small clam",
+      "category": "request",
+      "summary": "Bring 1 x a large shrimp, 1 x a small clam. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:332,I:334;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large shrimp",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            332
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a small clam",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            334
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:334;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-e3f299aee48c",
+      "title": "Deliver 1 x a large shrimp, 1 x a large mussel",
+      "category": "request",
+      "summary": "Bring 1 x a large shrimp, 1 x a large mussel. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:332,I:335;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large shrimp",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            332
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large mussel",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            335
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:335;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-e54143a20b71",
+      "title": "Deliver 1 x a large shrimp, 1 x a rainbow trout",
+      "category": "request",
+      "summary": "Bring 1 x a large shrimp, 1 x a rainbow trout. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:332,I:355;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large shrimp",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            332
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a rainbow trout",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            355
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:355;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-7c1eba8b9cf2",
+      "title": "Deliver 1 x a large shrimp, 1 x a speckled perch",
+      "category": "request",
+      "summary": "Bring 1 x a large shrimp, 1 x a speckled perch. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:332,I:356;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large shrimp",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            332
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a speckled perch",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            356
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:356;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-bdfb5cf802f7",
+      "title": "Deliver 2 x a large flat oyster",
+      "category": "request",
+      "summary": "Bring 2 x a large flat oyster. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:333,I:333;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 2 x a large flat oyster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            333
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:333,I:333;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-5e4d9fda4b31",
+      "title": "Deliver 1 x a large flat oyster, 1 x a small clam",
+      "category": "request",
+      "summary": "Bring 1 x a large flat oyster, 1 x a small clam. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:333,I:334;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large flat oyster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            333
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a small clam",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            334
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:333,I:334;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-39a9a9049331",
+      "title": "Deliver 1 x a large flat oyster, 1 x a large mussel",
+      "category": "request",
+      "summary": "Bring 1 x a large flat oyster, 1 x a large mussel. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:333,I:335;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large flat oyster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            333
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large mussel",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            335
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:333,I:335;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-4500adccb562",
+      "title": "Deliver 1 x a large flat oyster, 1 x a rainbow trout",
+      "category": "request",
+      "summary": "Bring 1 x a large flat oyster, 1 x a rainbow trout. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:333,I:355;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large flat oyster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            333
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a rainbow trout",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            355
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:333,I:355;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-3b60029dcbad",
+      "title": "Deliver 1 x a large flat oyster, 1 x a speckled perch",
+      "category": "request",
+      "summary": "Bring 1 x a large flat oyster, 1 x a speckled perch. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:333,I:356;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large flat oyster",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            333
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a speckled perch",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            356
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:333,I:356;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-2d1c472022a8",
+      "title": "Deliver 2 x a small clam",
+      "category": "request",
+      "summary": "Bring 2 x a small clam. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:334,I:334;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 2 x a small clam",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            334
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:334,I:334;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-e470aeaa140a",
+      "title": "Deliver 1 x a small clam, 1 x a large mussel",
+      "category": "request",
+      "summary": "Bring 1 x a small clam, 1 x a large mussel. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:334,I:335;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a small clam",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            334
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a large mussel",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            335
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:334,I:335;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-c61021c9d5a1",
+      "title": "Deliver 1 x a small clam, 1 x a rainbow trout",
+      "category": "request",
+      "summary": "Bring 1 x a small clam, 1 x a rainbow trout. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:334,I:355;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a small clam",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            334
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a rainbow trout",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            355
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:334,I:355;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-0056c62e5801",
+      "title": "Deliver 1 x a small clam, 1 x a speckled perch",
+      "category": "request",
+      "summary": "Bring 1 x a small clam, 1 x a speckled perch. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:334,I:356;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a small clam",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            334
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a speckled perch",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            356
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:334,I:356;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-a4f66349f616",
+      "title": "Deliver 2 x a large mussel",
+      "category": "request",
+      "summary": "Bring 2 x a large mussel. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:335,I:335;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 2 x a large mussel",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            335
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:335,I:335;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-e7053603118b",
+      "title": "Deliver 1 x a large mussel, 1 x a rainbow trout",
+      "category": "request",
+      "summary": "Bring 1 x a large mussel, 1 x a rainbow trout. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:335,I:355;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large mussel",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            335
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a rainbow trout",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            355
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:335,I:355;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-acc25d546f5a",
+      "title": "Deliver 1 x a large mussel, 1 x a speckled perch",
+      "category": "request",
+      "summary": "Bring 1 x a large mussel, 1 x a speckled perch. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:335,I:356;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large mussel",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            335
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a speckled perch",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            356
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:335,I:356;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-85dd9a2605c3",
+      "title": "Deliver 2 x a rainbow trout",
+      "category": "request",
+      "summary": "Bring 2 x a rainbow trout. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:355,I:355;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 2 x a rainbow trout",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            355
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:355,I:355;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-aa3208eda727",
+      "title": "Deliver 1 x a rainbow trout, 1 x a speckled perch",
+      "category": "request",
+      "summary": "Bring 1 x a rainbow trout, 1 x a speckled perch. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:355,I:356;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a rainbow trout",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            355
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a speckled perch",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            356
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:355,I:356;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29266-3dd090dd0026",
+      "title": "Deliver 2 x a speckled perch",
+      "category": "request",
+      "summary": "Bring 2 x a speckled perch. Reward: 1 x the Charity Seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:356,I:356;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 2 x a speckled perch",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            356
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:356,I:356;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29269-4797fc378179",
+      "title": "Deliver 1 x a bubbling vial of liquid",
+      "category": "request",
+      "summary": "Bring 1 x a bubbling vial of liquid. Reward: 1 x a note.",
+      "contracts": [
+        {
+          "giver_vnum": 29269,
+          "completion_key": "give=I:29255;receive=I:29287;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-29255",
+          "text": "Record the ingredient exchange for a bubbling vial of liquid",
+          "kind": "completion",
+          "hint": "This is one known way to obtain the requested material. An item obtained another way can still satisfy the delivery.",
+          "contracts": [
+            {
+              "giver_vnum": 29233,
+              "completion_key": "give=I:29271,I:29272,I:29333;receive=I:29255;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a bubbling vial of liquid",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29255
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29269,
+              "completion_key": "give=I:29255;receive=I:29287;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

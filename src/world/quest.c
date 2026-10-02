@@ -1793,6 +1793,7 @@ int quester(P_char ch, P_char pl, int cmd, char *arg)
 				else
 					send_to_char("\n", pl);
 
+				zone_story_quest_runtime::encountered(pl, ch);
 				return (TRUE);
 			}
 		}
