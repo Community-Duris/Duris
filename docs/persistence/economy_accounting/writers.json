@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "3dc1f35bbf144e862104767e77fc7fb9795f81a6",
+  "source_commit": "d4af6fac3d5946fafe2ee60caf2429671d2e01a1",
   "census_complete": true,
   "writers": [
     {
@@ -15797,7 +15797,7 @@
       "coverage": "legacy",
       "classification": "An eligible NPC-death event can instantiate an enhancement essence and directly give its new UID to the dying NPC as loot.",
       "authority_boundary": "Bind the death source, NPC instance, selected reward vnum and new UID before the item becomes loot.",
-      "current_support": "Source classification only; active-epoch refusal and both-backend executable root unverified.",
+      "current_support": "Actual production-function sanitizers qualify wide global and zone elite-level scaling, unchanged normal two-roll thresholds, level/enable gates and missing-template handling. Durable source attribution, active-epoch publication and backend executable roots remain unverified.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -15812,7 +15812,9 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_essence_drop_numeric_bounds.py"
+      ],
       "sites": [
         [
           "src/item/enhance.c",
@@ -19257,7 +19259,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Eight read_object calls allocate unpublished material, essence or recipe candidates; admission occurs only through grant_salvage_item.",
+      "classification": "Six read_object calls allocate unpublished ordinary salvage material, essence or recipe candidates; admission occurs through grant_salvage_item. Material downgrading has its separate batch owner.",
       "authority_boundary": "Keep each candidate in NOWHERE until a source-qualified grant is committed; do not count template allocation as issuance.",
       "current_support": "Source-reviewed provisional allocation; the active-epoch salvage command is refused.",
       "backends": {
@@ -19276,52 +19278,44 @@
       },
       "test_candidates": [
         "tests/async/test_economy_writer_coverage_contract.py",
-        "tests/async/test_pa_item_admission.py"
+        "tests/async/test_pa_item_admission.py",
+        "tests/async/test_salvage_prototype_preflight.py",
+        "tests/async/test_salvage_numeric_bounds.py"
       ],
       "sites": [
         [
           "src/item/salvage.c",
-          209,
+          518,
           "item_lifecycle"
         ],
         [
           "src/item/salvage.c",
-          210,
+          527,
           "item_lifecycle"
         ],
         [
           "src/item/salvage.c",
-          455,
+          565,
           "item_lifecycle"
         ],
         [
           "src/item/salvage.c",
-          464,
+          586,
           "item_lifecycle"
         ],
         [
           "src/item/salvage.c",
-          502,
+          606,
           "item_lifecycle"
         ],
         [
           "src/item/salvage.c",
-          523,
-          "item_lifecycle"
-        ],
-        [
-          "src/item/salvage.c",
-          543,
-          "item_lifecycle"
-        ],
-        [
-          "src/item/salvage.c",
-          624,
+          695,
           "item_lifecycle"
         ]
       ],
       "evidence": [],
-      "reachability_evidence": "All eight read_object results are passed to grant_salvage_item directly or through salvaged/recipe; do_salvage checks active authority before reaching them.",
+      "reachability_evidence": "All six ordinary salvage read_object results reach grant_salvage_item directly or through salvaged/recipe; the active-authority refusal precedes candidate allocation.",
       "native_effects": {
         "holding_effect": "No direct coin effect.",
         "custody_effect": "No selected custody changes at these allocation sites.",
@@ -19336,7 +19330,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Material downgrade, salvage material, optional essence and recipe outputs are separately queued typed grants. The carried source and optional scientific tools are retired by direct legacy calls, so the outputs are not yet one linked salvage root.",
+      "classification": "Ordinary salvage material, optional essence and recipe outputs remain separate typed grants. Source and optional tools are retired separately. Material downgrade now uses its separate atomic batch owner.",
       "authority_boundary": "Accepted grant_salvage_item source event, selected backend, expected native revisions and receipt before publication.",
       "current_support": "Typed output submission exists behind do_salvage's active-epoch refusal; backend parity, same-root input/output accounting and playable completion remain unverified.",
       "backends": {
@@ -19360,7 +19354,7 @@
       "sites": [
         [
           "src/item/salvage.c",
-          28,
+          30,
           "economic_submit"
         ]
       ],
@@ -19410,7 +19404,7 @@
       "sites": [
         [
           "src/item/salvage.c",
-          32,
+          34,
           "item_lifecycle"
         ]
       ],
@@ -19430,7 +19424,7 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "The carried source is removed and extracted on material downgrade, failed skill, low-value breakage or completed salvage. Generated outputs are separate queued grants.",
+      "classification": "Failed skill, low-value breakage and completed ordinary salvage still retire the carried source directly; ordinary outputs remain separate grants. Material downgrade retirement is owned by its atomic craft batch.",
       "authority_boundary": "Bind source UID retirement, selected outcome and every output UID to one replayable root before changing live custody; a destruction-only outcome remains a sink.",
       "current_support": "Legacy direct item retirement; do_salvage has a source-order active-epoch refusal, but no unified salvage root is qualified.",
       "backends": {
@@ -19454,27 +19448,17 @@
       "sites": [
         [
           "src/item/salvage.c",
-          215,
-          "item_publication"
-        ],
-        [
-          "src/item/salvage.c",
-          216,
+          297,
           "item_lifecycle"
         ],
         [
           "src/item/salvage.c",
-          243,
+          314,
           "item_lifecycle"
         ],
         [
           "src/item/salvage.c",
-          260,
-          "item_lifecycle"
-        ],
-        [
-          "src/item/salvage.c",
-          664,
+          735,
           "item_lifecycle"
         ]
       ],
@@ -45778,6 +45762,68 @@
       "refusal_source_evidence": [
         "economic_gameplay_authority::active() guard at the gameplay entry and craft submission boundary."
       ]
+    },
+    {
+      "id": "item.salvage_material_downgrade",
+      "path": "src/item/salvage.c",
+      "symbol": "downgrade_salvage_material",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Material downgrade freezes the original carried input and two detached lower-tier outputs in one craft custody command. Missing prototypes or refused admission clean only detached candidates; success is reported after committed publication.",
+      "authority_boundary": "One native craft commit retires the original UID and admits both lower-tier output UIDs with exact owner/item revisions, source and retained operation receipt.",
+      "current_support": "Production-branch ASan/UBSan checks prove missing-prototype and admission refusal preservation, deferred publication and terminal refusal behavior. At 0cd04f40b, real mortal flatfile, MariaDB 10.11.14 and MySQL 8.0.46 journeys retire the original UID once and preserve two distinct lower-tier output UIDs through copyover and two cold restarts, with accounting inactive. The enclosing salvage command retains its active-epoch refusal. Active accounting, further material families and complete salvage qualification remain unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_salvage_material_downgrade.py",
+        "tests/async/run_alchemist_crafting_journey.py",
+        "tests/async/test_issue_551_crafting_conservation.py"
+      ],
+      "sites": [
+        [
+          "src/item/salvage.c",
+          57,
+          "item_lifecycle"
+        ],
+        [
+          "src/item/salvage.c",
+          61,
+          "economic_submit"
+        ],
+        [
+          "src/item/salvage.c",
+          70,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "do_salvage calls the downgrade owner only for a material above its lowest tier, after the shared active-epoch refusal. The helper submits one input and exactly two outputs together; there are no independent output grants or direct input retirement in this branch.",
+      "native_effects": {
+        "holding_effect": "No coin effect.",
+        "custody_effect": "One original material UID is retired and exactly two fresh lower-tier material UIDs are admitted together; rejected provisional candidates never acquire native custody.",
+        "native_state_targets": [
+          "item_current_owner and item_ownership_ledger",
+          "flatfile item catalog and immutable operation receipt",
+          "source claim and critical-command custody receipt"
+        ]
+      },
+      "refusal_source_evidence": [
+        "do_salvage checks economic_gameplay_authority::active() before calling downgrade_salvage_material; the branch preserves the input when either detached prototype or batch admission fails."
+      ]
     }
   ],
   "census": [
@@ -54255,93 +54301,93 @@
     },
     {
       "path": "src/item/salvage.c",
-      "line": 28,
+      "line": 30,
       "family": "economic_submit",
       "excerpt": "if (object && item_creation_grant_submit_to_player(ch, object, ch, NULL,"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 32,
+      "line": 61,
+      "family": "economic_submit",
+      "excerpt": "item_movement_transaction_submit_craft(ch, inputs, 1, outputs, 2, OBJ_VNUM(item),"
+    },
+    {
+      "path": "src/item/salvage.c",
+      "line": 34,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 209,
+      "line": 57,
       "family": "item_lifecycle",
-      "excerpt": "grant_salvage_item(ch, read_object(--itemvnum, VIRTUAL));"
+      "excerpt": "P_obj outputs[] = { read_object(output_vnum, VIRTUAL), read_object(output_vnum, VIRTUAL) };"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 210,
+      "line": 57,
       "family": "item_lifecycle",
-      "excerpt": "grant_salvage_item(ch, read_object(itemvnum, VIRTUAL));"
+      "excerpt": "P_obj outputs[] = { read_object(output_vnum, VIRTUAL), read_object(output_vnum, VIRTUAL) };"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 216,
+      "line": 70,
       "family": "item_lifecycle",
-      "excerpt": "extract_obj(item);"
+      "excerpt": "extract_obj(output, FALSE);"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 243,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(item);"
-    },
-    {
-      "path": "src/item/salvage.c",
-      "line": 260,
+      "line": 297,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item);"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 455,
+      "line": 314,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(item);"
+    },
+    {
+      "path": "src/item/salvage.c",
+      "line": 518,
       "family": "item_lifecycle",
       "excerpt": "grant_salvage_item(ch, read_object(MAG_ESSENCE_VNUM, VIRTUAL));"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 464,
+      "line": 527,
       "family": "item_lifecycle",
       "excerpt": "grant_salvage_item(ch, read_object(MAG_ESSENCE_VNUM, VIRTUAL));"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 502,
+      "line": 565,
       "family": "item_lifecycle",
       "excerpt": "salvaged = read_object(matvnum, VIRTUAL);"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 523,
+      "line": 586,
       "family": "item_lifecycle",
       "excerpt": "salvaged = read_object(matvnum, VIRTUAL);"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 543,
+      "line": 606,
       "family": "item_lifecycle",
       "excerpt": "salvaged = read_object(matvnum, VIRTUAL);"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 624,
+      "line": 695,
       "family": "item_lifecycle",
       "excerpt": "recipe = read_object(SALVAGE_RECIPE_VNUM, VIRTUAL);"
     },
     {
       "path": "src/item/salvage.c",
-      "line": 664,
+      "line": 735,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item);"
-    },
-    {
-      "path": "src/item/salvage.c",
-      "line": 215,
-      "family": "item_publication",
-      "excerpt": "obj_from_char(item);"
     },
     {
       "path": "src/item/storage_lockers.c",

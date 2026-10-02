@@ -504,6 +504,7 @@ int main()
 
         salvage = extract_function("item/salvage.c", "void do_salvage(")
         salvage_guard = salvage.index("economic_gameplay_authority::active()")
+        self.assertLess(salvage_guard, salvage.index("downgrade_salvage_material(ch,"))
         self.assertLess(salvage_guard, salvage.index("grant_salvage_item(ch,"))
         self.assertLess(salvage_guard, salvage.index("extract_obj(item)"))
         self.assertLess(salvage_guard,

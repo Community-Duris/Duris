@@ -620,14 +620,22 @@ class SplitEconomyActivationContract(unittest.TestCase):
                 if site[0] == path:
                     owners.setdefault(tuple(site), set()).add(route["id"])
         self.assertEqual(current, owners.keys(), "review new salvage custody sites")
-        self.assertEqual(owners[(path, 32, "item_lifecycle")],
-                         {"item.salvage_grant_reject_cleanup"})
-        self.assertEqual(owners[(path, 215, "item_publication")],
-                         {"item.salvage_input_retirement"})
+        cleanup = next(row for row in registry["writers"]
+                       if row["id"] == "item.salvage_grant_reject_cleanup")
+        self.assertEqual(len(cleanup["sites"]), 1)
+        self.assertEqual(owners[tuple(cleanup["sites"][0])], {cleanup["id"]})
+        retirement = next(row for row in registry["writers"]
+                          if row["id"] == "item.salvage_input_retirement")
+        source_lines = (ROOT / path).read_text().splitlines()
+        self.assertEqual(len(retirement["sites"]), 3)
+        for site in retirement["sites"]:
+            self.assertEqual(owners[tuple(site)], {retirement["id"]})
+            self.assertIn("extract_obj(item)", source_lines[site[1] - 1])
         for route_id in ("item.salvage_candidate_allocation",
                          "item.salvage_grant_reject_cleanup"):
             self.assertEqual(self.routes[route_id]["disposition"], "non_writer_candidate")
         for route_id in ("item.salvage_grant", "item.salvage_input_retirement",
+                         "item.salvage_material_downgrade",
                          "item.salvage_scientific_tools_consumption"):
             route = self.routes[route_id]
             self.assertEqual(route["disposition"], "runtime_mutation_route")
@@ -635,6 +643,8 @@ class SplitEconomyActivationContract(unittest.TestCase):
                             ["must_block_on_activation"])
             self.assertFalse(route["double_entry_evidence"]
                              ["unified_operation_postings_observed"])
+        downgrade = self.routes["item.salvage_material_downgrade"]
+        self.assertEqual(downgrade["current_critical_command_schema"]["current_schema"], 1)
         tool = next(row for row in registry["writers"]
                     if row["id"] == "item.salvage_scientific_tools_consumption")
         self.assertEqual(tool["sites"], [])  # Semantic helper call is outside the scanner.

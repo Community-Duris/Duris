@@ -9,16 +9,16 @@
   ],
   "counts": {
     "dormant_writer_candidates": 14,
-    "draft_registry_rows": 863,
-    "function_definition_anchors_verified": 855,
-    "matrix_rows": 863,
+    "draft_registry_rows": 864,
+    "function_definition_anchors_verified": 856,
+    "matrix_rows": 864,
     "non_function_candidate_anchors": 8,
     "non_writer_or_out_of_scope_candidates": 96,
     "offline_operational_writer_routes": 3,
-    "routes_with_current_schema_1_path": 84,
+    "routes_with_current_schema_1_path": 85,
     "routes_with_schema_2_gameplay_producer": 15,
     "routes_with_unified_double_entry_evidence": 2,
-    "runtime_mutation_and_projection_routes": 750,
+    "runtime_mutation_and_projection_routes": 751,
     "supplemental_candidates_found": 0
   },
   "coverage_complete": false,
@@ -26,7 +26,7 @@
     "dormant_writer_candidate": 14,
     "non_writer_candidate": 96,
     "offline_operational_writer": 3,
-    "runtime_mutation_route": 686,
+    "runtime_mutation_route": 687,
     "runtime_projection_route": 64
   },
   "global_schema_and_accounting_evidence": {
@@ -39,33 +39,33 @@
     "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified."
   },
   "known_unknowns": [
-    "The matrix reconciles 863 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
+    "The matrix reconciles 864 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
     "The lexical census is fully mapped; this does not establish that every reachable economic mutation has passed executable review.",
     "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
     "current_occurrences": 2811,
-    "current_unique_path_line_family_sites": 2753,
+    "current_unique_path_line_family_sites": 2752,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "3dc1f35bbf144e862104767e77fc7fb9795f81a6",
+    "draft_source_commit": "d4af6fac3d5946fafe2ee60caf2429671d2e01a1",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2753,
+    "draft_unique_sites": 2752,
     "family_occurrences": {
       "coin_assignment": 160,
       "coin_bulk_mutation": 16,
       "direct_cash_assignment": 12,
-      "economic_submit": 186,
+      "economic_submit": 187,
       "item_lifecycle": 1146,
-      "item_publication": 1064,
+      "item_publication": 1063,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
       "sql_economy": 55
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 863-row registry maps 2753 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
-    "mapped_sites_still_present": 2753,
-    "mapped_unique_sites_from_draft_rows": 2753,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 864-row registry maps 2752 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2752,
+    "mapped_unique_sites_from_draft_rows": 2752,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "3dc1f35bbf144e862104767e77fc7fb9795f81a6",
+  "repository_head": "d4af6fac3d5946fafe2ee60caf2429671d2e01a1",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -21866,18 +21866,18 @@
         "holding_effect": "none in this function for economy/custody scope",
         "native_state_targets": []
       },
-      "reachability_evidence": "All eight read_object results are passed to grant_salvage_item directly or through salvaged/recipe; do_salvage checks active authority before reaching them.",
+      "reachability_evidence": "All six ordinary salvage read_object results reach grant_salvage_item directly or through salvaged/recipe; the active-authority refusal precedes candidate allocation.",
       "reason": "item_create",
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          139
+          179
         ],
         "file": "src/item/salvage.c",
         "function": "do_salvage",
         "original_draft_symbol": "do_salvage"
       },
-      "source_classification": "Eight read_object calls allocate unpublished material, essence or recipe candidates; admission occurs only through grant_salvage_item.",
+      "source_classification": "Six read_object calls allocate unpublished ordinary salvage material, essence or recipe candidates; admission occurs through grant_salvage_item. Material downgrading has its separate batch owner.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -21935,13 +21935,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          26
+          28
         ],
         "file": "src/item/salvage.c",
         "function": "grant_salvage_item",
         "original_draft_symbol": "grant_salvage_item"
       },
-      "source_classification": "Material downgrade, salvage material, optional essence and recipe outputs are separately queued typed grants. The carried source and optional scientific tools are retired by direct legacy calls, so the outputs are not yet one linked salvage root.",
+      "source_classification": "Ordinary salvage material, optional essence and recipe outputs remain separate typed grants. Source and optional tools are retired separately. Material downgrade now uses its separate atomic batch owner.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -21982,7 +21982,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          26
+          28
         ],
         "file": "src/item/salvage.c",
         "function": "grant_salvage_item",
@@ -22047,13 +22047,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          139
+          179
         ],
         "file": "src/item/salvage.c",
         "function": "do_salvage",
         "original_draft_symbol": "do_salvage"
       },
-      "source_classification": "The carried source is removed and extracted on material downgrade, failed skill, low-value breakage or completed salvage. Generated outputs are separate queued grants.",
+      "source_classification": "Failed skill, low-value breakage and completed ordinary salvage still retire the carried source directly; ordinary outputs remain separate grants. Material downgrade retirement is owned by its atomic craft batch.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -22112,7 +22112,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          139
+          179
         ],
         "file": "src/item/salvage.c",
         "function": "do_salvage",
@@ -50907,6 +50907,72 @@
         "original_draft_symbol": "sql_load_player_items"
       },
       "source_classification": "Malformed rich runtime state discards only this load attempt\u00e2\u20ac\u2122s materialized object graph; durable player item rows remain unchanged.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_typed_schema2_accounting",
+        "must_block_on_activation": true,
+        "required_policy": "Reject before the first native/live mutation unless one immutable typed operation binds actor, source event, native identity/revisions, exact coin postings and ordered custody events; commit domain state, evidence and receipt atomically on the selected backend, then publish. Do not fall back to schema 1 or direct legacy mutation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": 1,
+        "evidence": [
+          "src/item/item_transfer_command.c:1077",
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
+        "route_mode": "schema_1_typed_command_path",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "legacy_domain_ledger_only_not_double_entry",
+        "unified_operation_postings_observed": false
+      },
+      "id": "item.salvage_material_downgrade",
+      "native_effects": {
+        "custody_effect": "One original material UID is retired and exactly two fresh lower-tier material UIDs are admitted together; rejected provisional candidates never acquire native custody.",
+        "holding_effect": "No coin effect.",
+        "native_state_targets": [
+          "item_current_owner and item_ownership_ledger",
+          "flatfile item catalog and immutable operation receipt",
+          "source claim and critical-command custody receipt"
+        ]
+      },
+      "reachability_evidence": "do_salvage calls the downgrade owner only for a material above its lowest tier, after the shared active-epoch refusal. The helper submits one input and exactly two outputs together; there are no independent output grants or direct input retirement in this branch.",
+      "reason": "item_create",
+      "refusal_source_evidence": [
+        "do_salvage checks economic_gameplay_authority::active() before calling downgrade_salvage_material; the branch preserves the input when either detached prototype or batch admission fails."
+      ],
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          55
+        ],
+        "file": "src/item/salvage.c",
+        "function": "downgrade_salvage_material",
+        "original_draft_symbol": "downgrade_salvage_material"
+      },
+      "source_classification": "Material downgrade freezes the original carried input and two detached lower-tier outputs in one craft custody command. Missing prototypes or refused admission clean only detached candidates; success is reported after committed publication.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     }
   ],
