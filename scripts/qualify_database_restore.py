@@ -6,11 +6,13 @@ import migration_runner as migrations
 
 
 def require_completed_history(rows):
-    """Accept only either complete immutable history supported by the boot gate."""
+    """Accept only complete immutable histories supported by the boot gate."""
     manifests = (
         migrations.load_manifest(),
         migrations.load_manifest(
             migrations.ROOT / "migrations/migration_manifest.staging_0045.json"),
+        migrations.load_manifest(
+            migrations.ROOT / "migrations/migration_manifest.master_0031.json"),
     )
     for manifest in manifests:
         try:
