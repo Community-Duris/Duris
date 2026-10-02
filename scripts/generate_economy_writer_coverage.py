@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import ast
 from collections import Counter
+from functools import lru_cache
 import importlib.util
 import json
 from pathlib import Path
@@ -359,6 +360,7 @@ def load_validator():
     return module
 
 
+@lru_cache(maxsize=32)
 def mask_cpp(source: str) -> str:
     """Blank comments/literals while preserving offsets and line numbers."""
     out = list(source)

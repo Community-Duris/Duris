@@ -40,12 +40,12 @@ This checkpoint publishes the completed review fixes directly to
 
 | Check | Current evidence |
 | --- | --- |
-| Strict SQL and flatfile production builds | Passed for the source at `77f95ef9f`; the final merged SQL boot contract still needs a rebuild. |
+| Strict SQL and flatfile production builds | Passed for `ad5bc52bf`; all 1,210 native build source files match its committed tree. |
 | Recipe SQL receipts and fault recovery | Passed on disposable MySQL 8.0 and MariaDB 10.11 before the latest upstream integration. |
 | Integrated focused runtime checks | All 16 selected checks passed after the first upstream integration, including the ASan/UBSan prompt fixture. |
 | Null-output publication regression | Passed using the actual native movement module after `0464613a1`. |
 | Combat continuation and quarantine restore | Passed after integrating the upstream recovery evidence. Quarantine archives retain both original component frames and keep recovery fenced on conflicting evidence. |
-| Writer census | 2,806 lexical occurrences, 2,748 unique sites, 863 routes, zero unmapped sites; 52 coverage-contract tests passed on the preceding census snapshot. |
+| Writer census | Refreshed for `ad5bc52bf`: 2,806 lexical occurrences, 2,748 unique sites, 863 routes, zero unmapped sites; all 52 coverage contracts and artifact freshness passed. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
 | Recipe flatfile restore | Passed through the actual native restore decoder: complete recovery, checksum damage, missing obligation/root, future revision, and invalid receipt filename. |
 | Latest migration integration | Runtime manifest validator and all 34 native boot/migration contract tests passed with head 0053 and 225 tables. All three histories converge on the pinned schema on disposable MySQL 8.0.46 and MariaDB 10.11.14, including preserved master receipts/runtime payloads, append/replay, shell/compiled boot, restore selection, and tamper refusal. The fixture uses the current sealed baseline with the master prefix; a captured production clone remains outside this proof. |
 
