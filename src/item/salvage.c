@@ -477,6 +477,17 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 		    FALSE, ch, 0, 0, TO_CHAR);
 	}
 
+	// Resolve templates before any reward grant or tool/source retirement. The
+	// material and an eligible recipe are dereferenced by the legacy reward path.
+	if (real_object(matvnum) < 0 ||
+	    (crafting_recipe_target_is_available(item) && real_object(SALVAGE_RECIPE_VNUM) < 0))
+	{
+		send_to_char(
+			"The salvage output templates are unavailable; your item and tools were preserved.\r\n",
+			ch);
+		return;
+	}
+
 	// A rare Luck-based essence; default multipliers preserve the historical rolls.
 	essence_luck = (int)(GET_C_LUK(ch) * crafting_salvage_essence_luck_multiplier());
 	if (number(60, 400) < essence_luck && number(70, 400) < essence_luck &&
