@@ -975,7 +975,8 @@ unsigned int coin_transfer_accounting_record(MYSQL *, const critical_command &,
 	return ENOTSUP;
 }
 unsigned int coin_transfer_accounting_verify_retained(MYSQL *, const critical_command &,
-						      unsigned int, const uint8_t *, size_t)
+						      unsigned int, const uint8_t *, size_t,
+						      critical_failure_stage)
 {
 	return ENOTSUP;
 }
@@ -1110,11 +1111,10 @@ unsigned int coin_transfer_accounting_record(MYSQL *connection, const critical_c
 	}
 }
 
-unsigned int coin_transfer_accounting_verify_retained(MYSQL *connection,
-						      const critical_command &root,
-						      unsigned int result_code,
-						      const uint8_t *result_payload,
-						      size_t result_size)
+unsigned int
+coin_transfer_accounting_verify_retained(MYSQL *connection, const critical_command &root,
+					 unsigned int result_code, const uint8_t *result_payload,
+					 size_t result_size, critical_failure_stage failure_stage)
 {
 	try
 	{
@@ -1132,8 +1132,15 @@ unsigned int coin_transfer_accounting_verify_retained(MYSQL *connection,
 				EILSEQ);
 			plan = make_plan(connection, root, value, result);
 		}
-		else
-			require(result_size == 0, EILSEQ);
+		else if (result_size)
+		{
+			coin_transfer_stale_result stale = {};
+			require(result_code == ESTALE &&
+					coin_transfer_command_decode_stale_result(
+						value.payload, failure_stage, result_payload,
+						result_size, &stale),
+				EILSEQ);
+		}
 		const auto operation =
 			operation_fields(root, value.intent, result_code, plan ? &*plan : nullptr);
 		count(connection, "economic_accounting_operation", predicate(operation), 1);

@@ -19,6 +19,17 @@ locks. The game thread publishes only the stale wallet and/or bank domain, with 
 existing monotonic-revision guards. It does not automatically retry the transfer.
 Item, owner, parent, payload, rebase, and unknown conflicts remain diagnostic-only.
 
+The expanded fix also prevents a reproduced initiating mechanism: a coin transfer
+can commit after a player disconnects, while the game retains their character for
+reconnect. Descriptor-only publication skipped that body and retired the completion.
+Reconnect reused its old wallet and bank revisions, so the next transfer could be
+rejected even though no competing gameplay operation occurred. Publication now finds
+retained player wallets (including morph originals), updates the endpoint's bank
+directly, and continues broadcasting the shared bank to connected account members.
+Neither an older committed receipt nor an older stale repair can overwrite a newer
+wallet or bank revision. This establishes a current-code cause, not attribution of
+the historical incident.
+
 The historical initiating path remains unresolved:
 the prior incident record has no failed command payload or binary provenance, and no
 currency loss was established. A subsequent authorized read-only check matched 889
@@ -34,6 +45,23 @@ The relevant path has three authority boundaries. Admission prepares an immutabl
 command; persistence is the only place that mutates durable wallet/item state; live
 objects are published from committed completions or from a validated terminal
 stale-authority completion that changes no durable state.
+
+### Disconnect and reconnect
+
+`close_socket()` detaches a playing descriptor without extracting its character.
+`prepare_account_reconnect()` subsequently reuses that character and invokes the
+currency ready hook; it does not reload its currency authority. Previously,
+`publish_coin()` looked up wallet endpoints only through `find_player_by_pid()`,
+which searches playing descriptors. It could therefore skip a retained sender or
+recipient, mark the wallets published, and remove the pending transfer before the
+ready hook ran. That hook then had no receipt left to publish.
+
+The coin publication lookup now also searches retained characters, resolving a
+morphed body to its original player. The callback still receives the ordinary
+connected actor lookup. The bank publisher writes the command-identified endpoint
+directly because a linkdead body has no descriptor from which to recover its account
+name. Shared bank broadcasting also resolves morph originals. Truly unloaded
+players still read the authority on their next load.
 
 ### Wallet endpoint preparation
 
@@ -131,11 +159,19 @@ The SQL and game-thread regressions cover the refusal and repair boundaries:
   live endpoint, do not debit or credit the rejected transfer, do not auto-submit a
   second operation, and prove that a later command is built from the repaired state.
 
+The expansion extends the existing completion-retention harness with sender and
+recipient disconnects before committed and rejected completions, bank-only repairs,
+morph originals, genuinely unloaded endpoints, and receipts older than the retained
+body's wallet/bank state. It calls the production reconnect-ready hook and builds
+the next transfer through the production adapter, asserting the current before-vector
+and both revisions. The input-queue harness additionally exercises the production
+shared-bank publisher on a morphed descriptor and verifies its revision guard.
+
 The same harness also retains the existing SQL fault/rollback and interrupted
 transaction probe. A race where the pause finishes before `KILL CONNECTION` is
 now treated as an assertion outcome rather than an unrelated fixture SQL abort.
 
-Executed checks on this branch:
+The original receipt change was validated with:
 
 - `python3 tests/async/test_coin_command_transaction_contract.py` — passed.
 - `python3 tests/async/test_currency_transaction_contract.py` — 10 tests passed.
@@ -150,6 +186,42 @@ Executed checks on this branch:
 - `./tests/async/run_currency_transaction_schema_mysql.sh` — passed on the
   disposable MariaDB wrapper, including schema migration, coin SQL matrix, and
   player-load companion harness.
+
+### Accounting compatibility qualification (October 2, 2026)
+
+The accounting branch additionally verifies schema-version-2 terminal receipts and
+stores full authority in its flatfile records. Its SQL retained-receipt verifier now
+accepts a nonempty failure receipt only for a classified, validated `ESTALE` currency
+result. Apply, exact-ID replay, and reconciliation pass the recorded failure stage
+into that verifier. A refused root still requires no postings, effects, children,
+source claims, or outbox events.
+
+The flatfile adapter keeps its existing persisted record format. Completion derives
+the same bounded 83-byte recovery receipt from the retained opening authority;
+unclassified item conflicts and other refusals expose no currency repair payload.
+Replay and restart retain the same result and revision guards.
+
+The focused SQL wrapper now links the current accounting writer modules. Its
+synthetic fixture deletes its own source claims before deleting their parent
+operations, satisfying the newer foreign-key contract.
+
+The compatibility preparation passed:
+
+- 106 ASan/UBSan completion-retention scenarios across MySQL and flatfile builds,
+  including the disconnect, reconnect, morph, and older-receipt cases.
+- Both input-queue configurations, the real flatfile accounting coin journey,
+  native coin-accounting refusal tests, typed coin source contracts, and the coin
+  and critical transaction contracts.
+- `CURRENCY_TEST_COIN_ONLY=1 ./tests/async/run_currency_transaction_schema_mysql.sh`
+  on disposable MariaDB 10.11, including typed stale receipt replay/reconciliation,
+  malformed receipt rejection, no-posting refusals, shared banks, change making,
+  split children, physical pile custody, and rollback/reload cases.
+- `make -C src -j2` in the existing Docker build toolchain, formatting checks for
+  every touched C/C++ file, and `git diff --check`.
+
+These accounting-specific adjustments are prepared to accompany the branch's next
+merge from `master`; this qualification did not update the remote accounting branch.
+No live game database was used.
 
 ## Historical evidence and limits
 
