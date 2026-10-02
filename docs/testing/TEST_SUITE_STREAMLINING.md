@@ -2,9 +2,8 @@
 
 This follow-up to [the suite audit](TEST_SUITE_AUDIT.md) implements execution
 accounting, explicit profiles, native artifact reuse and resource scheduling.
-Behavioral upgrades and the remaining database/recovery orchestration are prepared
-below as separate follow-ups. Production code, schemas and runtime protocols are
-outside this change.
+It also upgrades five behavioral pilots and supplies the disposable database and
+recovery matrix. Production code, schemas and runtime protocols are unchanged.
 
 ## Execution and profiles
 
@@ -16,7 +15,7 @@ runs. Metadata changes are intentional review decisions, rather than a naming
 heuristic that silently decides whether to run a new test.
 
 The default core profile retains every previously automatic entry and adds the
-native-artifact regression. The 25 manual entries remain explicit. Automatic entries
+native-artifact regression. The remaining 24 manual entries have explicit providers in the integration matrix. Automatic entries
 with optional SQL checks remain in core, and their skips remain visible.
 
 | Profile | Scope | Evidence boundary |
@@ -25,8 +24,8 @@ with optional SQL checks remain in core, and their skips remain visible.
 | fast | Explicitly selected short offline/source/tool checks | Requires maintained tools and generated world inputs; no complete server build |
 | native | Focused compiled fixtures and other offline checks | Linked/extracted production behavior within each fixture's stated limits |
 | journey | Automatic process and server journeys | Private fixtures, real commands and lifecycle paths; manual journeys remain excluded |
-| database | Database entries plus mixed suites with optional SQL cases | Required skips fail; manual prerequisites currently refuse automatic execution |
-| recovery | Restore/backup/quarantine entries | Required skips fail; the copied-journal manual fixture is not provisioned automatically |
+| database | Database entries plus mixed suites with optional SQL cases | Required skips fail; the matrix supplies each reviewed prerequisite |
+| recovery | Restore/backup/quarantine entries | Required skips fail; quarantine uses a generated private journal |
 
 Use the existing full gate, or choose a profile:
 
@@ -109,72 +108,111 @@ TEST_TIMEOUT available as an explicit override. Process-group timeout cleanup,
 immediate failure diagnostics, heartbeat and interrupt exit 130 remain.
 Cancellation accounts for queued entries without starting them.
 
-## Prepared behavioral follow-up
+## Behavioral qualification
 
-Begin with these concrete pilots. Each new assertion must identify its production
-requirement and reject a deliberately incorrect implementation before a weaker
-overlapping check is retired.
+The behavioral owners execute production code and compare its results with
+independent requirements. The reviewed fault catalog is
+[behavioral_faults.json](../../tests/behavioral_faults.json). Qualification copies
+only source, test and migration inputs below `bin/`, mutates that private copy,
+and runs positive controls before and after each fault. A missing mutation site,
+compile failure, surviving fault or unsuccessful control fails qualification.
+The original checkout is checked for unchanged production source bytes.
 
-| Pilot | Existing owner | Executable upgrade | Deliberate fault / acceptance |
+| Requirement | Executable owner | Independent assertion | Reviewed fault |
 | --- | --- | --- | --- |
-| Save refusal | test_epic_save_guards.py and the actual epic refund callers | Inject failed persistence at the production save boundary; inspect the required state and user-visible result | Remove/refactor the refusal branch; distinguish attempted save from acknowledged durable state |
-| Currency replay | flatfile accounting store/bank/coin fixtures; currency_transaction_mysql_harness.cpp | Generate bounded sequences of transfer, duplicate replay, restart and rollback against the real implementation and a small independent model | Duplicate an effect, drop rollback or change a denomination; balances conserve and replay leaves state/counts unchanged |
-| Item custody | player/item transfer and accounting-reference fixtures | Exercise split/merge, handoff, failed publication, restart and quarantine through production APIs | Allow two owners or admit a fenced PID; enforce one owner per live UID and durable admission policy |
-| Load/query budget | player_death_recovery_mysql_harness.cpp | Extend existing actual-query/metric agreement across generated empty/nonempty retained-state combinations | Add an unmetered query or hide a query from metrics; actual count agrees and stays within the declared ceiling |
-| Concurrency ordering | pool-discard and deletion/retention fixtures | Add bounded deterministic synchronization at the actual ownership/wait/commit boundaries | Premature lease close, missed wakeup or wrong lock ordering must fail without lengthening client deadlines |
+| SAVE-REFUSAL | test_epic_save_guards.py | The actual epic callback preserves learned/taught skills on refusal; reset callers attempt a checkpoint and diagnose its failed acknowledgement | Ignore the refused refund |
+| CURRENCY-REPLAY | test_flatfile_accounting_bank.py | Three fixed seeds generate transfers, refusals, old replay and process restart; modeled denomination balances/revisions conserve value and replay preserves all durable bytes | Rotate denominations; misreport an old replay as a new commit |
+| CUSTODY-HISTORY | test_flatfile_item_repository.py | Twelve split/merge/handoff steps retain exactly two live UIDs with one modeled owner and topology; failed publication, interrupted commit and old replay preserve the required state | Retain the source owner after a handoff |
+| CUSTODY-ADMISSION | test_player_save_journal_quarantine.py | The real journal/codec archives fenced records byte for byte, refuses failed sync and protected append, and replays unaffected records; terminal refusal fences the remaining PID | Admit a quarantined PID |
+| LOAD-QUERY | player_death_recovery_mysql_harness.cpp | All 32 item/pet/retained combinations, full/metadata requests and PID/name lookup agree with independently wrapped actual SQL executions and the query ceilings; refused loads expose no materializable payload | Hide an executed query from metrics |
+| POOL-LEASE | test_sql_pool_discard_mysql.py | A borrower waits at the actual condition-variable boundary; marked leases remain owned until release; a clean replacement wakes and commits while abandoned transactions roll back | Expose a marked lease for reuse; remove release wake-up |
 
-Keep registration and forbidden-dependency checks as structural evidence.
-Use generated sequences against the actual implementation; testing only a
-reimplementation of the model would not qualify these behaviors. Start with
-bounded deterministic generation using existing tools. Add a property-testing
-dependency only if that pilot demonstrates a useful capability beyond the existing
-harness. Preserve a minimal failing sequence as a normal regression.
+These are scoped fault detections, not a suite-wide mutation score. Native
+assertions inside a standalone driver remain one opaque Python entry; their
+seed/step and completion witnesses are required separately by the matrix.
+Existing deletion/retention tests continue to synchronize at observed server
+row-lock requests, and the generated load owner also checks those orderings.
 
-The existing twelve audit faults and the new entry/cache/scheduler faults provide
-a starting catalog, not a suite-wide mutation score. Establish a requirement-to-
-case map for these pilots and review surviving faults. Code/branch coverage can
-identify unexercised paths, but cannot establish assertion correctness on its own.
+The epic fixture compiles the whole production translation unit but supplies
+external persistence and output boundaries. It distinguishes a save attempt from
+an acknowledged checkpoint; it does not assert that a stub wrote durable data.
+The journal fixture uses a mock receipt repository behind the real codec/journal;
+full native custody and recovery remain separately exercised by the existing
+player repository and integration journeys. The non-root systemd cases execute
+ownership, manager, unit and cgroup validation with a fixture manager; they do not
+prove communication with a live user's systemd service.
 
-## Prepared database and recovery matrix
+## Disposable database and recovery matrix
 
-The database and recovery profiles expose the outstanding prerequisite boundary
-now; they do not provision all manual fixtures. The next implementation should
-provide the missing owners, not source the checkout's .env or point tests at a
-configured game/database.
+[The workload](../../tests/integration_manifest.json) declares engine/provider,
+arguments, opt-ins, case identities and native witnesses for every SQL, recovery
+and manual owner. Coverage is validated before filtering. Missing required cases,
+skips, absent witnesses or nonzero exits fail a row. Setup/build/capability errors
+leave required coverage incomplete, including in JSON and JUnit. Filters record
+all excluded identities and cannot support a complete-matrix claim.
 
-| Fixture family | Existing entry points / provider | Missing integration work |
-| --- | --- | --- |
-| Owned schema and migration wrappers | make test-db; run_runtime_compatibility_mysql.sh; legacy wrappers | Record the exact supported image digest and required cases; run parity rows for both supported engines where applicable |
-| Empty pool/deletion/load fixtures | test_sql_pool_discard_mysql.py; player death conflict/recovery/deletion drivers | Allocate fresh engine-specific schemas with the existing name guards and TEST_DB_DISPOSABLE opt-in; retain real errors and query timelines |
-| Accounting, item reconcile and operation receipts | Manual economic schema/reference, player-save reconcile and spell-receipt drivers | Supply exact migrations, fixture identities and cleanup; validate actual native/runtime cases beyond their source contracts |
-| Mixed flat-file/SQL drivers | epic stone, locker receipt recovery, restitution target | Split prerequisite-specific cases into declared matrix rows; include a non-root row for user-systemd checks rather than accepting its skip |
-| Frozen artifact SQL journeys | pa_accounting_batch_artifact.py and pa_copyover/web helpers | Freeze a single verified source/binary/descriptor, pass DURIS_ACCOUNTING_BASE_BUILD, lease private fixture schemas and runtime roots |
-| Other real-server journeys | issue331, playtime, pet restart, mob gold and death/resurrection drivers | Supply private server/promotion helpers and explicit arguments; do not assume every manual entry needs SQL |
-| Privileged backup/restore | test_persistence_backup_integration.py | Provide Linux namespaces/capabilities and private MariaDB; require all nine cases to run |
-| Copied-journal recovery | test_player_save_journal_quarantine.py | Produce a synthetic captured journal plus matching custody manifests under a private fixture; never capture an existing user's journal |
+The matrix freezes both backend binaries from a clean Git commit, verifies source
+hashes after building, and records the full source manifest, compiler/options,
+image IDs/digests, required cases, individual outcomes and pending workload.
+MySQL 8.0.46 and MariaDB 10.11.19 are pinned to image digests. Nested compiler
+containers bind to the recorded tools image ID. Fresh schemas apply the maintained
+bootstrap and migration owner twice and check runtime compatibility; empty-schema
+fixtures receive their explicit guarded prefixes instead.
 
-Review manual classification separately: test_pa_runtime_sql.py itself protects a
-wrapper's source contract, while its run_pa_runtime_sql.sh wrapper provides real
-SQL evidence. A SQL-shaped filename or successful compilation does not establish
-a database execution.
+The shared SQL owner creates only new labelled containers with generated
+credentials. A container runner shares only its own validated network namespace;
+a native Linux runner publishes exclusively on loopback. Legacy wrappers retain
+their existing SQL harnesses and now receive the selected engine. Original client
+errors, setup/query events, source and synthetic journal digests, and outcomes are
+written before cleanup. Credentials are redacted. Every attempt gets a new evidence
+directory; a passing rerun cannot replace the original failure.
 
-For each matrix row, record the exact commit/source manifest, compiler/options,
-engine image/digest, fixture provider, required case IDs and capability boundary.
-Missing required prerequisites or cases must produce an incomplete/failed matrix,
-even when all executed entries pass. Keep excluded manual entries explicit in the
-selected workload manifest.
+The same command runs locally and in the development/master branch
+[workflow](../../.github/workflows/integration-matrix.yml):
 
-Preserve sanitized failure artifacts before cleanup: original client error,
-process/case timeline, seed, query/commit observations and synthetic journal/schema
-digests where relevant. Flush outcomes while the run progresses. A passing rerun
-must remain a separate attempt; it must not replace the first failure.
-The historical pool DDL failure remains unexplained until original-quality evidence
-or a reproducible fault establishes a cause.
+~~~sh
+python3 tests/run_integration_matrix.py --list
+make test-integration
+make test-integration TEST_ENGINE=mariadb TEST_MATCH=player_death_recovery
+python3 tests/qualify_behavioral_faults.py --family offline \
+  --evidence-dir bin/behavioral-faults-new-attempt
+~~~
 
-Expose the same matrix through local commands and workflows for the maintained
-development branch. Existing master backup and dual-engine telemetry workflows
-remain useful owners; their branch scope does not cover every development branch.
-Local executable verification remains the merge evidence required by AGENTS.md.
+The matrix requires Linux, Docker, maintained build dependencies and native
+MariaDB recovery tools. The checked-in tools image provides them without reading
+the repository's `.env`. Windows users can run the following owned container
+procedure from Bash/WSL. Use a fresh name for each attempt:
+
+~~~sh
+docker build -f tests/integration/Dockerfile -t duris-regression-tools:local .
+# Pull both exact images listed in tests/integration_manifest.json first.
+fixture=duris-matrix-private-attempt
+docker create --name "$fixture" --restart=no --cpus=4 --memory=6g \
+  --cap-add=SYS_ADMIN --cap-add=NET_ADMIN \
+  --security-opt=apparmor=unconfined --security-opt=seccomp=unconfined \
+  -v /var/run/docker.sock:/var/run/docker.sock duris-regression-tools:local
+docker start "$fixture"
+git archive HEAD > bin/matrix-source.tar
+docker cp bin/matrix-source.tar "$fixture:/tmp/source.tar"
+docker exec "$fixture" tar -xf /tmp/source.tar -C /suite
+# A normal checkout uses .git here. For a worktree copy its resolved Git
+# metadata/common object store, or use a fresh clean checkout instead.
+docker cp .git "$fixture:/suite/.git"
+docker exec -e "DURIS_TEST_CONTAINER=$fixture" -w /suite "$fixture" \
+  python3 tests/run_integration_matrix.py
+docker cp "$fixture:/suite/bin/integration-results" bin/
+# Remove only this newly created fixture after retaining its evidence.
+docker rm --force "$fixture"
+~~~
+
+Recovery explicitly requires namespace/mount capabilities and all nine backup
+cases. The copied-journal owner now generates a synthetic capture with real
+codec/journal APIs and matching hashed manifests; historical private captures
+remain supported only with all four explicit inputs. No configured game, existing
+account, shared database or production state is selected. Core retains visible
+optional SQL/systemd skips; the complete matrix requires its declared integration
+checks to execute. Local executable verification remains the merge evidence;
+AGENTS.md does not require waiting for CI.
 
 ## Validation record
 
