@@ -353,6 +353,12 @@ class RunnerBehavior(unittest.TestCase):
             "omitted_function.py": "def test_real():\n raise AssertionError('must execute')\n",
             "ignored_unit_failure.py": "import unittest\nclass Checks(unittest.TestCase):\n"
                                        " def test_real(self): assert False\nunittest.main(exit=False)\n",
+            "early_script_exit.py": "import os\nos._exit(0)\n",
+            "early_unit_exit.py": "import os, unittest\nclass Checks(unittest.TestCase):\n"
+                                  " def test_real(self): os._exit(0)\nunittest.main()\n",
+            "exit_after_unit_cases.py": "import os, unittest\nclass Checks(unittest.TestCase):\n"
+                                       " def test_real(self): self.assertTrue(True)\n"
+                                       "unittest.main(exit=False)\nos._exit(0)\n",
         }
         for name, body in fixtures.items():
             with self.subTest(name=name):

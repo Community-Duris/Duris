@@ -129,9 +129,14 @@ def run_test(path: Path, timeout: float = DEFAULT_TIMEOUT,
         return TestResult(path, 127, str(error), time.monotonic() - started, "error")
     def finish(code, output, status, skipped=0):
         try:
-            cases = json.loads(event_path.read_text())["cases"]
+            observation = json.loads(event_path.read_text())
+            cases = observation["cases"]
         except (OSError, ValueError, KeyError):
+            observation = {}
             cases = []
+        if not code and observation.get("complete") is not True:
+            code, status = 1, "error"
+            output += "\ncase execution contract failed: entry ended without complete observation\n"
         for row in cases:
             row["id"] = relative(path) + "::" + row["id"]
             if row["status"] == "running":
