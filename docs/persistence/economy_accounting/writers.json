@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "e8ca4e4482768c95e22a83772db1d2605863708f",
+  "source_commit": "8f9f624f78ab063a3fc7416592e05b6ed7c176b9",
   "census_complete": true,
   "writers": [
     {
@@ -15441,37 +15441,37 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1975,
+          1976,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1987,
+          1988,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1993,
+          1994,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          2000,
+          2001,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          2006,
+          2007,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          2016,
+          2017,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          2056,
+          2057,
           "item_lifecycle"
         ]
       ],
@@ -15797,7 +15797,7 @@
       "coverage": "legacy",
       "classification": "An eligible NPC-death event can instantiate an enhancement essence and directly give its new UID to the dying NPC as loot.",
       "authority_boundary": "Bind the death source, NPC instance, selected reward vnum and new UID before the item becomes loot.",
-      "current_support": "Source classification only; active-epoch refusal and both-backend executable root unverified.",
+      "current_support": "Actual production-function sanitizers qualify wide global and zone elite-level scaling, unchanged normal two-roll thresholds, level/enable gates and missing-template handling. Durable source attribution, active-epoch publication and backend executable roots remain unverified.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -15812,16 +15812,18 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_essence_drop_numeric_bounds.py"
+      ],
       "sites": [
         [
           "src/item/enhance.c",
-          1300,
+          1301,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1308,
+          1309,
           "item_publication"
         ]
       ],
@@ -18215,12 +18217,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          2099,
+          2100,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          2107,
+          2108,
           "item_publication"
         ]
       ],
@@ -53637,55 +53639,55 @@
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1300,
+      "line": 1301,
       "family": "item_lifecycle",
       "excerpt": "P_obj gift = read_object(reward, VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1975,
+      "line": 1976,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(vnum, VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1987,
+      "line": 1988,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1993,
+      "line": 1994,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2000,
+      "line": 2001,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2006,
+      "line": 2007,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2016,
+      "line": 2017,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2056,
+      "line": 2057,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2099,
+      "line": 2100,
       "family": "item_lifecycle",
       "excerpt": "if (!(material = read_object(high_vnum, VIRTUAL)))"
     },
@@ -53721,13 +53723,13 @@
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1308,
+      "line": 1309,
       "family": "item_publication",
       "excerpt": "obj_to_char(gift, ch);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2107,
+      "line": 2108,
       "family": "item_publication",
       "excerpt": "obj_to_char(material, mob);"
     },

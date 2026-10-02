@@ -48,7 +48,7 @@
     "current_occurrences": 2811,
     "current_unique_path_line_family_sites": 2753,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "e8ca4e4482768c95e22a83772db1d2605863708f",
+    "draft_source_commit": "8f9f624f78ab063a3fc7416592e05b6ed7c176b9",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
     "draft_unique_sites": 2753,
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "e8ca4e4482768c95e22a83772db1d2605863708f",
+  "repository_head": "8f9f624f78ab063a3fc7416592e05b6ed7c176b9",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -18058,7 +18058,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1960
+          1961
         ],
         "file": "src/item/enhance.c",
         "function": "load_enhance_index",
@@ -20660,7 +20660,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2089
+          2090
         ],
         "file": "src/item/enhance.c",
         "function": "enhance_on_npc_item_reset_skipped",
