@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs/persistence/economy_accounting"
 
 sys.path.insert(0, str(ROOT / "scripts"))
-from audit_accounting_invariants import AccountingInvariantAuditor, AuditError
+from audit_accounting_invariants import AccountingInvariantAuditor, AuditError, parse_copper
 
 
 class TestAccountingInvariants(unittest.TestCase):
@@ -105,6 +105,27 @@ class TestAccountingInvariants(unittest.TestCase):
         with self.assertRaises(AuditError) as ctx:
             self.auditor.audit_fixture(fix, "negative_balance")
         self.assertIn("Negative opening balance", str(ctx.exception))
+
+    def test_rejects_lossy_or_out_of_range_denominations(self):
+        for invalid in (True, False, 0.5, -0.5, "1", None, 2**63, -(2**63) - 1):
+            for location in ("holding", "posting"):
+                with self.subTest(invalid=invalid, location=location):
+                    fixture = copy.deepcopy(self.golden["fixtures"][0])
+                    if location == "holding":
+                        fixture["holdings"]["wallet"]["balance"][0] = invalid
+                    else:
+                        fixture["operations"][0]["postings"][0]["delta"][0] = invalid
+                    with self.assertRaises(AuditError):
+                        self.auditor.audit_fixture(fixture, "invalid_denomination")
+
+    def test_exact_integer_copper_bounds(self):
+        self.assertEqual(parse_copper([2**53 + 1, 0, 0, 0]), 2**53 + 1)
+        self.assertEqual(parse_copper([2**63 - 1, 0, 0, 0]), 2**63 - 1)
+        self.assertEqual(parse_copper([-(2**63), 0, 0, 0]), -(2**63))
+        for vector in ([2**63 - 1, 1, 0, 0], [-(2**63), -1, 0, 0],
+                       [0, 0, 0, 2**63 // 1000 + 1]):
+            with self.subTest(vector=vector), self.assertRaises(AuditError):
+                parse_copper(vector)
 
     def test_detects_unauthorized_account_kind(self):
         fix = copy.deepcopy(self.golden["fixtures"][0])

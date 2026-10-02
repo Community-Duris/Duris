@@ -23,8 +23,13 @@ def require(condition: bool, message: str) -> None:
 def parse_copper(denomination_vector) -> int:
     require(isinstance(denomination_vector, (list, tuple)) and len(denomination_vector) == 4,
             "Denomination vector must contain exactly 4 values")
+    require(all(type(amount) is int and -(2**63) <= amount < 2**63
+                for amount in denomination_vector),
+            "Denominations must be signed 64-bit integers")
     multipliers = [1, 10, 100, 1000]
-    return sum(int(amount) * mult for amount, mult in zip(denomination_vector, multipliers))
+    total = sum(amount * mult for amount, mult in zip(denomination_vector, multipliers))
+    require(-(2**63) <= total < 2**63, "Total copper exceeds signed 64-bit range")
+    return total
 
 
 class AccountingInvariantAuditor:
