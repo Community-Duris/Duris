@@ -120,3 +120,29 @@ This fixes an R7 diagnostic gap. The SQL exporter still marks its output
 `complete=false`; source/origin completeness, gameplay writers, integrated
 recovery, and release qualification remain open. Native gameplay behavior and
 accounting activation are unchanged.
+
+## Independent UID lifetime audit repair
+
+Lineage UID history previously checked revision continuity and final native
+state but bypassed the epoch-local creation checks. A second creation of an
+already-created UID, a missing first creation, or a malformed creation origin
+could escape the lifetime audit. Tombstoned UIDs could also become live again
+without a dedicated lifetime exception. A shared read-only lifetime check now
+validates creation origins, requires creation evidence for new UIDs, reports
+duplicate creation, and reports `resurrected_item_uid` when retained retirement
+is followed by a live state. Both lineage and epoch-local histories use it.
+Normal creation, movement, retirement, and baseline-live movement remain valid.
+
+Five new negative cases fail before repair; all 47 reconciler tests and six
+opening-origin tests pass afterward. The disposable MariaDB SQL probe also
+reproduces acceptance of a duplicate creation before repair despite consistent
+roots, references, revisions, and native state. The expanded read-only SQL
+snapshot probe passes on MariaDB 10.11.14 and MySQL 8.0.46: duplicate creation
+reports `duplicate_uid`, valid creation followed by destruction adds no
+exception, revival by a later move reports `resurrected_item_uid`, and fixture
+restoration returns the original exception set. Earlier snapshot corruption,
+consistent-cut, and SELECT-only-reader checks continue to pass.
+
+This strengthens R4/R7 audit diagnostics without changing native writers,
+inactive accounting, production data, or activation gates. SQL snapshots remain
+explicitly incomplete and do not qualify gameplay or crash recovery.

@@ -23,8 +23,9 @@ with zero unmapped sites. These counts do not replace route qualification.
 Independent reconciliation now checks every native item's parent edge even when
 lineage history replaces its epoch-local history or its opening origin is
 missing. Corruption/recovery probes pass through the read-only SQL exporter on
-both engines, alongside 41 reconciler tests; complete native source/origin and
-writer qualification remain open. See the October 2 review status for scope.
+both engines. Lineage and epoch-local history also share creation and irreversible
+UID-retirement checks; 47 reconciler tests pass. Complete native source/origin
+and writer qualification remain open. See the October 2 review status for scope.
 
 Stopped quarantine recovery from upstream `5c157f693` is integrated with the
 review fixes. Version-2 archives retain original frames and frozen grant

@@ -1440,6 +1440,7 @@ class Reconciler:
             if not origin or origin.get("origin") not in ("baseline", "creation"):
                 self.emit("unknown_legacy_origin", uid=uid)
                 continue
+            self.audit_item_lifetime(uid, origin, rows)
             state = {field: origin.get(field)
                      for field in ("revision", "root", "parent", "owner", "state")}
             for row in rows:
@@ -1782,6 +1783,26 @@ class Reconciler:
         if missing != coverage["missing_price_rows"]:
             raise SnapshotError("realized price coverage count mismatch")
 
+    def audit_item_lifetime(self, uid: int, origin: dict, events: list[dict]) -> None:
+        if origin["origin"] == "creation" and {
+                field: origin.get(field)
+                for field in ("revision", "root", "parent", "owner", "state")} != {
+                "revision": 0, "root": uid, "parent": None,
+                "owner": [0, 0, 0], "state": "absent"}:
+            self.emit("invalid_item_creation_origin", uid=uid)
+        created = origin["origin"] == "baseline"
+        retired = origin.get("state") == "tombstone"
+        for event in events:
+            if event.get("action") == "create":
+                if created:
+                    self.emit("duplicate_uid", uid=uid, operation_id=event.get("operation_id"))
+                created = True
+            if retired and event.get("state") == "live":
+                self.emit("resurrected_item_uid", uid=uid, operation_id=event.get("operation_id"))
+            retired = retired or event.get("state") == "tombstone"
+        if not created:
+            self.emit("missing_item_creation", uid=uid)
+
     def audit_items(self, ownership: dict, references: dict, origins: dict, native: dict,
                     lineage_history_uids: set[int] | None = None) -> None:
         referenced = set()
@@ -1818,21 +1839,12 @@ class Reconciler:
             if not origin or origin.get("origin") not in ("baseline", "creation"):
                 self.emit("unknown_legacy_origin", uid=uid)
                 continue
+            self.audit_item_lifetime(uid, origin, rows)
             state = {field: origin.get(field) for field in ("revision", "root", "parent", "owner", "state")}
-            if origin["origin"] == "creation" and state != {
-                    "revision": 0, "root": uid, "parent": None, "owner": [0, 0, 0], "state": "absent"}:
-                self.emit("invalid_item_creation_origin", uid=uid)
-            created = origin.get("origin") == "baseline"
             for event in rows:
                 if event.get("before_revision") != state["revision"] or event.get("revision") != state["revision"] + 1:
                     self.emit("broken_item_history", uid=uid, operation_id=event.get("operation_id"))
-                if event.get("action") == "create":
-                    if created:
-                        self.emit("duplicate_uid", uid=uid, operation_id=event.get("operation_id"))
-                    created = True
                 state = {field: event.get(field) for field in ("revision", "root", "parent", "owner", "state")}
-            if not created:
-                self.emit("missing_item_creation", uid=uid)
             if not current:
                 self.emit("missing_native_item", uid=uid)
             elif any(current.get(field) != state[field] for field in state):
