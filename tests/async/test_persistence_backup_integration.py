@@ -420,10 +420,27 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
                 else:
                     corrupt.write_bytes(original)
     def test_mariadb_full_dump_schema_history_values_and_isolated_service_boot(self):
+        self.sql_full_dump_restore("mariadb")
+
+    @unittest.skipUnless(os.environ.get("DURIS_RUN_MYSQL_BACKUP_INTEGRATION") == "1",
+                         "requires explicit disposable MySQL 8.0 integration invocation")
+    def test_mysql_full_dump_schema_history_values_and_isolated_service_boot(self):
+        self.sql_full_dump_restore("mysql")
+
+    def sql_full_dump_restore(self, engine):
+        self.p["restore_database_engine"] = engine
         self.build_native_fixture()
         source = self.base / "live"
         source.mkdir(mode=0o700)
-        with restore.private_database(source) as env:
+        def require_selected_engine(env):
+            version = sql(env, "SELECT VERSION();")
+            if engine == "mysql":
+                self.assertTrue(version.startswith("8.0.") and "MariaDB" not in version, version)
+            else:
+                self.assertIn("MariaDB", version)
+            return version
+        with restore.private_database(source, engine) as env:
+            source_version = require_selected_engine(env)
             self.p["journal_roots"] = {"players": Path(env["PLAYER_SAVE_JOURNAL_DIR"]),
                                        "critical": Path(env["CRITICAL_COMMAND_JOURNAL_DIR"])}
             for journal in self.p["journal_roots"].values():
@@ -460,6 +477,7 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
             actual_service_load = restore.service_load
             checked = []
             def check_values_then_boot(candidate, mode, restored_env):
+                self.assertEqual(require_selected_engine(restored_env), source_version)
                 self.assertNotEqual(restored_env["DB_SOCKET"], env["DB_SOCKET"])
                 self.assertEqual(sql(restored_env, query), expected)
                 checked.append(mode)
@@ -468,6 +486,7 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
                 receipt = restore.restore(self.p, result["generation"], self.ledger())
             self.assertEqual(checked, ["mariadb-primary"])
             self.assertEqual(receipt["result"], "qualified")
+            self.assertEqual(receipt["checks"]["database_engine"], engine)
             self.assertEqual(sql(env, query), expected)
             self.assertEqual(backup.inventory(generation), captured)
             candidate = self.p["restore_root"] / receipt["candidate"]

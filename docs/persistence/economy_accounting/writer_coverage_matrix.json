@@ -3677,7 +3677,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          711
+          714
         ],
         "file": "scripts/persistence_backup.py",
         "function": "backup",
@@ -3723,7 +3723,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          493
+          496
         ],
         "file": "scripts/persistence_backup.py",
         "function": "prune_unretained",
@@ -33961,7 +33961,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          33
+          34
         ],
         "file": "scripts/persistence_restore.py",
         "function": "tombstone_preflight",
@@ -34019,7 +34019,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          188
+          207
         ],
         "file": "scripts/persistence_restore.py",
         "function": "restore",
