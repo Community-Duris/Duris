@@ -1082,9 +1082,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new enhancement item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/item/enhance.c", 283, "item_lifecycle")],
+        self.assertEqual(owners[("src/item/enhance.c", 285, "item_lifecycle")],
                          {"item.enhance_transform"})
-        self.assertEqual(owners[("src/item/enhance.c", 1099, "item_publication")],
+        self.assertEqual(owners[("src/item/enhance.c", 1109, "item_publication")],
                          {"item.thanksgiving_turkey_grant"})
         for route_id in ("item.enhance_base_probe", "item.enhance_material_name_probe",
                          "item.superior_target_probe", "item.mod_enhance_description_probe",

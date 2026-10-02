@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "ffb73e6518a2dc39f3d243d3384ea851b4c3b8a4",
+  "source_commit": "2e5852e415c22f921ef381e68a27591a58b4fc6e",
   "census_complete": true,
   "writers": [
     {
@@ -15321,12 +15321,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          345,
+          347,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          357,
+          359,
           "item_lifecycle"
         ]
       ],
@@ -15373,7 +15373,7 @@
       "sites": [
         [
           "src/item/enhance.c",
-          275,
+          277,
           "money_helper"
         ]
       ],
@@ -15420,27 +15420,22 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1899,
+          1909,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1911,
+          1921,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1917,
+          1927,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1924,
-          "item_lifecycle"
-        ],
-        [
-          "src/item/enhance.c",
-          1930,
+          1934,
           "item_lifecycle"
         ],
         [
@@ -15450,7 +15445,12 @@
         ],
         [
           "src/item/enhance.c",
-          1980,
+          1950,
+          "item_lifecycle"
+        ],
+        [
+          "src/item/enhance.c",
+          1990,
           "item_lifecycle"
         ]
       ],
@@ -15495,12 +15495,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          364,
+          366,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          369,
+          371,
           "item_lifecycle"
         ]
       ],
@@ -15545,32 +15545,32 @@
       "sites": [
         [
           "src/item/enhance.c",
-          235,
+          237,
           "item_lifecycle"
-        ],
-        [
-          "src/item/enhance.c",
-          281,
-          "item_publication"
-        ],
-        [
-          "src/item/enhance.c",
-          282,
-          "item_publication"
         ],
         [
           "src/item/enhance.c",
           283,
-          "item_lifecycle"
-        ],
-        [
-          "src/item/enhance.c",
-          286,
           "item_publication"
         ],
         [
           "src/item/enhance.c",
-          287,
+          284,
+          "item_publication"
+        ],
+        [
+          "src/item/enhance.c",
+          285,
+          "item_lifecycle"
+        ],
+        [
+          "src/item/enhance.c",
+          288,
+          "item_publication"
+        ],
+        [
+          "src/item/enhance.c",
+          289,
           "item_lifecycle"
         ]
       ],
@@ -15788,12 +15788,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1224,
+          1234,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1232,
+          1242,
           "item_publication"
         ]
       ],
@@ -17947,12 +17947,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1042,
+          1052,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1052,
+          1062,
           "item_lifecycle"
         ]
       ],
@@ -17997,7 +17997,7 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1027,
+          1037,
           "money_helper"
         ]
       ],
@@ -18041,12 +18041,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1036,
+          1046,
           "item_publication"
         ],
         [
           "src/item/enhance.c",
-          1037,
+          1047,
           "item_lifecycle"
         ]
       ],
@@ -18178,12 +18178,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          2023,
+          2033,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          2031,
+          2041,
           "item_publication"
         ]
       ],
@@ -19945,7 +19945,7 @@
       "sites": [
         [
           "src/item/enhance.c",
-          611,
+          621,
           "money_helper"
         ]
       ],
@@ -19989,12 +19989,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          514,
+          516,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          518,
+          520,
           "item_lifecycle"
         ]
       ],
@@ -20083,12 +20083,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1099,
+          1109,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1099,
+          1109,
           "item_publication"
         ]
       ],
@@ -53468,133 +53468,127 @@
     },
     {
       "path": "src/item/enhance.c",
-      "line": 275,
+      "line": 277,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(ch, cost, 0);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 611,
+      "line": 621,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(ch, cost, 0);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1027,
+      "line": 1037,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(ch, cost, 0);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 235,
+      "line": 237,
       "family": "item_lifecycle",
       "excerpt": "robj = read_object(entry->vnum, VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 283,
+      "line": 285,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(source);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 287,
+      "line": 289,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(material);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 345,
+      "line": 347,
       "family": "item_lifecycle",
       "excerpt": "base = read_object(OBJ_VNUM(item), VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 357,
+      "line": 359,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(base);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 364,
+      "line": 366,
       "family": "item_lifecycle",
       "excerpt": "P_obj material = read_object(vnum, VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 369,
+      "line": 371,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(material);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 514,
+      "line": 516,
       "family": "item_lifecycle",
       "excerpt": "if (!target || !(target_obj = read_object(target->vnum, VIRTUAL)))"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 518,
+      "line": 520,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(target_obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1037,
+      "line": 1047,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(material);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1042,
+      "line": 1052,
       "family": "item_lifecycle",
       "excerpt": "P_obj tempobj = read_object(OBJ_VNUM(source), VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1052,
+      "line": 1062,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tempobj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1099,
+      "line": 1109,
       "family": "item_lifecycle",
       "excerpt": "obj_to_char(read_object(400232, VIRTUAL), mob);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1224,
+      "line": 1234,
       "family": "item_lifecycle",
       "excerpt": "P_obj gift = read_object(reward, VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1899,
+      "line": 1909,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(vnum, VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1911,
+      "line": 1921,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1917,
+      "line": 1927,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1924,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/item/enhance.c",
-      "line": 1930,
+      "line": 1934,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
@@ -53606,55 +53600,61 @@
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1980,
+      "line": 1950,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2023,
+      "line": 1990,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/item/enhance.c",
+      "line": 2033,
       "family": "item_lifecycle",
       "excerpt": "if (!(material = read_object(high_vnum, VIRTUAL)))"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 281,
+      "line": 283,
       "family": "item_publication",
       "excerpt": "obj_to_char(robj, ch);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 282,
+      "line": 284,
       "family": "item_publication",
       "excerpt": "obj_from_char(source);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 286,
+      "line": 288,
       "family": "item_publication",
       "excerpt": "obj_from_char(material);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1036,
+      "line": 1046,
       "family": "item_publication",
       "excerpt": "obj_from_char(material);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1099,
+      "line": 1109,
       "family": "item_publication",
       "excerpt": "obj_to_char(read_object(400232, VIRTUAL), mob);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1232,
+      "line": 1242,
       "family": "item_publication",
       "excerpt": "obj_to_char(gift, ch);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2031,
+      "line": 2041,
       "family": "item_publication",
       "excerpt": "obj_to_char(material, mob);"
     },
