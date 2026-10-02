@@ -11,6 +11,8 @@ command = extract_function("salvage.c", "void do_salvage(")
 materials = sorted(set(re.findall(r"case (MAT_[A-Z_]+):", command)))
 harness = r'''
 #include <cassert>
+#include <climits>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdarg>

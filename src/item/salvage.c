@@ -17,6 +17,8 @@
 #include "combat/chaos_materials.h"
 #include <stdio.h>
 #include <string.h>
+#include <climits>
+#include <cmath>
 extern P_room world;
 extern const int top_of_world;
 extern P_index obj_index;
@@ -254,6 +256,27 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
+	const double luck_multiplier = crafting_salvage_essence_luck_multiplier();
+	const double chance_multiplier = crafting_salvage_essence_chance_multiplier();
+	const int recipe_divisor = crafting_scientific_tools_recipe_roll_divisor();
+	const int recipe_multiplier = crafting_scientific_tools_recipe_player_multiplier();
+	if (!std::isfinite(luck_multiplier) || luck_multiplier <= 0 ||
+	    !std::isfinite(chance_multiplier) || chance_multiplier < 0 || recipe_divisor < 1 ||
+	    recipe_multiplier < 1)
+	{
+		send_to_char(
+			"The salvage roll settings are invalid; your item and tools were preserved.\r\n",
+			ch);
+		return;
+	}
+	// Luck rolls end at 500 and the final roll at one million. Bound the
+	// thresholds before integer conversion while preserving certain outcomes.
+	const int luck = GET_C_LUK(ch);
+	essence_luck = luck <= 0 ? 0 : static_cast<int>(std::fmin(501.0, luck * luck_multiplier));
+	const int essence_threshold = chance_multiplier >= 1.0 ?
+					      1000000 :
+					      static_cast<int>(1000000.0 * chance_multiplier);
+
 	if (scitools < 1)
 	{
 		if (crafting_scientific_tools_prevent_breakage())
@@ -489,10 +512,8 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 	}
 
 	// A rare Luck-based essence; default multipliers preserve the historical rolls.
-	essence_luck = (int)(GET_C_LUK(ch) * crafting_salvage_essence_luck_multiplier());
 	if (number(60, 400) < essence_luck && number(70, 400) < essence_luck &&
-	    number(80, 500) < essence_luck &&
-	    number(1, 1000000) <= (int)(1000000.0 * crafting_salvage_essence_chance_multiplier()))
+	    number(80, 500) < essence_luck && number(1, 1000000) <= essence_threshold)
 	{
 		grant_salvage_item(ch, read_object(MAG_ESSENCE_VNUM, VIRTUAL));
 		send_to_char(
@@ -627,7 +648,12 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 		reciperoll = 100000;
 	}
 
-	playerroll = GET_C_LUK(ch) + GET_LEVEL(ch) * 2 + GET_CHAR_SKILL(ch, SKILL_SALVAGE);
+	const int64_t player_score = static_cast<int64_t>(GET_C_LUK(ch)) +
+				     static_cast<int64_t>(GET_LEVEL(ch)) * 2 +
+				     GET_CHAR_SKILL(ch, SKILL_SALVAGE);
+	playerroll = player_score > INT_MAX ? INT_MAX :
+		     player_score < INT_MIN ? INT_MIN :
+					      static_cast<int>(player_score);
 	if (scitools > 0)
 	{
 		if (crafting_scientific_tools_prevent_breakage())
@@ -638,8 +664,11 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 			send_to_char(
 				"&+yYou consume a set of &+cLantan Scientific Tools&+y to improve your recipe discovery chance.\r\n",
 				ch);
-		reciperoll /= crafting_scientific_tools_recipe_roll_divisor();
-		playerroll *= crafting_scientific_tools_recipe_player_multiplier();
+		reciperoll /= recipe_divisor;
+		const int64_t assisted_score = static_cast<int64_t>(playerroll) * recipe_multiplier;
+		playerroll = assisted_score > INT_MAX ? INT_MAX :
+			     assisted_score < INT_MIN ? INT_MIN :
+							static_cast<int>(assisted_score);
 		vnum_from_inv(ch, crafting_scientific_tools_vnum(), 1);
 	}
 
