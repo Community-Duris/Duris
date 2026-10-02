@@ -13,12 +13,18 @@ named stories without changing native receipt IDs. Twin Towers replaces 84
 contracts with 10 achievement units and 3 daily groups, excluding 40 returned
 offerings and displaying 24 supporting contracts as 12 non-achievement services.
 The global projection now has
-2,436 achievement units and 2,039 daily candidate units after adding all 27
+2,359 achievement units and 1,962 daily candidate units after adding all 27
 starter/town mappings and eight further journals, equipment/crafting services,
 intermediate outcomes, and explicit missing-item exclusions. There are 36
-area sidecars and 2,585 projected units including services and administrative
+area sidecars and 2,509 projected units including services and administrative
 content. Other areas
 retain native-contract fallback; these counts do not claim full semantic review.
+Ailvio now projects its 78 equivalent two-fish recipes into one family-feeding
+story, leaving 22 achievement rows and 17 services. Braddistock displays its
+intermediate pet rescue as a service while preserving one final achievement.
+All raw definitions, receipt identities, zone registry and source fingerprint
+remain unchanged. Comprehensive source dossiers for these areas are tracked in
+the [execution register](../design/ZONE_STORY_ROADMAP_EXECUTION.md).
 The [priority roadmap](../design/ZONE_STORY_ZONE_PRIORITIES.md) and
 [complete active inventory](ZONE_STORY_ZONE_INVENTORY.md) distinguish reviewed
 story proposals from provisional static candidates. Player journals and new

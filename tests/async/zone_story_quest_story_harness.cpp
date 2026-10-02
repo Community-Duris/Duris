@@ -158,10 +158,108 @@ int main(int argc, char **argv)
 					"met NPC was missing");
 		}
 		require(catalog.story_mappings.size() == 36 &&
-				tracker.summary_for(7, 42).total == 2436,
+				tracker.summary_for(7, 42).total == 2359,
 			"native story projection disagreed with the complete source audit");
+		const auto story_for = [&](const char *area, const char *id) -> const auto &
+		{
+			const auto mapping = std::find_if(catalog.story_mappings.begin(),
+							  catalog.story_mappings.end(),
+							  [&](const auto &m)
+							  { return m.source_area == area; });
+			require(mapping != catalog.story_mappings.end(), "journey mapping missing");
+			const auto story = std::find_if(
+				mapping->stories.begin(), mapping->stories.end(),
+				[&](const auto &s) {
+					return s.id ==
+					       std::string("zone-story:story:") + area + ":" + id;
+				});
+			require(story != mapping->stories.end(), "journey story missing");
+			return *story;
+		};
+		const auto record = [&](service &journey, const std::string &id, const char *txid,
+					int zone, int room)
+		{
+			auto event = completion(id, txid, 120);
+			event.transaction.zone_number = zone;
+			event.transaction.room_vnum = room;
+			require(journey.record_completion(event) == result::applied,
+				"source story receipt was rejected");
+		};
+		const auto &fish = story_for("newbie", "feed-the-ailing-family");
+		service family(catalog);
+		require(family.discover_zone(7, 42, 292, 29296, 100, "arrival") ==
+					result::applied &&
+				family.meet_npc(7, 42, 29266, 29296, 101) == result::applied,
+			"family encounter failed");
+		zone_story_quest_catalog::journal_inventory supplies;
+		supplies.carried[293] = 1;
+		supplies.carried[294] = 1;
+		auto journal =
+			family.render_journal(7, 42, 292, 10, 1, 102, false, false, &supplies);
+		require(fish.contracts.size() == 78 &&
+				journal.find("[Ready now] " + fish.steps.front().text) !=
+					std::string::npos &&
+				journal.find("Next: " + fish.steps.back().text) !=
+					std::string::npos,
+			"mixed fish did not satisfy the two-fish delivery");
+		supplies.carried.clear();
+		supplies.carried[293] = 2;
+		require(family.render_journal(7, 42, 292, 10, 1, 103, false, false, &supplies)
+					.find("[Ready now] " + fish.steps.front().text) !=
+				std::string::npos,
+			"two matching fish were not accepted by the live checklist");
+		record(family, fish.contracts.front(), "family-same", 292, 29296);
+		record(family, fish.contracts.back(), "family-other", 292, 29296);
+		require(family.progress_for_zone(7, 42, 292).completed == 1 &&
+				family.progress_for_zone(7, 42, 292).total == 22,
+			"fish recipes inflated Ailvio story completion");
+		service restored_family(catalog), raw_family(raw_catalog);
+		const auto saved_family = family.serialize_state();
+		require(restored_family.deserialize_state(saved_family, &error) &&
+				raw_family.deserialize_state(saved_family, &error) &&
+				restored_family.progress_for_zone(7, 42, 292).completed == 1 &&
+				raw_family.progress_for_zone(7, 42, 292).completed == 2,
+			"fish grouping lost original receipts across restart");
+		service supplied_note(catalog);
+		require(supplied_note.discover_zone(7, 42, 292, 29227, 100, "arrival") ==
+					result::applied &&
+				supplied_note.meet_npc(7, 42, 29238, 29227, 101) == result::applied,
+			"cleric encounter failed");
+		const auto &cleric = story_for("newbie", "request-29238-c2cf98d3f50e");
+		supplies.carried.clear();
+		supplies.carried[29287] = 1;
+		const auto before_read = supplied_note.serialize_state();
+		journal = supplied_note.render_journal(7, 42, 292, 10, 1, 102, false, false,
+						       &supplies);
+		require(journal.find("Next: " + cleric.steps.back().text) != std::string::npos &&
+				supplied_note.serialize_state() == before_read,
+			"a supplied note required replaying the cure or reading created history");
+		record(supplied_note, cleric.contracts.front(), "supplied-note", 292, 29227);
+		require(supplied_note.progress_for_zone(7, 42, 292).completed == 1,
+			"a terminal note delivery fabricated predecessor completion");
+		service mansion(catalog);
+		require(mansion.discover_zone(7, 42, 13, 1300, 100, "arrival") == result::applied &&
+				mansion.meet_npc(7, 42, 1314, 1300, 101) == result::applied &&
+				mansion.meet_npc(7, 42, 1316, 1338, 102) == result::applied,
+			"mansion encounters failed");
+		const auto &rescue = story_for("braddistock", "release-slippers");
+		const auto &lord = story_for("braddistock", "quiet-the-mansion");
+		supplies.carried.clear();
+		supplies.carried[1340] = 1;
+		journal = mansion.render_journal(7, 42, 13, 10, 1, 103, false, false, &supplies);
+		require(journal.find(rescue.title) != std::string::npos &&
+				journal.find("Next: " + lord.steps.back().text) !=
+					std::string::npos,
+			"pet service was hidden or a supplied collar required the key route");
+		record(mansion, rescue.contracts.front(), "pet-rescue", 13, 1338);
+		require(mansion.progress_for_zone(7, 42, 13).completed == 0 &&
+				mansion.progress_for_zone(7, 42, 13).total == 1,
+			"pet preparation prematurely completed the mansion story");
+		record(mansion, lord.contracts.front(), "lord-collar", 13, 1300);
+		require(mansion.progress_for_zone(7, 42, 13).completed == 1,
+			"collar delivery did not complete the mansion story");
 		std::cout
-			<< "All starter/town mappings and encounter visibility passed native projection.\n";
+			<< "All mappings, fish grouping, supplied-note/collar guidance, and receipt recovery passed.\n";
 		return 0;
 	}
 	const bool applied = zone_story_quest_story::apply(read(argv[2]), "twin_towers_forest",

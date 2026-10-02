@@ -15,7 +15,7 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 2039
+assert report["daily_unit_count"] == 1962
 assert mapping["schema_version"] == 3 and mapping["stories"][0]["steps"][0]["optional"]
 assert sum(s["category"] == "service" for s in mapping["stories"]) == 12
 assert len(mapping["exclusions"]) == 1 and len(mapping["exclusions"][0]["contracts"]) == 40
@@ -43,13 +43,33 @@ assert len(chisel["steps"]) == 2 and chisel["steps"][0]["count"] == 1
 family = next(s for s in new_mappings["krimman"]["stories"] if s["title"] == "Release the Haunted Family")
 assert len(family["contracts"]) == 1 and len(family["steps"]) == 4
 
+ailvio = next(m for m in catalog["story_mappings"] if m["source_area"] == "newbie")
+assert len(ailvio["stories"]) == 39 and report["eligible_by_zone"]["292"] == 22
+feeding = next(s for s in ailvio["stories"] if s["id"] == "feed-the-ailing-family")
+# Every valid native pair is covered, including two fish of the same kind.
+import itertools
+fishes = [293, 294, 295, 318, 319, 330, 332, 333, 334, 335, 355, 356]
+pairs = {tuple(int(g[2:]) for g in c["completion_key"].split(";")[0][5:].split(",")) for c in feeding["contracts"]}
+assert len(feeding["contracts"]) == 78 and pairs == set(itertools.combinations_with_replacement(fishes, 2))
+assert feeding["steps"][0]["item_vnums"] == fishes and feeding["steps"][0]["count"] == 2
+assert all(c["completion_key"].endswith("receive=I:29223;disappear=1") for c in feeding["contracts"])
+assert sum(s["category"] == "service" for s in ailvio["stories"]) == 17
+cleric = next(s for s in ailvio["stories"] if s["id"] == "request-29238-c2cf98d3f50e")
+assert all(t["optional"] for t in cleric["steps"] if t["kind"] == "completion" and t["id"] != "turn-in")
+assert next(c for c in ailvio["contacts"] if c["mob_vnum"] == 29233)["topics"] == ["quest"]
+assert "item" in next(c for c in ailvio["contacts"] if c["mob_vnum"] == 29237)["topics"]
+mansion = next(m for m in catalog["story_mappings"] if m["source_area"] == "braddistock")
+assert report["eligible_by_zone"]["13"] == 1 and not mansion["exclusions"]
+assert [(s["id"], s["category"]) for s in mansion["stories"]] == [("release-slippers", "service"), ("quiet-the-mansion", "story")]
+assert all(t["optional"] for t in mansion["stories"][1]["steps"][:2])
+
 coverage_spec = importlib.util.spec_from_file_location("home_coverage", ROOT / "scripts/zone_story_quest_home_coverage.py")
 coverage = importlib.util.module_from_spec(coverage_spec)
 coverage_spec.loader.exec_module(coverage)
 required = coverage.required_areas(ROOT)
 assert len(required["areas"]) == 27 and required["excluded_empty_town_markers"] == ["end"]
 assert all((ROOT / r["mapping"]).is_file() for r in required["areas"])
-assert all(next(m for m in catalog["story_mappings"] if m["source_area"] == r["source_area"])["schema_version"] == 2 for r in required["areas"])
+assert all(next(m for m in catalog["story_mappings"] if m["source_area"] == r["source_area"])["schema_version"] in (2, 3) for r in required["areas"])
 
 with tempfile.TemporaryDirectory(prefix="duris-authored-story-") as temporary:
     binary = pathlib.Path(temporary) / "story_test"

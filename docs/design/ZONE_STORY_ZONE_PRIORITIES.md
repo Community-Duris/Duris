@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 and 2 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 4 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Active reset-generation qualification is a shared prerequisite for the pilots.
 
@@ -23,8 +23,8 @@ Active reset-generation qualification is a shared prerequisite for the pilots.
 | ---: | --- | --- | --- |
 | 1 | [Twin Towers Forest](../../areas/qst/twin_towers_forest.qst) (`twin_towers_forest`) | Flowers and garden access; lost arrows; fairy dust/wand/four-feather restoration; animal recovery â†’ tanning â†’ clothing. | Mapped. First full client/journey pilot; belt access is verified, dialogue/provenance/mixed fees remain open. |
 | 2 | [The Plains of Life](../../src/specs/specs.newbie2.c) (`newbie2`) | Plains of Life: meet the guide â†’ accepted racewars lesson â†’ blessed sword â†’ enter the stream to Ailvio. | Mapped orientation. Q-free scripted tutorial; add accepted-dialogue/tag-clear and travel adapters before recording stages. |
-| 3 | [Ailvio, Duris Newbie Outpost](../../areas/qst/newbie.qst) (`newbie`) | Ailvio: first supply requests â†’ ingredient-producing exchanges â†’ equipment recipes; newcomer map and equipment services. | Mapped. High newcomer value; select a small route instead of treating all 116 contracts as one story. |
-| 4 | [Braddistock Mansion](../../areas/qst/braddistock.qst) (`braddistock`) | Learn of the missing pet â†’ obtain the release key â†’ free the chained pet â†’ return the collar to its owner. | Mapped rescue story. Small receipt chain suited to the first all-stage/next-action qualification. |
+| 3 | [Ailvio, Duris Newbie Outpost](zone-stories/AILVIO.md) (`newbie`) | Feed family and Charity Seal; medicine and grandmother note; restore Silva's voice; teacher trials, ingredient search, supplies and departure. | Comprehensive source map. All 78 fish pairs are one story; optional predecessor routes, readable topics, bandage/grant/forage/source gaps documented. |
+| 4 | [Braddistock Mansion](zone-stories/BRADDISTOCK_MANSION.md) (`braddistock`) | Missing pet clues; Rat Lord's silver key; release Slippers; return collar; optional titan-maul lore. | Comprehensive source map. Rescue service plus final story; supplied-collar route; other same-name area's level gate distinguished; actual rat purge/payment remain unverified. |
 | 5 | [The Town of Breale](../../areas/qst/breale.qst) (`breale`) | Aid the dying witch; Esmerelda reagents â†’ brontella guidance â†’ Abigail mixtures â†’ montra guidance â†’ Pontif mixture. | New journal. Keep six accepted exchanges distinct until all-stage families exist; executable reagents disagree with prose. |
 | 6 | [Abandoned Elven Homestead](../../areas/qst/elvish.qst) (`elvish`) | Robin feather + ivy leaf â†’ two statues â†’ golden dragon statue â†’ release the cursed drider; four spider eggs â†’ hidden key. | New journal. Compact transformation chain; preparation services do not replace the terminal story or require personally sourced ingredients. |
 | 7 | [Lord Krimeneha's Mansion](../../areas/qst/krimman.qst) (`krimman`) | Investigate the poisoned pool â†’ staff exchange â†’ release wife/children and optional servants â†’ return three keepsakes. | New journal. Returned staff fragments are legitimate rescue milestones, not blanket rejections; family finale remains distinct. |

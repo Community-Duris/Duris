@@ -7,8 +7,10 @@ Deeper objective and provenance integration is incremental.**
 
 The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
 source dossiers, shipped changes, newly found dependencies, and verification.
-Twin Towers and Plains of Life now have complete source story maps; their
-active-world journeys remain unqualified. Schema 3 adds optional preparation.
+Twin Towers, Plains of Life, Ailvio and Braddistock now have complete source
+story maps; their active-world journeys remain unqualified. Schema 3 adds
+optional preparation. Ailvio's 78 pair recipes project one family-feeding story;
+Braddistock's pet rescue is displayed as an intermediate service.
 
 Maintain this plan as zones are reviewed. Keep static contract classification,
 historical objective coverage, economic support, and gameplay qualification
@@ -50,6 +52,11 @@ Implement and qualify the remaining additions in this order:
    Custom grants and transformations need equally explicit publication results.
    Plains of Life currently clears its lesson tag before confirming its sword:
    fix recoverable tag/grant ordering before claiming a completed tutorial.
+   Ailvio additionally needs committed map grants and hidden-ingredient
+   replacement. Port active forage before claiming its commission has an
+   ordinary supply route. Fishing already submits item grants; qualify its
+   success/experience after grant outcome rather than replacing that adapter.
+   Pet buy/rent deliberately refuse active accounting and stay optional services.
 1. **Shared journal projection and flower pilot.** Render the same canonical
    zone/story/objective state in ANSI/plain text and a versioned GMCP extension.
    Use the selected Client journal design: known contacts, stage/checklist,
@@ -60,15 +67,27 @@ Implement and qualify the remaining additions in this order:
    alias-aware learned topics. Use the Plains of Life tutorial and a small
    local exchange chain as the first adapters. Reads and repeated greetings
    create no history. Keep conversational knowledge separate from admission.
+   Add successful skill outcomes as a distinct adapter: Ailvio's bandage reward
+   currently observes a scheduled attempt before revival. A paid/consumed
+   bandage proves material use, not successful aid. Bind actor, exact victim,
+   room/reset generation and one reward episode. Qualify failed, aborted and
+   concurrent helpers with recovery before introducing a completed objective.
 3. **Optional preparation and complete story families.** Add conditional
    subrecipes, optional historical steps, explicit all-stage versus any-terminal
    completion, authored branch/reveal rules, and story attempts. A terminal
    `contracts` array currently means any-of; it cannot express a campaign where
    every independent exchange must succeed. Do not force gifted materials to
    replay a local recipe or treat the first promotion as completing knighthood.
+   Group only source-proven equivalent alternatives: Ailvio's complete fish-pair
+   set shares one giver/outcome, while independent teacher requests with different
+   recipients or rewards stay distinct. Record narrated closure separately from
+   actual NPC rescue/voice restoration/rat purge; do not turn prose into effects.
 4. **Source and transformation evidence.** Build on committed accounting
    lifecycle/custody evidence for personal recovery, distinct sources, tanning,
    freshness, and lineage. Never infer these from possession or text.
+   Use distinct source types for fishing, forage, search discovery and creature
+   proof. Cross-area item prototypes can have local reset carriers, as Ailvio's
+   drow spores do; prototype ownership is not travel or personal provenance.
 5. **Mixed offerings and larger pilot.** Commit materials/payment/rewards and
    stage evidence together, then qualify Twin Towers clothing and grove recipes.
 6. **Expand through the priority roadmap.** Review one story family at a time,
@@ -128,6 +147,10 @@ Candidate links need source review and appropriate gameplay qualification.
   Abandoned Elven Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus,
   Torg, and Vast Hidden Grove. Source inventory and ordered story roadmap are
   checked in; no deeper unsupported objective kinds are claimed.
+- [x] Ailvio source-comprehensive families, one feeding story for all 78 native
+  fish pairs, optional medicine/note/jar/seal routes, source hints, complete useful
+  conversation topics, and explicit scripted/support gaps. Braddistock's pet
+  service and supplied-collar route preserve both native receipts.
 
 Live inventory remains separate from earned accomplishments. NPC encounter
 history uses domain header `ZSQF|3` and existing SQL/flat-file buckets; old

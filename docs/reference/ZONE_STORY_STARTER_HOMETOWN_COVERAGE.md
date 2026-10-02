@@ -13,7 +13,7 @@ not a playable town; its `$~` entry is excluded. Ailvio and the Plains of Life
 are the two selectable introduction areas. Race/class switches can narrow
 creation choices; this audit intentionally covers the native union.
 
-Every listed sidecar uses schema 2 and classifies every native Q contract in
+Every listed sidecar uses schema 2 or 3 and classifies every native Q contract in
 its area. Request checklists use exact item counts and authoritative receipt
 terms. They are a mechanical journey baseline; they do not certify every
 dialogue dependency, item source, custom special, or lore interpretation.
@@ -35,7 +35,7 @@ names the native menu home whose starting rooms are owned by the area.
 
 | Area / sidecar | Creation homes | Town flag | Q | Requests / stories | Services | Excluded Q | Contacts |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| [Braddistock Mansion](../../areas/story/braddistock.story.json) | — | Yes | 2 | 1 | 0 | 1 | 2 |
+| [Braddistock Mansion](../../areas/story/braddistock.story.json) | — | Yes | 2 | 1 | 1 | 0 | 2 |
 | [Fort Marigot](../../areas/story/marigot.story.json) | Marigot | Yes | 0 | 0 | 0 | 0 | 1 |
 | [Ghore](../../areas/story/ghore.story.json) | Ghore | Yes | 0 | 0 | 0 | 0 | 0 |
 | [Faang](../../areas/story/faang.story.json) | Faang | Yes | 0 | 0 | 0 | 0 | 0 |
@@ -43,7 +43,7 @@ names the native menu home whose starting rooms are owned by the area.
 | [Khildarak Stronghold](../../areas/story/khildarak.story.json) | Khildarak | Yes | 2 | 2 | 0 | 0 | 3 |
 | [Githyanki Hometown](../../areas/story/gith_ht.story.json) | Githyanki Hometown | Yes | 0 | 0 | 0 | 0 | 0 |
 | [The Plains of Life](../../areas/story/newbie2.story.json) | Plane of Life (Beginner Introduction) | No | 0 | 0 | 0 | 0 | 1 |
-| [Ailvio, Duris Newbie Outpost](../../areas/story/newbie.story.json) | Outpost of Ailvio (Secondary Introduction) | No | 116 | 99 | 17 | 0 | 32 |
+| [Ailvio, Duris Newbie Outpost](../../areas/story/newbie.story.json) | Outpost of Ailvio (Secondary Introduction) | No | 116 | 22 | 17 | 0 | 32 |
 | [The Mountain Settlement of the Harpies](../../areas/story/harpyht.story.json) | Harpy | No | 3 | 3 | 0 | 0 | 3 |
 | [Llzazan Ghetto of Arachdrathos](../../areas/story/llzazan.story.json) | Arachdrathos | Yes | 0 | 0 | 0 | 0 | 0 |
 | [Arachdrathos - Drow City](../../areas/story/arac-web.story.json) | — | Yes | 1 | 0 | 0 | 1 | 1 |

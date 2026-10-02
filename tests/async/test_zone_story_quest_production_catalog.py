@@ -71,7 +71,16 @@ plains = inventory_module.area_evidence(ROOT, "newbie2")
 assert not plains["requests"] and len(plains["reset_commands"]) == 21
 assert set(plains["specials"]) == {"newbie_paladin", "newbie_sign1", "newbie_sign2", "stream_of_life"}
 assert 22809 in plains["items"]  # Prototype membership can exceed the zone room range.
-for area in ("twin_towers_forest", "newbie2"):
+ailvio = inventory_module.area_evidence(ROOT, "newbie")
+assert len(ailvio["requests"]) == 116 and len(ailvio["dialogue"]) == 160
+assert len(ailvio["reset_commands"]) == 314 and len(ailvio["special_assignments"]) == 11
+mansion = inventory_module.area_evidence(ROOT, "braddistock")
+assert len(mansion["requests"]) == 2 and len(mansion["dialogue"]) == 1
+assert len(mansion["reset_commands"]) == 186
+assert [(a["kind"], a["vnum"], a["function"]) for a in mansion["special_assignments"]] == [("obj", 1372, "jet_black_maul")]
+# The identically named mobile procedure belongs to the other mansion area.
+assert not any(a["function"] == "braddistock" for a in mansion["special_assignments"])
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:
