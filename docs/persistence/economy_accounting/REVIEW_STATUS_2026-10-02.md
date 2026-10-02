@@ -188,3 +188,16 @@ without modifying host packages. `make test-all` has resumed and is running
 No broad passing result is claimed while that run is unfinished. The bounded
 topology repair above occurred after this freeze and has separate focused
 evidence; this run must not be labeled an uninterrupted full run of later heads.
+
+## Disposable SQL journey port routing
+
+The playtime journey previously ignored `TEST_DB_PORT`, hardcoding the native
+server connection to 3306 and omitting a port from its SQL client. It now validates
+a bounded ASCII TCP port before the first connection and sends the same explicit
+port to both clients. Three connection-free regressions pass, covering custom
+and default routing plus invalid-port refusal. They failed before repair without
+opening a connection. The actual native repository probe now connects to the
+owned MariaDB instance on 34667, but its first item save fails with foreign-key
+error 1452: temporary item projections cannot satisfy the migrated permanent
+runtime-state table. That separate fixture repair and the complete dual-engine
+save/death/crash/copyover run remain pending. No gameplay completion is claimed.
