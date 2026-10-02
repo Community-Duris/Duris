@@ -81,6 +81,17 @@ int main()
 			!legacy && recovered.find("V|7|42|831") != std::string::npos,
 		"journal delta did not recover");
 	const auto committed_size = std::filesystem::file_size(state_path);
+	const std::string committed_state = recovered;
+	changes remove_metadata{ { { "meta", "" } }, false };
+	require(flatfile_zone_story_quest_records_save(root.string().c_str(), 2, remove_metadata,
+						       &error) ==
+				flatfile_zone_story_quest_result::corrupt &&
+			std::filesystem::file_size(state_path) == committed_size &&
+			flatfile_zone_story_quest_state_load(root.string().c_str(), 2, &recovered,
+							     &error) ==
+				flatfile_zone_story_quest_result::ok &&
+			recovered == committed_state,
+		"metadata deletion damaged the committed journal");
 	std::ifstream input(state_path, std::ios::binary);
 	std::vector<char> initial(70);
 	input.read(initial.data(), initial.size());

@@ -386,6 +386,17 @@ std::string display_zone_name(const zone_progress &progress)
 	return progress.zone_name.empty() ? "This area" : progress.zone_name;
 }
 
+std::string display_zone_name(const zone_story_quest_catalog::catalog &catalog,
+			      const zone_story_quest_catalog::zone_definition &zone)
+{
+	const auto name = lower_name(zone.name);
+	for (const auto &other : catalog.zones)
+		if (other.discoverable && other.zone_number != zone.zone_number &&
+		    lower_name(other.name) == name)
+			return zone.name + " (" + zone.source_area + ")";
+	return zone.name;
+}
+
 std::string display_quest_name(const zone_story_quest_tracking::quest_definition *definition)
 {
 	if (!definition)
@@ -799,7 +810,7 @@ zone_progress service::progress_for_zone_at(uint32_t season_id, uint32_t pid, in
 	progress.zone_number = zone_number;
 	const auto *registry = find_zone(zone_number);
 	if (registry)
-		progress.zone_name = registry->name;
+		progress.zone_name = display_zone_name(catalog_, *registry);
 	progress.discovered = has_discovered(season_id, pid, zone_number);
 	const auto *discovery_state = find_state(season_id, pid);
 	if (progress.discovered)
@@ -1141,7 +1152,8 @@ int32_t service::resolve_zone(std::string_view name, std::string *error) const
 		if (!zone.discoverable || query.empty())
 			continue;
 		const auto candidate = lower_name(zone.name);
-		if (candidate == query)
+		if (candidate == query ||
+		    lower_name(zone.name + " (" + zone.source_area + ")") == query)
 			exact.push_back(zone.zone_number);
 		else if (candidate.find(query) != std::string::npos)
 			partial.push_back(zone.zone_number);
@@ -1149,8 +1161,14 @@ int32_t service::resolve_zone(std::string_view name, std::string *error) const
 	const auto &matches = exact.empty() ? partial : exact;
 	if (matches.size() == 1)
 		return matches.front();
-	fail(error, matches.empty() ? "No area matches that name." :
-				      "That area name is ambiguous; use its full name.");
+	std::string message = "No area matches that name.";
+	if (!matches.empty())
+	{
+		message = "That area name is ambiguous; use one of:";
+		for (int32_t number : matches)
+			message += "\r\n  " + display_zone_name(catalog_, *find_zone(number));
+	}
+	fail(error, std::move(message));
 	return -1;
 }
 
@@ -1235,7 +1253,7 @@ std::string service::render_journal(uint32_t season, uint32_t pid, int32_t numbe
 		return "No playable area matches that name.\r\n";
 	std::ostringstream out;
 	out << "\r\n"
-	    << color(colors, "&+L") << zone->name
+	    << color(colors, "&+L") << display_zone_name(catalog_, *zone)
 	    << (daily_only ? " daily quests" : " quest journal") << color(colors, "&n") << "\r\n";
 	if (!has_discovered(season, pid, number))
 		return out.str() +
@@ -1490,8 +1508,8 @@ std::string service::render_daily(uint32_t season, uint32_t pid, int level, int 
 						    racewar, level, now))
 				++available;
 		}
-		out << "  " << zone.name << ": " << done << " done today, " << available
-		    << " available\r\n";
+		out << "  " << display_zone_name(catalog_, zone) << ": " << done << " done today, "
+		    << available << " available\r\n";
 	}
 	if (!any)
 		out << "  Explore an area to discover its daily quests.\r\n";
@@ -1859,6 +1877,10 @@ bool service::deserialize_state(std::string_view encoded, std::string *error)
 			telemetry_observation observation;
 			if (!deserialize_observation(observation_encoded, &observation))
 				return fail(error, "invalid telemetry observation");
+			std::string stored_id;
+			if (!hex_decode(fields[1], &stored_id) ||
+			    stored_id != observation.observation_id)
+				return fail(error, "telemetry record ID differs from its payload");
 			observations.push_back(std::move(observation));
 		}
 		else if (fields[0] == "X" && fields.size() == 3)

@@ -2,7 +2,6 @@
 """Recover frozen daily credit alongside item, cash, and XP reward receipts."""
 import argparse
 from pathlib import Path
-import subprocess
 import run_quest_reward_ack_crash as crash
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -11,9 +10,7 @@ parser.add_argument("--phase", choices=("offering", "xp-ack"), default="offering
 parser.add_argument("--backend", choices=("flatfile", "mariadb"), default="flatfile")
 args = parser.parse_args()
 if not crash.journey.INSPECTOR.is_file():
-    subprocess.run(["python3", "tests/async/test_flatfile_player_repository.py",
-                    "--build-inspector", str(crash.journey.INSPECTOR)],
-                   cwd=crash.quest.ROOT, check=True, timeout=180)
+    crash.journey.build_inspector()
 if args.backend == "mariadb":
     crash.run_sql(args.server.resolve(strict=True), args.phase, daily=True)
 else:

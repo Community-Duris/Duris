@@ -24,7 +24,11 @@ or database is changed by this feature branch.
 | `score` | Compact daily completion and renown reminder when enabled. |
 | `leaderboard quests [page]` | Existing worldwide unique-quest ranking, with its 12-hour publication delay. |
 
-Area lookup is case insensitive and accepts unambiguous partial names. Large
+Area lookup is case insensitive and accepts unambiguous partial names. Areas
+with identical names show a qualifier in their journal, daily overview, and
+achievements, such as `Ceothia (ceopast)`. Use that full qualified label to select
+the exact area. An ambiguous command lists usable matching labels; a numeric
+zone/VNUM is not required. Large
 journals use the existing pager. An undiscovered area reveals no checklist or
 quest progress. Commands are read-only: viewing a journal never creates an
 assignment, writes a completion, rerolls a quest, or grants a reward. Ordinary
@@ -104,8 +108,9 @@ SQL installations need immutable migration **0054_discovered_zone_daily_state**
 after the accounting migration history. It preserves v1 data and allows v2
 records in the existing table. It changes CHECK constraints without changing
 columns or historical migration files. Its verifier and manifest checksums are
-part of the runtime compatibility contract; the supported staging accounting
-fork remains separately recognized.
+part of the runtime compatibility contract. The supported staging-0045 and
+master-0031 histories remain separately recognized and also append migration
+0054 without rewriting their sealed prefixes.
 
 On a validated legacy load, stable quest credit is retained, discovery is
 backfilled only from recorded completion rooms, and daily availability starts

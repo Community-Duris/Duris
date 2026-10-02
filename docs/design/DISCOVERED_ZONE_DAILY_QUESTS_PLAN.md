@@ -1,8 +1,9 @@
 # Discovered Zone Daily Quests Implementation Plan
 
 **Status: implemented on `codex/discovered-zone-dailies`, based on
-`experimental-accounting` commit `1bb03b465`. Local build, gameplay, and recovery
-qualification passed; no merge or production rollout has been performed.**
+`experimental-accounting` commit `1bb03b465`, then synchronized with accounting
+commit `db2822706` for PR review. Local build, gameplay, and recovery qualification
+is recorded separately; no feature merge or production rollout has occurred.**
 
 Implementation details and current content coverage are maintained in the
 [daily contract](../reference/ZONE_STORY_QUEST_DAILY.md),

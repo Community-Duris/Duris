@@ -373,6 +373,10 @@ flatfile_zone_story_quest_records_save(const char *root, uint32_t catalog_revisi
 {
 	if (!root || !*root || !catalog_revision)
 		return broken(error, "invalid zone-story journal location");
+	const auto metadata = requested.values.find("meta");
+	if ((metadata != requested.values.end() && metadata->second.empty()) ||
+	    (requested.replace && metadata == requested.values.end()))
+		return broken(error, "zone-story journal metadata is missing");
 	const auto directory = state_directory(root);
 	if (cache.directory != directory)
 	{

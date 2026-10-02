@@ -18152,6 +18152,8 @@ achievements zones
 *Shows your zone discovery achievements and seasonal quest completion.
 achievements zone <area>
 *Shows discovery and unique quest milestones for that area.
+*Areas sharing a name include a qualifier, such as Ceothia (ceopast). Use the
+ full label shown in the area list or in the command's matching choices.
 
 Complete the real quest with its giver. Daily credit resets at 00:00 UTC.
 Only the first qualifying daily completion each day adds 1 renown. Normal quest

@@ -1,7 +1,8 @@
 # Discovered zone daily quests qualification
 
 Date: October 1, 2026. Feature branch: `codex/discovered-zone-dailies`.
-Base: `experimental-accounting`, commit `1bb03b465`.
+Initial base: `experimental-accounting`, commit `1bb03b465`. The PR review
+integration uses accounting commit `db2822706`; its results are recorded below.
 
 The implementation has passed local builds, focused regressions, native gameplay,
 and crash/restart recovery on flat-file authority and isolated MySQL 8 authority.
@@ -93,17 +94,76 @@ not a production load guarantee. Much larger populations and indefinite history
 still need a retention and storage budget. The feature does not discard recovery
 or accounting history to keep the benchmark small.
 
+## PR review against current accounting
+
+The feature was reviewed against `experimental-accounting` commit `db2822706`.
+The review covered arrival and temporary-placement hooks, catalog ownership and
+daily exclusions, player commands, daily evidence and projections, continuation
+decoding and reward recovery, both state repositories, and migration histories.
+The 148 intervening accounting commits were merged without rewriting their
+history or replacing their newer quest save-admission flow.
+
+Review fixes:
+
+- The unpublished daily migration collided with accounting's new 0051 slot.
+  It now appends as 0054 to all three supported histories, with freshly sealed
+  runtime head and history checksums. The migration verifier is executable.
+- Both state stores accepted a delta deleting the required metadata record.
+  They now reject it before writing. The extended storage regressions fail on
+  the original implementation and pass with the fix, including a cold reload
+  proving that the committed document remains intact.
+- The service loader accepted a telemetry record whose key differed from the
+  observation ID in its payload. It now rejects that mismatch atomically; the
+  extended domain regression reproduces the original defect and checks that
+  rejected input leaves live state unchanged.
+- The new gameplay wrappers still imposed a 180-second inspector build limit.
+  They now reuse accounting's native inspector builder and its 600-second build
+  budget; gameplay deadlines remain unchanged.
+- Seven production areas share three full names: Ceothia, The Underworld, and
+  Braddistock Mansion. Full names alone could never select their individual
+  journals. Duplicate names now show stable area qualifiers in the journal,
+  daily overview, achievements, and ambiguity choices; the same qualified label
+  selects that area without exposing a zone/VNUM. The domain regression covers
+  case-insensitive selection and consistent labels for the three Ceothia areas.
+
+The focused catalog, domain, arrival, flat-file storage, tracking, repository,
+daily-report, continuation, and reward-policy regressions passed after integration.
+The updated migration runner passed 24 tests; runtime boot compatibility passed
+10 tests, and the manifest validator accepted all three distinct sealed histories
+at head 0054. Disposable MySQL storage passed the metadata refusal, compression,
+rollback, replay, corruption, and erasure tests. The staging-0045 and master-0031
+histories each completed all 54 steps on disposable MySQL, passed the runtime
+schema/history verifier, and passed a repeat application of 0054. The retained
+6,000-completion flat-file state also round-tripped after integration. Formatting
+of the feature diff against the accounting base passed, including whole touched
+files; upstream files outside this PR's diff were not reformatted.
+
+Final SQL and flat-file server builds passed after the area-qualifier fix, and
+the native daily journey passed again using the current inspector. Offering
+commit and XP acknowledgement crash recovery both passed on flat-file and
+MySQL authority, each including two cold restarts and checks for original
+item/cash/XP rewards, frozen daily credit, and no duplicate awards. One SQL
+debugger setup was invalidated by an overlapping binary link; that attempt was
+discarded and the SQL XP acknowledgement check passed against the completed
+binary. The focused reward ACK retry test and all 21 current lifecycle tests
+also passed. All 54 migration apply/verifier checksums match the actual staged
+Git bytes, including canonical LF normalization. Final diff whitespace and
+formatting against the accounting base passed.
+
 ## Merge and rollout
 
-Merge accounting first, then update this feature branch to the accepted accounting
-base and repeat focused build/gameplay/recovery validation. Migration
-`0054_discovered_zone_daily_state` is required by both the canonical and supported
-staging histories. It is additive, re-runnable, preserves v1 state, and allows v2
-records without rewriting player facts during migration.
+The feature PR targets `experimental-accounting` and includes its current
+`db2822706` state. Before merging this feature into master, merge accounting and
+reconcile any later accounting changes. Migration `0054_discovered_zone_daily_state`
+is appended to the canonical, staging-0045, and master-0031 histories. It is
+additive, re-runnable, preserves v1 state, and allows v2 records without rewriting
+player facts during migration. The initial qualification above used the feature's
+then-current 0051 slot; review moved this unpublished migration to 0054 after the
+accounting branch consumed slots 0051 through 0053.
 
 MariaDB 10.11 engine integration was not run because that engine and Docker were
 unavailable in this environment. The existing MariaDB metadata fingerprint is
-unchanged; 0051 changes CHECK expressions rather than columns, indexes, or foreign
+unchanged by this feature; 0054 changes CHECK expressions rather than columns, indexes, or foreign
 keys. The dual-engine staging/tamper suite remains a useful check on a host with
 those engines. No CI wait or full repository burn-in was used for this focused
 feature qualification.

@@ -417,6 +417,14 @@ int main()
 					     &error) &&
 			recovered.serialize_state() == before_corrupt,
 		"corrupt load partially mutated live state");
+	std::string mismatched_observation = serialized;
+	const auto observation_start = mismatched_observation.find("E|") + 2;
+	const auto observation_end = mismatched_observation.find('|', observation_start);
+	mismatched_observation.replace(observation_start, observation_end - observation_start,
+				       "6d69736d61746368");
+	require(!recovered.deserialize_state(mismatched_observation, &error) &&
+			recovered.serialize_state() == before_corrupt,
+		"mismatched telemetry receipt ID was accepted or partially loaded");
 
 	recovered.remember_character(8, 42, "OldSeasonName");
 	telemetry_observation deleted_observation;
@@ -468,6 +476,26 @@ int main()
 	require(disabled.daily_for(7, 42, service::period_for(daily_now)).status ==
 			daily_status::none,
 		"disabled daily rendering created durable assignment state");
+	zone_story_quest_catalog::catalog named_catalog;
+	named_catalog.content_revision = 7;
+	named_catalog.zones = { { 808, "Ceothia", "ceothia", 80800, 80899, true },
+				{ 811, "Ceothia", "ceopast", 81100, 81199, true },
+				{ 814, "Ceothia", "ceofutur", 81400, 81499, true } };
+	service named_areas(named_catalog);
+	named_areas.set_daily_policy(policy);
+	require(named_areas.resolve_zone("Ceothia", &error) == -1 &&
+			error.find("Ceothia (ceopast)") != std::string::npos &&
+			named_areas.resolve_zone("CEOTHIA (CEOPAST)") == 811 &&
+			named_areas.resolve_zone("Ceothia (ceofutur)") == 814,
+		"duplicate area names had no usable qualified choice");
+	require(named_areas.discover_zone(7, 42, 811, 81110, daily_now, "arrival") ==
+				result::applied &&
+			named_areas.render_daily(7, 42, 10, 1, daily_now, false)
+					.find("Ceothia (ceopast)") != std::string::npos &&
+			named_areas.render_journal(7, 42, 811, 10, 1, daily_now, false, false)
+					.find("Ceothia (ceopast)") != std::string::npos &&
+			named_areas.progress_for_zone(7, 42, 811).zone_name == "Ceothia (ceopast)",
+		"duplicate area choices were not shown consistently in player views");
 	service disabled_after_assignment(catalog);
 	completion_event disabled_completion =
 		completion("tx-disabled", "zone-story:901:002", 901, 42, daily_now, { 42 });

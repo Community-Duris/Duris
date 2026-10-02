@@ -216,8 +216,7 @@ sql_zone_story_quest_records_save(uint32_t catalog_revision,
 			changed[id][key] = value;
 	}
 	const auto metadata = changed.find(1);
-	if ((metadata != changed.end() && metadata->second.count("meta") &&
-	     metadata->second.at("meta").empty()) ||
+	if ((metadata != changed.end() && !metadata->second.count("meta")) ||
 	    (updates.replace && (metadata == changed.end() || !metadata->second.count("meta"))) ||
 	    (!updates.replace && !buckets[1].count("meta") &&
 	     (metadata == changed.end() || !metadata->second.count("meta"))))

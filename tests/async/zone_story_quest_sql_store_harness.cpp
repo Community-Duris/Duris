@@ -30,6 +30,10 @@ int main(int argc, char **argv)
 	assert(sql_zone_story_quest_state_load(2, &state, &error, &legacy) == status::ok &&
 	       !legacy);
 	assert(state == document(initial.values));
+	changes remove_metadata{ { { "meta", "" } }, false };
+	assert(sql_zone_story_quest_records_save(2, remove_metadata, &error) == status::invalid);
+	assert(sql_zone_story_quest_state_load(2, &state, &error) == status::ok &&
+	       state == document(initial.values));
 	assert(!mysql_query(
 		DB,
 		("UPDATE zone_story_quest_state SET state_blob=CONCAT(state_blob,'00') WHERE state_id=" +
