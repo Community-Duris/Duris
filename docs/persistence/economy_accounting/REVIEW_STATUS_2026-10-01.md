@@ -25,6 +25,11 @@ This checkpoint publishes the completed review fixes directly to
   worker regression fails before the fix and passes afterward; missing
   components and mismatched revisions remain rejected, and the craft receipt
   reaches its exact successful completion.
+- Progression publication now keeps an admitted Craft/Forge save pending until
+  its exact completion, instead of issuing a new revision every 500ms. A failed
+  completion rearms capture without granting XP or rerolling a skill notch.
+  The actual owner regression fails before the fix and passes under ASan/UBSan,
+  covering delayed queued and coalesced saves, failure retry, and exact ACK.
 
 ## Verification and its limits
 
