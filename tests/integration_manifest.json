@@ -1716,6 +1716,26 @@
       "required_markers": [
         "PASS: behavioral faults and before/after executable controls: sql"
       ]
+    },
+    {
+      "id": "help_import_atomic",
+      "path": "tests/async/test_help_import_atomic.py",
+      "provider": "sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "unittest",
+      "required_cases": [
+        "AtomicImport.test_rollback_and_consistent_publication"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_help_import_atomic.py"
+      ],
+      "required_markers": []
     }
   ]
 }
