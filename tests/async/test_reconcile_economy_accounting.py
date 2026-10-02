@@ -769,6 +769,35 @@ class ReconciliationTests(unittest.TestCase):
                 self.assertEqual(self.lineage_lifetime_report(
                     ["create", "destroy", action]).counts["resurrected_item_uid"], 1)
 
+    def test_supply_action_requires_matching_custody_state(self):
+        for action, state in (("destroy", "live"), ("create", "tombstone")):
+            for lineage in (False, True):
+                with self.subTest(action=action, state=state, lineage=lineage):
+                    snapshot = clean_snapshot()
+                    event = snapshot["ownership_events"][0]
+                    event.update(action=action, state=state)
+                    snapshot["native"]["items"][0]["state"] = state
+                    if lineage:
+                        event.update(operation_outcome="committed", referenced=False)
+                        report = Reconciler()
+                        report.audit_lineage_uid_history(
+                            "disposable", {"uid_history_events": [event]},
+                            {(81,): snapshot["item_origins"][0]},
+                            {(81,): snapshot["native"]["items"][0]})
+                        codes = report.counts
+                    else:
+                        codes = self.codes(snapshot)
+                    self.assertIn("invalid_item_supply_state", codes)
+
+    def test_destroy_action_retires_uid_even_with_corrupt_live_state(self):
+        report = Reconciler()
+        report.audit_item_lifetime(81, clean_snapshot()["item_origins"][0], [
+            {"action": "destroy", "state": "live", "operation_id": OP},
+            {"action": "move", "state": "live", "operation_id": LEGACY},
+        ])
+        self.assertEqual(report.counts["invalid_item_supply_state"], 1)
+        self.assertEqual(report.counts["resurrected_item_uid"], 1)
+
     def test_lineage_history_accepts_creation_move_and_retirement(self):
         for actions in (["create"], ["create", "move"], ["create", "move", "destroy"]):
             with self.subTest(actions=actions):
