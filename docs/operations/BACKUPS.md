@@ -274,8 +274,11 @@ revision after its opening baseline to be present; cancelling missing events
 cannot qualify from an unchanged aggregate balance. Wallet and bank revisions
 also require a complete post-opening history. Their witnesses include successful
 native currency receipts and committed economic account effects resolved through
-retained native mappings; the same revision witnessed by both counts once.
-Unwitnessed future counters, missing revisions and stale saved counters refuse.
+retained native mappings. A native and economic witness counts once only for
+the same root and the same one-step wallet/bank transition. A native child
+receipt resolves to its declared economic root; an unrelated operation claiming
+the same revision refuses. Unwitnessed future counters, missing revisions,
+conflicting transitions and stale saved counters refuse.
 Revision comparison retains the full unsigned 64-bit range. These checks do not
 replace full economic source/custody reconciliation or route qualification.
 Runtime boot uses only the

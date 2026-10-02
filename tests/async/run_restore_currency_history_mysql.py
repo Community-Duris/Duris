@@ -60,7 +60,8 @@ try:
         "CREATE TABLE currency_wallet_baseline(pid BIGINT UNSIGNED PRIMARY KEY,opening_revision BIGINT UNSIGNED)",
         "CREATE TABLE currency_bank_baseline(bank_id BIGINT UNSIGNED PRIMARY KEY,opening_revision BIGINT UNSIGNED)",
         "CREATE TABLE currency_ledger(operation_id BINARY(16) PRIMARY KEY,pid BIGINT UNSIGNED,bank_id BIGINT UNSIGNED,"
-        "wallet_revision BIGINT UNSIGNED,bank_revision BIGINT UNSIGNED)",
+        "wallet_revision BIGINT UNSIGNED,bank_revision BIGINT UNSIGNED,"
+        "UNIQUE(pid,wallet_revision),UNIQUE(bank_id,bank_revision))",
         "CREATE TABLE critical_operation_inbox(operation_id BINARY(16) PRIMARY KEY,status INT,result_code INT,"
         "failure_stage INT,committed_at TIMESTAMP NULL)",
         "CREATE TABLE economic_account_mapping(mapping_id BIGINT UNSIGNED PRIMARY KEY,lineage BINARY(16),"
@@ -70,6 +71,8 @@ try:
         "outcome INT,result_code INT,reason INT)",
         "CREATE TABLE economic_accounting_account_effect(operation_id BINARY(16),account_key BINARY(40),"
         "before_revision BIGINT UNSIGNED,after_revision BIGINT UNSIGNED)",
+        "CREATE TABLE economic_accounting_child(operation_id BINARY(16),child_operation_id BINARY(16) UNIQUE,"
+        "receipt_operation_id BINARY(16),relationship INT)",
     )
     for statement in statements:
         execute(statement + " ENGINE=InnoDB")
@@ -107,6 +110,40 @@ try:
         key = lineage + struct.pack("<HHQQ4x", 1, kind, lifetime, 0)
         execute("INSERT INTO economic_accounting_account_effect VALUES(%s,%s,3,4)", (operation, key))
     admitted()
+    duplicate = (99).to_bytes(16, "big")
+    execute("INSERT INTO critical_operation_inbox VALUES(%s,1,0,0,CURRENT_TIMESTAMP)", (duplicate,))
+    execute("INSERT INTO economic_accounting_operation VALUES(%s,%s,1,0,32)", (duplicate, lineage))
+    execute("INSERT INTO economic_accounting_account_effect SELECT %s,account_key,3,4 "
+            "FROM economic_accounting_account_effect WHERE operation_id=%s", (duplicate, operation))
+    refused()
+    execute("DELETE FROM currency_ledger WHERE wallet_revision=2")
+    refused()  # A duplicate cannot compensate for a missing revision.
+    execute("INSERT INTO currency_ledger VALUES(%s,42,1,2,2)", ((2).to_bytes(16, "big"),))
+    execute("DELETE FROM economic_accounting_account_effect WHERE operation_id=%s", (duplicate,))
+    admitted()
+    for invalid_before in (1, 5):
+        execute("UPDATE economic_accounting_account_effect SET before_revision=%s", (invalid_before,))
+        refused()
+    execute("UPDATE economic_accounting_account_effect SET before_revision=3")
+    admitted()
+    # Native currency evidence can belong to a durably receipted root child.
+    execute("UPDATE currency_ledger SET operation_id=%s WHERE operation_id=%s", (duplicate, operation))
+    execute("INSERT INTO economic_accounting_child VALUES(%s,%s,%s,1)", (operation, duplicate, duplicate))
+    admitted()
+    execute("UPDATE economic_accounting_child SET receipt_operation_id=NULL")
+    refused()
+    execute("UPDATE economic_accounting_child SET receipt_operation_id=child_operation_id")
+    admitted()
+    execute("DELETE FROM economic_accounting_child")
+    execute("UPDATE currency_ledger SET operation_id=%s WHERE operation_id=%s", (operation, duplicate))
+    admitted()
+    # One root can retain several distinct native child revisions, including
+    # unchanged bank balances; uniqueness is per native revision, not per root.
+    for revision in (1, 2):
+        child = revision.to_bytes(16, "big")
+        execute("INSERT INTO economic_accounting_child VALUES(%s,%s,%s,1)", (operation, child, child))
+    admitted()
+    execute("DELETE FROM economic_accounting_child")
     execute("DELETE FROM currency_ledger WHERE wallet_revision=4")
     admitted()
     execute("UPDATE economic_accounting_operation SET outcome=2,result_code=1")
@@ -144,7 +181,8 @@ try:
     admitted()
     execute("DELETE FROM currency_ledger")
     refused()
-    print("Currency restore history: exact cuts, native/economic bridge, gaps, recovery and uint64 bounds passed")
+    print("Currency restore history: exact cuts, same-root/child bridges, conflicting roots/steps, "
+          "gaps, recovery and uint64 bounds passed")
 finally:
     if reader is not None:
         reader.close()
