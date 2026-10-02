@@ -142,7 +142,7 @@ def read_observations(path: Path) -> dict[str, Any]:
         raise EvidenceError("observation input exceeds byte bound")
     try:
         value = json.loads(raw, object_pairs_hook=_unique_object)
-    except (json.JSONDecodeError, UnicodeDecodeError) as error:
+    except (json.JSONDecodeError, UnicodeDecodeError, RecursionError) as error:
         raise EvidenceError("observation input is not valid JSON") from error
     return validate(value)
 
