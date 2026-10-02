@@ -1,0 +1,771 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "tharnadia",
+  "coverage": "complete",
+  "introduction": "Explore Tharnadia - City of Humans and meet its people to uncover local requests.",
+  "orientation": [
+    "Start with look and exits to learn your surroundings.",
+    "Use help home to learn about hometowns and help quest for quest commands."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 132568,
+      "name": "the knight",
+      "keyword": "knight",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "ascend"
+      ]
+    },
+    {
+      "mob_vnum": 132581,
+      "name": "a homeless child",
+      "keyword": "child",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 132587,
+      "name": "a slack-jawed prostitute",
+      "keyword": "slack",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 132613,
+      "name": "Zaberetornaz",
+      "keyword": "za",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "note"
+      ]
+    },
+    {
+      "mob_vnum": 132649,
+      "name": "Khira",
+      "keyword": "khira",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "book"
+      ]
+    },
+    {
+      "mob_vnum": 132659,
+      "name": "Ithilin, the travelling bard.",
+      "keyword": "bard",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "bard"
+      ]
+    },
+    {
+      "mob_vnum": 132660,
+      "name": "Zech, the dwarven warrior",
+      "keyword": "zech",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 132661,
+      "name": "a muscular human",
+      "keyword": "monk",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 132665,
+      "name": "Xero, the barbarian mercenary",
+      "keyword": "old",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 132666,
+      "name": "Leodra, the pudgy gnome conjurer",
+      "keyword": "pudgy",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 132667,
+      "name": "a bleeding halfling",
+      "keyword": "chiln",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 132669,
+      "name": "an energetic gnome",
+      "keyword": "nebble",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 132672,
+      "name": "Menae, the apprentice sorcerer",
+      "keyword": "menae",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 132673,
+      "name": "Rhed, the elven ranger",
+      "keyword": "elf",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "request-132587-92acce7b33b0",
+      "title": "Deliver 1 x a hooking ticket, 1 x a vorskin penis sheath",
+      "category": "request",
+      "summary": "Bring 1 x a hooking ticket, 1 x a vorskin penis sheath. Reward: 3 experience.",
+      "contracts": [
+        {
+          "giver_vnum": 132587,
+          "completion_key": "give=I:132600,I:132601;receive=E:3;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a hooking ticket",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            132600
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a vorskin penis sheath",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            132601
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 132587,
+              "completion_key": "give=I:132600,I:132601;receive=E:3;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-132587-f8dde3990aa5",
+      "title": "Deliver 1 x a hooking ticket",
+      "category": "request",
+      "summary": "Bring 1 x a hooking ticket. Reward: 1 x a bad case of herpes simplex.",
+      "contracts": [
+        {
+          "giver_vnum": 132587,
+          "completion_key": "give=I:132600;receive=I:132602;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a hooking ticket",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            132600
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 132587,
+              "completion_key": "give=I:132600;receive=I:132602;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-132613-985464cccbb4",
+      "title": "Deliver 1 x a crumpled up note",
+      "category": "request",
+      "summary": "Bring 1 x a crumpled up note. Reward: 1 x a spellbook, 1 x a glowing quill.",
+      "contracts": [
+        {
+          "giver_vnum": 132613,
+          "completion_key": "give=I:132624;receive=I:132622,I:132623;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a crumpled up note",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            132624
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 132613,
+              "completion_key": "give=I:132624;receive=I:132622,I:132623;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-132613-51cdb2599e0e",
+      "title": "Deliver 1 x a magical text book",
+      "category": "request",
+      "summary": "Bring 1 x a magical text book. Reward: 1 x a raven feather quill, 1 x a mysterious tome.",
+      "contracts": [
+        {
+          "giver_vnum": 132613,
+          "completion_key": "give=I:132664;receive=I:99412,I:132620;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a magical text book",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            132664
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 132613,
+              "completion_key": "give=I:132664;receive=I:99412,I:132620;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-132613-6ef453b052ca",
+      "title": "Deliver 1 x a bloody sacrificial dagger",
+      "category": "request",
+      "summary": "Bring 1 x a bloody sacrificial dagger. Reward: 1 x a disguise kit, 1 x a flowing robe of illusions, 1 x a strange glowing potion.",
+      "contracts": [
+        {
+          "giver_vnum": 132613,
+          "completion_key": "give=I:98928;receive=I:500,I:132629,I:132630;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a bloody sacrificial dagger",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            98928
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 132613,
+              "completion_key": "give=I:98928;receive=I:500,I:132629,I:132630;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-132660-be8ca01dfb13",
+      "title": "Crafting service: 1 x a long steel sword",
+      "category": "service",
+      "summary": "Bring 1 x a long steel sword. Reward: 1 x a sharpened long steel sword.",
+      "contracts": [
+        {
+          "giver_vnum": 132660,
+          "completion_key": "give=I:1108;receive=I:132681;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a long steel sword",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            1108
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 132660,
+              "completion_key": "give=I:1108;receive=I:132681;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-132660-2d6628ea0af0",
+      "title": "Crafting service: 1 x a large two-handed sword",
+      "category": "service",
+      "summary": "Bring 1 x a large two-handed sword. Reward: 1 x a sharp two-handed sword.",
+      "contracts": [
+        {
+          "giver_vnum": 132660,
+          "completion_key": "give=I:1110;receive=I:132678;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large two-handed sword",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            1110
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 132660,
+              "completion_key": "give=I:1110;receive=I:132678;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-132660-c44d3cfd7986",
+      "title": "Crafting service: 1 x a large two-handed sword",
+      "category": "service",
+      "summary": "Bring 1 x a large two-handed sword. Reward: 1 x a sharp two-handed sword.",
+      "contracts": [
+        {
+          "giver_vnum": 132660,
+          "completion_key": "give=I:1111;receive=I:132678;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large two-handed sword",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            1111
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 132660,
+              "completion_key": "give=I:1111;receive=I:132678;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-132660-e3a8a271d44c",
+      "title": "Crafting service: 1 x a thin steel dagger",
+      "category": "service",
+      "summary": "Bring 1 x a thin steel dagger. Reward: 1 x a thin sharp steel dagger.",
+      "contracts": [
+        {
+          "giver_vnum": 132660,
+          "completion_key": "give=I:1112;receive=I:132680;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a thin steel dagger",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            1112
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 132660,
+              "completion_key": "give=I:1112;receive=I:132680;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-132660-4150787189a9",
+      "title": "Crafting service: 1 x a thick short sword",
+      "category": "service",
+      "summary": "Bring 1 x a thick short sword. Reward: 1 x a thick and sharp sword.",
+      "contracts": [
+        {
+          "giver_vnum": 132660,
+          "completion_key": "give=I:1113;receive=I:132679;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a thick short sword",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            1113
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 132660,
+              "completion_key": "give=I:1113;receive=I:132679;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-132661-037e7198a995",
+      "title": "Deliver 1 x A small reed flute, 1 x A small clumsily made mandolin, 1 x a small bamboo lyre",
+      "category": "request",
+      "summary": "Bring 1 x A small reed flute, 1 x A small clumsily made mandolin, 1 x a small bamboo lyre. Reward: 10,000 copper, 1,500 experience.",
+      "contracts": [
+        {
+          "giver_vnum": 132661,
+          "completion_key": "give=I:132682,I:132683,I:132684;receive=C:10000,E:1500;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x A small reed flute",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            132682
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x A small clumsily made mandolin",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            132683
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a small bamboo lyre",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            132684
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 132661,
+              "completion_key": "give=I:132682,I:132683,I:132684;receive=C:10000,E:1500;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-132665-c3a70dc9934e",
+      "title": "Deliver 1 x a loaf of bread",
+      "category": "request",
+      "summary": "Bring 1 x a loaf of bread. Reward: 1 x a pair of durable olyx-hide boots.",
+      "contracts": [
+        {
+          "giver_vnum": 132665,
+          "completion_key": "give=I:132552;receive=I:132687;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a loaf of bread",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            132552
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 132665,
+              "completion_key": "give=I:132552;receive=I:132687;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-132666-ca55dd807414",
+      "title": "Deliver 1 x a large blank book",
+      "category": "request",
+      "summary": "Bring 1 x a large blank book. Reward: 1 x an autographed spellbook.",
+      "contracts": [
+        {
+          "giver_vnum": 132666,
+          "completion_key": "give=I:132685;receive=I:132686;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large blank book",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            132685
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 132666,
+              "completion_key": "give=I:132685;receive=I:132686;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-132667-a668a7ad5a20",
+      "title": "Deliver 1 x a vial filled with a thick maroon liquid, 1 x a heavy solid gold pendant",
+      "category": "request",
+      "summary": "Bring 1 x a vial filled with a thick maroon liquid, 1 x a heavy solid gold pendant. Reward: 3,000 experience, 1 x a small black pouch.",
+      "contracts": [
+        {
+          "giver_vnum": 132667,
+          "completion_key": "give=I:132697,I:132699;receive=E:3000,I:132698;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a vial filled with a thick maroon liquid",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            132697
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a heavy solid gold pendant",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            132699
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 132667,
+              "completion_key": "give=I:132697,I:132699;receive=E:3000,I:132698;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-132669-ccb9e605c69f",
+      "title": "Deliver 1 x a clump of nightshade, 1 x a small batch of mandrake roots",
+      "category": "request",
+      "summary": "Bring 1 x a clump of nightshade, 1 x a small batch of mandrake roots. Reward: 1 x a vial filled with a thick maroon liquid.",
+      "contracts": [
+        {
+          "giver_vnum": 132669,
+          "completion_key": "give=I:132694,I:132695;receive=I:132697;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a clump of nightshade",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            132694
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a small batch of mandrake roots",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            132695
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 132669,
+              "completion_key": "give=I:132694,I:132695;receive=I:132697;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-132673-7b1eea575547",
+      "title": "Deliver 1 x small and furry black wolf pup",
+      "category": "request",
+      "summary": "Bring 1 x small and furry black wolf pup. Reward: 1 x a cured leather hunting belt, 1 x a heavy forest cloak.",
+      "contracts": [
+        {
+          "giver_vnum": 132673,
+          "completion_key": "give=I:132700;receive=I:132701,I:132702;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x small and furry black wolf pup",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            132700
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 132673,
+              "completion_key": "give=I:132700;receive=I:132701,I:132702;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "reason": "Coin-only, informational, or skill exchanges; supporting services rather than item-delivery story achievements.",
+      "contracts": [
+        {
+          "giver_vnum": 132581,
+          "completion_key": "give=T:19;receive=E:33;disappear=1"
+        },
+        {
+          "giver_vnum": 132672,
+          "completion_key": "give=C:1000;receive=I:132703;disappear=0"
+        }
+      ]
+    },
+    {
+      "reason": "Native exchange references missing item prototypes in the active world sources; integration requires world data repair.",
+      "contracts": [
+        {
+          "giver_vnum": 132659,
+          "completion_key": "give=I:5;receive=I:132705;disappear=0"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "arac-web",
+  "coverage": "complete",
+  "introduction": "Explore Arachdrathos - Drow City and meet its people to uncover local requests.",
+  "orientation": [
+    "Start with look and exits to learn your surroundings.",
+    "Use help home to learn about hometowns and help quest for quest commands."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 36423,
+      "name": "a gatekeeper",
+      "keyword": "hearty",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "hi"
+      ]
+    }
+  ],
+  "stories": [],
+  "exclusions": [
+    {
+      "reason": "Coin-only, informational, or skill exchanges; supporting services rather than item-delivery story achievements.",
+      "contracts": [
+        {
+          "giver_vnum": 36423,
+          "completion_key": "give=C:10000;receive=I:36400;disappear=1"
+        }
+      ]
+    }
+  ]
+}

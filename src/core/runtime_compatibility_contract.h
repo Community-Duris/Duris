@@ -101,32 +101,33 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * economic operation roots without adding a runtime table; migration 0047 adds
  * a durable quest XP receipt mask and migration 0048 adds per-recipient XP
  * entitlements. Migration 0049 adds player spell-effect receipts, 0051 adds
- * player item runtime state, and 0052 indexes quest item witness reads. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0053_craft_progression";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 53;
+ * player item runtime state, and 0052 indexes quest item witness reads. Migration
+ * 0053 adds craft progression and 0054 permits discovered-zone daily state. */
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0054_discovered_zone_daily_state";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 54;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"4b17920b26cad6762637a1f3e0d7cb13d997e2f163b550c56b24363efa45aff1";
+	"e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"aacc5516aed02ca8b8b3115a2e8c22ef3f113b299723ea249034971ceb50417a";
+	"c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"e63cdd39538481b97760af4893592341e1352674c8ee8e8d7f33a8d8ecbfae75";
-constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID = "0053_craft_progression";
-constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 53;
+	"7d9446512b52e068170f0d9bbce2fcb362a32e2960cfc5369073374a2bf8a853";
+constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID = "0054_discovered_zone_daily_state";
+constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 54;
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_APPLY_CHECKSUM =
-	"4b17920b26cad6762637a1f3e0d7cb13d997e2f163b550c56b24363efa45aff1";
+	"e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM =
-	"aacc5516aed02ca8b8b3115a2e8c22ef3f113b299723ea249034971ceb50417a";
+	"c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM =
-	"e4e77237744a5074e7097ab93b9e50fee1ee1be74168afb3ad9356a7913acbfd";
+	"61892b12124d1c6aeeb24f5c32ea0c81867188f0f649742623b0b1d7d92e383b";
 /* Master recorded runtime state at 0031; its accounting upgrade retains that prefix. */
-constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID = "0053_craft_progression";
-constexpr unsigned RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 53;
+constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID = "0054_discovered_zone_daily_state";
+constexpr unsigned RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 54;
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_APPLY_CHECKSUM =
-	"4b17920b26cad6762637a1f3e0d7cb13d997e2f163b550c56b24363efa45aff1";
+	"e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e";
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_VERIFY_CHECKSUM =
-	"aacc5516aed02ca8b8b3115a2e8c22ef3f113b299723ea249034971ceb50417a";
+	"c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe";
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HISTORY_CHECKSUM =
-	"20b2bb46c5d4f6cacf993186c9aded434ea7fb669df8252eff4e774443676399";
+	"17433a81cd69e9fd9b48407b9d2f829a7f357e0f1ab74893ae7c2a826ca3f5ac";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_SQL =
 	"SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING "
 	"utf8mb4))),16,'0')),CONVERT(migration_id USING "
@@ -142,7 +143,7 @@ constexpr const char *RUNTIME_MIGRATION_HISTORY_SQL =
 	"utf8mb4))),16,'0')),CONVERT(compatibility USING "
 	"utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING "
 	"utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history "
-	"ORDER BY sequence_number LIMIT 54";
+	"ORDER BY sequence_number LIMIT 55";
 constexpr const char *RUNTIME_EXTRA_DESCRIPTION_GENERATION_SQL =
 	"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN "
 	"('player_item_extra_descr','player_pet_item_extra_descr') AND column_name='description_sha256' AND "

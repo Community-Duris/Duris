@@ -129,3 +129,6 @@ Kept when the `.spec_system/` tracking tree was retired.
 - `lib/` is **not documentation**. `lib/information/` is read by the server at runtime
   (`src/cmd/wikihelp.c`, `src/account/nanny.c`) and by `scripts/import_help_to_prod.sh`; moving it
   breaks the running game.
+
+- [Discovered zone daily quests implementation plan](design/DISCOVERED_ZONE_DAILY_QUESTS_PLAN.md)
+- [Discovered zone daily quests qualification](design/DISCOVERED_ZONE_DAILY_QUESTS_QUALIFICATION.md)

@@ -203,7 +203,7 @@ def validate() -> dict:
         raise migration_runner.MigrationContractError("runtime and migration baseline drift")
     staging = migration_runner.load_manifest(
         ROOT / "migrations/migration_manifest.staging_0045.json")
-    if len(migration.migrations) != 53 or len(staging.migrations) != 53 or \
+    if len(migration.migrations) != 54 or len(staging.migrations) != 54 or \
             staging.baseline_id != migration.baseline_id or \
             staging.required_tables != migration.required_tables or \
             staging.migrations[:44] != migration.migrations[:44] or \
@@ -220,7 +220,7 @@ def validate() -> dict:
         ROOT / "migrations/migration_manifest.master_0031.json")
     # Receipt IDs are immutable names; sequence is the declared application order.
     # Reuse 0051's identical SQL/verifier bytes without renaming master's receipt.
-    if len(master.migrations) != 53 or master.baseline_id != migration.baseline_id or \
+    if len(master.migrations) != 54 or master.baseline_id != migration.baseline_id or \
             master.required_tables != migration.required_tables or \
             master.migrations[:30] != migration.migrations[:30] or \
             master.migrations[30] != replace(migration.migrations[50], sequence=31,

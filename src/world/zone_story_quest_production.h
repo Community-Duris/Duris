@@ -4,13 +4,15 @@
 #include "world/zone_story_quest_catalog.h"
 
 #include <cstdint>
+#include <cstddef>
 #include <string>
 
 struct quest_complete_data;
 
 namespace zone_story_quest_production
 {
-constexpr uint32_t ZONE_STORY_QUEST_PRODUCTION_CONTENT_REVISION = 1;
+constexpr uint32_t ZONE_STORY_QUEST_PRODUCTION_CONTENT_REVISION = 2;
+constexpr std::size_t ZONE_STORY_QUEST_MAX_DURABLE_OFFERINGS = 14;
 
 /* Build the catalog from the booted static quest index.  The catalog is
  * intentionally separate from bartender/random world quest assignment. */

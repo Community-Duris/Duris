@@ -1,0 +1,1344 @@
+{
+  "schema_version": 3,
+  "revision": 3,
+  "source_area": "twin_towers_forest",
+  "coverage": "complete",
+  "stories": [
+    {
+      "id": "flowers-for-alvinar",
+      "title": "Flowers for Alvinar",
+      "category": "story",
+      "summary": "Alvinar wants a plant he can grow. A cut flower will not do.",
+      "contracts": [
+        {
+          "giver_vnum": 13500,
+          "completion_key": "give=I:13553;receive=I:13572;disappear=0"
+        },
+        {
+          "giver_vnum": 13500,
+          "completion_key": "give=I:13555;receive=I:13572;disappear=0"
+        },
+        {
+          "giver_vnum": 13500,
+          "completion_key": "give=I:13557;receive=I:13572;disappear=0"
+        },
+        {
+          "giver_vnum": 13500,
+          "completion_key": "give=I:13559;receive=I:13572;disappear=0"
+        },
+        {
+          "giver_vnum": 13500,
+          "completion_key": "give=I:13561;receive=I:13572;disappear=0"
+        },
+        {
+          "giver_vnum": 13500,
+          "completion_key": "give=I:13563;receive=I:13572;disappear=0"
+        },
+        {
+          "giver_vnum": 13500,
+          "completion_key": "give=I:13565;receive=I:13572;disappear=0"
+        },
+        {
+          "giver_vnum": 13500,
+          "completion_key": "give=I:13567;receive=I:13572;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "garden-access",
+          "text": "Wear the gardener's belt at your waist to enter the magical garden",
+          "kind": "equipped_item",
+          "hint": "The belt opens guarded garden paths when worn at the waist. A valid plant supplied by another player can be handed directly to Alvinar.",
+          "item_vnums": [
+            13521
+          ],
+          "count": 1,
+          "slot": 13,
+          "optional": true
+        },
+        {
+          "id": "plant",
+          "text": "Carry a plant suitable for Alvinar's garden",
+          "kind": "carried_item",
+          "hint": "Plants, bulbs, sprouts, and seedlings are accepted; cut flowers are returned. Carry the plant directly in your inventory.",
+          "item_vnums": [
+            13553,
+            13555,
+            13557,
+            13559,
+            13561,
+            13563,
+            13565,
+            13567
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the original turn-in",
+          "kind": "completion",
+          "hint": "The journal records the successful native exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 13500,
+              "completion_key": "give=I:13553;receive=I:13572;disappear=0"
+            },
+            {
+              "giver_vnum": 13500,
+              "completion_key": "give=I:13555;receive=I:13572;disappear=0"
+            },
+            {
+              "giver_vnum": 13500,
+              "completion_key": "give=I:13557;receive=I:13572;disappear=0"
+            },
+            {
+              "giver_vnum": 13500,
+              "completion_key": "give=I:13559;receive=I:13572;disappear=0"
+            },
+            {
+              "giver_vnum": 13500,
+              "completion_key": "give=I:13561;receive=I:13572;disappear=0"
+            },
+            {
+              "giver_vnum": 13500,
+              "completion_key": "give=I:13563;receive=I:13572;disappear=0"
+            },
+            {
+              "giver_vnum": 13500,
+              "completion_key": "give=I:13565;receive=I:13572;disappear=0"
+            },
+            {
+              "giver_vnum": 13500,
+              "completion_key": "give=I:13567;receive=I:13572;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lost-arrows",
+      "title": "The Archers' Lost Arrows",
+      "category": "request",
+      "summary": "Return a green-shafted, blue-feathered arrow. Farlindel pays 3 gold; Hanson pays 2 gold. Other arrows are separate trades.",
+      "contracts": [
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=I:13530;receive=C:300;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=I:13530;receive=C:200;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "arrow",
+          "text": "Carry one of the brothers' missing arrows",
+          "kind": "carried_item",
+          "hint": "The sprites hide the arrows in underbrush and piles of leaves.",
+          "item_vnums": [
+            13530
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the original turn-in",
+          "kind": "completion",
+          "hint": "The journal records the successful native exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 13501,
+              "completion_key": "give=I:13530;receive=C:300;disappear=0"
+            },
+            {
+              "giver_vnum": 13502,
+              "completion_key": "give=I:13530;receive=C:200;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "glor-linda-magic",
+      "title": "Restore Glor-Linda's Magic",
+      "category": "story",
+      "summary": "Return her fairy dust, one wand, and four different magical feathers. The wand determines the reward.",
+      "contracts": [
+        {
+          "giver_vnum": 13520,
+          "completion_key": "give=I:13582,I:13583,I:13584,I:13585,I:13586,I:13587;receive=E:10000,I:13581;disappear=1"
+        },
+        {
+          "giver_vnum": 13520,
+          "completion_key": "give=I:13582,I:13584,I:13585,I:13586,I:13587,I:13589;receive=E:10000,I:13588;disappear=1"
+        },
+        {
+          "giver_vnum": 13520,
+          "completion_key": "give=I:13582,I:13584,I:13585,I:13586,I:13587,I:13591;receive=E:10000,I:13590;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "dust",
+          "text": "Carry Glor-Linda's fairy dust",
+          "kind": "carried_item",
+          "hint": "The pixies stole her dust and wands.",
+          "item_vnums": [
+            13582
+          ],
+          "count": 1
+        },
+        {
+          "id": "wand",
+          "text": "Carry one of Glor-Linda's wands",
+          "kind": "carried_item",
+          "hint": "",
+          "item_vnums": [
+            13583,
+            13589,
+            13591
+          ],
+          "count": 1
+        },
+        {
+          "id": "feather-1",
+          "text": "Carry magical feather 1 of four different kinds",
+          "kind": "carried_item",
+          "hint": "Glor-Linda describes the magical birds when asked about them.",
+          "item_vnums": [
+            13584
+          ],
+          "count": 1
+        },
+        {
+          "id": "feather-2",
+          "text": "Carry magical feather 2 of four different kinds",
+          "kind": "carried_item",
+          "hint": "Glor-Linda describes the magical birds when asked about them.",
+          "item_vnums": [
+            13585
+          ],
+          "count": 1
+        },
+        {
+          "id": "feather-3",
+          "text": "Carry magical feather 3 of four different kinds",
+          "kind": "carried_item",
+          "hint": "Glor-Linda describes the magical birds when asked about them.",
+          "item_vnums": [
+            13586
+          ],
+          "count": 1
+        },
+        {
+          "id": "feather-4",
+          "text": "Carry magical feather 4 of four different kinds",
+          "kind": "carried_item",
+          "hint": "Glor-Linda describes the magical birds when asked about them.",
+          "item_vnums": [
+            13587
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the original turn-in",
+          "kind": "completion",
+          "hint": "The journal records the successful native exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 13520,
+              "completion_key": "give=I:13582,I:13583,I:13584,I:13585,I:13586,I:13587;receive=E:10000,I:13581;disappear=1"
+            },
+            {
+              "giver_vnum": 13520,
+              "completion_key": "give=I:13582,I:13584,I:13585,I:13586,I:13587,I:13589;receive=E:10000,I:13588;disappear=1"
+            },
+            {
+              "giver_vnum": 13520,
+              "completion_key": "give=I:13582,I:13584,I:13585,I:13586,I:13587,I:13591;receive=E:10000,I:13590;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "marja-jacket",
+      "title": "A Jacket from Marja",
+      "category": "story",
+      "summary": "Bring Marja the prepared hides and 30 gold for her work. The fee follows the actual exchange contract.",
+      "contracts": [
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=C:3000,I:13543,I:13543,I:13543,I:13543,I:13546,I:13546;receive=I:13522;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13543",
+          "text": "Carry 4 tanned buckskins",
+          "kind": "carried_item",
+          "hint": "The hunters can prepare fresh game into hides and pelts.",
+          "item_vnums": [
+            13543
+          ],
+          "count": 4
+        },
+        {
+          "id": "material-13546",
+          "text": "Carry 2 rabbit pelts",
+          "kind": "carried_item",
+          "hint": "The hunters can prepare fresh game into hides and pelts.",
+          "item_vnums": [
+            13546
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the original turn-in",
+          "kind": "completion",
+          "hint": "The journal records the successful native exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 13503,
+              "completion_key": "give=C:3000,I:13543,I:13543,I:13543,I:13543,I:13546,I:13546;receive=I:13522;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "marja-boots",
+      "title": "Deerskin Boots from Marja",
+      "category": "story",
+      "summary": "Bring Marja the prepared hides and 30 gold for her work. The fee follows the actual exchange contract.",
+      "contracts": [
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=C:3000,I:13544,I:13544,I:13546,I:13546,I:13546,I:13546;receive=I:13523;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13544",
+          "text": "Carry 2 tanned deerskins",
+          "kind": "carried_item",
+          "hint": "The hunters can prepare fresh game into hides and pelts.",
+          "item_vnums": [
+            13544
+          ],
+          "count": 2
+        },
+        {
+          "id": "material-13546",
+          "text": "Carry 4 rabbit pelts",
+          "kind": "carried_item",
+          "hint": "The hunters can prepare fresh game into hides and pelts.",
+          "item_vnums": [
+            13546
+          ],
+          "count": 4
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the original turn-in",
+          "kind": "completion",
+          "hint": "The journal records the successful native exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 13503,
+              "completion_key": "give=C:3000,I:13544,I:13544,I:13546,I:13546,I:13546,I:13546;receive=I:13523;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "marja-pants",
+      "title": "Doeskin Pants from Marja",
+      "category": "story",
+      "summary": "Bring Marja the prepared hides and 20 gold for her work. The fee follows the actual exchange contract.",
+      "contracts": [
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=C:2000,I:13545,I:13545,I:13545,I:13545;receive=I:13524;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13545",
+          "text": "Carry 4 tanned doeskins",
+          "kind": "carried_item",
+          "hint": "The hunters can prepare fresh game into hides and pelts.",
+          "item_vnums": [
+            13545
+          ],
+          "count": 4
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the original turn-in",
+          "kind": "completion",
+          "hint": "The journal records the successful native exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 13503,
+              "completion_key": "give=C:2000,I:13545,I:13545,I:13545,I:13545;receive=I:13524;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "marja-belt",
+      "title": "A Snakeskin Belt from Marja",
+      "category": "story",
+      "summary": "Bring Marja the prepared hides and 10 gold for her work. The fee follows the actual exchange contract.",
+      "contracts": [
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=C:1000,I:13547,I:13547;receive=I:13525;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13547",
+          "text": "Carry 2 snakeskins",
+          "kind": "carried_item",
+          "hint": "The hunters can prepare fresh game into hides and pelts.",
+          "item_vnums": [
+            13547
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the original turn-in",
+          "kind": "completion",
+          "hint": "The journal records the successful native exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 13503,
+              "completion_key": "give=C:1000,I:13547,I:13547;receive=I:13525;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "marja-cape",
+      "title": "A Fox Fur Cape from Marja",
+      "category": "story",
+      "summary": "Bring Marja the prepared hides and 100 gold for her work. The fee follows the actual exchange contract.",
+      "contracts": [
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=C:10000,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550;receive=I:13526;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13550",
+          "text": "Carry 10 fox furs",
+          "kind": "carried_item",
+          "hint": "The hunters can prepare fresh game into hides and pelts.",
+          "item_vnums": [
+            13550
+          ],
+          "count": 10
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the original turn-in",
+          "kind": "completion",
+          "hint": "The journal records the successful native exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 13503,
+              "completion_key": "give=C:10000,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550,I:13550;receive=I:13526;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "marja-cap",
+      "title": "A Coonskin Cap from Marja",
+      "category": "story",
+      "summary": "Bring Marja the prepared hides and 10 gold for her work. The fee follows the actual exchange contract.",
+      "contracts": [
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=C:1000,I:13548;receive=I:13527;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13548",
+          "text": "Carry 1 coonskins",
+          "kind": "carried_item",
+          "hint": "The hunters can prepare fresh game into hides and pelts.",
+          "item_vnums": [
+            13548
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the original turn-in",
+          "kind": "completion",
+          "hint": "The journal records the successful native exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 13503,
+              "completion_key": "give=C:1000,I:13548;receive=I:13527;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "marja-backpack",
+      "title": "A Wolfhide Backpack from Marja",
+      "category": "story",
+      "summary": "Bring Marja the prepared hides and 10 gold for her work. The fee follows the actual exchange contract.",
+      "contracts": [
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=C:1000,I:13549,I:13549;receive=I:13551;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-13549",
+          "text": "Carry 2 wolf hides",
+          "kind": "carried_item",
+          "hint": "The hunters can prepare fresh game into hides and pelts.",
+          "item_vnums": [
+            13549
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the original turn-in",
+          "kind": "completion",
+          "hint": "The journal records the successful native exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 13503,
+              "completion_key": "give=C:1000,I:13549,I:13549;receive=I:13551;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "prepare-animal-13505",
+      "title": "Prepare fox",
+      "category": "service",
+      "summary": "Exchange the fresh animal and the fee for 1 x a fox fillet, 1 x a fox fur. Farlindel: 200 copper; Hanson: 200 copper. These supplies can support Marja's clothing commissions.",
+      "contracts": [
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=C:200,I:13505;receive=I:13535,I:13550;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=C:200,I:13505;receive=I:13535,I:13550;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply",
+          "text": "Carry a freshly killed fox",
+          "kind": "carried_item",
+          "hint": "Fresh animals decay. Bring prepared supplies or ask Marja about clothing after using the tanning service.",
+          "item_vnums": [
+            13505
+          ],
+          "count": 1
+        },
+        {
+          "id": "exchange",
+          "text": "Complete the exchange with either archer",
+          "kind": "completion",
+          "hint": "Use the fee stated above. This service does not award a separate story or daily achievement.",
+          "contracts": [
+            {
+              "giver_vnum": 13501,
+              "completion_key": "give=C:200,I:13505;receive=I:13535,I:13550;disappear=0"
+            },
+            {
+              "giver_vnum": 13502,
+              "completion_key": "give=C:200,I:13505;receive=I:13535,I:13550;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "prepare-animal-13508",
+      "title": "Prepare wolf",
+      "category": "service",
+      "summary": "Exchange the fresh animal and the fee for 1 x a wolf roast, 1 x a wolf hide. Farlindel: 300 copper; Hanson: 300 copper. These supplies can support Marja's clothing commissions.",
+      "contracts": [
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=C:300,I:13508;receive=I:13536,I:13549;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=C:300,I:13508;receive=I:13536,I:13549;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply",
+          "text": "Carry a freshly killed wolf",
+          "kind": "carried_item",
+          "hint": "Fresh animals decay. Bring prepared supplies or ask Marja about clothing after using the tanning service.",
+          "item_vnums": [
+            13508
+          ],
+          "count": 1
+        },
+        {
+          "id": "exchange",
+          "text": "Complete the exchange with either archer",
+          "kind": "completion",
+          "hint": "Use the fee stated above. This service does not award a separate story or daily achievement.",
+          "contracts": [
+            {
+              "giver_vnum": 13501,
+              "completion_key": "give=C:300,I:13508;receive=I:13536,I:13549;disappear=0"
+            },
+            {
+              "giver_vnum": 13502,
+              "completion_key": "give=C:300,I:13508;receive=I:13536,I:13549;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "prepare-animal-13511",
+      "title": "Prepare rabbit",
+      "category": "service",
+      "summary": "Exchange the fresh animal and the fee for 1 x some rabbit meat, 1 x a white rabbit pelt. Farlindel: 100 copper; Hanson: 100 copper. These supplies can support Marja's clothing commissions.",
+      "contracts": [
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=C:100,I:13511;receive=I:13532,I:13546;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=C:100,I:13511;receive=I:13532,I:13546;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply",
+          "text": "Carry a freshly killed rabbit",
+          "kind": "carried_item",
+          "hint": "Fresh animals decay. Bring prepared supplies or ask Marja about clothing after using the tanning service.",
+          "item_vnums": [
+            13511
+          ],
+          "count": 1
+        },
+        {
+          "id": "exchange",
+          "text": "Complete the exchange with either archer",
+          "kind": "completion",
+          "hint": "Use the fee stated above. This service does not award a separate story or daily achievement.",
+          "contracts": [
+            {
+              "giver_vnum": 13501,
+              "completion_key": "give=C:100,I:13511;receive=I:13532,I:13546;disappear=0"
+            },
+            {
+              "giver_vnum": 13502,
+              "completion_key": "give=C:100,I:13511;receive=I:13532,I:13546;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "prepare-animal-13513",
+      "title": "Prepare raccoon",
+      "category": "service",
+      "summary": "Exchange the fresh animal and the fee for 1 x a strip of raccoon jerky, 1 x a coonskin. Farlindel: 100 copper; Hanson: 100 copper. These supplies can support Marja's clothing commissions.",
+      "contracts": [
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=C:100,I:13513;receive=I:13534,I:13548;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=C:100,I:13513;receive=I:13534,I:13548;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply",
+          "text": "Carry a freshly killed raccoon",
+          "kind": "carried_item",
+          "hint": "Fresh animals decay. Bring prepared supplies or ask Marja about clothing after using the tanning service.",
+          "item_vnums": [
+            13513
+          ],
+          "count": 1
+        },
+        {
+          "id": "exchange",
+          "text": "Complete the exchange with either archer",
+          "kind": "completion",
+          "hint": "Use the fee stated above. This service does not award a separate story or daily achievement.",
+          "contracts": [
+            {
+              "giver_vnum": 13501,
+              "completion_key": "give=C:100,I:13513;receive=I:13534,I:13548;disappear=0"
+            },
+            {
+              "giver_vnum": 13502,
+              "completion_key": "give=C:100,I:13513;receive=I:13534,I:13548;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "prepare-animal-13515",
+      "title": "Prepare buck",
+      "category": "service",
+      "summary": "Exchange the fresh animal and the fee for 2 x a venison chop, 1 x a tanned buckskin. Farlindel: 500 copper; Hanson: 500 copper. These supplies can support Marja's clothing commissions.",
+      "contracts": [
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=C:500,I:13515;receive=I:13531,I:13531,I:13543;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=C:500,I:13515;receive=I:13531,I:13531,I:13543;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply",
+          "text": "Carry a freshly killed buck",
+          "kind": "carried_item",
+          "hint": "Fresh animals decay. Bring prepared supplies or ask Marja about clothing after using the tanning service.",
+          "item_vnums": [
+            13515
+          ],
+          "count": 1
+        },
+        {
+          "id": "exchange",
+          "text": "Complete the exchange with either archer",
+          "kind": "completion",
+          "hint": "Use the fee stated above. This service does not award a separate story or daily achievement.",
+          "contracts": [
+            {
+              "giver_vnum": 13501,
+              "completion_key": "give=C:500,I:13515;receive=I:13531,I:13531,I:13543;disappear=0"
+            },
+            {
+              "giver_vnum": 13502,
+              "completion_key": "give=C:500,I:13515;receive=I:13531,I:13531,I:13543;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "prepare-animal-13516",
+      "title": "Prepare deer",
+      "category": "service",
+      "summary": "Exchange the fresh animal and the fee for 2 x a venison chop, 1 x a tanned deerskin. Farlindel: 300 copper; Hanson: 300 copper. These supplies can support Marja's clothing commissions.",
+      "contracts": [
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=C:300,I:13516;receive=I:13531,I:13531,I:13544;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=C:300,I:13516;receive=I:13531,I:13531,I:13544;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply",
+          "text": "Carry a freshly killed deer",
+          "kind": "carried_item",
+          "hint": "Fresh animals decay. Bring prepared supplies or ask Marja about clothing after using the tanning service.",
+          "item_vnums": [
+            13516
+          ],
+          "count": 1
+        },
+        {
+          "id": "exchange",
+          "text": "Complete the exchange with either archer",
+          "kind": "completion",
+          "hint": "Use the fee stated above. This service does not award a separate story or daily achievement.",
+          "contracts": [
+            {
+              "giver_vnum": 13501,
+              "completion_key": "give=C:300,I:13516;receive=I:13531,I:13531,I:13544;disappear=0"
+            },
+            {
+              "giver_vnum": 13502,
+              "completion_key": "give=C:300,I:13516;receive=I:13531,I:13531,I:13544;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "prepare-animal-13517",
+      "title": "Prepare doe",
+      "category": "service",
+      "summary": "Exchange the fresh animal and the fee for 1 x a venison chop, 1 x a tanned doeskin. Farlindel: 300 copper; Hanson: 200 copper. These supplies can support Marja's clothing commissions.",
+      "contracts": [
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=C:300,I:13517;receive=I:13531,I:13545;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=C:200,I:13517;receive=I:13531,I:13545;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply",
+          "text": "Carry a freshly killed doe",
+          "kind": "carried_item",
+          "hint": "Fresh animals decay. Bring prepared supplies or ask Marja about clothing after using the tanning service.",
+          "item_vnums": [
+            13517
+          ],
+          "count": 1
+        },
+        {
+          "id": "exchange",
+          "text": "Complete the exchange with either archer",
+          "kind": "completion",
+          "hint": "Use the fee stated above. This service does not award a separate story or daily achievement.",
+          "contracts": [
+            {
+              "giver_vnum": 13501,
+              "completion_key": "give=C:300,I:13517;receive=I:13531,I:13545;disappear=0"
+            },
+            {
+              "giver_vnum": 13502,
+              "completion_key": "give=C:200,I:13517;receive=I:13531,I:13545;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "prepare-animal-13518",
+      "title": "Prepare rattlesnake",
+      "category": "service",
+      "summary": "Exchange the fresh animal and the fee for 2 x a rattlesnake steak, 1 x a tanned snakeskin. Farlindel: 300 copper; Hanson: 100 copper. These supplies can support Marja's clothing commissions.",
+      "contracts": [
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=C:300,I:13518;receive=I:13533,I:13533,I:13547;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=C:100,I:13518;receive=I:13533,I:13533,I:13547;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply",
+          "text": "Carry a freshly killed rattlesnake",
+          "kind": "carried_item",
+          "hint": "Fresh animals decay. Bring prepared supplies or ask Marja about clothing after using the tanning service.",
+          "item_vnums": [
+            13518
+          ],
+          "count": 1
+        },
+        {
+          "id": "exchange",
+          "text": "Complete the exchange with either archer",
+          "kind": "completion",
+          "hint": "Use the fee stated above. This service does not award a separate story or daily achievement.",
+          "contracts": [
+            {
+              "giver_vnum": 13501,
+              "completion_key": "give=C:300,I:13518;receive=I:13533,I:13533,I:13547;disappear=0"
+            },
+            {
+              "giver_vnum": 13502,
+              "completion_key": "give=C:100,I:13518;receive=I:13533,I:13533,I:13547;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "archer-trade-13519",
+      "title": "Sell a bluejay",
+      "category": "service",
+      "summary": "A supporting trade, separate from the missing-arrow request. Farlindel: 1000 copper; Hanson: 2000 copper.",
+      "contracts": [
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=I:13519;receive=C:1000;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=I:13519;receive=C:2000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply",
+          "text": "Carry a freshly killed bluejay",
+          "kind": "carried_item",
+          "hint": "Carry the item directly in your inventory.",
+          "item_vnums": [
+            13519
+          ],
+          "count": 1
+        },
+        {
+          "id": "exchange",
+          "text": "Complete the exchange with either archer",
+          "kind": "completion",
+          "hint": "Either archer accepts this trade at the stated price.",
+          "contracts": [
+            {
+              "giver_vnum": 13501,
+              "completion_key": "give=I:13519;receive=C:1000;disappear=0"
+            },
+            {
+              "giver_vnum": 13502,
+              "completion_key": "give=I:13519;receive=C:2000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "archer-trade-13569",
+      "title": "Sell a white-shafted arrow with green feathers",
+      "category": "service",
+      "summary": "A supporting trade, separate from the missing-arrow request. Farlindel: 100 copper; Hanson: 100 copper.",
+      "contracts": [
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=I:13569;receive=C:100;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=I:13569;receive=C:100;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply",
+          "text": "Carry a white-shafted arrow with green feathers",
+          "kind": "carried_item",
+          "hint": "Carry the item directly in your inventory.",
+          "item_vnums": [
+            13569
+          ],
+          "count": 1
+        },
+        {
+          "id": "exchange",
+          "text": "Complete the exchange with either archer",
+          "kind": "completion",
+          "hint": "Either archer accepts this trade at the stated price.",
+          "contracts": [
+            {
+              "giver_vnum": 13501,
+              "completion_key": "give=I:13569;receive=C:100;disappear=0"
+            },
+            {
+              "giver_vnum": 13502,
+              "completion_key": "give=I:13569;receive=C:100;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "archer-trade-13570",
+      "title": "Sell a red-shafted arrow with white feathers",
+      "category": "service",
+      "summary": "A supporting trade, separate from the missing-arrow request. Farlindel: 100 copper; Hanson: 100 copper.",
+      "contracts": [
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=I:13570;receive=C:100;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=I:13570;receive=C:100;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply",
+          "text": "Carry a red-shafted arrow with white feathers",
+          "kind": "carried_item",
+          "hint": "Carry the item directly in your inventory.",
+          "item_vnums": [
+            13570
+          ],
+          "count": 1
+        },
+        {
+          "id": "exchange",
+          "text": "Complete the exchange with either archer",
+          "kind": "completion",
+          "hint": "Either archer accepts this trade at the stated price.",
+          "contracts": [
+            {
+              "giver_vnum": 13501,
+              "completion_key": "give=I:13570;receive=C:100;disappear=0"
+            },
+            {
+              "giver_vnum": 13502,
+              "completion_key": "give=I:13570;receive=C:100;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "archer-trade-13571",
+      "title": "Sell a yellow-shafted arrow with red feathers",
+      "category": "service",
+      "summary": "A supporting trade, separate from the missing-arrow request. Farlindel: 100 copper; Hanson: 100 copper.",
+      "contracts": [
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=I:13571;receive=C:100;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=I:13571;receive=C:100;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "supply",
+          "text": "Carry a yellow-shafted arrow with red feathers",
+          "kind": "carried_item",
+          "hint": "Carry the item directly in your inventory.",
+          "item_vnums": [
+            13571
+          ],
+          "count": 1
+        },
+        {
+          "id": "exchange",
+          "text": "Complete the exchange with either archer",
+          "kind": "completion",
+          "hint": "Either archer accepts this trade at the stated price.",
+          "contracts": [
+            {
+              "giver_vnum": 13501,
+              "completion_key": "give=I:13571;receive=C:100;disappear=0"
+            },
+            {
+              "giver_vnum": 13502,
+              "completion_key": "give=I:13571;receive=C:100;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "reason": "Rejected offering or reminder: the NPC returns the submitted item.",
+      "contracts": [
+        {
+          "giver_vnum": 13500,
+          "completion_key": "give=I:13552;receive=I:13552;disappear=0"
+        },
+        {
+          "giver_vnum": 13500,
+          "completion_key": "give=I:13554;receive=I:13554;disappear=0"
+        },
+        {
+          "giver_vnum": 13500,
+          "completion_key": "give=I:13556;receive=I:13556;disappear=0"
+        },
+        {
+          "giver_vnum": 13500,
+          "completion_key": "give=I:13558;receive=I:13558;disappear=0"
+        },
+        {
+          "giver_vnum": 13500,
+          "completion_key": "give=I:13560;receive=I:13560;disappear=0"
+        },
+        {
+          "giver_vnum": 13500,
+          "completion_key": "give=I:13562;receive=I:13562;disappear=0"
+        },
+        {
+          "giver_vnum": 13500,
+          "completion_key": "give=I:13564;receive=I:13564;disappear=0"
+        },
+        {
+          "giver_vnum": 13500,
+          "completion_key": "give=I:13566;receive=I:13566;disappear=0"
+        },
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=I:13543;receive=I:13543;disappear=0"
+        },
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=I:13544;receive=I:13544;disappear=0"
+        },
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=I:13545;receive=I:13545;disappear=0"
+        },
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=I:13546;receive=I:13546;disappear=0"
+        },
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=I:13547;receive=I:13547;disappear=0"
+        },
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=I:13548;receive=I:13548;disappear=0"
+        },
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=I:13549;receive=I:13549;disappear=0"
+        },
+        {
+          "giver_vnum": 13501,
+          "completion_key": "give=I:13550;receive=I:13550;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=I:13543;receive=I:13543;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=I:13544;receive=I:13544;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=I:13545;receive=I:13545;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=I:13546;receive=I:13546;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=I:13547;receive=I:13547;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=I:13548;receive=I:13548;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=I:13549;receive=I:13549;disappear=0"
+        },
+        {
+          "giver_vnum": 13502,
+          "completion_key": "give=I:13550;receive=I:13550;disappear=0"
+        },
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=I:13505;receive=I:13505;disappear=0"
+        },
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=I:13508;receive=I:13508;disappear=0"
+        },
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=I:13511;receive=I:13511;disappear=0"
+        },
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=I:13513;receive=I:13513;disappear=0"
+        },
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=I:13515;receive=I:13515;disappear=0"
+        },
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=I:13516;receive=I:13516;disappear=0"
+        },
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=I:13517;receive=I:13517;disappear=0"
+        },
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=I:13518;receive=I:13518;disappear=0"
+        },
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=I:13519;receive=I:13519;disappear=0"
+        },
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=I:13522;receive=I:13522;disappear=0"
+        },
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=I:13523;receive=I:13523;disappear=0"
+        },
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=I:13524;receive=I:13524;disappear=0"
+        },
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=I:13525;receive=I:13525;disappear=0"
+        },
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=I:13526;receive=I:13526;disappear=0"
+        },
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=I:13527;receive=I:13527;disappear=0"
+        },
+        {
+          "giver_vnum": 13503,
+          "completion_key": "give=I:13551;receive=I:13551;disappear=0"
+        }
+      ]
+    }
+  ],
+  "introduction": "Explore the forest and the towers to uncover local stories and requests.",
+  "orientation": [
+    "Start with look and exits. People appear in this journal once you have had a chance to meet them."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 13500,
+      "name": "Alvinar",
+      "keyword": "alvinar",
+      "description": "Alvinar wants living plants for his wife. Ask flowers and towers for the garden route, or sons and furs for the family tanning and clothing work.",
+      "topics": [
+        "hello",
+        "farm",
+        "flowers",
+        "towers",
+        "woods",
+        "sons",
+        "game",
+        "wife",
+        "cloud"
+      ]
+    },
+    {
+      "mob_vnum": 13501,
+      "name": "Farlindel the archer",
+      "keyword": "farlindel",
+      "description": "Farlindel describes the missing arrows and buys recovered game. Ask practice, sprites, and arrows for the recovery request.",
+      "topics": [
+        "hello",
+        "woods",
+        "game",
+        "mage",
+        "archer",
+        "practice",
+        "sprites",
+        "arrows"
+      ]
+    },
+    {
+      "mob_vnum": 13502,
+      "name": "Hanson the archer",
+      "keyword": "hanson",
+      "description": "Hanson buys arrows and bluejays and prepares fresh game for a fee. Ask hides or an animal name for preparation; ask father and mother about the family cottage.",
+      "topics": [
+        "hello",
+        "woods",
+        "game",
+        "hide",
+        "archer",
+        "father",
+        "mother",
+        "buck",
+        "doe",
+        "deer",
+        "rabbit",
+        "fox",
+        "wolf",
+        "snake",
+        "coon"
+      ]
+    },
+    {
+      "mob_vnum": 13503,
+      "name": "Marja",
+      "keyword": "marja",
+      "description": "Marja makes seven kinds of clothing from prepared hides. Ask clothing or the named garment. Raw animals and finished clothes are returned.",
+      "topics": [
+        "hello",
+        "father",
+        "son",
+        "husband",
+        "clothing",
+        "jacket",
+        "pants",
+        "boots",
+        "cape",
+        "belt",
+        "cap",
+        "backpack",
+        "buck",
+        "doe",
+        "deer",
+        "fox",
+        "snake",
+        "coon",
+        "wolf"
+      ]
+    },
+    {
+      "mob_vnum": 13504,
+      "name": "Tryve the gardener",
+      "keyword": "tryve",
+      "description": "Tryve wears the belt that opens the garden barrier at the waist. There is no conversation or turn-in that awards this belt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 13520,
+      "name": "Glor-Linda",
+      "keyword": "sprite",
+      "description": "Glor-Linda needs fairy dust, one of three wands, and four different magical bird feathers. Ask crying, wand, fairy, and magical to learn her request.",
+      "topics": [
+        "hi",
+        "name",
+        "crying",
+        "wand",
+        "fairy",
+        "magical"
+      ]
+    }
+  ]
+}

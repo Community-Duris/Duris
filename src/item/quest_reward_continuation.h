@@ -47,6 +47,11 @@ struct quest_reward_continuation
 	std::array<uint32_t, 64> credited_pids = {};
 	uint32_t xp_award_count = 0;
 	std::array<quest_reward_xp_award, 64> xp_awards = {};
+	uint32_t season_id = 0;
+	uint32_t catalog_revision = 0;
+	uint32_t daily_policy_revision = 0;
+	uint32_t daily_count = 0;
+	std::array<uint32_t, 64> daily_pids = {};
 	std::string character_name;
 	std::string definition_id;
 };
@@ -99,6 +104,7 @@ inline uint64_t quest_item_reward_source_id(const quest_reward_continuation &ter
 // party and stable quest identity. Version 3 adds skill eligibility metadata.
 // Version 4 freezes solo quest XP. Version 5 freezes per-recipient XP values
 // for the already captured group, so recovery need not rediscover the party.
+// Version 6 freezes season, catalog revision, and daily-qualified recipients.
 inline bool quest_reward_continuation_decode(const uint8_t *data, size_t size,
 					     quest_reward_continuation *decoded)
 {
@@ -119,7 +125,8 @@ inline bool quest_reward_continuation_decode(const uint8_t *data, size_t size,
 		return value;
 	};
 	const uint32_t version = read32(0);
-	if (version != 1 && version != 2 && version != 3 && version != 4 && version != 5)
+	if (version != 1 && version != 2 && version != 3 && version != 4 && version != 5 &&
+	    version != 6)
 		return false;
 	quest_reward_continuation value;
 	value.version = version;
@@ -184,7 +191,7 @@ inline bool quest_reward_continuation_decode(const uint8_t *data, size_t size,
 		value.strongest_party_level = static_cast<int32_t>(read32(offset + 16));
 		value.credited_count = read32(offset + 20);
 		offset += extension_header_bytes;
-		if (!value.zone_number || value.zone_number > INT32_MAX || value.player_level < 0 ||
+		if (value.zone_number > INT32_MAX || value.player_level < 0 ||
 		    value.strongest_party_level < 0 || !value.credited_count ||
 		    value.credited_count > QUEST_REWARD_MAX_CREDITED_PIDS ||
 		    value.party_size != value.credited_count ||
@@ -237,8 +244,11 @@ inline bool quest_reward_continuation_decode(const uint8_t *data, size_t size,
 			value.xp_award_count = read32(offset);
 			offset += sizeof(uint32_t);
 			if (value.xp_award_count > value.xp_awards.size() ||
-			    size != offset + static_cast<size_t>(value.xp_award_count) * 3 *
-						     sizeof(uint32_t))
+			    (size < offset + static_cast<size_t>(value.xp_award_count) * 3 *
+						     sizeof(uint32_t) ||
+			     (version == 5 &&
+			      size != offset + static_cast<size_t>(value.xp_award_count) * 3 *
+						       sizeof(uint32_t))))
 				return false;
 			for (size_t index = 0; index < value.xp_award_count;
 			     ++index, offset += 3 * sizeof(uint32_t))
@@ -289,6 +299,35 @@ inline bool quest_reward_continuation_decode(const uint8_t *data, size_t size,
 							return false;
 					}
 		}
+		if (version == 6)
+		{
+			if (size - offset < 16)
+				return false;
+			value.season_id = read32(offset);
+			value.catalog_revision = read32(offset + 4);
+			value.daily_policy_revision = read32(offset + 8);
+			value.daily_count = read32(offset + 12);
+			offset += 16;
+			if (!value.season_id || !value.catalog_revision ||
+			    value.daily_policy_revision != 1 ||
+			    value.daily_count > value.credited_count ||
+			    size - offset != value.daily_count * 4)
+				return false;
+			for (size_t i = 0; i < value.daily_count; ++i, offset += 4)
+			{
+				value.daily_pids[i] = read32(offset);
+				bool member = false;
+				for (size_t j = 0; j < value.credited_count; ++j)
+					member |= value.daily_pids[i] == value.credited_pids[j];
+				if (!member)
+					return false;
+				for (size_t j = 0; j < i; ++j)
+					if (value.daily_pids[i] == value.daily_pids[j])
+						return false;
+			}
+		}
+		if (version >= 5 && size != offset)
+			return false;
 		if (version < 5 && size != offset)
 			return false;
 	}

@@ -1,0 +1,3024 @@
+{
+  "schema_version": 3,
+  "revision": 2,
+  "source_area": "newbie",
+  "coverage": "complete",
+  "introduction": "Learn your way around Ailvio, help its families, and choose the requests offered by the teachers you meet.",
+  "orientation": [
+    "Start with Burbul: ask burbul hello, info, quest, or map. Look at the map to locate the guilds.",
+    "A letter of introduction can be exchanged for a teacher's starter equipment. These supply services are separate from their quests.",
+    "Try one local story: feed the hungry family; bring medicine to the grandmother; or recover Silva's stolen voice.",
+    "Explore with look, exits, and search. Some materials are hidden, carried by creatures, or inside containers. Current possession does not prove how you obtained an item.",
+    "The archway in the glowing temple leads to a hometown chosen by your race and class. Prepare before leaving Ailvio."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 29201,
+      "name": "Burbul the halfling",
+      "keyword": "burbul",
+      "description": "Learn the commands, local teachers, and hometowns. Ask about a map and check your inventory before relying on it.",
+      "topics": [
+        "hi",
+        "info",
+        "players",
+        "webpage",
+        "hometown",
+        "toggle",
+        "rule",
+        "help",
+        "quest",
+        "command",
+        "map"
+      ]
+    },
+    {
+      "mob_vnum": 29216,
+      "name": "Chyron, the centaur alchemist",
+      "keyword": "chyron",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "search"
+      ]
+    },
+    {
+      "mob_vnum": 29217,
+      "name": "Mier Sadev the pimp",
+      "keyword": "mier",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 29218,
+      "name": "Maerg, an old herb woman",
+      "keyword": "hag",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "jar"
+      ]
+    },
+    {
+      "mob_vnum": 29226,
+      "name": "Brodi, an old fisherman",
+      "keyword": "brodi",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 29232,
+      "name": "Saelryn, the elven sorceress",
+      "keyword": "sorc",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "spell",
+        "casting",
+        "circles",
+        "innate",
+        "specialization",
+        "tip",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 29233,
+      "name": "Red, the human alchemist",
+      "keyword": "red",
+      "description": "Ask about the sick child and the ingredients for a cure. Red also accepts a separate set of foraging materials.",
+      "topics": [
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 29234,
+      "name": "Drinnan, the halfling illusionist",
+      "keyword": "drinnan",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "innates",
+        "spell",
+        "casting",
+        "circles",
+        "specialization",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 29235,
+      "name": "Llerrad, the centaur ranger",
+      "keyword": "ranger",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "spell",
+        "casting",
+        "circles",
+        "innate",
+        "alignment",
+        "skill",
+        "specialization",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 29236,
+      "name": "Creyset, the minotaur shaman",
+      "keyword": "mino",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "spell",
+        "casting",
+        "circles",
+        "innate",
+        "totem",
+        "spec",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 29237,
+      "name": "Lapney, the centaur druid",
+      "keyword": "druid",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "spell",
+        "casting",
+        "circles",
+        "innate",
+        "spec",
+        "quest",
+        "item"
+      ]
+    },
+    {
+      "mob_vnum": 29238,
+      "name": "Roshenbly, the gnomish cleric",
+      "keyword": "cleric",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "innate",
+        "spell",
+        "pray",
+        "circles",
+        "spec",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 29239,
+      "name": "Nalk, the thri-kreen warrior",
+      "keyword": "nalk",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "skill",
+        "spec",
+        "innate",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 29240,
+      "name": "Agare, the half-elf paladin",
+      "keyword": "half",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "mount",
+        "innate",
+        "spell",
+        "align",
+        "skill",
+        "spec",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 29241,
+      "name": "Grinda, the Ship Master",
+      "keyword": "grinda",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "undock",
+        "speed",
+        "contact"
+      ]
+    },
+    {
+      "mob_vnum": 29242,
+      "name": "Eian, the Collector",
+      "keyword": "eian",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 29243,
+      "name": "Deline, the Beast Mistress",
+      "keyword": "deline",
+      "description": "Learn how pets and their orders work. Pet purchases and rentals are currently unavailable.",
+      "topics": [
+        "help"
+      ]
+    },
+    {
+      "mob_vnum": 29249,
+      "name": "Tor, the Chief Guardsman",
+      "keyword": "tor",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 29250,
+      "name": "Vaugh, a tired adventurer",
+      "keyword": "vaugh",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 29252,
+      "name": "Victa, the Hawk Master",
+      "keyword": "hawk",
+      "description": "Learn how pets and their orders work. Pet purchases and rentals are currently unavailable.",
+      "topics": [
+        "help"
+      ]
+    },
+    {
+      "mob_vnum": 29257,
+      "name": "Kord, the barbarian mercenary",
+      "keyword": "kord",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "innate",
+        "specialization",
+        "skill",
+        "headbutt",
+        "hide",
+        "track",
+        "grapple",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 29258,
+      "name": "Quek, the halfling Rogue",
+      "keyword": "quek",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "help",
+        "specialization",
+        "innate",
+        "skill",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 29259,
+      "name": "Risp, the dwarf assassin",
+      "keyword": "risp",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "skill",
+        "innate",
+        "spec",
+        "weapons",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 29260,
+      "name": "Perr, the Githzerai monk",
+      "keyword": "perr",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "innate",
+        "chant",
+        "spec",
+        "skill",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 29261,
+      "name": "Foet, the grey elf bard",
+      "keyword": "foet",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "innate",
+        "spec",
+        "spell",
+        "casting",
+        "circles",
+        "songs",
+        "instrument",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 29262,
+      "name": "Osule, the human ethermancer",
+      "keyword": "osule",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "innate",
+        "spell",
+        "circles",
+        "specialization",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 29263,
+      "name": "Esera, the gnome conjurer",
+      "keyword": "esera",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "spell",
+        "casting",
+        "circles",
+        "innate",
+        "specialization",
+        "tip",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 29264,
+      "name": "Taiz, the half-elf theurgist",
+      "keyword": "taiz",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi",
+        "spell",
+        "casting",
+        "circles",
+        "pet",
+        "zombies",
+        "wraiths",
+        "vampires",
+        "liches",
+        "dracolichs",
+        "golems",
+        "control",
+        "innate",
+        "spec",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 29266,
+      "name": "a tired father",
+      "keyword": "father",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "fish"
+      ]
+    },
+    {
+      "mob_vnum": 29269,
+      "name": "a frail grandmother",
+      "keyword": "grandma",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 29284,
+      "name": "a sick child",
+      "keyword": "sick",
+      "description": "Ask about these topics for guidance. Conversation is useful preparation; it does not record a completed lesson.",
+      "topics": [
+        "sick"
+      ]
+    },
+    {
+      "mob_vnum": 29304,
+      "name": "A beautiful half-elf woman",
+      "keyword": "beautiful",
+      "description": "Her wounded friend needs a bandage. Ask for help and read help bandage. You can help him, though this encounter is not yet tracked in the journal.",
+      "topics": [
+        "hi"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "request-29201-b3b227fb1c39",
+      "title": "Burbul's unusual map exchange",
+      "category": "service",
+      "summary": "Burbul trades an ogre arm for a map. Asking him for a map is a separate service; this entry records the arm exchange.",
+      "contracts": [
+        {
+          "giver_vnum": 29201,
+          "completion_key": "give=I:87700;receive=I:29201;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x the torn-off arm of an insane snow ogre",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            87700
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Burbul the halfling",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29201,
+              "completion_key": "give=I:87700;receive=I:29201;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29216-4199f2ad9903",
+      "title": "Find Chyron's misplaced ingredients",
+      "category": "request",
+      "summary": "Bring 1 x a salt box, 1 x a vial of basilisk tears. Reward: 1 x a swirling potion of marbled red and white.",
+      "contracts": [
+        {
+          "giver_vnum": 29216,
+          "completion_key": "give=I:29220,I:29221;receive=I:29222;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a salt box",
+          "kind": "carried_item",
+          "hint": "Search Chyron's forest hut for the hidden salt box. A supplied item is also accepted.",
+          "item_vnums": [
+            29220
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a vial of basilisk tears",
+          "kind": "carried_item",
+          "hint": "Search Chyron's forest hut for the hidden vial. A supplied item is also accepted.",
+          "item_vnums": [
+            29221
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Chyron, the centaur alchemist",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29216,
+              "completion_key": "give=I:29220,I:29221;receive=I:29222;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29218-c6701a3f237f",
+      "title": "Maerg's trade for the magical jar",
+      "category": "request",
+      "summary": "Bring 1 x spores of the giant mushroom. Reward: 1 x a small magical jar.",
+      "contracts": [
+        {
+          "giver_vnum": 29218,
+          "completion_key": "give=I:88502;receive=I:29291;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x spores of the giant mushroom",
+          "kind": "carried_item",
+          "hint": "The drow mother in the prisoner cage carries the spores. The material comes from another area's object prototype but has a local source. A supplied item is also accepted.",
+          "item_vnums": [
+            88502
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Maerg, an old herb woman",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29218,
+              "completion_key": "give=I:88502;receive=I:29291;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29232-a241a868d7f1",
+      "title": "Recover Saelryn's dark stones",
+      "category": "request",
+      "summary": "Bring 1 x mysterious dark stones. Reward: 2,500 experience, 1 x a dark magical tome.",
+      "contracts": [
+        {
+          "giver_vnum": 29232,
+          "completion_key": "give=I:29238;receive=E:2500,I:29293;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x mysterious dark stones",
+          "kind": "carried_item",
+          "hint": "Search the dark woods for a hidden passage into a tree; the stones are inside. A supplied item is also accepted.",
+          "item_vnums": [
+            29238
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Saelryn, the elven sorceress",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29232,
+              "completion_key": "give=I:29238;receive=E:2500,I:29293;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29232-4a618d504eb0",
+      "title": "Starter equipment from Saelryn",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a shabby alligator skin jerkin, 2 x a light blue scarf, 1 x an amber-colored rod, 1 x a quill, 1 x a spellbook, 1 x a pair of tight black slippers.",
+      "contracts": [
+        {
+          "giver_vnum": 29232,
+          "completion_key": "give=I:29319;receive=I:706,I:731,I:731,I:735,I:1114,I:1115,I:1131;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "The Ailvio newcomer kit includes a letter of introduction. It can be spent on one teacher's equipment exchange. A supplied item is also accepted.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Saelryn, the elven sorceress",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29232,
+              "completion_key": "give=I:29319;receive=I:706,I:731,I:731,I:735,I:1114,I:1115,I:1131;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29233-266a3514c35d",
+      "title": "Mix the child's medicine",
+      "category": "request",
+      "summary": "Bring 1 x a wing of a dragon fly, 1 x the eyes of a bullfrog, 1 x a vine stalk. Reward: 1 x a bubbling vial of liquid.",
+      "contracts": [
+        {
+          "giver_vnum": 29233,
+          "completion_key": "give=I:29271,I:29272,I:29333;receive=I:29255;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a wing of a dragon fly",
+          "kind": "carried_item",
+          "hint": "Search along the narrow path into the woods for the hidden dragonfly wing. A supplied item is also accepted.",
+          "item_vnums": [
+            29271
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x the eyes of a bullfrog",
+          "kind": "carried_item",
+          "hint": "Search the fallen log in the dark forest for the bullfrog eyes inside. A supplied item is also accepted.",
+          "item_vnums": [
+            29272
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a vine stalk",
+          "kind": "carried_item",
+          "hint": "The overgrown vine in the alchemist's garden carries a stalk. A supplied item is also accepted.",
+          "item_vnums": [
+            29333
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Red, the human alchemist",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29233,
+              "completion_key": "give=I:29271,I:29272,I:29333;receive=I:29255;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29233-391905414f3c",
+      "title": "Starter equipment from Red",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a small recipe book, 1 x a large leather backpack, 1 x a stone warhammer.",
+      "contracts": [
+        {
+          "giver_vnum": 29233,
+          "completion_key": "give=I:29319;receive=I:52,I:377,I:676;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "The Ailvio newcomer kit includes a letter of introduction. It can be spent on one teacher's equipment exchange. A supplied item is also accepted.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Red, the human alchemist",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29233,
+              "completion_key": "give=I:29319;receive=I:52,I:377,I:676;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29233-c4126338692d",
+      "title": "Red's foraging supplies",
+      "category": "request",
+      "summary": "Bring 1 x a mandrake root, 1 x some faerie dust, 1 x a few drops of dragons blood, 1 x a green herb, 1 x eyes of a bullfrog. Reward: 5,000 experience, 1 x a ceramic chillum, 1 x a hefty bag.",
+      "contracts": [
+        {
+          "giver_vnum": 29233,
+          "completion_key": "give=I:822,I:824,I:825,I:826,I:29241;receive=E:5000,I:835,I:29310;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a mandrake root",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            822
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x some faerie dust",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            824
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a few drops of dragons blood",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            825
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-4",
+          "text": "Carry 1 x a green herb",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            826
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-5",
+          "text": "Carry 1 x eyes of a bullfrog",
+          "kind": "carried_item",
+          "hint": "These are a different item from the eyes used in the child's cure. No ordinary local source for this kind has been confirmed. A supplied item is also accepted.",
+          "item_vnums": [
+            29241
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Red, the human alchemist",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29233,
+              "completion_key": "give=I:822,I:824,I:825,I:826,I:29241;receive=E:5000,I:835,I:29310;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29234-70c299204aaa",
+      "title": "Recover Drinnan's dark stones",
+      "category": "request",
+      "summary": "Bring 1 x mysterious dark stones. Reward: 2,500 experience, 1 x veil of shadows.",
+      "contracts": [
+        {
+          "giver_vnum": 29234,
+          "completion_key": "give=I:29238;receive=E:2500,I:29239;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x mysterious dark stones",
+          "kind": "carried_item",
+          "hint": "Search the dark woods for a hidden passage into a tree; the stones are inside. A supplied item is also accepted.",
+          "item_vnums": [
+            29238
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Drinnan, the halfling illusionist",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29234,
+              "completion_key": "give=I:29238;receive=E:2500,I:29239;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29234-4a618d504eb0",
+      "title": "Starter equipment from Drinnan",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a shabby alligator skin jerkin, 2 x a light blue scarf, 1 x an amber-colored rod, 1 x a quill, 1 x a spellbook, 1 x a pair of tight black slippers.",
+      "contracts": [
+        {
+          "giver_vnum": 29234,
+          "completion_key": "give=I:29319;receive=I:706,I:731,I:731,I:735,I:1114,I:1115,I:1131;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "The Ailvio newcomer kit includes a letter of introduction. It can be spent on one teacher's equipment exchange. A supplied item is also accepted.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Drinnan, the halfling illusionist",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29234,
+              "completion_key": "give=I:29319;receive=I:706,I:731,I:731,I:735,I:1114,I:1115,I:1131;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29235-07f520288dfd",
+      "title": "Bring Llerrad proof from the bandit camp",
+      "category": "request",
+      "summary": "Bring 1 x a bleeding ear, 1 x a recently severed scalp, 1 x a grubby toe. Reward: 2,500 experience, 1 x the bow of the ranger, 3 x a handmade ranger arrow, 1 x a quiver.",
+      "contracts": [
+        {
+          "giver_vnum": 29235,
+          "completion_key": "give=I:29262,I:29263,I:29264;receive=E:2500,I:29273,I:29311,I:29311,I:29311,I:29312;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a bleeding ear",
+          "kind": "carried_item",
+          "hint": "One of the captors in the bandit camp carries the ear. A supplied item is also accepted.",
+          "item_vnums": [
+            29262
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a recently severed scalp",
+          "kind": "carried_item",
+          "hint": "One of the captors in the bandit camp carries the scalp. A supplied item is also accepted.",
+          "item_vnums": [
+            29263
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a grubby toe",
+          "kind": "carried_item",
+          "hint": "One of the captors in the bandit camp carries the toe. A supplied item is also accepted.",
+          "item_vnums": [
+            29264
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Llerrad, the centaur ranger",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29235,
+              "completion_key": "give=I:29262,I:29263,I:29264;receive=E:2500,I:29273,I:29311,I:29311,I:29311,I:29312;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29235-c95e695ebe0a",
+      "title": "Starter equipment from Llerrad",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a pair of studded leather sleeves, 1 x a pair of studded leather leggings, 1 x a pair of studded leather boots, 1 x some thick leather gloves, 2 x a thick spiked leather bracer, 1 x a bronze skull cap, 1 x a suit of spiked leather armor, 1 x a thick short sword, 1 x a quill, 1 x a spellbook, 1 x a small quiver, 2 x a thin arrow, 1 x a reed longbow.",
+      "contracts": [
+        {
+          "giver_vnum": 29235,
+          "completion_key": "give=I:29319;receive=I:1101,I:1102,I:1103,I:1104,I:1105,I:1105,I:1106,I:1107,I:1113,I:1114,I:1115,I:1116,I:1117,I:1117,I:1118;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "The Ailvio newcomer kit includes a letter of introduction. It can be spent on one teacher's equipment exchange. A supplied item is also accepted.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Llerrad, the centaur ranger",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29235,
+              "completion_key": "give=I:29319;receive=I:1101,I:1102,I:1103,I:1104,I:1105,I:1105,I:1106,I:1107,I:1113,I:1114,I:1115,I:1116,I:1117,I:1117,I:1118;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29236-b68152c4d345",
+      "title": "A seal of charity for Creyset",
+      "category": "request",
+      "summary": "Deliver the Charity Seal to Creyset for 2,500 experience and his reward. Helping the hungry family is a known route to the seal.",
+      "contracts": [
+        {
+          "giver_vnum": 29236,
+          "completion_key": "give=I:29223;receive=E:2500,I:29224;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "feed-family",
+          "text": "Help the hungry family obtain food",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Give any two fish to the tired father to receive the Charity Seal. A supplied seal is also accepted by Creyset.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:293;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:294;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:295;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:318;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:319;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:330;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:332;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:333;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:294;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:295;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:318;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:319;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:330;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:332;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:333;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:295;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:318;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:319;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:330;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:332;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:333;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:318;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:319;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:330;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:332;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:333;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:319;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:330;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:332;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:333;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:330;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:332;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:333;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:332;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:333;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:333,I:333;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:333,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:333,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:333,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:333,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:334,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:334,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:334,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:334,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:335,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:335,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:335,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:355,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:355,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:356,I:356;receive=I:29223;disappear=1"
+            }
+          ]
+        },
+        {
+          "id": "item-1",
+          "text": "Carry 1 x the Charity Seal",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29223
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Creyset, the minotaur shaman",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29236,
+              "completion_key": "give=I:29223;receive=E:2500,I:29224;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29236-a5b5a1890296",
+      "title": "Starter equipment from Creyset",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a small pinewood raven totem, 1 x a small limestone totem, 1 x a small ivory totem, 1 x a large stone warhammer, 1 x a smelly fur hat, 1 x a suit of smelly animal furs, 1 x a pair of fur boots.",
+      "contracts": [
+        {
+          "giver_vnum": 29236,
+          "completion_key": "give=I:29319;receive=I:105,I:106,I:107,I:1127,I:1144,I:1145,I:1146;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "The Ailvio newcomer kit includes a letter of introduction. It can be spent on one teacher's equipment exchange. A supplied item is also accepted.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Creyset, the minotaur shaman",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29236,
+              "completion_key": "give=I:29319;receive=I:105,I:106,I:107,I:1127,I:1144,I:1145,I:1146;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29237-fdd9fe063a15",
+      "title": "Gather Lapney's woodland offerings",
+      "category": "request",
+      "summary": "Bring 1 x an acorn, 1 x a broken tree branch, 1 x a red feather. Reward: 2,500 experience, 1 x a gnarly walking stick.",
+      "contracts": [
+        {
+          "giver_vnum": 29237,
+          "completion_key": "give=I:29282,I:29283,I:29284;receive=E:2500,I:29286;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x an acorn",
+          "kind": "carried_item",
+          "hint": "Look for an acorn before the bear cave. A supplied item is also accepted.",
+          "item_vnums": [
+            29282
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a broken tree branch",
+          "kind": "carried_item",
+          "hint": "Branches lie around the edge of the dark forest. A supplied item is also accepted.",
+          "item_vnums": [
+            29283
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a red feather",
+          "kind": "carried_item",
+          "hint": "Look for a red feather at the centaur campsite. A supplied item is also accepted.",
+          "item_vnums": [
+            29284
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Lapney, the centaur druid",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29237,
+              "completion_key": "give=I:29282,I:29283,I:29284;receive=E:2500,I:29286;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29237-958531668fce",
+      "title": "Starter equipment from Lapney",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a pair of bark sleeves, 1 x a pair of bark leggings, 1 x a pair of bark lined boots, 1 x a bark and leaf cap, 1 x a suit of bark coated armor, 1 x a hardwood cudgel.",
+      "contracts": [
+        {
+          "giver_vnum": 29237,
+          "completion_key": "give=I:29319;receive=I:1135,I:1136,I:1137,I:1138,I:1139,I:1140;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "The Ailvio newcomer kit includes a letter of introduction. It can be spent on one teacher's equipment exchange. A supplied item is also accepted.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Lapney, the centaur druid",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29237,
+              "completion_key": "give=I:29319;receive=I:1135,I:1136,I:1137,I:1138,I:1139,I:1140;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29238-c2cf98d3f50e",
+      "title": "Report the child's recovery to Roshenbly",
+      "category": "request",
+      "summary": "Deliver the grandmother's note to Roshenbly for 2,500 experience and an emblem of healing. The note follows Red's medicine and the grandmother's thanks; those exchanges remain optional preparation for this delivery.",
+      "contracts": [
+        {
+          "giver_vnum": 29238,
+          "completion_key": "give=I:29287;receive=E:2500,I:29302;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "mix-medicine",
+          "text": "Obtain Red's medicine for the child",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Red needs a dragonfly wing, the hidden bullfrog eyes, and a vine stalk. Supplied medicine is also accepted.",
+          "contracts": [
+            {
+              "giver_vnum": 29233,
+              "completion_key": "give=I:29271,I:29272,I:29333;receive=I:29255;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "help-grandmother",
+          "text": "Give the medicine to the grandmother",
+          "kind": "completion",
+          "optional": true,
+          "hint": "The grandmother gives you a note describing the child's recovery. A supplied note still satisfies Roshenbly's request.",
+          "contracts": [
+            {
+              "giver_vnum": 29269,
+              "completion_key": "give=I:29255;receive=I:29287;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a note",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29287
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Roshenbly, the gnomish cleric",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29238,
+              "completion_key": "give=I:29287;receive=E:2500,I:29302;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29238-8ea47992a50f",
+      "title": "Starter equipment from Roshenbly",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a pair of thin cloth sleeves, 1 x a pair of thin cloth pants, 1 x a pair of wormskin boots, 1 x some holy beads, 1 x a holy priest cap, 1 x a thin priest gown, 1 x a large stone warhammer.",
+      "contracts": [
+        {
+          "giver_vnum": 29238,
+          "completion_key": "give=I:29319;receive=I:1119,I:1120,I:1121,I:1122,I:1124,I:1126,I:1127;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "The Ailvio newcomer kit includes a letter of introduction. It can be spent on one teacher's equipment exchange. A supplied item is also accepted.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Roshenbly, the gnomish cleric",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29238,
+              "completion_key": "give=I:29319;receive=I:1119,I:1120,I:1121,I:1122,I:1124,I:1126,I:1127;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29239-ae3e13cfc529",
+      "title": "Nalk's trial against the xorn",
+      "category": "request",
+      "summary": "Bring 1 x a piece of stoned skin. Reward: 2,500 experience, 1 x a warrior's sword of strength.",
+      "contracts": [
+        {
+          "giver_vnum": 29239,
+          "completion_key": "give=I:29267;receive=E:2500,I:29270;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a piece of stoned skin",
+          "kind": "carried_item",
+          "hint": "The xorn behind the warrior guild's eastern door carries this proof. A supplied item is also accepted.",
+          "item_vnums": [
+            29267
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Nalk, the thri-kreen warrior",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29239,
+              "completion_key": "give=I:29267;receive=E:2500,I:29270;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29239-36e835443fe6",
+      "title": "Starter equipment from Nalk",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a pair of studded leather sleeves, 1 x a pair of studded leather leggings, 1 x a pair of studded leather boots, 1 x some thick leather gloves, 2 x a thick spiked leather bracer, 1 x a bronze skull cap, 1 x a suit of spiked leather armor, 1 x a long steel sword, 1 x a small round wooden shield.",
+      "contracts": [
+        {
+          "giver_vnum": 29239,
+          "completion_key": "give=I:29319;receive=I:1101,I:1102,I:1103,I:1104,I:1105,I:1105,I:1106,I:1107,I:1108,I:1109;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "The Ailvio newcomer kit includes a letter of introduction. It can be spent on one teacher's equipment exchange. A supplied item is also accepted.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Nalk, the thri-kreen warrior",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29239,
+              "completion_key": "give=I:29319;receive=I:1101,I:1102,I:1103,I:1104,I:1105,I:1105,I:1106,I:1107,I:1108,I:1109;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29240-e63d8a301b35",
+      "title": "Bring Agare proof from the captors",
+      "category": "request",
+      "summary": "Bring 1 x a bleeding ear, 1 x a recently severed scalp, 1 x a grubby toe. Reward: 2,500 experience, 1 x the two hands of justice, 1 x a beacon of courage.",
+      "contracts": [
+        {
+          "giver_vnum": 29240,
+          "completion_key": "give=I:29262,I:29263,I:29264;receive=E:2500,I:29265,I:29266;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a bleeding ear",
+          "kind": "carried_item",
+          "hint": "One of the captors in the bandit camp carries the ear. A supplied item is also accepted.",
+          "item_vnums": [
+            29262
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a recently severed scalp",
+          "kind": "carried_item",
+          "hint": "One of the captors in the bandit camp carries the scalp. A supplied item is also accepted.",
+          "item_vnums": [
+            29263
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a grubby toe",
+          "kind": "carried_item",
+          "hint": "One of the captors in the bandit camp carries the toe. A supplied item is also accepted.",
+          "item_vnums": [
+            29264
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Agare, the half-elf paladin",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29240,
+              "completion_key": "give=I:29262,I:29263,I:29264;receive=E:2500,I:29265,I:29266;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29240-395f8dcac62f",
+      "title": "Starter equipment from Agare",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a pair of studded leather sleeves, 1 x a pair of studded leather leggings, 1 x a pair of studded leather boots, 1 x a suit of spiked leather armor, 1 x a large two-handed sword.",
+      "contracts": [
+        {
+          "giver_vnum": 29240,
+          "completion_key": "give=I:29319;receive=I:1101,I:1102,I:1103,I:1107,I:1110;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "The Ailvio newcomer kit includes a letter of introduction. It can be spent on one teacher's equipment exchange. A supplied item is also accepted.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Agare, the half-elf paladin",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29240,
+              "completion_key": "give=I:29319;receive=I:1101,I:1102,I:1103,I:1107,I:1110;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29257-6c4e54c1a3f9",
+      "title": "Kord's bandit bounty",
+      "category": "request",
+      "summary": "Bring 1 x a bleeding ear, 1 x a recently severed scalp, 1 x a grubby toe. Reward: 3,000 copper, 2,500 experience, 1 x dagger of the bounty hunter.",
+      "contracts": [
+        {
+          "giver_vnum": 29257,
+          "completion_key": "give=I:29262,I:29263,I:29264;receive=C:3000,E:2500,I:29237;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a bleeding ear",
+          "kind": "carried_item",
+          "hint": "One of the captors in the bandit camp carries the ear. A supplied item is also accepted.",
+          "item_vnums": [
+            29262
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a recently severed scalp",
+          "kind": "carried_item",
+          "hint": "One of the captors in the bandit camp carries the scalp. A supplied item is also accepted.",
+          "item_vnums": [
+            29263
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a grubby toe",
+          "kind": "carried_item",
+          "hint": "One of the captors in the bandit camp carries the toe. A supplied item is also accepted.",
+          "item_vnums": [
+            29264
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Kord, the barbarian mercenary",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29257,
+              "completion_key": "give=I:29262,I:29263,I:29264;receive=C:3000,E:2500,I:29237;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29257-b632f5b9c160",
+      "title": "Starter equipment from Kord",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a pair of studded leather sleeves, 1 x a pair of studded leather leggings, 1 x a pair of studded leather boots, 1 x some thick leather gloves, 1 x a bronze skull cap, 1 x a suit of spiked leather armor, 1 x a long steel sword, 1 x a thin steel dagger.",
+      "contracts": [
+        {
+          "giver_vnum": 29257,
+          "completion_key": "give=I:29319;receive=I:1101,I:1102,I:1103,I:1104,I:1106,I:1107,I:1108,I:1112;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "The Ailvio newcomer kit includes a letter of introduction. It can be spent on one teacher's equipment exchange. A supplied item is also accepted.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Kord, the barbarian mercenary",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29257,
+              "completion_key": "give=I:29319;receive=I:1101,I:1102,I:1103,I:1104,I:1106,I:1107,I:1108,I:1112;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29258-522b3c801186",
+      "title": "Recover Quek's broken amulet",
+      "category": "request",
+      "summary": "Bring 1 x a broken half of an amulet. Reward: 2,500 experience, 1 x the dagger of thieves.",
+      "contracts": [
+        {
+          "giver_vnum": 29258,
+          "completion_key": "give=I:29294;receive=E:2500,I:29295;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a broken half of an amulet",
+          "kind": "carried_item",
+          "hint": "Explore beneath the bear den. Search for the opening under the bones; tight passages can require reclining. A supplied item is also accepted.",
+          "item_vnums": [
+            29294
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Quek, the halfling Rogue",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29258,
+              "completion_key": "give=I:29294;receive=E:2500,I:29295;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29258-cca6c848c3c4",
+      "title": "Starter equipment from Quek",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 2 x a set of lockpicks, 1 x a thin steel dagger, 1 x a pair of tight black sleeves, 1 x a pair of tight black pants, 1 x a pair of tight black gloves, 1 x a pair of tight black slippers, 1 x a black leather mask.",
+      "contracts": [
+        {
+          "giver_vnum": 29258,
+          "completion_key": "give=I:29319;receive=I:412,I:412,I:1112,I:1128,I:1129,I:1130,I:1131,I:1132;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "The Ailvio newcomer kit includes a letter of introduction. It can be spent on one teacher's equipment exchange. A supplied item is also accepted.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Quek, the halfling Rogue",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29258,
+              "completion_key": "give=I:29319;receive=I:412,I:412,I:1112,I:1128,I:1129,I:1130,I:1131,I:1132;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29259-446cbbbc0c79",
+      "title": "Bring Risp proof from the bandit camp",
+      "category": "request",
+      "summary": "Bring 1 x a bleeding ear, 1 x a recently severed scalp, 1 x a grubby toe. Reward: 2,500 experience, 1 x a painful dagger.",
+      "contracts": [
+        {
+          "giver_vnum": 29259,
+          "completion_key": "give=I:29262,I:29263,I:29264;receive=E:2500,I:29300;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a bleeding ear",
+          "kind": "carried_item",
+          "hint": "One of the captors in the bandit camp carries the ear. A supplied item is also accepted.",
+          "item_vnums": [
+            29262
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a recently severed scalp",
+          "kind": "carried_item",
+          "hint": "One of the captors in the bandit camp carries the scalp. A supplied item is also accepted.",
+          "item_vnums": [
+            29263
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a grubby toe",
+          "kind": "carried_item",
+          "hint": "One of the captors in the bandit camp carries the toe. A supplied item is also accepted.",
+          "item_vnums": [
+            29264
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Risp, the dwarf assassin",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29259,
+              "completion_key": "give=I:29262,I:29263,I:29264;receive=E:2500,I:29300;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29259-9efdc91e2b60",
+      "title": "Starter equipment from Risp",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 2 x a thin steel dagger, 1 x a pair of tight black sleeves, 1 x a pair of tight black pants, 1 x a pair of tight black gloves, 1 x a pair of tight black slippers.",
+      "contracts": [
+        {
+          "giver_vnum": 29259,
+          "completion_key": "give=I:29319;receive=I:1112,I:1112,I:1128,I:1129,I:1130,I:1131;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "The Ailvio newcomer kit includes a letter of introduction. It can be spent on one teacher's equipment exchange. A supplied item is also accepted.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Risp, the dwarf assassin",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29259,
+              "completion_key": "give=I:29319;receive=I:1112,I:1112,I:1128,I:1129,I:1130,I:1131;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29260-5f675d3c1def",
+      "title": "Perr's black wolf materials",
+      "category": "request",
+      "summary": "Bring 1 x a black wolf paw, 1 x a spotted wolfskin, 1 x a sharp wolf tooth. Reward: 2,500 experience, 1 x some apprentice monk robes.",
+      "contracts": [
+        {
+          "giver_vnum": 29260,
+          "completion_key": "give=I:29274,I:29275,I:29276;receive=E:2500,I:29277;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a black wolf paw",
+          "kind": "carried_item",
+          "hint": "The black wolf in the northern woods carries the paw. A supplied item is also accepted.",
+          "item_vnums": [
+            29274
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a spotted wolfskin",
+          "kind": "carried_item",
+          "hint": "The black wolf in the northern woods carries the skin. A supplied item is also accepted.",
+          "item_vnums": [
+            29275
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a sharp wolf tooth",
+          "kind": "carried_item",
+          "hint": "The black wolf in the northern woods carries the tooth. A supplied item is also accepted.",
+          "item_vnums": [
+            29276
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Perr, the Githzerai monk",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29260,
+              "completion_key": "give=I:29274,I:29275,I:29276;receive=E:2500,I:29277;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29260-93ac92a18cd8",
+      "title": "Starter equipment from Perr",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a set of loose fitting robes, 1 x a set of loose fitting leggings, 1 x a set of loose fitting sleeves, 1 x some thin leather sandals, 1 x a whisper-thin helm.",
+      "contracts": [
+        {
+          "giver_vnum": 29260,
+          "completion_key": "give=I:29319;receive=I:1147,I:1148,I:1149,I:1150,I:1151;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "The Ailvio newcomer kit includes a letter of introduction. It can be spent on one teacher's equipment exchange. A supplied item is also accepted.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Perr, the Githzerai monk",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29260,
+              "completion_key": "give=I:29319;receive=I:1147,I:1148,I:1149,I:1150,I:1151;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29261-dd855811a340",
+      "title": "Restore Silva's stolen voice",
+      "category": "request",
+      "summary": "Bring 1 x a small magical jar. Reward: 2,500 experience, 1 x a delicate bard's flute.",
+      "contracts": [
+        {
+          "giver_vnum": 29261,
+          "completion_key": "give=I:29291;receive=E:2500,I:29292;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-29291",
+          "text": "Optional exchange for a small magical jar",
+          "kind": "completion",
+          "hint": "This is one known way to obtain the requested material. An item obtained another way can still satisfy the delivery.",
+          "contracts": [
+            {
+              "giver_vnum": 29218,
+              "completion_key": "give=I:88502;receive=I:29291;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a small magical jar",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29291
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Foet, the grey elf bard",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29261,
+              "completion_key": "give=I:29291;receive=E:2500,I:29292;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29261-00b4555d2dbb",
+      "title": "Starter equipment from Foet",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a thin steel dagger, 1 x a pair of tight black sleeves, 2 x a pair of tight black pants, 1 x a pair of tight black gloves, 1 x a pair of tight black slippers, 1 x a plain silver flute.",
+      "contracts": [
+        {
+          "giver_vnum": 29261,
+          "completion_key": "give=I:29319;receive=I:1112,I:1128,I:1129,I:1129,I:1130,I:1131,I:1134;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "The Ailvio newcomer kit includes a letter of introduction. It can be spent on one teacher's equipment exchange. A supplied item is also accepted.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Foet, the grey elf bard",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29261,
+              "completion_key": "give=I:29319;receive=I:1112,I:1128,I:1129,I:1129,I:1130,I:1131,I:1134;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29262-25eb5e965699",
+      "title": "Recover Osule's meteor fragment",
+      "category": "request",
+      "summary": "Bring 1 x a meteor fragment. Reward: 2,500 experience, 1 x an incomplete suit of chainmail of the elements.",
+      "contracts": [
+        {
+          "giver_vnum": 29262,
+          "completion_key": "give=I:29330;receive=E:2500,I:29331;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a meteor fragment",
+          "kind": "carried_item",
+          "hint": "Search among the trees in the southern forest for the buried fragment. A supplied item is also accepted.",
+          "item_vnums": [
+            29330
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Osule, the human ethermancer",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29262,
+              "completion_key": "give=I:29330;receive=E:2500,I:29331;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29263-59668520256b",
+      "title": "Return Esera's missing amulet half",
+      "category": "request",
+      "summary": "Bring 1 x a broken half of an amulet. Reward: 2,500 experience, 1 x a glowing black tome with a bone splint spine.",
+      "contracts": [
+        {
+          "giver_vnum": 29263,
+          "completion_key": "give=I:29294;receive=E:2500,I:29206;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a broken half of an amulet",
+          "kind": "carried_item",
+          "hint": "Explore beneath the bear den. Search for the opening under the bones; tight passages can require reclining. A supplied item is also accepted.",
+          "item_vnums": [
+            29294
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Esera, the gnome conjurer",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29263,
+              "completion_key": "give=I:29294;receive=E:2500,I:29206;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29263-4a618d504eb0",
+      "title": "Starter equipment from Esera",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a shabby alligator skin jerkin, 2 x a light blue scarf, 1 x an amber-colored rod, 1 x a quill, 1 x a spellbook, 1 x a pair of tight black slippers.",
+      "contracts": [
+        {
+          "giver_vnum": 29263,
+          "completion_key": "give=I:29319;receive=I:706,I:731,I:731,I:735,I:1114,I:1115,I:1131;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "The Ailvio newcomer kit includes a letter of introduction. It can be spent on one teacher's equipment exchange. A supplied item is also accepted.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Esera, the gnome conjurer",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29263,
+              "completion_key": "give=I:29319;receive=I:706,I:731,I:731,I:735,I:1114,I:1115,I:1131;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29264-0eb2ff00c7db",
+      "title": "Bring Taiz the acolyte's bones",
+      "category": "request",
+      "summary": "Bring 1 x a pile of bones of an acolyte. Reward: 2,500 experience, 1 x death skull.",
+      "contracts": [
+        {
+          "giver_vnum": 29264,
+          "completion_key": "give=I:29296;receive=E:2500,I:29297;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a pile of bones of an acolyte",
+          "kind": "carried_item",
+          "hint": "An acolyte in the church carries these bones. Their delivery does not establish who killed the acolyte. A supplied item is also accepted.",
+          "item_vnums": [
+            29296
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Taiz, the half-elf theurgist",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29264,
+              "completion_key": "give=I:29296;receive=E:2500,I:29297;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29264-fce0bf8aae1b",
+      "title": "Starter equipment from Taiz",
+      "category": "service",
+      "summary": "Bring 1 x note letter. Reward: 1 x a thin steel dagger, 1 x a quill, 1 x a spellbook, 1 x an evil looking helm, 1 x a dark black robe, 1 x a pair of dark black boots.",
+      "contracts": [
+        {
+          "giver_vnum": 29264,
+          "completion_key": "give=I:29319;receive=I:1112,I:1114,I:1115,I:1141,I:1142,I:1143;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x note letter",
+          "kind": "carried_item",
+          "hint": "The Ailvio newcomer kit includes a letter of introduction. It can be spent on one teacher's equipment exchange. A supplied item is also accepted.",
+          "item_vnums": [
+            29319
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with Taiz, the half-elf theurgist",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29264,
+              "completion_key": "give=I:29319;receive=I:1112,I:1114,I:1115,I:1141,I:1142,I:1143;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "feed-the-ailing-family",
+      "title": "Feed a hungry family",
+      "category": "story",
+      "summary": "Bring any two fish to the tired father. Two of the same kind or a mixed pair both work. He gives you the Charity Seal, which Creyset accepts as proof of aid.",
+      "contracts": [
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:293;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:294;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:295;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:318;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:319;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:330;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:332;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:333;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:334;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:335;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:355;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:293,I:356;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:294;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:295;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:318;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:319;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:330;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:332;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:333;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:334;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:335;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:355;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:294,I:356;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:295;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:318;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:319;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:330;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:332;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:333;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:334;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:335;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:355;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:295,I:356;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:318;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:319;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:330;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:332;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:333;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:334;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:335;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:355;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:318,I:356;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:319,I:319;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:319,I:330;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:319,I:332;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:319,I:333;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:319,I:334;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:319,I:335;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:319,I:355;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:319,I:356;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:330,I:330;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:330,I:332;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:330,I:333;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:330,I:334;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:330,I:335;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:330,I:355;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:330,I:356;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:332,I:332;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:332,I:333;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:332,I:334;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:332,I:335;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:332,I:355;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:332,I:356;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:333,I:333;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:333,I:334;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:333,I:335;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:333,I:355;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:333,I:356;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:334,I:334;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:334,I:335;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:334,I:355;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:334,I:356;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:335,I:335;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:335,I:355;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:335,I:356;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:355,I:355;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:355,I:356;receive=I:29223;disappear=1"
+        },
+        {
+          "giver_vnum": 29266,
+          "completion_key": "give=I:356,I:356;receive=I:29223;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "fish",
+          "text": "Carry two fish for the family",
+          "kind": "carried_item",
+          "hint": "Brodi explains fishing and sells a pole. Fish in water with a pole in your inventory. Fish supplied by someone else also satisfy this delivery.",
+          "item_vnums": [
+            293,
+            294,
+            295,
+            318,
+            319,
+            330,
+            332,
+            333,
+            334,
+            335,
+            355,
+            356
+          ],
+          "count": 2
+        },
+        {
+          "id": "turn-in",
+          "text": "Give two fish to the tired father",
+          "kind": "completion",
+          "hint": "Any pair of the listed fish is accepted. The family receives food and you receive the Charity Seal.",
+          "contracts": [
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:293;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:294;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:295;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:318;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:319;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:330;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:332;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:333;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:293,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:294;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:295;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:318;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:319;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:330;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:332;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:333;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:294,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:295;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:318;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:319;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:330;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:332;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:333;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:295,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:318;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:319;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:330;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:332;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:333;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:318,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:319;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:330;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:332;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:333;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:319,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:330;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:332;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:333;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:330,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:332;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:333;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:332,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:333,I:333;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:333,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:333,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:333,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:333,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:334,I:334;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:334,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:334,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:334,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:335,I:335;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:335,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:335,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:355,I:355;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:355,I:356;receive=I:29223;disappear=1"
+            },
+            {
+              "giver_vnum": 29266,
+              "completion_key": "give=I:356,I:356;receive=I:29223;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-29269-4797fc378179",
+      "title": "Bring medicine to the grandmother",
+      "category": "request",
+      "summary": "Bring 1 x a bubbling vial of liquid. Reward: 1 x a note.",
+      "contracts": [
+        {
+          "giver_vnum": 29269,
+          "completion_key": "give=I:29255;receive=I:29287;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-29255",
+          "text": "Optional exchange for a bubbling vial of liquid",
+          "kind": "completion",
+          "hint": "This is one known way to obtain the requested material. An item obtained another way can still satisfy the delivery.",
+          "contracts": [
+            {
+              "giver_vnum": 29233,
+              "completion_key": "give=I:29271,I:29272,I:29333;receive=I:29255;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a bubbling vial of liquid",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            29255
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exchange with a frail grandmother",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 29269,
+              "completion_key": "give=I:29255;receive=I:29287;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

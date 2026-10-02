@@ -1,0 +1,162 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "ixarkon",
+  "coverage": "complete",
+  "introduction": "Explore Ixarkon and meet its people to uncover local requests.",
+  "orientation": [
+    "Start with look and exits to learn your surroundings.",
+    "Use help home to learn about hometowns and help quest for quest commands."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 96419,
+      "name": "the sage Ixaruuk",
+      "keyword": "sage",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "arcane",
+        "components"
+      ]
+    },
+    {
+      "mob_vnum": 96423,
+      "name": "an elder illithid",
+      "keyword": "elder",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "pleasantries",
+        "crisis",
+        "appease",
+        "talisman"
+      ]
+    },
+    {
+      "mob_vnum": 96436,
+      "name": "a drow banker",
+      "keyword": "drow",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "business",
+        "menzoberranzan",
+        "drow",
+        "slaves",
+        "amulet"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "request-96419-68463578ae17",
+      "title": "Deliver 1 x a large mushroom spore",
+      "category": "request",
+      "summary": "Bring 1 x a large mushroom spore. Reward: 25,000 copper, 50,000 experience.",
+      "contracts": [
+        {
+          "giver_vnum": 96419,
+          "completion_key": "give=I:96431;receive=C:25000,E:50000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a large mushroom spore",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            96431
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 96419,
+              "completion_key": "give=I:96431;receive=C:25000,E:50000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-96423-9ef90d0b74d4",
+      "title": "Deliver 1 x a small spider amulet of Lloth",
+      "category": "request",
+      "summary": "Bring 1 x a small spider amulet of Lloth. Reward: 5,500 experience, 1 x a bone-white skullcap.",
+      "contracts": [
+        {
+          "giver_vnum": 96423,
+          "completion_key": "give=I:96434;receive=E:5500,I:96435;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a small spider amulet of Lloth",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            96434
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 96423,
+              "completion_key": "give=I:96434;receive=E:5500,I:96435;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-96436-719ce450900e",
+      "title": "Deliver 1,000,000 copper, 1 x a red skullcap",
+      "category": "request",
+      "summary": "Bring 1,000,000 copper, 1 x a red skullcap. Reward: 50,000 experience, 1 x a small spider amulet of Lloth.",
+      "contracts": [
+        {
+          "giver_vnum": 96436,
+          "completion_key": "give=C:1000000,I:96414;receive=E:50000,I:96434;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a red skullcap",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            96414
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 96436,
+              "completion_key": "give=C:1000000,I:96414;receive=E:50000,I:96434;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

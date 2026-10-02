@@ -1,0 +1,335 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "woodseer",
+  "coverage": "complete",
+  "introduction": "Explore Woodseer and meet its people to uncover local requests.",
+  "orientation": [
+    "Start with look and exits to learn your surroundings.",
+    "Use help home to learn about hometowns and help quest for quest commands."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 16530,
+      "name": "a half-elf bard",
+      "keyword": "elf",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "instrument",
+        "park"
+      ]
+    },
+    {
+      "mob_vnum": 16599,
+      "name": "a halfling woman",
+      "keyword": "farmer",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "searching",
+        "honey"
+      ]
+    },
+    {
+      "mob_vnum": 16614,
+      "name": "the raving artist",
+      "keyword": "artist",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "pigment",
+        "green"
+      ]
+    },
+    {
+      "mob_vnum": 16625,
+      "name": "a woodworker",
+      "keyword": "woodworker",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "beeswax"
+      ]
+    },
+    {
+      "mob_vnum": 16632,
+      "name": "a frowning mage",
+      "keyword": "frowning",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "potion"
+      ]
+    },
+    {
+      "mob_vnum": 16637,
+      "name": "an unkempt wizard",
+      "keyword": "wizard",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "search",
+        "feather"
+      ]
+    },
+    {
+      "mob_vnum": 16688,
+      "name": "the maitre d'",
+      "keyword": "maitre",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "turtle"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "request-16530-319885a24a7b",
+      "title": "Deliver 1 x a broken mandolin",
+      "category": "request",
+      "summary": "Bring 1 x a broken mandolin. Reward: 1,000 copper.",
+      "contracts": [
+        {
+          "giver_vnum": 16530,
+          "completion_key": "give=I:16526;receive=C:1000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a broken mandolin",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            16526
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 16530,
+              "completion_key": "give=I:16526;receive=C:1000;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-16599-5ebb15ae5a54",
+      "title": "Deliver 1 x some honey",
+      "category": "request",
+      "summary": "Bring 1 x some honey. Reward: 500 copper.",
+      "contracts": [
+        {
+          "giver_vnum": 16599,
+          "completion_key": "give=I:16545;receive=C:500;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x some honey",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            16545
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 16599,
+              "completion_key": "give=I:16545;receive=C:500;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-16614-89a5ffaadffe",
+      "title": "Deliver 1 x a tube of green pigment",
+      "category": "request",
+      "summary": "Bring 1 x a tube of green pigment. Reward: 500 copper.",
+      "contracts": [
+        {
+          "giver_vnum": 16614,
+          "completion_key": "give=I:16561;receive=C:500;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a tube of green pigment",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            16561
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 16614,
+              "completion_key": "give=I:16561;receive=C:500;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-16625-06a52409e119",
+      "title": "Deliver 1 x some beeswax",
+      "category": "request",
+      "summary": "Bring 1 x some beeswax. Reward: 1 x a wooden ring.",
+      "contracts": [
+        {
+          "giver_vnum": 16625,
+          "completion_key": "give=I:16546;receive=I:16576;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x some beeswax",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            16546
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 16625,
+              "completion_key": "give=I:16546;receive=I:16576;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-16632-f03bbd8043ee",
+      "title": "Deliver 1 x an oblong egg",
+      "category": "request",
+      "summary": "Bring 1 x an oblong egg. Reward: 1 x a plain flask.",
+      "contracts": [
+        {
+          "giver_vnum": 16632,
+          "completion_key": "give=I:16547;receive=I:16579;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x an oblong egg",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            16547
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 16632,
+              "completion_key": "give=I:16547;receive=I:16579;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-16637-cf5f291bd407",
+      "title": "Deliver 1 x a hummingbird feather",
+      "category": "request",
+      "summary": "Bring 1 x a hummingbird feather. Reward: 500 copper.",
+      "contracts": [
+        {
+          "giver_vnum": 16637,
+          "completion_key": "give=I:16544;receive=C:500;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a hummingbird feather",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            16544
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 16637,
+              "completion_key": "give=I:16544;receive=C:500;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-16688-dcf40d71c0ed",
+      "title": "Deliver 1 x some raw turtle meat",
+      "category": "request",
+      "summary": "Bring 1 x some raw turtle meat. Reward: 500 copper, 1 x a bowl of turtle soup.",
+      "contracts": [
+        {
+          "giver_vnum": 16688,
+          "completion_key": "give=I:16543;receive=C:500,I:16610;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x some raw turtle meat",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            16543
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 16688,
+              "completion_key": "give=I:16543;receive=C:500,I:16610;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

@@ -1,0 +1,426 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "ashrumite",
+  "coverage": "complete",
+  "introduction": "Explore Ashrumite Village and meet its people to uncover local requests.",
+  "orientation": [
+    "Start with look and exits to learn your surroundings.",
+    "Use help home to learn about hometowns and help quest for quest commands."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 66017,
+      "name": "the mage shopkeeper",
+      "keyword": "mage",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "necklace",
+        "platinum",
+        "scrolls"
+      ]
+    },
+    {
+      "mob_vnum": 66021,
+      "name": "the jeweler",
+      "keyword": "jeweler",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "gem",
+        "set",
+        "ring",
+        "necklace",
+        "earring",
+        "cost"
+      ]
+    },
+    {
+      "mob_vnum": 66040,
+      "name": "the silversmith",
+      "keyword": "silversmith",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "nugget",
+        "cost",
+        "necklace"
+      ]
+    },
+    {
+      "mob_vnum": 66041,
+      "name": "the bartender",
+      "keyword": "bartender",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "disc"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "request-66021-5df5a5ca069c",
+      "title": "Deliver 1,000 copper, 1 x an amethyst, 1 x an exotic tigers-eye gem, 1 x a lustrous diamond, 1 x a necklace of fine silver, 1 x a necklace of silver set with gems, 1 x a necklace of silver set with gems",
+      "category": "request",
+      "summary": "Bring 1,000 copper, 1 x an amethyst, 1 x an exotic tigers-eye gem, 1 x a lustrous diamond, 1 x a necklace of fine silver, 1 x a necklace of silver set with gems, 1 x a necklace of silver set with gems. Reward: 1 x a small gold nugget.",
+      "contracts": [
+        {
+          "giver_vnum": 66021,
+          "completion_key": "give=C:1000,I:66044,I:66045,I:66046,I:66047,I:66048,I:66049;receive=I:66050;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x an amethyst",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            66044
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x an exotic tigers-eye gem",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            66045
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x a lustrous diamond",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            66046
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-4",
+          "text": "Carry 1 x a necklace of fine silver",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            66047
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-5",
+          "text": "Carry 1 x a necklace of silver set with gems",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            66048
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-6",
+          "text": "Carry 1 x a necklace of silver set with gems",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            66049
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 66021,
+              "completion_key": "give=C:1000,I:66044,I:66045,I:66046,I:66047,I:66048,I:66049;receive=I:66050;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-66021-ca1d7c51d803",
+      "title": "Deliver 20 copper, 1 x a raw gem",
+      "category": "request",
+      "summary": "Bring 20 copper, 1 x a raw gem. Reward: 1 x an amethyst.",
+      "contracts": [
+        {
+          "giver_vnum": 66021,
+          "completion_key": "give=C:20,I:66039;receive=I:66044;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a raw gem",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            66039
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 66021,
+              "completion_key": "give=C:20,I:66039;receive=I:66044;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-66021-f20d451a46e3",
+      "title": "Deliver 20 copper, 1 x a raw gem",
+      "category": "request",
+      "summary": "Bring 20 copper, 1 x a raw gem. Reward: 1 x an exotic tigers-eye gem.",
+      "contracts": [
+        {
+          "giver_vnum": 66021,
+          "completion_key": "give=C:20,I:66040;receive=I:66045;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a raw gem",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            66040
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 66021,
+              "completion_key": "give=C:20,I:66040;receive=I:66045;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-66021-5f38e7379418",
+      "title": "Deliver 20 copper, 1 x a raw gem",
+      "category": "request",
+      "summary": "Bring 20 copper, 1 x a raw gem. Reward: 1 x a lustrous diamond.",
+      "contracts": [
+        {
+          "giver_vnum": 66021,
+          "completion_key": "give=C:20,I:66041;receive=I:66046;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a raw gem",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            66041
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 66021,
+              "completion_key": "give=C:20,I:66041;receive=I:66046;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-66021-b36b8c42f70a",
+      "title": "Deliver 20 copper, 1 x a beautiful sapphire",
+      "category": "request",
+      "summary": "Bring 20 copper, 1 x a beautiful sapphire. Reward: 1 x a necklace of fine silver.",
+      "contracts": [
+        {
+          "giver_vnum": 66021,
+          "completion_key": "give=C:20,I:66042;receive=I:66047;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a beautiful sapphire",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            66042
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 66021,
+              "completion_key": "give=C:20,I:66042;receive=I:66047;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-66021-a5db6645a824",
+      "title": "Deliver 20 copper, 1 x a brilliant emerald",
+      "category": "request",
+      "summary": "Bring 20 copper, 1 x a brilliant emerald. Reward: 1 x a necklace of silver set with gems.",
+      "contracts": [
+        {
+          "giver_vnum": 66021,
+          "completion_key": "give=C:20,I:66043;receive=I:66048;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a brilliant emerald",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            66043
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 66021,
+              "completion_key": "give=C:20,I:66043;receive=I:66048;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-66040-89ce148efe13",
+      "title": "Deliver 10 copper, 1 x a raw gem",
+      "category": "request",
+      "summary": "Bring 10 copper, 1 x a raw gem. Reward: 1 x a raw gem.",
+      "contracts": [
+        {
+          "giver_vnum": 66040,
+          "completion_key": "give=C:10,I:66032;receive=I:66033;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a raw gem",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            66032
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 66040,
+              "completion_key": "give=C:10,I:66032;receive=I:66033;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-66040-f70b6bdc0505",
+      "title": "Deliver 2,500 copper, 5 x a raw gem",
+      "category": "request",
+      "summary": "Bring 2,500 copper, 5 x a raw gem. Reward: 1 x a necklace of silver set with gems.",
+      "contracts": [
+        {
+          "giver_vnum": 66040,
+          "completion_key": "give=C:2500,I:66033,I:66033,I:66033,I:66033,I:66033;receive=I:66049;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 5 x a raw gem",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            66033
+          ],
+          "count": 5
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 66040,
+              "completion_key": "give=C:2500,I:66033,I:66033,I:66033,I:66033,I:66033;receive=I:66049;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "reason": "Coin-only, informational, or skill exchanges; supporting services rather than item-delivery story achievements.",
+      "contracts": [
+        {
+          "giver_vnum": 66041,
+          "completion_key": "give=C:1000;receive=;disappear=0"
+        }
+      ]
+    },
+    {
+      "reason": "Native exchange references missing item prototypes in the active world sources; integration requires world data repair.",
+      "contracts": [
+        {
+          "giver_vnum": 66017,
+          "completion_key": "give=C:25000,I:4372,I:66050;receive=I:66051;disappear=0"
+        },
+        {
+          "giver_vnum": 66021,
+          "completion_key": "give=C:100,I:66048,I:66064;receive=I:66066;disappear=0"
+        },
+        {
+          "giver_vnum": 66021,
+          "completion_key": "give=C:100,I:66048,I:66065;receive=I:66067;disappear=0"
+        }
+      ]
+    }
+  ]
+}

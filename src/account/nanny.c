@@ -1998,6 +1998,7 @@ void enter_game(P_desc d)
 	 * gameplay session; the legacy menu completes that transition below. */
 	if (STATE(d) == CON_PLAYING)
 	{
+		zone_story_quest_runtime::arrived(ch);
 		(void)telemetry_runtime_game_enter(ch, d);
 		(void)telemetry_runtime_game_context(ch, d);
 	}
@@ -2978,6 +2979,7 @@ void select_main_menu(P_desc d, char *arg)
 		}
 		enter_game(d);
 		STATE(d) = CON_PLAYING;
+		zone_story_quest_runtime::arrived(d->character);
 		(void)telemetry_runtime_game_enter(d->character, d);
 		(void)telemetry_runtime_game_context(d->character, d);
 		d->prompt_mode = !item_creation_grant_blocks_commands(d->character);

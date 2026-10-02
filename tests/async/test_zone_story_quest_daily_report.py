@@ -21,7 +21,7 @@ def main() -> None:
     catalog = json.loads(
         (ROOT / "docs/reference/ZONE_STORY_QUEST_PRODUCTION_CATALOG.json").read_text()
     )
-    definition = catalog["definitions"][0]
+    definition = next(item for item in catalog["definitions"] if item["daily_eligible"])
     observations = []
     for pid in (101, 102):
         observations.append({

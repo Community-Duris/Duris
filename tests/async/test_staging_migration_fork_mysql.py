@@ -140,7 +140,7 @@ def migrate(engine: schema.Engine, manifest_name: str, success: bool = True) -> 
     return result.stdout + result.stderr
 
 
-def history(engine: schema.Engine, limit: int = 53) -> str:
+def history(engine: schema.Engine, limit: int = 54) -> str:
     return engine.sql("SELECT HEX(CONCAT(migration_id,CHAR(0),sequence_number,CHAR(0),"
                       "description,CHAR(0),HEX(apply_checksum),CHAR(0),HEX(verify_checksum),"
                       "CHAR(0),compatibility,CHAR(0),runner_version,CHAR(0),applied_at)) "
@@ -435,7 +435,7 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             migrate(fork, "migration_manifest.staging_0045.json")
             check(after == history(fork), "staging rerun rewrote migration receipts")
             check(fork.sql("SELECT COUNT(*) FROM mud_schema_history;", database=fork.database)
-                  == "53", "staging transition did not append exactly eight receipts")
+                  == "54", "staging transition did not append exactly nine receipts")
 
             print(f"{label}: upgrading immutable master prefix through 0031", flush=True)
             setup(from_master, master, master_bootstrap)
@@ -465,8 +465,8 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             migrate(from_master, "migration_manifest.master_0031.json")
             check(master_after == history(from_master), "master rerun rewrote migration receipts")
             check(from_master.sql("SELECT COUNT(*) FROM mud_schema_history;",
-                                  database=from_master.database) == "53",
-                  "master transition did not append exactly twenty-two receipts")
+                                  database=from_master.database) == "54",
+                  "master transition did not append exactly twenty-three receipts")
             check(payload_before == from_master.sql(payload_query, database=from_master.database),
                   "master rerun changed retained item runtime payloads")
             runtime = json.loads(schema.RUNTIME_MANIFEST.read_text())

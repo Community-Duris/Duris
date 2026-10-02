@@ -1,0 +1,120 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "khildarak",
+  "coverage": "complete",
+  "introduction": "Explore Khildarak Stronghold and meet its people to uncover local requests.",
+  "orientation": [
+    "Start with look and exits to learn your surroundings.",
+    "Use help home to learn about hometowns and help quest for quest commands."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 17059,
+      "name": "the clan elder",
+      "keyword": "elder",
+      "description": "This person offers local conversation. Try these topics to learn more.",
+      "topics": [
+        "khildarak"
+      ]
+    },
+    {
+      "mob_vnum": 17118,
+      "name": "a cook",
+      "keyword": "cook",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "mine",
+        "item"
+      ]
+    },
+    {
+      "mob_vnum": 17248,
+      "name": "a kuo-toa priest",
+      "keyword": "priest",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hello",
+        "bones",
+        "journey",
+        "kraken",
+        "task"
+      ]
+    }
+  ],
+  "stories": [
+    {
+      "id": "request-17118-e5eeeb25247d",
+      "title": "Deliver 1 x a steeders egg sack",
+      "category": "request",
+      "summary": "Bring 1 x a steeders egg sack. Reward: 5,000 copper.",
+      "contracts": [
+        {
+          "giver_vnum": 17118,
+          "completion_key": "give=I:17074;receive=C:5000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a steeders egg sack",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            17074
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 17118,
+              "completion_key": "give=I:17074;receive=C:5000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-17248-effe52f75b66",
+      "title": "Deliver 1 x a piece of kraken tentacle",
+      "category": "request",
+      "summary": "Bring 1 x a piece of kraken tentacle. Reward: 1 x a rib bone.",
+      "contracts": [
+        {
+          "giver_vnum": 17248,
+          "completion_key": "give=I:17022;receive=I:17020;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a piece of kraken tentacle",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            17022
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 17248,
+              "completion_key": "give=I:17022;receive=I:17020;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

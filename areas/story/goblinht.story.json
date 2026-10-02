@@ -1,0 +1,394 @@
+{
+  "schema_version": 2,
+  "revision": 1,
+  "source_area": "goblinht",
+  "coverage": "complete",
+  "introduction": "Explore The Town of Moregeeth and meet its people to uncover local requests.",
+  "orientation": [
+    "Start with look and exits to learn your surroundings.",
+    "Use help home to learn about hometowns and help quest for quest commands."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 70000,
+      "name": "Moreg",
+      "keyword": "moreg",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "dura"
+      ]
+    },
+    {
+      "mob_vnum": 70001,
+      "name": "the ghost of Glub",
+      "keyword": "glub",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "pain"
+      ]
+    },
+    {
+      "mob_vnum": 70022,
+      "name": "Gimbatul",
+      "keyword": "gimbatul",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "spell",
+        "enchanting",
+        "agree"
+      ]
+    },
+    {
+      "mob_vnum": 70023,
+      "name": "Gorblag",
+      "keyword": "gorblag",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 70031,
+      "name": "a goblin slut",
+      "keyword": "slut",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 70060,
+      "name": "Tala",
+      "keyword": "tala",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "dura"
+      ]
+    },
+    {
+      "mob_vnum": 70078,
+      "name": "a shamanic merchant",
+      "keyword": "shaman",
+      "description": "Start with these conversation topics, then follow the requests below.",
+      "topics": [
+        "hi",
+        "material"
+      ]
+    },
+    {
+      "mob_vnum": 70104,
+      "name": "Gorblog",
+      "keyword": "gorblog",
+      "description": "Check this person's requests below and examine them for clues.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "request-70000-cac0cf228598",
+      "title": "Deliver 1 x Dura's severed head",
+      "category": "request",
+      "summary": "Bring 1 x Dura's severed head. Reward: 10,000 copper, 1 x the key to Moregeeth.",
+      "contracts": [
+        {
+          "giver_vnum": 70000,
+          "completion_key": "give=I:70030;receive=C:10000,I:70028;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x Dura's severed head",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            70030
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 70000,
+              "completion_key": "give=I:70030;receive=C:10000,I:70028;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-70001-9d1b3f918a96",
+      "title": "Deliver 1 x a short sword named 'Pig-Sticker'",
+      "category": "request",
+      "summary": "Bring 1 x a short sword named 'Pig-Sticker'. Reward: 1 x a spectral short sword.",
+      "contracts": [
+        {
+          "giver_vnum": 70001,
+          "completion_key": "give=I:70001;receive=I:70002;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a short sword named 'Pig-Sticker'",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            70001
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 70001,
+              "completion_key": "give=I:70001;receive=I:70002;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-70022-009f889c6ed6",
+      "title": "Deliver 10,000 copper, 1 x a sharp obsidian dart",
+      "category": "request",
+      "summary": "Bring 10,000 copper, 1 x a sharp obsidian dart. Reward: 1 x an enchanted obsidian dart.",
+      "contracts": [
+        {
+          "giver_vnum": 70022,
+          "completion_key": "give=C:10000,I:70093;receive=I:70094;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a sharp obsidian dart",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            70093
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 70022,
+              "completion_key": "give=C:10000,I:70093;receive=I:70094;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-70022-365c2ffdeedb",
+      "title": "Deliver 1 x a stone heart, 1 x a ring of water, 1 x the wings of a sylph, 1 x a pendant of fire",
+      "category": "request",
+      "summary": "Bring 1 x a stone heart, 1 x a ring of water, 1 x the wings of a sylph, 1 x a pendant of fire. Reward: 1 x an elemental crown.",
+      "contracts": [
+        {
+          "giver_vnum": 70022,
+          "completion_key": "give=I:70013,I:70014,I:70015,I:70016;receive=I:70017;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a stone heart",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            70013
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-2",
+          "text": "Carry 1 x a ring of water",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            70014
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-3",
+          "text": "Carry 1 x the wings of a sylph",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            70015
+          ],
+          "count": 1
+        },
+        {
+          "id": "item-4",
+          "text": "Carry 1 x a pendant of fire",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            70016
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 70022,
+              "completion_key": "give=I:70013,I:70014,I:70015,I:70016;receive=I:70017;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-70022-05103b66908e",
+      "title": "Deliver 1 x a pouch of spell components",
+      "category": "request",
+      "summary": "Bring 1 x a pouch of spell components. Reward: 1 x a magical key.",
+      "contracts": [
+        {
+          "giver_vnum": 70022,
+          "completion_key": "give=I:70021;receive=I:70022;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a pouch of spell components",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            70021
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 70022,
+              "completion_key": "give=I:70021;receive=I:70022;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-70060-66ce3d7172b6",
+      "title": "Deliver 1 x a short letter",
+      "category": "request",
+      "summary": "Bring 1 x a short letter. Reward: 1 x a patch of zombie flesh.",
+      "contracts": [
+        {
+          "giver_vnum": 70060,
+          "completion_key": "give=I:70065;receive=I:70066;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 1 x a short letter",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            70065
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 70060,
+              "completion_key": "give=I:70065;receive=I:70066;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "request-70078-1fbc546637b6",
+      "title": "Deliver 500 copper, 5 x a bat skull",
+      "category": "request",
+      "summary": "Bring 500 copper, 5 x a bat skull. Reward: 1 x a necklace of bat skulls.",
+      "contracts": [
+        {
+          "giver_vnum": 70078,
+          "completion_key": "give=C:500,I:70075,I:70075,I:70075,I:70075,I:70075;receive=I:70074;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-1",
+          "text": "Carry 5 x a bat skull",
+          "kind": "carried_item",
+          "hint": "Look for clues in the request giver's description and conversation.",
+          "item_vnums": [
+            70075
+          ],
+          "count": 5
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the requested exchange",
+          "kind": "completion",
+          "hint": "Give the requested items to this request giver.",
+          "contracts": [
+            {
+              "giver_vnum": 70078,
+              "completion_key": "give=C:500,I:70075,I:70075,I:70075,I:70075,I:70075;receive=I:70074;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "reason": "Returned offered items: rejected requests or nonterminal responses, not new story achievements.",
+      "contracts": [
+        {
+          "giver_vnum": 70031,
+          "completion_key": "give=I:70026;receive=I:70026;disappear=0"
+        },
+        {
+          "giver_vnum": 70060,
+          "completion_key": "give=I:70030;receive=I:70030;disappear=0"
+        }
+      ]
+    },
+    {
+      "reason": "Coin-only, informational, or skill exchanges; supporting services rather than item-delivery story achievements.",
+      "contracts": [
+        {
+          "giver_vnum": 70023,
+          "completion_key": "give=C:5;receive=I:70018;disappear=0"
+        },
+        {
+          "giver_vnum": 70104,
+          "completion_key": "give=C:5;receive=I:70018;disappear=0"
+        }
+      ]
+    }
+  ]
+}

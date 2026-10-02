@@ -1,4 +1,5 @@
 #include "world/zone_story_quest_production.h"
+#include "world/zone_story_quest_story.h"
 
 #include "core/structs.h"
 
@@ -12,6 +13,11 @@
 #include <vector>
 
 extern P_index mob_index;
+extern P_index obj_index;
+extern FILE *mob_f;
+extern FILE *obj_f;
+extern int top_of_objt;
+extern int top_of_mobt;
 extern int number_of_quests;
 extern struct quest_data quest_index[];
 extern struct zone_data *zone_table;
@@ -66,6 +72,11 @@ std::vector<std::pair<char, int>> sorted_goals(const goal_data *goals)
 	return values;
 }
 
+bool positive_item_goal(const std::pair<char, int> &goal)
+{
+	return goal.first == 'I' && goal.second > 0;
+}
+
 std::string goals_string(const std::vector<std::pair<char, int>> &goals)
 {
 	std::ostringstream output;
@@ -84,8 +95,20 @@ std::string compact_player_text(const char *value)
 		return {};
 	std::string output;
 	bool pending_space = false;
-	for (const unsigned char character : std::string_view(value))
+	const std::string_view text(value);
+	for (size_t index = 0; index < text.size(); ++index)
 	{
+		const unsigned char character = text[index];
+		if (character == '&' && index + 1 < text.size())
+		{
+			const size_t code = index + (text[index + 1] == '+' ? 2 : 1);
+			if (code < text.size() &&
+			    std::isalnum(static_cast<unsigned char>(text[code])))
+			{
+				index = code;
+				continue;
+			}
+		}
 		if (std::isspace(character))
 		{
 			if (!output.empty())
@@ -104,11 +127,6 @@ std::string compact_player_text(const char *value)
 	return output;
 }
 
-bool is_system_quest_message(const char *keywords)
-{
-	return keywords && (!std::strncmp(keywords, "qc_", 3) || !std::strncmp(keywords, "QC_", 3));
-}
-
 std::string zone_name_for_number(int zone_number)
 {
 	if (!zone_table || top_of_zone_table < 0)
@@ -121,43 +139,99 @@ std::string zone_name_for_number(int zone_number)
 	return {};
 }
 
-std::string giver_name_for_index(int quester_rnum)
+std::string prototype_text(P_index index, int number, FILE *file, int requested_field)
 {
-	if (quester_rnum < 0 || !mob_index)
+	if (!index || number < 0)
 		return {};
-	const char *name = mob_index[quester_rnum].desc2;
-	if (!name || !*name)
-		name = mob_index[quester_rnum].keys;
-	return compact_player_text(name);
+	if (requested_field == 0 && index[number].keys)
+		return index[number].keys;
+	if (requested_field == 1 && index[number].desc2)
+		return compact_player_text(index[number].desc2);
+	// Prototype text is lazy in db.c. Read just the keyword/short-description
+	// fields without instantiating an NPC/item or minting an ownership UID.
+	if (!file)
+		return compact_player_text(index[number].keys);
+	const long previous = ftell(file);
+	if (previous < 0 || fseek(file, index[number].pos, SEEK_SET))
+		return {};
+	std::string label;
+	for (int field = 0; field <= requested_field; ++field)
+	{
+		std::string text;
+		int character;
+		while ((character = fgetc(file)) != EOF && character != '~' && text.size() < 65536)
+			text.push_back(static_cast<char>(character));
+		if (character != '~')
+		{
+			label.clear();
+			break;
+		}
+		if (field == requested_field)
+			label = std::move(text);
+	}
+	if (fseek(file, previous, SEEK_SET))
+		return {};
+	return requested_field == 0 ? label : compact_player_text(label.c_str());
 }
 
-std::string objective_for_quest(const quest_data &quest, std::string_view giver_name)
+std::string prototype_label(P_index index, int number, FILE *file)
 {
-	for (const quest_msg_data *message = quest.quest_message; message; message = message->next)
+	return prototype_text(index, number, file, 1);
+}
+
+std::string giver_name_for_index(int quester_rnum)
+{
+	return prototype_label(mob_index, quester_rnum, mob_f);
+}
+
+std::string objective_for_completion(const quest_complete_data &completion)
+{
+	std::ostringstream output;
+	output << "Bring ";
+	bool first = true;
+	std::map<std::pair<char, int>, size_t> goals;
+	for (const auto &goal : sorted_goals(completion.give))
+		++goals[goal];
+	for (const auto &[goal, count] : goals)
 	{
-		if (!message->message || !*message->message ||
-		    is_system_quest_message(message->key_words))
-			continue;
-		const std::string text = compact_player_text(message->message);
-		if (!text.empty())
-			return text;
+		if (!first)
+			output << ", ";
+		first = false;
+		if (goal.first == 'C')
+			output << goal.second << " copper";
+		else if (goal.first == 'I')
+		{
+			std::string name;
+			for (int index = 0; obj_index && index <= top_of_objt; ++index)
+				if (obj_index[index].virtual_number == goal.second)
+				{
+					name = prototype_label(obj_index, index, obj_f);
+					break;
+				}
+			output << count << " x " << (name.empty() ? "requested item" : name);
+		}
+		else
+			output << "the requested offering";
 	}
-	for (const quest_complete_data *completion = quest.quest_complete; completion;
-	     completion = completion->next)
-	{
-		const std::string text = compact_player_text(completion->message);
-		if (!text.empty())
-			return text;
-	}
-	if (!giver_name.empty())
-		return "Complete the request from " + std::string(giver_name) + ".";
-	return "Complete the assigned quest.";
+	if (first)
+		return "Speak with the quest giver to complete this request.";
+	return output.str() + " to the quest giver.";
 }
 } // namespace
 
 int zone_for_giver_vnum(int giver_vnum)
 {
-	return giver_vnum > 0 ? std::max(1, giver_vnum / 100) : 0;
+	if (giver_vnum <= 0 || !zone_table)
+		return -1;
+	int32_t previous_top = -1;
+	for (int index = 0; index <= top_of_zone_table; ++index)
+	{
+		const auto &zone = zone_table[index];
+		if (giver_vnum > previous_top && giver_vnum <= zone.top)
+			return zone.number;
+		previous_top = zone.top;
+	}
+	return -1;
 }
 
 std::string canonical_completion_key(const quest_complete_data &completion)
@@ -185,6 +259,20 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 		return result;
 	}
 	std::set<std::pair<int, std::string>> seen_contracts;
+	int32_t previous_top = -1;
+	for (int index = 0; zone_table && index <= top_of_zone_table; ++index)
+	{
+		const auto &zone = zone_table[index];
+		if (zone.number >= 0)
+			result.zones.push_back(
+				{ .zone_number = zone.number,
+				  .name = compact_player_text(zone.name),
+				  .source_area = zone.filename ? zone.filename : "runtime-zone",
+				  .first_vnum = previous_top + 1,
+				  .last_vnum = zone.top,
+				  .discoverable = zone.number > 0 });
+		previous_top = zone.top;
+	}
 	for (int quest = 0; quest < number_of_quests; ++quest)
 	{
 		const int quester_rnum = quest_index[quest].quester;
@@ -192,7 +280,7 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 			continue;
 		const int giver_vnum = mob_index[quester_rnum].virtual_number;
 		const int zone_number = zone_for_giver_vnum(giver_vnum);
-		if (zone_number <= 0)
+		if (zone_number < 0)
 			continue;
 		for (const quest_complete_data *completion = quest_index[quest].quest_complete;
 		     completion; completion = completion->next)
@@ -208,7 +296,9 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 			definition.source_system =
 				zone_story_quest_tracking::ZONE_STORY_QUEST_SOURCE_SYSTEM;
 			definition.zone_number = zone_number;
-			definition.source_area = "runtime-qst";
+			for (const auto &zone : result.zones)
+				if (zone.zone_number == zone_number)
+					definition.source_area = zone.source_area;
 			definition.giver_vnum = giver_vnum;
 			definition.completion_key = encoded_key;
 			definition.giver_name = giver_name_for_index(quester_rnum);
@@ -216,11 +306,38 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 			definition.display_name = definition.giver_name.empty() ?
 							  "Daily quest" :
 							  "A request from " + definition.giver_name;
-			definition.objective =
-				objective_for_quest(quest_index[quest], definition.giver_name);
+			definition.objective = objective_for_completion(*completion);
 			definition.active = true;
-			definition.eligible_for_zone_completion = true;
-			definition.repeatable = true;
+			definition.eligible_for_zone_completion = zone_number > 0;
+			bool resettable = false;
+			for (int index = 0; index <= top_of_zone_table; ++index)
+				if (zone_table[index].number == zone_number)
+					resettable = zone_table[index].reset_mode != 0;
+			definition.repeatable = !completion->disappear || resettable;
+			const auto give = sorted_goals(completion->give);
+			const auto receive = sorted_goals(completion->receive);
+			const bool item_offering =
+				std::any_of(give.begin(), give.end(), positive_item_goal);
+			const bool returns_offering =
+				std::any_of(give.begin(), give.end(),
+					    [&](const auto &goal) {
+						    return goal.first == 'I' &&
+							   std::find(receive.begin(), receive.end(),
+								     goal) != receive.end();
+					    });
+			const bool durable_offering =
+				give.size() <= ZONE_STORY_QUEST_MAX_DURABLE_OFFERINGS &&
+				std::all_of(give.begin(), give.end(), positive_item_goal);
+			definition.daily_eligible = definition.repeatable && zone_number > 0 &&
+						    item_offering && !returns_offering &&
+						    durable_offering;
+			if (!definition.daily_eligible)
+				definition.daily_exclusion =
+					zone_number <= 0       ? "Administrative content" :
+					!definition.repeatable ? "Story-only quest" :
+					returns_offering       ? "Item exchange" :
+					!item_offering	       ? "No repeatable item offering" :
+								 "Unsupported durable offering";
 			definition.content_revision = content_revision;
 			result.definitions.push_back(std::move(definition));
 		}
@@ -228,6 +345,59 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 	std::sort(result.definitions.begin(), result.definitions.end(),
 		  [](const auto &left, const auto &right)
 		  { return left.definition_id < right.definition_id; });
+	std::string mapping_error;
+	if (!zone_story_quest_story::load(&result, &mapping_error))
+	{
+		if (error)
+			*error = mapping_error;
+		return result;
+	}
+	for (const auto &mapping : result.story_mappings)
+	{
+		for (const auto &contact : mapping.contacts)
+		{
+			bool found = false;
+			for (int index = 0; mob_index && index <= top_of_mobt; ++index)
+				if (mob_index[index].virtual_number == contact.mob_vnum)
+				{
+					std::istringstream keywords(
+						prototype_text(mob_index, index, mob_f, 0));
+					std::string keyword;
+					while (keywords >> keyword)
+					{
+						std::transform(keyword.begin(), keyword.end(),
+							       keyword.begin(), [](unsigned char c)
+							       { return std::tolower(c); });
+						found = found || keyword == contact.keyword;
+					}
+					break;
+				}
+			if (!found)
+			{
+				if (error)
+					*error =
+						"story contact refers to an unknown NPC prototype or command alias";
+				return result;
+			}
+		}
+		for (const auto &story : mapping.stories)
+			for (const auto &step : story.steps)
+				for (const int vnum : step.item_vnums)
+				{
+					bool found = false;
+					for (int index = 0; obj_index && index <= top_of_objt;
+					     ++index)
+						found = found ||
+							obj_index[index].virtual_number == vnum;
+					if (!found)
+					{
+						if (error)
+							*error =
+								"story mapping refers to an unknown item prototype";
+						return result;
+					}
+				}
+	}
 	std::vector<zone_story_quest_catalog::diagnostic> diagnostics;
 	if (!zone_story_quest_catalog::validate(result, &diagnostics) && error)
 		*error = diagnostics.empty() ?
@@ -242,7 +412,7 @@ bool bootstrap(uint32_t content_revision, std::string *error)
 	zone_story_quest_catalog::catalog candidate =
 		build_runtime_catalog(content_revision, &build_error);
 	std::vector<zone_story_quest_catalog::diagnostic> diagnostics;
-	if (!zone_story_quest_catalog::validate(candidate, &diagnostics))
+	if (!build_error.empty() || !zone_story_quest_catalog::validate(candidate, &diagnostics))
 	{
 		catalog_ready = false;
 		if (error)

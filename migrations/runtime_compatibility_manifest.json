@@ -10,11 +10,11 @@
     "mariadb10_11": "25e566f69a1ac54ab4f4b78f0f2c990d9c394de5f543c1303fba0d88c8b5aec3"
   },
   "migration_head": {
-    "id": "0053_craft_progression",
-    "sequence": 53,
-    "apply_checksum": "4b17920b26cad6762637a1f3e0d7cb13d997e2f163b550c56b24363efa45aff1",
-    "verify_checksum": "aacc5516aed02ca8b8b3115a2e8c22ef3f113b299723ea249034971ceb50417a",
-    "history_checksum": "e63cdd39538481b97760af4893592341e1352674c8ee8e8d7f33a8d8ecbfae75"
+    "id": "0054_discovered_zone_daily_state",
+    "sequence": 54,
+    "apply_checksum": "e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e",
+    "verify_checksum": "c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe",
+    "history_checksum": "7d9446512b52e068170f0d9bbce2fcb362a32e2960cfc5369073374a2bf8a853"
   },
   "connection": {
     "character_set": "utf8mb4",
@@ -35,19 +35,19 @@
     "dataset_version": 1
   },
   "staging_0045_migration_head": {
-    "id": "0053_craft_progression",
-    "sequence": 53,
-    "apply_checksum": "4b17920b26cad6762637a1f3e0d7cb13d997e2f163b550c56b24363efa45aff1",
-    "verify_checksum": "aacc5516aed02ca8b8b3115a2e8c22ef3f113b299723ea249034971ceb50417a",
-    "history_checksum": "e4e77237744a5074e7097ab93b9e50fee1ee1be74168afb3ad9356a7913acbfd"
+    "id": "0054_discovered_zone_daily_state",
+    "sequence": 54,
+    "apply_checksum": "e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e",
+    "verify_checksum": "c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe",
+    "history_checksum": "61892b12124d1c6aeeb24f5c32ea0c81867188f0f649742623b0b1d7d92e383b"
   },
-  "migration_history_sql": "SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING utf8mb4))),16,'0')),CONVERT(migration_id USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(description USING utf8mb4))),16,'0')),CONVERT(description USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(compatibility USING utf8mb4))),16,'0')),CONVERT(compatibility USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history ORDER BY sequence_number LIMIT 54",
+  "migration_history_sql": "SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING utf8mb4))),16,'0')),CONVERT(migration_id USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(description USING utf8mb4))),16,'0')),CONVERT(description USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(compatibility USING utf8mb4))),16,'0')),CONVERT(compatibility USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history ORDER BY sequence_number LIMIT 55",
   "extra_description_generation_sql": "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN ('player_item_extra_descr','player_pet_item_extra_descr') AND column_name='description_sha256' AND data_type='binary' AND character_maximum_length=32 AND LOWER(extra) LIKE '%stored generated%' AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(generation_expression,CONCAT(CHAR(92),CHAR(39),CHAR(92),CHAR(39)),CONCAT(CHAR(39),CHAR(39))),CHAR(96),''),' ',''),'_utf8mb4',''))='unhex(sha2(coalesce(description,''''),256))'",
   "master_0031_migration_head": {
-    "id": "0053_craft_progression",
-    "sequence": 53,
-    "apply_checksum": "4b17920b26cad6762637a1f3e0d7cb13d997e2f163b550c56b24363efa45aff1",
-    "verify_checksum": "aacc5516aed02ca8b8b3115a2e8c22ef3f113b299723ea249034971ceb50417a",
-    "history_checksum": "20b2bb46c5d4f6cacf993186c9aded434ea7fb669df8252eff4e774443676399"
+    "id": "0054_discovered_zone_daily_state",
+    "sequence": 54,
+    "apply_checksum": "e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e",
+    "verify_checksum": "c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe",
+    "history_checksum": "17433a81cd69e9fd9b48407b9d2f829a7f357e0f1ab74893ae7c2a826ca3f5ac"
   }
 }
