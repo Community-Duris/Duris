@@ -562,6 +562,119 @@ class ReconciliationTests(unittest.TestCase):
         snapshot["ownership_events"].append(duplicate)
         self.assertIn("duplicate_uid_revision", self.codes(snapshot))
 
+    def test_orphan_parent_is_checked_independently_of_item_history(self):
+        for history_scope in (False, True):
+            for has_origin in (False, True):
+                with self.subTest(history_scope=history_scope, has_origin=has_origin):
+                    snapshot = clean_snapshot()
+                    if not has_origin:
+                        snapshot["item_origins"] = []
+                    if history_scope:
+                        event = copy.deepcopy(snapshot["ownership_events"][0])
+                        event.update(operation_outcome="committed", referenced=False)
+                        snapshot["native"]["uid_history_events"] = [event]
+                    # Keep history and current state consistent: the missing
+                    # parent must be diagnosed without a stale-state mismatch.
+                    snapshot["native"]["items"][0].update(parent=999, root=999)
+                    snapshot["ownership_events"][0].update(parent=999, root=999)
+                    if history_scope:
+                        snapshot["native"]["uid_history_events"][0].update(
+                            parent=999, root=999)
+                    report = Reconciler().audit(snapshot)
+                    self.assertEqual(report["exception_counts"].get("orphan_item_parent"), 1)
+                    self.assertIn({"code": "orphan_item_parent", "uid": 81,
+                                   "parent_uid": 999}, report["exceptions"])
+                    self.assertNotIn("stale_native_item", report["exception_counts"])
+
+    def test_valid_nested_native_items_and_orphan_ancestors(self):
+        native = {
+            (uid,): {"uid": uid, "revision": 1, "root": 83, "parent": parent,
+                     "owner": [1, 7, 0], "state": "live"}
+            for uid, parent in ((81, 82), (82, 83), (83, None))
+        }
+        origins = {identity: {**item, "origin": "baseline"}
+                   for identity, item in native.items()}
+        clean = Reconciler()
+        clean.audit_items({}, {}, origins, native, {81, 82, 83})
+        self.assertEqual(dict(clean.counts), {})
+
+        del native[(83,)]
+        orphan = Reconciler()
+        orphan.audit_items({}, {}, origins, native, {81, 82, 83})
+        self.assertEqual(orphan.counts["orphan_item_parent"], 1)
+        self.assertIn({"code": "orphan_item_parent", "uid": 82,
+                       "parent_uid": 83}, orphan.exceptions)
+
+    def test_tombstone_parent_is_checked_without_an_origin(self):
+        native = {(81,): {"uid": 81, "revision": 2, "root": 999, "parent": 999,
+                          "owner": [8, 0, 0], "state": "tombstone"}}
+        orphan = Reconciler()
+        orphan.audit_items({}, {}, {}, native, {81})
+        self.assertEqual(orphan.counts["orphan_item_parent"], 1)
+
+    def test_native_topology_work_is_bounded_for_deep_custody(self):
+        class MeasuredNative(dict):
+            reads = 0
+
+            def get(self, identity, default=None):
+                self.reads += 1
+                return super().get(identity, default)
+
+            def __getitem__(self, identity):
+                self.reads += 1
+                return super().__getitem__(identity)
+
+            def __contains__(self, identity):
+                self.reads += 1
+                return super().__contains__(identity)
+
+        count = 1200
+        native = MeasuredNative({
+            (uid,): {"uid": uid, "revision": 1, "root": count,
+                     "parent": uid + 1 if uid < count else None,
+                     "owner": [1, 7, 0], "state": "live"}
+            for uid in range(1, count + 1)
+        })
+        origins = {identity: {**item, "origin": "baseline"}
+                   for identity, item in native.items()}
+        for shape, parent, expected in (
+                ("chain", None, {}), ("cycle", 1, {"cyclic_native_topology": count}),
+                ("orphan", count + 1, {"orphan_item_parent": 1})):
+            with self.subTest(shape=shape):
+                native[(count,)]["parent"] = parent
+                native.reads = 0
+                reconciler = Reconciler(0)
+                reconciler.audit_items({}, {}, origins, native, set(range(1, count + 1)))
+                self.assertEqual(dict(reconciler.counts), expected)
+                self.assertLessEqual(native.reads, 20 * count,
+                                     "a bounded native snapshot must not trigger quadratic ancestor work")
+
+    def test_native_topology_cycle_and_edge_diagnostics(self):
+        base = {
+            (uid,): {"uid": uid, "revision": 1, "root": 2, "parent": parent,
+                     "owner": [1, 7, 0], "state": "live"}
+            for uid, parent in ((1, 2), (2, None), (3, 1))
+        }
+        for name, changes, expected in (
+                ("valid", {}, {}),
+                ("cycle", {2: {"parent": 1}}, {"cyclic_native_topology": 3}),
+                ("self_cycle", {2: {"parent": 2}}, {"cyclic_native_topology": 3}),
+                ("root_identity", {uid: {"root": 99} for uid in (1, 2, 3)},
+                 {"inconsistent_native_topology": 3}),
+                ("edge", {3: {"root": 99}}, {"inconsistent_native_topology": 1}),
+                ("orphan", {2: {"parent": 99}}, {"orphan_item_parent": 1}),
+                ("mixed_cycle", {2: {"parent": 1, "state": "tombstone", "owner": [8, 0, 0]}},
+                 {"inconsistent_native_topology": 2, "cyclic_native_topology": 1})):
+            with self.subTest(name=name):
+                native = copy.deepcopy(base)
+                for uid, change in changes.items():
+                    native[(uid,)].update(change)
+                origins = {identity: {**item, "origin": "baseline"}
+                           for identity, item in native.items()}
+                reconciler = Reconciler()
+                reconciler.audit_items({}, {}, origins, native, {1, 2, 3})
+                self.assertEqual(dict(reconciler.counts), expected)
+
     def test_cli_bounded_exception_result(self):
         snapshot = clean_snapshot()
         snapshot["postings"].pop()
@@ -615,6 +728,60 @@ class ReconciliationTests(unittest.TestCase):
             {},
         )
         self.assertEqual(reconciler.counts["uid_history_operation_not_committed"], 1)
+
+    def lineage_lifetime_report(self, actions, origin=None):
+        origin = origin or creation_snapshot()["item_origins"][0]
+        events = []
+        for index, action in enumerate(actions):
+            events.append({
+                "operation_id": f"{index + 1:032x}", "event_index": 0, "uid": 81,
+                "before_revision": origin["revision"] + index,
+                "revision": origin["revision"] + index + 1,
+                "root": 81, "parent": None,
+                "owner": [8, 0, 0] if action == "destroy" else [1, 7, 0],
+                "state": "tombstone" if action == "destroy" else "live",
+                "action": action, "operation_outcome": "committed", "referenced": False,
+            })
+        current = {field: events[-1][field]
+                   for field in ("uid", "revision", "root", "parent", "owner", "state")}
+        reconciler = Reconciler()
+        reconciler.audit_lineage_uid_history(
+            "disposable", {"uid_history_events": events}, {(81,): origin}, {(81,): current})
+        return reconciler
+
+    def test_lineage_history_requires_a_creation_event(self):
+        self.assertEqual(self.lineage_lifetime_report(["move"]).counts["missing_item_creation"], 1)
+
+    def test_lineage_history_rejects_duplicate_creation(self):
+        self.assertEqual(self.lineage_lifetime_report(["create", "create"]).counts["duplicate_uid"], 1)
+        origin = clean_snapshot()["item_origins"][0]
+        self.assertEqual(self.lineage_lifetime_report(["create"], origin).counts["duplicate_uid"], 1)
+
+    def test_lineage_history_checks_creation_origin(self):
+        origin = creation_snapshot()["item_origins"][0]
+        origin["state"] = "live"
+        self.assertEqual(self.lineage_lifetime_report(["create"], origin).counts[
+            "invalid_item_creation_origin"], 1)
+
+    def test_lineage_history_preserves_retired_uid_lifetimes(self):
+        for action in ("create", "move"):
+            with self.subTest(action=action):
+                self.assertEqual(self.lineage_lifetime_report(
+                    ["create", "destroy", action]).counts["resurrected_item_uid"], 1)
+
+    def test_lineage_history_accepts_creation_move_and_retirement(self):
+        for actions in (["create"], ["create", "move"], ["create", "move", "destroy"]):
+            with self.subTest(actions=actions):
+                self.assertEqual(dict(self.lineage_lifetime_report(actions).counts), {})
+        self.assertEqual(dict(self.lineage_lifetime_report(
+            ["move"], clean_snapshot()["item_origins"][0]).counts), {})
+
+    def test_opening_tombstone_cannot_become_live_in_either_history_scope(self):
+        snapshot = clean_snapshot()
+        snapshot["item_origins"][0].update(state="tombstone", owner=[8, 0, 0])
+        self.assertIn("resurrected_item_uid", self.codes(snapshot))
+        report = self.lineage_lifetime_report(["move"], snapshot["item_origins"][0])
+        self.assertEqual(report.counts["resurrected_item_uid"], 1)
 
     def test_uid_history_coverage_matches_the_full_event_and_unreferenced_sets(self):
         event = {
