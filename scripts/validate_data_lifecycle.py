@@ -133,6 +133,18 @@ RECIPE_PROGRESSION_RECOVERY_STORES = {
     "file:player-craft-receipts",
     "file:player-craft-obligations",
 }
+COUPLED_PLAYER_RECOVERY_STORES = {
+    "database:player_death_disposition",
+    "database:player_death_conflict_evidence",
+    "database:player_spell_effect_receipt",
+    "database:quest_reward_obligation",
+    "database:quest_reward_xp_entitlement",
+    "file:player-deaths",
+    "file:player-spell-receipts",
+    "file:player_save_quarantine",
+    "file:player_save_quarantine_archive",
+    "file:player_save_quarantine_policy",
+}
 NATIVE_FLATFILE_AUTHORITY_STORES = {
     "file:flatfile-player-snapshots",
     "file:flatfile-accounts",
@@ -495,6 +507,12 @@ def validate_manifest(manifest: dict, expected_tables: set[str],
                 entry["terminal_action"] != "retain"):
             raise ValidationError(
                 f"{entry_id}: recipe progression recovery must remain protected and retained"
+            )
+        if entry_id in COUPLED_PLAYER_RECOVERY_STORES and (
+                not entry["protected_record"] or entry["season_action"] != "retain" or
+                entry["terminal_action"] != "retain"):
+            raise ValidationError(
+                f"{entry_id}: coupled player recovery must remain protected and retained"
             )
         if entry_id in NATIVE_FLATFILE_AUTHORITY_STORES and (
                 not entry["protected_record"] or entry["season_action"] != "retain" or

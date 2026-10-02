@@ -65,7 +65,7 @@ This checkpoint publishes the completed review fixes directly to
   now have separate protected retention/export inventory entries. The lifecycle
   validator requires both; removing either is rejected. SQL and flatfile recipe
   recovery policies must also remain protected and retained; nine policy-edit
-  fault cases that previously passed are now refused. Nineteen lifecycle,
+  fault cases that previously passed are now refused. Twenty lifecycle,
   seven erasure, and six export regressions pass. The inventory now counts 43
   non-database stores, 225 SQL tables, and 42 Redis surfaces, with destructive
   rules and shared disclosure still disabled pending controller decisions.
@@ -107,6 +107,12 @@ This checkpoint publishes the completed review fixes directly to
   prove that progression capture refusal releases pins and queue bytes, while
   timeout/resume retains the original operation, discipline and XP even if live
   recovery state changes. Only the exact database ACK releases the request.
+
+- Coupled death disposition/conflict, spell, quest-XP and save-quarantine recovery
+  records must also remain protected and retained in lifecycle policy. Thirty
+  edits that previously removed protection or selected reset/deactivation now
+  fail closed. Twenty lifecycle, seven erasure and six export checks pass;
+  destructive rules remain disabled.
 
 ## Verification and its limits
 
