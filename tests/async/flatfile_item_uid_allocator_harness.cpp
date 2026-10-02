@@ -1,4 +1,5 @@
 #include "flatfile/flatfile_item_uid_allocator.h"
+#include "flatfile/flatfile_store.h"
 
 #include <algorithm>
 #include <array>
@@ -12,6 +13,21 @@
 #include <unistd.h>
 
 namespace fs = std::filesystem;
+
+bool fail_initialization_publication = false;
+bool flatfile_test_atomic_write(const std::string &, const std::string &,
+				const std::vector<uint8_t> &, std::string *);
+bool flatfile_atomic_write(const std::string &directory, const std::string &name,
+			   const std::vector<uint8_t> &bytes, std::string *error)
+{
+	if (fail_initialization_publication && name == "item_uid_allocator.initialized")
+	{
+		if (error)
+			*error = "injected initialization publication failure";
+		return false;
+	}
+	return flatfile_test_atomic_write(directory, name, bytes, error);
+}
 
 static void require(bool condition, const std::string &message)
 {
@@ -121,6 +137,90 @@ int main(int argc, char **argv)
 		"concurrent allocator high-water mark was incorrect");
 
 	const fs::path allocator = metadata / "item_uid_allocator";
+	const fs::path preserved = root / "preserved_allocator";
+	fs::rename(allocator, preserved);
+	first = 777;
+	require(flatfile_item_uid_reserve(root.string(), 1, &first, &error) ==
+				flatfile_item_uid_result::invalid &&
+			first == 777,
+		"missing issued allocator restarted at UID 1");
+	next_uid = 888;
+	revision = 999;
+	require(flatfile_item_uid_current(root.string(), &next_uid, &revision, &error) ==
+				flatfile_item_uid_result::invalid &&
+			next_uid == 888 && revision == 999,
+		"missing issued allocator appeared to be an uninitialized authority");
+	require(!fs::exists(allocator), "missing allocator was silently recreated");
+	fs::rename(preserved, allocator);
+	require(flatfile_item_uid_current(root.string(), &next_uid, &revision, &error) ==
+				flatfile_item_uid_result::ok &&
+			next_uid == 104 && revision == 5,
+		"restored allocator high-water mark changed");
+
+	const fs::path initialized = metadata / "item_uid_allocator.initialized";
+	require(fs::exists(initialized),
+		"successful reservation lacks durable initialization evidence");
+	const fs::path preserved_marker = root / "preserved_marker";
+	fs::rename(initialized, preserved_marker);
+	require(flatfile_item_uid_reserve(root.string(), 1, &first, &error) ==
+				flatfile_item_uid_result::ok &&
+			first == 104 && fs::exists(initialized),
+		"legacy allocator upgrade did not preserve its high-water mark");
+	{
+		std::fstream file(initialized, std::ios::in | std::ios::out | std::ios::binary);
+		require(file.good(), "could not open initialization marker for corruption test");
+		file.put('X');
+	}
+	first = 777;
+	require(flatfile_item_uid_reserve(root.string(), 1, &first, &error) ==
+				flatfile_item_uid_result::invalid &&
+			first == 777,
+		"corrupt initialization marker allowed a reservation");
+	fs::remove(initialized);
+	fs::rename(preserved_marker, initialized);
+	require(flatfile_item_uid_current(root.string(), &next_uid, &revision, &error) ==
+				flatfile_item_uid_result::ok &&
+			next_uid == 105 && revision == 6,
+		"marker refusal modified allocator authority");
+
+	// An older root may predate the marker. Surviving custody still proves that
+	// a missing allocator cannot safely be bootstrapped from UID 1.
+	const fs::path domains = root / "domains";
+	fs::create_directories(domains);
+	fs::permissions(domains, fs::perms::owner_all, fs::perm_options::replace);
+	{
+		std::ofstream file(domains / "item_ownership");
+		file << "surviving custody evidence";
+	}
+	fs::rename(initialized, preserved_marker);
+	fs::rename(allocator, preserved);
+	require(flatfile_item_uid_reserve(root.string(), 1, &first, &error) ==
+				flatfile_item_uid_result::invalid &&
+			!fs::exists(allocator),
+		"legacy custody with missing allocator was bootstrapped");
+	fs::rename(preserved, allocator);
+	fs::rename(preserved_marker, initialized);
+
+	const fs::path interrupted = root / "interrupted";
+	fs::create_directories(interrupted / "metadata");
+	fs::permissions(interrupted, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(interrupted / "metadata", fs::perms::owner_all, fs::perm_options::replace);
+	first = 777;
+	fail_initialization_publication = true;
+	require(flatfile_item_uid_reserve(interrupted.string(), 3, &first, &error) ==
+				flatfile_item_uid_result::io_error &&
+			first == 777,
+		"marker publication failure released an item UID");
+	fail_initialization_publication = false;
+	require(flatfile_item_uid_current(interrupted.string(), &next_uid, &revision, &error) ==
+				flatfile_item_uid_result::ok &&
+			next_uid == 4 && revision == 1,
+		"marker failure rolled back the consumed reservation");
+	require(flatfile_item_uid_reserve(interrupted.string(), 1, &first, &error) ==
+				flatfile_item_uid_result::ok &&
+			first == 4 &&
+			fs::exists(interrupted / "metadata" / "item_uid_allocator.initialized"),
+		"marker publication retry reused a consumed range");
 	{
 		std::fstream file(allocator, std::ios::in | std::ios::out | std::ios::binary);
 		require(file.good(), "could not open allocator for corruption test");

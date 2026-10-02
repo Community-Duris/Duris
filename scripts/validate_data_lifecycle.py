@@ -112,6 +112,8 @@ REQUIRED_NON_DATABASE_STORES = {
     "file:flatfile-bank-domains": ("recovery_state", "FLATFILE_ROOT/domains/bank-*.domain"),
     "file:flatfile-player-domain-journal": ("recovery_state", "FLATFILE_ROOT/domains/.player-domain-transaction"),
     "file:flatfile-legacy-currency-journal": ("recovery_state", "FLATFILE_ROOT/domains/.currency-transaction"),
+    "file:flatfile-item-uid-allocator": ("recovery_state", "FLATFILE_ROOT/metadata/item_uid_allocator"),
+    "file:flatfile-item-uid-initialization": ("recovery_state", "FLATFILE_ROOT/metadata/item_uid_allocator.initialized"),
     "file:player-deaths": ("recovery_state", "FLATFILE_ROOT/player-deaths/*.death"),
     "file:player-spell-receipts": ("recovery_state", "FLATFILE_ROOT/players/*.spell"),
     "file:player-craft-receipts": ("recovery_state", "FLATFILE_ROOT/players/*.craft"),
@@ -158,8 +160,11 @@ NATIVE_FLATFILE_AUTHORITY_STORES = {
     "file:flatfile-bank-domains",
     "file:flatfile-player-domain-journal",
     "file:flatfile-legacy-currency-journal",
+    "file:flatfile-item-uid-allocator",
+    "file:flatfile-item-uid-initialization",
 }
 CORE_TRANSACTION_RECOVERY_STORES = {
+    "database:item_uid_allocator",
     "database:critical_operation_inbox",
     "database:critical_outbox",
     "database:critical_outbox_delivery_dedupe",
