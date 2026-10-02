@@ -48,7 +48,7 @@
     "current_occurrences": 2809,
     "current_unique_path_line_family_sites": 2751,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "97ffd76d892c2cc10dc5d776a90153f7ea09457d",
+    "draft_source_commit": "70ff83d742e9e3e15c16dd1e586a7ff4a2e1c315",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
     "draft_unique_sites": 2751,
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "97ffd76d892c2cc10dc5d776a90153f7ea09457d",
+  "repository_head": "70ff83d742e9e3e15c16dd1e586a7ff4a2e1c315",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -16481,7 +16481,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1473
+          1488
         ],
         "file": "src/item/item_transfer_command.c",
         "function": "item_transfer_command_build",
@@ -17061,8 +17061,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2874,
-          2886
+          2888,
+          2900
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17124,7 +17124,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1280
+          1281
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -17186,7 +17186,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1180
+          1181
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -17371,7 +17371,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1061
+          1062
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -18415,7 +18415,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          898
+          899
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -18477,7 +18477,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          905
+          906
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -19550,7 +19550,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3122
+          3136
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19612,7 +19612,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2934
+          2948
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20598,7 +20598,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2022
+          2036
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -21210,7 +21210,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1556
+          1557
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -21272,7 +21272,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1112
+          1113
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -21640,7 +21640,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          967
+          968
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -30456,7 +30456,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1808
+          1811
         ],
         "file": "src/player/player_snapshot_repository.c",
         "function": "apply_death",
@@ -50667,7 +50667,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2536
+          2550
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
@@ -50733,7 +50733,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          698
+          699
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_craft",
@@ -50783,7 +50783,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          748
+          749
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_craft_outputs",
