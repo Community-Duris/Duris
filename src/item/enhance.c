@@ -1050,8 +1050,6 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 
 	if (source->affected[2].location == loc)
 		loctype = 1;
-	else
-		source->affected[2].location = loc;
 	modstring = modenhance_names[loc];
 
 	switch (loc)
@@ -1065,23 +1063,44 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 		mod = 1;
 	}
 
+	int next_modifier = mod;
 	if (loctype == 1)
 	{
 		// IF they've been modified less than 3 times.
 		if (source->affected[2].modifier / mod < enhance_mod_max_steps)
-			source->affected[2].modifier += mod;
+			next_modifier += source->affected[2].modifier;
 		else
 		{
 			send_to_char("Your enhancement was a failure.  Too much magic.\n", ch);
 			return;
 		}
 	}
-	else
-		source->affected[2].modifier = mod;
+	if (next_modifier < SCHAR_MIN || next_modifier > SCHAR_MAX)
+	{
+		send_to_char("Your enhancement was a failure.  Too much magic.\n", ch);
+		return;
+	}
+	P_obj tempobj = NULL;
+	if (!IS_ENCRUSTED(source))
+	{
+		tempobj = read_object(OBJ_VNUM(source), VIRTUAL);
+		if (!tempobj)
+		{
+			send_to_char("The enhancement template is unavailable.\r\n", ch);
+			return;
+		}
+	}
+	if (SUB_MONEY(ch, cost, 0) != 0)
+	{
+		if (tempobj)
+			extract_obj(tempobj);
+		send_to_char("The enhancement payment could not be accepted.\r\n", ch);
+		return;
+	}
 
+	source->affected[2].location = loc;
+	source->affected[2].modifier = static_cast<sbyte>(next_modifier);
 	SET_BIT(source->extra2_flags, ITEM2_ENHANCED);
-
-	SUB_MONEY(ch, cost, 0);
 	send_to_char("Your pockets feel &+Wlighter&n.\r\n", ch);
 
 	act("&+BYour enhancement is a success! Your &n$p&+B now feels slightly more powerful!\r\n",
@@ -1096,7 +1115,6 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 	if (IS_ENCRUSTED(source))
 		return describe_encrusted_enhanced(source);
 
-	P_obj tempobj = read_object(OBJ_VNUM(source), VIRTUAL);
 	char tempdesc[MAX_STRING_LENGTH], short_desc[MAX_STRING_LENGTH],
 		keywords[MAX_STRING_LENGTH];
 

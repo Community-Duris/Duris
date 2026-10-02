@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "0c49bf2bff6c04e902658c6836900aab4fee6f82",
+  "source_commit": "a2c560b9dc477c28c36c69f0d78c42257ed405f6",
   "census_complete": true,
   "writers": [
     {
@@ -14126,7 +14126,7 @@
       "sites": [
         [
           "src/item/item_transfer_command.c",
-          1488,
+          1473,
           "economic_submit"
         ]
       ],
@@ -14541,42 +14541,42 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1381,
+          1380,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1399,
+          1398,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2880,
+          2866,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2888,
+          2874,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2900,
+          2886,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3026,
+          3012,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3044,
+          3030,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3102,
+          3088,
           "economic_submit"
         ],
         [
@@ -14645,7 +14645,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1316,
+          1315,
           "item_publication"
         ]
       ],
@@ -14688,7 +14688,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1212,
+          1211,
           "item_lifecycle"
         ]
       ],
@@ -14808,7 +14808,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1067,
+          1066,
           "item_lifecycle"
         ]
       ],
@@ -15441,17 +15441,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1956,
+          1963,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1968,
-          "item_lifecycle"
-        ],
-        [
-          "src/item/enhance.c",
-          1974,
+          1975,
           "item_lifecycle"
         ],
         [
@@ -15461,17 +15456,22 @@
         ],
         [
           "src/item/enhance.c",
-          1987,
+          1988,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1997,
+          1994,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          2037,
+          2004,
+          "item_lifecycle"
+        ],
+        [
+          "src/item/enhance.c",
+          2044,
           "item_lifecycle"
         ]
       ],
@@ -15816,12 +15816,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1281,
+          1288,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1289,
+          1296,
           "item_publication"
         ]
       ],
@@ -15868,7 +15868,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          903,
+          902,
           "item_lifecycle"
         ]
       ],
@@ -15905,7 +15905,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          916,
+          915,
           "item_lifecycle"
         ]
       ],
@@ -17214,7 +17214,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          3153,
+          3139,
           "item_lifecycle"
         ]
       ],
@@ -17251,7 +17251,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          3004,
+          2990,
           "item_lifecycle"
         ]
       ],
@@ -17975,12 +17975,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1099,
+          1106,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1109,
+          1116,
           "item_lifecycle"
         ]
       ],
@@ -18004,9 +18004,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Modifier enhancement changes source affected fields before debiting the player and extracting its material; fee, in-place payload and material sink are separate direct effects.",
+      "classification": "Modifier enhancement validates the planned signed-byte affect and accepts the wallet fee before changing the source item and extracting its material. Fee, retained item payload and material sink still lack one durable compound receipt.",
       "authority_boundary": "Fence source UID/revision, material UID and wallet fee; commit payload, sink and fee atomically before any live field change.",
-      "current_support": "Legacy money-helper/source behavior only; unified accounting, both-backend parity and active-epoch refusal unverified.",
+      "current_support": "Actual production-function sanitizer evidence qualifies payment refusal without item/material mutation, all three ordinary fee tiers, the normal step cap and persisted modifier bounds. Compound durability and accounting backend qualification remain unverified.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -18021,18 +18021,20 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_essence_enhancement_payment.py"
+      ],
       "sites": [
         [
           "src/item/enhance.c",
-          1084,
+          1083,
           "money_helper"
         ]
       ],
       "evidence": [],
       "reachability_evidence": "The linked helper call is in the named source function; caller reachability, committed root identity and refusal still need executable qualification.",
       "native_effects": {
-        "holding_effect": "Modifier enhancement changes source affected fields before debiting the player and extracting its material; fee, in-place payload and material sink are separate direct effects.",
+        "holding_effect": "Modifier enhancement validates the planned signed-byte affect and accepts the wallet fee before changing the source item and extracting its material. Fee, retained item payload and material sink still lack one durable compound receipt.",
         "custody_effect": "Linked enhancement item route owns source/replacement/material UID history; the fee site alone does not prove it.",
         "native_state_targets": [
           "PC or NPC wallet denominations / native player_data where applicable",
@@ -18069,12 +18071,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1093,
+          1100,
           "item_publication"
         ],
         [
           "src/item/enhance.c",
-          1094,
+          1101,
           "item_lifecycle"
         ]
       ],
@@ -18126,37 +18128,37 @@
         ],
         [
           "src/item/item_movement_transaction.c",
-          1969,
+          1955,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2036,
+          2022,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2184,
+          2170,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2257,
+          2243,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2462,
+          2448,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2535,
+          2521,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2543,
+          2529,
           "economic_submit"
         ],
         [
@@ -18206,12 +18208,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          2080,
+          2087,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          2088,
+          2095,
           "item_publication"
         ]
       ],
@@ -18686,12 +18688,12 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1564,
+          1563,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1565,
+          1564,
           "item_publication"
         ]
       ],
@@ -18734,22 +18736,22 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1124,
+          1123,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1161,
+          1160,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1167,
+          1166,
           "item_publication"
         ],
         [
           "src/item/item_movement_transaction.c",
-          1171,
+          1170,
           "item_publication"
         ]
       ],
@@ -19074,7 +19076,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          1016,
+          1015,
           "item_publication"
         ]
       ],
@@ -20111,12 +20113,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1156,
+          1163,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1156,
+          1163,
           "item_publication"
         ]
       ],
@@ -22796,7 +22798,7 @@
         ],
         [
           "src/item/item_transfer_command.h",
-          280,
+          277,
           "economic_submit"
         ]
       ],
@@ -26949,7 +26951,7 @@
       "sites": [
         [
           "src/player/player_snapshot_repository.c",
-          1840,
+          1837,
           "sql_economy"
         ]
       ],
@@ -27950,7 +27952,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          3034,
+          3020,
           "economic_submit"
         ],
         [
@@ -45529,12 +45531,12 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          2550,
+          2536,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2757,
+          2743,
           "economic_submit"
         ]
       ],
@@ -45588,12 +45590,12 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          734,
+          733,
           "item_lifecycle"
         ],
         [
           "src/item/item_movement_transaction.c",
-          742,
+          741,
           "item_publication"
         ]
       ],
@@ -45644,7 +45646,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          761,
+          760,
           "item_lifecycle"
         ]
       ],
@@ -53532,9 +53534,9 @@
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1084,
+      "line": 1083,
       "family": "money_helper",
-      "excerpt": "SUB_MONEY(ch, cost, 0);"
+      "excerpt": "if (SUB_MONEY(ch, cost, 0) != 0)"
     },
     {
       "path": "src/item/enhance.c",
@@ -53598,49 +53600,43 @@
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1094,
+      "line": 1101,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(material);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1099,
+      "line": 1106,
       "family": "item_lifecycle",
       "excerpt": "P_obj tempobj = read_object(OBJ_VNUM(source), VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1109,
+      "line": 1116,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tempobj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1156,
+      "line": 1163,
       "family": "item_lifecycle",
       "excerpt": "obj_to_char(read_object(400232, VIRTUAL), mob);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1281,
+      "line": 1288,
       "family": "item_lifecycle",
       "excerpt": "P_obj gift = read_object(reward, VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1956,
+      "line": 1963,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(vnum, VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1968,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj);"
-    },
-    {
-      "path": "src/item/enhance.c",
-      "line": 1974,
+      "line": 1975,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
@@ -53652,25 +53648,31 @@
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1987,
+      "line": 1988,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1997,
+      "line": 1994,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2037,
+      "line": 2004,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2080,
+      "line": 2044,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj);"
+    },
+    {
+      "path": "src/item/enhance.c",
+      "line": 2087,
       "family": "item_lifecycle",
       "excerpt": "if (!(material = read_object(high_vnum, VIRTUAL)))"
     },
@@ -53694,25 +53696,25 @@
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1093,
+      "line": 1100,
       "family": "item_publication",
       "excerpt": "obj_from_char(material);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1156,
+      "line": 1163,
       "family": "item_publication",
       "excerpt": "obj_to_char(read_object(400232, VIRTUAL), mob);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1289,
+      "line": 1296,
       "family": "item_publication",
       "excerpt": "obj_to_char(gift, ch);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2088,
+      "line": 2095,
       "family": "item_publication",
       "excerpt": "obj_to_char(material, mob);"
     },
@@ -53748,211 +53750,211 @@
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1381,
+      "line": 1380,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1399,
+      "line": 1398,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1969,
+      "line": 1955,
       "family": "economic_submit",
       "excerpt": "!item_movement_transaction_submit(actor, root, target_parent, source,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2036,
+      "line": 2022,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2184,
+      "line": 2170,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2257,
+      "line": 2243,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2462,
+      "line": 2448,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2535,
+      "line": 2521,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2543,
+      "line": 2529,
       "family": "economic_submit",
       "excerpt": "return item_movement_transaction_submit_batch(actor, roots, root_count, target_container,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2550,
+      "line": 2536,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_craft("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2757,
+      "line": 2743,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2880,
+      "line": 2866,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2888,
+      "line": 2874,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2900,
+      "line": 2886,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3026,
+      "line": 3012,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3034,
+      "line": 3020,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3044,
+      "line": 3030,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3102,
+      "line": 3088,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 734,
+      "line": 733,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 761,
+      "line": 760,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 903,
+      "line": 902,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(root, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 916,
+      "line": 915,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(entry.object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1067,
+      "line": 1066,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1212,
+      "line": 1211,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3004,
+      "line": 2990,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3153,
+      "line": 3139,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 742,
+      "line": 741,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, actor);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1016,
+      "line": 1015,
       "family": "item_publication",
       "excerpt": "obj_to_char(root, actor);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1124,
+      "line": 1123,
       "family": "item_publication",
       "excerpt": "obj_to_room(object, request.room);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1161,
+      "line": 1160,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, recipient);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1167,
+      "line": 1166,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1171,
+      "line": 1170,
       "family": "item_publication",
       "excerpt": "obj_to_obj(object, container);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1316,
+      "line": 1315,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, actor);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1564,
+      "line": 1563,
       "family": "item_publication",
       "excerpt": "obj_from_char(root);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1565,
+      "line": 1564,
       "family": "item_publication",
       "excerpt": "obj_to_obj(root, corpse);"
     },
@@ -54024,13 +54026,13 @@
     },
     {
       "path": "src/item/item_transfer_command.c",
-      "line": 1488,
+      "line": 1473,
       "family": "economic_submit",
       "excerpt": "bool item_transfer_command_build(critical_command *command, critical_operation_id operation_id,"
     },
     {
       "path": "src/item/item_transfer_command.h",
-      "line": 280,
+      "line": 277,
       "family": "economic_submit",
       "excerpt": "bool item_transfer_command_build(critical_command *command, critical_operation_id operation_id,"
     },
@@ -56322,7 +56324,7 @@
     },
     {
       "path": "src/player/player_snapshot_repository.c",
-      "line": 1840,
+      "line": 1837,
       "family": "sql_economy",
       "excerpt": "\"UPDATE item_current_owner AS current_item SET item_revision=item_revision+1,state=\" +"
     },
