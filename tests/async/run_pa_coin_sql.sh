@@ -33,8 +33,10 @@ TMPDIR="$(mktemp -d -t pa-coin-sql.XXXXXX)"
 cleanup() {
     local status=$?
     if [[ -n "${NAME:-}" ]]; then
+        docker logs "$NAME" 2>&1 | PASSWORD="$PASSWORD" python3 -c \
+            'import os,sys; print(sys.stdin.read().replace(os.environ["PASSWORD"], "<fixture-password>"), end="")' || true
         docker rm -fv "$NAME" >/dev/null 2>&1 || true
-        if docker inspect "$NAME" >/dev/null 2>&1; then
+        if docker container inspect "$NAME" >/dev/null 2>&1; then
             printf 'Disposable SQL container cleanup failed: %s\n' "$NAME" >&2
             status=1
         else
@@ -63,11 +65,16 @@ export ENVIRONMENT=test DB_USER=root DB_PASSWD="$PASSWORD" MYSQL_PWD="$PASSWORD"
 export DB_NAME=pa_coin_sql_test CURRENCY_TEST_DB_NAME=pa_coin_sql_test
 if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then MYSQL_SSL=(--ssl-mode=PREFERRED); else MYSQL_SSL=(--skip-ssl); fi
 ready=0
-for candidate in "127.0.0.1:$published_port" "host.docker.internal:$published_port" "$container_host:3306"; do
+CANDIDATES=("127.0.0.1:$published_port" "host.docker.internal:$published_port" "$container_host:3306")
+if [[ -n "$SQL_FIXTURE_PRIVATE_PORT" ]]; then
+    CANDIDATES=("127.0.0.1:$published_port")
+fi
+for candidate in "${CANDIDATES[@]}"; do
     [[ "$candidate" == :3306 ]] && continue
     export DB_HOST="${candidate%:*}" DB_PORT="${candidate##*:}"
     MYSQL=(mysql "${MYSQL_SSL[@]}" --protocol=tcp --connect-timeout=3 -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -N -B)
-    for _ in $(seq 1 10); do
+    deadline=$((SECONDS + 90))
+    while ((SECONDS < deadline)); do
         if "${MYSQL[@]}" -e 'SELECT 1' >/dev/null 2>&1; then ready=1; break 2; fi
         sleep 1
     done

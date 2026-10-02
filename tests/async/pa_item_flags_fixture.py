@@ -7,7 +7,7 @@ import secrets
 import shutil
 import subprocess
 import tempfile
-import time
+from disposable_sql_fixture import DisposableSQL
 
 ROOT = Path(__file__).resolve().parents[2]
 IMAGE = os.environ.get("DURIS_TEST_DB_IMAGE", "mariadb:11.4")
@@ -400,171 +400,87 @@ def _require(result: subprocess.CompletedProcess[str], action: str) -> str:
     return result.stdout
 
 
-def _sql(container: str, database: str, password: str, *, source: Path | None = None,
-         statement: str | None = None) -> str:
-    env = os.environ.copy()
-    env["MYSQL_PWD"] = password
-    command = ["docker", "exec", "-i", "-e", "MYSQL_PWD", container,
-               "mysql", "--protocol=tcp", "-h127.0.0.1", "-P3306", "-uroot",
-               "--batch", "--skip-column-names", database]
-    if statement is not None:
-        command += ["-e", statement]
-        source_text = None
-    else:
-        if source is None:
-            raise ValueError("fixture SQL source is required")
-        source_text = source.read_text()
-    return _require(_run(command, env=env, input_text=source_text), "fixture SQL setup")
-
-
 def run_item_flags_fixture() -> str:
     if not shutil.which("docker"):
         raise RuntimeError("Docker is required for this disposable fixture")
-    if _run(["docker", "image", "inspect", IMAGE]).returncode:
-        raise RuntimeError(f"required local test image is unavailable: {IMAGE}")
     if _run(["docker", "image", "inspect", TOOLS_IMAGE]).returncode:
         raise RuntimeError(f"required local test image is unavailable: {TOOLS_IMAGE}")
 
     token = secrets.token_hex(8)
     name = f"duris-s05-item-flags-{os.getpid()}-{token}"
-    database = f"s05_item_flags_test_{token}"
-    password = secrets.token_hex(24)
-    env = os.environ.copy()
-    prefix = "MARIADB" if IMAGE.startswith("mariadb") else "MYSQL"
-    env[prefix + "_ROOT_PASSWORD"] = password
-    env[prefix + "_DATABASE"] = database
-    env["MYSQL_PWD"] = password
-    container = ""
+    evidence = Path(os.environ.get("DURIS_MATRIX_ROW_EVIDENCE",
+                                  ROOT / "bin/integration-fixtures" / name))
     tools_container = ""
     output: list[str] = []
-    try:
-        container = _require(_run([
-            "docker", "run", "--pull=never", "--rm", "-d", "--name", name,
-            "--cpus=2", "--memory=2g", "--memory-swap=2g",
-            "-e", prefix + "_ROOT_PASSWORD", "-e", prefix + "_DATABASE", IMAGE,
-            "--innodb-use-native-aio=OFF",
-        ], env=env), "start disposable MariaDB").strip()
-
-        ready = False
-        for _ in range(90):
-            check = _run(["docker", "exec", "-e", "MYSQL_PWD", container, "mysql",
-                          "--protocol=tcp", "-h127.0.0.1", "-P3306", "-uroot",
-                          "--batch", "--skip-column-names", "-e", "SELECT 1"], env=env)
-            if check.returncode == 0:
-                ready = True
-                break
-            time.sleep(1)
-        if not ready:
-            logs = _run(["docker", "logs", container]).stdout
-            evidence_dir = Path(tempfile.mkdtemp(prefix="s05-item-flags-db-failure-"))
-            evidence = evidence_dir / "mariadb.log"
-            evidence.write_text(logs)
-            evidence.chmod(0o600)
-            raise RuntimeError(f"disposable MariaDB did not become ready; owner-only log: {evidence}")
-
-        env["MYSQL_PWD"] = password
-        for migration in (
-            ROOT / "migrations/bootstrap_multithread_safe.sql",
-            ROOT / "migrations/immutable/0015_output_preferences.sql",
-            ROOT / "migrations/immutable/0020_player_death_restitution.sql",
-            ROOT / "migrations/immutable/0035_player_item_dynamic_state.sql",
-        ):
-            output.append(_sql(container, database, password, source=migration))
-
-        verifier = ROOT / "migrations/immutable/0035_player_item_dynamic_state.sh"
-        verifier_env = os.environ.copy()
-        verifier_env.update({
-            "DB_HOST": "127.0.0.1",
-            "DB_PORT": "3306",
-            "DB_USER": "root",
-            "DB_PASSWD": password,
-            "DB_NAME": database,
-        })
-        output.append(_require(
-            _run([
-                "docker", "exec", "-i", "-e", "DB_HOST", "-e", "DB_PORT", "-e",
-                "DB_USER", "-e", "DB_PASSWD", "-e", "DB_NAME", container, "bash", "-s",
-            ], env=verifier_env, input_text=verifier.read_text()),
-            "verify schema-0035 item dynamic-state metadata",
-        ))
-
-        with tempfile.TemporaryDirectory(prefix="s05-item-flags-") as temporary:
-            source = Path(temporary) / "item_flags.cpp"
-            source.write_text(HARNESS)
-            sources = [
-                "src/player/player_snapshot_repository.c",
-                "src/player/player_snapshot_codec.c",
-                "src/player/player_save_journal.c",
-                "src/player/player_load_repository.c",
-                "src/persistence/quest_reward_obligation_repository.c",
-                "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", "src/economy/currency_command.c",
-                "src/player/player_load_topology.c",
-                "src/player/player_death_recovery_query.c",
-                "src/player/player_death_conflict_repository.c",
-                "src/player/player_load_items.c",
-                "src/persistence/persistence_observability.c",
-                "src/persistence/critical_command.c",
-                "src/persistence/player_death_restitution_command.c",
-                "src/sql/item_extra_descr_codec.c",
-                "src/magic/spell_attribute_buffs.c",
-                "src/magic/spell_light_darkness.c",
-                "src/world/handler.c",
-            ]
-            tools_name = name + "-tools"
-            tools_container = _require(_run([
-                "docker", "create", "--name", tools_name,
-                "--network=container:" + container, "--cpus=2", "--memory=2g",
-                "--memory-swap=2g", "-w", "/workspace", TOOLS_IMAGE,
-                "sleep", "infinity",
-            ]), "create disposable compiler container").strip()
-            _require(_run(["docker", "start", tools_container]), "start compiler container")
-            _require(_run(["docker", "exec", tools_container, "mkdir", "-p",
-                           "/workspace/src", "/workspace/tests/async"]), "prepare compiler workspace")
-            _require(_run(["docker", "cp", str(ROOT / "src") + "/.",
-                           tools_container + ":/workspace/src/"]), "copy source into compiler container")
-            _require(_run(["docker", "cp", str(source),
-                           tools_container + ":/workspace/tests/async/item_flags.cpp"]),
-                     "copy test harness into compiler container")
-            source_args = " ".join(sources)
-            compile_script = (
-                "set -euo pipefail; "
-                "read -r -a MYSQL_CFLAGS <<< \"$(mysql_config --cflags)\"; "
-                "read -r -a MYSQL_LIBS <<< \"$(mysql_config --libs)\"; "
-                "g++ -std=c++20 -pthread -Isrc -ffunction-sections -fdata-sections "
-                "\"${MYSQL_CFLAGS[@]}\" tests/async/item_flags.cpp " + source_args +
-                " -Wl,--gc-sections \"${MYSQL_LIBS[@]}\" -lcrypto -o /tmp/s05_item_flags"
-            )
-            compiled = _run(["docker", "exec", tools_container, "bash", "-lc", compile_script])
-            output.append(_require(compiled, "compile focused spell and SQL harness"))
-            run_env = os.environ.copy()
-            run_env.update({
-                "DB_HOST": "127.0.0.1",
-                "DB_PORT": "3306",
-                "DB_USER": "root",
-                "DB_PASSWD": password,
-                "DB_NAME": database,
-            })
-            run = _run(["docker", "exec", "-e", "DB_HOST", "-e", "DB_PORT", "-e",
-                        "DB_USER", "-e", "DB_PASSWD", "-e", "DB_NAME", tools_container,
-                        "/tmp/s05_item_flags"], env=run_env)
-            output.append(run.stdout)
-            if run.returncode:
-                raise RuntimeError(f"S05 disposable SQL journey exit {run.returncode}:\n{run.stdout}")
-    finally:
-        if tools_container:
-            _run(["docker", "rm", "-f", tools_container])
-            absent = _run(["docker", "container", "inspect", tools_container])
-            if absent.returncode == 0 or not any(
-                marker in absent.stdout for marker in ("No such container", "No such object")
-            ):
-                raise RuntimeError("disposable S05 compiler container cleanup could not be verified")
-            print(f"S05_TOOLS_FIXTURE_REMOVED container={name}-tools")
-        if container:
-            _run(["docker", "rm", "-f", container])
-            absent = _run(["docker", "container", "inspect", container])
-            if absent.returncode == 0 or not any(
-                marker in absent.stdout for marker in ("No such container", "No such object")
-            ):
-                raise RuntimeError("disposable S05 DB container cleanup could not be verified")
-            print(f"S05_FIXTURE_REMOVED container={name}")
-    return "\n".join(part.strip() for part in output if part.strip())
+    fixture = DisposableSQL(IMAGE, evidence / "service")
+    with fixture:
+        container = fixture.container
+        with fixture.schema("s05_item_flags_test_", migrated=True) as fixture_environment:
+            try:
+                with tempfile.TemporaryDirectory(prefix="s05-item-flags-") as temporary:
+                    source = Path(temporary) / "item_flags.cpp"
+                    source.write_text(HARNESS)
+                    sources = [
+                        "src/player/player_snapshot_repository.c",
+                        "src/player/player_snapshot_codec.c",
+                        "src/player/player_save_journal.c",
+                        "src/player/player_load_repository.c",
+                        "src/persistence/quest_reward_obligation_repository.c",
+                        "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", "src/economy/currency_command.c",
+                        "src/player/player_load_topology.c",
+                        "src/player/player_death_recovery_query.c",
+                        "src/player/player_death_conflict_repository.c",
+                        "src/player/player_load_items.c",
+                        "src/persistence/persistence_observability.c",
+                        "src/persistence/critical_command.c",
+                        "src/persistence/player_death_restitution_command.c",
+                        "src/sql/item_extra_descr_codec.c",
+                        "src/magic/spell_attribute_buffs.c",
+                        "src/magic/spell_light_darkness.c",
+                        "src/world/handler.c",
+                    ]
+                    tools_name = name + "-tools"
+                    tools_container = _require(_run([
+                        "docker", "create", "--name", tools_name,
+                        "--network=container:" + container, "--cpus=2", "--memory=2g",
+                        "--memory-swap=2g", "-w", "/workspace", TOOLS_IMAGE,
+                        "sleep", "infinity",
+                    ]), "create disposable compiler container").strip()
+                    _require(_run(["docker", "start", tools_container]), "start compiler container")
+                    _require(_run(["docker", "exec", tools_container, "mkdir", "-p",
+                                   "/workspace/src", "/workspace/tests/async"]), "prepare compiler workspace")
+                    _require(_run(["docker", "cp", str(ROOT / "src") + "/.",
+                                   tools_container + ":/workspace/src/"]), "copy source into compiler container")
+                    _require(_run(["docker", "cp", str(source),
+                                   tools_container + ":/workspace/tests/async/item_flags.cpp"]),
+                             "copy test harness into compiler container")
+                    source_args = " ".join(sources)
+                    compile_script = (
+                        "set -euo pipefail; "
+                        "read -r -a MYSQL_CFLAGS <<< \"$(mysql_config --cflags)\"; "
+                        "read -r -a MYSQL_LIBS <<< \"$(mysql_config --libs)\"; "
+                        "g++ -std=c++20 -pthread -Isrc -ffunction-sections -fdata-sections "
+                        "\"${MYSQL_CFLAGS[@]}\" tests/async/item_flags.cpp " + source_args +
+                        " -Wl,--gc-sections \"${MYSQL_LIBS[@]}\" -lcrypto -o /tmp/s05_item_flags"
+                    )
+                    compiled = _run(["docker", "exec", tools_container, "bash", "-lc", compile_script])
+                    output.append(_require(compiled, "compile focused spell and SQL harness"))
+                    run_env = fixture_environment
+                    run = _run(["docker", "exec", "-e", "DB_HOST", "-e", "DB_PORT", "-e",
+                                "DB_USER", "-e", "DB_PASSWD", "-e", "DB_NAME", tools_container,
+                                "/tmp/s05_item_flags"], env=run_env)
+                    output.append(run.stdout)
+                    if run.returncode:
+                        raise RuntimeError(f"S05 disposable SQL journey exit {run.returncode}:\n{run.stdout}")
+            finally:
+                if tools_container:
+                    _require(_run(["docker", "rm", "-f", tools_container]),
+                             "remove owned S05 compiler container")
+                    absent = _run(["docker", "container", "inspect", tools_container])
+                    if absent.returncode == 0 or not any(
+                        marker in absent.stdout for marker in ("No such container", "No such object")
+                    ):
+                        raise RuntimeError("disposable S05 compiler container cleanup could not be verified")
+                    print(f"S05_TOOLS_FIXTURE_REMOVED container={name}-tools")
+    print(f"S05_FIXTURE_REMOVED container={fixture.name}")
+    return fixture.redact("\n".join(part.strip() for part in output if part.strip()))

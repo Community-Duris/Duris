@@ -72,14 +72,21 @@ std::string scalar(MYSQL *connection, const std::string &text) {
     require(row && row[0], "scalar missing");
     return row[0];
 }
-void assert_server_retired(MYSQL *observer, unsigned long id) {
+void assert_server_retired(MYSQL *observer, unsigned long id, bool server_killed) {
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+    std::string sessions, transactions;
     do {
-        if (scalar(observer, "SELECT COUNT(*) FROM information_schema.processlist WHERE ID=" + std::to_string(id)) == "0" &&
-            scalar(observer, "SELECT COUNT(*) FROM information_schema.innodb_trx WHERE trx_mysql_thread_id=" + std::to_string(id)) == "0") return;
+        sessions = scalar(observer, "SELECT COUNT(*) FROM information_schema.processlist WHERE ID=" + std::to_string(id));
+        transactions = scalar(observer, "SELECT COUNT(*) FROM information_schema.innodb_trx WHERE trx_mysql_thread_id=" + std::to_string(id));
+        if (sessions == "0" && transactions == "0") return;
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     } while (std::chrono::steady_clock::now() < deadline);
-    require(false, "retired server session/transaction remains live");
+    const auto state = scalar(observer, "SELECT COALESCE(GROUP_CONCAT(CONCAT_WS(':', COMMAND, STATE, TIME)), 'none') FROM information_schema.processlist WHERE ID=" + std::to_string(id));
+    const auto transaction_state = scalar(observer, "SELECT COALESCE(GROUP_CONCAT(CONCAT_WS(':', trx_id, trx_state, trx_operation_state)), 'none') FROM information_schema.innodb_trx WHERE trx_mysql_thread_id=" + std::to_string(id));
+    require(false, "retired server session/transaction remains live id=" + std::to_string(id) +
+            " killed=" + std::to_string(server_killed) + " sessions=" + sessions +
+            " transactions=" + transactions + " session_state=" + state +
+            " transaction_state=" + transaction_state);
 }
 }
 MYSQL *sql_open_configured_connection(unsigned long) { return connect_fixture(); }
@@ -126,7 +133,7 @@ int main() {
                 "discard exposed capacity before lease release");
         if (!server_killed) query(bad, "SELECT 1"); // A marked lease remains owned and usable.
         sql_pool_release(bad);
-        assert_server_retired(observer, id);
+        assert_server_retired(observer, id, server_killed);
         require(scalar(observer, "SELECT COUNT(*) FROM read_pool_probe WHERE marker=1") == "0", "retirement committed unacknowledged row");
         require(waiter.wait_for(std::chrono::seconds(2)) == std::future_status::ready,
                 "release did not wake waiting borrower within existing deadline");

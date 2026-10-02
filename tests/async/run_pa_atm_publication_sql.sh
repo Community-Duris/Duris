@@ -64,11 +64,16 @@ published_port="${mapping##*:}"
 export ENVIRONMENT=test DB_USER=root DB_PASSWD="$PASSWORD" MYSQL_PWD="$PASSWORD"
 if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then MYSQL_SSL=(--ssl-mode=PREFERRED); else MYSQL_SSL=(--skip-ssl); fi
 ready=0
-for candidate in "127.0.0.1:$published_port" "host.docker.internal:$published_port"; do
+CANDIDATES=("127.0.0.1:$published_port" "host.docker.internal:$published_port")
+if [[ -n "$SQL_FIXTURE_PRIVATE_PORT" ]]; then
+    CANDIDATES=("127.0.0.1:$published_port")
+fi
+for candidate in "${CANDIDATES[@]}"; do
     TARGET_HOST="${candidate%:*}"
     TARGET_PORT="${candidate##*:}"
     MYSQL=(mysql "${MYSQL_SSL[@]}" --protocol=tcp --connect-timeout=3 -h "$TARGET_HOST" -P "$TARGET_PORT" -u "$DB_USER" -N -B)
-    for _ in $(seq 1 10); do
+    deadline=$((SECONDS + 90))
+    while ((SECONDS < deadline)); do
         if "${MYSQL[@]}" -e 'SELECT 1' >/dev/null 2>&1; then ready=1; break 2; fi
         sleep 1
     done

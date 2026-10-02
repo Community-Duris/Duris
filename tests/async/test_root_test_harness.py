@@ -178,6 +178,27 @@ class RunnerBehavior(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "omits required owners"):
             matrix.workload(document, specs)
 
+    def test_once_matrix_preserves_both_pinned_database_images(self):
+        matrix = self.integration_module()
+        document = json.loads((ROOT / "tests/integration_manifest.json").read_text())
+        observed = []
+
+        def capture(row, tokens, environment, spec_map):
+            observed.append(environment)
+            return dict(row=row["id"], engine=tokens["engine"], status="passed")
+
+        tokens = dict(descriptor="unused", sql_binary="unused", flat_binary="unused",
+                      head="a" * 40, binary_sha256="b" * 64)
+        with (patch.object(matrix, "freeze_build", return_value=tokens),
+              patch.object(matrix, "image_identity", return_value={"id": "sha256:" + "c" * 64}),
+              patch.object(matrix.subprocess, "check_output", return_value="a" * 40 + "\n"),
+              patch.object(matrix, "run_row", side_effect=capture)):
+            self.assertEqual(matrix.main(["--engine", "once", "--match", "pa_runtime_sql",
+                                          "--evidence-root", str(self.root / "evidence")]), 0)
+        self.assertEqual(len(observed), 1)
+        self.assertEqual(observed[0]["PA_RUNTIME_SQL_MARIADB_IMAGE"], document["engines"]["mariadb"])
+        self.assertEqual(observed[0]["PA_RUNTIME_SQL_MYSQL_IMAGE"], document["engines"]["mysql"])
+
     def test_matrix_reports_pending_required_rows_as_incomplete_in_json_and_junit(self):
         matrix = self.integration_module()
         report = dict(status="incomplete", attempts=[], pending=["mysql/required_native"])
