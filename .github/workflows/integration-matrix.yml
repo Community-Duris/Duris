@@ -73,3 +73,7 @@ jobs:
             bin/integration-results/*/*/*/result.json
             bin/integration-results/*/*/service/timeline.json
             bin/integration-results/*/*/service/server.log
+            bin/integration-results/*/*/*/faults/*.json
+            bin/integration-results/*/*/*/faults/*.log
+            bin/integration-results/*/*/*/faults/service/timeline.json
+            bin/integration-results/*/*/*/faults/service/server.log

@@ -140,7 +140,7 @@ def freeze_build(directory, environment):
             "matrix-config"], cwd=ROOT, text=True, env=environment)
     atomic_json(directory / "compiler.json", {"version": compiler, "configurations": configurations})
     recovery_tools = {tool: subprocess.check_output([tool, "--version"], text=True).strip()
-                      for tool in ("mariadb", "mariadbd")}
+                      for tool in ("mariadb", "mariadbd", "curl", "systemd-analyze")}
     # The bootstrap script does not implement --version; invoking that option
     # can initialize a database. Bind its bytes instead.
     recovery_tools["mariadb-install-db_sha256"] = digest(Path(shutil.which("mariadb-install-db")))
