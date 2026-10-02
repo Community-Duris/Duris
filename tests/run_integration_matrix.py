@@ -93,6 +93,9 @@ def freeze_build(directory, environment):
     commands = [
         ["make", "-C", "src", "-j2", "PERSISTENCE_BACKEND=mariadb", "DMS_BINARY=" + str(binaries["sql_binary"])],
         ["make", "-C", "src", "-j2", "PERSISTENCE_BACKEND=flatfile", "DMS_BINARY=" + str(binaries["flat_binary"])],
+        # Recovery tools and a few maintained wrappers consume the standard SQL
+        # path. Link it from the same objects so a clean checkout is sufficient.
+        ["make", "-C", "src", "-j2", "PERSISTENCE_BACKEND=mariadb"],
         ["make", "build-restore-tools", "world", "-j2"],
         ["python3", "tests/async/test_pa_accounting_batch_artifact.py"],
         ["python3", "tests/async/test_pa_copyover_artifact_contract.py"],
@@ -135,6 +138,9 @@ def freeze_build(directory, environment):
             "--eval=matrix-config:;@echo CC=$(CC); echo FLAGS=$(CFLAGS) $(INCLUDES) $(LDFLAGS) $(LIBS)",
             "matrix-config"], cwd=ROOT, text=True, env=environment)
     atomic_json(directory / "compiler.json", {"version": compiler, "configurations": configurations})
+    recovery_tools = {tool: subprocess.check_output([tool, "--version"], text=True).strip()
+                      for tool in ("mariadb", "mariadbd", "mariadb-install-db")}
+    atomic_json(directory / "recovery-tools.json", recovery_tools)
     return {**{key: str(value) for key, value in binaries.items()}, "head": head,
             "binary_sha256": digest(binaries["sql_binary"]), "descriptor": str(descriptor)}
 

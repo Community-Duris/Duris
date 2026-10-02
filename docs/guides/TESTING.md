@@ -71,6 +71,11 @@ tests/async/run_sql_pool_shutdown.sh
 # Isolated Docker/MySQL schema suites (Docker is an optional prerequisite):
 make test-db
 
+# Required SQL and recovery workload, with owned fixtures and no permitted skips:
+make test-integration
+python3 tests/run_integration_matrix.py --list
+make test-integration TEST_ENGINE=mysql TEST_MATCH=player_death_recovery
+
 # Full historical legacy upgrade, replay, bootstrap equivalence, and compatibility:
 tests/async/run_legacy_migration_mysql.sh
 
@@ -85,8 +90,11 @@ automatic entry. Every discovered file must have an explicit entry in
 files fail before execution. Manual prerequisites remain explicit. Use
 `make test-fast` for the short offline profile, or `TEST_PROFILE=native`, `journey`,
 `database`, or `recovery` with `make test-python` or `make test-list`.
-Database/recovery profiles reject required skips and currently refuse manual
-entries whose disposable fixtures/arguments have not been provisioned.
+Database/recovery profiles reject required skips. `make test-integration` provisions
+the reviewed SQL and recovery workload in `tests/integration_manifest.json`,
+including required cases from mixed suites, manual arguments, privileged recovery,
+and non-root recovery. It uses pinned MySQL and MariaDB images, fresh schemas,
+frozen builds and private runtime state; missing cases and skipped checks fail.
 
 `TEST_JOBS=0` selects workers from the available CPU budget (cgroup-aware, capped
 at eight). The runner starts expensive tests early and schedules overlap using
@@ -118,8 +126,9 @@ Build/world generation precedes the Python timings.
 The native accounting and player-inspector fixtures reuse immutable, verified
 build artifacts with content/flag/toolchain invalidation. Runtime state remains
 private. See [test suite streamlining](../testing/TEST_SUITE_STREAMLINING.md) for
-profile boundaries, cache/scheduling proofs, and the prepared behavioral and
-integration-matrix follow-ups.
+profile boundaries, cache/scheduling proofs, behavioral fault qualifications and
+the disposable integration matrix. `.github/workflows/integration-matrix.yml`
+runs the same matrix command; local results are the merge evidence.
 
 Do not invoke a discovered sibling test from another test merely to run it again.
 Import helpers without executing their test body, and give a unique fixture a
