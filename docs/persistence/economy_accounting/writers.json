@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "cfb42c8ecb2f596e0a3dd1cad86cac83840a6adb",
+  "source_commit": "5017a0e9e4d569c31356053ec7258040ecc1492a",
   "census_complete": true,
   "writers": [
     {
@@ -15342,12 +15342,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          356,
+          368,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          368,
+          380,
           "item_lifecycle"
         ]
       ],
@@ -15394,7 +15394,7 @@
       "sites": [
         [
           "src/item/enhance.c",
-          286,
+          277,
           "money_helper"
         ]
       ],
@@ -15441,37 +15441,37 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1940,
+          1974,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1952,
+          1986,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1958,
+          1992,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1965,
+          1999,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1971,
+          2005,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1981,
+          2015,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          2021,
+          2055,
           "item_lifecycle"
         ]
       ],
@@ -15516,12 +15516,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          375,
+          387,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          380,
+          392,
           "item_lifecycle"
         ]
       ],
@@ -15547,7 +15547,7 @@
       "coverage": "legacy",
       "classification": "Enhance creates a fresh result UID, debits cash, gives the result to the player, then destroys the old source and normally the carried material; pouch mode retains its virtual donor.",
       "authority_boundary": "Commit old UID retirement, optional donor sink, result UID creation, exact payload and cash fee under one root before any result publication.",
-      "current_support": "Source classification only; active-epoch refusal and both-backend executable root unverified.",
+      "current_support": "Production-function sanitizer regressions qualify payment admission refusal, negative-price refusal and valid free/paid quotes with physical or pouch materials. A refused debit retires only the provisional output. Compound wallet/input/output durability and active-epoch executable roots remain unverified on all backends.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -15562,36 +15562,43 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_ordinary_enhancement_payment.py"
+      ],
       "sites": [
         [
           "src/item/enhance.c",
-          246,
+          252,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          292,
-          "item_publication"
-        ],
-        [
-          "src/item/enhance.c",
-          293,
-          "item_publication"
-        ],
-        [
-          "src/item/enhance.c",
-          294,
+          279,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          297,
+          304,
           "item_publication"
         ],
         [
           "src/item/enhance.c",
-          298,
+          305,
+          "item_publication"
+        ],
+        [
+          "src/item/enhance.c",
+          306,
+          "item_lifecycle"
+        ],
+        [
+          "src/item/enhance.c",
+          309,
+          "item_publication"
+        ],
+        [
+          "src/item/enhance.c",
+          310,
           "item_lifecycle"
         ]
       ],
@@ -15809,12 +15816,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1265,
+          1299,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1273,
+          1307,
           "item_publication"
         ]
       ],
@@ -17949,7 +17956,7 @@
       "coverage": "legacy",
       "classification": "Reads and frees a fresh prototype only to rebuild the already modified source item\u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u201e\u00a2s description.",
       "authority_boundary": "Keep the temporary template unpublished; description change belongs to the retained source UID revision.",
-      "current_support": "Source review only; exclusion and caller reachability need executable proof.",
+      "current_support": "Actual production-function sanitizers qualify missing-template refusal before payment/item/material mutation, exact probe release on rejected debit, ordinary description rebuilding and the encrusted path without a template. Compound retained-item durability remains unverified.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -17964,16 +17971,23 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_essence_enhancement_payment.py"
+      ],
       "sites": [
         [
           "src/item/enhance.c",
-          1083,
+          1086,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1093,
+          1096,
+          "item_lifecycle"
+        ],
+        [
+          "src/item/enhance.c",
+          1127,
           "item_lifecycle"
         ]
       ],
@@ -17997,9 +18011,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Modifier enhancement changes source affected fields before debiting the player and extracting its material; fee, in-place payload and material sink are separate direct effects.",
+      "classification": "Modifier enhancement validates the planned signed-byte affect and accepts the wallet fee before changing the source item and extracting its material. Fee, retained item payload and material sink still lack one durable compound receipt.",
       "authority_boundary": "Fence source UID/revision, material UID and wallet fee; commit payload, sink and fee atomically before any live field change.",
-      "current_support": "Legacy money-helper/source behavior only; unified accounting, both-backend parity and active-epoch refusal unverified.",
+      "current_support": "Actual production-function sanitizer evidence qualifies payment refusal without item/material mutation, all three ordinary fee tiers, the normal step cap and persisted modifier bounds. Compound durability and accounting backend qualification remain unverified.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -18014,18 +18028,20 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_essence_enhancement_payment.py"
+      ],
       "sites": [
         [
           "src/item/enhance.c",
-          1068,
+          1093,
           "money_helper"
         ]
       ],
       "evidence": [],
       "reachability_evidence": "The linked helper call is in the named source function; caller reachability, committed root identity and refusal still need executable qualification.",
       "native_effects": {
-        "holding_effect": "Modifier enhancement changes source affected fields before debiting the player and extracting its material; fee, in-place payload and material sink are separate direct effects.",
+        "holding_effect": "Modifier enhancement validates the planned signed-byte affect and accepts the wallet fee before changing the source item and extracting its material. Fee, retained item payload and material sink still lack one durable compound receipt.",
         "custody_effect": "Linked enhancement item route owns source/replacement/material UID history; the fee site alone does not prove it.",
         "native_state_targets": [
           "PC or NPC wallet denominations / native player_data where applicable",
@@ -18062,12 +18078,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1077,
+          1112,
           "item_publication"
         ],
         [
           "src/item/enhance.c",
-          1078,
+          1113,
           "item_lifecycle"
         ]
       ],
@@ -18199,12 +18215,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          2064,
+          2098,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          2072,
+          2106,
           "item_publication"
         ]
       ],
@@ -19966,7 +19982,7 @@
       "sites": [
         [
           "src/item/enhance.c",
-          652,
+          664,
           "money_helper"
         ]
       ],
@@ -20010,12 +20026,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          544,
+          556,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          548,
+          560,
           "item_lifecycle"
         ]
       ],
@@ -20104,12 +20120,12 @@
       "sites": [
         [
           "src/item/enhance.c",
-          1140,
+          1174,
           "item_lifecycle"
         ],
         [
           "src/item/enhance.c",
-          1140,
+          1174,
           "item_publication"
         ]
       ],
@@ -53513,193 +53529,205 @@
     },
     {
       "path": "src/item/enhance.c",
-      "line": 286,
+      "line": 277,
       "family": "money_helper",
-      "excerpt": "SUB_MONEY(ch, cost, 0);"
+      "excerpt": "if (cost > 0 && SUB_MONEY(ch, cost, 0) != 0)"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 652,
+      "line": 664,
       "family": "money_helper",
-      "excerpt": "SUB_MONEY(ch, cost, 0);"
+      "excerpt": "if (cost > 0 && SUB_MONEY(ch, cost, 0) != 0)"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1068,
+      "line": 1093,
       "family": "money_helper",
-      "excerpt": "SUB_MONEY(ch, cost, 0);"
+      "excerpt": "if (SUB_MONEY(ch, cost, 0) != 0)"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 246,
+      "line": 252,
       "family": "item_lifecycle",
       "excerpt": "robj = read_object(entry->vnum, VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 294,
+      "line": 279,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(robj);"
+    },
+    {
+      "path": "src/item/enhance.c",
+      "line": 306,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(source);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 298,
+      "line": 310,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(material);"
-    },
-    {
-      "path": "src/item/enhance.c",
-      "line": 356,
-      "family": "item_lifecycle",
-      "excerpt": "base = read_object(OBJ_VNUM(item), VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
       "line": 368,
       "family": "item_lifecycle",
-      "excerpt": "extract_obj(base);"
-    },
-    {
-      "path": "src/item/enhance.c",
-      "line": 375,
-      "family": "item_lifecycle",
-      "excerpt": "P_obj material = read_object(vnum, VIRTUAL);"
+      "excerpt": "base = read_object(OBJ_VNUM(item), VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
       "line": 380,
       "family": "item_lifecycle",
+      "excerpt": "extract_obj(base);"
+    },
+    {
+      "path": "src/item/enhance.c",
+      "line": 387,
+      "family": "item_lifecycle",
+      "excerpt": "P_obj material = read_object(vnum, VIRTUAL);"
+    },
+    {
+      "path": "src/item/enhance.c",
+      "line": 392,
+      "family": "item_lifecycle",
       "excerpt": "extract_obj(material);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 544,
+      "line": 556,
       "family": "item_lifecycle",
       "excerpt": "if (!target || !(target_obj = read_object(target->vnum, VIRTUAL)))"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 548,
+      "line": 560,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(target_obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1078,
+      "line": 1086,
       "family": "item_lifecycle",
-      "excerpt": "extract_obj(material);"
+      "excerpt": "tempobj = read_object(OBJ_VNUM(source), VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1083,
-      "family": "item_lifecycle",
-      "excerpt": "P_obj tempobj = read_object(OBJ_VNUM(source), VIRTUAL);"
-    },
-    {
-      "path": "src/item/enhance.c",
-      "line": 1093,
+      "line": 1096,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tempobj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1140,
+      "line": 1113,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(material);"
+    },
+    {
+      "path": "src/item/enhance.c",
+      "line": 1127,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(tempobj);"
+    },
+    {
+      "path": "src/item/enhance.c",
+      "line": 1174,
       "family": "item_lifecycle",
       "excerpt": "obj_to_char(read_object(400232, VIRTUAL), mob);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1265,
+      "line": 1299,
       "family": "item_lifecycle",
       "excerpt": "P_obj gift = read_object(reward, VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1940,
+      "line": 1974,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(vnum, VIRTUAL);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1952,
+      "line": 1986,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1958,
+      "line": 1992,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1965,
+      "line": 1999,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1971,
+      "line": 2005,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1981,
+      "line": 2015,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2021,
+      "line": 2055,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2064,
+      "line": 2098,
       "family": "item_lifecycle",
       "excerpt": "if (!(material = read_object(high_vnum, VIRTUAL)))"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 292,
+      "line": 304,
       "family": "item_publication",
       "excerpt": "obj_to_char(robj, ch);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 293,
+      "line": 305,
       "family": "item_publication",
       "excerpt": "obj_from_char(source);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 297,
+      "line": 309,
       "family": "item_publication",
       "excerpt": "obj_from_char(material);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1077,
+      "line": 1112,
       "family": "item_publication",
       "excerpt": "obj_from_char(material);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1140,
+      "line": 1174,
       "family": "item_publication",
       "excerpt": "obj_to_char(read_object(400232, VIRTUAL), mob);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 1273,
+      "line": 1307,
       "family": "item_publication",
       "excerpt": "obj_to_char(gift, ch);"
     },
     {
       "path": "src/item/enhance.c",
-      "line": 2072,
+      "line": 2106,
       "family": "item_publication",
       "excerpt": "obj_to_char(material, mob);"
     },
