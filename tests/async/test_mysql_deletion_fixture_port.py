@@ -39,6 +39,11 @@ class DeletionPortTests(unittest.TestCase):
                 self.assertIn("-P", captured["arguments"])
                 self.assertEqual(captured["arguments"][captured["arguments"].index("-P") + 1], expected)
 
+    def test_fixture_schema_fits_native_mysql_exclusion_lock(self):
+        captured = self.probe("34670")
+        lock = "duris.player.death.restitution." + captured["environment"]["DB_NAME"]
+        self.assertLessEqual(len(lock.encode("ascii")), 64)
+
     def test_invalid_port_refuses_before_connecting(self):
         for port in ("0", "65536", "-1", "", "3306suffix", "٣٣٠٦", "9" * 100):
             with self.subTest(port=port), mock.patch.dict(os.environ, {
