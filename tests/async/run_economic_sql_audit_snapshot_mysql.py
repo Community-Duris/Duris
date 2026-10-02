@@ -466,6 +466,65 @@ try:
                                "parent_item_uid=NULL WHERE item_uid=84")
             assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
                 expected_exceptions
+            # Re-creating a UID is invalid even if all revisions, references,
+            # roots and the final native row agree across the lineage cut.
+            duplicate_uid_root = bytes.fromhex("e6" * 16)
+            duplicate_uid_source = bytes.fromhex("b2" * 48)
+            with setup.cursor() as writer:
+                writer.execute("INSERT INTO economic_accounting_operation VALUES "
+                               "(%s,%s,%s,NULL,33,1,0,%s,0,0,0,1,NULL)",
+                               (duplicate_uid_root, LINEAGE, EPOCH, duplicate_uid_source))
+                writer.execute("INSERT INTO critical_operation_inbox "
+                               "(operation_id,status,result_code) VALUES (%s,1,0)",
+                               (duplicate_uid_root,))
+                writer.execute("INSERT INTO economic_accounting_source_claim VALUES (%s,%s,%s)",
+                               (LINEAGE, duplicate_uid_source, duplicate_uid_root))
+                writer.execute("INSERT INTO economic_accounting_item_reference VALUES "
+                               "(%s,0,0,84,1,2,%s,0)", (duplicate_uid_root, duplicate_uid_root))
+                writer.execute("INSERT INTO item_ownership_ledger VALUES "
+                               "(%s,0,84,84,NULL,1,7,0,2,1,2)", (duplicate_uid_root,))
+                writer.execute("UPDATE item_current_owner SET item_revision=2 WHERE item_uid=84")
+            duplicate_uid_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert duplicate_uid_report["exception_counts"] == {
+                **expected_exceptions, "duplicate_uid": 1}, duplicate_uid_report
+            with setup.cursor() as writer:
+                writer.execute("UPDATE economic_accounting_operation SET reason=34 "
+                               "WHERE operation_id=%s", (duplicate_uid_root,))
+                writer.execute("UPDATE item_ownership_ledger SET reason_type=3,"
+                               "to_owner_type=8,to_owner_id=0 WHERE operation_id=%s",
+                               (duplicate_uid_root,))
+                writer.execute("UPDATE item_current_owner SET state=2,owner_type=8,"
+                               "owner_id=0 WHERE item_uid=84")
+            assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
+                expected_exceptions
+            revived_uid_root = bytes.fromhex("e7" * 16)
+            revived_uid_source = bytes.fromhex("b3" * 48)
+            with setup.cursor() as writer:
+                writer.execute("INSERT INTO economic_accounting_operation VALUES "
+                               "(%s,%s,%s,NULL,32,1,0,%s,0,0,0,1,NULL)",
+                               (revived_uid_root, LINEAGE, EPOCH, revived_uid_source))
+                writer.execute("INSERT INTO critical_operation_inbox "
+                               "(operation_id,status,result_code) VALUES (%s,1,0)", (revived_uid_root,))
+                writer.execute("INSERT INTO economic_accounting_source_claim VALUES (%s,%s,%s)",
+                               (LINEAGE, revived_uid_source, revived_uid_root))
+                writer.execute("INSERT INTO economic_accounting_item_reference VALUES "
+                               "(%s,0,0,84,2,3,%s,0)", (revived_uid_root, revived_uid_root))
+                writer.execute("INSERT INTO item_ownership_ledger VALUES "
+                               "(%s,0,84,84,NULL,1,7,0,3,2,1)", (revived_uid_root,))
+                writer.execute("UPDATE item_current_owner SET item_revision=3,state=1,"
+                               "owner_type=1,owner_id=7 WHERE item_uid=84")
+            revived_uid_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert revived_uid_report["exception_counts"] == {
+                **expected_exceptions, "resurrected_item_uid": 1}, revived_uid_report
+            with setup.cursor() as writer:
+                for table in ("economic_accounting_operation", "critical_operation_inbox",
+                              "economic_accounting_source_claim", "economic_accounting_item_reference",
+                              "item_ownership_ledger"):
+                    writer.execute(f"DELETE FROM {table} WHERE operation_id IN (%s,%s)",
+                                   (duplicate_uid_root, revived_uid_root))
+                writer.execute("UPDATE item_current_owner SET item_revision=1 WHERE item_uid=84")
+            assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
+                expected_exceptions
             with setup.cursor() as writer:
                 writer.execute("INSERT INTO economic_accounting_operation VALUES "
                                "(%s,%s,%s,NULL,33,1,0,%s,0,0,0,1,NULL)",

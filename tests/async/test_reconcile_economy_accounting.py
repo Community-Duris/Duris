@@ -666,6 +666,60 @@ class ReconciliationTests(unittest.TestCase):
         )
         self.assertEqual(reconciler.counts["uid_history_operation_not_committed"], 1)
 
+    def lineage_lifetime_report(self, actions, origin=None):
+        origin = origin or creation_snapshot()["item_origins"][0]
+        events = []
+        for index, action in enumerate(actions):
+            events.append({
+                "operation_id": f"{index + 1:032x}", "event_index": 0, "uid": 81,
+                "before_revision": origin["revision"] + index,
+                "revision": origin["revision"] + index + 1,
+                "root": 81, "parent": None,
+                "owner": [8, 0, 0] if action == "destroy" else [1, 7, 0],
+                "state": "tombstone" if action == "destroy" else "live",
+                "action": action, "operation_outcome": "committed", "referenced": False,
+            })
+        current = {field: events[-1][field]
+                   for field in ("uid", "revision", "root", "parent", "owner", "state")}
+        reconciler = Reconciler()
+        reconciler.audit_lineage_uid_history(
+            "disposable", {"uid_history_events": events}, {(81,): origin}, {(81,): current})
+        return reconciler
+
+    def test_lineage_history_requires_a_creation_event(self):
+        self.assertEqual(self.lineage_lifetime_report(["move"]).counts["missing_item_creation"], 1)
+
+    def test_lineage_history_rejects_duplicate_creation(self):
+        self.assertEqual(self.lineage_lifetime_report(["create", "create"]).counts["duplicate_uid"], 1)
+        origin = clean_snapshot()["item_origins"][0]
+        self.assertEqual(self.lineage_lifetime_report(["create"], origin).counts["duplicate_uid"], 1)
+
+    def test_lineage_history_checks_creation_origin(self):
+        origin = creation_snapshot()["item_origins"][0]
+        origin["state"] = "live"
+        self.assertEqual(self.lineage_lifetime_report(["create"], origin).counts[
+            "invalid_item_creation_origin"], 1)
+
+    def test_lineage_history_preserves_retired_uid_lifetimes(self):
+        for action in ("create", "move"):
+            with self.subTest(action=action):
+                self.assertEqual(self.lineage_lifetime_report(
+                    ["create", "destroy", action]).counts["resurrected_item_uid"], 1)
+
+    def test_lineage_history_accepts_creation_move_and_retirement(self):
+        for actions in (["create"], ["create", "move"], ["create", "move", "destroy"]):
+            with self.subTest(actions=actions):
+                self.assertEqual(dict(self.lineage_lifetime_report(actions).counts), {})
+        self.assertEqual(dict(self.lineage_lifetime_report(
+            ["move"], clean_snapshot()["item_origins"][0]).counts), {})
+
+    def test_opening_tombstone_cannot_become_live_in_either_history_scope(self):
+        snapshot = clean_snapshot()
+        snapshot["item_origins"][0].update(state="tombstone", owner=[8, 0, 0])
+        self.assertIn("resurrected_item_uid", self.codes(snapshot))
+        report = self.lineage_lifetime_report(["move"], snapshot["item_origins"][0])
+        self.assertEqual(report.counts["resurrected_item_uid"], 1)
+
     def test_uid_history_coverage_matches_the_full_event_and_unreferenced_sets(self):
         event = {
             "operation_id": OP, "event_index": 0, "uid": 81,
