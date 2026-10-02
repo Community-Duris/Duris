@@ -33,9 +33,10 @@ neither every branch nor every historical prerequisite.
 | 6 | Abandoned Elven Homestead | [Comprehensive source dossier](zone-stories/ABANDONED_ELVEN_HOMESTEAD.md): four Q contracts, six M/MA responses, 138 resets, two key targets, shared speech doors and three item teleports | Revision 2: two achievements plus two services; optional egg/access/statue steps; source and post-reward key guidance | Active material/scenery sources; live access and confirmed travel; potion lineage; narrated elf closure; accepted tapestry examination |
 | 7 | Lord Krimeneha's Mansion | [Comprehensive source dossier](zone-stories/KRIMENEHAS_MANSION.md): nine Q contracts, nine M responses, 176 resets, all fragment rescues, roaming staff source and exact key/container targets | Revision 2: eight achievements plus staff service; optional access/preparation/family receipts; distinct gardener guidance | Active reset sources; replacement fragment lineage; roaming NPC/competing staff consumers; all-stage household and servants' blessing decision |
 | 8 | Bastine Castle | [Comprehensive source dossier](zone-stories/BASTINE_CASTLE.md): 14 Q contracts, four M responses, 428 resets, twelve promotion sources, prince/tower key and complete bounded Morlanthra continuation | Revision 2: twelve independent commissions in narrated order, prince and Victor requests; optional promotion/tower history; precise external sources and rewards | Active local/foreign sources; replacement hide lineage; all-stage rank campaign; owned cross-zone rescue; term/concealment decisions |
-| 9–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 9 | Pine Hollow | [Comprehensive source dossier](zone-stories/PINE_HOLLOW.md): seven Q contracts, ten M responses, 352 resets, roaming dragon sources, both mine keys, shared hazards and three external consumers | Revision 2: seven independent achievements; exact skin counts/types, source/availability guidance, real rewards and mine exploration | Active source generation; two-skin/one-cap conflict; holding-room availability; explicit branch attempts; hazard/access and owned foreign journeys |
+| 10–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Pine Hollow, followed by Quietus Quay. Their earlier native bindings
+The next area is Quietus Quay, followed by Torg. Their earlier native bindings
 do not establish comprehensive source review. Do not advance a zone's status
 merely because the map parses, the Q denominator matches, or a candidate item
 graph was extracted.
@@ -70,6 +71,9 @@ graph was extracted.
 | ZSQ-KRIMENEHA-ALL-STAGES / BASTINE-RANK | Staff preparation and household rescues are distinct; servants' blessing has no extra encoded reward. Bastine's twelve promotions do not enforce earlier ranks. | Add explicitly authored all-stage achievements and accepted membership/rank rules only after content decisions. Retain gifted terminal inputs and independent receipts. |
 | ZSQ-CROSS-ZONE-OWNERSHIP | Victor's Bastine trust exchange starts Highway's ordinary four-lock route and Morlanthra's own final Q. The tree is not a bespoke four-item admission check. | Add owned story links, shared clue/access adapters, encounter/stage visibility and terminal references without annexing or double-counting native receipts. Source range guesses must not override prototype-file ownership. |
 | ZSQ-BASTINE-TERMS / PRINCE | Staff/wand, helm/ankh and patch/face wording differ; bedroom secret/reset state differs. Prince head is reset inventory; grief, disease and banishment wording is not a Q state mutation. | Journal now uses actual items/keys and optional routes. Builder reviews intended narrative, concealment and later dragon challenge; qualify shared combat/gear separately before adding kill, cure or banishment objectives. |
+| ZSQ-RESET-SUPPLY-CAP | Pine Hollow's coat requires two huge skins, but the only active producer has an ordinary live item cap of one. Forced repopulation or existing stock can differ. | Reproduce fresh-world accumulation after reset admission; review raising the cap or adding a source. Exact count and stock capacity need separate static checks; preserve the two-skin Q pending a balance decision. |
+| ZSQ-BRANCH-AVAILABILITY / HOLDING-ROOM | Pine's dragon contracts are independent but remove their giver's remaining materials; three roaming proof carriers can enter a one-way holding room. | Qualify both completion orders and live source episodes. Author branch/attempt policy explicitly; reproduce the holding path and review barrier, return or placement repair without guessing a missing trophy. |
+| ZSQ-DATA-HAZARDS / FOREIGN-EYE | Pine's mine movement trap prevents that move; opening the trapped desk differs from retrieving the eye for Skelenak. The duergar liberation and fountain-death narrative has no local completion. | Add confirmed access/movement/open/retrieval with hazard outcome, source identity and owned foreign terminal; builders decide liberation/investigation intent before durable objectives are added. |
 | Evidence extractor gaps | Fixed chained literal assignment detection and ignored commented assignments. Object/mobile membership follows source prototypes rather than room bounds. | Continue review for aliases, computed VNUMs, preprocessor branches, dynamic assignments, and foreign reset sources; extraction remains a lead list, not execution proof. |
 
 ## Verification record
@@ -207,3 +211,38 @@ The source queue is now eight of 220 complete, with 212 areas pending. Continue
 with Pine Hollow and Quietus. Live roaming/source generation, exact replacement
 lineage, all-stage household/rank campaigns, accepted clues/access and owned
 cross-zone rescue remain qualification work; this pass does not certify them.
+
+### Fifth comprehensive mapping batch — October 2, 2026
+
+Pine Hollow's complete source dossier and reproducible audit index are recorded.
+Revision 2 improves sources, exact garments/materials, rewards, encounter guidance
+and competing-route availability while preserving seven independent achievements.
+The mine/duergar exploration, shared hazards and Skelenak eye continuation are
+mapped without creating an invented local terminal. Source-cap and holding-room
+concerns include precise reproduction and builder repair plans.
+
+Native C++20 warnings-as-errors regressions passed for all 36 maps and schemas
+1/2/3. New cases cover supplied dragon equipment/trophies without source, kill,
+topic or earlier branch history; independent receipts; one huge skin versus
+two exact huge skins; two versus three brown skins; ordinary/huge type separation;
+read-only next actions; and reload without invented other clothing or foreign
+achievements. These cases qualify projection/receipt behavior, not NPC wandering,
+source generation, trap execution or a played foreign quest journey.
+
+Production catalog/snapshot, generated world inventory and all nine reproducible
+source indices passed, including Pine's exact reset/prototype counts and the
+documented single huge-skin producer. All 27 required home maps passed. The
+maintained SQL `make -C src` completed from its existing artifacts; no production
+C/C++ source changed. Complete touched-file and changed-line formatting,
+`git diff --check`, and 282 local document links passed.
+
+All 2,668 raw definitions, source fingerprint, content revision, zone registry,
+native story bindings/classifications and other 35 maps are unchanged as parsed
+objects. Global projection remains 2,359 achievements, 1,962 potential daily
+units and 2,509 rows including services/administrative content. No database
+operation, migration, accounting activation or merge occurred.
+
+The source queue is now nine of 220 complete, with 211 areas pending. Continue
+with Quietus Quay, then Torg. Fresh active-world source capacity, roaming/holding
+availability, branch attempts, exact replacement lineage, shared hazard/access
+events and owned cross-zone journeys remain implementation/qualification work.

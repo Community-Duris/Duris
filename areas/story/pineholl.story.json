@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "revision": 1,
+  "revision": 2,
   "source_area": "pineholl",
   "coverage": "complete",
   "stories": [
@@ -8,7 +8,7 @@
       "id": "the-cruel-warrior-s-dragon-trophies-16005",
       "title": "The Cruel Warrior's Dragon Trophies",
       "category": "story",
-      "summary": "Deliver the three distinct dragon scales and broken lance requested by the warrior. Delivery does not prove personal kills, and this is separate from helping the wounded dragon.",
+      "summary": "Fulfill the hunter's demand for three different dragon scales and his broken lance. Supplied trophies are accepted. Auriam's own reward and the faerie guard's exchange share some of these materials.",
       "contracts": [
         {
           "giver_vnum": 16005,
@@ -20,7 +20,7 @@
           "id": "material-16015",
           "text": "Carry 1 x a gold dragon scale",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Auriam carries a gold dragon scale and also awards one for helping her. Her scale is distinct from Nuriem's green-hued scale and Altrucali's brown-hued scale. Materials supplied by another player are accepted.",
           "item_vnums": [
             16015
           ],
@@ -30,7 +30,7 @@
           "id": "material-16016",
           "text": "Carry 1 x a broken mithral lance",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Auriam carries the broken lance. The faerie guard in the Twisted Wood also accepts it. Auriam leaves after her own exchange, so secure the lance first if you intend to use that route. Materials supplied by another player are accepted.",
           "item_vnums": [
             16016
           ],
@@ -40,7 +40,7 @@
           "id": "material-16076",
           "text": "Carry 1 x a green-hued gold dragon scale",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Nuriem carries the green-hued scale. She can range beyond Pine Hollow; her source is separate from her mother's valley encounter. Materials supplied by another player are accepted.",
           "item_vnums": [
             16076
           ],
@@ -50,7 +50,7 @@
           "id": "material-16077",
           "text": "Carry 1 x the brown-hued scale of an elder gold dragon",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Altrucali carries the brown-hued scale. He can range beyond Pine Hollow. His scale is distinct from Nuriem's and Auriam's. Materials supplied by another player are accepted.",
           "item_vnums": [
             16077
           ],
@@ -58,9 +58,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Return all three distinct scales and the broken lance to the cruel warrior",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "He awards a dragonscale earring, golden dagger, dragonscale collar, sword of the blessed and gold dragon scale, then leaves. Supplied trophies are accepted.",
           "contracts": [
             {
               "giver_vnum": 16005,
@@ -74,7 +74,7 @@
       "id": "help-the-wounded-gold-dragon-16006",
       "title": "Help the Wounded Gold Dragon",
       "category": "story",
-      "summary": "Deliver the black sword, black platemail, and dark-spirit totem to help the wounded dragon. The journal records the exchange, not personal kills or a locked faction choice.",
+      "summary": "Help Auriam oppose the cruel warrior and Clamphorl by delivering their exact equipment. Supplied equipment is accepted. Auriam departs after rewarding you with a scale and her horn.",
       "contracts": [
         {
           "giver_vnum": 16006,
@@ -86,7 +86,7 @@
           "id": "material-16013",
           "text": "Carry 1 x a black sword",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The cruel warrior wields this sword. Carry it with his black platemail and Clamphorl's totem for Auriam's exchange. Materials supplied by another player are accepted.",
           "item_vnums": [
             16013
           ],
@@ -96,7 +96,7 @@
           "id": "material-16014",
           "text": "Carry 1 x a full suit of black platemail",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The cruel warrior wears this platemail. The faerie guard in the Twisted Wood also accepts it; that separate reward does not prepare the armor for Auriam. Materials supplied by another player are accepted.",
           "item_vnums": [
             16014
           ],
@@ -106,7 +106,7 @@
           "id": "material-16080",
           "text": "Carry 1 x the totem of dark spirits",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Clamphorl carries the totem of dark spirits and can range beyond Pine Hollow. The duergar mine is a separate exploration route. Materials supplied by another player are accepted.",
           "item_vnums": [
             16080
           ],
@@ -114,9 +114,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Bring the black sword, black platemail and dark-spirit totem to Auriam",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Auriam awards a gold dragon scale and her horn, then leaves. Secure any other materials you need from her before completing this exchange.",
           "contracts": [
             {
               "giver_vnum": 16006,
@@ -130,7 +130,7 @@
       "id": "a-brown-bear-jacket-16080",
       "title": "A Brown Bear Jacket",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Darlene makes one jacket of brown bearskin. This commission uses three brown skins and no coin fee. Supplied skins or pelts are accepted. The other garments are independent commissions.",
       "contracts": [
         {
           "giver_vnum": 16080,
@@ -142,7 +142,7 @@
           "id": "material-16019",
           "text": "Carry 3 x a brown bear skin",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Brown bears in the forest carry brown bear skins. Bring three of this exact kind; black and huge bear skins serve different commissions. Materials supplied by another player are accepted.",
           "item_vnums": [
             16019
           ],
@@ -150,9 +150,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Trade three brown bear skins with Darlene for a jacket",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Darlene makes one jacket of brown bearskin. This commission uses three brown skins and no coin fee.",
           "contracts": [
             {
               "giver_vnum": 16080,
@@ -166,7 +166,7 @@
       "id": "black-bear-leggings-16080",
       "title": "Black Bear Leggings",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Darlene makes one pair of black bearskin leggings. This commission uses three ordinary black skins and no coin fee. Supplied skins or pelts are accepted. The other garments are independent commissions.",
       "contracts": [
         {
           "giver_vnum": 16080,
@@ -178,7 +178,7 @@
           "id": "material-16020",
           "text": "Carry 3 x a black bear skin",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Black bears in the forest carry these skins. Bring three ordinary black bear skins for leggings; huge bear skins are for the coat. Materials supplied by another player are accepted.",
           "item_vnums": [
             16020
           ],
@@ -186,9 +186,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Trade three black bear skins with Darlene for leggings",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Darlene makes one pair of black bearskin leggings. This commission uses three ordinary black skins and no coin fee.",
           "contracts": [
             {
               "giver_vnum": 16080,
@@ -202,7 +202,7 @@
       "id": "a-heavy-bear-coat-16080",
       "title": "A Heavy Bear Coat",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Darlene makes one heavy bearskin coat. Both skins must be the huge kind; ordinary black skins serve the leggings request. Supplied skins or pelts are accepted. The other garments are independent commissions.",
       "contracts": [
         {
           "giver_vnum": 16080,
@@ -214,7 +214,7 @@
           "id": "material-16021",
           "text": "Carry 2 x a huge bear skin",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The large black bear carries a huge bear skin. This coat needs two; a single skin is insufficient. Confirm a supply of both skins before planning the exchange. Materials supplied by another player are accepted.",
           "item_vnums": [
             16021
           ],
@@ -222,9 +222,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Trade two huge bear skins with Darlene for a coat",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Darlene makes one heavy bearskin coat. Both skins must be the huge kind; ordinary black skins serve the leggings request.",
           "contracts": [
             {
               "giver_vnum": 16080,
@@ -238,7 +238,7 @@
       "id": "badgerskin-boots-16080",
       "title": "Badgerskin Boots",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Darlene makes one pair of badgerskin boots. This commission uses three pelts and no coin fee. Supplied skins or pelts are accepted. The other garments are independent commissions.",
       "contracts": [
         {
           "giver_vnum": 16080,
@@ -250,7 +250,7 @@
           "id": "material-16024",
           "text": "Carry 3 x a badger pelt",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Large badgers in the forest carry these pelts. Bring three together for one pair of boots. Materials supplied by another player are accepted.",
           "item_vnums": [
             16024
           ],
@@ -258,9 +258,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Trade three badger pelts with Darlene for boots",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Darlene makes one pair of badgerskin boots. This commission uses three pelts and no coin fee.",
           "contracts": [
             {
               "giver_vnum": 16080,
@@ -274,7 +274,7 @@
       "id": "a-red-fox-stole-16080",
       "title": "A Red Fox Stole",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Darlene makes one red fox stole. This commission uses three pelts and no coin fee. Supplied skins or pelts are accepted. The other garments are independent commissions.",
       "contracts": [
         {
           "giver_vnum": 16080,
@@ -286,7 +286,7 @@
           "id": "material-16025",
           "text": "Carry 3 x a red fox pelt",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Crafty red foxes in the wooded valley and western approaches carry these pelts. Bring three together; a separate Ice Crag request also uses a fox pelt. Materials supplied by another player are accepted.",
           "item_vnums": [
             16025
           ],
@@ -294,9 +294,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Trade three red fox pelts with Darlene for a stole",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Darlene makes one red fox stole. This commission uses three pelts and no coin fee.",
           "contracts": [
             {
               "giver_vnum": 16080,
@@ -308,17 +308,19 @@
     }
   ],
   "exclusions": [],
-  "introduction": "Explore the hollow for woodland requests and competing accounts of the dragon conflict.",
+  "introduction": "Explore a forest troubled by dragon hunters, a hostile logging village, and its concealed mine.",
   "orientation": [
-    "Use look and exits to explore. Meet visible people to reveal their requests.",
-    "Talk to the people you meet to learn about local requests. The checklist shows your current supplies and completed exchanges."
+    "Meet visible people to reveal their requests. Auriam and the cruel warrior begin in the forest valley; Darlene trades skins in the village.",
+    "Ask about the listed topics. The dragon accounts lead to different exchanges; supplied materials are accepted, and each request has its own reward.",
+    "Read the sign in Darlene's Trading Post for her five clothing commissions. Keep the exact skins or pelts you intend to trade in your inventory.",
+    "The village's guarded mine and smelter use different keys. Hidden passages beneath the mine lead to a duergar refuge; these exploration leads have no local quest completion."
   ],
   "contacts": [
     {
       "mob_vnum": 16005,
       "name": "a cruel warrior",
       "keyword": "anti-paladin",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "The hunter begins in the forest valley. Ask about his search, lance, Auriam and her children to learn his trophy demand.",
       "topics": [
         "search",
         "lance",
@@ -330,7 +332,7 @@
       "mob_vnum": 16006,
       "name": "Auriam",
       "keyword": "auriam",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "The wounded gold dragon begins in the forest valley. Ask about her scar to learn about the warrior and Clamphorl.",
       "topics": [
         "scar"
       ]
@@ -339,7 +341,7 @@
       "mob_vnum": 16080,
       "name": "Darlene",
       "keyword": "darlene",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Darlene works in the village trading post. Read her sign and ask about each garment; her exchanges use skins and pelts.",
       "topics": [
         "jacket",
         "leggings",

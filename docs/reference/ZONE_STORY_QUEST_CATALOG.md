@@ -25,6 +25,9 @@ intermediate pet rescue as a service while preserving one final achievement.
 Breale preserves its Passage drawing riddle and independent Triad rewards.
 The Homestead now displays optional access/statue preparation and explains the
 two spider keys, while retaining two achievements and two services.
+Pine Hollow retains seven independent achievements with exact source/material
+guidance; its source dossier records roaming proof availability, competing
+consumers, the coat supply-cap conflict and the foreign eye route.
 All raw definitions, receipt identities, zone registry and source fingerprint
 remain unchanged. Comprehensive source dossiers for these areas are tracked in
 the [execution register](../design/ZONE_STORY_ROADMAP_EXECUTION.md).

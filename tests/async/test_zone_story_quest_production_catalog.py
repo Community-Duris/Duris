@@ -93,7 +93,15 @@ assert len(krimman["reset_commands"]) == 176 and not krimman["special_assignment
 bastine = inventory_module.area_evidence(ROOT, "bastine")
 assert len(bastine["requests"]) == 14 and len(bastine["dialogue"]) == 4
 assert len(bastine["reset_commands"]) == 428 and not bastine["special_assignments"]
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine"):
+pineholl = inventory_module.area_evidence(ROOT, "pineholl")
+assert len(pineholl["requests"]) == 7 and len(pineholl["dialogue"]) == 10
+assert len(pineholl["reset_commands"]) == 352 and not pineholl["special_assignments"]
+assert len(pineholl["mobs"]) == 88 and len(pineholl["items"]) == 86
+# Preserve the documented supply conflict until a reviewed world-content repair:
+# the coat needs two huge skins while its only ordinary producer caps live skins at one.
+huge_skin_sources = [r for r in pineholl["reset_commands"] if r["command"] in ("O", "P", "G", "E") and r["arguments"][1] == 16021]
+assert len(huge_skin_sources) == 1 and huge_skin_sources[0]["arguments"][:3] == [1, 16021, 1]
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

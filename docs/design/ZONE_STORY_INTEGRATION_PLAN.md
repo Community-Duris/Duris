@@ -8,7 +8,7 @@ Deeper objective and provenance integration is incremental.**
 The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
 source dossiers, shipped changes, newly found dependencies, and verification.
 Twin Towers, Plains of Life, Ailvio, Braddistock, Breale, Abandoned Elven
-Homestead, Krimeneha's Mansion and Bastine now have complete source
+Homestead, Krimeneha's Mansion, Bastine and Pine Hollow now have complete source
 story maps; their active-world journeys remain unqualified. Schema 3 adds
 optional preparation. Ailvio's 78 pair recipes project one family-feeding story;
 Braddistock's pet rescue is displayed as an intermediate service. Breale preserves
@@ -17,6 +17,9 @@ explains actual gate/key/potion routes with optional access and recipe preparati
 Krimeneha maps seven fragment rescues, the independent lord finale, roaming
 staff source and competing consumer. Bastine maps narrated commission order,
 exact external trophies, prince access and the owned Morlanthra continuation.
+Pine Hollow adds competing dragon materials, roaming source/holding-room
+availability, exact clothing counts and a two-skin/one-cap supply conflict,
+shared mine hazards and the owned Skelenak eye continuation.
 
 Maintain this plan as zones are reviewed. Keep static contract classification,
 historical objective coverage, economic support, and gameplay qualification
@@ -92,6 +95,9 @@ Implement and qualify the remaining additions in this order:
    all-stage policy; neither a final gifted offering nor an early receipt proves
    the entire campaign. Cross-zone continuation must reference the owning entry
    and terminal receipt without counting the same rescue in two zones.
+   Pine's independent dragon exchanges remove their giver's remaining materials;
+   add NPC episode/availability and optional route ordering before inventing an
+   exclusive allegiance. A valid gifted trophy does not establish that choice.
 4. **Source and transformation evidence.** Build on committed accounting
    lifecycle/custody evidence for personal recovery, distinct sources, tanning,
    freshness, and lineage. Never infer these from possession or text.
@@ -107,6 +113,14 @@ Implement and qualify the remaining additions in this order:
    Commit exact input/output replacement and NPC episode, not a guessed unchanged
    object. Roaming source NPCs and competing quest consumers need current location
    separate from prototype/source ownership and exact consumption authority.
+   Validate source capacity against simultaneous recipe demand: Pine's coat needs
+   two huge skins but its only ordinary producer has a live item cap of one.
+   Treat forced/recovered stock separately; review cap/source repairs deliberately.
+   Confirm hazard outcomes as well as commands: Pine's movement trap returns
+   before arrival, while opening its trapped desk precedes eye retrieval. Dynamic
+   access must distinguish blocked, triggered, survived, opened and arrived states.
+   Qualify roaming-source holding/dead-end behavior and a reviewed return/barrier
+   policy; source-file ownership cannot promise current NPC availability.
 5. **Mixed offerings and larger pilot.** Commit materials/payment/rewards and
    stage evidence together, then qualify Twin Towers clothing and grove recipes.
 6. **Expand through the priority roadmap.** Review one story family at a time,
@@ -409,7 +423,10 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   Elven Homestead; retain source findings, optional preparation and exact receipts.
 - [x] Complete source dossiers for Krimeneha's Mansion and Bastine, including
   roaming/competing sources, replacement rewards and the bounded external rescue.
-- [ ] Complete comprehensive source dossiers for the other 212 roadmap areas.
+- [x] Complete Pine Hollow source dossier, including all seven requests, roaming
+  carriers, competing consumers, source-cap and holding concerns, mine hazards
+  and the bounded Skelenak eye continuation.
+- [ ] Complete comprehensive source dossiers for the other 211 roadmap areas.
 
 ## Per-zone integration register
 
@@ -424,6 +441,7 @@ contract classification; it does not claim complete objective coverage.
 | Abandoned Elven Homestead | 2 | Complete: two achievement rows and two preparation services | Source-comprehensive dossier; optional egg/access/statue history, distinct key uses, shared speech/teleport and tapestry leads | Active materials/scenery/nested container sources need generation authority; native exchanges retain existing accounting | Source/native checks; active journey, lineage and accepted travel/lore events pending |
 | Krimeneha's Mansion | 2 | Complete: eight achievements and one staff service | Source-comprehensive dossier; optional access/staff/family receipts; seven rescues and independent final keepsake exchange | Active local/roaming NPC equipment and nested treasure sources need generation authority; competing staff consumption requires exact identity | Source/native checks; roaming/replacement/full-household live journeys pending |
 | Bastine Castle | 2 | Complete: twelve commissions, prince request and Victor trust exchange | Source-comprehensive dossier; narrated order and optional earlier commissions; exact trophy/lock sources and Highway continuation | Active local/foreign item sources need generation authority; coin rewards retain native accounting | Source/native checks; all-stage ranks, source evidence and owned cross-zone journey pending |
+| Pine Hollow | 2 | Complete: two dragon stories and five clothing commissions | Source-comprehensive dossier; exact skins/rewards, roaming/competing materials, mine keys/hazards and Skelenak eye | Active reset sources require generation; two-skin/one-cap conflict needs a reviewed source repair | Native projection checks; live source capacity, holding/branch availability, hazards and foreign journey pending |
 | All 27 starter/town areas | 1–2 | Complete static Q classification; detailed counts and evidence in starter/town register | Orientation, encountered people, concrete delivery counts and native receipt checklists; selected multi-step routes | Existing offering limits; reviewed crafting and equipment services do not create story/daily units | All maps pass source/native validation; isolated native guided journey; individual full-world routes pending |
 | Eight additional quest areas | 1–2 | Complete: 86 contracts → 80 named story/request/service entries | Verified Q/M guidance, distinct material counts, optional preparation hints and receipts; deeper dialogue/lineage/branches pending | Mixed item-and-coin grove recipes remain unavailable; preparation services do not earn story/daily units | Source/native parser and encounter visibility checks; each full-world journey remains pending in the priority roadmap |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |

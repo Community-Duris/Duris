@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 8 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 9 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Active reset-generation qualification is a shared prerequisite for the pilots.
 
@@ -29,7 +29,7 @@ Active reset-generation qualification is a shared prerequisite for the pilots.
 | 6 | [Abandoned Elven Homestead](zone-stories/ABANDONED_ELVEN_HOMESTEAD.md) (`elvish`) | Spoken outer gate → four eggs/access key → drider feather + ivy leaf → manticore/serpent potions → golden dragon remedy → release/reward key → chest/pouch. | Source-comprehensive, revision 2. Two achievements plus two services; optional access/preparation; exact keys distinguished; shared travel/lore mapped without invented history. |
 | 7 | [Lord Krimeneha's Mansion](zone-stories/KRIMENEHAS_MANSION.md) (`krimman`) | Gardeners' pool/Eckraldu clues → roaming staff source → fragment service → seven spirit rescues → three family keepsakes → lord's sword/vault key; optional pool chest. | Source-comprehensive, revision 2. Eight achievements plus one service; optional access/history. Same-VNUM fragment replacement, competing staff consumer and servants' blessing policy documented. |
 | 8 | [Bastine Castle](zone-stories/BASTINE_CASTLE.md) (`bastine`) | Narrated Initiate → twelve independent trophy commissions → knighthood; Phex note/key → prince; Lamerok ring → Victor trust → four ordinary locks → Morlanthra's Highway rescue. | Source-comprehensive, revision 2. Exact external sources and accepted wand; optional earlier commissions/tower key. Rank/kill history, replacement hide and cross-zone campaign remain pending. |
-| 9 | [Pine Hollow](../../areas/qst/pineholl.qst) (`pineholl`) | Help the wounded dragon or fulfill the cruel warrior's trophy request; five independent fur clothing commissions. | New journal. Good branch/provenance pilot; routes remain independently accepted rather than becoming a newly locked faction choice. |
+| 9 | [Pine Hollow](zone-stories/PINE_HOLLOW.md) (`pineholl`) | Opposing dragon accounts → local warrior/Auriam materials + roaming children/shaman → independent rewards; five skin commissions; mine keys → hidden duergar refuge → trapped desk eye for Skelenak. | Source-comprehensive, revision 2. Exact source/availability/reward guidance; two-skin/one-cap and one-way holding concerns; no inferred faction, kills or liberation. Foreign receipts remain owned in their zones. |
 | 10 | [The Docks of Quietus Quay](../../areas/qst/quietus.qst) (`quietus`) | Show credentials → mission note → Aresliean proof; Rodev sword contract; Eckraldu staff contract; seal/dagger briefing → bloodstone finale. | New journal. Model accepted briefings separately from terminal missions; earlier credentials are guidance, not added admission requirements. |
 | 11 | [The Kingdom of Torg](../../areas/qst/torg.qst) (`torg`) | Raw dracolich hide → curing → bracelet; tentacle → favor token → secret rose → courier reward; locket → obsidian → divine-chisel buckle; eight legendary relics. | New journal. Several local exchange chains; personal lineage and intrusion/invasion specials need separate evidence. |
 | 12 | [Vast Hidden Grove](../../areas/qst/solonar.qst) (`solonar`) | Arch-magi robes via orb, scales, hide robes, thread, and faerie dust; ancient scroll/adamantium → piwafwi; repaired diamond + living wooden heart → Mage Bane. | New journal. Strong recipe graph; mixed item-and-coin terminal routes remain unavailable under current active accounting. |
@@ -92,6 +92,13 @@ is now reflected in its journal, while source hints identify all twelve
 accepted trophies. Victor's continuation uses four ordinary key targets and
 Morlanthra's own Highway receipt. Replacement item identity, complete household/
 rank campaigns and owned cross-zone projection are explicit shared-plan additions.
+
+Pine Hollow's complete source review adds the competing faerie equipment route,
+roaming proof carriers, actual mine/smelter keys and shared traps, and the marble
+eye's Skelenak continuation. The coat's two-skin demand conflicts with its only
+producer's ordinary live cap of one. A one-way holding exit can also affect proof
+availability. Both concerns have concrete reproduction and builder repair plans;
+seven independent local achievements and all native terms remain unchanged.
 
 ## Remaining native quest areas in triage order
 

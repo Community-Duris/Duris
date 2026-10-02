@@ -373,8 +373,93 @@ int main(int argc, char **argv)
 				restored_bastine.progress_for_zone(7, 42, 76).completed == 3 &&
 				restored_bastine.progress_for_zone(7, 42, 413).completed == 0,
 			"independent receipts changed on restart or Victor trust fabricated Highway rescue");
+		const auto &auriam = story_for("pineholl", "help-the-wounded-gold-dragon-16006");
+		const auto &hunter =
+			story_for("pineholl", "the-cruel-warrior-s-dragon-trophies-16005");
+		service supplied_dragon_gear(catalog), supplied_dragon_trophies(catalog);
+		require(supplied_dragon_gear.discover_zone(7, 42, 160, 16077, 100, "arrival") ==
+					result::applied &&
+				supplied_dragon_gear.meet_npc(7, 42, 16006, 16077, 101) ==
+					result::applied &&
+				supplied_dragon_trophies.discover_zone(
+					7, 42, 160, 16081, 100, "arrival") == result::applied &&
+				supplied_dragon_trophies.meet_npc(7, 42, 16005, 16081, 101) ==
+					result::applied,
+			"Pine Hollow dragon encounters failed");
+		supplies.carried.clear();
+		for (const auto item : { 16013, 16014, 16080 })
+			supplies.carried[item] = 1;
+		const auto before_dragon_read = supplied_dragon_gear.serialize_state();
+		journal = supplied_dragon_gear.render_journal(7, 42, 160, 10, 1, 102, false, false,
+							      &supplies);
+		require(journal.find("Next: " + auriam.steps.back().text) != std::string::npos &&
+				supplied_dragon_gear.serialize_state() == before_dragon_read,
+			"supplied dragon equipment required source/kill/topic history or journal read wrote state");
+		record(supplied_dragon_gear, auriam.contracts.front(), "supplied-dragon-gear", 160,
+		       16077);
+		supplies.carried.clear();
+		for (const auto item : { 16015, 16016, 16076, 16077 })
+			supplies.carried[item] = 1;
+		journal = supplied_dragon_trophies.render_journal(7, 42, 160, 10, 1, 102, false,
+								  false, &supplies);
+		require(journal.find("Next: " + hunter.steps.back().text) != std::string::npos &&
+				supplied_dragon_gear.progress_for_zone(7, 42, 160).completed == 1 &&
+				supplied_dragon_gear.progress_for_zone(7, 42, 160).total == 7,
+			"independent dragon requests inferred a required earlier branch or combined accomplishment");
+		record(supplied_dragon_trophies, hunter.contracts.front(),
+		       "supplied-dragon-trophies", 160, 16081);
+		record(supplied_dragon_gear, hunter.contracts.front(), "second-independent-dragon",
+		       160, 16081);
+		const auto &coat = story_for("pineholl", "a-heavy-bear-coat-16080");
+		const auto &jacket = story_for("pineholl", "a-brown-bear-jacket-16080");
+		service supplied_skins(catalog);
+		require(supplied_skins.discover_zone(7, 42, 160, 16110, 100, "arrival") ==
+					result::applied &&
+				supplied_skins.meet_npc(7, 42, 16080, 16110, 101) ==
+					result::applied,
+			"Darlene encounter failed");
+		supplies.carried.clear();
+		supplies.carried[16021] = 1;
+		supplies.carried[16020] = 2;
+		supplies.carried[16019] = 2;
+		const auto before_skin_read = supplied_skins.serialize_state();
+		journal = supplied_skins.render_journal(7, 42, 160, 10, 1, 102, false, false,
+							&supplies);
+		require(journal.find("Next: " + coat.steps.front().text) != std::string::npos &&
+				journal.find("Next: " + coat.steps.back().text) ==
+					std::string::npos &&
+				journal.find("Next: " + jacket.steps.front().text) !=
+					std::string::npos &&
+				journal.find("Next: " + jacket.steps.back().text) ==
+					std::string::npos &&
+				supplied_skins.serialize_state() == before_skin_read,
+			"one huge skin or two ordinary skins satisfied the exact coat/jacket recipe");
+		supplies.carried[16021] = 2;
+		supplies.carried[16019] = 3;
+		journal = supplied_skins.render_journal(7, 42, 160, 10, 1, 102, false, false,
+							&supplies);
+		require(journal.find("Next: " + coat.steps.back().text) != std::string::npos &&
+				journal.find("Next: " + jacket.steps.back().text) !=
+					std::string::npos &&
+				supplied_skins.progress_for_zone(7, 42, 160).completed == 0,
+			"complete supplied skins required local hunting or created a delivery receipt");
+		record(supplied_skins, coat.contracts.front(), "supplied-coat-skins", 160, 16110);
+		service restored_dragons(catalog), restored_trophies(catalog),
+			restored_skins(catalog);
+		require(restored_dragons.deserialize_state(supplied_dragon_gear.serialize_state(),
+							   &error) &&
+				restored_trophies.deserialize_state(
+					supplied_dragon_trophies.serialize_state(), &error) &&
+				restored_skins.deserialize_state(supplied_skins.serialize_state(),
+								 &error) &&
+				restored_dragons.progress_for_zone(7, 42, 160).completed == 2 &&
+				restored_trophies.progress_for_zone(7, 42, 160).completed == 1 &&
+				restored_skins.progress_for_zone(7, 42, 160).completed == 1 &&
+				restored_skins.progress_for_zone(7, 42, 40).completed == 0 &&
+				restored_dragons.progress_for_zone(7, 42, 163).completed == 0,
+			"Pine receipts changed on restart or fabricated other clothing/foreign accomplishments");
 		std::cout
-			<< "All mappings, optional preparation, independent family/commission journeys, and receipt recovery passed.\n";
+			<< "All mappings, optional preparation, independent family/commission/dragon journeys, exact skin counts, and receipt recovery passed.\n";
 		return 0;
 	}
 	const bool applied = zone_story_quest_story::apply(read(argv[2]), "twin_towers_forest",

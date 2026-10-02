@@ -48,6 +48,14 @@ assert [next(t["item_vnums"][0] for t in s["steps"] if t["kind"] == "carried_ite
     41388, 41407, 12802, 41327, 41924, 2607, 41408, 41922, 41920, 41375, 41411, 70970]
 assert sum(t.get("optional", False) for t in promotions[-1]["steps"]) == 11
 assert report["eligible_by_zone"]["164"] == 8 and report["eligible_by_zone"]["76"] == 14
+pineholl = new_mappings["pineholl"]
+assert pineholl["schema_version"] == 2 and pineholl["revision"] == 2
+assert report["eligible_by_zone"]["160"] == 7 and len(pineholl["stories"]) == 7
+clothing = [s for s in pineholl["stories"] if s["contracts"][0]["giver_vnum"] == 16080]
+assert [(s["steps"][0]["item_vnums"], s["steps"][0]["count"]) for s in clothing] == [
+    ([16019], 3), ([16020], 3), ([16021], 2), ([16024], 3), ([16025], 3)]
+assert all(s["category"] == "request" and len(s["contracts"]) == 1 and len(s["steps"]) == 2 for s in clothing)
+assert all(len(s["contracts"]) == 1 and s["steps"][-1]["contracts"] == s["contracts"] for s in pineholl["stories"])
 assert all(s["category"] == "service" for s in new_mappings["quietus"]["stories"] if "Credentials" in s["title"] or s["title"].startswith("Hear ") or s["title"].startswith("Obtain "))
 credentials = [s for s in new_mappings["quietus"]["stories"] if s["steps"][0].get("item_vnums") == [1701, 80808]]
 assert len(credentials) == 5 and all("badge" in s["steps"][0]["text"] and "longsword" in s["steps"][0]["text"] for s in credentials)
