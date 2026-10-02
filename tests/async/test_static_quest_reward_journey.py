@@ -207,9 +207,7 @@ def run(binary: Path) -> None:
 
 
 if __name__ == "__main__":
-    subprocess.run(["python3", "tests/async/test_flatfile_player_repository.py",
-                    "--build-inspector", str(journey.INSPECTOR)],
-                   cwd=ROOT, check=True, timeout=180)
+    journey.build_inspector()
     with tempfile.TemporaryDirectory(prefix="duris-quest-build-") as build_tmp:
         os.environ.setdefault("DURIS_REGRESSION_BUILD_CACHE",
                               str(ROOT / "bin/regression-artifacts"))
