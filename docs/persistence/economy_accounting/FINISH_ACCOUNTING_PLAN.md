@@ -16,7 +16,7 @@ master-prefix histories now retain 53 receipts. The staging fork preserves its
 first 45 and appends eight; the master fork preserves its first 31 and appends
 22, retaining the existing runtime-state payloads. All three converge on the
 pinned 225-table schema on disposable MySQL 8.0.46 and MariaDB 10.11.14 targets.
-The writer inventory covers 863 routes, 2,809 occurrences and 2,751 unique sites
+The writer inventory covers 863 routes, 2,810 occurrences and 2,752 unique sites
 with zero unmapped sites. These counts do not replace route qualification.
 
 ## Delivery gates

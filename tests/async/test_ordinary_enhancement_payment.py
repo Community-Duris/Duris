@@ -99,4 +99,3 @@ with tempfile.TemporaryDirectory(prefix='duris-ordinary-enhance-payment-') as te
                     '-fno-pie','-no-pie',str(cpp),'-o',str(binary)],cwd=ROOT,check=True)
     subprocess.run([str(binary)],check=True,timeout=30)
 print('Ordinary enhancement: debit refusal preserves inputs, releases output, and accepts valid free/paid quotes')
-
