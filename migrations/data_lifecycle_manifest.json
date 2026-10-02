@@ -8295,7 +8295,7 @@
       "locator": "FLATFILE_ROOT/metadata/item_uid_allocator.initialized",
       "data_category": "reconciliation_or_replay_record",
       "data_subject_key": "not_subject_scoped",
-      "technical_purpose": "permanent evidence that this root has issued UID reservations; missing allocator must be recovered rather than bootstrapped",
+      "technical_purpose": "sealed permanent UID and revision high-water evidence; reject missing or older allocator authority and retain the witness with its allocator across restart and restore",
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
