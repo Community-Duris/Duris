@@ -4,7 +4,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 NAME="duris-legacy-migration-$RANDOM-$$"
 PASSWORD="duris-legacy-test-$RANDOM-$$"
-DB_IMAGE="${LEGACY_DB_IMAGE:-mysql:8.0}"
+DB_IMAGE="${DURIS_TEST_DB_IMAGE:-${LEGACY_DB_IMAGE:-mysql:8.0}}"
+if [[ "$DB_IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PASSWORD_ENV=MYSQL_ROOT_PASSWORD; fi
 MIGRATED_DB="duris_legacy_migration_test"
 BOOTSTRAP_DB="duris_fresh_bootstrap_test"
 CONFIG=$(mktemp)
@@ -21,9 +22,11 @@ if mysql --help 2>&1 | grep -q -- '--ssl-mode'; then
 else
     MYSQL_SSL=(--skip-ssl)
 fi
-docker run -d --name "$NAME" -p 127.0.0.1::3306 \
-    -e MYSQL_ROOT_PASSWORD="$PASSWORD" "$DB_IMAGE" >/dev/null
-mapping=$(docker port "$NAME" 3306/tcp)
+source "$ROOT/tests/async/_sql_fixture_network.sh"
+sql_fixture_network
+docker run -d --name "$NAME" "${SQL_FIXTURE_NETWORK[@]}" \
+    -e "$PASSWORD_ENV=$PASSWORD" "$DB_IMAGE" "${SQL_FIXTURE_SERVER[@]}" >/dev/null
+mapping=$(sql_fixture_mapping "$NAME")
 DB_PORT=${mapping##*:}
 
 ready=0

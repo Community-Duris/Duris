@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tests/async"))
 from disposable_sql_fixture import DisposableSQL, clean_environment, image_identity
 from regression_inventory import inventory
-from run_regression_tests import run_test, skip_count, TestSpec
+from run_regression_tests import run_test, skip_count, TestSpec, terminate_test
 
 MANIFEST = ROOT / "tests/integration_manifest.json"
 
@@ -100,11 +100,18 @@ def freeze_build(directory, environment):
     for index, command in enumerate(commands):
         print("matrix build/check: " + " ".join(command), flush=True)
         with (directory / f"build-{index}.log").open("w") as log:
-            result = subprocess.run(command, cwd=ROOT, env=environment, stdout=log,
-                                    stderr=subprocess.STDOUT, timeout=1800)
-        checks.append({"command": command, "exit": result.returncode})
+            process = subprocess.Popen(command, cwd=ROOT, env=environment, stdout=log,
+                                       stderr=subprocess.STDOUT, start_new_session=True)
+            try:
+                exit_code = process.wait(timeout=1800)
+            except BaseException:
+                terminate_test(process)
+                checks.append({"command": command, "exit": process.returncode, "incomplete": True})
+                atomic_json(directory / "build-checks.json", checks)
+                raise
+        checks.append({"command": command, "exit": exit_code})
         atomic_json(directory / "build-checks.json", checks)
-        if result.returncode:
+        if exit_code:
             raise RuntimeError("matrix build/check failed; original log: " + str(directory / f"build-{index}.log"))
     # Recheck source bytes after compilation, before declaring this artifact qualified.
     recorded = json.loads(source_manifest.read_text())
@@ -228,6 +235,7 @@ def main(argv=None):
                        DURIS_TEST_TOOLS_IMAGE=args.tools_image)
     try:
         report["tools_image"] = image_identity(args.tools_image)
+        environment["DURIS_TEST_TOOLS_IMAGE"] = report["tools_image"]["id"]
         report["source_head"] = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
         write_report(report_path, report)
         tokens = freeze_build(directory, environment)

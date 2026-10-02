@@ -51,9 +51,11 @@ fi
 
 if [[ "$IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PASSWORD_ENV=MYSQL_ROOT_PASSWORD; fi
 export "$PASSWORD_ENV=$PASSWORD"
+source "$ROOT/tests/async/_sql_fixture_network.sh"
+sql_fixture_network
 docker run -d --name "$NAME" --cpus=2 --memory=2g --memory-swap=2g \
-    -p 127.0.0.1::3306 -e "$PASSWORD_ENV" "$IMAGE" >/dev/null
-mapping="$(docker port "$NAME" 3306/tcp)"
+    "${SQL_FIXTURE_NETWORK[@]}" -e "$PASSWORD_ENV" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}" >/dev/null
+mapping="$(sql_fixture_mapping "$NAME")"
 if [[ "$mapping" != 127.0.0.1:* ]]; then
     printf 'ATM SQL fixture published outside loopback: %s\n' "$mapping" >&2
     exit 1

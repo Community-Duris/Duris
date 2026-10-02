@@ -51,10 +51,12 @@ trap 'exit 143' TERM
 # Pass the generated fixture password in the environment, not in Docker's argv.
 if [[ "$IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PASSWORD_ENV=MYSQL_ROOT_PASSWORD; fi
 export "$PASSWORD_ENV=$PASSWORD"
+source "$ROOT/tests/async/_sql_fixture_network.sh"
+sql_fixture_network
 docker run -d --name "$NAME" --cpus=2 --memory=2g \
-    -p 127.0.0.1::3306 -e "$PASSWORD_ENV" "$IMAGE" >/dev/null
+    "${SQL_FIXTURE_NETWORK[@]}" -e "$PASSWORD_ENV" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}" >/dev/null
 unset "$PASSWORD_ENV"
-mapping="$(docker port "$NAME" 3306/tcp)"
+mapping="$(sql_fixture_mapping "$NAME")"
 published_port="${mapping##*:}"
 container_host="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$NAME")"
 export ENVIRONMENT=test DB_USER=root DB_PASSWD="$PASSWORD" MYSQL_PWD="$PASSWORD"

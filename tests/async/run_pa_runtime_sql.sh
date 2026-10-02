@@ -221,19 +221,25 @@ run_image() {
         password_env=MYSQL_ROOT_PASSWORD
         client=mysql
     fi
+    source "$ROOT/tests/async/_sql_fixture_network.sh"
+    sql_fixture_network
     export "$password_env=$PASSWORD"
     CONTAINER_ID="$(docker_bounded run --pull=never --cpus=2 --memory=2g -d --rm \
-        --name "$CONTAINER_NAME" --label duris.task=pa-runtime-sql --label "duris.run_id=$CONTAINER_NAME" -p 127.0.0.1::3306 -e "$password_env" "$image")"
+        --name "$CONTAINER_NAME" --label duris.task=pa-runtime-sql --label "duris.run_id=$CONTAINER_NAME" "${SQL_FIXTURE_NETWORK[@]}" -e "$password_env" "$image" "${SQL_FIXTURE_SERVER[@]}")"
     unset "$password_env"
     export MYSQL_PWD="$PASSWORD"
-    mapping="$(docker_bounded port "$CONTAINER_ID" 3306/tcp)"
+    if [[ -n "$SQL_FIXTURE_PRIVATE_PORT" ]]; then
+        mapping="$(sql_fixture_mapping "$CONTAINER_ID")"
+    else
+        mapping="$(docker_bounded port "$CONTAINER_ID" 3306/tcp)"
+    fi
     [[ "$mapping" =~ ^127\.0\.0\.1:([0-9]+)$ ]]
     DB_PORT="${BASH_REMATCH[1]}"
     ready=0
     deadline=$((SECONDS + 120))
     while ((SECONDS < deadline)); do
         if docker_probe exec -e MYSQL_PWD "$CONTAINER_ID" "$client" --protocol=tcp \
-            -h 127.0.0.1 -uroot -N -B -e 'SELECT 1' >/dev/null 2>&1; then
+            -h 127.0.0.1 -P"${SQL_FIXTURE_PRIVATE_PORT:-3306}" -uroot -N -B -e 'SELECT 1' >/dev/null 2>&1; then
             ready=1
             break
         fi
@@ -241,7 +247,7 @@ run_image() {
     done
     [[ "$ready" == 1 ]]
     version="$(docker_bounded exec -e MYSQL_PWD "$CONTAINER_ID" "$client" --protocol=tcp \
-        -h 127.0.0.1 -uroot -N -B -e 'SELECT VERSION()')"
+        -h 127.0.0.1 -P"${SQL_FIXTURE_PRIVATE_PORT:-3306}" -uroot -N -B -e 'SELECT VERSION()')"
     if [[ "$engine" == mariadb ]]; then
         [[ "$version" == *MariaDB* && "$version" == 10.11.* ]]
     else
@@ -253,9 +259,9 @@ run_image() {
     schema="pa_runtime_sql_test_$(python3 -c 'import secrets; print(secrets.token_hex(6))')"
     [[ "$schema" =~ ^pa_runtime_sql_test_[a-f0-9]{12}$ && ${#schema} -le 33 ]]
     docker_bounded exec -e MYSQL_PWD "$CONTAINER_ID" "$client" --protocol=tcp \
-        -h 127.0.0.1 -uroot -e "CREATE DATABASE \`$schema\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci" >/dev/null
+        -h 127.0.0.1 -P"${SQL_FIXTURE_PRIVATE_PORT:-3306}" -uroot -e "CREATE DATABASE \`$schema\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci" >/dev/null
     verify_schema() {
-        DB_HOST=127.0.0.1 DB_PORT=3306 DB_NAME="$schema" DB_USER=root DB_PASSWD="$PASSWORD" \
+        DB_HOST=127.0.0.1 DB_PORT="${SQL_FIXTURE_PRIVATE_PORT:-3306}" DB_NAME="$schema" DB_USER=root DB_PASSWD="$PASSWORD" \
             docker_bounded exec -i -e DB_HOST -e DB_PORT -e DB_NAME -e DB_USER -e DB_PASSWD \
             "$CONTAINER_ID" bash -s < migrations/immutable/0033_economic_sql_lifecycle_owner.sh
     }
@@ -276,7 +282,7 @@ run_image() {
         < migrations/immutable/0040_economic_sql_global_activation.sql
 
     db_host=127.0.0.1
-    if python3 -c 'import socket; socket.gethostbyname("host.docker.internal")' >/dev/null 2>&1; then
+    if [[ -z "$SQL_FIXTURE_PRIVATE_PORT" ]] && python3 -c 'import socket; socket.gethostbyname("host.docker.internal")' >/dev/null 2>&1; then
         db_host=host.docker.internal
     fi
     export DB_HOST="$db_host" DB_PORT DB_NAME="$schema" DB_USER=root DB_PASSWD="$PASSWORD"
