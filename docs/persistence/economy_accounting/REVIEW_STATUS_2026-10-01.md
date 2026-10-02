@@ -70,6 +70,11 @@ This checkpoint publishes the completed review fixes directly to
   non-database stores, 225 SQL tables, and 42 Redis surfaces, with destructive
   rules and shared disclosure still disabled pending controller decisions.
 
+- The administrator-property regression harness now supplies the unrelated
+  world-activity reload hook required by upstream property application. The real
+  initialize/set/revert/save/reload journey passes on SQL and flatfile again;
+  the full regression run remains in progress.
+
 ## Verification and its limits
 
 | Check | Current evidence |

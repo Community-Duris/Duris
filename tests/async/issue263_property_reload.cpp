@@ -41,6 +41,7 @@ void update_misfire_properties()
 	++completed_applies;
 }
 void collector_config_reload() {}
+void world_activity_reload() {}
 void item_actions_reload() {}
 void debug(const char *, ...) {}
 void logit(const char *, const char *, ...) {}
