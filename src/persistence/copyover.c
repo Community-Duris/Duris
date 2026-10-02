@@ -445,14 +445,11 @@ restore_telemetry_copyover_sessions(const std::vector<telemetry_copyover_entry> 
 				nullptr;
 		telemetry_capture_result result =
 			telemetry_runtime_game_session_resume(d->character, d, handoff);
-		if (handoff != nullptr &&
-		    (result.outcome == telemetry_runtime_outcome::invalid ||
-		     (result.outcome == telemetry_runtime_outcome::queue_full &&
-		      d->telemetry_connection_sequence == 0U)))
+		if (handoff != nullptr && result.outcome == telemetry_runtime_outcome::invalid)
 		{
-			// Failed admission leaves no descriptor identity. Retry as
-			// absent; queue loss AFTER admission retains an ID and must
-			// not be resumed twice.
+			// Invalid continuity falls back to an absent handoff. Temporary
+			// qualification/capacity failure retains the supplied value for
+			// the descriptor sweep; queue loss after admission retains IDs.
 			result = telemetry_runtime_game_session_resume(d->character, d, nullptr);
 		}
 		if (result.outcome != telemetry_runtime_outcome::accepted &&

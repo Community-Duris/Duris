@@ -34,6 +34,7 @@
 #include "net/output_channel.h"
 #include "net/output_preference_state.h"
 #include "economy/shopkeeper_save_policy.h"
+#include "telemetry/telemetry_types.h"
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -1838,6 +1839,10 @@ struct descriptor_data
 	uint64_t telemetry_connection_sequence;
 	uint64_t telemetry_connection_producer_boot_id;
 	uint64_t telemetry_connection_producer_process_id;
+	/* Runtime-only deferred copyover observation: 0 none, 1 absent, 2 supplied.
+	 * Never written to player files or added to the copyover wire format. */
+	telemetry_session_handoff telemetry_pending_handoff;
+	uint8_t telemetry_resume_pending;
 };
 
 /* Almost every construction of this type is a brace-initializer that lists only

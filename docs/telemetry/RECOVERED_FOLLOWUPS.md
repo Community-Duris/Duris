@@ -8,12 +8,17 @@ This work restores reviewable implementation and acceptance ownership for
 refer to discussions 636, 634, 627, and 633 respectively; those destinations were
 not resolvable when this work began. Closure is not completion evidence.
 
-Baseline: `f152b8d6927cccd96da27a03afa13883f9c997e9` on `master`.
-The SQL record-kind round-trip gate is already delivered by #591, and its
-accounting port by #669. Shared telemetry changes target master first. Any
-accounting port must be deliberately qualified against that branch's authoritative
-manifest; historical migrations must not be renumbered or rewritten in this PR.
-Accounting-specific reconciliation/reward projection remains #487, not this PR.
+The recovered follow-up baseline was
+`f152b8d6927cccd96da27a03afa13883f9c997e9` on `master`.
+The SQL record-kind round-trip gate was delivered by #591, and its accounting
+port by #669. The original follow-up scope targeted master first. Any accounting
+port must be deliberately qualified against that branch's authoritative manifest;
+historical migrations must not be renumbered or rewritten.
+PR #677 is now merged and integrated into the accepted balance expansion on
+`experimental-accounting` in draft PR #683. That expansion includes #487's
+accounting-specific reconciliation/reward projection audit and implementation.
+Its qualified delivery record below distinguishes completed requirements from
+the remaining full expansion; earlier master-first follow-up scope is historical.
 
 ## Scope and acceptance ownership
 

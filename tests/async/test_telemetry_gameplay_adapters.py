@@ -2,13 +2,14 @@
 """Compile and run the focused #265 gameplay-adapter journey."""
 
 from pathlib import Path
+import argparse
 import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def main() -> None:
+def main(*, sanitize: bool = False) -> None:
     artifacts = ROOT / "bin/tests"
     artifacts.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="telemetry-gameplay-", dir=artifacts) as directory:
@@ -46,6 +47,8 @@ def main() -> None:
             "-o",
             executable,
         ]
+        if sanitize:
+            command.extend(["-g", "-fno-omit-frame-pointer", "-fsanitize=address,undefined"])
         subprocess.run(command, cwd=ROOT, check=True, timeout=120)
         completed = subprocess.run(
             [executable], cwd=ROOT, check=False, text=True, capture_output=True, timeout=30
@@ -57,4 +60,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--sanitize", action="store_true", help="run AddressSanitizer and UndefinedBehaviorSanitizer")
+    main(sanitize=parser.parse_args().sanitize)

@@ -221,7 +221,10 @@ int main(int argc, char **argv) {
         resume_full_after_admission = !resume_full_before_admission;
         b.next = nullptr;
         restore_telemetry_copyover_sessions(&entries);
-        exactly_once(resume_full_before_admission ? 0 : 11, resume_full_before_admission ? 0 : 22);
+        if (resume_full_before_admission)
+            assert(observations.empty()); // runtime retains the handoff for a later descriptor observation
+        else
+            exactly_once(11, 22);
     } else if (std::strcmp(scenario, "unavailable") == 0) {
         for (auto outcome : {telemetry_runtime_outcome::disabled,
              telemetry_runtime_outcome::flatfile_disabled,

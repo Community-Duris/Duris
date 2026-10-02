@@ -36,6 +36,7 @@ struct fake_repository
 	bool saw_combat_context = false;
 	bool saw_idle_combat = false;
 	std::vector<telemetry_interval_payload> intervals; // worker writes; read after join
+	std::vector<telemetry_session_lifecycle_payload> lifecycles;
 };
 
 telemetry_repository_outcome fake_init(void *context, telemetry_repository_config) noexcept
@@ -67,6 +68,8 @@ telemetry_apply_batch_result fake_apply(void *context, const telemetry_record *r
 		result.results[index].outcome = telemetry_apply_outcome::applied;
 		if (records[index].header.kind == telemetry_record_kind::interval)
 			fake->intervals.push_back(records[index].payload.interval);
+		if (records[index].header.kind == telemetry_record_kind::session_lifecycle)
+			fake->lifecycles.push_back(records[index].payload.lifecycle);
 		if (records[index].header.kind == telemetry_record_kind::interval &&
 		    records[index].payload.interval.context == telemetry_activity_context::combat)
 		{
@@ -206,11 +209,16 @@ void check_enabled_game_path()
 
 	descriptor_data descriptor{};
 	descriptor.connected = CON_PLAYING;
+	descriptor.character = &player;
 	const telemetry_capture_result entered = telemetry_runtime_game_enter(&player, &descriptor);
 	assert(entered.outcome == telemetry_runtime_outcome::accepted);
 	assert(player.telemetry_session_sequence != 0U);
 	assert(descriptor.telemetry_connection_sequence != 0U);
 	const std::uint64_t first_connection = descriptor.telemetry_connection_sequence;
+	const auto repeated_entry = telemetry_runtime_game_enter(&player, &descriptor);
+	assert(repeated_entry.outcome == telemetry_runtime_outcome::accepted);
+	assert(repeated_entry.records_emitted == 0U && repeated_entry.records_dropped == 0U);
+	assert(descriptor.telemetry_connection_sequence == first_connection);
 
 	assert(telemetry_runtime_game_context(&player, &descriptor).outcome ==
 	       telemetry_runtime_outcome::accepted);
@@ -233,7 +241,7 @@ void check_enabled_game_path()
 		       .outcome == telemetry_runtime_outcome::accepted);
 
 	const telemetry_capture_result reconnected =
-		telemetry_runtime_game_enter(&player, &descriptor);
+		telemetry_runtime_game_presence(&player, &descriptor);
 	assert(reconnected.outcome == telemetry_runtime_outcome::accepted);
 	assert(descriptor.telemetry_connection_sequence != 0U);
 	assert(descriptor.telemetry_connection_sequence != first_connection);
@@ -260,6 +268,10 @@ void check_enabled_game_path()
 	assert(fake.applied_records != 0U);
 	assert(fake.shutdown_calls == 1U);
 	telemetry_transport_unbind_for_tests();
+	world = nullptr;
+	zone_table = nullptr;
+	top_of_world = -1;
+	top_of_zone_table = -1;
 }
 void check_staggered_checkpoint_cut()
 {
@@ -424,6 +436,7 @@ void check_resume_capacity_rollback()
 		pcs[i].pid = 8000 + i;
 		players[i].in_room = -1;
 		descriptors[i].connected = CON_PLAYING;
+		descriptors[i].character = &players[i];
 	}
 	for (std::size_t i = 0; i < count - 1; ++i)
 	{
@@ -445,6 +458,18 @@ void check_resume_capacity_rollback()
 		    static_cast<unsigned>(evidence.outcome));
 	const bool phantom_ids = player.telemetry_session_sequence != 0 ||
 				 descriptor.telemetry_connection_sequence != 0;
+	// Independently exercise normal login after the refused resume fixture.
+	descriptor.telemetry_resume_pending = 0U;
+	descriptor.telemetry_pending_handoff = {};
+	const auto entered = telemetry_runtime_game_enter(&player, &descriptor);
+	const bool enter_phantom_ids = player.telemetry_session_sequence != 0 ||
+				       descriptor.telemetry_connection_sequence != 0;
+	assert(telemetry_runtime_game_session_exit(&players[0], &descriptors[0],
+						   telemetry_session_end_reason::logout)
+		       .outcome == telemetry_runtime_outcome::accepted);
+	const auto recovered = telemetry_runtime_game_presence(&player, &descriptor);
+	const auto recovered_evidence = telemetry_runtime_game_evidence(
+		&player, &descriptor, telemetry_runtime_evidence_kind::player_action);
 	telemetry_monotonic_usec now = 0;
 	telemetry_utc_usec utc = 0;
 	assert(telemetry_runtime_now(&now, &utc));
@@ -454,6 +479,186 @@ void check_resume_capacity_rollback()
 	telemetry_transport_unbind_for_tests();
 	assert(resumed.outcome == telemetry_runtime_outcome::queue_full);
 	assert(!phantom_ids);
+	assert(entered.outcome == telemetry_runtime_outcome::queue_full);
+	assert(!enter_phantom_ids);
+	assert(recovered.outcome == telemetry_runtime_outcome::accepted);
+	assert(recovered_evidence.outcome == telemetry_runtime_outcome::accepted);
+}
+
+std::atomic<bool> startup_entered{ false };
+std::atomic<bool> release_startup{ false };
+telemetry_repository_outcome delayed_init(void *context,
+					  telemetry_repository_config config) noexcept
+{
+	startup_entered.store(true);
+	while (!release_startup.load())
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	return fake_init(context, config);
+}
+
+void check_deferred_startup_presence()
+{
+	fake_repository fake{};
+	const telemetry_transport_repository_binding repository = { delayed_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	const auto options = enabled_options();
+	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+	while (!startup_entered.load() && std::chrono::steady_clock::now() < deadline)
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	assert(startup_entered.load());
+	assert(telemetry_runtime_health_copy().state != telemetry_health_state::healthy);
+	constexpr std::size_t count = 11;
+	auto players = std::make_unique<char_data[]>(count);
+	auto pcs = std::make_unique<pc_only_data[]>(count);
+	auto descriptors = std::make_unique<descriptor_data[]>(count);
+	for (std::size_t i = 0; i < count; ++i)
+	{
+		players[i].only.pc = &pcs[i];
+		pcs[i].pid = 8200 + i;
+		players[i].in_room = -1;
+		descriptors[i].connected = CON_PLAYING;
+		descriptors[i].character = &players[i];
+	}
+	char_data switched_npc{};
+	switched_npc.specials.act = ACT_ISNPC;
+	descriptors[5].character = &switched_npc;
+	descriptors[5].original = &players[5];
+	descriptors[6].connected = CON_RMOTD;
+	players[7].telemetry_session_producer_boot_id = 42U; // partial IDs must not be replaced
+	for (std::size_t i : { 0U, 1U, 2U, 5U })
+	{
+		assert(telemetry_runtime_game_enter(&players[i], &descriptors[i]).outcome ==
+		       telemetry_runtime_outcome::queue_full);
+		assert(players[i].telemetry_session_sequence == 0U);
+		assert(descriptors[i].telemetry_connection_sequence == 0U);
+	}
+	telemetry_session_handoff handoff{};
+	handoff.session = { { { 41U, 43U }, 7U },
+			    8203U,
+			    8203U,
+			    options.config.season_id,
+			    options.config.environment_id };
+	handoff.previous_producer = { 41U, 43U };
+	handoff.last_checkpoint_revision = 5U;
+	handoff.cumulative = { 100U, 0U, 100U, 0U, 100U, 0U };
+	assert(telemetry_runtime_game_session_resume(&players[3], &descriptors[3], &handoff)
+		       .outcome == telemetry_runtime_outcome::queue_full);
+	assert(telemetry_runtime_game_session_resume(&players[4], &descriptors[4], nullptr)
+		       .outcome == telemetry_runtime_outcome::queue_full);
+	assert(descriptors[3].telemetry_resume_pending == 2U);
+	assert(descriptors[4].telemetry_resume_pending == 1U);
+	assert(players[3].telemetry_session_sequence == 0U &&
+	       descriptors[3].telemetry_connection_sequence == 0U);
+	telemetry_session_handoff cancelled = handoff;
+	cancelled.session.pid = 8209;
+	cancelled.session.subject_id = 8209U;
+	assert(telemetry_runtime_game_session_resume(&players[9], &descriptors[9], &cancelled)
+		       .outcome == telemetry_runtime_outcome::queue_full);
+	(void)telemetry_runtime_game_connection_transition(
+		&players[9], &descriptors[9], telemetry_connection_transition_kind::detached);
+	assert(descriptors[9].telemetry_resume_pending == 0U);
+	assert(descriptors[9].telemetry_pending_handoff.session.id.session_seq == 0U);
+	assert(telemetry_runtime_game_session_resume(&players[10], &descriptors[10], nullptr)
+		       .outcome == telemetry_runtime_outcome::queue_full);
+	(void)telemetry_runtime_game_session_exit(&players[10], &descriptors[10],
+						  telemetry_session_end_reason::logout);
+	assert(descriptors[10].telemetry_resume_pending == 0U);
+	assert(telemetry_runtime_game_evidence(&players[8], nullptr,
+					       telemetry_runtime_evidence_kind::linkdead)
+		       .outcome == telemetry_runtime_outcome::invalid);
+	release_startup.store(true);
+	const auto ready_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+	while (telemetry_runtime_health_copy().state != telemetry_health_state::healthy &&
+	       std::chrono::steady_clock::now() < ready_deadline)
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	assert(telemetry_runtime_health_copy().state == telemetry_health_state::healthy);
+	telemetry_monotonic_usec ready_cut = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	assert(telemetry_runtime_now(&ready_cut, &utc));
+	assert(telemetry_runtime_game_presence(&players[0], &descriptors[0]).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_game_evidence(&players[1], &descriptors[1],
+					       telemetry_runtime_evidence_kind::player_action)
+		       .outcome == telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_game_context(&players[2], &descriptors[2]).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	for (std::size_t i : { 3U, 4U, 5U })
+		assert(telemetry_runtime_game_presence(&players[i], &descriptors[i]).outcome ==
+		       telemetry_runtime_outcome::accepted);
+	for (std::size_t i = 0; i < 6; ++i)
+	{
+		const auto session = players[i].telemetry_session_sequence;
+		const auto connection = descriptors[i].telemetry_connection_sequence;
+		assert(session != 0U && connection != 0U &&
+		       descriptors[i].telemetry_resume_pending == 0U);
+		for (unsigned retry = 0; retry < 3; ++retry)
+		{
+			const auto result =
+				telemetry_runtime_game_presence(&players[i], &descriptors[i]);
+			assert(result.outcome == telemetry_runtime_outcome::accepted);
+			assert(result.records_emitted == 0U && result.records_dropped == 0U);
+			assert(players[i].telemetry_session_sequence == session);
+			assert(descriptors[i].telemetry_connection_sequence == connection);
+		}
+	}
+	for (std::size_t i : { 6U, 7U })
+		assert(telemetry_runtime_game_presence(&players[i], &descriptors[i]).outcome ==
+		       telemetry_runtime_outcome::invalid);
+	assert(telemetry_runtime_game_presence(&switched_npc, &descriptors[5]).outcome ==
+	       telemetry_runtime_outcome::invalid);
+	assert(players[7].telemetry_session_producer_boot_id == 42U);
+	const auto retained = telemetry_runtime_game_handoff_copy(&players[3]);
+	assert(retained.outcome == telemetry_runtime_outcome::accepted);
+	assert(retained.handoff.session.id.session_seq == handoff.session.id.session_seq);
+	assert(retained.handoff.session.id.producer.boot_id == handoff.session.id.producer.boot_id);
+	assert(retained.handoff.cumulative.connected_usec >= handoff.cumulative.connected_usec);
+	assert(retained.handoff.last_checkpoint_revision >= handoff.last_checkpoint_revision);
+	std::this_thread::sleep_for(std::chrono::milliseconds(2));
+	telemetry_monotonic_usec now = 0U;
+	assert(telemetry_runtime_now(&now, &utc));
+	(void)telemetry_runtime_pulse({ now, utc, 0U, 0U });
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	telemetry_transport_unbind_for_tests();
+	unsigned entries[6]{};
+	bool saw_presence = false, saw_active = false, saw_absent_quality = false;
+	for (const auto &row : fake.lifecycles)
+	{
+		assert(row.session.pid >= 8200 && row.session.pid < 8206);
+		assert(row.at_monotonic_usec >= ready_cut);
+		if (row.lifecycle == telemetry_lifecycle_kind::session_entered ||
+		    row.lifecycle == telemetry_lifecycle_kind::connection_attached)
+			++entries[row.session.pid - 8200U];
+		if (row.session.pid == 8204U)
+			saw_absent_quality |=
+				(row.quality_flags & TELEMETRY_QUALITY_UNCLOSED_TAIL) != 0U;
+	}
+	for (unsigned observed : entries)
+		assert(observed == 1U);
+	for (const auto &row : fake.intervals)
+	{
+		assert(row.session.pid >= 8200 && row.session.pid < 8206);
+		assert(row.window.start_monotonic_usec >= ready_cut);
+		if (row.session.pid == 8200U)
+		{
+			assert(row.category != telemetry_interval_category::connected_active);
+			saw_presence = true;
+		}
+		if (row.session.pid == 8201U &&
+		    row.category == telemetry_interval_category::connected_active)
+			saw_active = true;
+	}
+	std::fprintf(stderr, "startup evidence: presence=%u active=%u absent_quality=%u\n",
+		     saw_presence, saw_active, saw_absent_quality);
+	assert(saw_presence && saw_active && saw_absent_quality);
+	std::puts(
+		"PASS: deferred startup captures presence and preserves copyover without fabricated time");
 }
 
 static std::atomic<bool> worker_entered{ false };
@@ -511,6 +716,16 @@ void check_resume_queue_pressure()
 	const auto resumed = telemetry_runtime_game_session_resume(&player, &descriptor, nullptr);
 	const bool retained_ids = player.telemetry_session_sequence != 0 &&
 				  descriptor.telemetry_connection_sequence != 0;
+	char_data login_player{};
+	pc_only_data login_pc{};
+	login_player.only.pc = &login_pc;
+	login_pc.pid = 8102;
+	login_player.in_room = -1;
+	descriptor_data login_descriptor{};
+	login_descriptor.connected = CON_PLAYING;
+	const auto login = telemetry_runtime_game_enter(&login_player, &login_descriptor);
+	const bool login_retained_ids = login_player.telemetry_session_sequence != 0 &&
+					login_descriptor.telemetry_connection_sequence != 0;
 	release_worker.store(true);
 	const auto drain_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
 	while (telemetry_transport_health_copy().queue_depth != 0 &&
@@ -519,6 +734,8 @@ void check_resume_queue_pressure()
 	// Queue loss must not strand an admitted classifier/session pair.
 	const auto evidence = telemetry_runtime_game_evidence(
 		&player, &descriptor, telemetry_runtime_evidence_kind::player_action);
+	const auto login_evidence = telemetry_runtime_game_evidence(
+		&login_player, &login_descriptor, telemetry_runtime_evidence_kind::player_action);
 	std::printf(
 		"queue_saturated=%u churn=%u resume_outcome=%u dropped=%u retained_ids=%u evidence_outcome=%u\n",
 		full, iterations, static_cast<unsigned>(resumed.outcome), resumed.records_dropped,
@@ -537,12 +754,16 @@ void check_resume_queue_pressure()
 	std::puts(pass ? "PASS: admitted session survives explicit lifecycle queue loss" :
 			 "FAIL: admitted queue-loss resume lost session continuity");
 	assert(pass);
+	assert(login_retained_ids && login.outcome == telemetry_runtime_outcome::queue_full &&
+	       login.records_dropped > 0 &&
+	       login_evidence.outcome == telemetry_runtime_outcome::accepted);
 }
 
 } // namespace
 
 int main()
 {
+	check_deferred_startup_presence();
 	check_resume_capacity_rollback();
 	check_resume_queue_pressure();
 	check_environment_options();

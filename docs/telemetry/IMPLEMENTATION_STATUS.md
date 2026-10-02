@@ -14,6 +14,7 @@ work. A future production deployment is a separate operational decision.
 | #565: shared serialization/schema descriptor | Implemented and locally qualified | `telemetry_columns.inc` supplies the column identities used by serializers and startup validation. Preserve all record kinds 1–8, replay keys and column prefixes. Reserved/padding/absent union fields and sink-generated fields have explicit exclusions. |
 | #566: durable outage/loss evidence | Implemented and locally qualified | Worker registration before SQL initialization/admission; protected exclusive checksummed storage; bounded coherent samples; clean drain versus known abandonment and unknown tails; real restart/exec/SIGKILL and storage-failure tests. Offline read-only export preserves unknown ends. See [OUTAGE_STORAGE.md](OUTAGE_STORAGE.md) and the qualified #567 report integration below. |
 | #567: reviewed incident coverage | Implemented and locally qualified | Consecutive retained inventory versions, nullable unknown ends, committed first verified post-fix references, explicit backlog/reconstruction dispositions and atomic published coverage snapshots. Reports preserve gaps, source uncertainty and bounded private-role separation. Full local MariaDB/MySQL chains, capacity, digest/permission negatives, lost commit replies and unchanged v1 totals qualified. Historical facts require evidence; synthetic fixtures do not establish a real incident history. See [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
+| Initial session qualification/capacity recovery | Implemented and locally qualified | Existing descriptor sweep and context/evidence adapters retry missing entry. Deferred copyover retains one handoff in descriptor memory; supplied keys/totals/revision survive. No earlier unobserved time or human activity is invented. True capacity refusal rolls back IDs; lifecycle queue loss retains admitted IDs. See [SESSION_LIFECYCLE.md](SESSION_LIFECYCLE.md). |
 | Publish existing progression/encounter/combat observations | Pending | Versioned bounded projections and reports, with deduplication, coverage and read-only report permissions. |
 | Character/account/confirmed controller association | Pending | Cached scoped tokens, authenticated account ownership, reviewed cross-account linkage and dated association versions. Unknown controllers remain unknown. |
 | Shared battles and changing rosters | Pending | Link opponents and support actors to a shared battle, retain mode/roster segments, ownership-aware pets, compact context, observed outcomes and censored boundaries. |
@@ -21,7 +22,7 @@ work. A future production deployment is a separate operational decision.
 | Progression and portfolios | Pending | Rested/assistance provenance, earned/lost/restored/admin XP, milestone exposure and censoring, account/controller portfolio totals and union player-time. |
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
 | #487: economic projection compatibility | Pending audit and implementation | Reuse current accounting reconciliation where it meets acceptance; project canonical earned receipts without counting compatibility ledgers, transfers or openings as new rewards. |
-| #258: local observational acceptance and final runbook | Pending | Dedicated roles/catalog, real session/progression readback, normal gameplay/save, failure/recovery and a single reproducible local qualification command. Source audit confirmed that players entering before initial config admission can stay untracked: later evidence/context hooks do not retry session entry. Fix and qualify this without inventing earlier observed time. |
+| #258: local observational acceptance and final runbook | In progress | Initial readiness/capacity recovery is implemented and qualified in executable fixtures. Remaining: dedicated roles/catalog, real session/progression readback, normal gameplay/save, failure/recovery and a single reproducible local qualification command. |
 
 ## Qualified first-layer checks
 
@@ -115,7 +116,36 @@ TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_reposi
 
 This implementation does not establish battle balance, controller linkage
 coverage, zone difficulty or progression speed. Those require the remaining
-implementations above and the end-to-end local qualification. The next runtime
-requirement is to recover session capture after delayed startup qualification;
-publication of existing progression/encounter/combat facts follows. No production
-or staging access is required for that work.
+implementations above and the end-to-end local qualification. Initial session
+recovery is qualified below; publication of existing progression/encounter/combat
+facts follows. No production or staging access is required for that work.
+
+## Qualified session admission recovery
+
+The focused gameplay adapter executable passed delayed repository qualification
+followed by capture without reconnect, first command/context recovery, switched
+player ownership, supplied and absent copyover handoffs, teardown cancellation,
+invalid/partial identity negatives, state-capacity refusal followed by recovery,
+and admitted lifecycle queue loss. No new interval starts before the successful
+retry, repeated presence observations keep the same IDs, and input-free presence
+does not create active time. Supplied copyover preserves the session key,
+checkpoint revision and cumulative totals; absent copyover preserves unclosed-tail
+quality. The fixture's stale world pointers are cleared before their stack storage
+expires.
+
+The 14 actual copyover framing/recovery seams, existing gameplay hook contracts,
+standalone contract compilation, and SQL/client-free runtime lifecycle and outage
+journeys passed. The gameplay executable also passed AddressSanitizer and
+UndefinedBehaviorSanitizer after correcting the stale fixture pointers. The
+maintained SQL server built and touched C/C++ passed
+formatting. These proofs use executable local fixtures; the personal server
+gameplay, save, persistence/readback and measured latency qualification remains
+required by #258.
+
+```sh
+python3 tests/async/test_telemetry_gameplay_adapters.py
+python3 tests/async/test_telemetry_gameplay_adapters.py --sanitize
+python3 tests/async/test_telemetry_copyover_format.py
+python3 tests/async/test_telemetry_runtime_integration.py
+python3 tests/async/test_telemetry_runtime_outage.py
+```

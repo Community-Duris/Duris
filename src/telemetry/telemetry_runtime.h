@@ -112,20 +112,6 @@ struct telemetry_session_enter
 	telemetry_quality_mask quality_flags;
 };
 
-/* Bounded copyover state; no monotonic timestamp crosses process incarnations.
- * Export after accounting through the handoff cut. Revision is the last allocated
- * checkpoint revision (including dropped checkpoints), zero if none was sealed.
- * Import retains cumulative totals and starts from entry's NEW clock anchor.
- * This is observational state; failure never vetoes gameplay copyover. */
-struct telemetry_session_handoff
-{
-	telemetry_session_ref session;
-	telemetry_producer_id previous_producer;
-	telemetry_checkpoint_revision last_checkpoint_revision;
-	telemetry_cumulative_counters cumulative;
-	telemetry_quality_mask quality_flags;
-};
-
 struct telemetry_handoff_result
 {
 	telemetry_runtime_outcome outcome;
@@ -348,6 +334,11 @@ bool telemetry_runtime_now(telemetry_monotonic_usec *monotonic_usec,
  */
 telemetry_capture_result telemetry_runtime_game_enter(struct char_data *character,
 						      struct descriptor_data *descriptor);
+/* Retry entry for an observed playing descriptor, including a deferred copyover
+ * handoff. Safe on every existing descriptor sweep: admitted IDs are unchanged,
+ * no input is inferred, and no time before successful admission is invented. */
+telemetry_capture_result telemetry_runtime_game_presence(struct char_data *character,
+							 struct descriptor_data *descriptor);
 /* Captures current traced dimensions and publishes a bounded context update.
  * Call after game_enter or copyover resume; no SQL or filesystem work occurs. */
 telemetry_capture_result telemetry_runtime_game_context(struct char_data *character,

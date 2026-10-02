@@ -26,6 +26,10 @@ def main() -> None:
     )
     assert "telemetry_runtime_game_evidence" not in dispatch
     assert "telemetry_runtime_options_from_environment" in comm
+    sweep = function_slice(comm, "static void run_session_input_phase", "static void run_output_phase")
+    assert "telemetry_runtime_game_presence(telemetry_character, point)" in sweep
+    assert "point->original ? point->original : t_ch" in sweep
+    assert sweep.index("telemetry_runtime_game_presence") < sweep.index("player_count++")
     close_start = comm.index("void close_socket(struct descriptor_data *d)")
     close = comm[close_start : close_start + 6000]
     assert "telemetry_connection_transition_kind::detached" in close

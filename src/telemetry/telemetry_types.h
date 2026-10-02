@@ -568,6 +568,18 @@ struct telemetry_cumulative_counters
 	telemetry_duration_usec linkdead_usec;
 };
 
+/* Bounded copyover state; no monotonic timestamp crosses process incarnations.
+ * Import retains totals and starts from a new observation's clock anchor.
+ * Descriptors may hold this value while initial writer qualification completes. */
+struct telemetry_session_handoff
+{
+	telemetry_session_ref session;
+	telemetry_producer_id previous_producer;
+	telemetry_checkpoint_revision last_checkpoint_revision;
+	telemetry_cumulative_counters cumulative;
+	telemetry_quality_mask quality_flags;
+};
+
 /* Common immutable record metadata. occurrence_utc_usec is not ingestion time. */
 struct telemetry_record_header
 {
