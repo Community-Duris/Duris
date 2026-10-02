@@ -12,7 +12,7 @@ work. A future production deployment is a separate operational decision.
 | --- | --- | --- |
 | #561: full writer startup contract | Implemented and locally qualified | Validate every current writer column, type, signedness, width, nullable/default semantics, InnoDB engine and 12 required indexes. Exercise effective SELECT/INSERT/session UPDATE with zero-row statements and rollback. Reject admission until the worker qualifies; later transient outages retain buffering. |
 | #565: shared serialization/schema descriptor | Implemented and locally qualified | `telemetry_columns.inc` supplies the column identities used by serializers and startup validation. Preserve all record kinds 1–8, replay keys and column prefixes. Reserved/padding/absent union fields and sink-generated fields have explicit exclusions. |
-| #566: durable outage/loss evidence | Pending | Worker-owned producer registration before admission, protected exclusive durable storage, restart/exec/kill/corruption/disk-full tests, clean drain versus abandonment and unknown tails. No full payload spool is required. |
+| #566: durable outage/loss evidence | Implemented and locally qualified | Worker registration before SQL initialization/admission; protected exclusive checksummed storage; bounded coherent samples; clean drain versus known abandonment and unknown tails; real restart/exec/SIGKILL and storage-failure tests. Offline read-only export preserves unknown ends. See [OUTAGE_STORAGE.md](OUTAGE_STORAGE.md). Report gap integration remains #567. |
 | #567: reviewed incident coverage | Pending | Versioned incident registry, nullable unknown ends, first verified post-fix observation, backlog disposition and gap visibility in rollups/reports. Historical facts require evidence; synthetic fixtures cannot establish a real incident history. |
 | Publish existing progression/encounter/combat observations | Pending | Versioned bounded projections and reports, with deduplication, coverage and read-only report permissions. |
 | Character/account/confirmed controller association | Pending | Cached scoped tokens, authenticated account ownership, reviewed cross-account linkage and dated association versions. Unknown controllers remain unknown. |
@@ -69,6 +69,18 @@ namespace. The repository harness used explicit loopback fixture settings and
 staging, primary checkout environment file, player data or existing game process
 was used.
 
-This first layer does not establish battle balance, controller linkage coverage,
-zone difficulty, progression speed or durable outage evidence. Those require the
-remaining implementations above and the end-to-end local qualification.
+## Qualified durable outage evidence
+
+`test_telemetry_outage.py` passed native lifecycle, safe storage, checksum and
+semantic corruption, ENOSPC/write/fsync/rename publication faults, idempotent
+recovery, monotonic chain/history refusal, simultaneous process ownership, real
+SIGKILL and exec, changed protection/ownership, full producer quota and offline
+read-only export. `test_telemetry_runtime_outage.py` passed SQL-header and
+client-free variants: registration before repository initialization/admission,
+clean drain/restart, transient SQL recovery, unresolved commit shutdown, and
+disk-full startup/checkpoints. Instrumented writes/fsync confirmed worker-only I/O.
+
+This implementation does not establish battle balance, controller linkage
+coverage, zone difficulty or progression speed. Those require the remaining
+implementations above and the end-to-end local qualification. Outage evidence
+is durable; reviewed incident registration and visible report gaps remain pending.

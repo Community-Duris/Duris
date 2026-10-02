@@ -1048,9 +1048,78 @@ bool all_admitted_records_durable() noexcept
 	       applied + health.stale_checkpoint_records;
 }
 
+struct worker_outage_guard
+{
+	telemetry_outage_journal journal{};
+	bool failed = false;
+
+	bool refuse(telemetry_monotonic_usec now) noexcept
+	{
+		failed = true;
+		telemetry_transport_fail_storage_for_worker(
+			now, journal.error_code != 0U ? journal.error_code :
+							static_cast<std::uint32_t>(EIO));
+		return false;
+	}
+
+	bool start() noexcept
+	{
+		const char *directory = std::getenv("TELEMETRY_OUTAGE_LEDGER_DIR");
+		if ((directory == nullptr || *directory == '\0') &&
+		    telemetry_transport_uses_test_repository())
+			return true;
+		telemetry_outage_observation registration{};
+		registration.producer = R.producer;
+		registration.environment_id = R.session_scope_environment_id;
+		registration.season_id = R.session_scope_season_id;
+		if (!production_clock_now(nullptr, &registration.registered_monotonic_usec,
+					  &registration.registered_utc_usec))
+			return refuse(0U);
+		registration.observed_monotonic_usec = registration.registered_monotonic_usec;
+		registration.observed_utc_usec = registration.registered_utc_usec;
+		if (telemetry_outage_open(&journal, directory, registration) !=
+		    telemetry_outage_result::ready)
+			return refuse(registration.observed_monotonic_usec);
+		return true;
+	}
+
+	bool checkpoint(bool terminal = false) noexcept
+	{
+		if (journal.current >= journal.count || failed)
+			return !failed;
+		auto observation = journal.observations[journal.current];
+		telemetry_monotonic_usec now = 0U;
+		telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+		// No fresh trustworthy clock/sample means no invented boundary. On exit
+		// leave the last running watermark for unknown-tail classification.
+		if (!production_clock_now(nullptr, &now, &utc) ||
+		    now < observation.observed_monotonic_usec ||
+		    (!terminal && now - observation.observed_monotonic_usec < 1'000'000U) ||
+		    !telemetry_transport_outage_copy_for_worker(&observation))
+			return true;
+		observation.observed_monotonic_usec = now;
+		observation.observed_utc_usec = utc;
+		if (terminal)
+			observation.phase = telemetry_outage_terminal_phase(observation);
+		if (telemetry_outage_checkpoint(&journal, observation) !=
+		    telemetry_outage_result::ready)
+			return refuse(now);
+		return true;
+	}
+
+	~worker_outage_guard() noexcept
+	{
+		(void)checkpoint(true);
+		telemetry_outage_close(&journal);
+	}
+};
+
 void worker_loop() noexcept
 {
 	worker_done_guard done;
+	worker_outage_guard outage;
+	if (!outage.start())
+		return;
 	for (;;)
 	{
 		if (R.worker_stop.load(std::memory_order_acquire))
@@ -1083,6 +1152,8 @@ void worker_loop() noexcept
 		}
 		else
 			(void)telemetry_transport_pulse(now);
+		if (!outage.checkpoint())
+			return;
 		const std::uint64_t observed_generation =
 			R.wake_generation.load(std::memory_order_acquire);
 		std::unique_lock<std::mutex> lock(R.wake_mutex);

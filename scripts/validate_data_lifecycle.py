@@ -103,6 +103,7 @@ REQUIRED_NON_DATABASE_STORES = {
         "recovery_state", "FLATFILE_ROOT/metadata/player-recovery-*.receipt",
     ),
     "file:critical_command_journal": ("journal", "CRITICAL_COMMAND_JOURNAL_DIR"),
+    "file:telemetry_outage_ledger": ("journal", "TELEMETRY_OUTAGE_LEDGER_DIR"),
     "file:persistence_fallback": ("fallback", "legacy persistence fallback file"),
     "file:persistence_fallback_quarantine": (
         "quarantine", "legacy persistence fallback quarantine",
@@ -553,6 +554,12 @@ def validate_manifest(manifest: dict, expected_tables: set[str],
                 entry["terminal_action"] != "retain"):
             raise ValidationError(
                 f"{entry_id}: native flatfile authority must remain protected and retained"
+            )
+        if entry_id == "file:telemetry_outage_ledger" and (
+                not entry["protected_record"] or entry["season_action"] != "retain" or
+                entry["terminal_action"] != "retain"):
+            raise ValidationError(
+                "telemetry coverage evidence must remain protected and retained"
             )
         if entry["protected_record"] and entry["exception"] not in PROTECTED_EXCEPTIONS:
             raise ValidationError(f"{entry_id} protected record lacks a recognized exception")

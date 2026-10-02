@@ -43,7 +43,9 @@ Accounting-specific reconciliation/reward projection remains #487, not this PR.
 Current implementation and execution evidence are recorded in
 [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md). The shared column contract,
 startup schema/permission validation and admission gate have passed local
-MariaDB/MySQL qualification. Durable outage and incident coverage work remains.
+MariaDB/MySQL qualification. [Durable outage evidence](OUTAGE_STORAGE.md) now
+passes worker/runtime, process restart/exec/kill and storage-failure qualification.
+Reviewed incident coverage and report gap integration remain.
 The presence of a specification, draft PR or fixture does not satisfy acceptance.
 
 The owner has authorized a personal local test setup as the technical acceptance

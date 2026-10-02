@@ -187,6 +187,13 @@ initialization helper. Initialization and apply are single-worker-only APIs.
 
 ## Local validation and limitations
 
+Enabled SQL capture also requires protected durable outage storage. The worker
+registers its producer in `TELEMETRY_OUTAGE_LEDGER_DIR` before repository
+qualification and admission. See [OUTAGE_STORAGE.md](OUTAGE_STORAGE.md) for
+local setup, refusal/recovery semantics, bounded offline evidence export and
+the independent process/storage qualification. This does not change SQL grants
+or schema identities.
+
 The new migration verifier enforces explicit local/production scope and verified
 remote TLS; no remote connection falls back to plaintext or preferred-mode TLS.
 

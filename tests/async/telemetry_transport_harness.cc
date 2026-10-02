@@ -739,6 +739,20 @@ void lifecycle_race_and_stress_tests()
 	bind_and_init(config(16U, 4U, 4U, 1U));
 	std::atomic<bool> producing{ true };
 	std::atomic<std::uint64_t> next_sequence{ 100U };
+	std::uint64_t coherent_samples = 0U;
+	const auto observe = [&]
+	{
+		telemetry_outage_observation sample{};
+		if (!telemetry_transport_outage_copy_for_worker(&sample))
+			return;
+		++coherent_samples;
+		CHECK(sample.inflight_records + sample.unattempted_records ==
+		      sample.health.queue_depth);
+		CHECK(sample.health.admitted_detail ==
+		      sample.health.applied_records + sample.health.queue_depth);
+		CHECK(sample.health.last_committed_record_seq <=
+		      sample.health.last_admitted_record_seq);
+	};
 	std::thread worker(
 		[&]
 		{
@@ -747,9 +761,13 @@ void lifecycle_race_and_stress_tests()
 				clock_state.now.fetch_add(1U, std::memory_order_relaxed);
 				(void)telemetry_transport_pulse(
 					clock_state.now.load(std::memory_order_relaxed));
+				observe();
 			}
 			for (unsigned int attempt = 0U; attempt < 256U; ++attempt)
+			{
 				(void)telemetry_transport_pulse(1'000'000U + attempt);
+				observe();
+			}
 		});
 	for (unsigned int attempt = 0U; attempt < 20'000U; ++attempt)
 	{
@@ -759,6 +777,7 @@ void lifecycle_race_and_stress_tests()
 	}
 	producing.store(false, std::memory_order_release);
 	worker.join();
+	CHECK(coherent_samples != 0U);
 	CHECK(telemetry_transport_health_copy().queue_depth <= 16U);
 	finish();
 }

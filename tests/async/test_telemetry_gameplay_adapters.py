@@ -9,7 +9,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def main() -> None:
-    with tempfile.TemporaryDirectory(prefix="telemetry-gameplay-") as directory:
+    artifacts = ROOT / "bin/tests"
+    artifacts.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="telemetry-gameplay-", dir=artifacts) as directory:
         executable = str(Path(directory) / "telemetry-gameplay-adapters")
         command = [
             "g++",
@@ -31,6 +33,7 @@ def main() -> None:
                     "telemetry_encounter.c",
                     "telemetry_failure.c",
                     "telemetry_health.c",
+                    "telemetry_outage.c",
                     "telemetry_queue.c",
                     "telemetry_progression.c",
                     "telemetry_repository.c",

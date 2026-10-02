@@ -62,6 +62,8 @@ std::atomic<bool> REPOSITORY_READY{ false };
 /* Initial validation is required before admission. Once qualified, a later
  * transient outage may buffer records while the worker reconnects. */
 std::atomic<bool> ADMISSION_READY{ false };
+std::atomic<std::uint64_t> PRODUCER_SAMPLE_EPOCH{ 0U };
+std::atomic<std::uint64_t> OBSERVED_RECORD_KINDS{ 0U };
 std::atomic<bool> CIRCUIT_OPEN{ false };
 /* Set only after init reports an owned writer.  DB-down/disabled paths must
  * not synchronously call a borrowed shutdown callback that has no live writer. */
@@ -1250,6 +1252,22 @@ struct producer_guard
 	}
 };
 
+struct producer_sample_guard
+{
+	bool active;
+	explicit producer_sample_guard(bool entered) noexcept
+		: active(entered)
+	{
+		if (active)
+			PRODUCER_SAMPLE_EPOCH.fetch_add(1U, std::memory_order_seq_cst);
+	}
+	~producer_sample_guard()
+	{
+		if (active)
+			PRODUCER_SAMPLE_EPOCH.fetch_add(1U, std::memory_order_seq_cst);
+	}
+};
+
 } // namespace
 
 telemetry_transport_outcome
@@ -1330,6 +1348,8 @@ telemetry_transport_outcome telemetry_transport_init(telemetry_transport_config 
 
 	SETTINGS = config;
 	LAST_ADMITTED_KEY = {};
+	PRODUCER_SAMPLE_EPOCH.store(0U, std::memory_order_release);
+	OBSERVED_RECORD_KINDS.store(0U, std::memory_order_release);
 	LOSS = {};
 	LOSS_RANGE_UNKNOWN = false;
 	REPOSITORY_SETTINGS = { config.backend,		0U,
@@ -1377,6 +1397,7 @@ telemetry_transport_outcome telemetry_transport_init(telemetry_transport_config 
 telemetry_enqueue_result telemetry_transport_enqueue(telemetry_record record)
 {
 	producer_guard guard;
+	producer_sample_guard sample(guard.entered);
 	telemetry_enqueue_result result{};
 	result.key = record.header.key;
 	const std::uint8_t lifecycle = LIFECYCLE.load(std::memory_order_seq_cst);
@@ -1417,6 +1438,9 @@ telemetry_enqueue_result telemetry_transport_enqueue(telemetry_record record)
 		update_admission_result(result);
 		return result;
 	}
+	OBSERVED_RECORD_KINDS.fetch_or(std::uint64_t{ 1U }
+					       << static_cast<std::uint8_t>(record.header.kind),
+				       std::memory_order_relaxed);
 	if (CIRCUIT_OPEN.load(std::memory_order_acquire) && !control)
 	{
 		record_failed_admission(record, false);
@@ -1567,6 +1591,54 @@ void telemetry_transport_repository_shutdown_for_owner(void)
 telemetry_transport_loss_snapshot telemetry_transport_loss_copy_for_producer(void)
 {
 	return LOSS;
+}
+
+bool telemetry_transport_uses_test_repository(void)
+{
+	return REPOSITORY.init != DEFAULT_REPOSITORY.init;
+}
+
+void telemetry_transport_fail_storage_for_worker(telemetry_monotonic_usec now,
+						 std::uint32_t error_code)
+{
+	ADMISSION_READY.store(false, std::memory_order_release);
+	const auto first = INFLIGHT.isolation ? INFLIGHT.isolation_index : 0U;
+	open_circuit(now, error_code, telemetry_failure_class::permanent_repository,
+		     INFLIGHT.active ? INFLIGHT_RECORDS.data() + first : nullptr,
+		     INFLIGHT.active ? INFLIGHT.count - first : 0U, 0U);
+}
+
+bool telemetry_transport_outage_copy_for_worker(telemetry_outage_observation *observation)
+{
+	if (observation == nullptr)
+		return false;
+	for (unsigned int attempt = 0U; attempt < 4U; ++attempt)
+	{
+		const auto epoch = PRODUCER_SAMPLE_EPOCH.load(std::memory_order_seq_cst);
+		if ((epoch & 1U) != 0U)
+			continue;
+		const auto health = telemetry_transport_health_copy();
+		const auto kinds = OBSERVED_RECORD_KINDS.load(std::memory_order_acquire);
+		// A read-modify-write sees the latest epoch in modification order and
+		// orders the preceding atomic samples. Ordinary loads may see a stale
+		// even epoch while already observing part of the next admission.
+		if (epoch != PRODUCER_SAMPLE_EPOCH.fetch_add(0U, std::memory_order_seq_cst))
+			continue;
+		const auto first = INFLIGHT.isolation ? INFLIGHT.isolation_index : 0U;
+		const auto inflight = INFLIGHT.active ? INFLIGHT.count - first : 0U;
+		if (inflight > health.queue_depth || health.queue_depth > SETTINGS.queue_capacity)
+			return false;
+		observation->health = health;
+		observation->record_kind_mask = kinds;
+		observation->inflight_records = static_cast<std::uint32_t>(inflight);
+		observation->unattempted_records =
+			static_cast<std::uint32_t>(health.queue_depth - inflight);
+		if (inflight != 0U)
+			observation->health.inflight_first_record_seq =
+				INFLIGHT_RECORDS[first].header.key.record_seq;
+		return true;
+	}
+	return false;
 }
 
 telemetry_health_snapshot telemetry_transport_health_copy(void)

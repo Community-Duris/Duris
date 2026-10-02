@@ -3,6 +3,7 @@
 
 #include "telemetry/telemetry_repository.h"
 #include "telemetry/telemetry_transport.h"
+#include "telemetry/telemetry_outage_private.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -68,5 +69,14 @@ struct telemetry_transport_loss_snapshot
 	std::uint64_t last_rejected_record_seq = 0U;
 };
 telemetry_transport_loss_snapshot telemetry_transport_loss_copy_for_producer(void);
+
+/* Worker-only, bounded coherent sample. Skip a checkpoint when the producer is
+ * between queue publication and its counter updates; never wait on gameplay. */
+bool telemetry_transport_outage_copy_for_worker(telemetry_outage_observation *observation);
+void telemetry_transport_fail_storage_for_worker(telemetry_monotonic_usec now,
+						 std::uint32_t error_code);
+/* Explicitly injected repositories may omit storage in component fixtures.
+ * The production binding always requires a protected ledger directory. */
+bool telemetry_transport_uses_test_repository(void);
 
 #endif
