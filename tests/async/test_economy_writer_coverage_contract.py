@@ -1102,7 +1102,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
                             ["must_block_on_activation"])
         self.assertIn("generated-use record failure", self.routes["item.superior_enhance_fee"]
                       ["source_classification"])
-        self.assertIn("changes source affected fields before debiting",
+        self.assertIn("accepts the wallet fee before changing the source item",
                       self.routes["item.mod_enhance_fee"]["source_classification"])
 
     def test_legacy_file_item_sites_separate_save_unload_restore_and_dead_code(self) -> None:

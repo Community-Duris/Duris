@@ -177,17 +177,27 @@ This checkpoint publishes the completed review fixes directly to
   source files match that committed tree. Wallet admission is not a compound
   durable enhancement receipt; that integration remains outstanding.
 
+- Essence modifier enhancement now validates its planned signed-byte modifier
+  and accepts payment before changing the source item or consuming its essence.
+  The production-function regression reproduces mutation after a refused debit
+  before `a2c560b9d`; afterward ASan/UBSan checks preserve all state on refusal,
+  exercise all three fee tiers, retain the ordinary three-step cap and reject
+  overflow at modifier 127 even with a large configured step limit. All 16
+  affected enhancement checks and both strict production builds pass; all 1,210
+  native source files match that tree. This does not supply a compound durable
+  wallet/item/material receipt.
+
 ## Verification and its limits
 
 | Check | Current evidence |
 | --- | --- |
-| Strict SQL and flatfile production builds | Passed for `508912dd2`; all 1,210 native source files match its committed tree. Current recipe gameplay is separately qualified at `97ffd76d8` on flatfile and both SQL engines; it does not execute the enhancement payment repair. |
+| Strict SQL and flatfile production builds | Passed for `a2c560b9d`; all 1,210 native source files match its committed tree. Current recipe gameplay is separately qualified at `97ffd76d8` on flatfile and both SQL engines; it does not execute the enhancement payment repair. |
 | Recipe SQL receipts and fault recovery | Passed on disposable MySQL 8.0 and MariaDB 10.11 before the latest upstream integration. |
 | Integrated focused runtime checks | All 16 selected checks passed after the first upstream integration, including the ASan/UBSan prompt fixture. |
 | Frozen broad regression | The `8be8b55c0` snapshot completed all 822 scripts in 7,221.31 seconds; the runner reported 818 successes and four failures. Property reload, formatting, newborn grants and terminal-death entrypoints fail on that snapshot and pass their separately recorded focused repairs. Optional checks are included in the runner's success total: the MariaDB combat journey skipped because `TEST_DB_HOST` was not configured. This is not an all-green current-head or SQL gameplay qualification. A fresh 828-script run is in progress on frozen `63309643c`; it predates the enhancement payment fix and has no final result yet. |
 | Null-output publication regression | Passed using the actual native movement module after `0464613a1`. |
 | Combat continuation and quarantine restore | Passed after integrating the upstream recovery evidence. Quarantine archives retain both original component frames and keep recovery fenced on conflicting evidence. |
-| Writer census | Refreshed for `508912dd2`: 2,810 lexical occurrences, 2,752 unique sites, 863 routes, zero unmapped sites. The new provisional enhancement-output cleanup is explicitly classified; both moved wallet call sites retain their existing route ownership. The four temporary material-probe cleanup sites are explicitly classified in the recipe route. The previously qualified 51 unaffected coverage checks and corrected enhancement check pass; the refreshed 52-check suite is in progress and artifact freshness passes; enhancement assertions now resolve their unique current source calls. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
+| Writer census | Refreshed for `a2c560b9d`: 2,810 lexical occurrences, 2,752 unique sites, 863 routes, zero unmapped sites. The new provisional enhancement-output cleanup is explicitly classified; both moved wallet call sites retain their existing route ownership. The four temporary material-probe cleanup sites are explicitly classified in the recipe route. All 52 writer coverage checks pass on the frozen `508912dd2` source in 236.014 seconds, along with 14 accounting fixtures and matrix freshness; the essence fix reanchors the same route set and passes its 14-fixture validation, matrix freshness and corrected focused enhancement check; enhancement assertions now resolve their unique current source calls. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
 | Recipe flatfile restore | Passed through the actual native restore decoder: complete recovery, checksum damage, missing obligation/root, future revision, and invalid receipt filename. |
 | Mortal recipe gameplay | Physical and retained-pouch Craft/Forge passed on the current `97ffd76d8` flatfile binary with exact XP, output UIDs and counters through copyover and two cold restarts. Both disposable SQL engines now pass the same physical and retained-pouch journey on the verified `97ffd76d8` SQL binary, preserving inputs, output UIDs, XP and counters through copyover and two cold restarts. This remains one frozen leather recipe with accounting inactive. |
 | Death/resurrection accounting acceptance | **RED** on disposable MariaDB 10.11.14 and MySQL 8.0.46 using the verified `49f76401c` SQL binary. Real combat/death and resurrection returned all 12 original fixture item UIDs, restored the exact wallet, and retired the new death coin pile. The inactive-accounting journey still reports 27 uncovered item events and two currency operations missing accounting roots/postings. It does not qualify active accounting or subsequent restart. |
