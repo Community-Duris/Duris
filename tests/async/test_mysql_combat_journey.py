@@ -198,7 +198,9 @@ def run(server, reset_coins=False, boons=False, *, require_unassisted_recovery=F
             f'(owner_type=1 AND owner_id={player_id} AND owner_context_id=0))')
         assert exact_rows('item_owner_revision', owner_revision_where) == \
             owner_revisions_unaffected_before, \
-            'unrelated item-owner revision rows changed during wallet conversion'
+            ('unrelated item-owner revision rows changed during wallet conversion: ' +
+             repr({'before': owner_revisions_unaffected_before,
+                   'after': exact_rows('item_owner_revision', owner_revision_where)}))
         revision_after = {
             'system': number(
                 'SELECT revision FROM item_owner_revision WHERE owner_type=7 '
@@ -592,6 +594,7 @@ def run(server, reset_coins=False, boons=False, *, require_unassisted_recovery=F
                         record_state('retained_conflict_durable_ack')
 
                         state_at_ack = retained_state(pid)
+                        evidence['retained_state_after_ack'] = state_at_ack
                         assert len(state_at_ack['conflict_cases']) == 1
                         assert len(state_at_ack['death_dispositions']) == 1
                         wallet_conversion = verify_wallet_conversion(
