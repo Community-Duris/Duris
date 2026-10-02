@@ -153,8 +153,8 @@ NON_WRITERS = {
 }
 PROJECTION_ROUTES = {
     "quest.durable_offering_publication": "Removes the live offering objects only after the committed item-destruction result is checked; it must retain a recoverable quest reward obligation.",
-    "currency.bank_live_projection": "Publishes an already committed shared-bank balance into connected player views; no account_banks row or source balance changes here.",
-    "currency.wallet_live_projection": "Publishes a committed wallet result to live PC and GMCP state with a stale-revision check; no new native value is created here.",
+    "currency.bank_live_projection": "Publishes validated bank authority into retained endpoint and connected shared-account player views; no account_banks row or source balance changes here.",
+    "currency.wallet_live_projection": "Publishes a committed wallet result or validated stale authority to live PC and GMCP state with a monotonic revision check; no new native value is created here.",
     "player.load_economy_projection": "Materializes wallet and bank vectors from the validated player-load result into a newly loaded PC; no new native value is created here.",
     "player.flatfile_baseline_projection": "After a new-player flat-file baseline is committed and read back, copies its wallet/bank revisions and denominations into the live PC; no second credit is created here.",
     "player.legacy_flatfile_load": "Parses a legacy character file into a PC projection. This is an authorized load only when that file is the selected, complete native source for the active epoch.",
@@ -489,7 +489,7 @@ def source_targets(route_id: str, disposition: str) -> dict:
     if route_id in SQL_ROUTE_TARGETS:
         return SQL_ROUTE_TARGETS[route_id]
     if route_id == "currency.bank_live_projection":
-        return {"holding_effect": "Copies an existing bank balance into connected PC/GMCP projections after a native read or committed result; no native debit, credit, or issuance.",
+        return {"holding_effect": "Copies existing bank authority from a native load, committed completion, or validated stale receipt into retained and connected PC/GMCP projections; no native debit, credit, or issuance.",
                 "custody_effect": "None", "native_state_targets": ["in-memory PC bank balance and bank revision projection", "GMCP vitals"]}
     if route_id in {"currency.wallet_live_projection", "player.load_economy_projection"}:
         return {"holding_effect": "Copies retained wallet/bank authority into the live PC projection after a committed result or validated load; no native debit, credit, or issuance.",

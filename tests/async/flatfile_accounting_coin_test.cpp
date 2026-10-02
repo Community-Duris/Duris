@@ -205,6 +205,17 @@ void split_children_journey(const fs::path &path)
 	const auto stale = split_child_command(sender_before, second_before, 3, 4, 221);
 	const auto rejected = flatfile_accounting_coin_transaction::apply(root, stale);
 	assert(rejected.outcome == outcome::terminal_failure && rejected.error_code == ESTALE);
+	coin_transfer_payload stale_payload;
+	assert(coin_transfer_command_decode_payload(stale, &stale_payload));
+	coin_transfer_stale_result repair;
+	assert(rejected.result_size == COIN_TRANSFER_STALE_RESULT_BYTES &&
+	       coin_transfer_command_decode_stale_result(stale_payload, rejected.failure_stage,
+							 rejected.result_payload.data(),
+							 rejected.result_size, &repair));
+	assert(repair.endpoint_index == 0 && repair.wallet_stale && repair.bank_stale &&
+	       repair.current.wallet.amount[0] == 97 &&
+	       repair.current.wallet_revision == after_first.domains.wallet_revision &&
+	       repair.current.bank_revision == after_first.domains.bank_revision);
 	assert(retained(root, stale).plan.empty());
 	same(rejected, flatfile_accounting_coin_transaction::apply(root, stale));
 	assert(state(root).domains.wallet[0] == 97 && peer_state(root).domains.wallet[0] == 3 &&
@@ -313,7 +324,8 @@ coin_transfer_endpoint room_pile(const std::string &root, uint64_t uid,
 	uint64_t item_revision = ITEM_TRANSFER_ABSENT_REVISION;
 	if (!created)
 	{
-		const auto found = std::find_if(owned.begin(), owned.end(), [uid](const auto &item)
+		const auto found = std::find_if(owned.begin(), owned.end(),
+						[uid](const auto &item)
 						{ return item.item_uid == uid; });
 		assert(found != owned.end());
 		item_revision = found->item_revision;
@@ -719,14 +731,14 @@ void lifecycle_native_capture(const fs::path &path)
 	std::optional<economic_prepared_baseline> prepared;
 	assert(economic_baseline_prepare(baseline, &prepared) == economic_accounting_error::ok);
 	assert(prepared && prepared->witness().holdings.size() == 2);
-	const auto wallet_witness =
-		std::find_if(prepared->witness().holdings.begin(),
-			     prepared->witness().holdings.end(), [](const auto &holding)
-			     { return holding.account.kind == economic_account_kind::wallet; });
-	const auto bank_witness =
-		std::find_if(prepared->witness().holdings.begin(),
-			     prepared->witness().holdings.end(), [](const auto &holding)
-			     { return holding.account.kind == economic_account_kind::bank; });
+	const auto wallet_witness = std::find_if(
+		prepared->witness().holdings.begin(), prepared->witness().holdings.end(),
+		[](const auto &holding)
+		{ return holding.account.kind == economic_account_kind::wallet; });
+	const auto bank_witness = std::find_if(
+		prepared->witness().holdings.begin(), prepared->witness().holdings.end(),
+		[](const auto &holding)
+		{ return holding.account.kind == economic_account_kind::bank; });
 	assert(wallet_witness != prepared->witness().holdings.end() &&
 	       wallet_witness->native_revision == captured.wallets[0].native_revision &&
 	       wallet_witness->source_digest == captured.wallets[0].source_digest);
@@ -1143,6 +1155,8 @@ int main(int argc, char **argv)
 		flatfile_accounting_coin_transaction::apply(root, stale_split);
 	assert(stale_pile_result.outcome == outcome::terminal_failure &&
 	       stale_pile_result.error_code == ESTALE);
+	assert(stale_pile_result.result_size == 0 &&
+	       stale_pile_result.failure_stage == critical_failure_stage::coin_revision_unknown);
 	const auto stale_pile_record = retained(root, stale_split);
 	assert(stale_pile_record.result_code == ESTALE && stale_pile_record.plan.empty());
 	const auto stale_pile_replay =

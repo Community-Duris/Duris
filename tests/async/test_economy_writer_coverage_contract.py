@@ -361,7 +361,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
                              for site in sites["currency.wallet_credit"]), 4)
         self.assertEqual(sum(site[2] == "coin_assignment"
                              for site in sites["currency.wallet_debit"]), 8)
-        self.assertEqual(len(sites["currency.bank_live_projection"]), 4)
+        self.assertEqual(len(sites["currency.bank_live_projection"]), 8)
+        self.assertEqual(sum(site[0] == "src/economy/currency_transaction.c"
+                             for site in sites["currency.bank_live_projection"]), 4)
         self.assertEqual(len(sites["currency.bank_single_projection"]), 4)
         self.assertEqual(len(sites["currency.wallet_live_projection"]), 4)
         self.assertEqual(len(sites["player.load_economy_projection"]), 8)

@@ -1703,7 +1703,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			else if (accounted_coin)
 				retained_error = coin_transfer_accounting_verify_retained(
 					connection, command, stored.result_code,
-					stored.result_payload.data(), stored.result_payload.size());
+					stored.result_payload.data(), stored.result_payload.size(),
+					static_cast<critical_failure_stage>(stored.failure_stage));
 			else if (accounted_item)
 				retained_error = economic_sql_item_transfer_verify_retained(
 					connection, command, stored.result_code,
@@ -1879,6 +1880,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			durable_revision = std::max(durable_revision, revision);
 		}
 		std::array<uint8_t, COIN_TRANSFER_RESULT_BYTES> bytes = {};
+		size_t result_size = 0;
 		if (result_code)
 		{
 			if (!execute(connection, "ROLLBACK TO SAVEPOINT coin_endpoints"))
@@ -1888,6 +1890,24 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				return root_failure(error);
 			}
 			durable_revision = 0;
+			std::array<uint8_t, COIN_TRANSFER_STALE_RESULT_BYTES> stale_bytes = {};
+			coin_transfer_stale_result stale_result = {};
+			if (result_code == ESTALE &&
+			    coin_transfer_command_encode_stale_result(
+				    coin_payload, result, failure_stage, &stale_bytes) &&
+			    coin_transfer_command_decode_stale_result(
+				    coin_payload, failure_stage, stale_bytes.data(),
+				    stale_bytes.size(), &stale_result))
+			{
+				std::copy(stale_bytes.begin(), stale_bytes.end(), bytes.begin());
+				result_size = stale_bytes.size();
+				if (stale_result.wallet_stale)
+					durable_revision = stale_result.current.wallet_revision;
+				if (stale_result.bank_stale)
+					durable_revision =
+						std::max(durable_revision,
+							 stale_result.current.bank_revision);
+			}
 		}
 		else if (!coin_transfer_command_encode_result(coin_payload, result, &bytes))
 		{
@@ -1911,7 +1931,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				return root_failure(session_error);
 			}
 		}
-		const size_t result_size = result_code ? 0 : bytes.size();
+		if (!result_code)
+			result_size = bytes.size();
 		std::array<uint8_t, CRITICAL_OUTBOX_COIN_RECEIPT_BYTES> receipt;
 		std::copy(coin_payload.source.change.operation_id.bytes.begin(),
 			  coin_payload.source.change.operation_id.bytes.end(), receipt.begin());
@@ -1938,11 +1959,11 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		{
 			const auto session_error =
 				accounted_session_check(connection, &root_session, true);
-			const auto verify_error = session_error ?
-							  session_error :
-							  coin_transfer_accounting_verify_retained(
-								  connection, command, result_code,
-								  bytes.data(), result_size);
+			const auto verify_error =
+				session_error ? session_error :
+						coin_transfer_accounting_verify_retained(
+							connection, command, result_code,
+							bytes.data(), result_size, failure_stage);
 			const auto outbox_error = verify_error ?
 							  verify_error :
 							  verify_accounted_root_outbox(
@@ -3103,7 +3124,8 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 		else if (accounted_coin)
 			error = coin_transfer_accounting_verify_retained(
 				connection, command, stored.result_code,
-				stored.result_payload.data(), stored.result_payload.size());
+				stored.result_payload.data(), stored.result_payload.size(),
+				static_cast<critical_failure_stage>(stored.failure_stage));
 		else if (accounted_item)
 			error = economic_sql_item_transfer_verify_retained(
 				connection, command, stored.result_code,
