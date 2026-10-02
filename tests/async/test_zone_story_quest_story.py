@@ -98,6 +98,25 @@ assert all(t["count"] == 1 for t in legends["steps"][:-1])
 buckle = next(s for s in torg["stories"] if s["id"] == "an-obsidian-buckle-29024")
 assert {c["giver_vnum"] for c in buckle["contracts"]} == {29024}
 assert [t["item_vnums"] for t in buckle["steps"] if t["kind"] == "carried_item"] == [[28962], [28982]]
+solonar = new_mappings["solonar"]
+assert solonar["schema_version"] == 3 and solonar["revision"] == 2
+assert report["eligible_by_zone"]["306"] == 5 and len(solonar["stories"]) == 15
+assert sum(s["category"] == "service" for s in solonar["stories"]) == 10
+assert sum(len(s["contracts"]) for s in solonar["stories"]) == 15 and not solonar["exclusions"]
+assert len(solonar["contacts"]) == 14
+assert all(s["steps"][-1]["contracts"] == s["contracts"] for s in solonar["stories"])
+for prefix, optional in (("robes-of-", 5), ("a-piwafwi-", 2), ("forge-mage-", 2), ("prepare-an-ancient-", 2)):
+    story = next(s for s in solonar["stories"] if s["id"].startswith(prefix))
+    assert sum(t.get("optional", False) for t in story["steps"]) == optional
+mage_bane = next(s for s in solonar["stories"] if s["id"] == "forge-mage-bane-30638")
+assert [t["item_vnums"] for t in mage_bane["steps"] if t["kind"] == "carried_item"] == [[30659], [30662], [30664]]
+piwafwi = next(s for s in solonar["stories"] if s["id"] == "a-piwafwi-of-power-30604")
+assert [t["item_vnums"] for t in piwafwi["steps"] if t["kind"] == "carried_item"] == [[30634], [30635], [30636], [30649], [30666]]
+scroll = next(s for s in solonar["stories"] if s["id"] == "prepare-an-ancient-scroll-30617")
+assert scroll["contracts"][0]["completion_key"].endswith("receive=I:30666,I:30666;disappear=0")
+grove_definitions = [d for d in catalog["definitions"] if d["source_area"] == "solonar"]
+assert {d["giver_vnum"] for d in grove_definitions if d["daily_exclusion"] == "Unsupported durable offering"} == {30600, 30603, 30604}
+assert next(c for c in solonar["contacts"] if c["mob_vnum"] == 30638)["keyword"] == "valin"
 family = next(s for s in new_mappings["krimman"]["stories"] if s["title"] == "Release the Haunted Family")
 assert len(family["contracts"]) == 1 and len(family["steps"]) == 9
 assert all(t["optional"] for t in family["steps"][:-4])

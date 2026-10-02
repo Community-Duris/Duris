@@ -38,6 +38,15 @@ its dossier explains all topic families, actual speech/key access, distinct
 rings/chisels, eight legends and three separate Tranug commissions. Invasion
 arrival, holding availability, direct random legend/heart grants and owned
 foreign terminals remain separate qualification work.
+Vast Hidden Grove retains three equipment stories, two bird requests and ten
+services across fifteen contracts. Optional specialist receipts preserve
+supplied ingredients; exact small pickaxe, raw versus lavender thread,
+competing ingredient copies and two-scroll reward are explained. Its dossier
+records thirteen scenery routes, loaded door/falling behavior, Valin/miner
+availability, ordinary mouse pickup and an invalid inn assignment target.
+Three mixed fees remain unavailable; item-only coin rewards retain native
+accounting. Twelve source-comprehensive areas remain distinct from played
+active-world qualification.
 All raw definitions, receipt identities, zone registry and source fingerprint
 remain unchanged. Comprehensive source dossiers for these areas are tracked in
 the [execution register](../design/ZONE_STORY_ROADMAP_EXECUTION.md).

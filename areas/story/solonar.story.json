@@ -1,6 +1,6 @@
 {
-  "schema_version": 2,
-  "revision": 1,
+  "schema_version": 3,
+  "revision": 2,
   "source_area": "solonar",
   "coverage": "complete",
   "stories": [
@@ -8,7 +8,7 @@
       "id": "repair-a-shattered-diamond-30600",
       "title": "Repair a Shattered Diamond",
       "category": "service",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted. The offering also requires 4000 copper; this request is currently unavailable until combined material-and-coin payments are supported.",
+      "summary": "Phonar repairs a shattered diamond into a radiant diamond for Valin's Mage Bane recipe. Bring the diamond and 4000 copper. Supplied diamonds qualify. This exchange is currently unavailable until combined material-and-coin payments are supported.",
       "contracts": [
         {
           "giver_vnum": 30600,
@@ -20,7 +20,7 @@
           "id": "material-30661",
           "text": "Carry 1 x a shattered diamond",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The shattered diamond lies on the floor of the deep dragon's cavern. Supplied diamonds are accepted.",
           "item_vnums": [
             30661
           ],
@@ -28,9 +28,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Ask Phonar to repair the shattered diamond",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Bring the diamond and 4000 copper. Mixed material-and-coin payment is currently unavailable; this is a service.",
           "contracts": [
             {
               "giver_vnum": 30600,
@@ -44,7 +44,7 @@
       "id": "prepare-mithril-linked-scales-30601",
       "title": "Prepare Mithril Linked Scales",
       "category": "service",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Aidon binds a dragon tooth and scale into mithril linked scales for Striker's robes. He also rewards 10000 copper; that money is a reward, not a fee. Supplied materials qualify, and this preparation service earns no separate zone achievement.",
       "contracts": [
         {
           "giver_vnum": 30601,
@@ -56,7 +56,7 @@
           "id": "material-30651",
           "text": "Carry 1 x a large dragons tooth",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The deep dragon in the caverns carries the tooth. Supplied teeth are accepted; no personal dragon kill is required for delivery.",
           "item_vnums": [
             30651
           ],
@@ -66,7 +66,7 @@
           "id": "material-30652",
           "text": "Carry 1 x a large dragon scale",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The deep dragon carries this large scale. The salamander's smaller scale cannot replace it. Supplied dragon scales are accepted.",
           "item_vnums": [
             30652
           ],
@@ -74,9 +74,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver tooth and scale to Aidon",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "The exact pair produces mithril linked scales and a 10000-copper reward. This service is optional preparation for Striker.",
           "contracts": [
             {
               "giver_vnum": 30601,
@@ -90,7 +90,7 @@
       "id": "prepare-cured-hide-robes-30602",
       "title": "Prepare Cured Hide Robes",
       "category": "service",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Beowulf cures panther hide and buckskin into hide robes for Striker, and rewards 10000 copper. Reserve another hide for Xaves and more buckskin for the lich if following those stories too. Supplied materials qualify; this is a preparation service.",
       "contracts": [
         {
           "giver_vnum": 30602,
@@ -102,7 +102,7 @@
           "id": "material-30634",
           "text": "Carry 1 x a panther hide",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Panthers carry this hide. Striker's cured robes and Xaves' raw-hide recipe consume separate copies. Supplied hides are accepted.",
           "item_vnums": [
             30634
           ],
@@ -112,7 +112,7 @@
           "id": "material-30642",
           "text": "Carry 1 x some buckskin",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Certain bucks in the western glades carry buckskin; their separate hide spikes are not this ingredient. Beowulf and the lich consume separate copies. Supplied buckskin is accepted.",
           "item_vnums": [
             30642
           ],
@@ -120,9 +120,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver panther hide and buckskin to Beowulf",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "The exact pair produces cured hide robes and a 10000-copper reward. This service is optional preparation for Striker.",
           "contracts": [
             {
               "giver_vnum": 30602,
@@ -136,7 +136,7 @@
       "id": "robes-of-the-arch-magi-30603",
       "title": "Robes of the Arch-Magi",
       "category": "story",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted. The offering also requires 1000 copper; this request is currently unavailable until combined material-and-coin payments are supported.",
+      "summary": "Striker makes the robes of the arch-magi from a glowing orb, faerie dust, cured hide robes, radiant lavender thread and mithril linked scales, plus 1000 copper. The five preparation exchanges are optional history; supplied finished ingredients qualify. This final exchange is currently unavailable until combined material-and-coin payments are supported.",
       "contracts": [
         {
           "giver_vnum": 30603,
@@ -145,10 +145,75 @@
       ],
       "steps": [
         {
+          "id": "prepare-30635-0",
+          "text": "Prepare an orb with the old centaur",
+          "kind": "completion",
+          "hint": "Optional history; a supplied orb qualifies. The lich consumes a separate orb.",
+          "contracts": [
+            {
+              "giver_vnum": 30635,
+              "completion_key": "give=I:30644,I:30645,I:30647,I:30648;receive=I:30640;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "prepare-30601-1",
+          "text": "Prepare linked scales with Aidon",
+          "kind": "completion",
+          "hint": "Optional history; supplied linked scales qualify.",
+          "contracts": [
+            {
+              "giver_vnum": 30601,
+              "completion_key": "give=I:30651,I:30652;receive=C:10000,I:30658;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "prepare-30602-2",
+          "text": "Prepare cured robes with Beowulf",
+          "kind": "completion",
+          "hint": "Optional history; supplied cured robes qualify.",
+          "contracts": [
+            {
+              "giver_vnum": 30602,
+              "completion_key": "give=I:30634,I:30642;receive=C:10000,I:30656;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "prepare-30606-3",
+          "text": "Prepare lavender thread with Mogoe",
+          "kind": "completion",
+          "hint": "Optional history; supplied lavender thread qualifies. Reserve another raw pair for Xaves.",
+          "contracts": [
+            {
+              "giver_vnum": 30606,
+              "completion_key": "give=I:30635,I:30649;receive=C:10000,I:30657;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "prepare-30615-4",
+          "text": "Prepare faerie dust with the nymph",
+          "kind": "completion",
+          "hint": "Optional history; supplied dust qualifies.",
+          "contracts": [
+            {
+              "giver_vnum": 30615,
+              "completion_key": "give=I:30653,I:30654,I:30655;receive=C:15000,I:30650;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
           "id": "material-30640",
           "text": "Carry 1 x a small glowing orb",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Ask the old centaur about orb. He needs pech rock, salamander scale, water and a tempest fragment. The lich and Striker consume separate orbs. Supplied orbs are accepted.",
           "item_vnums": [
             30640
           ],
@@ -158,7 +223,7 @@
           "id": "material-30650",
           "text": "Carry 1 x some fairie dust",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Ask the nymph about dust and bring azalea, mistletoe and ginseng. Reserve the dust for Striker rather than using it. Supplied dust is accepted.",
           "item_vnums": [
             30650
           ],
@@ -168,7 +233,7 @@
           "id": "material-30656",
           "text": "Carry 1 x some cured hide robes",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Ask Beowulf about robes and bring panther hide with buckskin. Supplied cured robes are accepted.",
           "item_vnums": [
             30656
           ],
@@ -178,7 +243,7 @@
           "id": "material-30657",
           "text": "Carry 1 x some radiant glowing lavander thread",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Ask Mogoe about string and bring raw golden thread with cave-fisher filament. This lavender thread serves Striker; it cannot replace Xaves' raw golden thread. Supplied thread is accepted.",
           "item_vnums": [
             30657
           ],
@@ -188,7 +253,7 @@
           "id": "material-30658",
           "text": "Carry 1 x some mithril linked scales",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Ask Aidon about scales and bring a deep-dragon tooth with a large dragon scale. Supplied linked scales are accepted.",
           "item_vnums": [
             30658
           ],
@@ -196,9 +261,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver the five prepared ingredients to Striker",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "The full offering includes 1000 copper and produces arch-magi robes. Mixed material-and-coin payment is currently unavailable.",
           "contracts": [
             {
               "giver_vnum": 30603,
@@ -212,7 +277,7 @@
       "id": "a-piwafwi-of-power-30604",
       "title": "A Piwafwi of Power",
       "category": "story",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted. The offering also requires 10000 copper; this request is currently unavailable until combined material-and-coin payments are supported.",
+      "summary": "Xaves makes a piwafwi of power from an ancient scroll, panther hide, raw golden thread, adamantium and cave-fisher filament, plus 10000 copper. Lavender thread cannot replace raw golden thread. Supplied materials qualify without earlier crafting receipts. This final exchange is currently unavailable until combined material-and-coin payments are supported.",
       "contracts": [
         {
           "giver_vnum": 30604,
@@ -221,10 +286,36 @@
       ],
       "steps": [
         {
+          "id": "prepare-30617-0",
+          "text": "Prepare ancient scrolls with the lich",
+          "kind": "completion",
+          "hint": "Optional history; one supplied ancient scroll qualifies. Mogoe's thread service is not a substitute for raw golden thread.",
+          "contracts": [
+            {
+              "giver_vnum": 30617,
+              "completion_key": "give=I:30639,I:30640,I:30641,I:30642;receive=I:30666,I:30666;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "prepare-30620-1",
+          "text": "Prepare adamantium with the faerie dragon",
+          "kind": "completion",
+          "hint": "Optional history; a supplied stone qualifies.",
+          "contracts": [
+            {
+              "giver_vnum": 30620,
+              "completion_key": "give=I:30632,I:30633,I:30638;receive=I:30636;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
           "id": "material-30634",
           "text": "Carry 1 x a panther hide",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Panthers carry this hide. Striker's cured robes and Xaves' raw-hide recipe consume separate copies. Supplied hides are accepted.",
           "item_vnums": [
             30634
           ],
@@ -234,7 +325,7 @@
           "id": "material-30635",
           "text": "Carry 1 x a golden strand of thread",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The mimic behind Striker's shop carries raw golden thread. The downward passage is currently open; radiant lavender thread is a different ingredient. Supplied thread is accepted.",
           "item_vnums": [
             30635
           ],
@@ -244,7 +335,7 @@
           "id": "material-30636",
           "text": "Carry 1 x an admantium stone",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The faerie dragon trades this adamantium for mandrake, nightshade and an elk horn. Supplied stones are accepted.",
           "item_vnums": [
             30636
           ],
@@ -254,7 +345,7 @@
           "id": "material-30649",
           "text": "Carry 1 x some filiment",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Certain cave fishers in the northern caverns carry filament. Mogoe and Xaves consume separate copies. Supplied filament is accepted.",
           "item_vnums": [
             30649
           ],
@@ -264,7 +355,7 @@
           "id": "material-30666",
           "text": "Carry 1 x an ancient and powerful scroll",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Ask the elven lich about scroll and bring tablet, orb, quill and buckskin. His exchange gives two scrolls; Xaves consumes one. Supplied scrolls are accepted.",
           "item_vnums": [
             30666
           ],
@@ -272,9 +363,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver the scroll and four raw materials to Xaves",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "The full offering includes 10000 copper and produces the piwafwi. Mixed material-and-coin payment is currently unavailable.",
           "contracts": [
             {
               "giver_vnum": 30604,
@@ -288,7 +379,7 @@
       "id": "awaken-the-wooden-heart-30605",
       "title": "Awaken the Wooden Heart",
       "category": "service",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Umpf awakens a treant's wooden heart with a scale amulet to make the pulsating heart Valin needs. The amulet lies in the deep dragon's cavern. Supplied materials qualify; awakening is a preparation service, not the Mage Bane finale.",
       "contracts": [
         {
           "giver_vnum": 30605,
@@ -300,7 +391,7 @@
           "id": "material-30660",
           "text": "Carry 1 x a small amulet of scales",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The scale amulet lies on the floor of the deep dragon's cavern. Finding it does not require a recorded dragon kill. Supplied amulets are accepted.",
           "item_vnums": [
             30660
           ],
@@ -310,7 +401,7 @@
           "id": "material-30663",
           "text": "Carry 1 x a treants wooden heart",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "One treant in the western cavern carries the wooden heart; not every treant does. Supplied hearts are accepted.",
           "item_vnums": [
             30663
           ],
@@ -318,9 +409,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver wooden heart and scale amulet to Umpf",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "This service produces the pulsating heart. Awakening alone does not complete Valin's Mage Bane story.",
           "contracts": [
             {
               "giver_vnum": 30605,
@@ -334,7 +425,7 @@
       "id": "prepare-radiant-thread-30606",
       "title": "Prepare Radiant Thread",
       "category": "service",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Mogoe consumes golden thread and cave-fisher filament to make radiant lavender thread for Striker, and rewards 10000 copper. Xaves needs a separate raw thread and filament pair. Supplied materials qualify; preparing this thread earns no separate zone achievement.",
       "contracts": [
         {
           "giver_vnum": 30606,
@@ -346,7 +437,7 @@
           "id": "material-30635",
           "text": "Carry 1 x a golden strand of thread",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The mimic behind Striker's shop carries raw golden thread. The downward passage is currently open; radiant lavender thread is a different ingredient. Supplied thread is accepted.",
           "item_vnums": [
             30635
           ],
@@ -356,7 +447,7 @@
           "id": "material-30649",
           "text": "Carry 1 x some filiment",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Certain cave fishers in the northern caverns carry filament. Mogoe and Xaves consume separate copies. Supplied filament is accepted.",
           "item_vnums": [
             30649
           ],
@@ -364,9 +455,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver raw thread and filament to Mogoe",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "This service consumes the pair and produces lavender thread with a 10000-copper reward. Keep another raw pair for Xaves.",
           "contracts": [
             {
               "giver_vnum": 30606,
@@ -380,7 +471,7 @@
       "id": "trade-herbs-for-faerie-dust-30615",
       "title": "Trade Herbs for Faerie Dust",
       "category": "service",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "The nymph exchanges an azalea flower, mistletoe and ginseng root for faerie dust and 15000 copper. The dust is one ingredient in Striker's robes. Supplied plants qualify; no personal harvest or earlier conversation is required by this preparation exchange.",
       "contracts": [
         {
           "giver_vnum": 30615,
@@ -392,7 +483,7 @@
           "id": "material-30653",
           "text": "Carry 1 x a small azalea flower",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The azalea flower lies in the broad western glades. Supplied flowers are accepted; no gardener belt gate is encoded here.",
           "item_vnums": [
             30653
           ],
@@ -402,7 +493,7 @@
           "id": "material-30654",
           "text": "Carry 1 x some mistletoe",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Mistletoe lies in the northwest glades near the mouse. Supplied sprigs are accepted.",
           "item_vnums": [
             30654
           ],
@@ -412,7 +503,7 @@
           "id": "material-30655",
           "text": "Carry 1 x a small ginseng root",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Ginseng lies near the sooty disc in the northwest glades. Reserve it for the nymph rather than eating it. Supplied roots are accepted.",
           "item_vnums": [
             30655
           ],
@@ -420,9 +511,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver the three plants to the nymph",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "This service produces faerie dust and a 15000-copper reward. Striker still needs the dust and his other ingredients.",
           "contracts": [
             {
               "giver_vnum": 30615,
@@ -436,7 +527,7 @@
       "id": "prepare-an-ancient-scroll-30617",
       "title": "Prepare an Ancient Scroll",
       "category": "service",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "The elven lich consumes a stone tablet, glowing orb, crystalline quill and buckskin, and gives two ancient scrolls. Xaves needs one scroll. The centaur's two recipes are optional preparation; supplied ingredients qualify. If also making Striker's robes, reserve a second orb and more buckskin. This exchange records delivery, not a verified cure of the lich's curse.",
       "contracts": [
         {
           "giver_vnum": 30617,
@@ -445,10 +536,36 @@
       ],
       "steps": [
         {
+          "id": "prepare-30635-0",
+          "text": "Prepare a quill with the old centaur",
+          "kind": "completion",
+          "hint": "Optional history; a supplied quill qualifies.",
+          "contracts": [
+            {
+              "giver_vnum": 30635,
+              "completion_key": "give=I:30643,I:30646;receive=C:6000,I:30641;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "prepare-30635-1",
+          "text": "Prepare an orb with the old centaur",
+          "kind": "completion",
+          "hint": "Optional history; a supplied orb qualifies. Striker needs a separate orb.",
+          "contracts": [
+            {
+              "giver_vnum": 30635,
+              "completion_key": "give=I:30644,I:30645,I:30647,I:30648;receive=I:30640;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
           "id": "material-30639",
           "text": "Carry 1 x an old stone tablet",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The old tablet lies beyond the pale tree, near the mimic's den. Supplied tablets are accepted; no recorded theft is required.",
           "item_vnums": [
             30639
           ],
@@ -458,7 +575,7 @@
           "id": "material-30640",
           "text": "Carry 1 x a small glowing orb",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Ask the old centaur about orb. He needs pech rock, salamander scale, water and a tempest fragment. The lich and Striker consume separate orbs. Supplied orbs are accepted.",
           "item_vnums": [
             30640
           ],
@@ -468,7 +585,7 @@
           "id": "material-30641",
           "text": "Carry 1 x a crystalline quill",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Ask the old centaur about quill and bring airy residue with magical sand. Supplied quills are accepted.",
           "item_vnums": [
             30641
           ],
@@ -478,7 +595,7 @@
           "id": "material-30642",
           "text": "Carry 1 x some buckskin",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Certain bucks in the western glades carry buckskin; their separate hide spikes are not this ingredient. Beowulf and the lich consume separate copies. Supplied buckskin is accepted.",
           "item_vnums": [
             30642
           ],
@@ -486,9 +603,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver tablet, orb, quill and buckskin to the lich",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "This service consumes all four ingredients and gives two ancient scrolls. Delivery records no separate verified curse removal.",
           "contracts": [
             {
               "giver_vnum": 30617,
@@ -502,7 +619,7 @@
       "id": "trade-for-adamantium-30620",
       "title": "Trade for Adamantium",
       "category": "service",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "The faerie dragon trades adamantium for mandrake, nightshade and an elk horn. This stone is one ingredient in Xaves' piwafwi. Supplied materials qualify; the dragon's exchange is a preparation service, not the cloak finale.",
       "contracts": [
         {
           "giver_vnum": 30620,
@@ -514,7 +631,7 @@
           "id": "material-30632",
           "text": "Carry 1 x a small patch of mandrake roots",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Mandrake lies in the grove near the treants. Supplied roots are accepted.",
           "item_vnums": [
             30632
           ],
@@ -524,7 +641,7 @@
           "id": "material-30633",
           "text": "Carry 1 x a nightshade plant",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Nightshade lies deeper in the forest. Supplied berries are accepted.",
           "item_vnums": [
             30633
           ],
@@ -534,7 +651,7 @@
           "id": "material-30638",
           "text": "Carry 1 x a worn elk horn",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Look for the horn carried by an elk in the eastern glades. Not every elk carries this ingredient. Supplied horns are accepted.",
           "item_vnums": [
             30638
           ],
@@ -542,9 +659,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver mandrake, nightshade and elk horn to the faerie dragon",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "This service produces the adamantium needed by Xaves; a crafted stone does not complete the piwafwi story.",
           "contracts": [
             {
               "giver_vnum": 30620,
@@ -558,7 +675,7 @@
       "id": "feed-the-hawk-30631",
       "title": "Feed the Hawk",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Offer a dead mouse to the hawk by the engraved circle. The reward is 10000 copper and the hawk leaves. The mouse's source item cannot currently be picked up through ordinary ground or corpse recovery, so that route needs repair. A supplied deliverable mouse qualifies without proving a personal kill.",
       "contracts": [
         {
           "giver_vnum": 30631,
@@ -570,7 +687,7 @@
           "id": "material-30668",
           "text": "Carry 1 x a dead mouse",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The mouse carries this dead-mouse item, but its ordinary recovery route currently refuses pickup. A supplied mouse must be deliverable; carrying it does not prove personal recovery.",
           "item_vnums": [
             30668
           ],
@@ -578,9 +695,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Feed the dead mouse to the hawk",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "The exact mouse earns 10000 copper and removes this hawk. Ordinary mouse recovery needs repair; a supplied deliverable mouse works.",
           "contracts": [
             {
               "giver_vnum": 30631,
@@ -594,7 +711,7 @@
       "id": "feed-the-swallow-30632",
       "title": "Feed the Swallow",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Offer a dead earthworm to the small swallow near the pedestal. The reward is 5000 copper and the bird leaves. Its response calls it a sparrow, but use the visible swallow keyword. Supplied worms qualify without personal source history; availability returns through the bird's own reset episode.",
       "contracts": [
         {
           "giver_vnum": 30632,
@@ -606,7 +723,7 @@
           "id": "material-30669",
           "text": "Carry 1 x a dead earthworm",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Earthworms in the western glades carry the dead-worm ingredient. A supplied worm is accepted; merely meeting the worm records no recovery achievement.",
           "item_vnums": [
             30669
           ],
@@ -614,9 +731,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Feed the dead worm to the swallow",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "The exact worm earns 5000 copper and removes this bird. Use swallow when selecting the bird despite the response's sparrow wording.",
           "contracts": [
             {
               "giver_vnum": 30632,
@@ -630,7 +747,7 @@
       "id": "prepare-a-crystalline-quill-30635",
       "title": "Prepare a Crystalline Quill",
       "category": "service",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "The old centaur combines airy residue and magical sand into a crystalline quill and rewards 6000 copper. The quill helps the lich prepare ancient scrolls. Supplied elemental materials qualify; no recorded elemental kills are required by this preparation service.",
       "contracts": [
         {
           "giver_vnum": 30635,
@@ -642,7 +759,7 @@
           "id": "material-30643",
           "text": "Carry 1 x a small pocket of air",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The air servant in the elemental circle carries airy residue. Supplied residue is accepted.",
           "item_vnums": [
             30643
           ],
@@ -652,7 +769,7 @@
           "id": "material-30646",
           "text": "Carry 1 x a bit of sand",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The sandling in the elemental circle carries magical sand. Supplied sand is accepted.",
           "item_vnums": [
             30646
           ],
@@ -660,9 +777,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver air residue and magical sand to the centaur",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "This service produces the crystalline quill and a 6000-copper reward. It is a different recipe from his orb.",
           "contracts": [
             {
               "giver_vnum": 30635,
@@ -676,7 +793,7 @@
       "id": "prepare-a-glowing-orb-30635",
       "title": "Prepare a Glowing Orb",
       "category": "service",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "The old centaur combines pech rock, salamander scale, a vial of water and a tempest fragment into a glowing orb. Both the lich and Striker consume an orb, so their stories need separate copies. Supplied materials qualify; orb crafting is a preparation service.",
       "contracts": [
         {
           "giver_vnum": 30635,
@@ -688,7 +805,7 @@
           "id": "material-30644",
           "text": "Carry 1 x a small pech rock",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The pech in the elemental circle carries this rock. Supplied rock is accepted.",
           "item_vnums": [
             30644
           ],
@@ -698,7 +815,7 @@
           "id": "material-30645",
           "text": "Carry 1 x a fire salamander scale",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The salamander in the elemental circle carries this scale. It is different from the deep dragon's scale. Supplied scales are accepted.",
           "item_vnums": [
             30645
           ],
@@ -708,7 +825,7 @@
           "id": "material-30647",
           "text": "Carry 1 x a small vial of water",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The nereid in the elemental circle carries the vial. Reserve it for crafting rather than drinking it. Supplied vials are accepted.",
           "item_vnums": [
             30647
           ],
@@ -718,7 +835,7 @@
           "id": "material-30648",
           "text": "Carry 1 x a piece of the storm",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The tempest in the elemental circle carries this fragment of storm. Supplied fragments are accepted.",
           "item_vnums": [
             30648
           ],
@@ -726,9 +843,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver all four orb materials to the centaur",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "This service produces one glowing orb. Prepare a second orb if both the lich and Striker need one.",
           "contracts": [
             {
               "giver_vnum": 30635,
@@ -742,7 +859,7 @@
       "id": "forge-mage-bane-30638",
       "title": "Forge Mage Bane",
       "category": "story",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Valin combines a radiant diamond, a small pickaxe and a pulsating wooden heart into Mage Bane, then leaves. Diamond repair and heart awakening are optional history; supplied finished ingredients qualify. Valin and the miner begin off the ordinary entry routes and can roam into a holding room, so their current availability needs checking.",
       "contracts": [
         {
           "giver_vnum": 30638,
@@ -751,10 +868,36 @@
       ],
       "steps": [
         {
+          "id": "prepare-30600-0",
+          "text": "Repair a diamond with Phonar",
+          "kind": "completion",
+          "hint": "Optional history; a supplied radiant diamond qualifies. Phonar's mixed-payment repair is currently unavailable.",
+          "contracts": [
+            {
+              "giver_vnum": 30600,
+              "completion_key": "give=C:4000,I:30661;receive=I:30662;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "prepare-30605-1",
+          "text": "Awaken a wooden heart with Umpf",
+          "kind": "completion",
+          "hint": "Optional history; a supplied pulsating heart qualifies. The small pickaxe is still required.",
+          "contracts": [
+            {
+              "giver_vnum": 30605,
+              "completion_key": "give=I:30660,I:30663;receive=I:30664;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
           "id": "material-30659",
           "text": "Carry 1 x a small pickaxe with a small hilt",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "The wandering miner carries the small pickaxe. It is a separate ingredient even though Valin mainly mentions the diamond and heart. Miner availability needs checking. Supplied pickaxes are accepted.",
           "item_vnums": [
             30659
           ],
@@ -764,7 +907,7 @@
           "id": "material-30662",
           "text": "Carry 1 x a radiant diamond of power",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Phonar repairs a shattered diamond for 4000 copper; that mixed-payment route is currently unavailable. An already supplied radiant diamond is accepted by Valin.",
           "item_vnums": [
             30662
           ],
@@ -774,7 +917,7 @@
           "id": "material-30664",
           "text": "Carry 1 x a pulsating heart of wood",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Ask Umpf about heart and bring a treant heart with the scale amulet. Supplied pulsating hearts are accepted.",
           "item_vnums": [
             30664
           ],
@@ -782,9 +925,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Deliver diamond, small pickaxe and living heart to Valin",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "The exact three ingredients produce Mage Bane and remove Valin. Supplied ingredients qualify; confirm the roaming recipient is available.",
           "contracts": [
             {
               "giver_vnum": 30638,
@@ -796,17 +939,25 @@
     }
   ],
   "exclusions": [],
-  "introduction": "Explore the hidden grove for local requests and linked recipes.",
+  "introduction": "Explore the grove's linked crafting stories: Striker's robes, Xaves' piwafwi and Valin's Mage Bane. Preparation services explain their ingredients; feeding the two birds is a separate pair of requests.",
   "orientation": [
-    "Use look and exits to explore. Meet visible people to reveal their requests.",
-    "Talk to the people you meet to learn about local requests. The checklist shows your current supplies and completed exchanges."
+    "Use look and exits, and meet visible people to reveal their requests. The checklist shows current supplies and recorded exchanges; conversation alone earns no achievement.",
+    "From the Homestead pond, stare statue reaches the grove's large open branch. The Solonar statue on that branch returns to the Homestead. Arrival discovers only the zone actually reached.",
+    "Touch pedestal by the swallow returns to the western glades; stare circle by the hawk returns to the inner circle. The paired soot discs respond to tap disc and link the glades with the caverns.",
+    "In the merchant branches, stare at Sehanine's statue to reach the other side. Follow the elemental circle for the centaur's six different recipe ingredients. Hidden circle passages may need discovery and opening.",
+    "The Point's north passage responds to say arrow, then opening. The inner circle's locked south passage responds to say solonor; the hawk's circle offers another route. The centaur's hidden north passage is currently unlocked.",
+    "Enter opening from the northwestern path to approach the lich, or from the other northern path to approach the deep dragon. Examine the local exits and keep the return route in view.",
+    "High tree branches can cause falls. Flight or levitation can protect you; active climbing may catch a slip. Learning a password or taking a route is guidance here, not a recorded story stage.",
+    "Some recipes consume the same ingredients. Reserve separate orbs, buckskin, panther hides, raw golden thread and filament when pursuing several stories. Supplied ingredients qualify without personal acquisition history.",
+    "Valin and the miner roam from an area outside ordinary entry routes and can enter a holding room. Check whether they are present. The hawk's ordinary mouse-recovery route needs repair.",
+    "Diamond repair, arch-magi robes and the piwafwi include coin fees and are currently unavailable until mixed payments are supported. Other listed coin amounts are rewards. Preparation alone does not complete an equipment story."
   ],
   "contacts": [
     {
       "mob_vnum": 30600,
       "name": "Phonar the bumbling gnome",
       "keyword": "phonar",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Phonar repairs the shattered diamond in the northern merchant branches; his 4000-copper mixed payment is currently unavailable.",
       "topics": [
         "diamond"
       ]
@@ -815,7 +966,7 @@
       "mob_vnum": 30601,
       "name": "Aidon The HeartSeeker",
       "keyword": "aidon",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Aidon links the deep dragon's tooth and scale for Striker and pays a coin reward.",
       "topics": [
         "scales"
       ]
@@ -824,7 +975,7 @@
       "mob_vnum": 30602,
       "name": "Beowulf of the people of the North",
       "keyword": "beowulf",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Beowulf cures panther hide and buckskin for Striker; keep separate materials for Xaves and the lich.",
       "topics": [
         "robes"
       ]
@@ -833,7 +984,7 @@
       "mob_vnum": 30603,
       "name": "Striker Moonflower",
       "keyword": "striker",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Striker explains the arch-magi recipe in two responses. Bring all five prepared ingredients; its coin-fee turn-in is currently unavailable.",
       "topics": [
         "mage",
         "items"
@@ -842,15 +993,15 @@
     {
       "mob_vnum": 30604,
       "name": "a nasty looking drow named Xaves",
-      "keyword": "drow",
-      "description": "Review the local requests below.",
+      "keyword": "xaves",
+      "description": "Xaves offers the piwafwi recipe without an addressable topic response. He needs raw golden thread, not Mogoe's lavender thread; its coin-fee turn-in is currently unavailable.",
       "topics": []
     },
     {
       "mob_vnum": 30605,
       "name": "a large ugly ogre named Umpf",
-      "keyword": "ogre",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "keyword": "umpf",
+      "description": "Umpf combines a treant heart with the scale amulet for Valin's recipe.",
       "topics": [
         "heart"
       ]
@@ -858,8 +1009,8 @@
     {
       "mob_vnum": 30606,
       "name": "a small scarred Duergar named Mogoe",
-      "keyword": "duergar",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "keyword": "mogoe",
+      "description": "Mogoe consumes raw golden thread and filament for Striker's lavender thread. Reserve another raw pair for Xaves.",
       "topics": [
         "string"
       ]
@@ -868,7 +1019,7 @@
       "mob_vnum": 30615,
       "name": "a small nymph",
       "keyword": "nymph",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "The nymph by the southern branches trades three plants for faerie dust and a coin reward.",
       "topics": [
         "dust"
       ]
@@ -877,7 +1028,7 @@
       "mob_vnum": 30617,
       "name": "an ancient elven lich",
       "keyword": "lich",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "The lich beyond the northern cave opening exchanges four ingredients for two ancient scrolls. One scroll serves Xaves.",
       "topics": [
         "scroll"
       ]
@@ -886,7 +1037,7 @@
       "mob_vnum": 30620,
       "name": "a faerie dragon",
       "keyword": "faerie",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "The faerie dragon above the tree apex trades adamantium for two plants and an elk horn.",
       "topics": [
         "stone"
       ]
@@ -895,30 +1046,31 @@
       "mob_vnum": 30631,
       "name": "a soaring hawk",
       "keyword": "hawk",
-      "description": "Review the local requests below.",
+      "description": "The hawk by the circle accepts a dead mouse and leaves. Its ordinary mouse-recovery route currently needs repair.",
       "topics": []
     },
     {
       "mob_vnum": 30632,
       "name": "a small swallow",
       "keyword": "swallow",
-      "description": "Review the local requests below.",
+      "description": "The small swallow by the pedestal accepts a dead worm and leaves. Its response calls it a sparrow; select it with swallow.",
       "topics": []
     },
     {
       "mob_vnum": 30635,
       "name": "an old weak centaur",
       "keyword": "centaur",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "The old centaur beyond the hidden circle passage makes a quill from two elemental materials or an orb from four different materials.",
       "topics": [
-        "quill"
+        "quill",
+        "orb"
       ]
     },
     {
       "mob_vnum": 30638,
       "name": "a small little gnome named Valin",
-      "keyword": "gnome",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "keyword": "valin",
+      "description": "Valin makes Mage Bane from a radiant diamond, small pickaxe and living heart, then leaves. His roaming location may be unavailable; use valin to distinguish him from Phonar.",
       "topics": [
         "pickaxe"
       ]

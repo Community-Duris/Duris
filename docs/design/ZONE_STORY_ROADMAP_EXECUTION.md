@@ -36,9 +36,10 @@ neither every branch nor every historical prerequisite.
 | 9 | Pine Hollow | [Comprehensive source dossier](zone-stories/PINE_HOLLOW.md): seven Q contracts, ten M responses, 352 resets, roaming dragon sources, both mine keys, shared hazards and three external consumers | Revision 2: seven independent achievements; exact skin counts/types, source/availability guidance, real rewards and mine exploration | Active source generation; two-skin/one-cap conflict; holding-room availability; explicit branch attempts; hazard/access and owned foreign journeys |
 | 10 | Quietus Quay | [Comprehensive source dossier](zone-stories/QUIETUS_QUAY.md): 16 Q contracts, 14 M families, four special assignments, five shops, 216 resets; reachable world-quest/ship/shared money execution | Revision 2: four missions plus seven services; optional briefings, ten contacts/all native topic families, exact proof/rewards and rare-source guidance | Active resets; filled-badge tree/parent policy; rare episode availability; world-quest refunds/exact attempts; coordinated ship coin/epic settlement |
 | 11 | Torg | [Comprehensive source dossier](zone-stories/TORG.md): 15 Q contracts, 15 M families, three literal assignments, table-driven teacher/forge reachability, two shops, 597 resets, complete local death specials and bounded foreign continuations | Revision 2: twelve achievements plus two services; optional hide/rose/locket preparation, twelve contacts/all topics, exact rings/relics/chisels and access guidance | Active resets; holding/cap availability; confirmed invasion; committed random scroll/heart lineage and expiry intent; service/unused-content decisions; owned foreign journeys |
-| 12–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 12 | Vast Hidden Grove | [Comprehensive source dossier](zone-stories/VAST_HIDDEN_GROVE.md): 15 Q contracts, 12 M families, 100 rooms, 41 mobiles, 72 objects, seven shops, 152 resets and thirteen scenery teleports | Revision 2: three equipment stories, two bird requests and ten services; optional recipe history, fourteen contacts/all topics, exact inputs/rewards and shared-material guidance | Active resets; three mixed fees; Valin/miner roaming/holding; ordinary dead-mouse pickup; invalid inn target; loaded access versus prose; confirmed source/travel/recipe lineage |
+| 13–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Vast Hidden Grove (Solonar), followed by Winterhaven. Their earlier
+The next area is Winterhaven, followed by Shairak and Smokeveil Forest. Their earlier
 native bindings do not establish comprehensive source review. Do not advance a zone's status
 merely because the map parses, the Q denominator matches, or a candidate item
 graph was extracted.
@@ -86,6 +87,11 @@ graph was extracted.
 | ZSQ-TORG-SCROLL-TRANSFORM | Foreign-prototype legend reward is consumed before unconfirmed direct publication of one random Uz half. | Commit exact selected scroll UID and generation, freeze the one-of-two result, and recover input/output together. Test invalid target/output, rejection, retry/crash and foreign terminal ownership. |
 | ZSQ-TORG-LANELLA-BIRTH / TIMER | Custom death directly publishes one random intact/broken heart without actor/source evidence. Duration is assigned to value[0], but no reviewed timer consumer or decay affect implements it. | Commit one-of-two actor-aware birth and placement; builder confirms intended expiry before implementing exact UID/deadline/recovery. Gifts permit foreign delivery without invented personal kill credit. |
 | ZSQ-TORG-CONTENT / FORGE | Normal shop boot leaves Kordor's smith table unattached; old master/placeholder are unplaced and altar procedure is commented out. Shared smith menu/material paths need review before enabling. | Builder chooses intended forge/altar/retired content; qualify compatible shop-secondary dispatch, exact choices/materials and service settlement. Preserve deliberate active refusals, valid alternate receipts and permanent-character safeguards. |
+| ZSQ-GROVE-AVAILABILITY | Valin and the pickaxe miner load in incoming-inaccessible 30607, can wander north into the glades or south into exitless 30612, and retain live cap one. | Reproduce fresh/recovered episodes and current location; builder reviews placement, wander barrier or return. Supplied ingredients and episode-specific D closure remain valid. |
+| ZSQ-GROVE-RECOVERY | Dead mouse 30668 is ITEM_TRASH with no TAKE bit; ordinary ground/external-corpse recovery refuses it, unlike the dead worm. | Reproduce normal-player refusal and supplied/staff distinctions; review TAKE or an explicit committed recovery action with source/actor/UID evidence. |
+| ZSQ-GROVE-ACCESS | Striker's downward world state loses upper bits and has no D reset, so the mimic route is open. Centaur passage is hidden/closed but unlocked; negative key alone does not require speech. | Derive initial/live exit state from executable loading/reset rules. Builder decides narrative clarification versus intended gates before changing behavior; qualify alternate/supplied routes and falling outcomes. |
+| ZSQ-SPECIAL-TARGET | Literal inn assignment 30511 is inside Solonar's derived span but absent from active rooms; real_room0 falls back to world index zero. | Resolve against actual active entities, skip/log missing assignments and review intended location/owner. Preserve legitimate index-zero targets; range membership is only a lead. |
+| ZSQ-GROVE-RECIPES | Two finales consume the same raw thread/filament; lich and Striker need separate orbs. Lich supplies two scrolls, and Valin requires a small pickaxe beyond the two items emphasized in dialogue. | Current journal uses exact inputs, separate consumer guidance and optional receipts. Extend explicit recipe edges/counts, distinct UID output recovery, current stock and accepted all-stage policies; keep three fee refusals separate from seven coin rewards. |
 | Evidence extractor gaps | Fixed chained literal assignment detection and ignored commented assignments. Object/mobile membership follows source prototypes rather than room bounds. | Continue review for aliases, computed VNUMs, preprocessor branches, table-driven teacher/smith assignments, F-selected parents, and foreign reset sources; extraction remains a lead list, not execution proof. |
 
 ## Verification record
@@ -359,3 +365,57 @@ are preserved. Source weaknesses are not claims of observed production loss.
 The source queue is now eleven of 220 complete, with 209 areas pending. Continue
 with Vast Hidden Grove (Solonar), then Winterhaven. Full active-world generation,
 semantic events, service settlement and played/recovery journeys remain open.
+
+### Eighth comprehensive mapping batch — October 2, 2026
+
+Vast Hidden Grove's [source dossier](zone-stories/VAST_HIDDEN_GROVE.md) and
+[reproducible index](../reference/zone-story-audits/solonar.md) cover all fifteen
+Q contracts, twelve M families, 100 rooms, 41 mobiles, 72 objects, seven shops
+and 152 resets. Reviewed every local room/prototype, thirteen shared scenery
+teleports, loaded/reset access, elemental/plant/animal sources, generic wandering,
+normal pickup/corpse recovery, falling and bounded foreign source/arrival leads.
+
+Revision 2 retains three independent equipment stories, two bird requests and
+ten services. Optional specialist receipts explain the arch-magi, piwafwi,
+Mage Bane and lich routes without requiring personal preparation. Fourteen
+contacts cover all native topic families. Current guidance distinguishes raw
+golden from lavender thread, competing ingredient copies, the lich's two-scroll
+reward, Valin's additionally required small pickaxe, three fees versus seven
+coin rewards, actual scenery commands, hidden/unlocked versus speech-locked
+passages and falling hazards.
+
+Native C++20 warnings-as-errors schema/projection regressions passed for all 36
+maps and schemas 1/2/3. New cases cover supplied recipes skipping optional history,
+exact pickaxe/raw-thread requirements, all three accounting-service fee warnings,
+spent ingredients remaining missing after preparation receipts, ten services
+adding no achievements, read-only projection and five recovered local achievements
+without fabricated Homestead/Alatorin completion. These fixtures project recovered
+receipts; they do not execute the unavailable mixed fees or qualify live sources.
+
+Production catalog/snapshot, generated world inventory and all twelve source
+indices passed. Source checks include contact/topic aliases, exact Valin/miner
+load episodes, physically absent inn room 30511 and Striker's missing D reset.
+All 27 required home maps remain present. The maintained SQL build completed
+from existing artifacts with `make -C src -j6 CC=g++-12 BIN_ROOT=../bin`; relative
+artifact paths avoid this worktree's space-containing default target paths.
+No production C/C++ source changed. Touched-file and changed-line formatting,
+whitespace and 331 local document links passed.
+
+All 2,668 raw definitions, source fingerprint/content revision, registry, native
+bindings/categories and other 35 maps remain unchanged as parsed objects.
+Projection remains 2,359 achievements, 1,962 potential daily units and 2,509
+rows including services/administrative content. The previous Torg dossier's rose
+and hearts now use their actual ITEM_TRASH type; the current durable offering
+limit is fourteen. Those source corrections change no receipt or behavior.
+
+Repair/qualification plans cover Valin/miner holding availability, ordinary
+mouse recovery, missing assignment target resolution, narrative versus loaded
+access, exact competing recipe consumers and two-output lineage/recovery.
+Existing reset-generation, mixed-offering and confirmed travel/semantic plans
+remain prerequisites for active-world qualification. No database operation,
+migration, accounting activation or merge occurred.
+
+The queue is now twelve of 220 source-comprehensive areas, with 208 pending.
+Continue with Winterhaven, then Shairak and Smokeveil Forest. Full active-world
+generation, semantic events, service settlement and played/recovery journeys
+remain open.

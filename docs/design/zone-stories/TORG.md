@@ -93,7 +93,7 @@ the reverse face names key 28910. Shared unlock updates the reciprocal face;
 do not infer two required keys for one ordinary forward traversal.
 
 The woman's `story` response establishes her relationship with Zuzon. The token
-exchange describes an illusion/concealment device, but the rose is ITEM_OTHER
+exchange describes an illusion/concealment device, but the rose is ITEM_TRASH
 with no reviewed special or encoded invisibility/access effect. Her service and
 Zuzon's `lover` response explain the secret delivery; they do not implement an
 escort, meeting, lover-state change or accepted-topic achievement.
@@ -140,7 +140,7 @@ needs opening; a secret-looking description alone is not a live secret flag.
 The eight-legend delivery accepts exactly one of each relic 28944–28951 in a
 single exchange. Its reward is shimmering curtain of fire 28954 plus Legend of
 The Lore Keeper 55363. The eight distinct roots fit the durable offering limit
-of eight; eight arbitrary relics or eight copies of one kind do not suffice.
+of fourteen; eight arbitrary relics or eight copies of one kind do not suffice.
 
 | Relic | Source mobile | Reset equipment/inventory |
 | --- | --- | --- |
@@ -264,7 +264,7 @@ belongs to Torg's achievement denominator. Lanella can wander through either
 arena-side route or down into the same exitless 29063 holding room; availability
 needs the same live-cap review as the legends.
 
-The heart handler assigns a duration to value[0], but these ITEM_OTHER hearts
+The heart handler assigns a duration to value[0], but these ITEM_TRASH hearts
 have no reviewed timer-consuming procedure or decay affect initialized by that
 handler. `dragon_heart_decay` is assigned to different dragon-heart prototypes.
 A duration field alone does not qualify an expiration mechanic. Confirm builder

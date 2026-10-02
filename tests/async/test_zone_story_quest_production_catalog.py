@@ -142,7 +142,25 @@ for response in torg["dialogue"]:
     assert set(response["body"][0].rstrip("~").split()) & set(torg_contacts[response["giver_vnum"]]["topics"])
 for vnum, contact in torg_contacts.items():
     assert contact["keyword"] in torg["mobs"][vnum]["keywords"]
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg"):
+solonar = inventory_module.area_evidence(ROOT, "solonar")
+assert len(solonar["requests"]) == 15 and len(solonar["dialogue"]) == 12
+assert len(solonar["reset_commands"]) == 152 and len(solonar["mobs"]) == 41 and len(solonar["items"]) == 72
+# A literal range candidate is not proof that its target exists in the active world.
+assert {(a["kind"], a["vnum"], a["function"]) for a in solonar["special_assignments"]} == {("room", 30511, "inn")}
+active_areas = [line.split()[0] for line in (ROOT / "areas/AREA").read_text().splitlines()
+                if line.strip() and not line.lstrip().startswith("*")]
+assert not any(re.search(r"^#30511\s*$", path.read_text(), re.M) for area in active_areas
+               for path in [ROOT / f"areas/wld/{area}.wld"] if path.is_file())
+assert any(r["command"] == "M" and r["arguments"][1:5] == [30638, 1, 30607, 100] for r in solonar["reset_commands"])
+assert any(r["command"] == "M" and r["arguments"][1:5] == [30636, 1, 30607, 100] for r in solonar["reset_commands"])
+assert not any(r["command"] == "D" and r["arguments"][1] == 30686 for r in solonar["reset_commands"])
+solonar_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "solonar")
+solonar_contacts = {c["mob_vnum"]: c for c in solonar_mapping["contacts"]}
+for response in solonar["dialogue"]:
+    assert set(response["body"][0].rstrip("~").split()) & set(solonar_contacts[response["giver_vnum"]]["topics"])
+for vnum, contact in solonar_contacts.items():
+    assert contact["keyword"] in solonar["mobs"][vnum]["keywords"]
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

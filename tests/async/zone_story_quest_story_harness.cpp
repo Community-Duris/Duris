@@ -626,8 +626,96 @@ int main(int argc, char **argv)
 				restored_torg.progress_for_zone(7, 42, 875).completed == 0 &&
 				restored_torg.progress_for_zone(7, 42, 712).completed == 0,
 			"Torg reload changed local receipts or fabricated foreign quest completion");
+		const auto &grove_robes = story_for("solonar", "robes-of-the-arch-magi-30603");
+		const auto &grove_cloak = story_for("solonar", "a-piwafwi-of-power-30604");
+		const auto &mage_bane = story_for("solonar", "forge-mage-bane-30638");
+		const auto &lich_scroll = story_for("solonar", "prepare-an-ancient-scroll-30617");
+		service supplied_grove(catalog);
+		require(supplied_grove.discover_zone(7, 42, 306, 30648, 100, "arrival") ==
+				result::applied,
+			"grove arrival discovery failed");
+		for (int contact : { 30600, 30601, 30602, 30603, 30604, 30605, 30606, 30615, 30617,
+				     30620, 30631, 30632, 30635, 30638 })
+			require(supplied_grove.meet_npc(7, 42, contact, 30648, 101) ==
+					result::applied,
+				"grove fixture encounter failed");
+		supplies.carried.clear();
+		for (int material : { 30634, 30636, 30639, 30640, 30641, 30642, 30649, 30650, 30656,
+				      30657, 30658, 30662, 30664, 30666 })
+			supplies.carried[material] = 1;
+		const auto before_grove_read = supplied_grove.serialize_state();
+		journal = supplied_grove.render_journal(7, 42, 306, 10, 1, 102, false, false,
+							&supplies);
+		for (const auto *recipe : { &grove_robes, &lich_scroll })
+			require(journal.find("Next: " + recipe->steps.back().text) !=
+					std::string::npos,
+				"supplied grove ingredients required optional crafting history");
+		for (const auto *recipe : { &grove_robes, &grove_cloak, &mage_bane, &lich_scroll })
+			for (const auto &step : recipe->steps)
+				if (step.optional)
+					require(journal.find("Next: " + step.text) ==
+							std::string::npos,
+						"optional grove preparation displaced current delivery");
+		require(journal.find("Next: " + mage_bane.steps[2].text) != std::string::npos &&
+				journal.find("Next: " + grove_cloak.steps[3].text) !=
+					std::string::npos,
+			"diamond/heart omitted pickaxe or lavender replaced raw golden thread");
+		const std::string unavailable = "Turn-in currently unavailable:";
+		size_t fee_warnings = 0;
+		for (size_t at = journal.find(unavailable); at != std::string::npos;
+		     at = journal.find(unavailable, at + unavailable.size()))
+			++fee_warnings;
+		require(fee_warnings == 3,
+			"grove mixed fees were advertised as available or coin rewards became fees");
+		supplies.carried[30659] = 1;
+		supplies.carried[30635] = 1;
+		journal = supplied_grove.render_journal(7, 42, 306, 10, 1, 102, false, false,
+							&supplies);
+		for (const auto *recipe : { &mage_bane, &grove_cloak })
+			require(journal.find("Next: " + recipe->steps.back().text) !=
+					std::string::npos,
+				"exact supplied pickaxe/raw thread did not satisfy live ingredient checks");
+		require(supplied_grove.serialize_state() == before_grove_read &&
+				supplied_grove.progress_for_zone(7, 42, 306).completed == 0 &&
+				supplied_grove.progress_for_zone(7, 42, 306).total == 5,
+			"grove possession or reading created history or counted services");
+		// Project recovered native receipts; this does not execute unavailable coin fees.
+		for (const auto &mapping : catalog.story_mappings)
+			if (mapping.source_area == "solonar")
+				for (const auto &recipe : mapping.stories)
+					if (recipe.category == "service")
+						record(supplied_grove, recipe.contracts.front(),
+						       recipe.id.c_str(), 306, 30648);
+		require(supplied_grove.progress_for_zone(7, 42, 306).completed == 0,
+			"grove intermediate recipes added achievements");
+		supplies.carried.erase(30640);
+		supplies.carried.erase(30635);
+		journal = supplied_grove.render_journal(7, 42, 306, 10, 1, 122, false, false,
+							&supplies);
+		require(journal.find("Next: " + grove_robes.steps[5].text) != std::string::npos &&
+				journal.find("Next: " + grove_cloak.steps[3].text) !=
+					std::string::npos &&
+				journal.find("Next: " + grove_robes.steps.back().text) ==
+					std::string::npos &&
+				journal.find("Next: " + grove_cloak.steps.back().text) ==
+					std::string::npos,
+			"recorded grove preparation recreated consumed orb or raw-thread stock");
+		for (const auto &mapping : catalog.story_mappings)
+			if (mapping.source_area == "solonar")
+				for (const auto &recipe : mapping.stories)
+					if (recipe.category != "service")
+						record(supplied_grove, recipe.contracts.front(),
+						       recipe.id.c_str(), 306, 30648);
+		service restored_grove(catalog);
+		require(restored_grove.deserialize_state(supplied_grove.serialize_state(),
+							 &error) &&
+				restored_grove.progress_for_zone(7, 42, 306).completed == 5 &&
+				restored_grove.progress_for_zone(7, 42, 306).total == 5 &&
+				restored_grove.progress_for_zone(7, 42, 358).completed == 0 &&
+				restored_grove.progress_for_zone(7, 42, 831).completed == 0,
+			"grove reload changed local receipts or invented foreign completion");
 		std::cout
-			<< "All mappings, optional preparation, independent family/commission/dragon/Quietus/Torg journeys, exact materials, service exclusion, and receipt recovery passed.\n";
+			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;
 	}
 	const bool applied = zone_story_quest_story::apply(read(argv[2]), "twin_towers_forest",

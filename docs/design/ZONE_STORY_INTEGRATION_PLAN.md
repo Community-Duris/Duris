@@ -8,8 +8,9 @@ Deeper objective and provenance integration is incremental.**
 The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
 source dossiers, shipped changes, newly found dependencies, and verification.
 Twin Towers, Plains of Life, Ailvio, Braddistock, Breale, Abandoned Elven
-Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus and Torg now have
-complete source story maps; their active-world journeys remain unqualified. Schema 3 adds
+Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus, Torg and Vast Hidden
+Grove now have complete source story maps; their active-world journeys remain
+unqualified. Schema 3 adds
 optional preparation. Ailvio's 78 pair recipes project one family-feeding story;
 Braddistock's pet rescue is displayed as an intermediate service. Breale preserves
 its deliberate drawing riddle and five independent Triad stages. The Homestead
@@ -28,6 +29,12 @@ Torg adds actual Colosseum speech/key access, distinct ring/chisel identities,
 eight-relic and independent Tranug commissions, invasion-dependent recipients,
 and owned foreign legend/heart routes. Random script births/transforms, confirmed
 follower arrival, holding availability and unattached forge content expand the plan.
+Vast Hidden Grove adds three independent equipment families, ten services and
+two bird requests. Its recipes expose competing raw thread/filament, orb, hide
+and buckskin consumers, two-scroll output and an omitted-in-dialogue pickaxe.
+Unavailable mixed fees, inaccessible/holding NPC episodes, ordinary mouse
+recovery, missing special targets, loaded door state and falling hazards
+now have explicit repair and qualification proposals in the execution register.
 
 Maintain this plan as zones are reviewed. Keep static contract classification,
 historical objective coverage, economic support, and gameplay qualification
@@ -496,7 +503,16 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   Colosseum/key/ring routes, legendary and Tranug relic sources, invasion and
   equipment commissions, random legend/heart continuations, and service/unused
   content. Record actual F parents, holding availability and boot reachability.
-- [ ] Complete comprehensive source dossiers for the other 209 roadmap areas.
+- [x] Complete Vast Hidden Grove source dossier: fifteen contracts, twelve M
+  families, three equipment branches, exact competing ingredients and two-scroll
+  reward, thirteen scenery routes, shared speech/door/falling execution,
+  Valin/miner availability, mouse recovery and missing inn target.
+- [ ] Validate special assignment targets against actual active entity existence,
+  not derived zone spans; skip/diagnose missing targets without index-zero fallback.
+- [ ] Qualify recipe consumers and multiple identical outputs with exact UID
+  lineage/current stock. Review ordinary recovery flags, wandering availability
+  and narrated versus loaded access before declaring a source route playable.
+- [ ] Complete comprehensive source dossiers for the other 208 roadmap areas.
 
 ## Per-zone integration register
 
@@ -514,8 +530,9 @@ contract classification; it does not claim complete objective coverage.
 | Pine Hollow | 2 | Complete: two dragon stories and five clothing commissions | Source-comprehensive dossier; exact skins/rewards, roaming/competing materials, mine keys/hazards and Skelenak eye | Active reset sources require generation; two-skin/one-cap conflict needs a reviewed source repair | Native projection checks; live source capacity, holding/branch availability, hazards and foreign journey pending |
 | Quietus Quay | 2 | Complete: four independent missions and seven service rows, covering all 16 Q contracts | Source-comprehensive dossier; optional briefings, ten contacts/all M families, exact sources/rewards, rare availability and supporting exploration | Active reset generation, container-offering policy, world-quest refunds and ship coin settlement remain open | Native projection checks; active source/ship/refund/rare-load journeys pending |
 | Torg | 2 | Complete: twelve achievements plus two services, covering all 15 Q contracts | [Source-comprehensive dossier](zone-stories/TORG.md); optional hide/rose/locket history, twelve contacts/all M families, exact rings/relics/chisels, invasion-dependent recipients and foreign continuations | Active reset sources require generation; scroll/heart direct grants and service adapters remain unqualified | Native projection checks; live holding/invasion, random transform/birth and foreign journeys pending |
+| Vast Hidden Grove | 2 | Complete: three equipment stories, two requests and ten services across 15 Q contracts | [Source-comprehensive dossier](zone-stories/VAST_HIDDEN_GROVE.md); optional recipe history, fourteen contacts/all M families, exact materials/two-scroll output, competing consumers and access | Active source generation and three mixed fees remain unavailable; item-only rewards retain existing accounting | Native projection/receipt checks; live source/holding/pickup, multi-output recovery and access journeys pending |
 | All 27 starter/town areas | 1–2 | Complete static Q classification; detailed counts and evidence in starter/town register | Orientation, encountered people, concrete delivery counts and native receipt checklists; selected multi-step routes | Existing offering limits; reviewed crafting and equipment services do not create story/daily units | All maps pass source/native validation; isolated native guided journey; individual full-world routes pending |
-| Eight additional quest areas | 1–2 | Complete: 86 contracts → 80 named story/request/service entries | Verified Q/M guidance, distinct material counts, optional preparation hints and receipts; deeper dialogue/lineage/branches pending | Mixed item-and-coin grove recipes remain unavailable; preparation services do not earn story/daily units | Source/native parser and encounter visibility checks; each full-world journey remains pending in the priority roadmap |
+| Eight additional quest areas | 2 | Complete: 86 contracts → 80 named story/request/service entries | Verified Q/M guidance, distinct material counts, optional preparation hints and receipts; deeper dialogue/lineage/branches pending | Mixed item-and-coin grove recipes remain unavailable; preparation services do not earn story/daily units | Source/native parser and encounter visibility checks; each full-world journey remains pending in the priority roadmap |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
 
 ## Twin Towers evidence and decisions
