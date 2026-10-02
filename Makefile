@@ -60,7 +60,7 @@ AREA_WORLD_DIRECT_INPUTS := \
 
 .PHONY: \
 	help all build build-server build-editor build-area-tools world \
-	build-deps-package test test-all test-fast test-python test-native test-list test-db \
+	build-deps-package test test-all test-fast test-python test-native test-list test-db test-integration \
 	security-sbom security-check clean clean-all
 
 help:
@@ -166,9 +166,13 @@ test: test-python test-native
 test-all: build
 	+$(MAKE) test
 
+test-integration:
+	$(PYTHON) tests/run_integration_matrix.py $(if $(strip $(TEST_ENGINE)),--engine "$(TEST_ENGINE)",) $(if $(strip $(TEST_MATCH)),--match "$(TEST_MATCH)",)
+
 test-list:
 	$(PYTHON) tests/run_regression_tests.py --list --profile "$(TEST_PROFILE)" $(if $(strip $(TEST_MATCH)),--match "$(TEST_MATCH)",)
 
+# The full disposable matrix is also available as make test-integration.
 # These suites create and destroy their own MySQL containers. They are kept out
 # of test-all because Docker is intentionally not a core build dependency.
 test-db:

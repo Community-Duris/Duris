@@ -307,7 +307,7 @@ class TargetTests(unittest.TestCase):
     @unittest.skipUnless(os.environ.get("DURIS_TARGET_NATIVE_DB_IMAGE"), "native DB image not requested")
     def test_real_maintenance_and_native_backup_round_trip(self):
         image = os.environ["DURIS_TARGET_NATIVE_DB_IMAGE"]
-        self.assertIn(image, {"mysql:8.0", "mariadb:10.11"})
+        self.assertRegex(image, r"^(?:mysql:8\.0(?:\.\d+)?|mariadb:10\.11(?:\.\d+)?)(?:@sha256:[0-9a-f]{64})?$")
         db_name = "duris_prod_recovery_fixture"
         suffix = secrets.token_hex(5)
         created = []
@@ -340,7 +340,8 @@ class TargetTests(unittest.TestCase):
                 time.sleep(0.5)
             runtime_id = run(["docker", "create", "--name", "duris-331-target-runtime-" + suffix,
                               "--network", "none", "--restart=no", "-e", "DB_HOST=127.0.0.1",
-                              "-e", "DB_NAME=" + db_name, "duris-issue-213-tools:latest",
+                              "-e", "DB_NAME=" + db_name,
+                              os.environ.get("DURIS_TEST_TOOLS_IMAGE", "duris-issue-213-tools:latest"),
                               "sleep", "600"]).stdout.strip()
             created.append(runtime_id)
             env = self.env(ENVIRONMENT="production", DB_NAME=db_name, DB_USER="root")

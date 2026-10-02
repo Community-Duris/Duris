@@ -10,8 +10,8 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-IMAGE = "mariadb:11.4"
-TOOLS_IMAGE = "duris-issue-213-tools:latest"
+IMAGE = os.environ.get("DURIS_TEST_DB_IMAGE", "mariadb:11.4")
+TOOLS_IMAGE = os.environ.get("DURIS_TEST_TOOLS_IMAGE", "duris-issue-213-tools:latest")
 
 HARNESS = r'''
 #include "core/prototypes.h"
@@ -404,8 +404,11 @@ def _sql(container: str, database: str, password: str, *, source: Path | None = 
          statement: str | None = None) -> str:
     env = os.environ.copy()
     env["MYSQL_PWD"] = password
+    prefix = "MARIADB" if IMAGE.startswith("mariadb") else "MYSQL"
+    env[prefix + "_ROOT_PASSWORD"] = password
+    env[prefix + "_DATABASE"] = database
     command = ["docker", "exec", "-i", "-e", "MYSQL_PWD", container,
-               "mariadb", "--protocol=tcp", "-h127.0.0.1", "-P3306", "-uroot",
+               "mysql", "--protocol=tcp", "-h127.0.0.1", "-P3306", "-uroot",
                "--batch", "--skip-column-names", database]
     if statement is not None:
         command += ["-e", statement]
@@ -440,12 +443,12 @@ def run_item_flags_fixture() -> str:
         container = _require(_run([
             "docker", "run", "--pull=never", "--rm", "-d", "--name", name,
             "--cpus=2", "--memory=2g", "--memory-swap=2g",
-            "-e", "MARIADB_ROOT_PASSWORD", "-e", "MARIADB_DATABASE", IMAGE,
+            "-e", prefix + "_ROOT_PASSWORD", "-e", prefix + "_DATABASE", IMAGE,
         ], env=env), "start disposable MariaDB").strip()
 
         ready = False
         for _ in range(90):
-            check = _run(["docker", "exec", "-e", "MYSQL_PWD", container, "mariadb",
+            check = _run(["docker", "exec", "-e", "MYSQL_PWD", container, "mysql",
                           "--protocol=tcp", "-h127.0.0.1", "-P3306", "-uroot",
                           "--batch", "--skip-column-names", "-e", "SELECT 1"], env=env)
             if check.returncode == 0:

@@ -28,7 +28,7 @@ export DURIS_PARALLEL_DB_TEST_SLOT=0
 
 NAME="duris-pa-coin-$$-${RANDOM}"
 PASSWORD="pa-coin-$$-${RANDOM}"
-IMAGE="mariadb:10.11"
+IMAGE="${DURIS_TEST_DB_IMAGE:-mariadb:10.11}"
 TMPDIR="$(mktemp -d -t pa-coin-sql.XXXXXX)"
 cleanup() {
     local status=$?
@@ -49,10 +49,11 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 # Pass the generated fixture password in the environment, not in Docker's argv.
-export MARIADB_ROOT_PASSWORD="$PASSWORD"
+if [[ "$IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PASSWORD_ENV=MYSQL_ROOT_PASSWORD; fi
+export "$PASSWORD_ENV=$PASSWORD"
 docker run -d --name "$NAME" --cpus=2 --memory=2g \
-    -p 127.0.0.1::3306 -e MARIADB_ROOT_PASSWORD mariadb:10.11 >/dev/null
-unset MARIADB_ROOT_PASSWORD
+    -p 127.0.0.1::3306 -e "$PASSWORD_ENV" "$IMAGE" >/dev/null
+unset "$PASSWORD_ENV"
 mapping="$(docker port "$NAME" 3306/tcp)"
 published_port="${mapping##*:}"
 container_host="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$NAME")"

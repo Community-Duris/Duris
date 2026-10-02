@@ -22,7 +22,7 @@ def declarations(path: Path) -> tuple[list[str], str | None]:
     return functions, entry
 
 
-def execute(path: Path, mode: str, output: Path, minimum: int) -> int:
+def execute(path: Path, mode: str, output: Path, minimum: int, arguments=()) -> int:
     """Write only case identities/outcomes; retain the original script semantics."""
     functions, entry = declarations(path)
     records: list[dict] = []
@@ -107,7 +107,7 @@ def execute(path: Path, mode: str, output: Path, minimum: int) -> int:
 
     if mode != "unittest" and (functions or entry):
         sys.setprofile(observe)
-    sys.argv = [str(path)]
+    sys.argv = [str(path), *arguments]
     sys.path.insert(0, str(path.parent))
     code = 0
     try:
@@ -155,4 +155,4 @@ def execute(path: Path, mode: str, output: Path, minimum: int) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(execute(Path(sys.argv[1]).resolve(), sys.argv[2],
-                            Path(sys.argv[3]), int(sys.argv[4])))
+                            Path(sys.argv[3]), int(sys.argv[4]), sys.argv[5:]))

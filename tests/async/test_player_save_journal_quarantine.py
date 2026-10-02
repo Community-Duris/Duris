@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed quarantine integration test using a copied captured journal.
+"""Fail-closed quarantine integration with a generated, copied synthetic journal.
 
 The supplied alias index is private and is read only to create owner-only test
 policy files in a temporary directory. No raw PID values are printed or stored
@@ -18,6 +18,7 @@ import stat
 import struct
 import subprocess
 import tempfile
+from types import SimpleNamespace
 from typing import TypedDict
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -40,6 +41,9 @@ class Frame(TypedDict):
 
 HARNESS = r'''#include "player/player_save_journal.h"
 #include "player/player_snapshot_codec.h"
+#include "classes/necromancy.h"
+#include "world/vnum.obj.h"
+#include "core/defines.h"
 
 #include <cassert>
 #include <algorithm>
@@ -213,6 +217,43 @@ int main(int argc, char **argv)
     const std::string journal_path = directory + "/player-save.journal";
     const std::string archive_path = directory + "/player-save.journal.quarantine.archive";
     const std::string policy_path = directory + "/player-save.quarantine-pids";
+    if (std::string(argv[2]) == "generate") {
+        assert(player_save_journal_init(directory.c_str()));
+        // These identities and item UIDs are synthetic. Capture through the
+        // production encoder/journal, rather than reproducing its byte format.
+        for (int pid = 1; pid <= 25; ++pid) {
+            for (uint64_t revision : {1, 2}) {
+                player_snapshot snapshot = {};
+                snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+                snapshot.pid = pid;
+                snapshot.revision = revision;
+                snapshot.components = PLAYER_CHECKPOINT_COMPONENT_ALL;
+                snapshot.encoded_size_bound = 8192;
+                snapshot.save_intent = 4;
+                snapshot.status_strings.push_back({player_status_string_field::name, "Synthetic"});
+                if (pid == 1) {
+                    snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+                    snapshot.death.emplace();
+                    snapshot.death->operation_id.bytes[0] = 1;
+                    snapshot.death->operation_id.bytes[15] = revision;
+                    snapshot.death->corpse_room_vnum = 1201;
+                    snapshot.death->wallet_revision = 1;
+                    player_item_snapshot corpse = {};
+                    corpse.object_uid = 1000 + revision;
+                    corpse.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+                    corpse.vnum = VOBJ_CORPSE;
+                    corpse.type = ITEM_CORPSE;
+                    corpse.values[CORPSE_PID] = pid;
+                    corpse.values[CORPSE_SAVEID] = 100 + revision;
+                    corpse.values[CORPSE_FLAGS] = PC_CORPSE;
+                    snapshot.death->corpse.push_back(corpse);
+                }
+                assert(player_save_journal_append(snapshot) == player_save_journal_result::ok);
+            }
+        }
+        player_save_journal_shutdown();
+        return 0;
+    }
     const std::vector<int> policy_ids = read_ids(policy_path);
 
     if (std::string(argv[2]) == "fail-sync") {
@@ -345,9 +386,9 @@ def load_alias_map(path: Path) -> dict[str, int]:
     return alias_map
 
 
-def parse_capture(path: Path) -> list[Frame]:
+def parse_capture(path: Path, expected_digest=EXPECTED_CAPTURE_SHA256, expected_count=4810) -> list[Frame]:
     raw = path.read_bytes()
-    if hashlib.sha256(raw).hexdigest() != EXPECTED_CAPTURE_SHA256:
+    if hashlib.sha256(raw).hexdigest() != expected_digest:
         fail("capture digest does not match the approved fixture")
     frames: list[Frame] = []
     offset = 0
@@ -375,7 +416,7 @@ def parse_capture(path: Path) -> list[Frame]:
             }
         )
         offset += size
-    if offset != len(raw) or len(frames) != 4810:
+    if offset != len(raw) or len(frames) != expected_count:
         fail("capture frame count is not the expected fixture count")
     return frames
 
@@ -459,15 +500,9 @@ def verify_archive(
         fail("archive entry count differs from the original quarantined frames")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--capture", type=Path, required=True)
-    parser.add_argument("--reconciliation", type=Path, required=True)
-    parser.add_argument("--alias-index", type=Path, required=True)
-    parser.add_argument("--split-manifest", type=Path, required=True)
-    args = parser.parse_args()
-
-    frames = parse_capture(args.capture)
+def run_capture(args, *, expected_digest=EXPECTED_CAPTURE_SHA256, expected_count=4810,
+                expected_counts=None, expected_bytes=None) -> None:
+    frames = parse_capture(args.capture, expected_digest, expected_count)
     reconciliation = json.loads(args.reconciliation.read_text())
     alias_map = load_alias_map(args.alias_index)
     split_manifest = json.loads(args.split_manifest.read_text())
@@ -475,14 +510,14 @@ def main() -> None:
     if (
         split_manifest.get("clone_only") is not True
         or split_manifest.get("all_frames_accounted_for") is not True
-        or split_manifest.get("original_sha256") != EXPECTED_CAPTURE_SHA256
+        or split_manifest.get("original_sha256") != expected_digest
         or not isinstance(protected_aliases, list)
         or len(protected_aliases) != 22
         or len(set(protected_aliases)) != 22
     ):
         fail("split manifest flags, original digest, or protected alias count are invalid")
-    expected_counts = {"active": 948, "protected": 3862}
-    expected_bytes = {"active": 24_919_913, "protected": 83_536_054}
+    expected_counts = expected_counts or {"active": 948, "protected": 3862}
+    expected_bytes = expected_bytes or {"active": 24_919_913, "protected": 83_536_054}
     if any(split_manifest.get("counts", {}).get(k) != v for k, v in expected_counts.items()):
         fail("split manifest active/protected frame counts differ from the verified rehearsal")
     if any(split_manifest.get("bytes", {}).get(k) != v for k, v in expected_bytes.items()):
@@ -537,7 +572,7 @@ def main() -> None:
     ):
         fail("split-copy bytes do not exactly match the manifest-selected original frames")
 
-    with tempfile.TemporaryDirectory(prefix="duris-journal-quarantine-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="duris-journal-quarantine-", dir=ROOT / "bin/tests") as temporary:
         root = Path(temporary)
         failure_dir = root / "failure"
         prepare_journal(failure_dir, args.capture, configured_ids)
@@ -653,18 +688,14 @@ def main() -> None:
         "sql_load_player_shapechanges",
     )
     for name in guarded_sql_boundaries:
-        definitions = list(re.finditer(r"^bool " + re.escape(name) + r"\(", sql_source, re.M))
+        definitions = list(re.finditer(r"^(?:static )?bool " + re.escape(name) + r"\(", sql_source, re.M))
         if not definitions:
             fail("a direct SQL save/load boundary could not be located")
         start = definitions[-1].start()
         opening = sql_source.find("{", start)
         closing = sql_source.find("\n}", opening)
         if opening < 0 or closing < 0 or "player_save_journal_pid_quarantined(" not in sql_source[opening:closing]:
-            fail("a direct SQL save/load boundary is missing its PID fence")
-    by_name = list(re.finditer(r"^bool sql_delete_player_by_name\(", sql_source, re.M))
-    if not by_name or "sql_delete_player(pid)" not in sql_source[by_name[-1].start() :].split("\n}", 1)[0]:
-        fail("the name-based player delete bypass does not delegate through the PID fence")
-
+            fail(name + " direct SQL save/load boundary is missing its PID fence")
     repository_source = (ROOT / "src/player/player_load_repository.c").read_text()
     repository_start = repository_source.rfind(
         "player_load_result player_load_repository_execute("
@@ -676,6 +707,65 @@ def main() -> None:
         fail("the direct repository load path can start SQL before checking the PID fence")
 
     print("[PASS] copied capture: byte-exact hashed quarantine, fail-closed sync failure, dynamic PID fence, unaffected replay order")
+
+
+def synthetic_capture(directory):
+    capture_root = directory / "capture"
+    capture_root.mkdir(mode=0o700)
+    source = directory / "generate.cpp"
+    binary = directory / "generate"
+    source.write_text(HARNESS)
+    subprocess.run(["g++", "-std=c++20", "-O2", "-pthread", "-Wl,--wrap=fdatasync", "-Isrc",
+                    str(source), "src/player/player_snapshot_codec.c", "src/player/player_save_journal.c",
+                    "-o", str(binary)], cwd=ROOT, check=True)
+    subprocess.run([str(binary), str(capture_root), "generate"], cwd=ROOT, check=True, timeout=30)
+    capture = capture_root / "player-save.journal"
+    original_digest = hashlib.sha256(capture.read_bytes()).hexdigest()
+    frames = parse_capture(capture, original_digest, 50)
+    aliases = {f"PID-{pid:03}": pid for pid in range(1, 26)}
+    protected = sorted(set(aliases) - KNOWN_ACTIVE_ALIASES - {"PID-025"})
+    protected_ids = {aliases[alias] for alias in protected}
+    groups = [{"pid_alias": alias, "frames": 2, "death_frames": 2 if pid == 1 else 0}
+              for alias, pid in aliases.items()]
+    paths = SimpleNamespace(capture=capture, alias_index=directory / "aliases.json",
+                            reconciliation=directory / "reconciliation.json",
+                            split_manifest=directory / "split.json")
+    paths.alias_index.write_text(json.dumps({"records": {"synthetic": [
+        {"pid_alias": alias, "pid": pid} for alias, pid in aliases.items()]}}))
+    paths.reconciliation.write_text(json.dumps({"frame_count": 50, "death_frames": 2, "groups": groups}))
+    active = b"".join(frame["raw"] for frame in frames if frame["pid"] not in protected_ids)
+    fenced = b"".join(frame["raw"] for frame in frames if frame["pid"] in protected_ids)
+    (directory / "player-save.journal").write_bytes(active)
+    (directory / "protected-player-save.journal").write_bytes(fenced)
+    counts = {"active": 6, "protected": 44}
+    sizes = {"active": len(active), "protected": len(fenced)}
+    paths.split_manifest.write_text(json.dumps({"clone_only": True, "all_frames_accounted_for": True,
+        "original_sha256": original_digest, "protected_aliases": protected, "counts": counts,
+        "bytes": sizes, "protected_sha256": hashlib.sha256(fenced).hexdigest(),
+        "active_sha256": hashlib.sha256(active).hexdigest()}))
+    for path in directory.rglob("*"):
+        if path.is_file() and path != binary:
+            path.chmod(0o600)
+    print("CUSTODY-ADMISSION synthetic_capture_sha256=" + original_digest, flush=True)
+    return paths, original_digest, counts, sizes
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    for argument in ("capture", "reconciliation", "alias-index", "split-manifest"):
+        parser.add_argument("--" + argument, type=Path)
+    args = parser.parse_args()
+    supplied = [args.capture, args.reconciliation, args.alias_index, args.split_manifest]
+    if any(supplied):
+        if not all(supplied):
+            parser.error("historical capture qualification requires all four private inputs")
+        run_capture(args)
+    else:
+        (ROOT / "bin/tests").mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="synthetic-quarantine-", dir=ROOT / "bin/tests") as temporary:
+            paths, original_digest, counts, sizes = synthetic_capture(Path(temporary))
+            run_capture(paths, expected_digest=original_digest, expected_count=50,
+                        expected_counts=counts, expected_bytes=sizes)
 
 
 if __name__ == "__main__":

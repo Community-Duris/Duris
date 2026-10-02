@@ -133,6 +133,61 @@ print("root build and test harness contracts passed")
 
 
 class RunnerBehavior(unittest.TestCase):
+    def test_explicit_arguments_and_fixture_environment_reach_observed_child(self):
+        path = self.script("test_arguments.py", "import sys, os\n"
+                           "assert sys.argv[1:] == ['--fixture', 'literal space']\n"
+                           "assert os.environ['OWNED_FIXTURE'] == 'private'\n"
+                           "assert 'INHERITED_DB' not in os.environ\n")
+        environment = dict(os.environ, OWNED_FIXTURE="private")
+        environment.pop("INHERITED_DB", None)
+        with patch.object(runner, "ROOT", self.root):
+            result = runner.run_test(path, 5, arguments=("--fixture", "literal space"),
+                                     environment=environment)
+        self.assertEqual(result.returncode, 0, result.output)
+        self.assertEqual(result.cases[0]["status"], "passed")
+
+    def integration_module(self):
+        spec = importlib.util.spec_from_file_location("matrix_contract", ROOT / "tests/run_integration_matrix.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_matrix_refuses_missing_identity_hidden_skip_and_missing_native_witness(self):
+        matrix = self.integration_module()
+        path = self.script("test_named.py", "import io, unittest\n"
+                           "class Native(unittest.TestCase):\n"
+                           " def test_real(self): self.skipTest('fixture absent')\n"
+                           "unittest.main(testRunner=unittest.TextTestRunner(stream=io.StringIO()))\n")
+        spec = runner.TestSpec(path, mode="unittest")
+        with patch.object(runner, "ROOT", self.root):
+            result = runner.run_test(path, 5, spec=spec)
+        row = dict(required_cases=["Native.test_real", "Native.test_removed"],
+                   required_markers=["PASS: actual native witness"])
+        failures = matrix.outcome_contract(row, result)
+        self.assertTrue(any("missing required cases" in text for text in failures))
+        self.assertTrue(any("skipped" in text for text in failures))
+        self.assertTrue(any("missing requirement evidence" in text for text in failures))
+
+    def test_matrix_validates_required_owner_coverage_before_filters(self):
+        matrix = self.integration_module()
+        document = json.loads((ROOT / "tests/integration_manifest.json").read_text())
+        matrix.workload(document, specs)
+        required = next(spec for spec in specs if spec.manual)
+        for row in document["rows"]:
+            row["covers"] = [name for name in row["covers"] if name != required.path.name]
+        with self.assertRaisesRegex(ValueError, "omits required owners"):
+            matrix.workload(document, specs)
+
+    def test_matrix_reports_pending_required_rows_as_incomplete_in_json_and_junit(self):
+        matrix = self.integration_module()
+        report = dict(status="incomplete", attempts=[], pending=["mysql/required_native"])
+        path = self.root / "matrix.json"
+        matrix.write_report(path, report)
+        self.assertEqual(json.loads(path.read_text())["pending"], report["pending"])
+        xml = runner.ET.parse(path.with_suffix(".xml")).getroot()
+        self.assertEqual(xml.attrib["failures"], "1")
+        self.assertEqual(xml.find("testcase/failure").attrib["type"], "incomplete")
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="regression-runner-")
         self.addCleanup(self.temporary.cleanup)

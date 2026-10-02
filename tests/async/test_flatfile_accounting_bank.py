@@ -59,7 +59,11 @@ def main():
             ],
             compiler=compiler, name="accounting-bank",
         )
-        subprocess.run([str(binary), str(Path(temporary) / "state")], cwd=ROOT, check=True,
+        print("BANK-NATIVE compiled", flush=True)
+        arguments = [str(binary), str(Path(temporary) / "state")]
+        if os.environ.get("DURIS_BANK_GENERATED_ONLY") == "1":
+            arguments.append("--generated-only")
+        subprocess.run(arguments, cwd=ROOT, check=True,
                        timeout=660,
                        env=dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
                                 UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"))

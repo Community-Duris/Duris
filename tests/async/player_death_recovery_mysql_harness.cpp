@@ -272,6 +272,11 @@ player_load_result load(MYSQL *db, int pid, const std::string &name, bool payloa
 	query_observation::count = 0;
 	auto result = player_load_repository_execute(db, request);
 	query_observation::connection = nullptr;
+	if (!recovery_query)
+		require(result.metrics.query_count == query_observation::count,
+			"LOAD-QUERY actual statements differ from metrics: reported=" +
+				std::to_string(result.metrics.query_count) +
+				" actual=" + std::to_string(query_observation::count));
 	if (!recovery_query && payload && result.outcome == player_load_outcome::applied)
 	{
 		const size_t query_limit = by_name ? PLAYER_LOAD_NAME_QUERY_MAX :
@@ -301,6 +306,81 @@ void refusal(const player_load_result &result, player_load_recovery_gate gate)
 			result.snapshot.pets.empty() && result.snapshot.status_integers.empty() &&
 			result.item_identities.empty() && result.pet_identities.empty(),
 		"refused load returned materializable partial state");
+}
+
+// Requirement LOAD-QUERY / CUSTODY-ADMISSION: retained evidence fences the
+// character independently of empty/nonempty native item and pet components.
+void generated_load_combinations(MYSQL *db)
+{
+	for (unsigned mask = 0; mask < 8; ++mask)
+	{
+		const bool items = mask & 1, pets = mask & 2, retained = mask & 4;
+		if (items)
+		{
+			sql(db,
+			    "INSERT INTO item_owner_revision(owner_type,owner_id,revision) VALUES(1,3,1)");
+			sql(db,
+			    "INSERT INTO player_items(id,pid,vnum,obj_uid,name) VALUES(7703,3,501,7703,'generated item')");
+			sql(db,
+			    "INSERT INTO item_current_owner(item_uid,root_item_uid,owner_type,owner_id,item_revision,vnum,state) VALUES(7703,7703,1,3,1,501,1)");
+		}
+		if (pets)
+		{
+			sql(db,
+			    "INSERT INTO player_pets(id,owner_pid,mob_vnum,pet_uid) VALUES(9703,3,100,9703)");
+			sql(db,
+			    "INSERT INTO item_owner_revision(owner_type,owner_id,owner_context_id,revision) VALUES(" +
+				    std::to_string(static_cast<unsigned>(item_owner_type::pet)) +
+				    ",9703,3,1)");
+		}
+		if (retained)
+		{
+			auto request = retained_request(40 + mask);
+			request.pid = 3;
+			request.status_strings.front().value = "Clean";
+			request.death->corpse.resize(1);
+			request.death->corpse.front().values[CORPSE_PID] = 3;
+			request.death->custody.clear();
+			require(player_death_conflict_retain(db, request).outcome ==
+					player_death_conflict_outcome::retained,
+				"generated retained-state fixture");
+		}
+		const auto before = native_state(db);
+		for (bool payload : { false, true })
+			for (bool by_name : { false, true })
+			{
+				std::cout << "LOAD-QUERY mask=" << mask << " payload=" << payload
+					  << " by_name=" << by_name << std::endl;
+				const auto result = load(db, 3, "Clean", payload, by_name);
+				if (retained)
+					refusal(result,
+						player_load_recovery_gate::retained_conflict);
+				else
+				{
+					require(result.outcome == player_load_outcome::applied &&
+							result.recovery_gate ==
+								player_load_recovery_gate::clear,
+						"generated healthy state refused, error=" +
+							std::to_string(result.error_code));
+					require(result.snapshot.items.size() ==
+								size_t(payload && items) &&
+							result.snapshot.pets.size() ==
+								size_t(payload && pets),
+						"generated component inclusion disagrees with request");
+				}
+				require(query_observation::count <= PLAYER_LOAD_QUERY_MAX,
+					"generated load exceeded declared total query ceiling");
+			}
+		require(native_state(db) == before, "generated load changed durable native state");
+		sql(db, "DELETE FROM player_death_conflict_evidence WHERE pid=3");
+		sql(db, "DELETE FROM player_items WHERE pid=3");
+		sql(db, "DELETE FROM item_current_owner WHERE item_uid=7703");
+		sql(db, "DELETE FROM item_owner_revision WHERE owner_type=1 AND owner_id=3");
+		sql(db, "DELETE FROM player_pets WHERE owner_pid=3");
+		sql(db,
+		    "DELETE FROM item_owner_revision WHERE owner_id=9703 AND owner_context_id=3");
+	}
+	std::cout << "PASS: LOAD-QUERY 32 generated empty/nonempty retained/item/pet admissions\n";
 }
 constexpr int RACE_CASES = 8;
 player_snapshot seed_race(MYSQL *db, int index)
@@ -639,6 +719,7 @@ int main(int argc, char **argv)
 			std::to_string(CASE_COUNT),
 		"case fixture count");
 	verify(db);
+	generated_load_combinations(db);
 	verify_load_races(db, std::string(argv[1]) == "--seed-and-check");
 	verify_name_resolution_race(db, std::string(argv[1]) == "--seed-and-check");
 	mysql_close(db);
