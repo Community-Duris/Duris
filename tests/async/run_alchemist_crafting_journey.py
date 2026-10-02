@@ -3,6 +3,8 @@
 
 Uses the existing isolated combat journey's account, socket and world helpers.
 Requires the combined #551/#661 server and the flat-file repository inspector.
+The optional --recipe-only mode isolates mortal Craft/Forge progression,
+retained pouch counters, copyover and cold restarts.
 The optional --creation-save-only mode qualifies #664 with overlapping setup
 grants and saves, then copyover, disconnect and cold reload, without crafting.
 """
@@ -10,6 +12,7 @@ from pathlib import Path
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -28,8 +31,9 @@ def authored(vnum):
     raise AssertionError(f'missing authored object {vnum}')
 
 
-def run(binary, mode='file', creation_save_only=False):
+def run(binary, mode='file', creation_save_only=False, recipe_only=False):
     assert mode in ('file', 'redis')
+    assert not (creation_save_only and recipe_only), 'select one focused journey'
     with tempfile.TemporaryDirectory(prefix='alchemist-crafting-journey-') as temporary:
         root = Path(temporary)
         state = root / 'state'
@@ -42,8 +46,11 @@ def run(binary, mode='file', creation_save_only=False):
         journey.generate_certificate(runtime)
         path = runtime / 'areas_mini/mini.obj'
         objects = path.read_text()
+        recipe = re.search(r'(?ms)^#678\n.*?(?=^#\d+\n)', objects).group(0)
+        recipe = recipe.replace('#678\n', '#30101\n', 1).replace('cap brown brownish leather green stitching~', 'recipe cap testcraft~')
+        objects = objects.replace('$~', recipe + '$~')
         for vnum in (102, 470, 806, 808, 1251, 868, 866, 865, 863, 859,
-                     857, 855, 853, 850, 400230, 400231, 400291, 400300):
+                     857, 855, 853, 850, 400230, 400231, 400291, 400300, 400045, 400049, 400211, 400223, 400224):
             if not re.search(rf'(?m)^#{vnum}$', objects):
                 objects = objects.replace('$~', authored(vnum) + '$~')
         # real_object() uses the maintained sorted prototype index.
@@ -112,13 +119,32 @@ def run(binary, mode='file', creation_save_only=False):
         source = FIXTURE.replace('std::vector<uint8_t> payload, bytes;',
             'snapshot.skills.push_back({1308,100,100});\n'
             'snapshot.skills.push_back({1148,100,100});\n'
+            'snapshot.skills.push_back({1132,100,100});\n'
+            'snapshot.skills.push_back({1134,100,100});\n'
+            'auto established=flatfile_recipe_establish(root,{},&error);\n'
+            'assert(established==flatfile_recipe_result::ok || established==flatfile_recipe_result::already_exists);\n'
+            'auto recipe_result=flatfile_recipe_add(root,pid,30101,&error);\n'
+            'assert(recipe_result==flatfile_recipe_result::ok || recipe_result==flatfile_recipe_result::unchanged);\n'
             'std::vector<uint8_t> payload, bytes;')
+        source = '#include "flatfile/flatfile_recipe_repository.h"\n#include <iostream>\n' + source
+        source = source.replace('assert(argc == 2);', 'assert(argc == 2 || argc == 3);')
+        source = source.replace('for (auto &field : snapshot.status_integers) {',
+            'if (argc==3) { for (auto &field:snapshot.status_integers) { '
+            'if (field.field==player_status_field::experience && std::string(argv[2])=="inspect") { '
+            'std::cout << field.signed_value << std::endl; return 0; } '
+            'if (field.field==player_status_field::level || field.field==player_status_field::highest_level) '
+            'field.signed_value=field.unsigned_value=50; } '
+            'std::vector<uint8_t> bytes; assert(flatfile_player_snapshot_encode_file(snapshot,&bytes)); '
+            'assert(flatfile_atomic_write(flatfile_player_snapshot_file::player_directory(root),'
+            'flatfile_player_snapshot_file::player_filename(pid),bytes,&error)); return 0; } '
+            'for (auto &field : snapshot.status_integers) {')
         cpp = root / 'staff.cpp'
         cpp.write_text(source)
         fixture = root / 'staff'
         subprocess.run(['g++', '-std=c++20', '-Isrc', str(cpp),
             'src/player/player_snapshot_codec.c', 'src/flatfile/flatfile_player_snapshot_file.c',
-            'src/flatfile/flatfile_store.c', '-lcrypto', '-o', str(fixture)],
+            'src/flatfile/flatfile_store.c', 'src/flatfile/flatfile_recipe_repository.c',
+            'src/flatfile/flatfile_authority_transaction.c', '-lcrypto', '-pthread', '-o', str(fixture)],
             cwd=journey.ROOT, check=True)
         client = process = output = None
 
@@ -195,10 +221,11 @@ def run(binary, mode='file', creation_save_only=False):
                 subprocess.run([str(fixture), str(state)], check=True)
             else:
                 sql("UPDATE player_data SET level=62,highest_level=62,base_hit=200000 WHERE name='Taverek'")
-                for skill_id in (1308, 1148):
+                for skill_id in (1308, 1148, 1132, 1134):
                     sql("INSERT INTO player_skills(pid,skill_id,learned,taught) "
                         f"SELECT pid,{skill_id},100,100 FROM player_data WHERE name='Taverek' "
                         "ON DUPLICATE KEY UPDATE learned=100,taught=100")
+                sql("INSERT INTO player_recipes(pid,recipe_vnum) SELECT pid,30101 FROM player_data WHERE name='Taverek'")
                 env.update(REDIS='TRUE', REDIS_HOST='127.0.0.1', REDIS_PORT=str(redis_port),
                     REDIS_NAMESPACE='duris:local:alchemist-' + database.split('_')[-1],
                     REDIS_WORLD_STATE='TRUE',
@@ -207,222 +234,319 @@ def run(binary, mode='file', creation_save_only=False):
             boot()
             client = journey.reconnect_character(port)
             command('toggle paging')
-            granted = []
-            for index in range(200):
-                stat = command(f'stat mob alc{index:02d}', .15)
-                match = re.search(r'Carried Items:\s*(\d+)', stat)
-                assert match, stat
-                if int(match.group(1)):
-                    granted.append(f'alc{index:02d}')
-                if len(granted) >= 3:
-                    break
-            assert len(granted) >= 3, 'fewer than three grants among 200 fresh spawns'
-            print('Selected automatically granted NPCs: ' + ', '.join(granted), flush=True)
-            signatures = {name: re.search(r'Numbers:.*?(\d+)-I', command('stat mob ' + name)).group(1)
-                          for name in granted}
-            for cycle in range(2):
-                client.send('save')
-                client.expect('Save complete for Taverek.', timeout=30)
+            if not recipe_only:
+                granted = []
+                for index in range(200):
+                    stat = command(f'stat mob alc{index:02d}', .15)
+                    match = re.search(r'Carried Items:\s*(\d+)', stat)
+                    assert match, stat
+                    if int(match.group(1)):
+                        granted.append(f'alc{index:02d}')
+                    if len(granted) >= 3:
+                        break
+                assert len(granted) >= 3, 'fewer than three grants among 200 fresh spawns'
+                print('Selected automatically granted NPCs: ' + ', '.join(granted), flush=True)
+                signatures = {name: re.search(r'Numbers:.*?(\d+)-I', command('stat mob ' + name)).group(1)
+                              for name in granted}
+                for cycle in range(2):
+                    client.send('save')
+                    client.expect('Save complete for Taverek.', timeout=30)
+                    client.send('shutdown copyover')
+                    client.expect('Copyover complete!', timeout=90)
+                    for name in granted:
+                        stat = command('stat mob ' + name)
+                        assert re.search(r'Numbers:.*?(\d+)-I', stat).group(1) == signatures[name], stat
+                        assert re.search(r'Carried Items:\s*(\d+)', stat).group(1) == '1', stat
+                    print(f'PASS copyover {cycle + 1}: selected NPC identities and one vial retained', flush=True)
+                text = command('steal vial ' + granted[0], 1)
+                assert 'Got it!' in text, text
+                before = save_items()
+                assert sum(item['vnum'] == 102 for item in before) == 1, before
                 client.send('shutdown copyover')
                 client.expect('Copyover complete!', timeout=90)
-                for name in granted:
+                assert {(item['uid'], item['vnum']) for item in before} == {
+                    (item['uid'], item['vnum']) for item in save_items()}
+                print('PASS original socket copyover retains the stolen vial and exact player item UIDs', flush=True)
+                command('restore Taverek', 1)
+                if creation_save_only:
+                    original = {(item['uid'], item['vnum']) for item in save_items()}
+                    for cycle in range(8):
+                        # Await only the existing creation response, as in #664;
+                        # no checkpoint barrier between the two setup grants.
+                        # A simultaneous second load is intentionally refused by
+                        # the existing command busy gate, so submit it after the
+                        # first grant's publication while its save may still run.
+                        if cycle % 2:
+                            first = command('load obj 806\nsave')
+                        else:
+                            client.send('save')
+                            first = command('load obj 806')
+                        second = command('load obj 808')
+                        assert 'Save attempt failed' not in first + second, first + second
+                        items = save_items()
+                        assert len({item['uid'] for item in items}) == len(items), items
+                        assert sum(item['vnum'] == 806 for item in items) == cycle + 1, items
+                        assert sum(item['vnum'] == 808 for item in items) == cycle + 1, items
+                    expected = {(item['uid'], item['vnum']) for item in items}
+                    assert original <= expected and len(expected - original) == 16
+                    client.send('shutdown copyover')
+                    client.expect('Copyover complete!', timeout=90)
+                    assert expected == {(item['uid'], item['vnum']) for item in save_items()}
+                    client.send('quit')
+                    client.expect('ACCOUNT MENU', timeout=30)
+                    stop()
+                    boot()
+                    client = journey.reconnect_character(port)
+                    assert expected == {(item['uid'], item['vnum']) for item in save_items()}
+                    logs = full_logs()
+                    assert 'active_custody_absent_from_snapshot' not in logs
+                    assert 'outcome=terminal_failure' not in logs
+                    print('PASS eight overlapping save/grant rounds: 16 exact new UIDs, copyover, disconnect and cold reload', flush=True)
+                    return
+                command('load obj 806')
+                command('load obj 808')
+                inputs = save_items()
+                consumed = {item['uid'] for item in inputs if item['vnum'] in (102, 806, 808)}
+                assert len(consumed) == 3, inputs
+                client.send('mixpoison')
+                client.expect('You finish mixing 1 poison.', timeout=30)
+                items = save_items()
+                assert consumed.isdisjoint({item['uid'] for item in items}), items
+                assert sum(item['vnum'] == 470 for item in items) == 1, items
+                print('PASS stolen automatic vial -> real Assassin poison craft and exact input retirement', flush=True)
+                command('kill ' + granted[1], 3)
+                client.send('get all corpse')
+                client.expect('vial', timeout=30)
+                items = save_items()
+                assert sum(item['vnum'] == 102 for item in items) == 1, items
+                print('PASS real NPC death and corpse loot of automatic vial', flush=True)
+                # A durable NPC is only used to hold the real combat open for observation.
+                for name in (granted[2], granted[0]):
+                    command('setbit char ' + name + ' basehit 30000', 1)
+                    command('setbit char ' + name + ' hit 30000', 1)
                     stat = command('stat mob ' + name)
-                    assert re.search(r'Numbers:.*?(\d+)-I', stat).group(1) == signatures[name], stat
-                    assert re.search(r'Carried Items:\s*(\d+)', stat).group(1) == '1', stat
-                print(f'PASS copyover {cycle + 1}: selected NPC identities and one vial retained', flush=True)
-            text = command('steal vial ' + granted[0], 1)
-            assert 'Got it!' in text, text
-            before = save_items()
-            assert sum(item['vnum'] == 102 for item in before) == 1, before
-            client.send('shutdown copyover')
-            client.expect('Copyover complete!', timeout=90)
-            assert {(item['uid'], item['vnum']) for item in before} == {
-                (item['uid'], item['vnum']) for item in save_items()}
-            print('PASS original socket copyover retains the stolen vial and exact player item UIDs', flush=True)
-            command('restore Taverek', 1)
-            if creation_save_only:
-                original = {(item['uid'], item['vnum']) for item in save_items()}
-                for cycle in range(8):
-                    # Await only the existing creation response, as in #664;
-                    # no checkpoint barrier between the two setup grants.
-                    # A simultaneous second load is intentionally refused by
-                    # the existing command busy gate, so submit it after the
-                    # first grant's publication while its save may still run.
-                    if cycle % 2:
-                        first = command('load obj 806\nsave')
-                    else:
-                        client.send('save')
-                        first = command('load obj 806')
-                    second = command('load obj 808')
-                    assert 'Save attempt failed' not in first + second, first + second
+                    assert int(re.search(r'Hits:\s*\[\s*(\d+)', stat).group(1)) >= 1000, stat
+                command('setattr ' + granted[2] + ' agi 103')
+                client.send('force ' + granted[2] + ' kill ' + granted[0])
+                client.expect('alchemical mixture', timeout=45)
+                command('purge ' + granted[2])
+                print('PASS real server combat scheduler invokes virtual alchemist ability', flush=True)
+                for attempt in range(5):
+                    previous = {item['uid'] for item in save_items()}
+                    command('load obj 677')
+                    command('load obj 400291')
+                    inputs = save_items()
+                    consumed = {item['uid'] for item in inputs if item['uid'] not in previous}
+                    assert len(consumed) == 2, inputs
+                    client.send('encrust mace green')
+                    result, text = client.expect_any(('Hurrah! Hurrah!', 'You broke your item in the process.'), 30)
                     items = save_items()
-                    assert len({item['uid'] for item in items}) == len(items), items
-                    assert sum(item['vnum'] == 806 for item in items) == cycle + 1, items
-                    assert sum(item['vnum'] == 808 for item in items) == cycle + 1, items
-                expected = {(item['uid'], item['vnum']) for item in items}
-                assert original <= expected and len(expected - original) == 16
-                client.send('shutdown copyover')
-                client.expect('Copyover complete!', timeout=90)
-                assert expected == {(item['uid'], item['vnum']) for item in save_items()}
+                    assert consumed.isdisjoint({item['uid'] for item in items}), items
+                    if result == 'Hurrah! Hurrah!':
+                        break
+                else:
+                    raise AssertionError('five valid Encrust attempts failed')
+                items = save_items()
+                assert any(item['vnum'] == 1251 for item in items), items
+                print('PASS real epic Encrust replacement', flush=True)
+                for _ in range(3):
+                    command('load obj 400230')
+                inputs = save_items()
+                consumed = {item['uid'] for item in inputs if item['vnum'] == 400230}
+                client.send('buy 1')
+                client.expect('The Harvester accepts the soul shards and gives you a greater orb.', timeout=30)
+                final = save_items()
+                assert consumed.isdisjoint({item['uid'] for item in final}), final
+                assert sum(item['vnum'] == 400231 for item in final) == 1, final
+                expected = {(item['uid'], item['vnum']) for item in final if item['vnum'] in (470, 1251, 400231, 102)}
+                rich_before = None
+                if mode == 'redis':
+                    rich_before = sql("SELECT pi.obj_uid,SHA2(runtime.payload,256) FROM player_items pi "
+                        "JOIN player_item_runtime_state runtime ON runtime.item_id=pi.id "
+                        "JOIN player_data player ON player.pid=pi.pid WHERE player.name='Taverek' "
+                        "AND pi.vnum IN(470,1251,400231) ORDER BY pi.obj_uid")
+                    assert len(rich_before.splitlines()) == 3, rich_before
+                    acknowledged = full_logs().count('generation and floor handoff acknowledged')
+                    deadline = time.monotonic() + 60
+                    while full_logs().count('generation and floor handoff acknowledged') <= acknowledged:
+                        assert time.monotonic() < deadline, 'no fresh acknowledged Redis world snapshot'
+                        time.sleep(.2)
                 client.send('quit')
                 client.expect('ACCOUNT MENU', timeout=30)
                 stop()
                 boot()
                 client = journey.reconnect_character(port)
-                assert expected == {(item['uid'], item['vnum']) for item in save_items()}
-                logs = full_logs()
-                assert 'active_custody_absent_from_snapshot' not in logs
-                assert 'outcome=terminal_failure' not in logs
-                print('PASS eight overlapping save/grant rounds: 16 exact new UIDs, copyover, disconnect and cold reload', flush=True)
-                return
-            command('load obj 806')
-            command('load obj 808')
-            inputs = save_items()
-            consumed = {item['uid'] for item in inputs if item['vnum'] in (102, 806, 808)}
-            assert len(consumed) == 3, inputs
-            client.send('mixpoison')
-            client.expect('You finish mixing 1 poison.', timeout=30)
-            items = save_items()
-            assert consumed.isdisjoint({item['uid'] for item in items}), items
-            assert sum(item['vnum'] == 470 for item in items) == 1, items
-            print('PASS stolen automatic vial -> real Assassin poison craft and exact input retirement', flush=True)
-            command('kill ' + granted[1], 3)
-            client.send('get all corpse')
-            client.expect('vial', timeout=30)
-            items = save_items()
-            assert sum(item['vnum'] == 102 for item in items) == 1, items
-            print('PASS real NPC death and corpse loot of automatic vial', flush=True)
-            # A durable NPC is only used to hold the real combat open for observation.
-            for name in (granted[2], granted[0]):
-                command('setbit char ' + name + ' basehit 30000', 1)
-                command('setbit char ' + name + ' hit 30000', 1)
-                stat = command('stat mob ' + name)
-                assert int(re.search(r'Hits:\s*\[\s*(\d+)', stat).group(1)) >= 1000, stat
-            command('setattr ' + granted[2] + ' agi 103')
-            client.send('force ' + granted[2] + ' kill ' + granted[0])
-            client.expect('alchemical mixture', timeout=45)
-            command('purge ' + granted[2])
-            print('PASS real server combat scheduler invokes virtual alchemist ability', flush=True)
-            for attempt in range(5):
-                previous = {item['uid'] for item in save_items()}
-                command('load obj 677')
-                command('load obj 400291')
-                inputs = save_items()
-                consumed = {item['uid'] for item in inputs if item['uid'] not in previous}
-                assert len(consumed) == 2, inputs
-                client.send('encrust mace green')
-                result, text = client.expect_any(('Hurrah! Hurrah!', 'You broke your item in the process.'), 30)
-                items = save_items()
-                assert consumed.isdisjoint({item['uid'] for item in items}), items
-                if result == 'Hurrah! Hurrah!':
-                    break
+                reloaded = save_items()
+                assert expected == {(item['uid'], item['vnum']) for item in reloaded
+                                    if item['vnum'] in (470, 1251, 400231, 102)}, reloaded
+                if mode == 'redis':
+                    assert 'restored world recovery generation' in full_logs()
+                    rich_after = sql("SELECT pi.obj_uid,SHA2(runtime.payload,256) FROM player_items pi "
+                        "JOIN player_item_runtime_state runtime ON runtime.item_id=pi.id "
+                        "JOIN player_data player ON player.pid=pi.pid WHERE player.name='Taverek' "
+                        "AND pi.vnum IN(470,1251,400231) ORDER BY pi.obj_uid")
+                    assert rich_before == rich_after, (rich_before, rich_after)
+                    for name in granted[:1]:
+                        stat = command('stat mob ' + name)
+                        assert re.search(r'Numbers:.*?(\d+)-I', stat).group(1) == signatures[name], stat
+                        assert re.search(r'Carried Items:\s*(\d+)', stat).group(1) == '0', stat
+                    print('PASS SQL rich-state bytes and depleted NPC identity survive Redis cold recovery without reroll', flush=True)
+                print('PASS Harvester exact retirement and all craft/vial UIDs survive cold player reload', flush=True)
+                # Enable the real pouch feature only after the ordinary starter and
+                # physical-craft journey, so the original fixture remains intact.
+                client.send('quit')
+                client.expect('ACCOUNT MENU', timeout=30)
+                stop()
+                env.update(CHAOS_MUD='TRUE', CHAOS_STARTER_FRIGATE='FALSE')
+                boot()
+                client = journey.reconnect_character(port)
+                command('load obj 400300')
+                pouch_items = [item for item in save_items() if item['vnum'] == 400300]
+                assert len(pouch_items) == 1, pouch_items
+                pouch_uid = pouch_items[0]['uid']
+                for _ in range(2):
+                    command('load obj 400291')
+                collected = {item['uid'] for item in save_items() if item['vnum'] == 400291}
+                assert len(collected) == 2, collected
+                client.send('put all.green pouch')
+                client.expect('You record 2 collected materials', timeout=30)
+                assert collected.isdisjoint({item['uid'] for item in save_items()})
+                attempts = 0
+                for attempts in range(1, 6):
+                    previous = {item['uid'] for item in save_items()}
+                    command('load obj 677')
+                    bases = {item['uid'] for item in save_items()
+                             if item['vnum'] == 677 and item['uid'] not in previous}
+                    assert len(bases) == 1, bases
+                    # The preceding physical journey leaves an already-encrusted
+                    # mace in inventory. Target the newly loaded second match.
+                    client.send('encrust 2.mace 400291')
+                    result, _ = client.expect_any(('Hurrah! Hurrah!', 'You broke your item in the process.'), 30)
+                    current = save_items()
+                    assert bases.isdisjoint({item['uid'] for item in current}), current
+                    assert not any(item['vnum'] == 400291 for item in current), current
+                    assert [item['uid'] for item in current if item['vnum'] == 400300] == [pouch_uid]
+                    if result == 'Hurrah! Hurrah!':
+                        break
+                else:
+                    raise AssertionError('five valid virtual Encrust attempts failed')
+
+                def pouch_scores():
+                    text = command('look in pouch')
+                    clean = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', text)
+                    assert re.search(rf'\b{attempts} generated / 2 collected\b', clean), clean
+                    assert '[400291]' in clean, clean
+                    return clean
+
+                pouch_scores()
+                client.send('shutdown copyover')
+                client.expect('Copyover complete!', timeout=90)
+                pouch_scores()
+                expected_pouch_items = {(item['uid'], item['vnum']) for item in save_items()}
+                client.send('quit')
+                client.expect('ACCOUNT MENU', timeout=30)
+                stop()
+                boot()
+                client = journey.reconnect_character(port)
+                assert expected_pouch_items == {(item['uid'], item['vnum']) for item in save_items()}
+                pouch_scores()
+                print('PASS real pouch collection and virtual Encrust preserve counters and the original pouch UID through copyover and cold reload', flush=True)
             else:
-                raise AssertionError('five valid Encrust attempts failed')
-            items = save_items()
-            assert any(item['vnum'] == 1251 for item in items), items
-            print('PASS real epic Encrust replacement', flush=True)
-            for _ in range(3):
-                command('load obj 400230')
-            inputs = save_items()
-            consumed = {item['uid'] for item in inputs if item['vnum'] == 400230}
-            client.send('buy 1')
-            client.expect('The Harvester accepts the soul shards and gives you a greater orb.', timeout=30)
-            final = save_items()
-            assert consumed.isdisjoint({item['uid'] for item in final}), final
-            assert sum(item['vnum'] == 400231 for item in final) == 1, final
-            expected = {(item['uid'], item['vnum']) for item in final if item['vnum'] in (470, 1251, 400231, 102)}
-            rich_before = None
-            if mode == 'redis':
-                rich_before = sql("SELECT pi.obj_uid,SHA2(runtime.payload,256) FROM player_items pi "
-                    "JOIN player_item_runtime_state runtime ON runtime.item_id=pi.id "
-                    "JOIN player_data player ON player.pid=pi.pid WHERE player.name='Taverek' "
-                    "AND pi.vnum IN(470,1251,400231) ORDER BY pi.obj_uid")
-                assert len(rich_before.splitlines()) == 3, rich_before
-                acknowledged = full_logs().count('generation and floor handoff acknowledged')
-                deadline = time.monotonic() + 60
-                while full_logs().count('generation and floor handoff acknowledged') <= acknowledged:
-                    assert time.monotonic() < deadline, 'no fresh acknowledged Redis world snapshot'
-                    time.sleep(.2)
+                command('load obj 400300')
+                pouch_items = [item for item in save_items() if item['vnum'] == 400300]
+                assert len(pouch_items) == 1, pouch_items
+                pouch_uid = pouch_items[0]['uid']
+
+            # Freeze one authored leather recipe and grant setup requirements
+            # before switching this fixture to a mortal, so real XP can change.
+            information = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', command('craft info 30101', 1))
+            high = int(re.search(r'need (\d+) of', information).group(1))
+            low_match = re.search(r'and (\d+) of', information)
+            low = int(low_match.group(1)) if low_match else 0
+            assert 1 <= high <= 10 and 0 <= low <= 4, information
+            for vnum, count in ((400049, 2 * high), (400045, 2 * low), (400224, 2), (400223, 2)):
+                for _ in range(count):
+                    command(f'load obj {vnum}')
+            seeded = save_items()
+            material_uids = {item['uid'] for item in seeded if item['vnum'] in (400045, 400049)}
+            tool_uids = {item['uid'] for item in seeded if item['vnum'] in (400223, 400224)}
+            assert len(material_uids) == 2 * (high + low) and len(tool_uids) == 4
             client.send('quit')
             client.expect('ACCOUNT MENU', timeout=30)
             stop()
+            if mode == 'file':
+                subprocess.run([str(fixture), str(state), 'mortal'], check=True)
+            else:
+                sql("UPDATE player_data SET level=50,highest_level=50 WHERE name='Taverek'")
+            env['CHAOS_MUD'] = 'FALSE'
             boot()
             client = journey.reconnect_character(port)
-            reloaded = save_items()
-            assert expected == {(item['uid'], item['vnum']) for item in reloaded
-                                if item['vnum'] in (470, 1251, 400231, 102)}, reloaded
-            if mode == 'redis':
-                assert 'restored world recovery generation' in full_logs()
-                rich_after = sql("SELECT pi.obj_uid,SHA2(runtime.payload,256) FROM player_items pi "
-                    "JOIN player_item_runtime_state runtime ON runtime.item_id=pi.id "
-                    "JOIN player_data player ON player.pid=pi.pid WHERE player.name='Taverek' "
-                    "AND pi.vnum IN(470,1251,400231) ORDER BY pi.obj_uid")
-                assert rich_before == rich_after, (rich_before, rich_after)
-                for name in granted[:1]:
-                    stat = command('stat mob ' + name)
-                    assert re.search(r'Numbers:.*?(\d+)-I', stat).group(1) == signatures[name], stat
-                    assert re.search(r'Carried Items:\s*(\d+)', stat).group(1) == '0', stat
-                print('PASS SQL rich-state bytes and depleted NPC identity survive Redis cold recovery without reroll', flush=True)
-            print('PASS Harvester exact retirement and all craft/vial UIDs survive cold player reload', flush=True)
-            # Enable the real pouch feature only after the ordinary starter and
-            # physical-craft journey, so the original fixture remains intact.
+
+            def durable_recipe_experience():
+                save_items()
+                if mode == 'file':
+                    return int(subprocess.check_output([str(fixture), str(state), 'inspect'], text=True))
+                return int(sql("SELECT exp FROM player_data WHERE name='Taverek'"))
+
+            before_experience = durable_recipe_experience()
+            for discipline in ('craft', 'forge'):
+                before = save_items()
+                before_uids = {item['uid'] for item in before}
+                client.send(f'{discipline} make 30101')
+                client.expect('finish your work, admiring your new', timeout=30)
+                after = save_items()
+                fresh = [item for item in after if item['uid'] not in before_uids]
+                assert len(fresh) == 1 and fresh[0]['vnum'] == 30101, (discipline, fresh)
+                retired = [item for item in before if item['uid'] not in {row['uid'] for row in after}]
+                assert len(retired) == high + low + 1, (discipline, retired)
+                assert sum(item['vnum'] == 400049 for item in retired) == high
+                assert sum(item['vnum'] == 400045 for item in retired) == low
+                assert sum(item['vnum'] == (400224 if discipline == 'craft' else 400223) for item in retired) == 1
+                experience = durable_recipe_experience()
+                assert experience > before_experience, (discipline, before_experience, experience)
+                before_experience = experience
+            assert material_uids.isdisjoint({item['uid'] for item in save_items()})
+            print('PASS real mortal Craft and Forge retire exact materials/tools, admit fresh outputs and save XP', flush=True)
             client.send('quit')
             client.expect('ACCOUNT MENU', timeout=30)
             stop()
-            env.update(CHAOS_MUD='TRUE', CHAOS_STARTER_FRIGATE='FALSE')
+            env['CHAOS_MUD'] = 'TRUE'
             boot()
             client = journey.reconnect_character(port)
-            command('load obj 400300')
-            pouch_items = [item for item in save_items() if item['vnum'] == 400300]
-            assert len(pouch_items) == 1, pouch_items
-            pouch_uid = pouch_items[0]['uid']
-            for _ in range(2):
-                command('load obj 400291')
-            collected = {item['uid'] for item in save_items() if item['vnum'] == 400291}
-            assert len(collected) == 2, collected
-            client.send('put all.green pouch')
-            client.expect('You record 2 collected materials', timeout=30)
-            assert collected.isdisjoint({item['uid'] for item in save_items()})
-            attempts = 0
-            for attempts in range(1, 6):
-                previous = {item['uid'] for item in save_items()}
-                command('load obj 677')
-                bases = {item['uid'] for item in save_items()
-                         if item['vnum'] == 677 and item['uid'] not in previous}
-                assert len(bases) == 1, bases
-                # The preceding physical journey leaves an already-encrusted
-                # mace in inventory. Target the newly loaded second match.
-                client.send('encrust 2.mace 400291')
-                result, _ = client.expect_any(('Hurrah! Hurrah!', 'You broke your item in the process.'), 30)
-                current = save_items()
-                assert bases.isdisjoint({item['uid'] for item in current}), current
-                assert not any(item['vnum'] == 400291 for item in current), current
-                assert [item['uid'] for item in current if item['vnum'] == 400300] == [pouch_uid]
-                if result == 'Hurrah! Hurrah!':
-                    break
-            else:
-                raise AssertionError('five valid virtual Encrust attempts failed')
-
-            def pouch_scores():
-                text = command('look in pouch')
-                clean = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', text)
-                assert re.search(rf'\b{attempts} generated / 2 collected\b', clean), clean
-                assert '[400291]' in clean, clean
-                return clean
-
-            pouch_scores()
-            client.send('shutdown copyover')
+            for discipline in ('craft', 'forge'):
+                before = save_items()
+                before_uids = {item['uid'] for item in before}
+                client.send(f'{discipline} make 30101')
+                client.expect('finish your work, admiring your new', timeout=30)
+                after = save_items()
+                retired = [item for item in before if item['uid'] not in {row['uid'] for row in after}]
+                fresh = [item for item in after if item['uid'] not in before_uids]
+                assert len(retired) == 1 and retired[0]['vnum'] == (400224 if discipline == 'craft' else 400223)
+                assert len(fresh) == 1 and fresh[0]['vnum'] == 30101
+                assert [item['uid'] for item in after if item['vnum'] == 400300] == [pouch_uid]
+                experience = durable_recipe_experience()
+                assert experience > before_experience
+                before_experience = experience
+            assert tool_uids.isdisjoint({item['uid'] for item in save_items()})
+            recipe_scores = command('look in pouch', 1)
+            assert f'{2 * high} generated / 0 collected' in recipe_scores, recipe_scores
+            expected_items = {(item['uid'], item['vnum']) for item in save_items()}
+            expected_experience = durable_recipe_experience()
+            # Exercise the normal launcher lifecycle request while the actor
+            # remains mortal and eligible for progression awards.
+            process.send_signal(signal.SIGUSR1)
             client.expect('Copyover complete!', timeout=90)
-            pouch_scores()
-            expected_pouch_items = {(item['uid'], item['vnum']) for item in save_items()}
-            client.send('quit')
-            client.expect('ACCOUNT MENU', timeout=30)
-            stop()
-            boot()
-            client = journey.reconnect_character(port)
-            assert expected_pouch_items == {(item['uid'], item['vnum']) for item in save_items()}
-            pouch_scores()
-            print('PASS real pouch collection and virtual Encrust preserve counters and the original pouch UID through copyover and cold reload', flush=True)
+            assert durable_recipe_experience() == expected_experience
+            for _ in range(2):
+                client.send('quit')
+                client.expect('ACCOUNT MENU', timeout=30)
+                stop()
+                boot()
+                client = journey.reconnect_character(port)
+                assert expected_items == {(item['uid'], item['vnum']) for item in save_items()}
+                assert durable_recipe_experience() == expected_experience
+                assert f'{2 * high} generated / 0 collected' in command('look in pouch', 1)
+            print('PASS retained pouch Craft/Forge output UIDs, counters and exact XP survive copyover and two cold restarts', flush=True)
         except Exception:
             print((runtime / 'server.out').read_text(errors='replace')[-6000:])
             print(journey.runtime_logs(runtime)[-12000:])
@@ -439,4 +563,4 @@ def run(binary, mode='file', creation_save_only=False):
 
 if __name__ == '__main__':
     run(Path(sys.argv[1]).resolve(), sys.argv[2] if len(sys.argv) > 2 else 'file',
-        '--creation-save-only' in sys.argv[3:])
+        '--creation-save-only' in sys.argv[3:], '--recipe-only' in sys.argv[3:])

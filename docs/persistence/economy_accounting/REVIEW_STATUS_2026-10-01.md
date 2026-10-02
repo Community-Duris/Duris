@@ -2,7 +2,7 @@
 
 This checkpoint publishes the completed review fixes directly to
 `Community-Duris/Duris:experimental-accounting`. It integrates upstream through
-`99ae211a9cab4dc842e1fa73e2150b1063d72807`, preserving the canonical, staging
+`ffb73e6518a2dc39f3d243d3384ea851b4c3b8a4`, preserving the canonical, staging
 0045, and master 0031 migration histories. The master upgrade now appends the
 0052 witness index and 0053 craft receipts without rewriting its existing prefix.
 
@@ -33,20 +33,30 @@ This checkpoint publishes the completed review fixes directly to
 - Mini-mode startup now installs progression callbacks before any player
   materialization. Both strict production builds passed, and the actual
   flatfile server completed mortal Craft and Forge with exact materials/tool
-  retirement, fresh output UIDs, and durable XP. Retained-pouch and SQL gameplay
-  qualification are still running.
+  retirement, fresh output UIDs, and durable XP.
+- The real-server recipe fixture now supports a focused mortal journey. It
+  uses the launcher copyover signal after crafting, retaining mortal progression
+  semantics without granting a staff shutdown command. Physical and retained-
+  pouch Craft/Forge pass on flatfile, MySQL 8.0.46 and MariaDB 10.11.14, including
+  exact output UIDs, material/tool retirement, XP, counters, copyover, and two
+  cold restarts. This qualifies the fixture's frozen leather recipe; it does
+  not qualify every recipe variant or active accounting gameplay.
+- Upstream artifact lifetime repair and master migration verifier files are
+  integrated. Both production profiles rebuild successfully, and the native
+  canonical/staging/master history matrix passes again on both SQL engines.
 
 ## Verification and its limits
 
 | Check | Current evidence |
 | --- | --- |
-| Strict SQL and flatfile production builds | Passed for `ad5bc52bf`; all 1,210 native build source files match its committed tree. |
+| Strict SQL and flatfile production builds | Passed after integration `8be8b55c0`; recipe gameplay uses the separately qualified `ad5bc52bf` builds, whose 1,210 native source files match its committed tree. |
 | Recipe SQL receipts and fault recovery | Passed on disposable MySQL 8.0 and MariaDB 10.11 before the latest upstream integration. |
 | Integrated focused runtime checks | All 16 selected checks passed after the first upstream integration, including the ASan/UBSan prompt fixture. |
 | Null-output publication regression | Passed using the actual native movement module after `0464613a1`. |
 | Combat continuation and quarantine restore | Passed after integrating the upstream recovery evidence. Quarantine archives retain both original component frames and keep recovery fenced on conflicting evidence. |
-| Writer census | Refreshed for `ad5bc52bf`: 2,806 lexical occurrences, 2,748 unique sites, 863 routes, zero unmapped sites; all 52 coverage contracts and artifact freshness passed. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
+| Writer census | Refreshed for the integrated upstream source: 2,805 lexical occurrences, 2,747 unique sites, 863 routes, zero unmapped sites; all 52 coverage contracts and artifact freshness passed. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
 | Recipe flatfile restore | Passed through the actual native restore decoder: complete recovery, checksum damage, missing obligation/root, future revision, and invalid receipt filename. |
+| Mortal recipe gameplay | Physical and retained-pouch Craft/Forge passed on flatfile and both SQL engines with exact XP, output UIDs and counters through copyover and two cold restarts. |
 | Latest migration integration | Runtime manifest validator and all 34 native boot/migration contract tests passed with head 0053 and 225 tables. All three histories converge on the pinned schema on disposable MySQL 8.0.46 and MariaDB 10.11.14, including preserved master receipts/runtime payloads, append/replay, shell/compiled boot, restore selection, and tamper refusal. The fixture uses the current sealed baseline with the master prefix; a captured production clone remains outside this proof. |
 
 Prior build and component passes do not establish an all-green result at this
