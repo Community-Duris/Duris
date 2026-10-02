@@ -155,6 +155,13 @@ void worker_main()
 			update_depth_health_locked();
 		}
 
+		persistence_trace_event trace;
+		trace.stage = persistence_trace_stage::save_apply;
+		trace.pid = job->snapshot.pid;
+		trace.revision = job->snapshot.revision;
+		trace.components = job->snapshot.components;
+		trace.attempt = job->retry_count;
+		persistence_trace_record(trace);
 		const uint64_t started = now_usec();
 		player_save_apply_result applied = {};
 		try
@@ -178,6 +185,18 @@ void worker_main()
 			applied.outcome = player_save_apply_outcome::terminal_failure;
 			applied.error_code = ESTALE;
 		}
+		trace.stage = persistence_trace_stage::save_result;
+		trace.outcome = static_cast<uint32_t>(applied.outcome);
+		trace.error = applied.error_code;
+		trace.diagnosis = static_cast<uint32_t>(applied.custody_diagnosis);
+		trace.witness = applied.custody_witness;
+		trace.durable_revision = applied.durable_revision;
+		trace.incident =
+			applied.outcome == player_save_apply_outcome::terminal_failure ||
+			((applied.outcome == player_save_apply_outcome::retryable_failure ||
+			  applied.outcome == player_save_apply_outcome::ambiguous_commit) &&
+			 job->retry_count >= PLAYER_SAVE_WORKER_MAX_RETRIES);
+		persistence_trace_record(trace);
 		if ((applied.outcome == player_save_apply_outcome::applied ||
 		     applied.outcome == player_save_apply_outcome::already_applied ||
 		     applied.outcome == player_save_apply_outcome::stale_revision) &&
@@ -204,6 +223,10 @@ void worker_main()
 					acked = false;
 				}
 			}
+			trace.stage = persistence_trace_stage::save_checkpoint;
+			trace.outcome = acked ? 0 : 1;
+			trace.incident = false;
+			persistence_trace_record(trace);
 			if (!acked)
 			{
 				std::lock_guard<std::mutex> lock(worker_mutex);
@@ -230,6 +253,11 @@ void worker_main()
 			}
 			if (terminal)
 				terminal(job->snapshot, terminal_context);
+			trace.stage = persistence_trace_stage::save_fence;
+			trace.outcome = static_cast<uint32_t>(applied.outcome);
+			trace.error = applied.error_code;
+			trace.incident = true;
+			persistence_trace_record(trace);
 		}
 		const uint64_t completed = now_usec();
 		player_save_completion completion = {
@@ -247,6 +275,7 @@ void worker_main()
 			.quest_xp_receipts = {},
 			.spell_effect_receipts = {},
 			.failed_spell_effect_receipts = {},
+			.custody_witness = applied.custody_witness,
 		};
 		{
 			std::unique_lock<std::mutex> lock(worker_mutex);
@@ -542,6 +571,13 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 			{
 				saturating_increment(health.applied);
 				exact_acknowledged = true;
+				persistence_trace_event trace;
+				trace.stage = persistence_trace_stage::save_ack;
+				trace.pid = completion.pid;
+				trace.revision = completion.revision;
+				trace.durable_revision = completion.durable_revision;
+				trace.components = completion.components;
+				persistence_trace_record(trace);
 				finished = true;
 			}
 			else
