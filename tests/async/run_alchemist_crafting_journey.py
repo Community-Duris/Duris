@@ -5,12 +5,17 @@ Uses the existing isolated combat journey's account, socket and world helpers.
 Requires the combined #551/#661 server and the flat-file repository inspector.
 The optional --recipe-only mode isolates mortal Craft/Forge progression,
 retained pouch counters, copyover and cold restarts.
+SQL mode also accepts --recipe-fault=disconnect, crash-before-commit,
+crash-before-save or lost-ack. These exercise physical Craft/Forge at native
+transaction/save boundaries, then repeat copyover and cold-restart checks.
+Use a disposable TEST_DB_* target; lost-ack requires an unprivileged POSIX user.
 The optional --creation-save-only mode qualifies #664 with overlapping setup
 grants and saves, then copyover, disconnect and cold reload, without crafting.
 """
 from pathlib import Path
 import os
 import re
+import selectors
 import shutil
 import signal
 import subprocess
@@ -31,8 +36,14 @@ def authored(vnum):
     raise AssertionError(f'missing authored object {vnum}')
 
 
-def run(binary, mode='file', creation_save_only=False, recipe_only=False):
+def run(binary, mode='file', creation_save_only=False, recipe_only=False, recipe_fault=None):
     assert mode in ('file', 'redis')
+    assert recipe_fault in (None, 'disconnect', 'crash-before-commit', 'crash-before-save', 'lost-ack')
+    if recipe_fault:
+        recipe_only = True
+        assert mode == 'redis', 'integrated interruption qualification is SQL-first'
+        if recipe_fault == 'lost-ack':
+            assert os.geteuid() != 0, 'lost-ACK permission fault requires an unprivileged test user'
     assert not (creation_save_only and recipe_only), 'select one focused journey'
     with tempfile.TemporaryDirectory(prefix='alchemist-crafting-journey-') as temporary:
         root = Path(temporary)
@@ -44,6 +55,12 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False):
         (runtime / 'logs/log').mkdir(parents=True)
         journey.make_fixture(runtime)
         journey.generate_certificate(runtime)
+        if recipe_fault:
+            # Assert the frozen award independently of login/rested bonuses.
+            properties = runtime / 'lib/duris.properties'
+            assert 'exp.rested.enabled=1.000' in properties.read_text()
+            properties.write_text(properties.read_text().replace(
+                'exp.rested.enabled=1.000', 'exp.rested.enabled=0.000'))
         path = runtime / 'areas_mini/mini.obj'
         objects = path.read_text()
         recipe = re.search(r'(?ms)^#678\n.*?(?=^#\d+\n)', objects).group(0)
@@ -146,15 +163,15 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False):
             'src/flatfile/flatfile_store.c', 'src/flatfile/flatfile_recipe_repository.c',
             'src/flatfile/flatfile_authority_transaction.c', '-lcrypto', '-pthread', '-o', str(fixture)],
             cwd=journey.ROOT, check=True)
-        client = process = output = None
+        client = process = output = native_lock = None
 
-        def stop():
+        def stop(kill=False):
             nonlocal client, process, output
             if client:
                 client.close()
                 client = None
             if process and process.poll() is None:
-                process.terminate()
+                process.kill() if kill else process.terminate()
                 try:
                     process.wait(timeout=30)
                 except subprocess.TimeoutExpired:
@@ -209,6 +226,46 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False):
             return '\n'.join(path.read_text(errors='replace')
                              for path in (runtime / 'logs/log').glob('*') if path.is_file())
 
+        def await_value(read, accept, description):
+            deadline = time.monotonic() + 30
+            while time.monotonic() < deadline:
+                value = read()
+                if accept(value):
+                    return value
+                time.sleep(.05)
+            raise AssertionError(f'{description}: timed out; last value {value}')
+
+        def receipt_count():
+            return int(sql('SELECT COUNT(*) FROM player_craft_progression '
+                           'WHERE pid=1 AND applied_revision>0'))
+
+        def release_native_lock():
+            nonlocal native_lock
+            if native_lock is None:
+                return
+            native_lock.terminate()
+            native_lock.communicate(timeout=10)
+            native_lock = None
+
+        def hold_native_lock(player_save):
+            nonlocal native_lock
+            native_lock = subprocess.Popen(mysql + [database, '--unbuffered'], env=env,
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            # A shared parent-row lock permits Craft's FK checks and blocks the
+            # later player UPDATE, separating item commit from progression save.
+            target = ('player_data WHERE pid=1' if player_save else
+                'item_owner_revision WHERE owner_type=1 AND owner_id=1 AND owner_context_id=0')
+            locking = ' LOCK IN SHARE MODE;\n' if player_save else ' FOR UPDATE;\n'
+            native_lock.stdin.write("START TRANSACTION; SELECT 'LOCKED' FROM " + target + locking)
+            native_lock.stdin.flush()
+            with selectors.DefaultSelector() as ready:
+                ready.register(native_lock.stdout, selectors.EVENT_READ)
+                deadline = time.monotonic() + 15
+                while time.monotonic() < deadline:
+                    if ready.select(.1) and 'LOCKED' in native_lock.stdout.readline():
+                        return
+                raise AssertionError('native transaction lock was not acquired')
+
         try:
             boot()
             client = journey.MudClient(port)
@@ -231,6 +288,8 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False):
                     REDIS_WORLD_STATE='TRUE',
                     REDIS_WORLD_STATE_INTERVAL='5',
                     REDIS_WORLD_STATE_SECRET='local-alchemist-fixture-secret-123456789')
+                if recipe_fault:
+                    env.update(REDIS='FALSE', REDIS_WORLD_STATE='FALSE')
             boot()
             client = journey.reconnect_character(port)
             command('toggle paging')
@@ -492,8 +551,41 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False):
             for discipline in ('craft', 'forge'):
                 before = save_items()
                 before_uids = {item['uid'] for item in before}
+                before_receipts = receipt_count() if recipe_fault else 0
+                if recipe_fault:
+                    hold_native_lock(recipe_fault in ('crash-before-save', 'lost-ack'))
                 client.send(f'{discipline} make 30101')
-                client.expect('finish your work, admiring your new', timeout=30)
+                if recipe_fault:
+                    client.expect('Your requirements have been reserved', timeout=30)
+                    if recipe_fault in ('crash-before-save', 'lost-ack'):
+                        await_value(lambda: int(sql('SELECT COUNT(*) FROM player_craft_progression '
+                            'WHERE pid=1 AND applied_revision=0')), lambda n: n == 1,
+                            'craft committed before its progression save')
+                        assert receipt_count() == before_receipts
+                    if recipe_fault == 'lost-ack':
+                        directory = runtime / 'journals/critical'
+                        directory.chmod(0o500)
+                        journal = directory / 'critical-command.journal'
+                        retained_frame = journal.read_bytes()
+                        assert retained_frame and not os.access(directory, os.W_OK)
+                        release_native_lock()
+                        await_value(receipt_count, lambda n: n == before_receipts + 1,
+                            'progression save committed before failed publication ACK')
+                        time.sleep(1)
+                        assert journal.read_bytes() == retained_frame
+                    client.close()
+                    client = None
+                    if recipe_fault != 'disconnect':
+                        stop(kill=True)
+                    release_native_lock()
+                    (runtime / 'journals/critical').chmod(0o700)
+                    if recipe_fault != 'disconnect':
+                        boot()
+                    client = journey.reconnect_character(port, allow_linkdead=recipe_fault == 'disconnect')
+                    await_value(receipt_count, lambda n: n == before_receipts + 1,
+                        'one recovered progression receipt')
+                else:
+                    client.expect('finish your work, admiring your new', timeout=30)
                 after = save_items()
                 fresh = [item for item in after if item['uid'] not in before_uids]
                 assert len(fresh) == 1 and fresh[0]['vnum'] == 30101, (discipline, fresh)
@@ -504,6 +596,15 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False):
                 assert sum(item['vnum'] == (400224 if discipline == 'craft' else 400223) for item in retired) == 1
                 experience = durable_recipe_experience()
                 assert experience > before_experience, (discipline, before_experience, experience)
+                if recipe_fault:
+                    assert experience == before_experience + (5 * high + low - 4) * 1000
+                    awards = sql('SELECT discipline,experience FROM player_craft_progression '
+                        'WHERE pid=1 AND applied_revision>0 ORDER BY discipline')
+                    expected_awards = '\n'.join(f'{kind}\t{(5 * high + low - 4) * 1000}'
+                        for kind in range(1, (1 if discipline == 'craft' else 2) + 1))
+                    assert awards == expected_awards, (discipline, awards)
+                    print(f'PASS {discipline}/{recipe_fault}: exact input retirement, '
+                          'one output and one frozen XP award', flush=True)
                 before_experience = experience
             assert material_uids.isdisjoint({item['uid'] for item in save_items()})
             print('PASS real mortal Craft and Forge retire exact materials/tools, admit fresh outputs and save XP', flush=True)
@@ -538,9 +639,12 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False):
             client.expect('Copyover complete!', timeout=90)
             assert durable_recipe_experience() == expected_experience
             for _ in range(2):
-                client.send('quit')
-                client.expect('ACCOUNT MENU', timeout=30)
-                stop()
+                if recipe_fault:
+                    stop(kill=True)
+                else:
+                    client.send('quit')
+                    client.expect('ACCOUNT MENU', timeout=30)
+                    stop()
                 boot()
                 client = journey.reconnect_character(port)
                 assert expected_items == {(item['uid'], item['vnum']) for item in save_items()}
@@ -548,6 +652,12 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False):
                 assert f'{2 * high} generated / 0 collected' in command('look in pouch', 1)
             print('PASS retained pouch Craft/Forge output UIDs, counters and exact XP survive copyover and two cold restarts', flush=True)
         except Exception:
+            if recipe_fault and database:
+                print('Recipe progression: ' + sql('SELECT HEX(operation_id),pid,discipline,'
+                    'experience,applied_revision FROM player_craft_progression'))
+                print('Recent native operations: ' + sql('SELECT HEX(operation_id),command_type,'
+                    'status,result_code,failure_stage,durable_revision FROM critical_operation_inbox '
+                    'ORDER BY created_at DESC LIMIT 4'))
             print((runtime / 'server.out').read_text(errors='replace')[-6000:])
             print(journey.runtime_logs(runtime)[-12000:])
             print('\n'.join(line for line in full_logs().splitlines()
@@ -556,11 +666,15 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False):
                 print(client.transcript.decode(errors='replace')[-9000:])
             raise
         finally:
-            stop()
+            stop(kill=native_lock is not None)
+            release_native_lock()
+            if recipe_fault:
+                (runtime / 'journals/critical').chmod(0o700)
             if database:
                 sql('DROP DATABASE ' + database, False)
 
 
 if __name__ == '__main__':
     run(Path(sys.argv[1]).resolve(), sys.argv[2] if len(sys.argv) > 2 else 'file',
-        '--creation-save-only' in sys.argv[3:], '--recipe-only' in sys.argv[3:])
+        '--creation-save-only' in sys.argv[3:], '--recipe-only' in sys.argv[3:],
+        next((arg.split('=', 1)[1] for arg in sys.argv[3:] if arg.startswith('--recipe-fault=')), None))

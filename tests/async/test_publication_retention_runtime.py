@@ -26,6 +26,7 @@ HARNESS = r'''
 #include <cstdarg>
 #include <cstring>
 #include <cstdio>
+#include <filesystem>
 #include <thread>
 #include <vector>
 
@@ -428,6 +429,7 @@ int main(int argc, char **argv)
     assert(item_movement_transaction_submit_craft(&actor, inputs, 1, recipe_outputs, 1,
         42, craft_callback, nullptr, 0, &reject, nullptr, nullptr, 0,
         chaos_pouch_usage_mode::generated, &recipe));
+    assert(item_movement_transaction_player_creation_busy(&actor));
     craft_completed=false;
     for(int spin=0;spin<1000&&!craft_completed;++spin) {
         const size_t count=critical_command_coordinator_pulse(completions,8);
@@ -437,16 +439,35 @@ int main(int argc, char **argv)
     }
     assert(craft_completed && recipe_publications==1 && recipe_acknowledgements==0);
     assert(extractions==3 && craft_callbacks==2 && OBJ_CARRIED_BY(&recipe_output,&actor));
+    assert(!item_movement_transaction_player_creation_busy(&actor));
     assert(item_movement_transaction_health_copy().pending==1);
     assert(critical_command_coordinator_health_copy().publication_pending==1);
     std::vector<critical_operation_id> pending_recipes;
     assert(item_movement_transaction_pending_craft_progression(1001,&pending_recipes) && pending_recipes.size()==1);
     recipe_progression_ready=true;
+    // Make checkpoint creation fail even as root, while retaining the open
+    // journal and its durable frame. Restore the same directory for retry.
+    const std::string held_journal = std::string(argv[1]) + ".held";
+    std::filesystem::rename(argv[1], held_journal);
+    FILE *blocked_directory = std::fopen(argv[1], "w");
+    assert(blocked_directory && std::fclose(blocked_directory) == 0);
     std::this_thread::sleep_for(std::chrono::milliseconds(70));
+    item_movement_transaction_handle_completions(nullptr,0);
+    assert(extractions==3 && craft_callbacks==3 && recipe_acknowledgements==0);
+    assert(item_movement_transaction_health_copy().publication_ack_pending==1);
+    const int published_recipe = recipe_publications;
+    character_list = nullptr; // ACK cleanup no longer needs the notified actor.
+    for (int retry=0;retry<8;++retry)
+        item_movement_transaction_handle_completions(nullptr,0);
+    assert(recipe_publications==published_recipe && craft_callbacks==3);
+    assert(critical_command_journal_health_copy().records==1);
+    std::filesystem::remove(argv[1]);
+    std::filesystem::rename(held_journal, argv[1]);
     item_movement_transaction_handle_completions(nullptr,0);
     assert(extractions==3 && craft_callbacks==3 && recipe_acknowledgements==1);
     assert(item_movement_transaction_health_copy().pending==0);
     assert(item_movement_transaction_pending_craft_progression(1001,&pending_recipes) && pending_recipes.empty());
+    character_list = &actor;
     craft_progression_hooks={};
     accounting_active = false;
     // Restore the independent movement fixture for the uncertainty scenario.
