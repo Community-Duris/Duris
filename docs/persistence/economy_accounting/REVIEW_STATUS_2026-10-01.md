@@ -30,6 +30,11 @@ This checkpoint publishes the completed review fixes directly to
   completion rearms capture without granting XP or rerolling a skill notch.
   The actual owner regression fails before the fix and passes under ASan/UBSan,
   covering delayed queued and coalesced saves, failure retry, and exact ACK.
+- Mini-mode startup now installs progression callbacks before any player
+  materialization. Both strict production builds passed, and the actual
+  flatfile server completed mortal Craft and Forge with exact materials/tool
+  retirement, fresh output UIDs, and durable XP. Retained-pouch and SQL gameplay
+  qualification are still running.
 
 ## Verification and its limits
 
