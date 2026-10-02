@@ -1611,9 +1611,13 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 	std::map<int, player_revision_t> acknowledged;
 	std::vector<operation_record_proof> proven_operations;
 	std::set<int> runtime_quarantined_pids;
-	auto quarantine_failed_pid = [&](int pid)
+	auto quarantine_failed_pid = [&](persistence_trace_event trace)
 	{
+		const int pid = trace.pid;
 		const player_save_journal_result quarantined = quarantine_runtime_pid(pid);
+		trace.stage = persistence_trace_stage::save_replay_fence;
+		trace.incident = true;
+		persistence_trace_record(trace);
 		if (quarantined != player_save_journal_result::ok)
 			return quarantined;
 		runtime_quarantined_pids.insert(pid);
@@ -1671,6 +1675,12 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 				continue;
 			}
 			same_identity.push_back(&frame);
+			persistence_trace_event trace;
+			trace.stage = persistence_trace_stage::save_replay_apply;
+			trace.pid = frame.snapshot.pid;
+			trace.revision = frame.snapshot.revision;
+			trace.components = frame.snapshot.components;
+			persistence_trace_record(trace);
 			player_save_apply_result applied = {};
 			try
 			{
@@ -1678,12 +1688,27 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 			}
 			catch (...)
 			{
+				trace.stage = persistence_trace_stage::save_replay_result;
+				trace.outcome = static_cast<uint32_t>(
+					player_save_apply_outcome::terminal_failure);
+				trace.error = EFAULT;
+				trace.incident = true;
+				persistence_trace_record(trace);
 				const player_save_journal_result quarantined =
-					quarantine_failed_pid(frame.snapshot.pid);
+					quarantine_failed_pid(trace);
 				if (quarantined != player_save_journal_result::ok)
 					return quarantined;
 				continue;
 			}
+			trace.stage = persistence_trace_stage::save_replay_result;
+			trace.outcome = static_cast<uint32_t>(applied.outcome);
+			trace.error = applied.error_code;
+			trace.diagnosis = static_cast<uint32_t>(applied.custody_diagnosis);
+			trace.witness = applied.custody_witness;
+			trace.durable_revision = applied.durable_revision;
+			trace.incident = applied.outcome ==
+					 player_save_apply_outcome::terminal_failure;
+			persistence_trace_record(trace);
 			if (applied.outcome == player_save_apply_outcome::retryable_failure ||
 			    applied.outcome == player_save_apply_outcome::ambiguous_commit)
 			{
@@ -1702,7 +1727,7 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 					++health.backpressure;
 				}
 				const player_save_journal_result quarantined =
-					quarantine_failed_pid(frame.snapshot.pid);
+					quarantine_failed_pid(trace);
 				if (quarantined != player_save_journal_result::ok)
 					return quarantined;
 				continue;
@@ -1724,8 +1749,11 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 									      applied) &&
 				    !verified_obsolete_operations)
 				{
+					trace.outcome = static_cast<uint32_t>(
+						player_save_apply_outcome::terminal_failure);
+					trace.error = ESTALE;
 					const player_save_journal_result quarantined =
-						quarantine_failed_pid(frame.snapshot.pid);
+						quarantine_failed_pid(trace);
 					if (quarantined != player_save_journal_result::ok)
 						return quarantined;
 					continue;

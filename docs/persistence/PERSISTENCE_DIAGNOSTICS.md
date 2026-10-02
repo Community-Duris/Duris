@@ -71,6 +71,10 @@ implicitly. The selected file must be mode 0600 or stricter, and contain
 `DB_ALLOWED_TARGETS`. The exact `host/database` pair must be in that allow-list.
 Use the incident's actual `PERSISTENCE_MODE`; a flatfile report cannot be combined
 with SQL authority. Use a read-only database account when available.
+Remote hosts require `DB_TLS=TRUE` and an absolute, existing, non-symlink
+`DB_SSL_CA` file. The doctor verifies the server identity with either the MySQL
+or MariaDB client and refuses clients that cannot verify it. Captures explicitly
+use the selected TCP host and port; `DB_SOCKET` cannot override that target.
 
 SQL capture uses one repeatable-read, read-only consistent transaction. It reads
 scalar player revision, current custody/owner revisions, player/pet payload
@@ -90,6 +94,9 @@ prove that binary was the process that produced the runtime report.
 `assessment.last_failed_save` selects the most recent retained failed save.
 `history.incidents` preserves the first terminal or exhausted observation for a
 PID/revision or operation even when repeated retries wrap the ordinary history.
+Timeouts are retained separately from definitive failures for the same revision,
+so a slow save cannot displace its later custody witness. Terminal replay failures
+and receipt conflicts that quarantine a PID also retain their first observation.
 The witness carries the offending UID when available, snapshot/native presence,
 expected and observed vnum/root/parent/slot, observed item revision, and the line
 in `src/player/player_snapshot_repository.c` that refused the write. Use the
@@ -110,7 +117,15 @@ The rolling history correlates `save_capture → save_journal → save_apply →
 save_result → save_checkpoint → save_ack`, plus fence and timeout observations.
 `save_checkpoint` is the worker's journal acknowledgement attempt;
 `save_ack` is the successful game-thread revision acknowledgement. Command
-history correlates admission, journal, apply, result, and publication checkpoint.
+history correlates admission, journal, apply, `command_checkpoint`, result, and
+publication checkpoint. `command_checkpoint.outcome` uses the command journal
+result enum; `command_result` records the effective completion after checkpointing.
+Exhausted checkpoint failures retain the journal cause while leaving the native
+fence in place. Startup replay records `save_replay_apply`, `save_replay_result`,
+and quarantine attempts as `save_replay_fence`, using the save apply outcome enum.
+Replay receipt conflicts report `ESTALE`; exceptions report `EFAULT` without
+exception prose. A fence event observes the attempt; resident archive metadata
+reports whether quarantine actually succeeded.
 The operation ID and entity keys connect item movement to a player's save.
 Load results include the request ID and degraded component mask. Outcomes retain
 the numeric values of their source enums; stage names identify which enum applies.

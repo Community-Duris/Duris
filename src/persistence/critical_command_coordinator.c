@@ -866,6 +866,28 @@ void worker_main()
 		{
 			applied = { critical_apply_outcome::retryable_failure, 0, 0 };
 		}
+		if (!retain_publication &&
+		    (applied.outcome == critical_apply_outcome::applied ||
+		     applied.outcome == critical_apply_outcome::already_applied ||
+		     applied.outcome == critical_apply_outcome::terminal_failure))
+		{
+			const auto checkpoint =
+				critical_command_journal_checkpoint(command.operation_id);
+			auto checkpoint_trace = trace;
+			checkpoint_trace.stage = persistence_trace_stage::command_checkpoint;
+			checkpoint_trace.outcome = static_cast<uint32_t>(checkpoint);
+			checkpoint_trace.error = applied.error_code;
+			checkpoint_trace.diagnosis = static_cast<uint32_t>(applied.failure_stage);
+			checkpoint_trace.durable_revision = applied.durable_revision;
+			checkpoint_trace.incident = checkpoint !=
+							    critical_command_journal_result::ok &&
+						    attempt > CRITICAL_COORDINATOR_MAX_RETRIES;
+			persistence_trace_record(checkpoint_trace);
+			if (checkpoint != critical_command_journal_result::ok)
+				applied = { critical_apply_outcome::retryable_failure,
+					    applied.durable_revision, applied.error_code };
+		}
+		// Report the effective completion, including a failed journal checkpoint.
 		trace.stage = persistence_trace_stage::command_result;
 		trace.outcome = static_cast<uint32_t>(applied.outcome);
 		trace.error = applied.error_code;
@@ -876,16 +898,6 @@ void worker_main()
 				   applied.outcome == critical_apply_outcome::ambiguous_commit) &&
 				  attempt > CRITICAL_COORDINATOR_MAX_RETRIES);
 		persistence_trace_record(trace);
-		if (!retain_publication &&
-		    (applied.outcome == critical_apply_outcome::applied ||
-		     applied.outcome == critical_apply_outcome::already_applied ||
-		     applied.outcome == critical_apply_outcome::terminal_failure))
-		{
-			if (critical_command_journal_checkpoint(command.operation_id) !=
-			    critical_command_journal_result::ok)
-				applied = { critical_apply_outcome::retryable_failure,
-					    applied.durable_revision, applied.error_code };
-		}
 		critical_completion completion = { .operation_id = command.operation_id,
 						   .outcome = applied.outcome,
 						   .durable_revision = applied.durable_revision,

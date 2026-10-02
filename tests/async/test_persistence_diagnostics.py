@@ -71,6 +71,34 @@ int main() {
     }
     snapshot = persistence_trace_copy(filter);
     assert(snapshot.incidents_evicted == 2);
+
+    // A terminal timeout can precede the worker's definitive custody failure.
+    // Keep the first of each even after all recent events have wrapped.
+    persistence_trace_event timeout;
+    timeout.pid = 8001; timeout.revision = 42;
+    timeout.stage = persistence_trace_stage::save_timeout; timeout.incident = true;
+    persistence_trace_record(timeout);
+    persistence_trace_record(timeout);
+    auto failure = first; failure.pid = 8001; failure.witness.item_uid = 7050;
+    persistence_trace_record(failure);
+    persistence_trace_record(failure);
+    persistence_trace_record(timeout);
+    auto delayed = persistence_trace_copy({critical_entity_type::player, 8001});
+    assert(delayed.incident_count == 2);
+    const auto failure_sequence = delayed.incidents[1].sequence;
+    assert(delayed.incidents[0].stage == persistence_trace_stage::save_timeout);
+    assert(delayed.incidents[1].stage == persistence_trace_stage::save_result);
+    for (size_t i = 0; i < PERSISTENCE_TRACE_CAPACITY; ++i) {
+        persistence_trace_event noise; noise.pid = 8002; persistence_trace_record(noise);
+    }
+    delayed = persistence_trace_copy({critical_entity_type::player, 8001});
+    assert(delayed.count == 0 && delayed.incident_count == 2);
+    assert(delayed.incidents[1].sequence == failure_sequence);
+    const auto item_failure = persistence_trace_copy({critical_entity_type::item, 7050});
+    assert(item_failure.count == 0 && item_failure.incident_count == 1);
+    assert(item_failure.incidents[0].witness.item_uid == 7050);
+    assert(item_failure.incidents[0].diagnosis == 6);
+    snapshot = persistence_trace_copy(filter);
     const auto before = snapshot.latest_sequence;
     const auto lost_before = snapshot.dropped;
     std::vector<std::thread> producers;
