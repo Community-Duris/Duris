@@ -309,8 +309,72 @@ int main(int argc, char **argv)
 		require(restored_homestead.deserialize_state(homestead.serialize_state(), &error) &&
 				restored_homestead.progress_for_zone(7, 42, 358).completed == 1,
 			"drider terminal receipt did not survive restart independently of the egg request");
+		const auto &household = story_for("krimman", "release-the-haunted-family-16422");
+		const auto &fragment = story_for("krimman", "prepare-a-staff-fragment-16422");
+		const auto &serving_girl = story_for("krimman", "release-the-serving-girl-16420");
+		service supplied_keepsakes(catalog);
+		require(supplied_keepsakes.discover_zone(7, 42, 164, 16459, 100, "arrival") ==
+					result::applied &&
+				supplied_keepsakes.meet_npc(7, 42, 16422, 16459, 101) ==
+					result::applied,
+			"haunted family encounter failed");
+		supplies.carried.clear();
+		for (const auto item : { 16452, 16453, 16454 })
+			supplies.carried[item] = 1;
+		const auto household_before_read = supplied_keepsakes.serialize_state();
+		journal = supplied_keepsakes.render_journal(7, 42, 164, 10, 1, 102, false, false,
+							    &supplies);
+		require(journal.find("Next: " + household.steps.back().text) != std::string::npos &&
+				supplied_keepsakes.serialize_state() == household_before_read,
+			"supplied keepsakes required staff/rescue/access history or journal read wrote state");
+		record(supplied_keepsakes, fragment.contracts.front(), "staff-service", 164, 16459);
+		require(supplied_keepsakes.progress_for_zone(7, 42, 164).completed == 0 &&
+				supplied_keepsakes.progress_for_zone(7, 42, 164).total == 8,
+			"staff preparation became a rescue achievement");
+		record(supplied_keepsakes, household.contracts.front(), "supplied-keepsakes", 164,
+		       16459);
+		require(supplied_keepsakes.progress_for_zone(7, 42, 164).completed == 1,
+			"lord finale invented earlier family rescues");
+		record(supplied_keepsakes, serving_girl.contracts.front(), "serving-girl-rescue",
+		       164, 16450);
+		require(supplied_keepsakes.progress_for_zone(7, 42, 164).completed == 2,
+			"fragment-only rescue was treated as a rejected offering");
+		const auto &knighthood =
+			story_for("bastine", "the-bastine-road-knight-of-the-bastine-order-7600");
+		const auto &first_commission =
+			story_for("bastine", "the-bastine-road-young-warrior-7600");
+		const auto &victor = story_for("bastine", "the-apprentice-s-trust-7603");
+		service supplied_wand(catalog);
+		require(supplied_wand.discover_zone(7, 42, 76, 7626, 100, "arrival") ==
+					result::applied &&
+				supplied_wand.meet_npc(7, 42, 7600, 7626, 101) == result::applied,
+			"Bastine commission encounter failed");
+		supplies.carried.clear();
+		supplies.carried[70970] = 1;
+		journal = supplied_wand.render_journal(7, 42, 76, 10, 1, 102, false, false,
+						       &supplies);
+		require(journal.find("Next: " + knighthood.steps.back().text) !=
+					std::string::npos &&
+				supplied_wand.progress_for_zone(7, 42, 76).completed == 0,
+			"supplied final wand required earlier promotion history");
+		record(supplied_wand, first_commission.contracts.front(), "first-commission", 76,
+		       7626);
+		require(supplied_wand.progress_for_zone(7, 42, 76).completed == 1 &&
+				supplied_wand.progress_for_zone(7, 42, 76).total == 14,
+			"early commission completed the entire knighthood campaign");
+		record(supplied_wand, knighthood.contracts.front(), "gifted-wand", 76, 7626);
+		record(supplied_wand, victor.contracts.front(), "victor-trust", 76, 7620);
+		service restored_household(catalog), restored_bastine(catalog);
+		require(restored_household.deserialize_state(supplied_keepsakes.serialize_state(),
+							     &error) &&
+				restored_bastine.deserialize_state(supplied_wand.serialize_state(),
+								   &error) &&
+				restored_household.progress_for_zone(7, 42, 164).completed == 2 &&
+				restored_bastine.progress_for_zone(7, 42, 76).completed == 3 &&
+				restored_bastine.progress_for_zone(7, 42, 413).completed == 0,
+			"independent receipts changed on restart or Victor trust fabricated Highway rescue");
 		std::cout
-			<< "All mappings, fish grouping, supplied-material guidance, Triad/Homestead preparation, and receipt recovery passed.\n";
+			<< "All mappings, optional preparation, independent family/commission journeys, and receipt recovery passed.\n";
 		return 0;
 	}
 	const bool applied = zone_story_quest_story::apply(read(argv[2]), "twin_towers_forest",

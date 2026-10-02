@@ -1,6 +1,6 @@
 # Zone journal integration priorities
 
-**Reviewed planning order â€” October 2, 2026. Active economic accounting is required.**
+**Reviewed planning order — October 2, 2026. Active economic accounting is required.**
 
 This is an integration order, not a difficulty ranking or a claim that players must follow
 these stories in order. New journals use the existing schema; proposed learned dialogue,
@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 4 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 8 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Active reset-generation qualification is a shared prerequisite for the pilots.
 
@@ -27,8 +27,8 @@ Active reset-generation qualification is a shared prerequisite for the pilots.
 | 4 | [Braddistock Mansion](zone-stories/BRADDISTOCK_MANSION.md) (`braddistock`) | Missing pet clues; Rat Lord's silver key; release Slippers; return collar; optional titan-maul lore. | Comprehensive source map. Rescue service plus final story; supplied-collar route; other same-name area's level gate distinguished; actual rat purge/payment remain unverified. |
 | 5 | [The Town of Breale](zone-stories/BREALE.md) (`breale`) | Aid the dying witch; Hagatha key → hidden Passage drawings → Esmerelda requests → Abigail mixtures/passwords → Pontif amulet. | Source-comprehensive, revision 2. Six achievements remain distinct; optional access/history; deliberate riddle preserved. Review spell/escort prose separately. |
 | 6 | [Abandoned Elven Homestead](zone-stories/ABANDONED_ELVEN_HOMESTEAD.md) (`elvish`) | Spoken outer gate → four eggs/access key → drider feather + ivy leaf → manticore/serpent potions → golden dragon remedy → release/reward key → chest/pouch. | Source-comprehensive, revision 2. Two achievements plus two services; optional access/preparation; exact keys distinguished; shared travel/lore mapped without invented history. |
-| 7 | [Lord Krimeneha's Mansion](../../areas/qst/krimman.qst) (`krimman`) | Investigate the poisoned pool → staff exchange → release wife/children and optional servants → return three keepsakes. | New journal. Returned staff fragments are legitimate rescue milestones, not blanket rejections; family finale remains distinct. |
-| 8 | [Bastine Castle](../../areas/qst/bastine.qst) (`bastine`) | Initiate → independent trophy requests/promotions → knighthood; apprentice signet-ring trust → keys for the tree rescue. | New journal. Excellent long campaign; item delivery does not prove a kill, and described ranks are not an enforced state machine. |
+| 7 | [Lord Krimeneha's Mansion](zone-stories/KRIMENEHAS_MANSION.md) (`krimman`) | Gardeners' pool/Eckraldu clues → roaming staff source → fragment service → seven spirit rescues → three family keepsakes → lord's sword/vault key; optional pool chest. | Source-comprehensive, revision 2. Eight achievements plus one service; optional access/history. Same-VNUM fragment replacement, competing staff consumer and servants' blessing policy documented. |
+| 8 | [Bastine Castle](zone-stories/BASTINE_CASTLE.md) (`bastine`) | Narrated Initiate → twelve independent trophy commissions → knighthood; Phex note/key → prince; Lamerok ring → Victor trust → four ordinary locks → Morlanthra's Highway rescue. | Source-comprehensive, revision 2. Exact external sources and accepted wand; optional earlier commissions/tower key. Rank/kill history, replacement hide and cross-zone campaign remain pending. |
 | 9 | [Pine Hollow](../../areas/qst/pineholl.qst) (`pineholl`) | Help the wounded dragon or fulfill the cruel warrior's trophy request; five independent fur clothing commissions. | New journal. Good branch/provenance pilot; routes remain independently accepted rather than becoming a newly locked faction choice. |
 | 10 | [The Docks of Quietus Quay](../../areas/qst/quietus.qst) (`quietus`) | Show credentials → mission note → Aresliean proof; Rodev sword contract; Eckraldu staff contract; seal/dagger briefing → bloodstone finale. | New journal. Model accepted briefings separately from terminal missions; earlier credentials are guidance, not added admission requirements. |
 | 11 | [The Kingdom of Torg](../../areas/qst/torg.qst) (`torg`) | Raw dracolich hide → curing → bracelet; tentacle → favor token → secret rose → courier reward; locket → obsidian → divine-chisel buckle; eight legendary relics. | New journal. Several local exchange chains; personal lineage and intrusion/invasion specials need separate evidence. |
@@ -84,6 +84,14 @@ receiving an item is not kill proof. The Homestead shows why key targets,
 spoken magic-door properties and consumable potion recipes need review even
 when no local special is assigned. Its source dossier accounts for those
 routes; accepted travel, learned lore and personal source history remain open.
+
+Krimeneha's reviewed route distinguishes fragment preparation, seven real
+rescues and the lord's independent keepsake finale. Eckraldu can roam into
+other areas, and Quietus also consumes his staff. Bastine's narrated order
+is now reflected in its journal, while source hints identify all twelve
+accepted trophies. Victor's continuation uses four ordinary key targets and
+Morlanthra's own Highway receipt. Replacement item identity, complete household/
+rank campaigns and owned cross-zone projection are explicit shared-plan additions.
 
 ## Remaining native quest areas in triage order
 

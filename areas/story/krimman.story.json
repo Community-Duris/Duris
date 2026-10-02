@@ -1,122 +1,14 @@
 {
-  "schema_version": 2,
-  "revision": 1,
+  "schema_version": 3,
+  "revision": 2,
   "source_area": "krimman",
   "coverage": "complete",
   "stories": [
     {
-      "id": "release-the-lady-16419",
-      "title": "Release the Lady",
-      "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
-      "contracts": [
-        {
-          "giver_vnum": 16419,
-          "completion_key": "give=I:16451;receive=I:16451,I:16454;disappear=1"
-        }
-      ],
-      "steps": [
-        {
-          "id": "material-16451",
-          "text": "Carry 1 x a piece of a staff",
-          "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
-          "item_vnums": [
-            16451
-          ],
-          "count": 1
-        },
-        {
-          "id": "turn-in",
-          "text": "Complete the exchange",
-          "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
-          "contracts": [
-            {
-              "giver_vnum": 16419,
-              "completion_key": "give=I:16451;receive=I:16451,I:16454;disappear=1"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "release-the-serving-girl-16420",
-      "title": "Release the Serving Girl",
-      "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
-      "contracts": [
-        {
-          "giver_vnum": 16420,
-          "completion_key": "give=I:16451;receive=I:16451;disappear=1"
-        }
-      ],
-      "steps": [
-        {
-          "id": "material-16451",
-          "text": "Carry 1 x a piece of a staff",
-          "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
-          "item_vnums": [
-            16451
-          ],
-          "count": 1
-        },
-        {
-          "id": "turn-in",
-          "text": "Complete the exchange",
-          "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
-          "contracts": [
-            {
-              "giver_vnum": 16420,
-              "completion_key": "give=I:16451;receive=I:16451;disappear=1"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "release-the-crying-ghost-16421",
-      "title": "Release the Crying Ghost",
-      "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
-      "contracts": [
-        {
-          "giver_vnum": 16421,
-          "completion_key": "give=I:16451;receive=I:16436,I:16451;disappear=1"
-        }
-      ],
-      "steps": [
-        {
-          "id": "material-16451",
-          "text": "Carry 1 x a piece of a staff",
-          "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
-          "item_vnums": [
-            16451
-          ],
-          "count": 1
-        },
-        {
-          "id": "turn-in",
-          "text": "Complete the exchange",
-          "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
-          "contracts": [
-            {
-              "giver_vnum": 16421,
-              "completion_key": "give=I:16451;receive=I:16436,I:16451;disappear=1"
-            }
-          ]
-        }
-      ]
-    },
-    {
       "id": "prepare-a-staff-fragment-16422",
       "title": "Prepare a Staff Fragment",
       "category": "service",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Bring Eckraldu's staff to Lord Krimeneha to obtain a fragment that can free the sane spirits. This preparation exchange supports the rescues.",
       "contracts": [
         {
           "giver_vnum": 16422,
@@ -125,10 +17,21 @@
       ],
       "steps": [
         {
+          "id": "office-key",
+          "text": "Carry a steel key for the office",
+          "kind": "carried_item",
+          "optional": true,
+          "hint": "The crying ghost carries a steel key; a mad guest can carry another. It opens the office off the library. A supplied key or an already accessible office also works.",
+          "item_vnums": [
+            16427
+          ],
+          "count": 1
+        },
+        {
           "id": "material-16450",
           "text": "Carry 1 x Eckraldu's staff",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Eckraldu carries this staff. He can wander into the surrounding lands; the mansion is his source, not a promise of his current location. A supplied staff works too.",
           "item_vnums": [
             16450
           ],
@@ -136,9 +39,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Ask Lord Krimeneha to break the staff",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Find his ghost in the office off the library. The exchange supplies one reusable fragment; it does not free the family by itself.",
           "contracts": [
             {
               "giver_vnum": 16422,
@@ -149,56 +52,207 @@
       ]
     },
     {
-      "id": "release-the-haunted-family-16422",
-      "title": "Release the Haunted Family",
-      "category": "story",
-      "summary": "Return the three family keepsakes to release the lord. The staff-fragment exchanges can supply them; possession alone does not prove that you personally freed each spirit.",
+      "id": "release-the-second-gardener-16427",
+      "title": "Release the Second Gardener",
+      "category": "request",
+      "summary": "Free the elderly gardener to receive a metal band that opens the stone chest under the pool. He also knows who poisoned the garden.",
       "contracts": [
         {
-          "giver_vnum": 16422,
-          "completion_key": "give=I:16452,I:16453,I:16454;receive=I:16445,I:16455;disappear=1"
+          "giver_vnum": 16427,
+          "completion_key": "give=I:16451;receive=I:16422,I:16451;disappear=1"
         }
       ],
       "steps": [
         {
-          "id": "material-16452",
-          "text": "Carry 1 x a boy's signet ring",
-          "kind": "carried_item",
-          "hint": "A corresponding family spirit returns this keepsake when released with a staff fragment. Another valid keepsake also works.",
-          "item_vnums": [
-            16452
-          ],
-          "count": 1
+          "id": "staff-preparation",
+          "text": "Prepare a staff fragment with Lord Krimeneha",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional local route. Possessing a valid supplied fragment is enough for this rescue.",
+          "contracts": [
+            {
+              "giver_vnum": 16422,
+              "completion_key": "give=I:16450;receive=I:16451;disappear=0"
+            }
+          ]
         },
         {
-          "id": "material-16453",
-          "text": "Carry 1 x a girl's broach",
+          "id": "material-16451",
+          "text": "Carry 1 x a piece of a staff",
           "kind": "carried_item",
-          "hint": "A corresponding family spirit returns this keepsake when released with a staff fragment. Another valid keepsake also works.",
+          "hint": "Lord Krimeneha can supply a fragment in exchange for Eckraldu's staff. Each successful spirit rescue supplies another fragment; a gifted fragment is also accepted.",
           "item_vnums": [
-            16453
-          ],
-          "count": 1
-        },
-        {
-          "id": "material-16454",
-          "text": "Carry 1 x an elegant silver broach",
-          "kind": "carried_item",
-          "hint": "A corresponding family spirit returns this keepsake when released with a staff fragment. Another valid keepsake also works.",
-          "item_vnums": [
-            16454
+            16451
           ],
           "count": 1
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Free the elderly gardener and receive the chest key",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "The elderly gardener starts in the overgrown garden. Ask about lord to learn of Eckraldu.",
+          "contracts": [
+            {
+              "giver_vnum": 16427,
+              "completion_key": "give=I:16451;receive=I:16422,I:16451;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "release-the-first-gardener-16426",
+      "title": "Release the First Gardener",
+      "category": "request",
+      "summary": "Free the younger gardener with a fragment. His account of the pool explains the disaster, and his release stands on its own.",
+      "contracts": [
+        {
+          "giver_vnum": 16426,
+          "completion_key": "give=I:16451;receive=I:16451;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "staff-preparation",
+          "text": "Prepare a staff fragment with Lord Krimeneha",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional local route. Possessing a valid supplied fragment is enough for this rescue.",
           "contracts": [
             {
               "giver_vnum": 16422,
-              "completion_key": "give=I:16452,I:16453,I:16454;receive=I:16445,I:16455;disappear=1"
+              "completion_key": "give=I:16450;receive=I:16451;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-16451",
+          "text": "Carry 1 x a piece of a staff",
+          "kind": "carried_item",
+          "hint": "Lord Krimeneha can supply a fragment in exchange for Eckraldu's staff. Each successful spirit rescue supplies another fragment; a gifted fragment is also accepted.",
+          "item_vnums": [
+            16451
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Free the younger gardener",
+          "kind": "completion",
+          "hint": "The younger gardener starts in the indoor fountain sitting room. Ask about pool, monster and lord; the older gardener knows who caused the curse.",
+          "contracts": [
+            {
+              "giver_vnum": 16426,
+              "completion_key": "give=I:16451;receive=I:16451;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "release-the-crying-ghost-16421",
+      "title": "Release the Crying Ghost",
+      "category": "request",
+      "summary": "Free the crying ghost to receive the elegant key for the Lady's rooms. Keep the supplied fragment for the other rescues.",
+      "contracts": [
+        {
+          "giver_vnum": 16421,
+          "completion_key": "give=I:16451;receive=I:16436,I:16451;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "staff-preparation",
+          "text": "Prepare a staff fragment with Lord Krimeneha",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional local route. Possessing a valid supplied fragment is enough for this rescue.",
+          "contracts": [
+            {
+              "giver_vnum": 16422,
+              "completion_key": "give=I:16450;receive=I:16451;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "material-16451",
+          "text": "Carry 1 x a piece of a staff",
+          "kind": "carried_item",
+          "hint": "Lord Krimeneha can supply a fragment in exchange for Eckraldu's staff. Each successful spirit rescue supplies another fragment; a gifted fragment is also accepted.",
+          "item_vnums": [
+            16451
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Free the crying ghost and receive the elegant key",
+          "kind": "completion",
+          "hint": "The crying ghost is upstairs near the children's rooms. Ask about crying, leave and lord to hear what happened.",
+          "contracts": [
+            {
+              "giver_vnum": 16421,
+              "completion_key": "give=I:16451;receive=I:16436,I:16451;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "release-the-lady-16419",
+      "title": "Release the Lady",
+      "category": "request",
+      "summary": "Free the Lady with a fragment and keep her silver broach for the family reunion. The fragment is supplied again for another rescue.",
+      "contracts": [
+        {
+          "giver_vnum": 16419,
+          "completion_key": "give=I:16451;receive=I:16451,I:16454;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "staff-preparation",
+          "text": "Prepare a staff fragment with Lord Krimeneha",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional local route. Possessing a valid supplied fragment is enough for this rescue.",
+          "contracts": [
+            {
+              "giver_vnum": 16422,
+              "completion_key": "give=I:16450;receive=I:16451;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "lady-access-key",
+          "text": "Carry the elegant key for the Lady's rooms",
+          "kind": "carried_item",
+          "optional": true,
+          "hint": "The crying ghost rewards this key when freed; some mad ghosts also carry it. It opens the upstairs east door, distinct from the office's steel key.",
+          "item_vnums": [
+            16436
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-16451",
+          "text": "Carry 1 x a piece of a staff",
+          "kind": "carried_item",
+          "hint": "Lord Krimeneha can supply a fragment in exchange for Eckraldu's staff. Each successful spirit rescue supplies another fragment; a gifted fragment is also accepted.",
+          "item_vnums": [
+            16451
+          ],
+          "count": 1
+        },
+        {
+          "id": "turn-in",
+          "text": "Receive the Lady's silver broach",
+          "kind": "completion",
+          "hint": "Her bedroom is beyond the upstairs east door. The crying ghost supplies the elegant key for that door; a supplied key also works.",
+          "contracts": [
+            {
+              "giver_vnum": 16419,
+              "completion_key": "give=I:16451;receive=I:16451,I:16454;disappear=1"
             }
           ]
         }
@@ -208,7 +262,7 @@
       "id": "release-the-boy-16424",
       "title": "Release the Boy",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Free the boy with a fragment and keep his signet ring for Lord Krimeneha. The fragment can be used again.",
       "contracts": [
         {
           "giver_vnum": 16424,
@@ -217,10 +271,23 @@
       ],
       "steps": [
         {
+          "id": "staff-preparation",
+          "text": "Prepare a staff fragment with Lord Krimeneha",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional local route. Possessing a valid supplied fragment is enough for this rescue.",
+          "contracts": [
+            {
+              "giver_vnum": 16422,
+              "completion_key": "give=I:16450;receive=I:16451;disappear=0"
+            }
+          ]
+        },
+        {
           "id": "material-16451",
           "text": "Carry 1 x a piece of a staff",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Lord Krimeneha can supply a fragment in exchange for Eckraldu's staff. Each successful spirit rescue supplies another fragment; a gifted fragment is also accepted.",
           "item_vnums": [
             16451
           ],
@@ -228,9 +295,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Receive the boy's signet ring",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Find the boy upstairs beyond his locked bedroom door. That ordinary lock has no matching named quest key; bring suitable access help.",
           "contracts": [
             {
               "giver_vnum": 16424,
@@ -244,7 +311,7 @@
       "id": "release-the-young-girl-16425",
       "title": "Release the Young Girl",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Free the young girl with a fragment and keep her broach for Lord Krimeneha. The fragment can be used again.",
       "contracts": [
         {
           "giver_vnum": 16425,
@@ -253,10 +320,23 @@
       ],
       "steps": [
         {
+          "id": "staff-preparation",
+          "text": "Prepare a staff fragment with Lord Krimeneha",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional local route. Possessing a valid supplied fragment is enough for this rescue.",
+          "contracts": [
+            {
+              "giver_vnum": 16422,
+              "completion_key": "give=I:16450;receive=I:16451;disappear=0"
+            }
+          ]
+        },
+        {
           "id": "material-16451",
           "text": "Carry 1 x a piece of a staff",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Lord Krimeneha can supply a fragment in exchange for Eckraldu's staff. Each successful spirit rescue supplies another fragment; a gifted fragment is also accepted.",
           "item_vnums": [
             16451
           ],
@@ -264,9 +344,9 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Receive the young girl's broach",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Find the young girl upstairs beyond her locked bedroom door. That ordinary lock has no matching named quest key; bring suitable access help.",
           "contracts": [
             {
               "giver_vnum": 16425,
@@ -277,22 +357,35 @@
       ]
     },
     {
-      "id": "release-the-first-gardener-16426",
-      "title": "Release the First Gardener",
+      "id": "release-the-serving-girl-16420",
+      "title": "Release the Serving Girl",
       "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "summary": "Free the serving girl with a fragment. She has no extra keepsake, but her release is a complete rescue.",
       "contracts": [
         {
-          "giver_vnum": 16426,
+          "giver_vnum": 16420,
           "completion_key": "give=I:16451;receive=I:16451;disappear=1"
         }
       ],
       "steps": [
         {
+          "id": "staff-preparation",
+          "text": "Prepare a staff fragment with Lord Krimeneha",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional local route. Possessing a valid supplied fragment is enough for this rescue.",
+          "contracts": [
+            {
+              "giver_vnum": 16422,
+              "completion_key": "give=I:16450;receive=I:16451;disappear=0"
+            }
+          ]
+        },
+        {
           "id": "material-16451",
           "text": "Carry 1 x a piece of a staff",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "hint": "Lord Krimeneha can supply a fragment in exchange for Eckraldu's staff. Each successful spirit rescue supplies another fragment; a gifted fragment is also accepted.",
           "item_vnums": [
             16451
           ],
@@ -300,12 +393,12 @@
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Free the serving girl",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "Look for the serving girl's ghost in the mansion's wide hallway.",
           "contracts": [
             {
-              "giver_vnum": 16426,
+              "giver_vnum": 16420,
               "completion_key": "give=I:16451;receive=I:16451;disappear=1"
             }
           ]
@@ -313,36 +406,119 @@
       ]
     },
     {
-      "id": "release-the-second-gardener-16427",
-      "title": "Release the Second Gardener",
-      "category": "request",
-      "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+      "id": "release-the-haunted-family-16422",
+      "title": "Release the Haunted Family",
+      "category": "story",
+      "summary": "Return the boy's ring, the girl's broach and the Lady's silver broach to release Lord Krimeneha. Freeing other sane spirits is encouraged and recorded separately. Supplied keepsakes are accepted.",
       "contracts": [
         {
-          "giver_vnum": 16427,
-          "completion_key": "give=I:16451;receive=I:16422,I:16451;disappear=1"
+          "giver_vnum": 16422,
+          "completion_key": "give=I:16452,I:16453,I:16454;receive=I:16445,I:16455;disappear=1"
         }
       ],
       "steps": [
         {
-          "id": "material-16451",
-          "text": "Carry 1 x a piece of a staff",
+          "id": "office-key",
+          "text": "Carry a steel key for the office",
           "kind": "carried_item",
-          "hint": "Supplies received from another player are also accepted.",
+          "optional": true,
+          "hint": "The crying ghost carries a steel key; a mad guest can carry another. It opens the office off the library. A supplied key or an already accessible office also works.",
           "item_vnums": [
-            16451
+            16427
+          ],
+          "count": 1
+        },
+        {
+          "id": "staff-preparation",
+          "text": "Prepare a staff fragment",
+          "kind": "completion",
+          "optional": true,
+          "hint": "Optional route for obtaining the three keepsakes. Supplied keepsakes do not require earlier rescue receipts.",
+          "contracts": [
+            {
+              "giver_vnum": 16422,
+              "completion_key": "give=I:16450;receive=I:16451;disappear=0"
+            }
+          ]
+        },
+        {
+          "id": "rescue-16424",
+          "text": "Free the boy",
+          "kind": "completion",
+          "optional": true,
+          "hint": "An optional earlier rescue; its receipt is distinct from the lord's final exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 16424,
+              "completion_key": "give=I:16451;receive=I:16451,I:16452;disappear=1"
+            }
+          ]
+        },
+        {
+          "id": "rescue-16425",
+          "text": "Free the young girl",
+          "kind": "completion",
+          "optional": true,
+          "hint": "An optional earlier rescue; its receipt is distinct from the lord's final exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 16425,
+              "completion_key": "give=I:16451;receive=I:16451,I:16453;disappear=1"
+            }
+          ]
+        },
+        {
+          "id": "rescue-16419",
+          "text": "Free the Lady",
+          "kind": "completion",
+          "optional": true,
+          "hint": "An optional earlier rescue; its receipt is distinct from the lord's final exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 16419,
+              "completion_key": "give=I:16451;receive=I:16451,I:16454;disappear=1"
+            }
+          ]
+        },
+        {
+          "id": "material-16452",
+          "text": "Carry 1 x a boy's signet ring",
+          "kind": "carried_item",
+          "hint": "Free the boy with a staff fragment to receive his ring. Another valid supplied ring works too.",
+          "item_vnums": [
+            16452
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-16453",
+          "text": "Carry 1 x a girl's broach",
+          "kind": "carried_item",
+          "hint": "Free the young girl with a staff fragment to receive her broach. Another valid supplied broach works too.",
+          "item_vnums": [
+            16453
+          ],
+          "count": 1
+        },
+        {
+          "id": "material-16454",
+          "text": "Carry 1 x an elegant silver broach",
+          "kind": "carried_item",
+          "hint": "Free the Lady with a staff fragment to receive her silver broach. Use the crying ghost's elegant key to reach her rooms, or another valid route.",
+          "item_vnums": [
+            16454
           ],
           "count": 1
         },
         {
           "id": "turn-in",
-          "text": "Complete the exchange",
+          "text": "Return all three keepsakes to Lord Krimeneha",
           "kind": "completion",
-          "hint": "Return to the request giver with the exact offering.",
+          "hint": "His office is off the library. He rewards a silver bastard sword and the heavy key for his upstairs iron vault. The key opens the vault container; finding and reaching the vault room is a separate task.",
           "contracts": [
             {
-              "giver_vnum": 16427,
-              "completion_key": "give=I:16451;receive=I:16422,I:16451;disappear=1"
+              "giver_vnum": 16422,
+              "completion_key": "give=I:16452,I:16453,I:16454;receive=I:16445,I:16455;disappear=1"
             }
           ]
         }
@@ -350,31 +526,32 @@
     }
   ],
   "exclusions": [],
-  "introduction": "Explore the haunted mansion and listen to the spirits you can identify.",
+  "introduction": "Investigate the poisoned gardens, free the sane spirits and reunite Lord Krimeneha's family through their keepsakes.",
   "orientation": [
-    "Use look and exits to explore. Meet visible people to reveal their requests.",
-    "Talk to the people you meet to learn about local requests. The checklist shows your current supplies and completed exchanges."
+    "Ask the gardeners about the pool and their lord, then ask Lord Krimeneha about Eckraldu. These conversations explain the curse.",
+    "One staff fragment can support several rescues. Keep the family's three keepsakes for the lord; other spirit rescues remain separate accomplishments.",
+    "Several doors and treasure containers use different keys. The checklist shows supplies and accepted exchanges; it does not prove a personal kill, learned topic or lock opening."
   ],
   "contacts": [
     {
       "mob_vnum": 16419,
       "name": "the ghost of a Lady",
       "keyword": "lady",
-      "description": "Review the local requests below.",
+      "description": "Her silver broach is one of the lord's three family keepsakes.",
       "topics": []
     },
     {
       "mob_vnum": 16420,
       "name": "a serving girl's ghost",
       "keyword": "servant",
-      "description": "Review the local requests below.",
+      "description": "Her release has no extra keepsake reward; she still needs rescuing.",
       "topics": []
     },
     {
       "mob_vnum": 16421,
       "name": "the crying ghost",
       "keyword": "woman",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "Her release supplies the elegant key for the Lady's rooms.",
       "topics": [
         "crying",
         "leave",
@@ -385,7 +562,7 @@
       "mob_vnum": 16422,
       "name": "Lord Krimeneha's ghost",
       "keyword": "krimeneha",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "The office ghost explains the curse, prepares fragments and accepts the three family keepsakes.",
       "topics": [
         "pool",
         "eckraldu"
@@ -395,21 +572,21 @@
       "mob_vnum": 16424,
       "name": "a boy's ghost",
       "keyword": "boy",
-      "description": "Review the local requests below.",
+      "description": "His signet ring is one of the lord's three family keepsakes.",
       "topics": []
     },
     {
       "mob_vnum": 16425,
       "name": "a young girl's ghost",
       "keyword": "girl",
-      "description": "Review the local requests below.",
+      "description": "Her broach is one of the lord's three family keepsakes.",
       "topics": []
     },
     {
       "mob_vnum": 16426,
-      "name": "a gardener's ghost",
+      "name": "the younger gardener's ghost",
       "keyword": "gardener",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "The younger gardener in the indoor fountain sitting room witnessed the monsters coming from the pool.",
       "topics": [
         "pool",
         "monster",
@@ -418,9 +595,9 @@
     },
     {
       "mob_vnum": 16427,
-      "name": "a gardener's ghost",
+      "name": "the elderly gardener's ghost",
       "keyword": "gardener",
-      "description": "Ask about the listed topics, then review the local requests below.",
+      "description": "The elderly gardener in the overgrown garden identifies Eckraldu and rewards a pool-chest key.",
       "topics": [
         "lord"
       ]

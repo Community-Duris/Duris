@@ -42,6 +42,12 @@ assert all(len(t["contracts"]) == 1 for t in triad["steps"] if t["kind"] == "com
 assert report["eligible_by_zone"]["26"] == 6 and report["eligible_by_zone"]["358"] == 2
 promotions = [s for s in new_mappings["bastine"]["stories"] if s["title"].startswith("The Bastine Road:")]
 assert len(promotions) == 12 and all(len(s["contracts"]) == 1 for s in promotions)
+assert new_mappings["bastine"]["schema_version"] == new_mappings["krimman"]["schema_version"] == 3
+assert new_mappings["bastine"]["revision"] == new_mappings["krimman"]["revision"] == 2
+assert [next(t["item_vnums"][0] for t in s["steps"] if t["kind"] == "carried_item" and not t.get("optional")) for s in promotions] == [
+    41388, 41407, 12802, 41327, 41924, 2607, 41408, 41922, 41920, 41375, 41411, 70970]
+assert sum(t.get("optional", False) for t in promotions[-1]["steps"]) == 11
+assert report["eligible_by_zone"]["164"] == 8 and report["eligible_by_zone"]["76"] == 14
 assert all(s["category"] == "service" for s in new_mappings["quietus"]["stories"] if "Credentials" in s["title"] or s["title"].startswith("Hear ") or s["title"].startswith("Obtain "))
 credentials = [s for s in new_mappings["quietus"]["stories"] if s["steps"][0].get("item_vnums") == [1701, 80808]]
 assert len(credentials) == 5 and all("badge" in s["steps"][0]["text"] and "longsword" in s["steps"][0]["text"] for s in credentials)
@@ -49,7 +55,9 @@ chisel = next(s for s in new_mappings["torg"]["stories"] if s["id"] == "a-fine-c
 assert {c["giver_vnum"] for c in chisel["contracts"]} == {29023, 29024}
 assert len(chisel["steps"]) == 2 and chisel["steps"][0]["count"] == 1
 family = next(s for s in new_mappings["krimman"]["stories"] if s["title"] == "Release the Haunted Family")
-assert len(family["contracts"]) == 1 and len(family["steps"]) == 4
+assert len(family["contracts"]) == 1 and len(family["steps"]) == 9
+assert all(t["optional"] for t in family["steps"][:-4])
+assert [t["item_vnums"] for t in family["steps"][-4:-1]] == [[16452], [16453], [16454]]
 
 ailvio = next(m for m in catalog["story_mappings"] if m["source_area"] == "newbie")
 assert len(ailvio["stories"]) == 39 and report["eligible_by_zone"]["292"] == 22

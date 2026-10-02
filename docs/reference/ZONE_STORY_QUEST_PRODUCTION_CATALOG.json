@@ -41116,7 +41116,7 @@
     {
       "contacts": [
         {
-          "description": "Ask about the listed topics, then review the local requests below.",
+          "description": "Ask about knight, no or yes for the invitation and reply. Return the specific trophies for independent commissions.",
           "keyword": "mrotha",
           "mob_vnum": 7600,
           "name": "King Mrotha",
@@ -41127,7 +41127,7 @@
           ]
         },
         {
-          "description": "Ask about the listed topics, then review the local requests below.",
+          "description": "Ask about morlanthra to learn why Victor needs Lamerok's signet ring. His reward supplies the next rescue leads.",
           "keyword": "victor",
           "mob_vnum": 7603,
           "name": "Victor the Apprentice",
@@ -41138,159 +41138,16 @@
       ],
       "coverage": "complete",
       "exclusions": [],
-      "introduction": "Explore the castle for requests that send adventurers into the wider world.",
+      "introduction": "Answer King Mrotha's call for adventure, investigate the hidden prince, or help Victor reach his imprisoned master.",
       "orientation": [
-        "Use look and exits to explore. Meet visible people to reveal their requests.",
-        "Talk to the people you meet to learn about local requests. The checklist shows your current supplies and completed exchanges."
+        "Ask the King about knight, then yes to hear his first commission. His twelve trophy requests form a narrated road to knighthood; each can be completed independently.",
+        "Victor offers a separate rescue lead involving Sir Lamerok, Esterra's keys and Morlanthra. His trust reward starts that route; it does not complete the later rescue.",
+        "The checklist records supplies and accepted exchanges. Claimed ranks, personal kills, discovered clues and opened locks need their own evidence before becoming earned stages."
       ],
-      "revision": 1,
-      "schema_version": 2,
+      "revision": 2,
+      "schema_version": 3,
       "source_area": "bastine",
       "stories": [
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:12802;receive=C:5000;disappear=0",
-              "giver_vnum": 7600
-            }
-          ],
-          "id": "the-bastine-road-adept-warrior-7600",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
-              "id": "material-12802",
-              "item_vnums": [
-                12802
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a blessed shield of defense"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:12802;receive=C:5000;disappear=0",
-                  "giver_vnum": 7600
-                }
-              ],
-              "hint": "Return to the request giver with the exact offering.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the exchange"
-            }
-          ],
-          "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
-          "title": "The Bastine Road: Adept Warrior"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:2607;receive=C:75000;disappear=0",
-              "giver_vnum": 7600
-            }
-          ],
-          "id": "the-bastine-road-lieutenant-7600",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
-              "id": "material-2607",
-              "item_vnums": [
-                2607
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x the broom of air"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:2607;receive=C:75000;disappear=0",
-                  "giver_vnum": 7600
-                }
-              ],
-              "hint": "Return to the request giver with the exact offering.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the exchange"
-            }
-          ],
-          "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
-          "title": "The Bastine Road: Lieutenant"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:41327;receive=C:15000;disappear=0",
-              "giver_vnum": 7600
-            }
-          ],
-          "id": "the-bastine-road-veteran-7600",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
-              "id": "material-41327",
-              "item_vnums": [
-                41327
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x an anti-orc scimitar"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:41327;receive=C:15000;disappear=0",
-                  "giver_vnum": 7600
-                }
-              ],
-              "hint": "Return to the request giver with the exact offering.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the exchange"
-            }
-          ],
-          "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
-          "title": "The Bastine Road: Veteran"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:41375;receive=C:100000;disappear=0",
-              "giver_vnum": 7600
-            }
-          ],
-          "id": "the-bastine-road-captain-7600",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
-              "id": "material-41375",
-              "item_vnums": [
-                41375
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x an ankh of the black sword"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:41375;receive=C:100000;disappear=0",
-                  "giver_vnum": 7600
-                }
-              ],
-              "hint": "Return to the request giver with the exact offering.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the exchange"
-            }
-          ],
-          "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
-          "title": "The Bastine Road: Captain"
-        },
         {
           "category": "request",
           "contracts": [
@@ -41303,7 +41160,7 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "The thief captain on the Breale trade route carries the intimidator. A valid trophy supplied by another player also works.",
               "id": "material-41388",
               "item_vnums": [
                 41388
@@ -41318,13 +41175,13 @@
                   "giver_vnum": 7600
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "Find the King at his throne. This exchange awards 20 gold. His next commission asks for an iron crown of King Vinzor.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Present a dirk called 'intimidator' to King Mrotha"
             }
           ],
-          "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
+          "summary": "Return the listed trophy to King Mrotha for his Young Warrior commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
           "title": "The Bastine Road: Young Warrior"
         },
         {
@@ -41339,7 +41196,7 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "Look for the iron crown where King Vinzor's spirit haunts the surrounding lands. The crown can be found in his room; possession does not prove a kill. A valid trophy supplied by another player also works.",
               "id": "material-41407",
               "item_vnums": [
                 41407
@@ -41354,158 +41211,86 @@
                   "giver_vnum": 7600
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "Find the King at his throne. This exchange awards 100 gold. His next commission asks for a blessed shield of defense.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Present an iron crown of King Vinzor to King Mrotha"
             }
           ],
-          "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
+          "summary": "Return the listed trophy to King Mrotha for his Warrior commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
           "title": "The Bastine Road: Warrior"
         },
         {
           "category": "request",
           "contracts": [
             {
-              "completion_key": "give=I:41408;receive=C:100000;disappear=0",
+              "completion_key": "give=I:12802;receive=C:5000;disappear=0",
               "giver_vnum": 7600
             }
           ],
-          "id": "the-bastine-road-third-ranked-captain-7600",
+          "id": "the-bastine-road-adept-warrior-7600",
           "steps": [
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
-              "id": "material-41408",
+              "hint": "The stone golem near Skulldrach Lake carries the blessed shield. A valid trophy supplied by another player also works.",
+              "id": "material-12802",
               "item_vnums": [
-                41408
+                12802
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a cloth mask"
+              "text": "Carry 1 x a blessed shield of defense"
             },
             {
               "contracts": [
                 {
-                  "completion_key": "give=I:41408;receive=C:100000;disappear=0",
+                  "completion_key": "give=I:12802;receive=C:5000;disappear=0",
                   "giver_vnum": 7600
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "Find the King at his throne. This exchange awards 50 gold. His next commission asks for an anti-orc scimitar.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Present a blessed shield of defense to King Mrotha"
             }
           ],
-          "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
-          "title": "The Bastine Road: Third Ranked Captain"
+          "summary": "Return the listed trophy to King Mrotha for his Adept Warrior commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+          "title": "The Bastine Road: Adept Warrior"
         },
         {
           "category": "request",
           "contracts": [
             {
-              "completion_key": "give=I:41411;receive=C:200000,I:41304;disappear=0",
+              "completion_key": "give=I:41327;receive=C:15000;disappear=0",
               "giver_vnum": 7600
             }
           ],
-          "id": "the-bastine-road-general-7600",
+          "id": "the-bastine-road-veteran-7600",
           "steps": [
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
-              "id": "material-41411",
+              "hint": "The Bishop in the surrounding lands carries the anti-orc scimitar. A valid trophy supplied by another player also works.",
+              "id": "material-41327",
               "item_vnums": [
-                41411
+                41327
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x the spotted hide of the kearonor beast"
+              "text": "Carry 1 x an anti-orc scimitar"
             },
             {
               "contracts": [
                 {
-                  "completion_key": "give=I:41411;receive=C:200000,I:41304;disappear=0",
+                  "completion_key": "give=I:41327;receive=C:15000;disappear=0",
                   "giver_vnum": 7600
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "Find the King at his throne. This exchange awards 150 gold. His next commission asks for an ebony staff.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Present an anti-orc scimitar to King Mrotha"
             }
           ],
-          "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
-          "title": "The Bastine Road: General"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:41920;receive=C:50000;disappear=0",
-              "giver_vnum": 7600
-            }
-          ],
-          "id": "the-bastine-road-first-ranked-captain-7600",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
-              "id": "material-41920",
-              "item_vnums": [
-                41920
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a strip of hide of Xort beast"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:41920;receive=C:50000;disappear=0",
-                  "giver_vnum": 7600
-                }
-              ],
-              "hint": "Return to the request giver with the exact offering.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the exchange"
-            }
-          ],
-          "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
-          "title": "The Bastine Road: First Ranked Captain"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:41922;receive=C:100000;disappear=0",
-              "giver_vnum": 7600
-            }
-          ],
-          "id": "the-bastine-road-second-ranked-captain-7600",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
-              "id": "material-41922",
-              "item_vnums": [
-                41922
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x the face of Mythra"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:41922;receive=C:100000;disappear=0",
-                  "giver_vnum": 7600
-                }
-              ],
-              "hint": "Return to the request giver with the exact offering.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the exchange"
-            }
-          ],
-          "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
-          "title": "The Bastine Road: Second Ranked Captain"
+          "summary": "Return the listed trophy to King Mrotha for his Veteran commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+          "title": "The Bastine Road: Veteran"
         },
         {
           "category": "request",
@@ -41519,7 +41304,7 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "Johan in the Forest of Mir carries the ebony staff. A valid trophy supplied by another player also works.",
               "id": "material-41924",
               "item_vnums": [
                 41924
@@ -41534,14 +41319,230 @@
                   "giver_vnum": 7600
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "Find the King at his throne. This exchange awards 500 gold. His next commission asks for the broom of air.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Present an ebony staff to King Mrotha"
             }
           ],
-          "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
+          "summary": "Return the listed trophy to King Mrotha for his Soldier commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
           "title": "The Bastine Road: Soldier"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:2607;receive=C:75000;disappear=0",
+              "giver_vnum": 7600
+            }
+          ],
+          "id": "the-bastine-road-lieutenant-7600",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Pontif beneath Breale carries the broom of air. A valid trophy supplied by another player also works.",
+              "id": "material-2607",
+              "item_vnums": [
+                2607
+              ],
+              "kind": "carried_item",
+              "text": "Carry 1 x the broom of air"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2607;receive=C:75000;disappear=0",
+                  "giver_vnum": 7600
+                }
+              ],
+              "hint": "Find the King at his throne. This exchange awards 750 gold. His next commission asks for a cloth mask.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Present the broom of air to King Mrotha"
+            }
+          ],
+          "summary": "Return the listed trophy to King Mrotha for his Lieutenant commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+          "title": "The Bastine Road: Lieutenant"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:41408;receive=C:100000;disappear=0",
+              "giver_vnum": 7600
+            }
+          ],
+          "id": "the-bastine-road-third-ranked-captain-7600",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Sir Montel in the surrounding lands carries the cloth mask, identified as his mask. A valid trophy supplied by another player also works.",
+              "id": "material-41408",
+              "item_vnums": [
+                41408
+              ],
+              "kind": "carried_item",
+              "text": "Carry 1 x a cloth mask"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41408;receive=C:100000;disappear=0",
+                  "giver_vnum": 7600
+                }
+              ],
+              "hint": "Find the King at his throne. This exchange awards 1,000 gold. His next commission asks for the face of Mythra.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Present a cloth mask to King Mrotha"
+            }
+          ],
+          "summary": "Return the listed trophy to King Mrotha for his Third Ranked Captain commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+          "title": "The Bastine Road: Third Ranked Captain"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:41922;receive=C:100000;disappear=0",
+              "giver_vnum": 7600
+            }
+          ],
+          "id": "the-bastine-road-second-ranked-captain-7600",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Mythra the witch in the Forest of Mir carries the face of Mythra. A valid trophy supplied by another player also works.",
+              "id": "material-41922",
+              "item_vnums": [
+                41922
+              ],
+              "kind": "carried_item",
+              "text": "Carry 1 x the face of Mythra"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41922;receive=C:100000;disappear=0",
+                  "giver_vnum": 7600
+                }
+              ],
+              "hint": "Find the King at his throne. This exchange awards 1,000 gold. His next commission asks for a strip of hide of Xort beast.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Present the face of Mythra to King Mrotha"
+            }
+          ],
+          "summary": "Return the listed trophy to King Mrotha for his Second Ranked Captain commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+          "title": "The Bastine Road: Second Ranked Captain"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:41920;receive=C:50000;disappear=0",
+              "giver_vnum": 7600
+            }
+          ],
+          "id": "the-bastine-road-first-ranked-captain-7600",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The ravenous Xort beast in the Forest of Mir carries this hide. A valid trophy supplied by another player also works.",
+              "id": "material-41920",
+              "item_vnums": [
+                41920
+              ],
+              "kind": "carried_item",
+              "text": "Carry 1 x a strip of hide of Xort beast"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41920;receive=C:50000;disappear=0",
+                  "giver_vnum": 7600
+                }
+              ],
+              "hint": "Find the King at his throne. This exchange awards 500 gold. His next commission asks for an ankh of the black sword.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Present a strip of hide of Xort beast to King Mrotha"
+            }
+          ],
+          "summary": "Return the listed trophy to King Mrotha for his First Ranked Captain commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+          "title": "The Bastine Road: First Ranked Captain"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:41375;receive=C:100000;disappear=0",
+              "giver_vnum": 7600
+            }
+          ],
+          "id": "the-bastine-road-captain-7600",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The Black Knight in the surrounding lands carries the ankh of the black sword. The ankh is accepted even though the King later calls it a helm. A valid trophy supplied by another player also works.",
+              "id": "material-41375",
+              "item_vnums": [
+                41375
+              ],
+              "kind": "carried_item",
+              "text": "Carry 1 x an ankh of the black sword"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41375;receive=C:100000;disappear=0",
+                  "giver_vnum": 7600
+                }
+              ],
+              "hint": "Find the King at his throne. This exchange awards 1,000 gold. His next commission asks for the spotted hide of the kearonor beast.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Present an ankh of the black sword to King Mrotha"
+            }
+          ],
+          "summary": "Return the listed trophy to King Mrotha for his Captain commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+          "title": "The Bastine Road: Captain"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:41411;receive=C:200000,I:41304;disappear=0",
+              "giver_vnum": 7600
+            }
+          ],
+          "id": "the-bastine-road-general-7600",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The Kearonor Beast in the surrounding lands carries this spotted hide. Bring the original hide; the King's returned cursed version is a different item. A valid trophy supplied by another player also works.",
+              "id": "material-41411",
+              "item_vnums": [
+                41411
+              ],
+              "kind": "carried_item",
+              "text": "Carry 1 x the spotted hide of the kearonor beast"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41411;receive=C:200000,I:41304;disappear=0",
+                  "giver_vnum": 7600
+                }
+              ],
+              "hint": "Find the King at his throne. This exchange awards 2,000 gold. He also supplies a cursed version of the hide. The final commission asks for the wand of Life from the Test of Knights.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Present the spotted hide of the kearonor beast to King Mrotha"
+            }
+          ],
+          "summary": "Return the listed trophy to King Mrotha for his General commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
+          "title": "The Bastine Road: General"
         },
         {
           "category": "request",
@@ -41554,8 +41555,151 @@
           "id": "the-bastine-road-knight-of-the-bastine-order-7600",
           "steps": [
             {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41388;receive=C:2000;disappear=0",
+                  "giver_vnum": 7600
+                }
+              ],
+              "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+              "id": "earlier-41388",
+              "kind": "completion",
+              "optional": true,
+              "text": "Complete the Young Warrior commission"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41407;receive=C:10000;disappear=0",
+                  "giver_vnum": 7600
+                }
+              ],
+              "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+              "id": "earlier-41407",
+              "kind": "completion",
+              "optional": true,
+              "text": "Complete the Warrior commission"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:12802;receive=C:5000;disappear=0",
+                  "giver_vnum": 7600
+                }
+              ],
+              "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+              "id": "earlier-12802",
+              "kind": "completion",
+              "optional": true,
+              "text": "Complete the Adept Warrior commission"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41327;receive=C:15000;disappear=0",
+                  "giver_vnum": 7600
+                }
+              ],
+              "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+              "id": "earlier-41327",
+              "kind": "completion",
+              "optional": true,
+              "text": "Complete the Veteran commission"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41924;receive=C:50000;disappear=0",
+                  "giver_vnum": 7600
+                }
+              ],
+              "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+              "id": "earlier-41924",
+              "kind": "completion",
+              "optional": true,
+              "text": "Complete the Soldier commission"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2607;receive=C:75000;disappear=0",
+                  "giver_vnum": 7600
+                }
+              ],
+              "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+              "id": "earlier-2607",
+              "kind": "completion",
+              "optional": true,
+              "text": "Complete the Lieutenant commission"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41408;receive=C:100000;disappear=0",
+                  "giver_vnum": 7600
+                }
+              ],
+              "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+              "id": "earlier-41408",
+              "kind": "completion",
+              "optional": true,
+              "text": "Complete the Third Ranked Captain commission"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41922;receive=C:100000;disappear=0",
+                  "giver_vnum": 7600
+                }
+              ],
+              "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+              "id": "earlier-41922",
+              "kind": "completion",
+              "optional": true,
+              "text": "Complete the Second Ranked Captain commission"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41920;receive=C:50000;disappear=0",
+                  "giver_vnum": 7600
+                }
+              ],
+              "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+              "id": "earlier-41920",
+              "kind": "completion",
+              "optional": true,
+              "text": "Complete the First Ranked Captain commission"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41375;receive=C:100000;disappear=0",
+                  "giver_vnum": 7600
+                }
+              ],
+              "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+              "id": "earlier-41375",
+              "kind": "completion",
+              "optional": true,
+              "text": "Complete the Captain commission"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41411;receive=C:200000,I:41304;disappear=0",
+                  "giver_vnum": 7600
+                }
+              ],
+              "hint": "Optional earlier commission. A supplied wand of Life is accepted without these receipts.",
+              "id": "earlier-41411",
+              "kind": "completion",
+              "optional": true,
+              "text": "Complete the General commission"
+            },
+            {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "Kithron in the Test of Knights carries the wand of Life. This is the item the King calls the Staff of Life. A valid trophy supplied by another player also works.",
               "id": "material-70970",
               "item_vnums": [
                 70970
@@ -41570,13 +41714,13 @@
                   "giver_vnum": 7600
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "Find the King at his throne. This exchange awards 10,000 gold. He also awards the seal of the Bastine Knights and the platemail of knighthood. This completes his final commission; earlier promotions remain separate accomplishments.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Present the wand of Life to King Mrotha"
             }
           ],
-          "summary": "The king describes this request as a step along the road to knighthood. You can fulfill it independently of the other requests; trophies received from another player are also accepted.",
+          "summary": "Return the listed trophy to King Mrotha for his Knight of the Bastine Order commission. The King describes an ordered campaign, but each exchange accepts its trophy independently. Gifts are accepted.",
           "title": "The Bastine Road: Knight of the Bastine Order"
         },
         {
@@ -41591,7 +41735,18 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "The key and a note to Phex are in the desk beneath the King's bedroom passage. The key opens the locked door at the top of the tower stairs reached from the south guard quarters.",
+              "id": "tower-key",
+              "item_vnums": [
+                7601
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the tower key"
+            },
+            {
+              "count": 1,
+              "hint": "The Prince Prisoner carries this head in the locked tower. The journal records its delivery; it does not establish who defeated the prince.",
               "id": "material-7673",
               "item_vnums": [
                 7673
@@ -41606,13 +41761,13 @@
                   "giver_vnum": 7600
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "The King supplies werewolf-hide leggings. His grief and disease warning are part of the response; this checklist does not record infection, a cure or a temporary banishment.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Bring the werewolf head to King Mrotha"
             }
           ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+          "summary": "Bring the Prince Prisoner's bloody werewolf head to King Mrotha for the werewolf-hide leggings. Explore the castle's concealed history to understand the King's reaction. A supplied head is accepted.",
           "title": "The Werewolf Prince"
         },
         {
@@ -41627,7 +41782,7 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "Sir Lamerok carries the shiny signet ring in Esterra's Cavern. Identification reveals his name. A supplied valid ring is also accepted.",
               "id": "material-41397",
               "item_vnums": [
                 41397
@@ -41642,13 +41797,13 @@
                   "giver_vnum": 7603
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "Victor is in Morlanthra's bedroom. His steel key opens Esterra's room; Esterra carries the plain iron key, and Nynevena the transparent key. A separate tree-shaped key opens the prison. Give the apprentice's ring to Morlanthra for his own rescue reward.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Present Lamerok's ring to Victor"
             }
           ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+          "summary": "Earn Victor's trust with Sir Lamerok's signet ring. He supplies a small steel key and the apprentice's ring for Morlanthra's rescue in Esterra's Cavern. That later rescue belongs to the surrounding lands.",
           "title": "The Apprentice's Trust"
         }
       ]
@@ -43380,21 +43535,21 @@
     {
       "contacts": [
         {
-          "description": "Review the local requests below.",
+          "description": "Her silver broach is one of the lord's three family keepsakes.",
           "keyword": "lady",
           "mob_vnum": 16419,
           "name": "the ghost of a Lady",
           "topics": []
         },
         {
-          "description": "Review the local requests below.",
+          "description": "Her release has no extra keepsake reward; she still needs rescuing.",
           "keyword": "servant",
           "mob_vnum": 16420,
           "name": "a serving girl's ghost",
           "topics": []
         },
         {
-          "description": "Ask about the listed topics, then review the local requests below.",
+          "description": "Her release supplies the elegant key for the Lady's rooms.",
           "keyword": "woman",
           "mob_vnum": 16421,
           "name": "the crying ghost",
@@ -43405,7 +43560,7 @@
           ]
         },
         {
-          "description": "Ask about the listed topics, then review the local requests below.",
+          "description": "The office ghost explains the curse, prepares fragments and accepts the three family keepsakes.",
           "keyword": "krimeneha",
           "mob_vnum": 16422,
           "name": "Lord Krimeneha's ghost",
@@ -43415,24 +43570,24 @@
           ]
         },
         {
-          "description": "Review the local requests below.",
+          "description": "His signet ring is one of the lord's three family keepsakes.",
           "keyword": "boy",
           "mob_vnum": 16424,
           "name": "a boy's ghost",
           "topics": []
         },
         {
-          "description": "Review the local requests below.",
+          "description": "Her broach is one of the lord's three family keepsakes.",
           "keyword": "girl",
           "mob_vnum": 16425,
           "name": "a young girl's ghost",
           "topics": []
         },
         {
-          "description": "Ask about the listed topics, then review the local requests below.",
+          "description": "The younger gardener in the indoor fountain sitting room witnessed the monsters coming from the pool.",
           "keyword": "gardener",
           "mob_vnum": 16426,
-          "name": "a gardener's ghost",
+          "name": "the younger gardener's ghost",
           "topics": [
             "pool",
             "monster",
@@ -43440,10 +43595,10 @@
           ]
         },
         {
-          "description": "Ask about the listed topics, then review the local requests below.",
+          "description": "The elderly gardener in the overgrown garden identifies Eckraldu and rewards a pool-chest key.",
           "keyword": "gardener",
           "mob_vnum": 16427,
-          "name": "a gardener's ghost",
+          "name": "the elderly gardener's ghost",
           "topics": [
             "lord"
           ]
@@ -43451,123 +43606,16 @@
       ],
       "coverage": "complete",
       "exclusions": [],
-      "introduction": "Explore the haunted mansion and listen to the spirits you can identify.",
+      "introduction": "Investigate the poisoned gardens, free the sane spirits and reunite Lord Krimeneha's family through their keepsakes.",
       "orientation": [
-        "Use look and exits to explore. Meet visible people to reveal their requests.",
-        "Talk to the people you meet to learn about local requests. The checklist shows your current supplies and completed exchanges."
+        "Ask the gardeners about the pool and their lord, then ask Lord Krimeneha about Eckraldu. These conversations explain the curse.",
+        "One staff fragment can support several rescues. Keep the family's three keepsakes for the lord; other spirit rescues remain separate accomplishments.",
+        "Several doors and treasure containers use different keys. The checklist shows supplies and accepted exchanges; it does not prove a personal kill, learned topic or lock opening."
       ],
-      "revision": 1,
-      "schema_version": 2,
+      "revision": 2,
+      "schema_version": 3,
       "source_area": "krimman",
       "stories": [
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:16451;receive=I:16451,I:16454;disappear=1",
-              "giver_vnum": 16419
-            }
-          ],
-          "id": "release-the-lady-16419",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
-              "id": "material-16451",
-              "item_vnums": [
-                16451
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a piece of a staff"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:16451;receive=I:16451,I:16454;disappear=1",
-                  "giver_vnum": 16419
-                }
-              ],
-              "hint": "Return to the request giver with the exact offering.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the exchange"
-            }
-          ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
-          "title": "Release the Lady"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:16451;receive=I:16451;disappear=1",
-              "giver_vnum": 16420
-            }
-          ],
-          "id": "release-the-serving-girl-16420",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
-              "id": "material-16451",
-              "item_vnums": [
-                16451
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a piece of a staff"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:16451;receive=I:16451;disappear=1",
-                  "giver_vnum": 16420
-                }
-              ],
-              "hint": "Return to the request giver with the exact offering.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the exchange"
-            }
-          ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
-          "title": "Release the Serving Girl"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:16451;receive=I:16436,I:16451;disappear=1",
-              "giver_vnum": 16421
-            }
-          ],
-          "id": "release-the-crying-ghost-16421",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
-              "id": "material-16451",
-              "item_vnums": [
-                16451
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a piece of a staff"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:16451;receive=I:16436,I:16451;disappear=1",
-                  "giver_vnum": 16421
-                }
-              ],
-              "hint": "Return to the request giver with the exact offering.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the exchange"
-            }
-          ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
-          "title": "Release the Crying Ghost"
-        },
         {
           "category": "service",
           "contracts": [
@@ -43580,7 +43628,18 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "The crying ghost carries a steel key; a mad guest can carry another. It opens the office off the library. A supplied key or an already accessible office also works.",
+              "id": "office-key",
+              "item_vnums": [
+                16427
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a steel key for the office"
+            },
+            {
+              "count": 1,
+              "hint": "Eckraldu carries this staff. He can wander into the surrounding lands; the mansion is his source, not a promise of his current location. A supplied staff works too.",
               "id": "material-16450",
               "item_vnums": [
                 16450
@@ -43595,178 +43654,14 @@
                   "giver_vnum": 16422
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "Find his ghost in the office off the library. The exchange supplies one reusable fragment; it does not free the family by itself.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Ask Lord Krimeneha to break the staff"
             }
           ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+          "summary": "Bring Eckraldu's staff to Lord Krimeneha to obtain a fragment that can free the sane spirits. This preparation exchange supports the rescues.",
           "title": "Prepare a Staff Fragment"
-        },
-        {
-          "category": "story",
-          "contracts": [
-            {
-              "completion_key": "give=I:16452,I:16453,I:16454;receive=I:16445,I:16455;disappear=1",
-              "giver_vnum": 16422
-            }
-          ],
-          "id": "release-the-haunted-family-16422",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "A corresponding family spirit returns this keepsake when released with a staff fragment. Another valid keepsake also works.",
-              "id": "material-16452",
-              "item_vnums": [
-                16452
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a boy's signet ring"
-            },
-            {
-              "count": 1,
-              "hint": "A corresponding family spirit returns this keepsake when released with a staff fragment. Another valid keepsake also works.",
-              "id": "material-16453",
-              "item_vnums": [
-                16453
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a girl's broach"
-            },
-            {
-              "count": 1,
-              "hint": "A corresponding family spirit returns this keepsake when released with a staff fragment. Another valid keepsake also works.",
-              "id": "material-16454",
-              "item_vnums": [
-                16454
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x an elegant silver broach"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:16452,I:16453,I:16454;receive=I:16445,I:16455;disappear=1",
-                  "giver_vnum": 16422
-                }
-              ],
-              "hint": "Return to the request giver with the exact offering.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the exchange"
-            }
-          ],
-          "summary": "Return the three family keepsakes to release the lord. The staff-fragment exchanges can supply them; possession alone does not prove that you personally freed each spirit.",
-          "title": "Release the Haunted Family"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:16451;receive=I:16451,I:16452;disappear=1",
-              "giver_vnum": 16424
-            }
-          ],
-          "id": "release-the-boy-16424",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
-              "id": "material-16451",
-              "item_vnums": [
-                16451
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a piece of a staff"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:16451;receive=I:16451,I:16452;disappear=1",
-                  "giver_vnum": 16424
-                }
-              ],
-              "hint": "Return to the request giver with the exact offering.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the exchange"
-            }
-          ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
-          "title": "Release the Boy"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:16451;receive=I:16451,I:16453;disappear=1",
-              "giver_vnum": 16425
-            }
-          ],
-          "id": "release-the-young-girl-16425",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
-              "id": "material-16451",
-              "item_vnums": [
-                16451
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a piece of a staff"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:16451;receive=I:16451,I:16453;disappear=1",
-                  "giver_vnum": 16425
-                }
-              ],
-              "hint": "Return to the request giver with the exact offering.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the exchange"
-            }
-          ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
-          "title": "Release the Young Girl"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:16451;receive=I:16451;disappear=1",
-              "giver_vnum": 16426
-            }
-          ],
-          "id": "release-the-first-gardener-16426",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
-              "id": "material-16451",
-              "item_vnums": [
-                16451
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a piece of a staff"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:16451;receive=I:16451;disappear=1",
-                  "giver_vnum": 16426
-                }
-              ],
-              "hint": "Return to the request giver with the exact offering.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the exchange"
-            }
-          ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
-          "title": "Release the First Gardener"
         },
         {
           "category": "request",
@@ -43779,8 +43674,21 @@
           "id": "release-the-second-gardener-16427",
           "steps": [
             {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16450;receive=I:16451;disappear=0",
+                  "giver_vnum": 16422
+                }
+              ],
+              "hint": "Optional local route. Possessing a valid supplied fragment is enough for this rescue.",
+              "id": "staff-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Prepare a staff fragment with Lord Krimeneha"
+            },
+            {
               "count": 1,
-              "hint": "Supplies received from another player are also accepted.",
+              "hint": "Lord Krimeneha can supply a fragment in exchange for Eckraldu's staff. Each successful spirit rescue supplies another fragment; a gifted fragment is also accepted.",
               "id": "material-16451",
               "item_vnums": [
                 16451
@@ -43795,14 +43703,438 @@
                   "giver_vnum": 16427
                 }
               ],
-              "hint": "Return to the request giver with the exact offering.",
+              "hint": "The elderly gardener starts in the overgrown garden. Ask about lord to learn of Eckraldu.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the exchange"
+              "text": "Free the elderly gardener and receive the chest key"
             }
           ],
-          "summary": "Collect the listed supplies and return to the request giver. Supplies received from another player are also accepted.",
+          "summary": "Free the elderly gardener to receive a metal band that opens the stone chest under the pool. He also knows who poisoned the garden.",
           "title": "Release the Second Gardener"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:16451;receive=I:16451;disappear=1",
+              "giver_vnum": 16426
+            }
+          ],
+          "id": "release-the-first-gardener-16426",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16450;receive=I:16451;disappear=0",
+                  "giver_vnum": 16422
+                }
+              ],
+              "hint": "Optional local route. Possessing a valid supplied fragment is enough for this rescue.",
+              "id": "staff-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Prepare a staff fragment with Lord Krimeneha"
+            },
+            {
+              "count": 1,
+              "hint": "Lord Krimeneha can supply a fragment in exchange for Eckraldu's staff. Each successful spirit rescue supplies another fragment; a gifted fragment is also accepted.",
+              "id": "material-16451",
+              "item_vnums": [
+                16451
+              ],
+              "kind": "carried_item",
+              "text": "Carry 1 x a piece of a staff"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16451;receive=I:16451;disappear=1",
+                  "giver_vnum": 16426
+                }
+              ],
+              "hint": "The younger gardener starts in the indoor fountain sitting room. Ask about pool, monster and lord; the older gardener knows who caused the curse.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Free the younger gardener"
+            }
+          ],
+          "summary": "Free the younger gardener with a fragment. His account of the pool explains the disaster, and his release stands on its own.",
+          "title": "Release the First Gardener"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:16451;receive=I:16436,I:16451;disappear=1",
+              "giver_vnum": 16421
+            }
+          ],
+          "id": "release-the-crying-ghost-16421",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16450;receive=I:16451;disappear=0",
+                  "giver_vnum": 16422
+                }
+              ],
+              "hint": "Optional local route. Possessing a valid supplied fragment is enough for this rescue.",
+              "id": "staff-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Prepare a staff fragment with Lord Krimeneha"
+            },
+            {
+              "count": 1,
+              "hint": "Lord Krimeneha can supply a fragment in exchange for Eckraldu's staff. Each successful spirit rescue supplies another fragment; a gifted fragment is also accepted.",
+              "id": "material-16451",
+              "item_vnums": [
+                16451
+              ],
+              "kind": "carried_item",
+              "text": "Carry 1 x a piece of a staff"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16451;receive=I:16436,I:16451;disappear=1",
+                  "giver_vnum": 16421
+                }
+              ],
+              "hint": "The crying ghost is upstairs near the children's rooms. Ask about crying, leave and lord to hear what happened.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Free the crying ghost and receive the elegant key"
+            }
+          ],
+          "summary": "Free the crying ghost to receive the elegant key for the Lady's rooms. Keep the supplied fragment for the other rescues.",
+          "title": "Release the Crying Ghost"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:16451;receive=I:16451,I:16454;disappear=1",
+              "giver_vnum": 16419
+            }
+          ],
+          "id": "release-the-lady-16419",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16450;receive=I:16451;disappear=0",
+                  "giver_vnum": 16422
+                }
+              ],
+              "hint": "Optional local route. Possessing a valid supplied fragment is enough for this rescue.",
+              "id": "staff-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Prepare a staff fragment with Lord Krimeneha"
+            },
+            {
+              "count": 1,
+              "hint": "The crying ghost rewards this key when freed; some mad ghosts also carry it. It opens the upstairs east door, distinct from the office's steel key.",
+              "id": "lady-access-key",
+              "item_vnums": [
+                16436
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the elegant key for the Lady's rooms"
+            },
+            {
+              "count": 1,
+              "hint": "Lord Krimeneha can supply a fragment in exchange for Eckraldu's staff. Each successful spirit rescue supplies another fragment; a gifted fragment is also accepted.",
+              "id": "material-16451",
+              "item_vnums": [
+                16451
+              ],
+              "kind": "carried_item",
+              "text": "Carry 1 x a piece of a staff"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16451;receive=I:16451,I:16454;disappear=1",
+                  "giver_vnum": 16419
+                }
+              ],
+              "hint": "Her bedroom is beyond the upstairs east door. The crying ghost supplies the elegant key for that door; a supplied key also works.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Receive the Lady's silver broach"
+            }
+          ],
+          "summary": "Free the Lady with a fragment and keep her silver broach for the family reunion. The fragment is supplied again for another rescue.",
+          "title": "Release the Lady"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:16451;receive=I:16451,I:16452;disappear=1",
+              "giver_vnum": 16424
+            }
+          ],
+          "id": "release-the-boy-16424",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16450;receive=I:16451;disappear=0",
+                  "giver_vnum": 16422
+                }
+              ],
+              "hint": "Optional local route. Possessing a valid supplied fragment is enough for this rescue.",
+              "id": "staff-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Prepare a staff fragment with Lord Krimeneha"
+            },
+            {
+              "count": 1,
+              "hint": "Lord Krimeneha can supply a fragment in exchange for Eckraldu's staff. Each successful spirit rescue supplies another fragment; a gifted fragment is also accepted.",
+              "id": "material-16451",
+              "item_vnums": [
+                16451
+              ],
+              "kind": "carried_item",
+              "text": "Carry 1 x a piece of a staff"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16451;receive=I:16451,I:16452;disappear=1",
+                  "giver_vnum": 16424
+                }
+              ],
+              "hint": "Find the boy upstairs beyond his locked bedroom door. That ordinary lock has no matching named quest key; bring suitable access help.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Receive the boy's signet ring"
+            }
+          ],
+          "summary": "Free the boy with a fragment and keep his signet ring for Lord Krimeneha. The fragment can be used again.",
+          "title": "Release the Boy"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:16451;receive=I:16451,I:16453;disappear=1",
+              "giver_vnum": 16425
+            }
+          ],
+          "id": "release-the-young-girl-16425",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16450;receive=I:16451;disappear=0",
+                  "giver_vnum": 16422
+                }
+              ],
+              "hint": "Optional local route. Possessing a valid supplied fragment is enough for this rescue.",
+              "id": "staff-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Prepare a staff fragment with Lord Krimeneha"
+            },
+            {
+              "count": 1,
+              "hint": "Lord Krimeneha can supply a fragment in exchange for Eckraldu's staff. Each successful spirit rescue supplies another fragment; a gifted fragment is also accepted.",
+              "id": "material-16451",
+              "item_vnums": [
+                16451
+              ],
+              "kind": "carried_item",
+              "text": "Carry 1 x a piece of a staff"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16451;receive=I:16451,I:16453;disappear=1",
+                  "giver_vnum": 16425
+                }
+              ],
+              "hint": "Find the young girl upstairs beyond her locked bedroom door. That ordinary lock has no matching named quest key; bring suitable access help.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Receive the young girl's broach"
+            }
+          ],
+          "summary": "Free the young girl with a fragment and keep her broach for Lord Krimeneha. The fragment can be used again.",
+          "title": "Release the Young Girl"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:16451;receive=I:16451;disappear=1",
+              "giver_vnum": 16420
+            }
+          ],
+          "id": "release-the-serving-girl-16420",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16450;receive=I:16451;disappear=0",
+                  "giver_vnum": 16422
+                }
+              ],
+              "hint": "Optional local route. Possessing a valid supplied fragment is enough for this rescue.",
+              "id": "staff-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Prepare a staff fragment with Lord Krimeneha"
+            },
+            {
+              "count": 1,
+              "hint": "Lord Krimeneha can supply a fragment in exchange for Eckraldu's staff. Each successful spirit rescue supplies another fragment; a gifted fragment is also accepted.",
+              "id": "material-16451",
+              "item_vnums": [
+                16451
+              ],
+              "kind": "carried_item",
+              "text": "Carry 1 x a piece of a staff"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16451;receive=I:16451;disappear=1",
+                  "giver_vnum": 16420
+                }
+              ],
+              "hint": "Look for the serving girl's ghost in the mansion's wide hallway.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Free the serving girl"
+            }
+          ],
+          "summary": "Free the serving girl with a fragment. She has no extra keepsake, but her release is a complete rescue.",
+          "title": "Release the Serving Girl"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:16452,I:16453,I:16454;receive=I:16445,I:16455;disappear=1",
+              "giver_vnum": 16422
+            }
+          ],
+          "id": "release-the-haunted-family-16422",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The crying ghost carries a steel key; a mad guest can carry another. It opens the office off the library. A supplied key or an already accessible office also works.",
+              "id": "office-key",
+              "item_vnums": [
+                16427
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a steel key for the office"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16450;receive=I:16451;disappear=0",
+                  "giver_vnum": 16422
+                }
+              ],
+              "hint": "Optional route for obtaining the three keepsakes. Supplied keepsakes do not require earlier rescue receipts.",
+              "id": "staff-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Prepare a staff fragment"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16451;receive=I:16451,I:16452;disappear=1",
+                  "giver_vnum": 16424
+                }
+              ],
+              "hint": "An optional earlier rescue; its receipt is distinct from the lord's final exchange.",
+              "id": "rescue-16424",
+              "kind": "completion",
+              "optional": true,
+              "text": "Free the boy"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16451;receive=I:16451,I:16453;disappear=1",
+                  "giver_vnum": 16425
+                }
+              ],
+              "hint": "An optional earlier rescue; its receipt is distinct from the lord's final exchange.",
+              "id": "rescue-16425",
+              "kind": "completion",
+              "optional": true,
+              "text": "Free the young girl"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16451;receive=I:16451,I:16454;disappear=1",
+                  "giver_vnum": 16419
+                }
+              ],
+              "hint": "An optional earlier rescue; its receipt is distinct from the lord's final exchange.",
+              "id": "rescue-16419",
+              "kind": "completion",
+              "optional": true,
+              "text": "Free the Lady"
+            },
+            {
+              "count": 1,
+              "hint": "Free the boy with a staff fragment to receive his ring. Another valid supplied ring works too.",
+              "id": "material-16452",
+              "item_vnums": [
+                16452
+              ],
+              "kind": "carried_item",
+              "text": "Carry 1 x a boy's signet ring"
+            },
+            {
+              "count": 1,
+              "hint": "Free the young girl with a staff fragment to receive her broach. Another valid supplied broach works too.",
+              "id": "material-16453",
+              "item_vnums": [
+                16453
+              ],
+              "kind": "carried_item",
+              "text": "Carry 1 x a girl's broach"
+            },
+            {
+              "count": 1,
+              "hint": "Free the Lady with a staff fragment to receive her silver broach. Use the crying ghost's elegant key to reach her rooms, or another valid route.",
+              "id": "material-16454",
+              "item_vnums": [
+                16454
+              ],
+              "kind": "carried_item",
+              "text": "Carry 1 x an elegant silver broach"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:16452,I:16453,I:16454;receive=I:16445,I:16455;disappear=1",
+                  "giver_vnum": 16422
+                }
+              ],
+              "hint": "His office is off the library. He rewards a silver bastard sword and the heavy key for his upstairs iron vault. The key opens the vault container; finding and reaching the vault room is a separate task.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Return all three keepsakes to Lord Krimeneha"
+            }
+          ],
+          "summary": "Return the boy's ring, the girl's broach and the Lady's silver broach to release Lord Krimeneha. Freeing other sane spirits is encouraged and recorded separately. Supplied keepsakes are accepted.",
+          "title": "Release the Haunted Family"
         }
       ]
     },

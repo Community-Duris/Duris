@@ -31,9 +31,11 @@ neither every branch nor every historical prerequisite.
 | 4 | Braddistock Mansion | [Comprehensive source dossier](zone-stories/BRADDISTOCK_MANSION.md): both Q contracts, one addressable and two ambient M responses, maul procedure, 186 reset commands; other same-name area's level gate distinguished | Revision 2: final story plus pet-rescue service; optional key/rescue steps for supplied collars | Active key/container reset sources; hidden-exit journey; rat-purge/later-payment prose decision; personal recovery; optional maul effect evidence |
 | 5 | Breale | [Comprehensive source dossier](zone-stories/BREALE.md): six Q contracts, six M responses, nine town-special assignments, five shops, 399 resets, full Passage of Clarity puzzle | Revision 2: six distinct achievements; optional key and earlier Triad receipts; source/clue guidance and exact rewards | Active item/shop sources; accepted puzzle/topic events; all-stage Triad family; bracelet/escort decision; reward-spell prose review |
 | 6 | Abandoned Elven Homestead | [Comprehensive source dossier](zone-stories/ABANDONED_ELVEN_HOMESTEAD.md): four Q contracts, six M/MA responses, 138 resets, two key targets, shared speech doors and three item teleports | Revision 2: two achievements plus two services; optional egg/access/statue steps; source and post-reward key guidance | Active material/scenery sources; live access and confirmed travel; potion lineage; narrated elf closure; accepted tapestry examination |
-| 7–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 7 | Lord Krimeneha's Mansion | [Comprehensive source dossier](zone-stories/KRIMENEHAS_MANSION.md): nine Q contracts, nine M responses, 176 resets, all fragment rescues, roaming staff source and exact key/container targets | Revision 2: eight achievements plus staff service; optional access/preparation/family receipts; distinct gardener guidance | Active reset sources; replacement fragment lineage; roaming NPC/competing staff consumers; all-stage household and servants' blessing decision |
+| 8 | Bastine Castle | [Comprehensive source dossier](zone-stories/BASTINE_CASTLE.md): 14 Q contracts, four M responses, 428 resets, twelve promotion sources, prince/tower key and complete bounded Morlanthra continuation | Revision 2: twelve independent commissions in narrated order, prince and Victor requests; optional promotion/tower history; precise external sources and rewards | Active local/foreign sources; replacement hide lineage; all-stage rank campaign; owned cross-zone rescue; term/concealment decisions |
+| 9–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Krimeneha's Mansion, followed by Bastine. Their earlier native bindings
+The next area is Pine Hollow, followed by Quietus Quay. Their earlier native bindings
 do not establish comprehensive source review. Do not advance a zone's status
 merely because the map parses, the Q denominator matches, or a candidate item
 graph was extracted.
@@ -63,6 +65,11 @@ graph was extracted.
 | ZSQ-ACCESS-STATE / MAGIC-DOORS | Shared mechanics make property data executable: Homestead key `-2` plus last exit keyword unlocks the locked outer gate through speech. The hidden beach has the same negative key but is reset unlocked. | Add reviewed exit/key/password/property leads and live blocked reasons. Separate current access from accepted unlock and confirmed arrival history; open routes and supplied keys work without local preparation receipts. |
 | ZSQ-ELVISH-KEY-IDENTITY / POTION-LINEAGE | Two identically aliased spider keys have different targets; preparation statues are consumable potion types. | Fixed journal distinctions and optional preparation. Future projection links exact target/item identity and committed recipe UIDs, handles consumed/gifted ingredients, and does not infer personal recovery or terminal release from preparation alone. |
 | ZSQ-ELVISH-NARRATIVE / SHARED-TRAVEL | Leaf/petals and serpent/dragon differ in prose; final elf change is narrated closure. Deity statues invoke generic item teleports, including a cross-area destination. | Builder reviews narrative/effects deliberately. Qualify accepted examination/topic and confirmed shared travel; echoed MA/QA text is not recipient objective evidence. Spellcase magical opening remains unintegrated flavor pending builder intent. |
+| ZSQ-REUSED-REWARD-LINEAGE | Krimeneha's seven rescues consume a fragment and generate another with the same VNUM. Bastine consumes original hide 41411 and supplies same-named hide 41304 with a different property. | Freeze exact input/output UIDs, replacement semantics, NPC episode and actor/recipient in committed evidence. Same-name/type return does not prove immutable custody, and a fragment-only rescue remains a real accomplishment. |
+| ZSQ-ROAMING-SOURCE / COMPETING-CONSUMERS | Eckraldu can leave the mansion's load room for three other areas; Quietus also accepts his staff. This is a supported source lead, not proof of a missing staff. | Keep prototype owner, reset generation, current location and encounter separate; qualify movement and competing exact-staff consumption. Confirm intended roaming route before changing placement. |
+| ZSQ-KRIMENEHA-ALL-STAGES / BASTINE-RANK | Staff preparation and household rescues are distinct; servants' blessing has no extra encoded reward. Bastine's twelve promotions do not enforce earlier ranks. | Add explicitly authored all-stage achievements and accepted membership/rank rules only after content decisions. Retain gifted terminal inputs and independent receipts. |
+| ZSQ-CROSS-ZONE-OWNERSHIP | Victor's Bastine trust exchange starts Highway's ordinary four-lock route and Morlanthra's own final Q. The tree is not a bespoke four-item admission check. | Add owned story links, shared clue/access adapters, encounter/stage visibility and terminal references without annexing or double-counting native receipts. Source range guesses must not override prototype-file ownership. |
+| ZSQ-BASTINE-TERMS / PRINCE | Staff/wand, helm/ankh and patch/face wording differ; bedroom secret/reset state differs. Prince head is reset inventory; grief, disease and banishment wording is not a Q state mutation. | Journal now uses actual items/keys and optional routes. Builder reviews intended narrative, concealment and later dragon challenge; qualify shared combat/gear separately before adding kill, cure or banishment objectives. |
 | Evidence extractor gaps | Fixed chained literal assignment detection and ignored commented assignments. Object/mobile membership follows source prototypes rather than room bounds. | Continue review for aliases, computed VNUMs, preprocessor branches, dynamic assignments, and foreign reset sources; extraction remains a lead list, not execution proof. |
 
 ## Verification record
@@ -167,3 +174,36 @@ rows including services/administrative content. No database operation,
 migration, accounting activation or merge occurred. Source mapping now covers
 priorities 1–6 of 220; the remaining 214 areas and active-world journeys remain
 open. Continue with Krimeneha's Mansion and Bastine, retaining the original queue.
+
+### Fourth comprehensive mapping batch — October 2, 2026
+
+Krimeneha's Mansion and Bastine source dossiers and reproducible indices are
+complete. Schema 3 revision 2 journals preserve all 23 original native bindings
+and classifications. Krimeneha retains eight achievements plus its staff
+preparation service; Bastine retains twelve independent commissions, prince
+request and Victor trust exchange. Native admission and rewards are unchanged.
+
+Native C++20 warnings-as-errors regressions passed for all 36 maps and schemas
+1/2/3. New journeys cover supplied family keepsakes without staff/access/rescue
+history, read-only projection, preparation outside achievement counts, a real
+fragment-only rescue, supplied final wand without earlier promotions, early
+commission versus final completion, Victor trust without invented Highway
+rescue, and original independent receipt recovery after restart.
+
+Production catalog/snapshot, generated inventory, all eight source indices
+and all 27 required home maps passed. The maintained SQL server build completed
+from its existing artifacts; no production C/C++ source changed in this batch.
+Whole touched-file and changed-line formatting passed. Document checks resolved 294 local links,
+and `git diff --check` passed. The priority document's remaining corrupted em
+dash was repaired.
+
+All 2,668 raw definitions, source fingerprint, content revision, zone registry,
+native story bindings/classifications and other 34 maps remain unchanged as
+parsed objects. Global projection stays at 2,359 achievements, 1,962 potential
+daily units and 2,509 rows including services/administrative content. No
+database operation, migration, accounting activation or merge occurred.
+
+The source queue is now eight of 220 complete, with 212 areas pending. Continue
+with Pine Hollow and Quietus. Live roaming/source generation, exact replacement
+lineage, all-stage household/rank campaigns, accepted clues/access and owned
+cross-zone rescue remain qualification work; this pass does not certify them.

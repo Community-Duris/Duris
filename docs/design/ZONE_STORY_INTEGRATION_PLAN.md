@@ -7,13 +7,16 @@ Deeper objective and provenance integration is incremental.**
 
 The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
 source dossiers, shipped changes, newly found dependencies, and verification.
-Twin Towers, Plains of Life, Ailvio, Braddistock, Breale and Abandoned Elven
-Homestead now have complete source
+Twin Towers, Plains of Life, Ailvio, Braddistock, Breale, Abandoned Elven
+Homestead, Krimeneha's Mansion and Bastine now have complete source
 story maps; their active-world journeys remain unqualified. Schema 3 adds
 optional preparation. Ailvio's 78 pair recipes project one family-feeding story;
 Braddistock's pet rescue is displayed as an intermediate service. Breale preserves
 its deliberate drawing riddle and five independent Triad stages. The Homestead
 explains actual gate/key/potion routes with optional access and recipe preparation.
+Krimeneha maps seven fragment rescues, the independent lord finale, roaming
+staff source and competing consumer. Bastine maps narrated commission order,
+exact external trophies, prince access and the owned Morlanthra continuation.
 
 Maintain this plan as zones are reviewed. Keep static contract classification,
 historical objective coverage, economic support, and gameplay qualification
@@ -85,6 +88,10 @@ Implement and qualify the remaining additions in this order:
    set shares one giver/outcome, while independent teacher requests with different
    recipients or rewards stay distinct. Record narrated closure separately from
    actual NPC rescue/voice restoration/rat purge; do not turn prose into effects.
+   Krimeneha's whole-household bonus and Bastine's full knighthood need explicit
+   all-stage policy; neither a final gifted offering nor an early receipt proves
+   the entire campaign. Cross-zone continuation must reference the owning entry
+   and terminal receipt without counting the same rescue in two zones.
 4. **Source and transformation evidence.** Build on committed accounting
    lifecycle/custody evidence for personal recovery, distinct sources, tanning,
    freshness, and lineage. Never infer these from possession or text.
@@ -95,6 +102,11 @@ Implement and qualify the remaining additions in this order:
    Use distinct source types for fishing, forage, search discovery and creature
    proof. Cross-area item prototypes can have local reset carriers, as Ailvio's
    drow spores do; prototype ownership is not travel or personal provenance.
+   A returning item can be a new UID of the same prototype, as in Krimeneha's
+   fragment rescues, or a different same-named prototype, as in Bastine's hide.
+   Commit exact input/output replacement and NPC episode, not a guessed unchanged
+   object. Roaming source NPCs and competing quest consumers need current location
+   separate from prototype/source ownership and exact consumption authority.
 5. **Mixed offerings and larger pilot.** Commit materials/payment/rewards and
    stage evidence together, then qualify Twin Towers clothing and grove recipes.
 6. **Expand through the priority roadmap.** Review one story family at a time,
@@ -319,6 +331,12 @@ read-only journal projection, and spoiler/reveal choices for both clients.
 - [ ] Cover gifts, purchases, theft, player drop/pickup, loans, containers,
   death recovery, and legacy objects with unknown origin. Unknown evidence
   cannot earn a personal-sourcing achievement.
+- [ ] Declare return-in-place versus retire-and-replace explicitly. Link exact
+  input/output UIDs for same-prototype fragments and different-prototype hides,
+  with frozen actor, recipient, source/NPC episode and recovery identity.
+- [ ] Keep a roaming source's prototype owner, reset source, live room and
+  encounter episode distinct. Qualify competing consumers of one exact item
+  across zone boundaries; a source lead is not a promised present location.
 - [ ] Emit Twin Towers animal source evidence using the special's actor context;
   link fresh animal retirement to resulting hide/meat UIDs through a confirmed
   tanning exchange, including freshness and decay.
@@ -356,6 +374,9 @@ with unchanged input/reward identities.
 - [ ] Version optional preparation, conditional subrecipes, explicit all-stage
   campaign completion, story attempts, and branch/reveal policy. Preserve the
   current any-of terminal semantics for existing mappings.
+- [ ] Add owned cross-zone story links with shared stage/reveal policy. Victor's
+  local trust exchange and Morlanthra's Highway rescue retain their own native
+  receipts; campaign projection must not double-count the same terminal outcome.
 
 Delivered portion: plain/ANSI journals now show the first outstanding step,
 encountered contacts and conversation commands, live material counts, receipt
@@ -386,7 +407,9 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   including all support/rejection/lore interactions and custom dependencies.
 - [x] Complete source dossiers for Ailvio, Braddistock, Breale and Abandoned
   Elven Homestead; retain source findings, optional preparation and exact receipts.
-- [ ] Complete comprehensive source dossiers for the other 214 roadmap areas.
+- [x] Complete source dossiers for Krimeneha's Mansion and Bastine, including
+  roaming/competing sources, replacement rewards and the bounded external rescue.
+- [ ] Complete comprehensive source dossiers for the other 212 roadmap areas.
 
 ## Per-zone integration register
 
@@ -399,6 +422,8 @@ contract classification; it does not claim complete objective coverage.
 | Plains of Life | 2 | Q-free scripted tutorial; no invented native terminal | Source-comprehensive dossier: optional sign aids, accepted topic/tag/sword and stream travel; scripted history pending | Active reset scenery and confirmed sword grant remain blockers | Source/alias checks; active journey remains pending |
 | Breale | 2 | Complete: six independent Q exchanges | Source-comprehensive dossier; drawing translations, optional access/history, accepted materials and named reward guidance; all-stage/learned events pending | Active key/potion/reagent/shop resets need generation authority | Source/native checks; active journey and spell/escort content decisions pending |
 | Abandoned Elven Homestead | 2 | Complete: two achievement rows and two preparation services | Source-comprehensive dossier; optional egg/access/statue history, distinct key uses, shared speech/teleport and tapestry leads | Active materials/scenery/nested container sources need generation authority; native exchanges retain existing accounting | Source/native checks; active journey, lineage and accepted travel/lore events pending |
+| Krimeneha's Mansion | 2 | Complete: eight achievements and one staff service | Source-comprehensive dossier; optional access/staff/family receipts; seven rescues and independent final keepsake exchange | Active local/roaming NPC equipment and nested treasure sources need generation authority; competing staff consumption requires exact identity | Source/native checks; roaming/replacement/full-household live journeys pending |
+| Bastine Castle | 2 | Complete: twelve commissions, prince request and Victor trust exchange | Source-comprehensive dossier; narrated order and optional earlier commissions; exact trophy/lock sources and Highway continuation | Active local/foreign item sources need generation authority; coin rewards retain native accounting | Source/native checks; all-stage ranks, source evidence and owned cross-zone journey pending |
 | All 27 starter/town areas | 1–2 | Complete static Q classification; detailed counts and evidence in starter/town register | Orientation, encountered people, concrete delivery counts and native receipt checklists; selected multi-step routes | Existing offering limits; reviewed crafting and equipment services do not create story/daily units | All maps pass source/native validation; isolated native guided journey; individual full-world routes pending |
 | Eight additional quest areas | 1–2 | Complete: 86 contracts → 80 named story/request/service entries | Verified Q/M guidance, distinct material counts, optional preparation hints and receipts; deeper dialogue/lineage/branches pending | Mixed item-and-coin grove recipes remain unavailable; preparation services do not earn story/daily units | Source/native parser and encounter visibility checks; each full-world journey remains pending in the priority roadmap |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |

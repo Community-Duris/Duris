@@ -87,7 +87,13 @@ assert len(breale["special_assignments"]) == 9 and set(breale["specials"]) == {"
 elvish = inventory_module.area_evidence(ROOT, "elvish")
 assert len(elvish["requests"]) == 4 and len(elvish["dialogue"]) == 6
 assert len(elvish["reset_commands"]) == 138 and not elvish["special_assignments"]
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish"):
+krimman = inventory_module.area_evidence(ROOT, "krimman")
+assert len(krimman["requests"]) == 9 and len(krimman["dialogue"]) == 9
+assert len(krimman["reset_commands"]) == 176 and not krimman["special_assignments"]
+bastine = inventory_module.area_evidence(ROOT, "bastine")
+assert len(bastine["requests"]) == 14 and len(bastine["dialogue"]) == 4
+assert len(bastine["reset_commands"]) == 428 and not bastine["special_assignments"]
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:
