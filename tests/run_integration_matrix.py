@@ -175,6 +175,7 @@ def run_row(row, tokens, environment, specs):
     arguments = [value.format(**tokens) for value in row["arguments"]]
     environment = dict(environment, **{key: value.format(**tokens) for key, value in row["environment"].items()
                                       if key != "schema_suffix"})
+    environment["DURIS_MATRIX_ROW_EVIDENCE"] = tokens["evidence"]
     path = ROOT / row["path"]
     if path.suffix == ".sh":
         arguments = [row["path"], *arguments]
@@ -283,8 +284,9 @@ def main(argv=None):
                     # Existing wrappers keep their explicit opt-ins; their reviewed image
                     # selectors receive the same pinned provider as the surrounding row.
                     text = (ROOT / row["path"]).read_text()
-                    for variable in re.findall(r'\$\{([A-Z_]+(?:DB_IMAGE|MYSQL_IMAGE))[:-]', text):
-                        row_environment[variable] = image
+                    if image:
+                        for variable in re.findall(r'\$\{([A-Z_]+(?:DB_IMAGE|MYSQL_IMAGE))[:-]', text):
+                            row_environment[variable] = image
                     if row["provider"] == "sql":
                         row_environment.update(sql.environment)
                         if row.get("schema_prefix"):

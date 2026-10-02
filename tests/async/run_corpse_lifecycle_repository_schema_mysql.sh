@@ -46,8 +46,10 @@ done
 "${MYSQL[@]}" -e \
 	"CREATE DATABASE $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/bootstrap_multithread_safe.sql"
-"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0013_pet_restore_state.sql"
-"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0028_pet_custody.sql"
+python3 scripts/migration_runner.py adopt --kind fresh_bootstrap
+python3 scripts/migration_runner.py run
+python3 scripts/migration_runner.py run
+bash migrations/verify_runtime_compatibility.sh
 
 mkdir -p "$ROOT/bin/tests"
 SQL_DISPATCH_SOURCES_TEXT="$(python3 tests/async/_sql_dispatch_sources.py)"

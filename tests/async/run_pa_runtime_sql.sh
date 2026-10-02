@@ -296,7 +296,7 @@ run_image() {
     compile_bounded "$cxx" -std=c++20 -w -ffunction-sections -fdata-sections "${sanitizer_flags[@]}" \
         -Isrc "${mysql_cflags[@]}" -c src/sql/sql.c -o "$TEMP/sql.o"
     compile_bounded "$cxx" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread \
-        "${sanitizer_flags[@]}" -Isrc "${mysql_cflags[@]}" \
+        -ffunction-sections -fdata-sections "${sanitizer_flags[@]}" -Isrc "${mysql_cflags[@]}" \
         -Dsql_open_configured_connection=pa_runtime_sql_test_open_connection \
         -c src/sql/sql_economic_runtime.c -o "$TEMP/runtime-owner.o"
     compile_bounded "$cxx" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread \
@@ -308,9 +308,35 @@ run_image() {
     compile_bounded "$cxx" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread \
         "${sanitizer_flags[@]}" -Isrc "${mysql_cflags[@]}" \
         -c tests/async/pa_runtime_sql_harness.cpp -o "$TEMP/harness.o"
+    # Startup now recovers the actual accounting lifecycle and gameplay
+    # authority. Keep those owners linked instead of replacing them with stubs.
+    local -a runtime_sources=(
+        src/persistence/economic_sql_accounting_lifecycle_transaction.c
+        src/persistence/economic_sql_source_snapshot.c
+        src/economy/economic_sql_source_normalize.c
+        src/economy/economic_gameplay_authority.c
+        src/persistence/economic_sql_baseline_transaction.c
+        src/economy/economic_baseline_command.c
+        src/economy/economic_baseline_adapter.c
+        src/economy/economic_baseline_codec.c
+        src/economy/economic_accounting_intent.c
+        src/economy/economic_accounting_plan.c
+        src/economy/economic_accounting_types.c
+        src/economy/currency_command.c
+        src/persistence/critical_command.c
+    )
+    local -a runtime_objects=()
+    local source object
+    for source in "${runtime_sources[@]}"; do
+        object="$TEMP/$(basename "$source").o"
+        compile_bounded "$cxx" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread \
+            -ffunction-sections -fdata-sections "${sanitizer_flags[@]}" \
+            -Isrc "${mysql_cflags[@]}" -c "$source" -o "$object"
+        runtime_objects+=("$object")
+    done
     compile_bounded "$cxx" "${sanitizer_flags[@]}" -pthread -Wl,--gc-sections -no-pie \
         "$TEMP/harness.o" "$TEMP/runtime-owner.o" "$TEMP/lifecycle-guard.o" \
-        "$TEMP/observability.o" "$TEMP/sql.o" "${mysql_libs[@]}" \
+        "$TEMP/observability.o" "$TEMP/sql.o" "${runtime_objects[@]}" "${mysql_libs[@]}" \
         -lcrypto -lz -o "$TEMP/pa-runtime-sql"
     ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 \
     UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \

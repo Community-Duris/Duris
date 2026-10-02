@@ -8,6 +8,7 @@ LEGACY_DB_NAME="runtime_contract_legacy_test"
 DB_IMAGE="${RUNTIME_DB_IMAGE:-mysql:8.0}"
 cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
+trap 'printf "runtime schema proof failed at line %s (replay=%s step=%s)\n" "$LINENO" "${replay:-legacy}" "${file:-setup}" >&2' ERR
 if [[ "$DB_IMAGE" == mariadb:* ]]; then
     ROOT_PASSWORD_ENV="MARIADB_ROOT_PASSWORD"
 else
