@@ -115,7 +115,7 @@ sale = find(text_shop, 'update_crew(ship);')
 sale_queue = find(text_shop, 'queue_ship_save(ship, "cargo sale");', sale)
 checks.append(('cargo sale queued save', sale, sale_queue, -1, -1))
 
-repair = find(text_shop, 'Thank you for for your business, it will take')
+repair = find(text_shop, 'Thank you for for your business, it will take', literal=True)
 repair_queue = find(text_shop, 'queue_ship_save(ship, "repair");', repair)
 checks.append(('repair queued save', repair, repair_queue, -1, -1))
 
@@ -142,7 +142,7 @@ sql_load_query = find(text_player, 'from ships where owner_name', sql_load_ship_
 checks.append(('sql_load_ship SQL authority', sql_load_ship_fn, sql_load_query, -1, -1))
 
 sql_delete_ship_fn = find(text_player, 'bool sql_delete_ship(const char *owner_name)')
-sql_delete_query = find(text_player, "delete from ships where owner_name='%s'", sql_delete_ship_fn)
+sql_delete_query = find(text_player, "delete from ships where owner_name='%s'", sql_delete_ship_fn, literal=True)
 sql_delete_inv = find(text_player, 'redis_invalidate_ship_snapshot', sql_delete_ship_fn)
 checks.append(('sql_delete_ship redis invalidate', sql_delete_ship_fn, sql_delete_query, sql_delete_inv, -1))
 

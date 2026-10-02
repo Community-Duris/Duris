@@ -11,6 +11,7 @@ Pins these previously repaired boundaries:
 """
 
 from _paths import SRC
+from _source_contract import function_bodies
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -233,11 +234,12 @@ require(
     "const char *failed_component" in LOAD_REPOSITORY_H,
     "the load result must carry the failing repository stage back to the game thread",
 )
-execute = section(
-    LOAD_REPOSITORY,
-    "player_load_result player_load_repository_execute(MYSQL *connection,",
-    "\n\tresult.metrics.transaction_usec",
-)
+execute_bodies = function_bodies(LOAD_REPOSITORY, "execute_player_load")
+require(len(execute_bodies) == 1, "the shared load executor must have one definition")
+execute = execute_bodies[0]
+public_executor = function_bodies(LOAD_REPOSITORY, "player_load_repository_execute")
+require(len(public_executor) == 1 and "execute_player_load(connection, request, false)" in public_executor[0],
+        "the public load path must use the executor whose diagnostics are checked")
 for token, stage in (
     ('result.failed_component = "status"', "status"),
     ('"components")', "components"),

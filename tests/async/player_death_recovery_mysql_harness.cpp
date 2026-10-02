@@ -12,6 +12,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
+#include <map>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -25,9 +26,17 @@ MYSQL *connection = nullptr;
 std::function<void()> after_start;
 std::function<void()> after_identity_lock;
 } // namespace load_barrier
+namespace query_observation
+{
+MYSQL *connection = nullptr;
+size_t count = 0;
+std::map<MYSQL_STMT *, MYSQL *> statements;
+} // namespace query_observation
 extern "C" int __real_mysql_real_query(MYSQL *, const char *, unsigned long);
 extern "C" int __wrap_mysql_real_query(MYSQL *db, const char *text, unsigned long length)
 {
+	if (db == query_observation::connection)
+		++query_observation::count;
 	const int rc = __real_mysql_real_query(db, text, length);
 	if (!rc && db == load_barrier::connection)
 	{
@@ -47,6 +56,30 @@ extern "C" int __wrap_mysql_real_query(MYSQL *db, const char *text, unsigned lon
 		}
 	}
 	return rc;
+}
+extern "C" MYSQL_STMT *__real_mysql_stmt_init(MYSQL *);
+extern "C" MYSQL_STMT *__wrap_mysql_stmt_init(MYSQL *db)
+{
+	auto statement = __real_mysql_stmt_init(db);
+	if (statement)
+		query_observation::statements.emplace(statement, db);
+	return statement;
+}
+extern "C" int __real_mysql_stmt_execute(MYSQL_STMT *);
+extern "C" int __wrap_mysql_stmt_execute(MYSQL_STMT *statement)
+{
+	const auto found = query_observation::statements.find(statement);
+	if (found != query_observation::statements.end() &&
+	    found->second == query_observation::connection)
+		++query_observation::count;
+	return __real_mysql_stmt_execute(statement);
+}
+using statement_close_result = decltype(mysql_stmt_close(nullptr));
+extern "C" statement_close_result __real_mysql_stmt_close(MYSQL_STMT *);
+extern "C" statement_close_result __wrap_mysql_stmt_close(MYSQL_STMT *statement)
+{
+	query_observation::statements.erase(statement);
+	return __real_mysql_stmt_close(statement);
 }
 
 MYSQL *sql_pool_acquire(void)
@@ -235,13 +268,24 @@ player_load_result load(MYSQL *db, int pid, const std::string &name, bool payloa
 	if (recovery_query)
 		request.death_recovery_query.kind = player_death_recovery_query_kind::list;
 	request.deadline_usec = persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+	query_observation::connection = db;
+	query_observation::count = 0;
 	auto result = player_load_repository_execute(db, request);
+	query_observation::connection = nullptr;
 	if (!recovery_query && payload && result.outcome == player_load_outcome::applied)
 	{
-		const size_t expected_queries = by_name ? PLAYER_LOAD_QUERY_MAX :
-							  PLAYER_LOAD_PID_QUERY_MAX;
-		require(result.metrics.query_count == expected_queries,
-			"healthy full load query count disagrees with materialization budget");
+		const size_t query_limit = by_name ? PLAYER_LOAD_NAME_QUERY_MAX :
+						     PLAYER_LOAD_PID_QUERY_MAX;
+		// This request has no pending craft/spell receipts; empty obligation
+		// results can also avoid witness reads. The budget is a ceiling.
+		require(result.metrics.query_count == query_observation::count,
+			"load query metrics disagree with actual client statement executions: reported=" +
+				std::to_string(result.metrics.query_count) +
+				" actual=" + std::to_string(query_observation::count));
+		require(query_observation::count <= query_limit,
+			"healthy full load exceeded query budget: actual=" +
+				std::to_string(query_observation::count) +
+				" limit=" + std::to_string(query_limit));
 	}
 	return result;
 }

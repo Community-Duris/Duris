@@ -3,7 +3,6 @@
 
 import os
 from pathlib import Path
-import subprocess
 import sys
 import tempfile
 from types import SimpleNamespace
@@ -14,7 +13,7 @@ from unittest.mock import Mock, patch
 journey = SimpleNamespace(
     ROOT=Path(__file__).resolve().parents[2],
     INSPECTOR=Path("unused-shared-inspector"),
-    make_fixture=Mock(), build_flatfile_server=Mock(), run_journey=Mock(),
+    make_fixture=Mock(), build_inspector=Mock(), build_flatfile_server=Mock(), run_journey=Mock(),
 )
 first_session = SimpleNamespace(verify_first_session=Mock())
 with patch.dict(sys.modules, {
@@ -41,13 +40,9 @@ with tempfile.TemporaryDirectory() as temporary:
         supplied = root / "supplied-server"
         calls = []
 
-        def compile_inspector(command, **kwargs):
-            assert command[:3] == [
-                "python3", "tests/async/test_flatfile_player_repository.py",
-                "--build-inspector",
-            ]
-            assert kwargs == dict(cwd=root, check=True, timeout=180)
-            inspector = Path(command[3])
+        def build_inspector(inspector):
+            # Follow the journey's inspector builder; its compiler/deadline
+            # contract is separate from this lifetime and isolation check.
             assert inspector.parent.parent == root / "bin/tests"
             assert inspector.parent.name.startswith(f"auction-coin-put-{os.getpid()}-")
             assert inspector not in destinations
@@ -57,7 +52,6 @@ with tempfile.TemporaryDirectory() as temporary:
             calls.append("inspector")
             if mode == "inspector-failure":
                 raise InjectedFailure(mode)
-            return subprocess.CompletedProcess(command, 0)
 
         def build_server(build_root):
             assert build_root == destinations[-1].parent
@@ -86,7 +80,7 @@ with tempfile.TemporaryDirectory() as temporary:
             arguments += ["--server", str(supplied), "--expect-regression"]
         with (patch.object(auction.journey, "ROOT", root),
               patch.object(sys, "argv", arguments),
-              patch.object(auction.subprocess, "run", side_effect=compile_inspector),
+              patch.object(auction.journey, "build_inspector", side_effect=build_inspector),
               patch.object(auction.journey, "build_flatfile_server", side_effect=build_server),
               patch.object(auction.journey, "run_journey", side_effect=run_journey)):
             try:

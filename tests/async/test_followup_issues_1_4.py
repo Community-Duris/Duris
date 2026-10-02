@@ -31,7 +31,7 @@ assert contains(bid_body, "auction_transaction_submit")
 lock_start = auction_repository.index("bool lock_auction(")
 lock_end = auction_repository.index("bool ensure_owner_revision", lock_start)
 lock_body = auction_repository[lock_start:lock_end]
-assert contains(lock_body, "WHERE a.id=")
+assert contains(lock_body, "WHERE a.id=", literal=True)
 assert contains(lock_body, "FOR UPDATE")
 
 apply_start = critical_repository.index("critical_apply_result critical_command_repository_apply")
@@ -61,7 +61,7 @@ assert contains(locker, "if (!locker_handle_leave(ch, pLocker, room, troom))\n\t
 entry_start = locker.index("int storage_locker_room_hook(")
 entry_end = locker.index("int guild_locker_room_hook(", entry_start)
 entry_body = locker[entry_start:entry_end]
-payment_start = entry_body.index("..but you don't have the money")
+payment_start = entry_body.index('"..but you don\'t have the money')
 payment_end = entry_body.index("// End Money hack", payment_start)
 payment_failure = entry_body[payment_start:payment_end]
 exit_lookup = payment_failure.index("const int exit_room = locker_exit_room(ch, room);")

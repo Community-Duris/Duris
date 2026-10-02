@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
-"""Contract and safety regression for staged baseline epoch cutover activation."""
+"""Source contracts for staged activation; executable refusal lives in test_economic_sql_lifecycle_no_mysql."""
 from pathlib import Path
-import os
 import re
-import shlex
-import subprocess
-import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -49,13 +45,6 @@ class TestEconomicSqlLifecycleActivationContract(unittest.TestCase):
         self.assertIn("AND active_epoch IS NULL", impl)
         # Exact retry accepts only the already selected epoch.
         self.assertIn("parse_id(state[0]).bytes == stored.epoch.bytes", impl)
-
-    def test_client_free_refusal_executes(self):
-        cmd = ["python3", str(ROOT / "tests/async/test_economic_sql_lifecycle_no_mysql.py")]
-        res = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
-        self.assertEqual(res.returncode, 0, f"no-mysql test failed: {res.stderr}\n{res.stdout}")
-        self.assertIn("SQL lifecycle client-free refusal contract: PASS", res.stdout)
-
 
 if __name__ == "__main__":
     unittest.main()
