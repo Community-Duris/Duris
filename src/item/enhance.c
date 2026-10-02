@@ -9,6 +9,9 @@
 #include <math.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <climits>
+#include <cmath>
+#include <cstdint>
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
@@ -381,10 +384,14 @@ static int enhance_entry_modifier(const struct enhance_index_entry *entry, int a
 	return 0;
 }
 
-/* A superior stat may reach floor(1.5 * its positive prototype modifier). */
+/* A superior stat must fit its persisted signed-byte modifier. */
 static int enhance_stat_cap(int base_modifier)
 {
-	return base_modifier > 0 ? (int)(base_modifier * enhance_stat_cap_multiplier) : 0;
+	if (base_modifier <= 0 || !std::isfinite(enhance_stat_cap_multiplier) ||
+	    enhance_stat_cap_multiplier <= 0.0)
+		return 0;
+	const double cap = base_modifier * enhance_stat_cap_multiplier;
+	return cap >= SCHAR_MAX ? SCHAR_MAX : static_cast<int>(cap);
 }
 
 /* Find the deterministic next template: exact stat value, compatible wear slot, lowest vnum. */
@@ -447,6 +454,19 @@ static bool is_superior_stat_apply(int apply_loc)
 	return FALSE;
 }
 
+/* Validate the whole tribute quote before narrowing or consuming materials. */
+static bool scale_superior_material_count(int count, int *scaled)
+{
+	if (count < 0 || !std::isfinite(enhance_stat_material_quantity_multiplier) ||
+	    enhance_stat_material_quantity_multiplier <= 0.0)
+		return FALSE;
+	const double quote = count * enhance_stat_material_quantity_multiplier + 0.999999;
+	if (!std::isfinite(quote) || quote >= static_cast<double>(INT_MAX) + 1.0)
+		return FALSE;
+	*scaled = static_cast<int>(quote);
+	return TRUE;
+}
+
 static bool superior_plan_add_material(struct superior_enhancement_plan *plan, int vnum, int count)
 {
 	int i;
@@ -457,6 +477,8 @@ static bool superior_plan_add_material(struct superior_enhancement_plan *plan, i
 	{
 		if (plan->materials[i].vnum == vnum)
 		{
+			if (plan->materials[i].count > INT_MAX - count)
+				return FALSE;
 			plan->materials[i].count += count;
 			return TRUE;
 		}
@@ -517,11 +539,14 @@ static bool build_superior_enhancement_plan(P_obj item, struct superior_enhancem
 		low_vnum = get_matstart(target_obj);
 		extract_obj(target_obj);
 		high_vnum = low_vnum + 4;
-		high_count = (target->ival + 4) / 5;
-		low_count = (target->ival + 4) - high_count * 5;
-		low_count = (int)(low_count * enhance_stat_material_quantity_multiplier + 0.999999);
-		high_count =
-			(int)(high_count * enhance_stat_material_quantity_multiplier + 0.999999);
+		if (target->ival < 0)
+			return FALSE;
+		const int64_t material_value = static_cast<int64_t>(target->ival) + 4;
+		high_count = static_cast<int>(material_value / 5);
+		low_count = static_cast<int>(material_value % 5);
+		if (!scale_superior_material_count(low_count, &low_count) ||
+		    !scale_superior_material_count(high_count, &high_count))
+			return FALSE;
 		if (!superior_plan_add_material(plan, low_vnum, low_count) ||
 		    !superior_plan_add_material(plan, high_vnum, high_count))
 			return FALSE;
@@ -582,7 +607,15 @@ static bool perform_superior_enhancement(P_char ch, P_obj source, P_obj pouch,
 {
 	char buf[MAX_STRING_LENGTH];
 	int i;
-	int cost = enhance_stat_platinum_base + itemvalue(source) * enhance_stat_platinum_per_ival;
+	const int64_t quoted_cost =
+		static_cast<int64_t>(enhance_stat_platinum_base) +
+		static_cast<int64_t>(itemvalue(source)) * enhance_stat_platinum_per_ival;
+	if (quoted_cost < 0 || quoted_cost > INT_MAX)
+	{
+		send_to_char("The enhancement price is outside the supported range.\r\n", ch);
+		return FALSE;
+	}
+	const int cost = static_cast<int>(quoted_cost);
 
 	if (!superior_plan_has_materials(ch, pouch, plan))
 		return FALSE;
