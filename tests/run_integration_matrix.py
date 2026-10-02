@@ -118,9 +118,11 @@ def freeze_build(directory, environment):
         if exit_code:
             raise RuntimeError("matrix build/check failed; original log: " + str(directory / f"build-{index}.log"))
     # Recheck source bytes after compilation, before declaring this artifact qualified.
-    recorded = json.loads(source_manifest.read_text())
+    recorded = json.loads((directory / "workload-source-manifest.json").read_text())
     if any(digest(ROOT / name) != value for name, value in recorded.items()):
         raise RuntimeError("source changed while compiling frozen matrix artifacts")
+    if subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip() != head:
+        raise RuntimeError("source commit changed while compiling frozen matrix artifacts")
     for binary in binaries.values():
         binary.chmod(0o555)
     source_manifest.chmod(0o444)
@@ -213,7 +215,8 @@ def run_row(row, tokens, environment, specs):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine", choices=("mysql", "mariadb", "once"))
-    parser.add_argument("--match")
+    parser.add_argument("--match", action="append",
+                        help="select rows matching any repeated substring filter")
     parser.add_argument("--list", action="store_true")
     parser.add_argument("--evidence-root", type=Path, default=ROOT / "bin/integration-results")
     parser.add_argument("--tools-image", default=os.environ.get("DURIS_TEST_TOOLS_IMAGE", "duris-regression-tools:local"))
@@ -223,7 +226,7 @@ def main(argv=None):
     rows = workload(document, specs)
     selected = [(engine, row) for engine in (*document["engines"], "once") for row in rows
                 if engine in row["engines"] and (not args.engine or args.engine == engine)
-                and (not args.match or args.match in row["id"])]
+                and (not args.match or any(value in row["id"] for value in args.match))]
     if not selected:
         parser.error("no matrix rows selected")
     if args.list:
