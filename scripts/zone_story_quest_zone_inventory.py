@@ -17,9 +17,11 @@ def special_assignments(source):
     """
     tokens = re.compile(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|//[^\n]*|/\*[\s\S]*?\*/')
     source = tokens.sub(lambda m: re.sub(r"[^\n]", " ", m[0]), source)
-    target = r"(?:mob_index\[real_mobile0\(\d+\)\]\.func\.mob|obj_index\[real_object0\(\d+\)\]\.func\.obj|world\[real_room0\(\d+\)\]\.funct)"
+    target = (r"(?:mob_index\s*\[\s*real_mobile0\s*\(\s*\d+\s*\)\s*\]\s*\.\s*func\s*\.\s*mob"
+              r"|obj_index\s*\[\s*real_object0\s*\(\s*\d+\s*\)\s*\]\s*\.\s*func\s*\.\s*obj"
+              r"|world\s*\[\s*real_room0\s*\(\s*\d+\s*\)\s*\]\s*\.\s*funct)")
     chains = re.compile(rf"(?P<targets>(?:{target}\s*=\s*)+)(?P<function>\w+)\s*;")
-    targets = re.compile(r"(?P<kind>mob_index|obj_index|world)\[(?:real_mobile0|real_object0|real_room0)\((?P<vnum>\d+)\)\]")
+    targets = re.compile(r"(?P<kind>mob_index|obj_index|world)\s*\[\s*(?:real_mobile0|real_object0|real_room0)\s*\(\s*(?P<vnum>\d+)\s*\)\s*\]")
     result = []
     for chain in chains.finditer(source):
         if chain["function"] in {"0", "NULL", "nullptr"}:

@@ -162,6 +162,15 @@ with tempfile.TemporaryDirectory(prefix="duris-authored-story-") as temporary:
     native = ROOT / "docs/reference/ZONE_STORY_QUEST_PRODUCTION_CATALOG.json"
     subprocess.run([str(binary), str(native), str(ROOT / "areas/story/twin_towers_forest.story.json")], cwd=ROOT, check=True)
     subprocess.run([str(binary), str(native), str(ROOT / "areas/story/twin_towers_forest.story.json"), "all"], cwd=ROOT, check=True)
+    boundary_dir = pathlib.Path(temporary) / "sidecar-boundary"
+    boundary_dir.mkdir()
+    boundary_path = boundary_dir / "twin_towers_forest.story.json"
+    encoded = json.dumps(mapping).encode("utf-8")
+    boundary_path.write_bytes(encoded + b" " * (module.MAX_STORY_MAPPING_BYTES - len(encoded)))
+    subprocess.run([str(binary), str(native), str(boundary_path), "boundary"], cwd=ROOT, check=True)
+    with boundary_path.open("ab") as output:
+        output.write(b" ")
+    subprocess.run([str(binary), str(native), str(boundary_path), "oversized"], cwd=ROOT, check=True)
     for version in (1, 2):
         legacy_mapping = copy.deepcopy(mapping)
         legacy_mapping["schema_version"] = version

@@ -61,8 +61,9 @@ integrations; it adds the required `introduction`, `orientation`, and `contacts`
 fields below. Story bindings and step kinds retain the same meanings.
 
 Every shown field is required. Unknown/duplicate fields are rejected. Files
-are bounded to 256 KiB. Plain-text strings are at most 1,024 UTF-8 bytes,
-without controls or `$` substitution tokens. IDs use lowercase letters,
+are bounded to 512 KiB in both the authoring validator and native loader.
+Plain-text strings are at most 1,024 UTF-8 bytes, without controls or `$`
+substitution tokens. IDs use lowercase letters,
 numbers, hyphens, and underscores, at most 64 characters.
 
 ```json

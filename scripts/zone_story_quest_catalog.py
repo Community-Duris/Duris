@@ -25,6 +25,7 @@ REQUIRED_FIELDS = {
 QUEST_BLOCK_RE = re.compile(r"^#(-?\d+)\s*$")
 GOAL_RE = re.compile(r"^([GR])\s+([ITCSE])\s+(-?\d+)\s*$")
 MAX_DURABLE_ITEM_OFFERINGS = 14
+MAX_STORY_MAPPING_BYTES = 512 * 1024
 
 
 def active_quest_files(source_root):
@@ -202,8 +203,8 @@ def production_catalog(source_root, content_revision=2):
             continue
         if not path.is_file():
             raise ValueError(f"{path}: unreadable story mapping")
-        if path.stat().st_size > 256 * 1024:
-            raise ValueError(f"{path}: story mapping exceeds 256 KiB")
+        if path.stat().st_size > MAX_STORY_MAPPING_BYTES:
+            raise ValueError(f"{path}: story mapping exceeds 512 KiB")
         mapping = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=unique_fields)
         if not isinstance(mapping, dict) or mapping.get("source_area") != zone["source_area"]:
             raise ValueError(f"{path}: source_area must match its filename")

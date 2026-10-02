@@ -13,7 +13,7 @@ namespace zone_story_quest_story
 {
 namespace
 {
-constexpr size_t max_file_bytes = 256 * 1024;
+constexpr size_t max_file_bytes = 512 * 1024;
 
 void fields(const cJSON *object, std::initializer_list<std::string_view> expected,
 	    const std::string &path, bool allow_optional = false)

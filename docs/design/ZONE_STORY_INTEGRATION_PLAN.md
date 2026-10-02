@@ -487,6 +487,8 @@ GMCP support, current versus historical status, and no writes/rewards on read.
 - [x] Detect literal chained special assignments and omit commented-out ones;
   export per-area Q/M, prototype, reset, and special evidence. Computed aliases
   and dynamic code still need manual review.
+- [x] Detect multiline literal resolvers and field chains, including all 21
+  Winterhaven animal-decay assignments. Keep alias macros manually reviewed.
 - [x] Complete source story dossiers for Twin Towers and Plains of Life,
   including all support/rejection/lore interactions and custom dependencies.
 - [x] Complete source dossiers for Ailvio, Braddistock, Breale and Abandoned
@@ -507,12 +509,25 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   families, three equipment branches, exact competing ingredients and two-scroll
   reward, thirteen scenery routes, shared speech/door/falling execution,
   Valin/miner availability, mouse recovery and missing inn target.
+- [x] Complete Winterhaven source dossier: all 221 Q/QA contracts, 350 M/MA
+  responses, wildlife/tanning, silk, elemental alchemy, prison/palace, snow-ogre
+  keys, thieves, timed dragon hearts, 49 memories and fifteen artifact recipes.
+  Record foreign ownership, exact M/F parents, optional recipe history,
+  one-use keys, competing consumers, source gaps and gift/scroll repair plans.
+- [x] Raise the bounded sidecar allowance to 512 KiB in both Python authoring
+  and native apply/file-load paths. Exact-boundary and one-byte-over regressions
+  preserve fail-closed, atomic application and the existing per-field limits.
 - [ ] Validate special assignment targets against actual active entity existence,
   not derived zone spans; skip/diagnose missing targets without index-zero fallback.
 - [ ] Qualify recipe consumers and multiple identical outputs with exact UID
   lineage/current stock. Review ordinary recovery flags, wandering availability
   and narrated versus loaded access before declaring a source route playable.
-- [ ] Complete comprehensive source dossiers for the other 208 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 207 roadmap areas.
+- [ ] Add district/family authoring and shared presentation for large zones.
+  Winterhaven's 219 rows fit existing story/objective limits but need a bounded
+  512 KiB source-sidecar allowance for detailed guidance. Preserve receipt IDs;
+  qualify family visibility, conditional recipes and ingredient allocation before
+  collapsing independent commissions or treating every producer as a finale.
 
 ## Per-zone integration register
 
@@ -531,6 +546,7 @@ contract classification; it does not claim complete objective coverage.
 | Quietus Quay | 2 | Complete: four independent missions and seven service rows, covering all 16 Q contracts | Source-comprehensive dossier; optional briefings, ten contacts/all M families, exact sources/rewards, rare availability and supporting exploration | Active reset generation, container-offering policy, world-quest refunds and ship coin settlement remain open | Native projection checks; active source/ship/refund/rare-load journeys pending |
 | Torg | 2 | Complete: twelve achievements plus two services, covering all 15 Q contracts | [Source-comprehensive dossier](zone-stories/TORG.md); optional hide/rose/locket history, twelve contacts/all M families, exact rings/relics/chisels, invasion-dependent recipients and foreign continuations | Active reset sources require generation; scroll/heart direct grants and service adapters remain unqualified | Native projection checks; live holding/invasion, random transform/birth and foreign journeys pending |
 | Vast Hidden Grove | 2 | Complete: three equipment stories, two requests and ten services across 15 Q contracts | [Source-comprehensive dossier](zone-stories/VAST_HIDDEN_GROVE.md); optional recipe history, fourteen contacts/all M families, exact materials/two-scroll output, competing consumers and access | Active source generation and three mixed fees remain unavailable; item-only rewards retain existing accounting | Native projection/receipt checks; live source/holding/pickup, multi-output recovery and access journeys pending |
+| Winterhaven | 2 | Complete: 135 request rows, 84 service rows and two exclusions across 221 Q/QA contracts | [Source-comprehensive dossier](zone-stories/WINTERHAVEN.md); 92 contacts, all 152 nonempty addressable families, 38 optional preparation checks, exact colors/marks/quantities, consumed-key and timed-heart guidance | Active reset generation, 49 mixed payments and custom birth/decay/random multi-output transforms remain unqualified; native item-only receipts retain accounting | Native projection/receipt checks; full access/timer/source/foreign journeys and selected content/service repairs pending |
 | All 27 starter/town areas | 1–2 | Complete static Q classification; detailed counts and evidence in starter/town register | Orientation, encountered people, concrete delivery counts and native receipt checklists; selected multi-step routes | Existing offering limits; reviewed crafting and equipment services do not create story/daily units | All maps pass source/native validation; isolated native guided journey; individual full-world routes pending |
 | Eight additional quest areas | 2 | Complete: 86 contracts → 80 named story/request/service entries | Verified Q/M guidance, distinct material counts, optional preparation hints and receipts; deeper dialogue/lineage/branches pending | Mixed item-and-coin grove recipes remain unavailable; preparation services do not earn story/daily units | Source/native parser and encounter visibility checks; each full-world journey remains pending in the priority roadmap |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |

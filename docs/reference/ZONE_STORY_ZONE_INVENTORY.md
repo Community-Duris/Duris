@@ -340,7 +340,7 @@ identify candidates for explicit semantic adapters. Do not invent turn-in achiev
 | Plane of Earth (`plane_earth_one`) | 0 | No | artifact_hide, artifact_stone, blind_boots, earth_treant, earthquake_gauntlet, magic_pool |
 | Plane of Fire (`plane_fire_one`) | 1 | No | guild_guard, imix_shout, magic_pool, ring_elemental_control, staff_of_blue_flames, unblock_on_death |
 | Plane of Water (`plane_water_one`) | 0 | No | artifact_invisible, magic_pool, olhydra_shout, orb_of_the_sea |
-| The Adventurers Guildhalls (`player_castles`) | 0 | No | guildhome, guildwindow, ship_exit_room |
+| The Adventurers Guildhalls (`player_castles`) | 0 | No | guildhome, guildwindow, magic_mouth, ship_exit_room |
 | The Potion Treasure Vault (`potions`) | 0 | No | — |
 | Pragtog's Domain (`pragtog`) | 0 | No | — |
 | Rabble (`rabble`) | 0 | No | dragonslayer, fooquest_boss, fooquest_mob, newbie_quest |

@@ -37,10 +37,12 @@ neither every branch nor every historical prerequisite.
 | 10 | Quietus Quay | [Comprehensive source dossier](zone-stories/QUIETUS_QUAY.md): 16 Q contracts, 14 M families, four special assignments, five shops, 216 resets; reachable world-quest/ship/shared money execution | Revision 2: four missions plus seven services; optional briefings, ten contacts/all native topic families, exact proof/rewards and rare-source guidance | Active resets; filled-badge tree/parent policy; rare episode availability; world-quest refunds/exact attempts; coordinated ship coin/epic settlement |
 | 11 | Torg | [Comprehensive source dossier](zone-stories/TORG.md): 15 Q contracts, 15 M families, three literal assignments, table-driven teacher/forge reachability, two shops, 597 resets, complete local death specials and bounded foreign continuations | Revision 2: twelve achievements plus two services; optional hide/rose/locket preparation, twelve contacts/all topics, exact rings/relics/chisels and access guidance | Active resets; holding/cap availability; confirmed invasion; committed random scroll/heart lineage and expiry intent; service/unused-content decisions; owned foreign journeys |
 | 12 | Vast Hidden Grove | [Comprehensive source dossier](zone-stories/VAST_HIDDEN_GROVE.md): 15 Q contracts, 12 M families, 100 rooms, 41 mobiles, 72 objects, seven shops, 152 resets and thirteen scenery teleports | Revision 2: three equipment stories, two bird requests and ten services; optional recipe history, fourteen contacts/all topics, exact inputs/rewards and shared-material guidance | Active resets; three mixed fees; Valin/miner roaming/holding; ordinary dead-mouse pickup; invalid inn target; loaded access versus prose; confirmed source/travel/recipe lineage |
-| 13–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 13 | Winterhaven | [Comprehensive source dossier](zone-stories/WINTERHAVEN.md): all 221 Q/QA contracts, 350 M/MA responses, 599 rooms, 314 mobiles, 483 objects, thirteen shops, 1,284 resets, 92 literal assignment candidates and bounded foreign continuations | Revision 2: 135 requests, 84 services, two exclusions, 92 contacts/152 nonempty topic families, 38 optional preparation checks and exact source/key/timer/recipe guidance | Active resets; 49 mixed fees; foreign sources/recipient availability; timed births/decay; random scroll/gift lineage; physical access, source gaps and selected prose/power/service repairs |
+| 14–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Winterhaven, followed by Shairak and Smokeveil Forest. Their earlier
-native bindings do not establish comprehensive source review. Do not advance a zone's status
+The next area is Shairak and Smokeveil Forest, followed by the Twin Keeps of
+Devastated Tharnadia. Their earlier native bindings do not establish comprehensive
+source review. Do not advance a zone's status
 merely because the map parses, the Q denominator matches, or a candidate item
 graph was extracted.
 
@@ -92,7 +94,13 @@ graph was extracted.
 | ZSQ-GROVE-ACCESS | Striker's downward world state loses upper bits and has no D reset, so the mimic route is open. Centaur passage is hidden/closed but unlocked; negative key alone does not require speech. | Derive initial/live exit state from executable loading/reset rules. Builder decides narrative clarification versus intended gates before changing behavior; qualify alternate/supplied routes and falling outcomes. |
 | ZSQ-SPECIAL-TARGET | Literal inn assignment 30511 is inside Solonar's derived span but absent from active rooms; real_room0 falls back to world index zero. | Resolve against actual active entities, skip/log missing assignments and review intended location/owner. Preserve legitimate index-zero targets; range membership is only a lead. |
 | ZSQ-GROVE-RECIPES | Two finales consume the same raw thread/filament; lich and Striker need separate orbs. Lich supplies two scrolls, and Valin requires a small pickaxe beyond the two items emphasized in dialogue. | Current journal uses exact inputs, separate consumer guidance and optional receipts. Extend explicit recipe edges/counts, distinct UID output recovery, current stock and accepted all-stage policies; keep three fee refusals separate from seven coin rewards. |
-| Evidence extractor gaps | Fixed chained literal assignment detection and ignored commented assignments. Object/mobile membership follows source prototypes rather than room bounds. | Continue review for aliases, computed VNUMs, preprocessor branches, table-driven teacher/smith assignments, F-selected parents, and foreign reset sources; extraction remains a lead list, not execution proof. |
+| ZSQ-WINTER-ACCESS / CONSUMED-KEYS | Painting uses `stare`; the chief key breaks after each unlock, and his four-locket finale removes the recipient. Dragon hearts unlock three different seals and retain individual expiry. | Model confirmed verb/scenery travel, live door/attempt state, key consumption and replacement availability. Qualify four locked doors, partly open routes, supplied lockets, early finale and reconnect without inventing prerequisite receipts. |
+| ZSQ-WINTER-RANDOM / GIFT | Attribute/legend scrolls consume before unchecked random publication. Lancer's gem helper returns zero after creation, and the gift is retired before two failed publications. | Verify exact selected UID/context, return/check the created gem, freeze both outputs/prices, commit input/output lineage and print success only after outcome. Test wrong target, failure, replay/crash, foreign and supplied input. |
+| ZSQ-WINTER-TIMERS | Same-VNUM animal birth, carried/ground/container decay and individually timed dragon hearts lack committed source/transform events. Animal worn handling is absent; heart missing-output failure leaves the counter below zero. | Commit actor/NPC episode, exact UID/deadline and placement-aware retirement/replacement. Review intended timers before generalizing to puffadder/Incarnate/plant; qualify retry/reconnect and personal versus supplied proof. |
+| ZSQ-WINTER-SOURCES | Torg memory exists without a found ambassador reset; the city-roof/key route and several artifact inputs have no confirmed ordinary static producer. Volo and Adryv are placed abroad; cap-one Chibbleniffle has two competing placements. | Review computed/foreign/recovered sources and live location/custody. Builder chooses restore/retire/clarify without guessed exits, key rewards or personal-credit assumptions. |
+| ZSQ-WINTER-TERMS / POWERS | Prose differs from actual cloak count, egg/blueprint reward, helmet metal and Incarnate output count. Several advertised powers are commented/unassigned; a Living Legend combat-periodic branch follows an unconditional return. | Propose targeted content corrections/restoration and separately qualify intended effects. Keep native receipts valid; no inactive power, discussion or lore-only king/vault becomes a completed objective. |
+| ZSQ-WINTER-CAPACITY / FAMILIES | 219 detailed rows exceed the old 256 KiB authoring limit. 49 memory requests, competing supplies and 49 mixed payments need distinct family/service treatment. | Raise the guarded source bound to 512 KiB with boundary regression; add district/family projection, conditional recipe/ingredient allocation and committed multi-output settlement before collapsing campaigns. |
+| Evidence extractor gaps | Fixed chained/multiline literal assignment detection and ignored commented assignments. Object/mobile membership follows source prototypes rather than room bounds. | Continue review for aliases, computed VNUMs, preprocessor branches, table-driven teacher/smith assignments, F-selected parents, and foreign reset sources; extraction remains a lead list, not execution proof. |
 
 ## Verification record
 
@@ -419,3 +427,52 @@ The queue is now twelve of 220 source-comprehensive areas, with 208 pending.
 Continue with Winterhaven, then Shairak and Smokeveil Forest. Full active-world
 generation, semantic events, service settlement and played/recovery journeys
 remain open.
+
+## Winterhaven source pass and verification — October 2, 2026
+
+The [Winterhaven dossier](zone-stories/WINTERHAVEN.md) and
+[reproducible index](../reference/zone-story-audits/wh.md) cover all 571 native
+blocks, 599 rooms, 314 mobiles, 483 objects, thirteen shops and 1,284 resets.
+Bounded foreign reads resolve source ownership, actual heart births/keys,
+scroll lineage, artifact inputs and related consumers. The 92 literal assignment
+candidates include 21 animal decays recovered by multiline resolver/field-chain
+extraction. Macro aliases remain manually resolved. All 48 reset-sourced memories
+and the engineer-reward Ultarium memory were checked separately.
+
+Revision 2 retains 219 row IDs and their bindings/categories, two exclusions,
+135 achievements and 84 services. It adds 92 contacts covering all 152 nonempty
+addressable topic families, 38 optional preparation checks and exact sources,
+colors/marks, counts, keys, timers and competing consumers. Unsupported personal
+or semantic history is described in the plan rather than falsely recorded.
+
+Focused checks passed:
+
+- `test_zone_story_quest_production_catalog.py`: catalog/snapshot and generated
+  inventory agreement, thirteen reproducible indices, nonempty topic/alias
+  coverage, multiline literal assignments and the authoring byte boundary.
+- `test_zone_story_quest_story.py`: all 36 native maps and schemas 1/2/3;
+  thirteen-root supplied Storm recipe, two cosmic-dust copies, distinct same-name
+  marks, optional key preparation, 49 fee warnings, spent equipment/orbs staying
+  missing despite service receipts, independent memories and 135 recovered
+  achievements without invented foreign completion. Native apply and file-load
+  accept exactly 512 KiB and reject one byte over without partial application.
+- `test_zone_story_quest_production.py` and `test_zone_story_quest_catalog.py`:
+  runtime production/bootstrap and catalog contracts.
+- Maintained SQL C++20 build with `make -C src -j6 CC=g++-12 BIN_ROOT=../bin` and
+  `EXTRA_LDFLAGS=-L/tmp/plan2-hiredis/home/wsl/.local/duris-build-deps/hiredis-1.4.1/lib`.
+  The existing matched hiredis/TLS libraries were used; no dependency installed.
+  Formatting and whitespace checks passed.
+
+All 2,668 native definitions, source fingerprint/content revision, registry,
+bindings/classifications/exclusions and other 35 maps remain unchanged as parsed
+objects. Global projection remains 2,359 achievements, 1,962 potential daily
+units and 2,509 rows including services/administrative content. Python and native
+source-sidecar bounds now agree at 512 KiB; per-story/objective/text bounds remain.
+
+The findings register adds consumed-key/access policy, timed birth/decay,
+recoverable random gifts/scrolls, missing/foreign sources, selected prose/power
+repairs and district/family authoring. These are explicit implementation and
+qualification plans; mixed fees, fresh active sources and full played/recovery
+journeys remain pending. No accounting activation, DB operation, migration or
+merge occurred. The queue is thirteen of 220 source-comprehensive areas, with
+207 pending; continue with Shairak and Smokeveil Forest, then the Twin Keeps.

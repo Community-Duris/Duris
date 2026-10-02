@@ -61,6 +61,33 @@ const char *example = "mob_index[real_mobile0(97)].func.mob = quoted;";
 ''')
 assert [(a["kind"], a["vnum"], a["function"], a["line"]) for a in assignments] == [
     ("mob", 10, "shared", 4), ("mob", 11, "shared", 5), ("room", 13, "gate", 7)]
+multiline = inventory_module.special_assignments('''
+obj_index [ real_object0 (
+ 14
+) ]
+ .func
+ .obj = obj_index [ real_object0 (15) ] .func .obj = decay;
+obj_index[real_object0(computed_vnum)].func.obj = computed;
+''')
+assert [(a["kind"], a["vnum"], a["function"], a["line"]) for a in multiline] == [
+    ("obj", 14, "decay", 2), ("obj", 15, "decay", 6)]
+wh_evidence = inventory_module.area_evidence(ROOT, "wh")
+assert len(wh_evidence["requests"]) == 221 and len(wh_evidence["special_assignments"]) == 92
+assert {a["vnum"] for a in wh_evidence["special_assignments"] if a["function"] == "wh_corpse_decay"} == set(range(55500, 55521))
+assert len(wh_evidence["dialogue"]) == 191 and len(wh_evidence["reset_commands"]) == 1284
+assert len(wh_evidence["mobs"]) == 314 and len(wh_evidence["items"]) == 483
+wh_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "wh")
+wh_contacts = {c["mob_vnum"]: c for c in wh_mapping["contacts"]}
+nonempty_topics = 0
+for response in wh_evidence["dialogue"]:
+    aliases = set(response["body"][0].rstrip("~").split())
+    # Empty native default bodies do not provide a useful advertised topic.
+    if inventory_module.plain(" ".join(response["body"][1:]).replace("~", "")):
+        assert aliases & set(wh_contacts[response["giver_vnum"]]["topics"])
+        nonempty_topics += 1
+assert nonempty_topics == 152 and len(wh_contacts) == 92
+for vnum, contact in wh_contacts.items():
+    assert contact["keyword"] in wh_evidence["mobs"][vnum]["keywords"]
 twin = inventory_module.area_evidence(ROOT, "twin_towers_forest")
 assert len(twin["requests"]) == 84 and len(twin["dialogue"]) == 58
 assert len(twin["reset_commands"]) == 345
@@ -160,7 +187,7 @@ for response in solonar["dialogue"]:
     assert set(response["body"][0].rstrip("~").split()) & set(solonar_contacts[response["giver_vnum"]]["topics"])
 for vnum, contact in solonar_contacts.items():
     assert contact["keyword"] in solonar["mobs"][vnum]["keywords"]
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar"):
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:
@@ -183,5 +210,27 @@ with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") 
     written = json.loads(output.read_text(encoding="utf-8"))
     assert written["source"]["fingerprint_sha256"] == catalog["source"]["fingerprint_sha256"]
     assert len(written["definitions"]) == len(catalog["definitions"])
+
+with tempfile.TemporaryDirectory(prefix="duris-zone-story-sidecar-boundary-") as temporary:
+    fixture = pathlib.Path(temporary)
+    (fixture / "areas/zon").mkdir(parents=True)
+    (fixture / "areas/story").mkdir()
+    (fixture / "areas/AREA").write_text("sample\n", encoding="utf-8")
+    (fixture / "areas/zon/sample.zon").write_text("#1\nSample~\n199 2\n", encoding="utf-8")
+    mapping = {"schema_version": 1, "revision": 1, "source_area": "sample",
+               "coverage": "complete", "stories": [], "exclusions": []}
+    path = fixture / "areas/story/sample.story.json"
+    encoded = json.dumps(mapping).encode("utf-8")
+    assert catalog_module.MAX_STORY_MAPPING_BYTES == 512 * 1024
+    path.write_bytes(encoded + b" " * (catalog_module.MAX_STORY_MAPPING_BYTES - len(encoded)))
+    assert catalog_module.production_catalog(fixture)["story_mappings"] == [mapping]
+    with path.open("ab") as output:
+        output.write(b" ")
+    try:
+        catalog_module.production_catalog(fixture)
+    except ValueError as error:
+        assert "exceeds 512 KiB" in str(error)
+    else:
+        raise AssertionError("oversized source sidecar was accepted")
 
 print("zone-story production catalog coverage regression passed")

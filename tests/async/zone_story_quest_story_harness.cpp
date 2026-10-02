@@ -4,6 +4,7 @@
 #include <cjson/cJSON.h>
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -113,6 +114,25 @@ int main(int argc, char **argv)
 	require(zone_story_quest_catalog::eligible_definition_count(catalog, 135, 2) == 84,
 		"raw Twin Towers count changed");
 	std::string error;
+	if (argc > 3 && (std::string(argv[3]) == "boundary" || std::string(argv[3]) == "oversized"))
+	{
+		const bool accepted = std::string(argv[3]) == "boundary";
+		auto loaded = catalog;
+		require(zone_story_quest_story::apply(read(argv[2]), "twin_towers_forest", &catalog,
+						      &error) == accepted,
+			"native sidecar apply disagreed with the byte boundary");
+		require(zone_story_quest_story::load(
+				&loaded, &error,
+				std::filesystem::path(argv[2]).parent_path().string()) == accepted,
+			"native file loader disagreed with the byte boundary");
+		for (const auto *candidate : { &catalog, &loaded })
+			require(candidate->story_mappings.size() == (accepted ? 1 : 0) &&
+					zone_story_quest_catalog::eligible_definition_count(
+						*candidate, 135, 2) == (accepted ? 10 : 84),
+				"sidecar boundary failure partially applied a mapping");
+		require(accepted || !error.empty(), "oversized sidecar lacked a diagnostic");
+		return 0;
+	}
 	if (argc > 3 && std::string(argv[3]) == "all")
 	{
 		std::unique_ptr<cJSON, decltype(&cJSON_Delete)> snapshot(
@@ -714,6 +734,96 @@ int main(int argc, char **argv)
 				restored_grove.progress_for_zone(7, 42, 358).completed == 0 &&
 				restored_grove.progress_for_zone(7, 42, 831).completed == 0,
 			"grove reload changed local receipts or invented foreign completion");
+		const auto &storm = story_for("wh", "request-55103-dd5688196e76");
+		const auto &cosmos = story_for("wh", "request-55103-0e8b41819618");
+		const auto &dagger_marks = story_for("wh", "request-55116-e78a927f5454");
+		const auto &chief_key = story_for("wh", "request-55229-23f9768a6235");
+		const auto &winter =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "wh"; });
+		service supplied_winter(catalog);
+		require(supplied_winter.discover_zone(7, 42, 550, 55125, 100, "arrival") ==
+				result::applied,
+			"Winterhaven arrival discovery failed");
+		for (const auto &contact : winter.contacts)
+			require(supplied_winter.meet_npc(7, 42, contact.mob_vnum, 55125, 101) ==
+					result::applied,
+				"Winterhaven fixture encounter failed");
+		supplies.carried.clear();
+		for (int material : { 22631, 34541, 55166, 55209, 55284, 75856, 76050, 76066, 76243,
+				      76634, 82553, 82554, 82555, 55167, 55319, 55233 })
+			supplies.carried[material] = 1;
+		supplies.carried[55291] = 3;
+		const auto before_winter_read = supplied_winter.serialize_state();
+		journal = supplied_winter.render_journal(7, 42, 550, 10, 1, 102, false, false,
+							 &supplies);
+		for (const auto *recipe : { &storm, &chief_key })
+			require(journal.find("Next: " + recipe->steps.back().text) !=
+					std::string::npos,
+				"supplied Winterhaven recipe required optional preparation");
+		// The cosmos and storm share a giver, so check its distinct missing-dust text.
+		require(journal.find("Next: " + cosmos.steps[5].text) != std::string::npos &&
+				journal.find("Next: " + dagger_marks.steps[1].text) !=
+					std::string::npos &&
+				journal.find("Next: " + dagger_marks.steps.back().text) ==
+					std::string::npos,
+			"duplicate dust or a same-name dagger mark satisfied distinct requirements");
+		for (const auto *recipe : { &storm, &cosmos, &chief_key })
+			for (const auto &step : recipe->steps)
+				if (step.optional)
+					require(journal.find("Next: " + step.text) ==
+							std::string::npos,
+						"optional Winterhaven preparation displaced live requirements");
+		fee_warnings = 0;
+		for (size_t at = journal.find(unavailable); at != std::string::npos;
+		     at = journal.find(unavailable, at + unavailable.size()))
+			++fee_warnings;
+		require(fee_warnings == 49,
+			"Winterhaven fee refusals disappeared or item-only coin rewards became fees");
+		supplies.carried[55319] = 2;
+		supplies.carried[55375] = supplies.carried[55379] = 1;
+		journal = supplied_winter.render_journal(7, 42, 550, 10, 1, 102, false, false,
+							 &supplies);
+		require(journal.find("Next: " + cosmos.steps[5].text) == std::string::npos &&
+				journal.find("Next: " + dagger_marks.steps.back().text) !=
+					std::string::npos &&
+				supplied_winter.serialize_state() == before_winter_read &&
+				supplied_winter.progress_for_zone(7, 42, 550).completed == 0 &&
+				supplied_winter.progress_for_zone(7, 42, 550).total == 135,
+			"Winterhaven exact stock failed or reading/possession created history");
+		for (const auto &recipe : winter.stories)
+			if (recipe.category == "service")
+				record(supplied_winter, recipe.contracts.front(), recipe.id.c_str(),
+				       550, 55125);
+		require(supplied_winter.progress_for_zone(7, 42, 550).completed == 0,
+			"Winterhaven services added achievements");
+		supplies.carried.erase(55166);
+		supplies.carried.erase(55209);
+		journal = supplied_winter.render_journal(7, 42, 550, 10, 1, 122, false, false,
+							 &supplies);
+		require(journal.find("Next: " + storm.steps[4].text) != std::string::npos,
+			"Winterhaven preparation receipts recreated consumed improved equipment");
+		supplies.carried[55166] = 1;
+		journal = supplied_winter.render_journal(7, 42, 550, 10, 1, 122, false, false,
+							 &supplies);
+		require(journal.find("Next: " + storm.steps[5].text) != std::string::npos,
+			"Winterhaven orb receipt recreated consumed stock");
+		const auto &first_memory = story_for("wh", "request-55202-7a73a52f2b9a");
+		record(supplied_winter, first_memory.contracts.front(), "first-memory", 550, 55125);
+		require(supplied_winter.progress_for_zone(7, 42, 550).completed == 1,
+			"one memory receipt completed other independent deliveries");
+		for (const auto &recipe : winter.stories)
+			if (recipe.category != "service" && recipe.id != first_memory.id)
+				record(supplied_winter, recipe.contracts.front(), recipe.id.c_str(),
+				       550, 55125);
+		service restored_winter(catalog);
+		require(restored_winter.deserialize_state(supplied_winter.serialize_state(),
+							  &error) &&
+				restored_winter.progress_for_zone(7, 42, 550).completed == 135 &&
+				restored_winter.progress_for_zone(7, 42, 550).total == 135 &&
+				restored_winter.progress_for_zone(7, 42, 306).completed == 0 &&
+				restored_winter.progress_for_zone(7, 42, 831).completed == 0,
+			"Winterhaven reload changed local receipts or invented foreign completion");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;
