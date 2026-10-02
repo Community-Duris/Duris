@@ -257,13 +257,16 @@ class ManualRegistrationTests(unittest.TestCase):
             "test_pa_coin_sql.py",
             "test_pa_web_recovery_sql.py",
         }
-        self.assertLessEqual(leased_journeys, regression_runner.MANUAL_ONLY_TEST_NAMES)
+        manual = {spec.path.name for spec in regression_runner.inventory(
+            regression_runner.TEST_DIRECTORY, regression_runner.MANIFEST) if spec.manual}
+        self.assertLessEqual(leased_journeys, manual)
         discovered_names = {path.name for path in regression_runner.discover_tests(None)}
         self.assertFalse(leased_journeys & discovered_names)
         self.assertIn("test_pa_copyover_artifact_contract.py", discovered_names)
 
     def test_rollout_sql_and_account_authority_journeys_are_manual_only(self):
-        manual = regression_runner.MANUAL_ONLY_TEST_NAMES
+        manual = {spec.path.name for spec in regression_runner.inventory(
+            regression_runner.TEST_DIRECTORY, regression_runner.MANIFEST) if spec.manual}
         self.assertIn("test_pa_copyover_sql.py", manual)
         self.assertIn("test_pa_copyover_account_authority.py", manual)
         discovered_names = {path.name for path in regression_runner.discover_tests(None)}

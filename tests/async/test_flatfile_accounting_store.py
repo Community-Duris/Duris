@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+from native_build_artifacts import build_native
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = [
@@ -25,20 +26,36 @@ SOURCES = [
 def main():
     # Private authority metadata requires a native filesystem, including when
     # the checkout itself lives on a Windows mount under WSL.
-    with tempfile.TemporaryDirectory(prefix="duris-accounting-") as temporary:
-        binary = Path(temporary) / "store"
-        subprocess.run(
+    (ROOT / "bin/tests").mkdir(parents=True, exist_ok=True)
+    with (tempfile.TemporaryDirectory(prefix="duris-accounting-", dir=ROOT / "bin/tests") as build,
+          tempfile.TemporaryDirectory(prefix="duris-accounting-state-") as temporary):
+        binary = Path(build) / "store"
+        binary = build_native(
+            binary,
+            SOURCES,
             [
-                "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
-                "-O1", "-g", "-fsanitize=address,undefined",
-                "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
+                "-std=c++20",
+                "-Wall",
+                "-Wextra",
+                "-Wpedantic",
+                "-Werror",
+                "-O1",
+                "-g",
+                "-fsanitize=address,undefined",
+                "-fno-omit-frame-pointer",
+                "-fno-pie",
+                "-no-pie",
                 "-DDURIS_FLATFILE_ACCOUNTING_TEST",
-                "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST", "-Isrc", *SOURCES,
-                "-Wl,--wrap=write,--wrap=fdatasync,--wrap=fsync,--wrap=renameat,--wrap=unlinkat,--wrap=_Znwm",
-                "-lcrypto", "-pthread", "-o", str(binary),
+                "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
+                "-Isrc",
+                "-pthread",
             ],
-            cwd=ROOT,
-            check=True,
+            [
+                "-Wl,--wrap=write,--wrap=fdatasync,--wrap=fsync,--wrap=renameat,--wrap=unlinkat,--wrap=_Znwm",
+                "-lcrypto",
+                "-pthread",
+            ],
+            compiler="g++", name="accounting-store",
         )
         subprocess.run(
             [str(binary), str(Path(temporary) / "state")],
