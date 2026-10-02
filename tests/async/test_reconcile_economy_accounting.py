@@ -121,6 +121,65 @@ class ReconciliationTests(unittest.TestCase):
             self.assertNotIn("alias", json.dumps(data))
             self.assertLessEqual(len(data["rows"]), 3)
 
+    def test_checked_copper_totals_for_holdings_origins_and_effects(self):
+        # All denomination fields fit int64 and the postings still balance.
+        # Consistent oversized opening/effect/native values cannot qualify.
+        for platinum in ((2**63 - 1 - 10) // 1000, 2**63 - 1):
+            snapshot = clean_snapshot()
+            for row in snapshot["account_origins"]:
+                if row["account_key"] == WALLET:
+                    row["balance"][3] = platinum
+            for row in snapshot["effects"]:
+                if row["account_key"] == WALLET:
+                    row["before"][3] = row["after"][3] = platinum
+            for row in snapshot["native"]["holdings"]:
+                if row["account_key"] == WALLET:
+                    row["balance"][3] = platinum
+            before = copy.deepcopy(snapshot)
+            if platinum == 2**63 - 1:
+                with self.assertRaisesRegex(SnapshotError, "copper overflow"):
+                    Reconciler().audit(snapshot)
+            else:
+                self.assertEqual(self.codes(snapshot), set())
+            self.assertEqual(snapshot, before)
+
+        # Check each independently, including before-images. A stale closing
+        # report is insufficient when the vector itself is unrepresentable.
+        for domain, side in (("native", "balance"), ("origin", "balance"),
+                             ("effect", "before"), ("effect", "after")):
+            for amount in (2**63 - 1, -(2**63)):
+                with self.subTest(domain=domain, side=side, amount=amount):
+                    snapshot = clean_snapshot()
+                    rows = {"native": snapshot["native"]["holdings"],
+                            "origin": snapshot["account_origins"],
+                            "effect": snapshot["effects"]}[domain]
+                    rows[0][side][3] = amount
+                    before = copy.deepcopy(snapshot)
+                    with self.assertRaisesRegex(SnapshotError, "copper overflow"):
+                        Reconciler().audit(snapshot)
+                    self.assertEqual(snapshot, before)
+
+    def test_cli_refuses_overflow_with_zero_output_limit_without_repair(self):
+        snapshot = clean_snapshot()
+        snapshot["native"]["holdings"][0]["balance"][3] = 2**63 - 1
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "snapshot.json"
+            path.write_text(json.dumps(snapshot), encoding="utf-8")
+            original = path.read_bytes()
+            result = subprocess.run([sys.executable,
+                str(ROOT / "scripts/reconcile_economy_accounting.py"), str(path),
+                "--limit", "0"], capture_output=True, text=True, check=False)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("copper overflow", result.stderr)
+            self.assertEqual(result.stdout, "")
+            self.assertEqual(path.read_bytes(), original)
+            path.write_text(json.dumps(clean_snapshot()), encoding="utf-8")
+            repaired = subprocess.run([sys.executable,
+                str(ROOT / "scripts/reconcile_economy_accounting.py"), str(path),
+                "--limit", "0"], capture_output=True, text=True, check=False)
+            self.assertEqual(repaired.returncode, 0, repaired.stderr)
+            self.assertEqual(json.loads(repaired.stdout)["exception_count"], 0)
+
     def money_revision_snapshot(self, before):
         snapshot = clean_snapshot()
         for origin in snapshot["account_origins"]:

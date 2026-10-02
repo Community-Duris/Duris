@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 import economic_sql_audit_snapshot as exporter  # noqa: E402
 from economic_sql_audit_snapshot import capture  # noqa: E402
-from reconcile_economy_accounting import Reconciler  # noqa: E402
+from reconcile_economy_accounting import Reconciler, SnapshotError  # noqa: E402
 from test_economic_sql_audit_origins import EPOCH, LINEAGE, OPENING, OP, key, witness  # noqa: E402
 
 INSTALL = bytes.fromhex("77" * 16)
@@ -493,6 +493,31 @@ try:
             assert capture(audit, LINEAGE, EPOCH) == snapshot
             print("SQL money uint64 boundary: wallet/pile authority, stale-revision refusal "
                   "and baseline recovery passed", flush=True)
+            # Representable denomination fields may still overflow checked
+            # copper totals. These are corrupt disposable evidence/native rows;
+            # neither the exporter nor reconciler may wrap or auto-repair them.
+            for table, column, predicate, params in (
+                    ("economic_accounting_account_effect", "before_platinum",
+                     "operation_id=%s AND account_index=0", (root,)),
+                    ("economic_accounting_account_effect", "after_platinum",
+                     "operation_id=%s AND account_index=0", (root,)),
+                    ("player_data", "platinum", "pid=%s", (7,))):
+                for amount in (2**63 - 1, -(2**63)):
+                    with setup.cursor() as writer:
+                        writer.execute(f"UPDATE {table} SET {column}=%s WHERE {predicate}",
+                                       (amount, *params))
+                    corrupted = capture(audit, LINEAGE, EPOCH)
+                    try:
+                        Reconciler().audit(corrupted)
+                    except SnapshotError as error:
+                        assert str(error) == "copper overflow", error
+                    else:
+                        raise AssertionError("out-of-range weighted money vector was accepted")
+                    with setup.cursor() as writer:
+                        writer.execute(f"UPDATE {table} SET {column}=0 WHERE {predicate}", params)
+                    assert capture(audit, LINEAGE, EPOCH) == snapshot
+            print("SQL checked copper: native/effect overflow refusal and exact "
+                  "unchanged snapshot repair passed", flush=True)
             # The native schema uses uint64 revisions. Qualify a complete
             # witnessed move at UINT64_MAX, separately from owner counters.
             maximum_revision = 2**64 - 1
