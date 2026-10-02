@@ -48,7 +48,7 @@
     "current_occurrences": 2811,
     "current_unique_path_line_family_sites": 2753,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "bf6aac22ffaf4406a364089b8f7eafcf4feacca9",
+    "draft_source_commit": "e8ca4e4482768c95e22a83772db1d2605863708f",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
     "draft_unique_sites": 2753,
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "bf6aac22ffaf4406a364089b8f7eafcf4feacca9",
+  "repository_head": "e8ca4e4482768c95e22a83772db1d2605863708f",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -17947,7 +17947,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          359
+          360
         ],
         "file": "src/item/enhance.c",
         "function": "enhance_base_modifier",
@@ -18058,7 +18058,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1959
+          1960
         ],
         "file": "src/item/enhance.c",
         "function": "load_enhance_index",
@@ -18105,7 +18105,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          385
+          386
         ],
         "file": "src/item/enhance.c",
         "function": "enhance_material_name",
@@ -18353,7 +18353,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1180
+          1181
         ],
         "file": "src/item/enhance.c",
         "function": "enhance_load_essence_drop",
@@ -20395,7 +20395,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          982
+          983
         ],
         "file": "src/item/enhance.c",
         "function": "modenhance",
@@ -20456,7 +20456,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          982
+          983
         ],
         "file": "src/item/enhance.c",
         "function": "modenhance",
@@ -20518,7 +20518,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          982
+          983
         ],
         "file": "src/item/enhance.c",
         "function": "modenhance",
@@ -20660,7 +20660,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2088
+          2089
         ],
         "file": "src/item/enhance.c",
         "function": "enhance_on_npc_item_reset_skipped",
@@ -22481,7 +22481,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          625
+          626
         ],
         "file": "src/item/enhance.c",
         "function": "perform_superior_enhancement",
@@ -22528,7 +22528,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          530
+          531
         ],
         "file": "src/item/enhance.c",
         "function": "build_superior_enhancement_plan",
@@ -22651,7 +22651,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1159
+          1160
         ],
         "file": "src/item/enhance.c",
         "function": "thanksgiving_proc",
