@@ -48,7 +48,7 @@
     "current_occurrences": 2806,
     "current_unique_path_line_family_sites": 2748,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "0464613a1f105320cc7c511f29603bc1c69adf7c",
+    "draft_source_commit": "681ba51cdd879f6f50b93672f8fa519dacdab95d",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
     "draft_unique_sites": 2748,
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "0464613a1f105320cc7c511f29603bc1c69adf7c",
+  "repository_head": "681ba51cdd879f6f50b93672f8fa519dacdab95d",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -24811,7 +24811,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           722,
-          4840
+          4847
         ],
         "file": "src/sql/sql.c",
         "function": "sql_pwipe",
@@ -24858,7 +24858,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           549,
-          2878
+          2885
         ],
         "file": "src/sql/sql.c",
         "function": "sql_soft_delete_character",
