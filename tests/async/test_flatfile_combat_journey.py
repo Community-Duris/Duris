@@ -32,7 +32,20 @@ PASSWORD = "Qz7!mN4@"
 CHARACTER = "Taverek"
 EMAIL = "journey@example.invalid"
 INSPECTOR = ROOT / "bin/tests/coin-death-inspector"
+INSPECTOR_BUILD_TIMEOUT = 600
 ANSI = re.compile(rb"\x1b\[[0-?]*[ -/]*[@-~]")
+
+
+def build_inspector(destination: pathlib.Path = INSPECTOR) -> None:
+    # This compiles the native repository and its authority owners, not a small
+    # inspection shim. Use the server build's budget; gameplay keeps its own
+    # much shorter deadlines. A 180-second limit expired before gameplay in the
+    # frozen 63309643c regression run.
+    started = time.monotonic()
+    subprocess.run(["python3", "tests/async/test_flatfile_player_repository.py",
+                    "--build-inspector", str(destination)], cwd=ROOT, check=True,
+                   timeout=INSPECTOR_BUILD_TIMEOUT)
+    print(f"INSPECTOR_BUILD elapsed={time.monotonic() - started:.3f}s", flush=True)
 
 
 def require(condition: bool, message: str) -> None:
@@ -833,8 +846,7 @@ def run_journey(binary: pathlib.Path, reset_coins: bool = False,
 
 
 if __name__ == "__main__":
-    subprocess.run(["python3", "tests/async/test_flatfile_player_repository.py",
-                    "--build-inspector", str(INSPECTOR)], cwd=ROOT, check=True, timeout=180)
+    build_inspector()
     # Private temporary roots retain standalone build cleanup. The regression
     # runner shares a verified executable across journeys; runtime fixtures
     # remain isolated and are removed on both success and failure.
