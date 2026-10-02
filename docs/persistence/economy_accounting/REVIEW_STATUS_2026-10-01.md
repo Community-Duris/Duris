@@ -102,6 +102,12 @@ This checkpoint publishes the completed review fixes directly to
   mortal physical and pouch Craft/Forge journey preserves exact inputs, output
   UIDs, XP and counters through copyover and two cold restarts.
 
+- The terminal-death entrypoint fixture now compiles the production craft-receipt
+  merge and component mask alongside quest XP. Controlled capture/ACK checks
+  prove that progression capture refusal releases pins and queue bytes, while
+  timeout/resume retains the original operation, discipline and XP even if live
+  recovery state changes. Only the exact database ACK releases the request.
+
 ## Verification and its limits
 
 | Check | Current evidence |
