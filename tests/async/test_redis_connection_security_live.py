@@ -145,11 +145,14 @@ int main(int argc, char **argv)
 }
 '''
 
-    with tempfile.TemporaryDirectory(prefix="redis-connection-security-") as temp_dir:
+    # A qualification TMPDIR can make the socket exceed sockaddr_un.sun_path.
+    # Keep artifacts under TMPDIR and the Unix socket in its own private short root.
+    with (tempfile.TemporaryDirectory(prefix="redis-connection-security-") as temp_dir,
+          tempfile.TemporaryDirectory(prefix="duris-redis-", dir="/tmp") as socket_dir):
         temp = Path(temp_dir)
         plain_port = free_port()
         tls_port = free_port()
-        socket_path = temp / "redis.sock"
+        socket_path = Path(socket_dir) / "redis.sock"
         source = temp / "harness.cpp"
         binary = temp / "harness"
         ca_key = temp / "ca.key"
