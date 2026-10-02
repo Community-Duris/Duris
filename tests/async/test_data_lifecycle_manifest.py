@@ -108,7 +108,7 @@ class LifecycleManifestTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
         self.assertEqual(report["database_tables"], 225)
-        self.assertEqual(report["non_database_stores"], 43)
+        self.assertEqual(report["non_database_stores"], 47)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
 
@@ -126,6 +126,10 @@ class LifecycleManifestTest(unittest.TestCase):
             ("file:flatfile-accounts", "FLATFILE_ROOT/identities/accounts/*.acct"),
             ("file:flatfile-identity-catalog", "FLATFILE_ROOT/identities/names/catalog.identity"),
             ("file:flatfile-item-ownership", "FLATFILE_ROOT/domains/item_ownership"),
+            ("file:flatfile-player-domains", "FLATFILE_ROOT/domains/player-*.domain"),
+            ("file:flatfile-bank-domains", "FLATFILE_ROOT/domains/bank-*.domain"),
+            ("file:flatfile-player-domain-journal", "FLATFILE_ROOT/domains/.player-domain-transaction"),
+            ("file:flatfile-legacy-currency-journal", "FLATFILE_ROOT/domains/.currency-transaction"),
         )
         for entry_id, locator in stores:
             with self.subTest(store=entry_id):
