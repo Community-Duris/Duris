@@ -16,6 +16,7 @@ void help_cache_pulse();
 void help_cache_shutdown();
 std::string help_cache_status();
 const help_catalog *help_cache_get();
+unsigned long help_cache_generation();
 bool help_title_matches(const std::string &title, const std::string &query);
 bool help_title_equal(const std::string &left, const std::string &right);
 
