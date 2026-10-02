@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -139,7 +140,10 @@ def freeze_build(directory, environment):
             "matrix-config"], cwd=ROOT, text=True, env=environment)
     atomic_json(directory / "compiler.json", {"version": compiler, "configurations": configurations})
     recovery_tools = {tool: subprocess.check_output([tool, "--version"], text=True).strip()
-                      for tool in ("mariadb", "mariadbd", "mariadb-install-db")}
+                      for tool in ("mariadb", "mariadbd")}
+    # The bootstrap script does not implement --version; invoking that option
+    # can initialize a database. Bind its bytes instead.
+    recovery_tools["mariadb-install-db_sha256"] = digest(Path(shutil.which("mariadb-install-db")))
     atomic_json(directory / "recovery-tools.json", recovery_tools)
     return {**{key: str(value) for key, value in binaries.items()}, "head": head,
             "binary_sha256": digest(binaries["sql_binary"]), "descriptor": str(descriptor)}
