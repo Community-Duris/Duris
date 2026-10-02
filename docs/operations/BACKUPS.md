@@ -271,7 +271,25 @@ the runtime schema, recomputes the complete migration history, and reconciles
 account/character, wallet, bank, and epic evidence. Epic qualification also
 requires the saved revision to match the last immutable event and every
 revision after its opening baseline to be present; cancelling missing events
-cannot qualify from an unchanged aggregate balance. Runtime boot uses only the
+cannot qualify from an unchanged aggregate balance. Wallet and bank revisions
+also require a complete post-opening history. Their witnesses include successful
+native currency receipts and committed economic account effects resolved through
+retained native mappings. A native and economic witness counts once only for
+the same root and the same one-step wallet/bank transition. A native child
+receipt resolves to its declared economic root; an unrelated operation claiming
+the same revision refuses. Unwitnessed future counters, missing revisions,
+conflicting transitions and stale saved counters refuse.
+Revision comparison retains the full unsigned 64-bit range. Denomination value
+qualification then walks those same committed native/economic before/after
+witnesses from the opening cut to the saved balance. Every before-image must
+match the previous after-image and the final vector must match native authority.
+Matching bridges share a witness only when their root, revisions and all coin
+vectors agree. NULL/negative vectors, conflicting bridges and weighted copper
+totals beyond signed 64-bit refuse using wide decimal arithmetic. Pre-opening
+history is excluded. An economic-only shop effect needs no invented legacy
+currency row. These checks do not replace full economic source/custody
+reconciliation or route qualification.
+Runtime boot uses only the
 new socket. Flatfile restore verifies copied bytes before mutation, runs native
 authority replay, and validates existing account, snapshot, and world catalog bytes.
 Full player/domain loads run after WAL replay, allowing a durable first snapshot

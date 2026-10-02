@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "b401a85219572eadae6cf1c91ae9488eb8bb419e",
+  "source_commit": "4fffb07486c62cb8ea23fb4a39d3be46b9a3a521",
   "census_complete": true,
   "writers": [
     {
@@ -21581,7 +21581,7 @@
       "coverage": "legacy",
       "classification": "Incremental character deletion, then atomic remaining account authorities removal.",
       "authority_boundary": "Account deletion fence and recovery first; credentials removed last",
-      "current_support": "Existing behavior only; accounting integration unverified",
+      "current_support": "Native flatfile accounting admission refuses unsupported deletion under the existing authority lock, including active and corrupt control metadata and empty accounts. Direct wallet/bank removal APIs are independently guarded. ASan/UBSan native deletion/recovery checks pass; the real account-menu journey preserves inactive refusal/retry, deletion, alias erasure and usable-account cold restart. This is bounded refusal evidence, not typed erasure, SQL parity, full accounting qualification or production activation.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -21600,7 +21600,11 @@
         "tests/async/test_flatfile_character_delete.py"
       ],
       "sites": [],
-      "evidence": []
+      "evidence": [],
+      "refusal_source_evidence": [
+        "flatfile_economic_legacy_domain_gate runs under the deletion authority lock before preparing new removal operations; direct player/account domain removal repeats admission under that same lock.",
+        "tests/async/flatfile_character_delete_harness.cpp:accounting_deletion_refusals; tests/async/test_flatfile_character_delete.py (DURIS_TEST_SANITIZERS=1); tests/async/run_flatfile_deletion_journey.py (inactive real server)."
+      ]
     },
     {
       "id": "lifecycle.flat_character_delete",
@@ -21612,7 +21616,7 @@
       "coverage": "legacy",
       "classification": "Compound removal of player and dependent authorities.",
       "authority_boundary": "Snapshot/identity/authority locks; refuses auction references and inconsistent tombstones",
-      "current_support": "Existing behavior only; accounting integration unverified",
+      "current_support": "Native flatfile accounting admission refuses unsupported deletion under the existing authority lock, including active and corrupt control metadata and empty accounts. Direct wallet/bank removal APIs are independently guarded. ASan/UBSan native deletion/recovery checks pass; the real account-menu journey preserves inactive refusal/retry, deletion, alias erasure and usable-account cold restart. This is bounded refusal evidence, not typed erasure, SQL parity, full accounting qualification or production activation.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -21631,7 +21635,11 @@
         "tests/async/test_flatfile_character_delete.py"
       ],
       "sites": [],
-      "evidence": []
+      "evidence": [],
+      "refusal_source_evidence": [
+        "flatfile_economic_legacy_domain_gate runs under the deletion authority lock before preparing new removal operations; direct player/account domain removal repeats admission under that same lock.",
+        "tests/async/flatfile_character_delete_harness.cpp:accounting_deletion_refusals; tests/async/test_flatfile_character_delete.py (DURIS_TEST_SANITIZERS=1); tests/async/run_flatfile_deletion_journey.py (inactive real server)."
+      ]
     },
     {
       "id": "lifecycle.quiescence",
@@ -26966,7 +26974,7 @@
       "sites": [
         [
           "src/player/player_snapshot_repository.c",
-          1838,
+          1917,
           "sql_economy"
         ]
       ],
@@ -40106,12 +40114,12 @@
       "sites": [
         [
           "src/cmd/actinf.c",
-          5076,
+          5223,
           "item_lifecycle"
         ],
         [
           "src/cmd/actinf.c",
-          5084,
+          5231,
           "item_lifecycle"
         ]
       ],
@@ -47155,13 +47163,13 @@
     },
     {
       "path": "src/cmd/actinf.c",
-      "line": 5076,
+      "line": 5223,
       "family": "item_lifecycle",
       "excerpt": "if ((t_obj = read_object(obj_index[i].virtual_number, VIRTUAL)))"
     },
     {
       "path": "src/cmd/actinf.c",
-      "line": 5084,
+      "line": 5231,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(t_obj, FALSE);"
     },
@@ -56431,7 +56439,7 @@
     },
     {
       "path": "src/player/player_snapshot_repository.c",
-      "line": 1838,
+      "line": 1917,
       "family": "sql_economy",
       "excerpt": "\"UPDATE item_current_owner AS current_item SET item_revision=item_revision+1,state=\" +"
     },

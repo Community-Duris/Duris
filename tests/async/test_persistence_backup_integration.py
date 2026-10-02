@@ -498,6 +498,52 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
             with self.assertRaises(backup.BackupError):
                 restore.database_qualify(env)
             sql(env, "UPDATE player_data SET account_name='SyntheticRestore' WHERE pid=42;")
+            # Money authority also needs a witnessed revision, independently
+            # of unchanged denomination totals.
+            for table, key, identity, column in (
+                    ("player_data", "pid", 42, "wallet_revision"),
+                    ("account_banks", "id", 1, "bank_revision")):
+                sql(env, f"UPDATE {table} SET {column}=9 WHERE {key}={identity};")
+                with self.assertRaises(backup.BackupError):
+                    restore.database_qualify(env)
+                sql(env, f"UPDATE {table} SET {column}=0 WHERE {key}={identity};")
+                restore.database_qualify(env)
+            # Removing a cancelling money pair preserves every aggregate and
+            # the latest after-image, but loses two recoverable native revisions.
+            currency_rows = ((1, 1, 12, 20), (2, 2, 14, 18),
+                             (3, -2, 12, 20), (4, -1, 11, 21))
+            def currency_event(revision, delta, wallet_copper, bank_copper):
+                identity = "f1" + f"{revision:030x}"
+                sql(env, "INSERT IGNORE INTO critical_operation_inbox(operation_id,command_hash,"
+                         "keys_hash,command_type,schema_version,payload_version,status,result_code,"
+                         "result_payload,committed_at) VALUES(UNHEX('" + identity + "'),"
+                         "UNHEX(REPEAT('11',32)),UNHEX(REPEAT('22',32)),1,1,1,1,0,X'',CURRENT_TIMESTAMP);")
+                sql(env, "INSERT INTO currency_ledger(operation_id,pid,bank_id,"
+                         "wallet_delta_copper,wallet_delta_silver,wallet_delta_gold,wallet_delta_platinum,"
+                         "bank_delta_copper,bank_delta_silver,bank_delta_gold,bank_delta_platinum,"
+                         "wallet_after_copper,wallet_after_silver,wallet_after_gold,wallet_after_platinum,"
+                         "bank_after_copper,bank_after_silver,bank_after_gold,bank_after_platinum,"
+                         "wallet_revision,bank_revision,reason_type,source_site) VALUES(UNHEX('" +
+                         identity + "'),42,1," + str(delta) + ",0,0,0," + str(-delta) + ",0,0,0," +
+                         str(wallet_copper) + ",12,13,14," + str(bank_copper) + ",22,23,24," +
+                         str(revision) + "," + str(revision) + ",1,1);")
+            for row in currency_rows:
+                currency_event(*row)
+            sql(env, "UPDATE player_data SET wallet_revision=4 WHERE pid=42;"
+                     "UPDATE account_banks SET bank_revision=4 WHERE id=1;")
+            restore.database_qualify(env)
+            sql(env, "DELETE FROM currency_ledger WHERE pid=42 AND wallet_revision IN(2,3);")
+            self.assertEqual(sql(env, query), expected)
+            with self.assertRaises(backup.BackupError):
+                restore.database_qualify(env)
+            for row in currency_rows[1:3]:
+                currency_event(*row)
+            restore.database_qualify(env)
+            sql(env, "DELETE FROM currency_ledger WHERE pid=42;"
+                     "DELETE FROM critical_operation_inbox WHERE LEFT(HEX(operation_id),2)='F1';"
+                     "UPDATE player_data SET wallet_revision=0 WHERE pid=42;"
+                     "UPDATE account_banks SET bank_revision=0 WHERE id=1;")
+            restore.database_qualify(env)
             # A balance alone cannot establish recoverable authority: a future
             # revision without an immutable event would fence legitimate retry.
             sql(env, "UPDATE player_data SET epic_revision=9 WHERE pid=42;")
