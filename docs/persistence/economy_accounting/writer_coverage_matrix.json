@@ -48,7 +48,7 @@
     "current_occurrences": 2805,
     "current_unique_path_line_family_sites": 2747,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "49f76401c57ef816eebed7264a1c59b6f9144207",
+    "draft_source_commit": "7360003fa2da31df73ed4a7f8a5020b7c2c896d7",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
     "draft_unique_sites": 2747,
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "49f76401c57ef816eebed7264a1c59b6f9144207",
+  "repository_head": "7360003fa2da31df73ed4a7f8a5020b7c2c896d7",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -8128,7 +8128,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          402
+          414
         ],
         "file": "src/economy/crafting.c",
         "function": "crafting_configure_recipe_scroll",
@@ -8188,7 +8188,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          504
+          516
         ],
         "file": "src/economy/crafting.c",
         "function": "crafting_get_player_recipes",
@@ -8368,7 +8368,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1169
+          1179
         ],
         "file": "src/economy/crafting.c",
         "function": "crafting_handle_forge_command",
@@ -8427,7 +8427,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          73
+          74
         ],
         "file": "src/economy/crafting.c",
         "function": "submit_recipe_craft",
@@ -8547,7 +8547,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          611
+          623
         ],
         "file": "src/economy/crafting.c",
         "function": "crafting_handle_craft_command",
