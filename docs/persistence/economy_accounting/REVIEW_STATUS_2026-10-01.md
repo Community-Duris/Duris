@@ -65,8 +65,8 @@ This checkpoint publishes the completed review fixes directly to
   now have separate protected retention/export inventory entries. The lifecycle
   validator requires both; removing either is rejected. SQL and flatfile recipe
   recovery policies must also remain protected and retained; nine policy-edit
-  fault cases that previously passed are now refused. Sixteen lifecycle,
-  seven erasure, and six export regressions pass. The inventory now counts 39
+  fault cases that previously passed are now refused. Nineteen lifecycle,
+  seven erasure, and six export regressions pass. The inventory now counts 43
   non-database stores, 225 SQL tables, and 42 Redis surfaces, with destructive
   rules and shared disclosure still disabled pending controller decisions.
 
@@ -80,11 +80,18 @@ This checkpoint publishes the completed review fixes directly to
   runtime-compatibility contracts, and the native read-transaction cleanup fault
   harness pass. Both strict production profiles rebuild successfully.
 
+- Native flatfile player snapshots, account records, identity allocation/name
+  catalog, and item-ownership catalog now have separate required lifecycle
+  entries, alongside legacy compatibility files. Twelve protection/reset edits
+  are refused, and account export rules must exclude both stored password hashes
+  and confirmation secrets. Controller retention and disclosure decisions remain
+  pending; this adds inventory guards without enabling erasure or disclosure.
+
 ## Verification and its limits
 
 | Check | Current evidence |
 | --- | --- |
-| Strict SQL and flatfile production builds | Passed for `49f76401c`; all 1,210 native source files match its committed tree. Recipe gameplay uses the separately qualified `ad5bc52bf` builds. |
+| Strict SQL and flatfile production builds | Passed for `cdbd4022f`; all 1,210 native source files match its committed tree after the formatting-only header repair. Recipe gameplay uses the separately qualified `ad5bc52bf` builds. |
 | Recipe SQL receipts and fault recovery | Passed on disposable MySQL 8.0 and MariaDB 10.11 before the latest upstream integration. |
 | Integrated focused runtime checks | All 16 selected checks passed after the first upstream integration, including the ASan/UBSan prompt fixture. |
 | Null-output publication regression | Passed using the actual native movement module after `0464613a1`. |
