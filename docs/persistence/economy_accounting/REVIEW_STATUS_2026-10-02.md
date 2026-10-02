@@ -350,3 +350,37 @@ destination refuses before deleting content. The fixture copies the maintained
 importer into its own temporary runtime with no checkout `.env`; no production
 help or game rows change. This qualifies the bounded tooling fixture, not the
 complete skipped SQL/backup matrix or accounting release.
+
+## Real SQL deletion/retention and connection-fault checks
+
+Three checks skipped in the frozen broad run now pass against fresh owned schemas
+on actual MySQL 8.0.46 and MariaDB 10.11.14:
+
+- The exact production deletion guard and `sql_delete_player` refuse missing
+  authority, unresolved retained evidence and read failure, preserve caller
+  transaction rollback, and commit a clean deletion without evicting revisions.
+- Two real connections prove retention-first evidence remains visible after the
+  observed deletion lock wait, and deletion-first commit prevents a later
+  publisher from finding the deleted identity. This exercises the production
+  deletion functions and retention's row-lock/evidence boundary, not a full
+  concurrent gameplay save.
+- The actual SQL pool retires open or killed sessions, rolls back their rows,
+  and commits successfully from replacement borrowers.
+
+These checked source files are unchanged in native tree
+`2fa0d98dac56a1687e4af4314da7ac9b327a670d`. Each test owns a fresh namespace;
+no production tables, credentials or rows are involved. The production-profile
+combat fixture reaches healthy death with 12 captured item identities and one
+corpse-create operation, but its later dispute remains held: unassisted recovery
+uses a `TEST_MUD`-only owner, and the default fixture-side payload removal also
+does not release the sealed terminal request. Both production-profile attempts
+remain RED at that later acceptance boundary on MariaDB; no complete passing
+production conflict journey or dual-engine result is claimed.
+
+The same source builds a separate strict development executable, SHA-256
+`8b3556f6e1417c23645883e0e03e19ab9632ca71faf716825753d3373b649b26`.
+Its default-coin MariaDB unassisted journey passes durable acknowledgement before
+the account menu, original item evidence, self-scoped recovery list/detail,
+cold-entry refusal and restart without manual fixture repair. Remaining coin,
+boon and MySQL variants are in progress. The production selector and safety gates
+remain unchanged; these development results do not qualify production release.

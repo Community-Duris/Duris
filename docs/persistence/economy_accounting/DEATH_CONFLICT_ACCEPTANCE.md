@@ -49,6 +49,13 @@ connection settings. Pass generated fixture credentials through the process
 environment, not logs, committed configuration, or command arguments. Do not
 source a checkout `.env` or use a shared database.
 
+For the guarded retained-conflict owner, the selected executable must be built
+with `BUILD_PROFILE=development` (`TEST_MUD`). The probe's unassisted option sets
+the existing disposable selector, but a production executable cannot select that
+owner merely because the environment requests it. Keep the production and
+development binary hashes and evidence separate. A production refusal/hold does
+not qualify unassisted release and is not permission to remove the selector gate.
+
 This probe leaves the injected payload untouched. It requires the account-menu
 transition within the existing 45-second test budget and records whether that
 transition occurred. It must not be described as passing when it times out,
