@@ -59,7 +59,7 @@ TABLES = (
     "CREATE TABLE economic_accounting_child (operation_id BINARY(16),child_index INT,"
     "child_operation_id BINARY(16),parent_index INT) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_item_reference (operation_id BINARY(16),event_index INT,"
-    "child_index INT,item_uid BIGINT,before_revision BIGINT,after_revision BIGINT,"
+    "child_index INT,item_uid BIGINT,before_revision BIGINT UNSIGNED,after_revision BIGINT UNSIGNED,"
     "legacy_operation_id BINARY(16),legacy_event_index INT) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_source_claim (lineage BINARY(16),source_event BINARY(48),"
     "operation_id BINARY(16)) ENGINE=InnoDB",
@@ -83,11 +83,11 @@ TABLES = (
     "claim_revision BIGINT) ENGINE=InnoDB",
     "CREATE TABLE shopkeepers (id BIGINT,cash BIGINT,shop_revision BIGINT) ENGINE=InnoDB",
     "CREATE TABLE item_current_owner (item_uid BIGINT,root_item_uid BIGINT,parent_item_uid BIGINT,"
-    "owner_type INT,owner_id BIGINT,owner_context_id BIGINT,item_revision BIGINT,state INT,"
+    "owner_type INT,owner_id BIGINT,owner_context_id BIGINT,item_revision BIGINT UNSIGNED,state INT,"
     "vnum INT,coin_payload MEDIUMBLOB) ENGINE=InnoDB",
     "CREATE TABLE item_ownership_ledger (operation_id BINARY(16),event_index INT,item_uid BIGINT,"
     "root_item_uid BIGINT,parent_item_uid BIGINT,to_owner_type INT,to_owner_id BIGINT,"
-    "to_owner_context_id BIGINT,item_revision BIGINT,from_owner_revision BIGINT,"
+    "to_owner_context_id BIGINT,item_revision BIGINT UNSIGNED,from_owner_revision BIGINT,"
     "reason_type INT) ENGINE=InnoDB",
 )
 
@@ -448,6 +448,59 @@ try:
             assert report["exception_counts"] == expected_exceptions, report
             # Aggregate owner revisions count changes to many UIDs. They may
             # differ from this UID's revision without changing its history.
+            # The native schema uses uint64 revisions. Qualify a complete
+            # witnessed move at UINT64_MAX, separately from owner counters.
+            maximum_revision = 2**64 - 1
+            high_revision_root = bytes.fromhex("c7" * 16)
+            high_blob = bytearray(blob)
+            item_offset = 192 + struct.unpack_from("<I", high_blob, 184)[0] * 112
+            assert struct.unpack_from("<Q", high_blob, item_offset)[0] == 81
+            assert struct.unpack_from("<Q", high_blob, item_offset + 48)[0] == 2
+            struct.pack_into("<Q", high_blob, item_offset + 48, maximum_revision - 1)
+            with setup.cursor() as writer:
+                writer.execute("UPDATE economic_baseline_witness SET witness_digest=%s,"
+                               "canonical_witness=%s WHERE operation_id=%s",
+                               (hashlib.sha256(high_blob).digest(), bytes(high_blob), OP))
+                writer.execute("UPDATE item_current_owner SET item_revision=%s WHERE item_uid=81",
+                               (maximum_revision,))
+                writer.execute("INSERT INTO economic_accounting_operation VALUES "
+                               "(%s,%s,%s,NULL,32,1,0,NULL,0,0,0,1,NULL)",
+                               (high_revision_root, LINEAGE, EPOCH))
+                writer.execute("INSERT INTO critical_operation_inbox "
+                               "(operation_id,status,result_code) VALUES (%s,1,0)",
+                               (high_revision_root,))
+                writer.execute("INSERT INTO economic_accounting_item_reference VALUES "
+                               "(%s,0,0,81,%s,%s,%s,0)",
+                               (high_revision_root, maximum_revision - 1,
+                                maximum_revision, high_revision_root))
+                writer.execute("INSERT INTO item_ownership_ledger VALUES "
+                               "(%s,0,81,81,NULL,1,7,0,%s,99,1)",
+                               (high_revision_root, maximum_revision))
+            high_snapshot = capture(audit, LINEAGE, EPOCH)
+            assert Reconciler().audit(high_snapshot)["exception_counts"] == expected_exceptions
+            high_event = next(row for row in high_snapshot["native"]["uid_history_events"]
+                              if row["uid"] == 81)
+            assert (high_event["before_revision"], high_event["revision"]) == (
+                maximum_revision - 1, maximum_revision)
+            with setup.cursor() as writer:
+                writer.execute("DELETE FROM economic_accounting_item_reference WHERE operation_id=%s",
+                               (high_revision_root,))
+            missing_high_reference = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert missing_high_reference["exception_counts"]["unreferenced_uid_event"] == 1
+            with setup.cursor() as writer:
+                writer.execute("DELETE FROM item_ownership_ledger WHERE operation_id=%s",
+                               (high_revision_root,))
+                writer.execute("DELETE FROM critical_operation_inbox WHERE operation_id=%s",
+                               (high_revision_root,))
+                writer.execute("DELETE FROM economic_accounting_operation WHERE operation_id=%s",
+                               (high_revision_root,))
+                writer.execute("UPDATE item_current_owner SET item_revision=2 WHERE item_uid=81")
+                writer.execute("UPDATE economic_baseline_witness SET witness_digest=%s,"
+                               "canonical_witness=%s WHERE operation_id=%s",
+                               (hashlib.sha256(blob).digest(), blob, OP))
+            assert capture(audit, LINEAGE, EPOCH) == snapshot
+            print("SQL UID uint64 boundary: witnessed exact move, missing-reference refusal "
+                  "and baseline recovery passed", flush=True)
             with setup.cursor() as writer:
                 writer.execute("UPDATE item_ownership_ledger SET from_owner_revision=99 "
                                "WHERE item_uid=84")
