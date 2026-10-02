@@ -446,6 +446,26 @@ try:
                                    "unmapped_native_wallet": 1,
                                    "unauthorized_mapping_creation": 1}
             assert report["exception_counts"] == expected_exceptions, report
+            # A consistent current/history pair can still refer to a missing
+            # native parent. Lineage history must not bypass topology checks.
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_current_owner SET root_item_uid=999,"
+                               "parent_item_uid=999 WHERE item_uid=84")
+                writer.execute("UPDATE item_ownership_ledger SET root_item_uid=999,"
+                               "parent_item_uid=999 WHERE item_uid=84")
+            orphan_snapshot = capture(audit, LINEAGE, EPOCH)
+            orphan_report = Reconciler().audit(orphan_snapshot)
+            assert orphan_report["exception_counts"].get("orphan_item_parent") == 1, orphan_report
+            assert {"code": "orphan_item_parent", "uid": 84, "parent_uid": 999} in \
+                orphan_report["exceptions"]
+            assert "stale_native_item" not in orphan_report["exception_counts"], orphan_report
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_current_owner SET root_item_uid=84,"
+                               "parent_item_uid=NULL WHERE item_uid=84")
+                writer.execute("UPDATE item_ownership_ledger SET root_item_uid=84,"
+                               "parent_item_uid=NULL WHERE item_uid=84")
+            assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
+                expected_exceptions
             with setup.cursor() as writer:
                 writer.execute("INSERT INTO economic_accounting_operation VALUES "
                                "(%s,%s,%s,NULL,33,1,0,%s,0,0,0,1,NULL)",

@@ -1837,9 +1837,13 @@ class Reconciler:
                 self.emit("missing_native_item", uid=uid)
             elif any(current.get(field) != state[field] for field in state):
                 self.emit("stale_native_item", uid=uid)
-            if current and current.get("parent") is not None and (current.get("parent"),) not in native:
-                self.emit("orphan_item_parent", uid=uid, parent_uid=current.get("parent"))
         for (uid,), item in native.items():
+            # Native topology is independent of the available origin/history
+            # proof. Check each direct edge once, including history-scoped UIDs
+            # and tombstones, before walking ancestors for cycle/root checks.
+            parent_uid = item.get("parent")
+            if parent_uid is not None and (parent_uid,) not in native:
+                self.emit("orphan_item_parent", uid=uid, parent_uid=parent_uid)
             visited = set()
             position = item
             while position.get("parent") is not None:

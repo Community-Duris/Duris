@@ -562,6 +562,56 @@ class ReconciliationTests(unittest.TestCase):
         snapshot["ownership_events"].append(duplicate)
         self.assertIn("duplicate_uid_revision", self.codes(snapshot))
 
+    def test_orphan_parent_is_checked_independently_of_item_history(self):
+        for history_scope in (False, True):
+            for has_origin in (False, True):
+                with self.subTest(history_scope=history_scope, has_origin=has_origin):
+                    snapshot = clean_snapshot()
+                    if not has_origin:
+                        snapshot["item_origins"] = []
+                    if history_scope:
+                        event = copy.deepcopy(snapshot["ownership_events"][0])
+                        event.update(operation_outcome="committed", referenced=False)
+                        snapshot["native"]["uid_history_events"] = [event]
+                    # Keep history and current state consistent: the missing
+                    # parent must be diagnosed without a stale-state mismatch.
+                    snapshot["native"]["items"][0].update(parent=999, root=999)
+                    snapshot["ownership_events"][0].update(parent=999, root=999)
+                    if history_scope:
+                        snapshot["native"]["uid_history_events"][0].update(
+                            parent=999, root=999)
+                    report = Reconciler().audit(snapshot)
+                    self.assertEqual(report["exception_counts"].get("orphan_item_parent"), 1)
+                    self.assertIn({"code": "orphan_item_parent", "uid": 81,
+                                   "parent_uid": 999}, report["exceptions"])
+                    self.assertNotIn("stale_native_item", report["exception_counts"])
+
+    def test_valid_nested_native_items_and_orphan_ancestors(self):
+        native = {
+            (uid,): {"uid": uid, "revision": 1, "root": 83, "parent": parent,
+                     "owner": [1, 7, 0], "state": "live"}
+            for uid, parent in ((81, 82), (82, 83), (83, None))
+        }
+        origins = {identity: {**item, "origin": "baseline"}
+                   for identity, item in native.items()}
+        clean = Reconciler()
+        clean.audit_items({}, {}, origins, native, {81, 82, 83})
+        self.assertEqual(dict(clean.counts), {})
+
+        del native[(83,)]
+        orphan = Reconciler()
+        orphan.audit_items({}, {}, origins, native, {81, 82, 83})
+        self.assertEqual(orphan.counts["orphan_item_parent"], 1)
+        self.assertIn({"code": "orphan_item_parent", "uid": 82,
+                       "parent_uid": 83}, orphan.exceptions)
+
+    def test_tombstone_parent_is_checked_without_an_origin(self):
+        native = {(81,): {"uid": 81, "revision": 2, "root": 999, "parent": 999,
+                          "owner": [8, 0, 0], "state": "tombstone"}}
+        orphan = Reconciler()
+        orphan.audit_items({}, {}, {}, native, {81})
+        self.assertEqual(orphan.counts["orphan_item_parent"], 1)
+
     def test_cli_bounded_exception_result(self):
         snapshot = clean_snapshot()
         snapshot["postings"].pop()
