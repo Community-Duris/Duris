@@ -39,6 +39,7 @@ docs/
 |----------|---------|
 | [PLAYER_SAVE_PIPELINE.md](persistence/PLAYER_SAVE_PIPELINE.md) | Revisioned checkpoint coordinator and completion boundary. |
 | [PLAYER_SAVE_JOURNAL.md](persistence/PLAYER_SAVE_JOURNAL.md) | Journal permissions, bounds, replay, and diagnostics. |
+| [PLAYER_QUARANTINE_RECOVERY.md](persistence/PLAYER_QUARANTINE_RECOVERY.md) | Restricted stopped recovery, durable proof, compatible restore and qualification limits. |
 | [WORLD_RECOVERY_PIPELINE.md](persistence/WORLD_RECOVERY_PIPELINE.md) | Immutable world generations and exact acknowledgement. |
 | [CRITICAL_COMMAND_PIPELINE.md](persistence/CRITICAL_COMMAND_PIPELINE.md) | Operation identity, transaction, journal, outbox, replay, and fences. |
 | [IMMUTABLE_MIGRATIONS.md](persistence/IMMUTABLE_MIGRATIONS.md) | Honest baseline adoption and checksummed ordered migration history. |

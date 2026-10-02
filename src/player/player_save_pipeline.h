@@ -90,7 +90,8 @@ class player_save_pipeline_replay_gate
 	std::atomic<bool> replay_complete_{ false };
 };
 
-bool player_save_pipeline_init(const char *journal_directory);
+bool player_save_pipeline_init(const char *journal_directory,
+			       void (*verify_resolved_recovery)() = nullptr);
 void player_save_pipeline_shutdown(void);
 bool player_save_pipeline_mark(int pid, player_component_mask_t components);
 player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int save_intent,

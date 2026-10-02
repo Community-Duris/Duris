@@ -131,4 +131,33 @@ with tempfile.TemporaryDirectory(prefix="duris-quarantine-restore-") as temporar
         assert result.returncode != 0, case
         assert all(path.read_bytes() == content for path, content in original.items()), case
 
-print("[PASS] native restore preserves both component frames; higher revisions and policy removal keep the PID fenced; damaged hashes, invalid/unsafe policy, wrong root, and symlinks refuse restore")
+    # Reuse the native player fixture: it commits a grant and recovery, then a
+    # later ordinary save. Qualification must inspect native proof, not revision.
+    with tempfile.TemporaryDirectory(prefix="recovery-inspector-", dir=ROOT / "bin/tests") as inspector_dir:
+        inspector = Path(inspector_dir) / "inspector"
+        subprocess.run(["python3", "tests/async/test_flatfile_player_repository.py",
+                        "--build-inspector", str(inspector)], cwd=ROOT, check=True)
+        native = root / "native"
+        subprocess.run([str(inspector), str(native), "quarantine-recovery"], cwd=ROOT, check=True)
+        candidate = root / "resolved"
+        candidate.mkdir(mode=0o700)
+        (candidate / "ISOLATED_RESTORE").write_text("synthetic recovery restore\n")
+        shutil.copytree(native / "case-0", candidate / "state", ignore=shutil.ignore_patterns("journal"))
+        shutil.copytree(native / "case-0/journal", candidate / "journals/players")
+        (candidate / "journals/critical").mkdir(mode=0o700)
+        protected_archive = candidate / "journals/players/player-save.journal.quarantine.archive"
+        original = protected_archive.read_bytes()
+        subprocess.run([str(qualifier), "--journals-drained", str(candidate)], check=True)
+        assert protected_archive.read_bytes() == original
+        receipts = list((candidate / "state/metadata").glob("player-recovery-*.receipt"))
+        assert len(receipts) == 1
+        receipts[0].unlink()
+        refused = subprocess.run([str(qualifier), "--journals-drained", str(candidate)], capture_output=True)
+        assert refused.returncode != 0 and protected_archive.read_bytes() == original
+
+    pipeline = (ROOT / "src/player/player_save_pipeline.c").read_text()
+    boot = pipeline[pipeline.index("bool player_save_pipeline_init("):]
+    assert boot.index("player_save_journal_init(") < boot.index("verify_resolved_recovery();") < boot.index("player_save_worker_init(")
+    assert "player_quarantine_recovery_revalidate_selected" in (ROOT / "src/net/comm.c").read_text()
+
+print("[PASS] native v1/v2 restore preserves original component frames, verifies later-save commit proof, refuses mixed generations/missing proof and damaged/unsafe evidence; boot verification precedes ordinary replay")

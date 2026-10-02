@@ -31,6 +31,9 @@ player_snapshot_repository_write_retained_death(MYSQL *connection, const player_
 
 player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 							  const player_snapshot &snapshot);
+struct player_save_recovery_record;
+player_save_apply_result
+player_snapshot_repository_recovery_apply(MYSQL *, const player_save_recovery_record &);
 player_save_apply_result player_snapshot_repository_apply_from_pool(const player_snapshot &snapshot,
 								    void *context);
 
