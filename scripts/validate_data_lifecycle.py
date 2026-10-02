@@ -106,6 +106,8 @@ REQUIRED_NON_DATABASE_STORES = {
     ),
     "file:player-deaths": ("recovery_state", "FLATFILE_ROOT/player-deaths/*.death"),
     "file:player-spell-receipts": ("recovery_state", "FLATFILE_ROOT/players/*.spell"),
+    "file:player-craft-receipts": ("recovery_state", "FLATFILE_ROOT/players/*.craft"),
+    "file:player-craft-obligations": ("recovery_state", "FLATFILE_ROOT/players/*.craft-obligation"),
     "file:zone-story-quests": (
         "recovery_state", "FLATFILE_ROOT/domains/zone-story-quests.state",
     ),
