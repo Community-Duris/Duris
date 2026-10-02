@@ -96,3 +96,27 @@ through two cold restarts. Both engines pass those stronger assertions and the
 existing bandage custody contract passes. Accounting remains inactive in this
 journey; active-epoch evidence and interruption during consumption/publication
 remain open. It does not prove persistence of the NPC healing effect.
+
+## Independent native topology audit repair
+
+The independent reconciler previously skipped its missing-parent check when an
+item had lineage UID history or lacked a known opening origin. A current row
+and immutable history could agree on a nonexistent parent without reporting
+`orphan_item_parent`. The check now runs independently for every native direct
+parent edge, including retained tombstones, before ancestor cycle/root checks.
+It reports the offending child once even when descendants traverse that edge.
+
+New regressions reproduce five failures before repair and all 41 reconciler
+tests pass afterward. They cover history-scoped and ordinary UIDs, missing and
+known origins, nested valid custody, missing ancestors, and tombstones. An
+actual SQL corruption probe also reproduces the omission on disposable
+MariaDB before repair. The complete read-only snapshot probe passes after repair
+on MariaDB 10.11.14 and MySQL 8.0.46: consistent current/history rows with an
+absent parent report the orphan, and restoring those fixture rows returns the
+original exception set. Existing SELECT-only reader, consistent-cut, CLI,
+mapping, source, and ledger corruption checks also pass.
+
+This fixes an R7 diagnostic gap. The SQL exporter still marks its output
+`complete=false`; source/origin completeness, gameplay writers, integrated
+recovery, and release qualification remain open. Native gameplay behavior and
+accounting activation are unchanged.

@@ -20,6 +20,12 @@ pinned 225-table schema on disposable MySQL 8.0.46 and MariaDB 10.11.14 targets.
 The writer inventory covers 864 routes, 2,815 occurrences and 2,756 unique sites
 with zero unmapped sites. These counts do not replace route qualification.
 
+Independent reconciliation now checks every native item's parent edge even when
+lineage history replaces its epoch-local history or its opening origin is
+missing. Corruption/recovery probes pass through the read-only SQL exporter on
+both engines, alongside 41 reconciler tests; complete native source/origin and
+writer qualification remain open. See the October 2 review status for scope.
+
 Stopped quarantine recovery from upstream `5c157f693` is integrated with the
 review fixes. Version-2 archives retain original frames and frozen grant
 commands; native commit proofs gate resolution and later-save revalidation.
