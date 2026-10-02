@@ -73,7 +73,8 @@ with tempfile.TemporaryDirectory(prefix='locker-recovery-') as temporary:
         database = 'locker_receipt_test_' + uuid.uuid4().hex[:12]
         os.environ['LOCKER_TEST_DATABASE'] = database
         environment = dict(os.environ, MYSQL_PWD=os.environ['TEST_DB_PASSWORD'])
-        mysql = ['mysql', '--protocol=tcp', '-h', os.environ['TEST_DB_HOST'], '-u', os.environ['TEST_DB_USER']]
+        mysql = ['mysql', '--no-defaults', '--protocol=tcp', '-h', os.environ['TEST_DB_HOST'],
+                 '-P', os.environ.get('TEST_DB_PORT', '3306'), '-u', os.environ['TEST_DB_USER']]
         def sql(script, selected=False):
             subprocess.run(mysql + ([database] if selected else []), input=script, text=True, env=environment, check=True)
         sql('CREATE DATABASE ' + database)

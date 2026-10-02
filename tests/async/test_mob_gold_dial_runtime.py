@@ -26,6 +26,7 @@ from test_flatfile_combat_journey import (
     generate_certificate,
     make_fixture,
     reconnect_character,
+    make_overlord,
 )
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -225,7 +226,7 @@ def stat_target_money(client: MudClient, key: str = TARGET_KEY,
     return result
 
 
-def run_case(binary: pathlib.Path, promoter: pathlib.Path, setting: int) -> tuple[int, int, int, int]:
+def run_case(binary: pathlib.Path, promoter: pathlib.Path | None, setting: int) -> tuple[int, int, int, int]:
     with tempfile.TemporaryDirectory(prefix=f"gold-fix-state-{setting}-") as state_tmp, \
             tempfile.TemporaryDirectory(prefix=f"gold-fix-run-{setting}-") as run_tmp:
         state_root, run_root = pathlib.Path(state_tmp), pathlib.Path(run_tmp)
@@ -250,14 +251,12 @@ def run_case(binary: pathlib.Path, promoter: pathlib.Path, setting: int) -> tupl
             client.close()
             client = None
             stop(process, output)
-            promotion = subprocess.run(
-                [str(promoter), str(state_root), "61"],
-                check=True,
-                capture_output=True,
-                text=True,
-                timeout=60,
-            )
-            print(f"setting={setting} {promotion.stdout.strip()}", flush=True)
+            if promoter:
+                promotion = subprocess.run([str(promoter), str(state_root), "61"],
+                    check=True, capture_output=True, text=True, timeout=60)
+                print(f"setting={setting} {promotion.stdout.strip()}", flush=True)
+            else:
+                make_overlord(state_root, "Taverek")
             process, output = boot(binary, state_root, run_root, output_path, plain)
             client = reconnect_character(plain)
             values = stat_target_money(client)
@@ -291,18 +290,23 @@ def run_case(binary: pathlib.Path, promoter: pathlib.Path, setting: int) -> tupl
 
 
 def main() -> None:
+    global INSPECTOR
     parser = argparse.ArgumentParser()
     parser.add_argument("--server", type=pathlib.Path, required=True,
                         help="fresh or baseline flat-file server binary")
-    parser.add_argument("--promoter", type=pathlib.Path, required=True,
+    parser.add_argument("--promoter", type=pathlib.Path,
                         help="typed disposable flat-file level promotion helper")
     args = parser.parse_args()
     require(args.server.is_file() and os.access(args.server, os.X_OK),
             f"server binary is not executable: {args.server}")
-    require(args.promoter.is_file() and os.access(args.promoter, os.X_OK),
-            f"promotion helper is not executable: {args.promoter}")
-    neutral = run_case(args.server.resolve(), args.promoter.resolve(), 5)
-    hard = run_case(args.server.resolve(), args.promoter.resolve(), 10)
+    if args.promoter:
+        require(args.promoter.is_file() and os.access(args.promoter, os.X_OK),
+                f"promotion helper is not executable: {args.promoter}")
+    from _flatfile_player_fixture import build_player_inspector
+    INSPECTOR = build_player_inspector(INSPECTOR)
+    promoter = args.promoter.resolve() if args.promoter else None
+    neutral = run_case(args.server.resolve(), promoter, 5)
+    hard = run_case(args.server.resolve(), promoter, 10)
     neutral_total = neutral[0] * 1000 + neutral[1] * 100 + neutral[2] * 10 + neutral[3]
     hard_total = hard[0] * 1000 + hard[1] * 100 + hard[2] * 10 + hard[3]
     # The normal level-60 converter's four rolls are bounded to 75..125.  The

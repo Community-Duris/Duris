@@ -103,7 +103,8 @@ def skip_count(output: str) -> tuple[bool, int]:
 
 
 def run_test(path: Path, timeout: float = DEFAULT_TIMEOUT,
-             stop: threading.Event | None = None, spec: TestSpec | None = None) -> TestResult:
+             stop: threading.Event | None = None, spec: TestSpec | None = None,
+             *, arguments=(), environment=None, prefix=(), observer_uid=None) -> TestResult:
     started = time.monotonic()
     stop = stop if stop is not None else threading.Event()
     if stop.is_set():
@@ -115,13 +116,16 @@ def run_test(path: Path, timeout: float = DEFAULT_TIMEOUT,
                    for node in ast.walk(tree))
         spec = TestSpec(path, mode="unittest" if unit else "script")
     events = tempfile.TemporaryDirectory(prefix="regression-cases-")
+    if observer_uid is not None:
+        os.chown(events.name, observer_uid, observer_uid)
     event_path = Path(events.name) / "cases.json"
     try:
         process = subprocess.Popen(
-            [sys.executable, str(ENTRY_ADAPTER), str(path.resolve()), spec.mode,
-             str(event_path), str(spec.minimum_cases)], cwd=ROOT, stdout=subprocess.PIPE,
+            [*prefix, sys.executable, str(ENTRY_ADAPTER), str(path.resolve()), spec.mode,
+             str(event_path), str(spec.minimum_cases), *arguments], cwd=ROOT, stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT, text=True, errors="replace",
-            env=dict(os.environ, DURIS_NATIVE_BUILD_JOBS=str(min(2, spec.cpu))),
+            env=dict(os.environ if environment is None else environment,
+                     DURIS_NATIVE_BUILD_JOBS=str(min(2, spec.cpu))),
             start_new_session=os.name == "posix",
         )
     except OSError as error:

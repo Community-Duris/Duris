@@ -18,7 +18,7 @@ from typing import Any
 import test_flatfile_combat_journey as journey
 
 ROOT = Path(__file__).resolve().parents[2]
-MARIADB_IMAGE = "mariadb:10.11"
+MARIADB_IMAGE = os.environ.get("DURIS_TEST_DB_IMAGE", "mariadb:10.11")
 WIND_BLADE_VNUM = 98
 
 
@@ -188,27 +188,27 @@ class DisposableMariaDB:
         )
 
     def start(self) -> None:
-        network_mode = _run(
-            ["docker", "inspect", "--format", "{{.HostConfig.NetworkMode}}", "hermes"],
-            env=_clean_env(), timeout=30,
-        ).stdout.strip()
-        require(network_mode.startswith("container:"),
-                f"worker gateway does not use a shared container network namespace: {network_mode!r}")
+        from disposable_sql_fixture import private_network
+        network_mode = private_network()
+        prefix = "MARIADB" if MARIADB_IMAGE.startswith("mariadb") else "MYSQL"
+        self.process_env.update({prefix + "_ROOT_PASSWORD": self.root_password,
+                                 prefix + "_ROOT_HOST": "%", prefix + "_DATABASE": self.database,
+                                 prefix + "_USER": self.user, prefix + "_PASSWORD": self.password})
         command = [
             "docker", "run", "--detach",
             "--name", self.container,
             "--label", "duris.task=s04-item-creation",
             "--label", f"duris.run_id={self.run_id}",
             "--cpus=2", "--memory=2g",
-            "--network", network_mode,
-            "--env", "MARIADB_ROOT_PASSWORD",
-            "--env", "MARIADB_ROOT_HOST",
-            "--env", "MARIADB_DATABASE",
-            "--env", "MARIADB_USER",
-            "--env", "MARIADB_PASSWORD",
-            MARIADB_IMAGE,
-            f"--port={self.port}", "--bind-address=127.0.0.1",
         ]
+        if network_mode:
+            command += ["--network", network_mode]
+        else:
+            command += ["--publish", f"127.0.0.1:{self.port}:{self.port}"]
+        for key in ("ROOT_PASSWORD", "ROOT_HOST", "DATABASE", "USER", "PASSWORD"):
+            command += ["--env", prefix + "_" + key]
+        command += [MARIADB_IMAGE, f"--port={self.port}",
+                    "--bind-address=" + ("127.0.0.1" if network_mode else "0.0.0.0")]
         self.start_attempted = True
         _run(command, env=self.process_env, timeout=90)
         self.started = True

@@ -429,6 +429,14 @@ if __name__ == "__main__":
     if os.environ.get("TEST_DB_DISPOSABLE") != "1":
         raise SystemExit("run only through the disposable MariaDB wrapper")
     (ROOT / "bin/tests").mkdir(parents=True, exist_ok=True)
-    subprocess.run(["make", "-C", "src", "-j2", "PERSISTENCE_BACKEND=mariadb"],
-                   cwd=ROOT, check=True)
-    run((ROOT / "bin/server/dms_new").resolve())
+    frozen = os.environ.get("DURIS_MATRIX_SQL_BINARY")
+    if frozen:
+        from pa_accounting_batch_artifact import load_base_build
+        build = load_base_build()
+        if Path(frozen).resolve() != build.binary:
+            raise SystemExit("death journey requires the attested matrix binary")
+        run(build.binary)
+    else:
+        subprocess.run(["make", "-C", "src", "-j2", "PERSISTENCE_BACKEND=mariadb"],
+                       cwd=ROOT, check=True)
+        run((ROOT / "bin/server/dms_new").resolve())
