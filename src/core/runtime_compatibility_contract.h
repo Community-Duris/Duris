@@ -119,8 +119,7 @@ constexpr const char *RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM =
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM =
 	"e4e77237744a5074e7097ab93b9e50fee1ee1be74168afb3ad9356a7913acbfd";
 /* Master recorded runtime state at 0031; its accounting upgrade retains that prefix. */
-constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID =
-	"0053_craft_progression";
+constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID = "0053_craft_progression";
 constexpr unsigned RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 53;
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_APPLY_CHECKSUM =
 	"4b17920b26cad6762637a1f3e0d7cb13d997e2f163b550c56b24363efa45aff1";
