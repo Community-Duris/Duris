@@ -404,3 +404,44 @@ exception set. No source rows are repaired by the exporter or reconciler.
 This is bounded R4/R7 audit evidence. The export remains `sql_partial` with
 `complete=false`; native origin/source completeness, runtime writer coverage,
 active-accounting journeys and full lifecycle/workload qualification remain open.
+
+## Optional native item-provenance fixture restored
+
+The opt-in item-provenance test failed at link time: it omitted function/data
+sections, garbage collection, the maintained fail-closed legacy escape stub, and
+the real-query wrapper used by its included native harness. Its compile/run now
+matches that maintained SQL driver, including the 64 MiB stack needed for bounded
+item payloads. Both engines then exposed an outdated duplicate-source assertion: 
+a new command reusing a committed logical event is correctly a terminal `EEXIST`
+refusal, rather than a retryable raw SQL 1062. Native policy is unchanged.
+
+The corrected test checks the refusal twice and proves there is still exactly
+one source claim, no duplicate item/custody event, and no root, item reference,
+inbox or outbox for the refused command. The complete probe passes on disposable
+MySQL 8.0.46 and MariaDB 10.11.14 with the migrated canonical schema: sourced
+creation, nested transfers, pet/locker rows, duplicate quest/world sources, theft,
+retirement, exact replay and epoch transition; simultaneous first claimants
+retain one owner, native row, event, reference and source; batch retirement
+preserves source/event/reference identity and child tombstones. These are native
+repository transactions, not full active-accounting player journeys.
+
+Two more frozen-suite opt-ins now pass on both engines against unchanged native
+source tree `2fa0d98dac56a1687e4af4314da7ac9b327a670d`:
+
+- The native load/query/archive stack checks 30 ordered retained cases, full and
+  metadata-only PID/name refusal, self-scoped detail/list, sanitization, hash and
+  schema failures, borrowed transactions, exact source preservation, eight real
+  two-connection retention/load orderings, and name-reassignment refusal.
+- The four telemetry schema tests check replay/session uniqueness, signed/unsigned
+  endpoints, repeated migration verification and deliberate schema-damage
+  refusal. The native connection factory checks target/credential selection,
+  UTC/strict/charset/deadlines, allocation cleanup, failed-exec continuity, exec
+  socket closure and advisory-lock release. Its credential I/O spy forwards to
+  the disposable root account; this does not qualify real ingest-role grants.
+
+All targets and damaged/restored rows are owned disposable fixtures. A diagnostic
+run also hit an unavailable MariaDB global temporary file during provisioning;
+the final native provenance runs use private daemon temporary directories and
+complete with zero failed checks on both engines. Docker `make test-db`, full
+backup/restore, actual active-accounting gameplay and integrated workload gates
+remain open. Focused passes do not rewrite the frozen broad-suite outcome.

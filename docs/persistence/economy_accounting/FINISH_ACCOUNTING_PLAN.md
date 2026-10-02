@@ -40,6 +40,11 @@ The skipped help-import fixture now honors a validated disposable connection;
 its rollback, atomic publication and nontransactional refusal test passes on
 both SQL engines. A fresh 839-test full run is underway on exact published
 candidate `79540e65d`; later fixture fixes retain separate focused evidence.
+The optional native item-provenance fixture now links and honors terminal
+source-reuse refusal; its full transaction/replay/epoch/concurrency probe passes
+on both engines. Native load/recovery and telemetry schema/factory checks also
+pass separately on both engines. These leave player-journey, backup/restore,
+real telemetry-role grants and Docker integration gates open.
 
 The disposable playtime journey now honors a validated `TEST_DB_PORT` in both
 native connections and SQL clients. Its outdated temporary-table probe is
