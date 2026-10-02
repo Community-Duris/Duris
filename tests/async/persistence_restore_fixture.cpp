@@ -77,6 +77,76 @@ int main(int argc, char **argv)
 	const std::string mode = argv[1];
 	const fs::path root = argv[2];
 	std::string error;
+	if (mode == "craft-receipt-ahead")
+	{
+		critical_operation_id operation = {};
+		operation.bytes[0] = 0xf1;
+		player_snapshot receipt;
+		require(flatfile_craft_receipt_read(root.string(), 42, operation, false, &receipt,
+						    &error) == flatfile_player_load_result::ok,
+			"craft fixture receipt read");
+		player_snapshot current;
+		require(flatfile_player_snapshot_read(root.string(), 42, &current, &error) ==
+				flatfile_player_load_result::ok,
+			"craft fixture current revision read");
+		receipt.revision = current.revision + 1;
+		std::vector<uint8_t> bytes;
+		require(flatfile_player_snapshot_encode_file(receipt, &bytes) &&
+				flatfile_atomic_write((root / "players").string(),
+						      flatfile_craft_receipt_filename(42,
+										      operation),
+						      bytes, &error),
+			"craft fixture future receipt write");
+		return 0;
+	}
+	if (mode == "seed-craft")
+	{
+		require(!fs::exists(root), "craft seed requires an absent disposable root");
+		craft_progression_matrix(root, true);
+		fs::create_directories(root / "identities/accounts");
+		fs::permissions(root / "identities/accounts", fs::perms::owner_all,
+				fs::perm_options::replace);
+		for (const auto &entry : fs::directory_iterator(root / "players"))
+			fs::permissions(entry.path(),
+					fs::perms::owner_read | fs::perms::owner_write,
+					fs::perm_options::replace);
+		flatfile_account_record account;
+		account.name = "Account-One";
+		account.email = "fixture@example.test";
+		account.confirmed = 1;
+		flatfile_account_character character;
+		character.pid = 42;
+		character.name = "Player";
+		character.level = 50;
+		account.characters.push_back(character);
+		uint64_t revision = 0;
+		require(flatfile_account_save(root.string(), account, 0, &revision, &error) ==
+				flatfile_account_result::ok,
+			"craft fixture account seed");
+		// The matrix deliberately leaves the pre-craft inventory projection behind.
+		// Finish its ordinary save before qualifying a complete restored candidate.
+		player_load_request request;
+		request.request_id = 1;
+		request.pid = 42;
+		request.account_name = "Account-One";
+		critical_operation_id operation = {};
+		operation.bytes[0] = 0xf1;
+		request.pending_craft_operations.push_back(operation);
+		request.deadline_usec =
+			persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+		auto loaded = flatfile_player_load_repository_execute(root.string(), request);
+		require(loaded.outcome == player_load_outcome::applied &&
+				loaded.craft_receipts.size() == 1,
+			"craft fixture recovered inventory load");
+		++loaded.snapshot.revision;
+		loaded.snapshot.components = PLAYER_CHECKPOINT_COMPONENT_ALL;
+		loaded.snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+		loaded.snapshot.craft_receipts.clear();
+		require(flatfile_player_snapshot_apply(root.string(), loaded.snapshot, &error)
+					.outcome == player_save_apply_outcome::applied,
+			"craft fixture recovered inventory save: " + error);
+		return 0;
+	}
 	if (mode == "retire-spell-owner")
 	{
 		require(flatfile_identity_remove(root.string(), 42, "Player", &error) ==
