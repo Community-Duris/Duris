@@ -527,3 +527,31 @@ captured production/staging generation, full-world player login, a MySQL restore
 drill, active-accounting evidence in every domain, remote backup custody or
 operator erasure propagation. No production data, accounting activation or
 deployment changes. Docker integration and the remaining R1-R8 gates stay open.
+
+
+## Independent UID revisions in the SQL audit
+
+Native `item_transfer_repository.c::insert_ledger` stores the new individual
+item revision separately from the new aggregate source-owner revision. The
+exporter incorrectly used the latter as the UID's prior revision in lineage
+references, attributed history and unattributed history. A disposable MariaDB
+probe reproduced refusal of an otherwise valid creation when its aggregate
+owner counter was 99. Unit regressions also reproduced incorrect inclusion of
+pre-witness history and omission of post-witness history when the counters
+crossed the opening item revision.
+
+The SELECT-only exporter now derives prior UID revision as native item revision
+minus one, matching the native custody update. Missing ledger joins remain
+explicit missing evidence. Impossible revision zero refuses the audit cut
+before history filtering. Ten exporter tests and all 53 reconciler tests pass.
+On MySQL 8.0.46 and MariaDB 10.11.14 the partial snapshot probe passes with
+independent owner counters for current and historical/unattributed UID events,
+revision-zero refusal, and exact baseline recovery after removing only fixture
+corruption. Contract validation passes 14 fixtures and matrix generation checks.
+
+This is a bounded R4/R7 exporter repair. Native source remains
+`2fa0d98dac56a1687e4af4314da7ac9b327a670d`; gameplay behavior, inactive accounting
+and safety gates are unchanged. The exporter remains `sql_partial` with
+`complete=false`, and activation/release remain blocked. The frozen 79540e65d
+839-test run and the exact 8c997b00d 841-test run remain in progress; neither yet
+qualifies this later audit repair or supplies the missing external-service gates.

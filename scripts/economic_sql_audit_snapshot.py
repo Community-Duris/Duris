@@ -34,6 +34,13 @@ def hex_id(value: bytes | None) -> str | None:
     return value.hex() if value is not None else None
 
 
+def previous_item_revision(revision: int) -> int:
+    """Native custody increments each UID once, independently of owner counters."""
+    if type(revision) is not int or not 0 < revision < 2**64:
+        raise ExportError("invalid native item ledger revision")
+    return revision - 1
+
+
 def account_key(lineage: bytes, kind: int, lifetime: int, context: int) -> str:
     return (lineage + struct.pack("<HHQQ4x", 1, kind, lifetime, context)).hex()
 
@@ -343,7 +350,7 @@ def read_lineage_uid_references(cursor, lineage: bytes) -> tuple[list[dict], lis
     references = bounded(cursor,
         "SELECT r.operation_id,r.event_index,r.child_index,r.item_uid,r.before_revision,"
         "r.after_revision,r.legacy_operation_id,r.legacy_event_index,o.epoch,o.outcome,"
-        "o.item_event_count,l.item_uid AS ledger_uid,l.from_owner_revision,l.item_revision,"
+        "o.item_event_count,l.item_uid AS ledger_uid,l.item_revision,"
         "l.root_item_uid,l.parent_item_uid,l.to_owner_type,l.to_owner_id,"
         "l.to_owner_context_id,l.reason_type "
         "FROM economic_accounting_item_reference r "
@@ -371,7 +378,8 @@ def read_lineage_uid_references(cursor, lineage: bytes) -> tuple[list[dict], lis
             "operation_outcome": {1: "committed", 2: "rejected"}.get(row["outcome"], "unknown"),
             "operation_item_event_count": row["item_event_count"],
             "ledger_uid": row["ledger_uid"],
-            "ledger_before_revision": row["from_owner_revision"],
+            "ledger_before_revision": (previous_item_revision(row["item_revision"])
+                                       if row["ledger_uid"] is not None else None),
             "ledger_revision": row["item_revision"], "ledger_root": row["root_item_uid"],
             "ledger_parent": row["parent_item_uid"], "ledger_owner": owner,
             "ledger_state": state, "ledger_action": action})
@@ -456,7 +464,7 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
         rows = bounded(cursor,
             "SELECT l.operation_id,l.event_index,l.item_uid,l.root_item_uid,l.parent_item_uid,"
             "l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
-            "l.from_owner_revision,l.reason_type,o.epoch AS operation_epoch,"
+            "l.reason_type,o.epoch AS operation_epoch,"
             "o.outcome AS operation_outcome "
             "FROM item_ownership_ledger l "
             "JOIN economic_accounting_operation o ON o.operation_id=l.operation_id "
@@ -464,7 +472,7 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
             f"AND l.item_uid IN ({placeholders}) ORDER BY l.item_uid,l.item_revision",
             (lineage, *batch))
         for row in rows:
-            before_revision = row["from_owner_revision"]
+            before_revision = previous_item_revision(row["item_revision"])
             if before_revision < baseline_revisions.get(row["item_uid"], 0):
                 continue
             ledger_events += 1
@@ -497,13 +505,13 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
         rows = bounded(cursor,
             "SELECT l.operation_id,l.event_index,l.item_uid,l.root_item_uid,l.parent_item_uid,"
             "l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
-            "l.from_owner_revision,l.reason_type FROM item_ownership_ledger l "
+            "l.reason_type FROM item_ownership_ledger l "
             "LEFT JOIN economic_accounting_operation o ON o.operation_id=l.operation_id "
             "WHERE o.operation_id IS NULL "
             f"AND l.item_uid IN ({placeholders}) ORDER BY l.item_uid,l.item_revision",
             tuple(batch))
         for row in rows:
-            before_revision = row["from_owner_revision"]
+            before_revision = previous_item_revision(row["item_revision"])
             if before_revision < baseline_revisions.get(row["item_uid"], 0):
                 continue
             if len(unattributed_events) >= MAX_ROWS:

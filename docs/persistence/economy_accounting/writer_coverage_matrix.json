@@ -34019,7 +34019,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          184
+          188
         ],
         "file": "scripts/persistence_restore.py",
         "function": "restore",

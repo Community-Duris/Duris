@@ -27,7 +27,10 @@ both engines. Lineage and epoch-local history also share creation and irreversib
 UID-retirement checks; memoized native topology bounds ancestor work, and 53
 reconciler tests pass. Explicit creation/destruction must also match live/tombstone
 custody, a corrupt destruction cannot erase the UID retirement fence, and
-a second destruction of an already retired UID is reported. Complete native source/origin
+a second destruction of an already retired UID is reported. SQL lineage
+references and history cuts now derive prior UID revisions from the immutable
+item revision, independently of aggregate owner counters; impossible revision
+zero refuses before filtering. Ten exporter tests and both SQL probes pass. Complete native source/origin
 and writer qualification remain open. See the October 2 review status for scope.
 
 The frozen candidate `fbd9f5035` completed `make test-all`: 822 passed, 11
