@@ -13,10 +13,10 @@ named stories without changing native receipt IDs. Twin Towers replaces 84
 contracts with 10 achievement units and 3 daily groups, excluding 40 returned
 offerings and displaying 24 supporting contracts as 12 non-achievement services.
 The global projection now has
-2,300 achievement units and 1,921 daily candidate units after adding starter/town
+2,294 achievement units and 1,920 daily candidate units after adding starter/town
 mappings and deeper journals, equipment/crafting services,
-intermediate outcomes, and explicit missing-item exclusions. There are 41
-area sidecars and 2,490 projected units including services and administrative
+intermediate outcomes, and explicit missing-item exclusions. There are 42
+area sidecars and 2,489 projected units including services and administrative
 content. Other areas
 retain native-contract fallback; these counts do not claim full semantic review.
 Ailvio now projects its 78 equivalent two-fish recipes into one family-feeding
@@ -58,7 +58,14 @@ The Clawed Caverns adds one king-story achievement, six shaping/paid-clue
 services and thirteen excluded returns. Exact final shards, optional keys and
 complete custom switch/death/transformation guidance preserve supplied deliveries
 while keeping unsafe custom-source and paid-clue paths unqualified.
-Eighteen source-comprehensive areas remain distinct from played
+Defense of Longhollow adds nine independent story/request achievements, five
+clothing services and one empty-placeholder exclusion. Six optional producer
+receipts preserve supplied bracers and prepared outputs. Exact duplicates,
+moonstone versus bracer, loose versus rooted bloom and reward coins versus
+unsupported payment coins have native/source regression coverage. Three stock
+conflicts, fixed powers versus prose and missing rescue/aid/closure endpoints
+remain explicit repair and qualification work.
+Nineteen source-comprehensive areas remain distinct from played
 active-world qualification.
 All raw definitions, receipt identities, zone registry and source fingerprint
 remain unchanged. Comprehensive source dossiers for these areas are tracked in

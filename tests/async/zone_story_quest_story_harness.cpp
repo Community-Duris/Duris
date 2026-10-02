@@ -153,10 +153,9 @@ int main(int argc, char **argv)
 		service tracker(catalog);
 		for (const auto &mapping : catalog.story_mappings)
 		{
-			const auto &zone =
-				*std::find_if(catalog.zones.begin(), catalog.zones.end(),
-					      [&](const auto &z)
-					      { return z.source_area == mapping.source_area; });
+			const auto &zone = *std::find_if(
+				catalog.zones.begin(), catalog.zones.end(), [&](const auto &z)
+				{ return z.source_area == mapping.source_area; });
 			require(tracker.discover_zone(7, 42, zone.zone_number,
 						      std::max(1, zone.first_vnum), 100,
 						      "arrival") == result::applied,
@@ -178,8 +177,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 41 &&
-				tracker.summary_for(7, 42).total == 2300,
+		require(catalog.story_mappings.size() == 42 &&
+				tracker.summary_for(7, 42).total == 2294,
 			"native story projection disagreed with the complete source audit");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -738,9 +737,9 @@ int main(int argc, char **argv)
 		const auto &cosmos = story_for("wh", "request-55103-0e8b41819618");
 		const auto &dagger_marks = story_for("wh", "request-55116-e78a927f5454");
 		const auto &chief_key = story_for("wh", "request-55229-23f9768a6235");
-		const auto &winter =
-			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
-				      [](const auto &m) { return m.source_area == "wh"; });
+		const auto &winter = *std::find_if(catalog.story_mappings.begin(),
+						   catalog.story_mappings.end(), [](const auto &m)
+						   { return m.source_area == "wh"; });
 		service supplied_winter(catalog);
 		require(supplied_winter.discover_zone(7, 42, 550, 55125, 100, "arrival") ==
 				result::applied,
@@ -824,9 +823,9 @@ int main(int argc, char **argv)
 				restored_winter.progress_for_zone(7, 42, 306).completed == 0 &&
 				restored_winter.progress_for_zone(7, 42, 831).completed == 0,
 			"Winterhaven reload changed local receipts or invented foreign completion");
-		const auto &smoke =
-			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
-				      [](const auto &m) { return m.source_area == "smokev"; });
+		const auto &smoke = *std::find_if(catalog.story_mappings.begin(),
+						  catalog.story_mappings.end(), [](const auto &m)
+						  { return m.source_area == "smokev"; });
 		const auto &ivar_hearts = story_for("smokev", "the-two-dragon-hearts");
 		const auto &ivar_talon = story_for("smokev", "ivars-talon-reward");
 		const auto &tarlator = story_for("smokev", "tarlators-humanity-request");
@@ -914,9 +913,9 @@ int main(int argc, char **argv)
 		const auto &figurine = story_for("caertannad", "hindiss-figurine-exchange");
 		const auto &head = story_for("caertannad", "hindiss-thel-samar-proof");
 		const auto &remedy = story_for("caertannad", "mungirs-silverleaf-remedy");
-		const auto &keeps =
-			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
-				      [](const auto &m) { return m.source_area == "caertannad"; });
+		const auto &keeps = *std::find_if(catalog.story_mappings.begin(),
+						  catalog.story_mappings.end(), [](const auto &m)
+						  { return m.source_area == "caertannad"; });
 		service supplied_keeps(catalog);
 		require(supplied_keeps.discover_zone(7, 42, 784, 78504, 100, "arrival") ==
 				result::applied,
@@ -1152,9 +1151,9 @@ int main(int argc, char **argv)
 		const auto &claw_blue = story_for("clwcvrn", "blue-shield");
 		const auto &claw_violet = story_for("clwcvrn", "violet-collar");
 		const auto &claw_sage = story_for("clwcvrn", "the-sages-paid-secret");
-		const auto &claw =
-			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
-				      [](const auto &m) { return m.source_area == "clwcvrn"; });
+		const auto &claw = *std::find_if(catalog.story_mappings.begin(),
+						 catalog.story_mappings.end(), [](const auto &m)
+						 { return m.source_area == "clwcvrn"; });
 		service supplied_claw(catalog);
 		require(supplied_claw.discover_zone(7, 42, 807, 80700, 100, "arrival") ==
 				result::applied,
@@ -1215,6 +1214,114 @@ int main(int argc, char **argv)
 				restored_claw.progress_for_zone(7, 42, 807).completed == 1 &&
 				restored_claw.progress_for_zone(7, 42, 807).total == 1,
 			"Clawed Caverns recovery changed the independent final delivery");
+		const auto &long_mayor = story_for("long", "proof-against-the-siege-leaders");
+		const auto &long_solar = story_for("long", "recognition-by-selunes-solar");
+		const auto &long_mist = story_for("long", "the-shadowy-mist");
+		const auto &long_blend = story_for("long", "the-kiss-of-talona-blend");
+		const auto &long_viper = story_for("long", "vipers-delight");
+		const auto &long_boots = story_for("long", "four-skins-for-snakeskin-boots");
+		const auto &long_fish = story_for("long", "the-fishscale-potion-experiment");
+		const auto &long_map = *std::find_if(catalog.story_mappings.begin(),
+						     catalog.story_mappings.end(), [](const auto &m)
+						     { return m.source_area == "long"; });
+		service supplied_long(catalog);
+		require(supplied_long.discover_zone(7, 42, 344, 34401, 100, "arrival") ==
+				result::applied,
+			"Longhollow discovery failed");
+		supplies.carried.clear();
+		journal = supplied_long.render_journal(7, 42, 344, 10, 1, 102, false, false,
+						       &supplies);
+		require(journal.find("] " + long_mayor.title + "\r\n") == std::string::npos,
+			"Longhollow discovery exposed an unseen mayor's story");
+		for (const auto &contact : long_map.contacts)
+			require(supplied_long.meet_npc(7, 42, contact.mob_vnum, 34401, 101) ==
+					result::applied,
+				"Longhollow fixture encounter failed");
+		const auto long_section = [&](const auto &story)
+		{
+			const auto at = journal.find("] " + story.title + "\r\n");
+			require(at != std::string::npos, "Longhollow journal row missing");
+			const auto end = journal.find("\r\n  [", at);
+			return journal.substr(at, end == std::string::npos ? end : end - at);
+		};
+		for (const auto &request : long_map.stories)
+			if (request.category == "service")
+				record(supplied_long, request.contracts.front(), request.id.c_str(),
+				       344, 34411);
+		for (const auto &[id, reason] : long_map.exclusions)
+			record(supplied_long, id, id.c_str(), 344, 34417);
+		require(supplied_long.progress_for_zone(7, 42, 344).completed == 0 &&
+				supplied_long.progress_for_zone(7, 42, 344).total == 9,
+			"clothing or empty Rolane placeholder awarded a Longhollow achievement");
+		const auto before_long_read = supplied_long.serialize_state();
+		supplies.carried[34427] = 5;
+		supplies.carried[34464] = supplies.carried[34406] = supplies.carried[34433] =
+			supplies.carried[34413] = 1;
+		journal = supplied_long.render_journal(7, 42, 344, 10, 1, 102, false, false,
+						       &supplies);
+		require(long_section(long_mayor).find("Next: " + long_mayor.steps[1].text) !=
+					std::string::npos &&
+				long_section(long_solar).find("Next: " + long_solar.steps[1].text) !=
+					std::string::npos &&
+				long_section(long_viper).find("Next: " + long_viper.steps[0].text) !=
+					std::string::npos &&
+				long_section(long_boots).find("(1/4)") != std::string::npos,
+			"duplicate heads, moonstone, one sac or one skin replaced exact ingredients");
+		supplies.carried[34413] = 4;
+		supplies.carried[34406] = 2;
+		journal = supplied_long.render_journal(7, 42, 344, 10, 1, 103, false, false,
+						       &supplies);
+		require(long_section(long_viper).find("Next: " + long_viper.steps.back().text) !=
+					std::string::npos &&
+				long_section(long_boots).find("Turn-in currently unavailable:") !=
+					std::string::npos &&
+				long_section(long_boots).find("20 gold") != std::string::npos &&
+				long_section(long_fish).find("25,000 copper") !=
+					std::string::npos &&
+				long_section(long_fish).find("Turn-in currently unavailable:") ==
+					std::string::npos,
+			"duplicate counts or coin payment versus native cash reward were conflated");
+		supplies.carried.clear();
+		for (int item : { 34452, 34443, 34444, 34445, 34439, 34449, 34447 })
+			supplies.carried[item] = 1;
+		supplies.carried[34425] = 1;
+		journal = supplied_long.render_journal(7, 42, 344, 10, 1, 104, false, false,
+						       &supplies);
+		require(long_section(long_solar).find("Next: " + long_solar.steps.back().text) !=
+					std::string::npos &&
+				long_section(long_mist).find("Next: " +
+							     long_mist.steps.back().text) !=
+					std::string::npos &&
+				long_section(long_blend).find("Next: " + long_blend.steps[4].text) !=
+					std::string::npos &&
+				supplied_long.serialize_state() == before_long_read,
+			"supplied finals needed producer history, rooted vine replaced bloom, or reads mutated state");
+		record(supplied_long, long_solar.contracts.front(), "long-supplied-bracer", 344,
+		       34417);
+		require(supplied_long.progress_for_zone(7, 42, 344).completed == 1,
+			"Solar's supplied-bracer receipt invented the mayor's earlier completion");
+		record(supplied_long, long_mayor.contracts.front(), "long-mayor", 344, 34446);
+		for (const auto *finale : { &long_mist, &long_blend })
+			for (const auto &step : finale->steps)
+				if (step.optional)
+					record(supplied_long, step.contracts.front(),
+					       step.contracts.front().c_str(), 344, 34438);
+		supplies.carried.clear();
+		journal = supplied_long.render_journal(7, 42, 344, 10, 1, 105, false, false,
+						       &supplies);
+		require(long_section(long_mist).find("Next: " + long_mist.steps[3].text) !=
+					std::string::npos &&
+				long_section(long_blend).find("Next: " + long_blend.steps[2].text) !=
+					std::string::npos &&
+				supplied_long.progress_for_zone(7, 42, 344).completed == 7,
+			"producer receipts replaced spent physical outputs or completed later finales");
+		record(supplied_long, long_mist.contracts.front(), "long-mist", 344, 34438);
+		record(supplied_long, long_blend.contracts.front(), "long-blend", 344, 34438);
+		service restored_long(catalog);
+		require(restored_long.deserialize_state(supplied_long.serialize_state(), &error) &&
+				restored_long.progress_for_zone(7, 42, 344).completed == 9 &&
+				restored_long.progress_for_zone(7, 42, 344).total == 9,
+			"Longhollow recovery changed independent story/request credit");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

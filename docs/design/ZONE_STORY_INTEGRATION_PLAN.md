@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 41 authored journals, accounting-gated player surfaces, starter/town
+**Status: 42 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -9,7 +9,7 @@ The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
 source dossiers, shipped changes, newly found dependencies, and verification.
 Twin Towers, Plains of Life, Ailvio, Braddistock, Breale, Abandoned Elven
 Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus, Torg, Vast Hidden
-Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter Woods and the Clawed Caverns now have complete source story maps;
+Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter Woods, the Clawed Caverns and Defense of Longhollow now have complete source story maps;
 their active-world journeys remain unqualified. Schema 3 adds
 optional preparation. Ailvio's 78 pair recipes project one family-feeding story;
 Braddistock's pet rescue is displayed as an intermediate service. Breale preserves
@@ -80,6 +80,19 @@ optional keys preserve supplied final proofs. Actual target resolution before
 damage/consumption, committed nested death disposition, coordinated transform/
 recipient retirement and paid-clue settlement extend the qualification plan.
 Entry-level and vault policies remain separate from the final story predicate.
+
+Defense of Longhollow adds four story finales, five ingredient requests,
+five clothing services and one empty-placeholder exclusion. Forty-one contacts
+cover all sixty addressed families, including safe aliases from one mixed-token
+response. Six optional producer receipts preserve supplied bracers and prepared
+outputs. The physical bracer, distinct heads/vials/scales and loose bloom differ
+from the moonstone, repeated copies and rooted scenery. Three duplicate-quantity
+recipes exceed ordinary cap-one supply. Fixed potion/armor effects differ from
+darkvision, coating and random-batch prose; captive rescue, healing and siege/title
+closure have no reviewed endpoints. Bounded supply, terms, powers and missing
+outcome proposals expand the plan. Native item-plus-cash rewards already have a
+committed path; four paid clothing offerings and table-driven epic teaching still
+need settlement qualification. Do not treat reward coins as an unsupported fee.
 
 Maintain this plan as zones are reviewed. Keep static contract classification,
 historical objective coverage, economic support, and gameplay qualification
@@ -592,7 +605,12 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   exact loose crystals/moss, ten contacts and all computed death assignments.
   Record target-validation, transform failure, nested death/currency disposition,
   entry/door policy and paid-clue repair/qualification proposals.
-- [ ] Complete comprehensive source dossiers for the other 202 roadmap areas.
+- [x] Complete Defense of Longhollow source dossier: fifteen Q/63 M blocks,
+  full siege/bracer and two witch combination routes, five requests/five clothing
+  services, one empty exclusion, forty-one contacts and six optional producers.
+  Record cap/quantity conflicts, actual reward-versus-payment direction, fixed
+  output powers, computed teaching and missing rescue/healing/closure endpoints.
+- [ ] Complete comprehensive source dossiers for the other 201 roadmap areas.
 - [ ] Add district/family authoring and shared presentation for large zones.
   Winterhaven's 219 rows fit existing story/objective limits but need a bounded
   512 KiB source-sidecar allowance for detailed guidance. Preserve receipt IDs;
@@ -624,6 +642,7 @@ contract classification; it does not claim complete objective coverage.
 | Bloodstone Keep | 1 | Complete: 31 achievements, 32 services and two exclusions across 65 exchanges | [Source-comprehensive dossier](zone-stories/BLOODSTONE_KEEP.md); twenty contacts/all 74 addressed families, 35 optional producer checks, exact same-named kinds, full access, artifact and alchemy routes | Active sources, five absent ordinary makers, missing components and nine-earring mixed fee remain unqualified | Native projection/receipt checks; actual source/access/transform/recipient episodes, unfinished content and selected prose/assignment repairs pending |
 | Neverwinter Woods | 1 | Complete: five Q bindings → one recovery achievement/daily family | [Source-comprehensive dossier](zone-stories/NEVERWINTER_WOODS.md); seven contacts/both topic families, five distinct live runes, optional bridge wand and actual fixed native reward | Active sources, current Malchor and cap-one replenishment remain unqualified | Native projection/receipt checks; selected-reward terms, checked maze topology, source/gift/arrival and orphan endpoint decisions pending |
 | The Clawed Caverns | 1 | Complete: one story, six services and thirteen excluded returns across twenty Q contracts | [Source-comprehensive dossier](zone-stories/THE_CLAWED_CAVERNS.md); ten contacts/all eight topics, optional spire/rainbow keys, exact final shards and full custom switch/death/transform/access routes | Active stock, custom container/key transformation and coin-only clue remain unqualified | Native projection/receipt checks; target-safe effects, recoverable nested death/transform/recipient retirement, confirmed travel and paid-clue settlement pending |
+| Defense of Longhollow | 1 | Complete: four stories, five requests, five clothing services and one empty exclusion across fifteen Q contracts | [Source-comprehensive dossier](zone-stories/DEFENSE_OF_LONGHOLLOW.md); forty-one contacts/all sixty topics, six optional producers, exact five heads, bracer, potion/poison outputs and source/access guidance | Active stock, three cap/quantity conflicts, four mixed fees and epic teaching remain unqualified | Native projection/receipt checks; committed source/lineage, paid services/teaching, confirmed powers and builder-approved rescue/healing/closure pending; cash reward path already supported |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
 
 ## Twin Towers evidence and decisions

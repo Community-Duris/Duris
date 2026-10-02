@@ -1,0 +1,1312 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "long",
+  "coverage": "complete",
+  "introduction": "Longhollow is under siege while a protected temple, woodland campsite and witch's shrine offer separate routes. The mayor's five-proof delivery leads to a physical bracer for Solar. The witch's potion and poison experiments have independent intermediate hand-ins and distinct physical-output finales. Clothing services and scene lore remain separate.",
+  "orientation": [
+    "Follow the forest path into the tall grass. The campsite beside the brook holds the trapper and traders; the stone shrine holds the witch. Trampled grass leads southeast to the ruined parish, its enemy leaders and Selune's temple.",
+    "Speak to the mayor in the clearing north of the parish. His proof set contains five distinct heads: the Bloodied Knight, necromancer, Fomorian chieftain, enchantress and dark priest. One head kind cannot replace another. The proof items are chance-loaded carried stock, not a reviewed personal-death achievement.",
+    "The knight and captive wife are upstairs in the mansion; the necromancer is at the burning stable and the dark priest chants in Market Square. The hidden briar route west of the grass leads through rock paths and a boulder entrance to the chieftain and enchantress in the caverns. Listed panels and doors reset open; no magical belt or glove gate is implemented here.",
+    "The mayor awards both the Longhollow bracer and an exquisite moonstone. Solar in Selune's inner sanctum accepts only the physical bracer for a star woven symbol, then disappears. Earlier mayor history is optional; a supplied bracer qualifies, while a moonstone or a spent-bracer receipt does not.",
+    "The witch narrates potion recipes in order, but each exact hand-in matches independently. Keep the distinct red, green and bubbling vials for the mist combination with the blood drop. The bubbling-vial recipe also rewards 25,000 copper through the supported native reward path; it charges no fee. Supplied exact outputs can feed the later recipe without producer history.",
+    "For the poison branch, two venom sacs plus mandrake produce a filled root; lotus, nightshade and red mushroom produce a filled head. Both prepared outputs plus the exact loose Kiss of Talona bloom complete the final blend. The nearby rooted vine is scenery, and the finished leaf's advertised poison behavior needs content review.",
+    "The trapper makes caps, boots, scarves, cloaks and a rare five-material headdress. Native boots cost 20 gold despite dialogue saying 15. Paid clothing is currently unavailable under active accounting. Four snake skins, two fox furs and two venom sacs exceed their respective ordinary cap-one supply; availability needs repair rather than a promise to wait for another reset.",
+    "Stock may be missing or carried by other players, and native NPCs may wander. Harv's shop remains implemented behind the alley panel despite his packing dialogue. Temple survivors, the captive wife, decorative corpses and Rolane's empty quest placeholder have no reviewed rescue, recovery or siege-ending completion.",
+    "Carry every offering directly, outside equipment or containers. Exact current supplies show readiness; an accounting-backed delivery records that hand-in once. Questions, optional producer receipts and printed promises do not confirm a personal kill, all-stage campaign, learned spell, title flag, rescue or applied item effect."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 34400,
+      "name": "a male fomorian",
+      "keyword": "giant",
+      "description": "A sleeping Fomorian reacts to a greeting. The response is scene lore, not proof against the chieftain.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34401,
+      "name": "a female fomorian",
+      "keyword": "fomorian",
+      "description": "The sleeping female Fomorian describes dreams and local village victims.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34402,
+      "name": "a fomorian guard",
+      "keyword": "guard",
+      "description": "The Fomorian guard threatens trespassers; ordinary guards are not one of the five requested heads.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34403,
+      "name": "the chieftain",
+      "keyword": "chieftain",
+      "description": "The chieftain serves the Barony and may carry one of the mayor's five distinct proofs.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34404,
+      "name": "a scout",
+      "keyword": "scout",
+      "description": "Fomorian scouts threaten intruders; their presence is separate from the chieftain's proof.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34405,
+      "name": "the fomorian guard",
+      "keyword": "guard",
+      "description": "An entrance guard threatens unwanted visitors; this is guidance rather than a quest stage.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34407,
+      "name": "the enchantress",
+      "keyword": "woman",
+      "description": "The enchantress observes the siege from the cavern bedroom and may carry her distinct proof head.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34408,
+      "name": "the advisor",
+      "keyword": "advisor",
+      "description": "The royal advisor discusses Longhollow and studies maps; his printed plan does not record a learned objective.",
+      "topics": [
+        "hi",
+        "hello",
+        "longhollow",
+        "map"
+      ]
+    },
+    {
+      "mob_vnum": 34409,
+      "name": "a Bloodied Knight",
+      "keyword": "knight",
+      "description": "The Bloodied Knight in the mansion threatens interrogation. His possible proof head is distinct from the captive wife or squire.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34411,
+      "name": "the fomorian tanner",
+      "keyword": "malformed",
+      "description": "The Fomorian tanner is busy preparing hides; no reviewed native clothing exchange is attached to him.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34412,
+      "name": "a fomorian child",
+      "keyword": "fomorian",
+      "description": "The boy responds to the siege's violence; no reviewed rescue or escort outcome is implemented.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34413,
+      "name": "a fomorian child",
+      "keyword": "fomorian",
+      "description": "The girl responds to the siege's violence; no reviewed rescue or escort outcome is implemented.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34414,
+      "name": "the tribal shaman",
+      "keyword": "fomorian",
+      "description": "The tribal shaman complains about the visiting enchantress and her plans.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34415,
+      "name": "a fomorian",
+      "keyword": "giant",
+      "description": "The Fomorian eats recovered organs. Decorative remains are not tracked collection quests here.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34417,
+      "name": "The Solar of Selune",
+      "keyword": "solar",
+      "description": "Ask Solar about heroes, evil and Selune. He exchanges the exact Longhollow bracer for the star woven symbol, then disappears.",
+      "topics": [
+        "hero",
+        "evil",
+        "selune",
+        "goddess",
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34418,
+      "name": "a priestess",
+      "keyword": "priestess",
+      "description": "The priestess worries about villagers. Her dialogue supplies scene context without a recorded aid outcome.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34419,
+      "name": "an acolyte",
+      "keyword": "acolyte",
+      "description": "The acolyte prays beside the wounded templar; no reviewed revival reward or completion callback exists here.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34420,
+      "name": "a templar",
+      "keyword": "templar",
+      "description": "The templar defends the sanctuary. Temple protection is distinct from a completed siege or rescue.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34421,
+      "name": "a templar",
+      "keyword": "templar",
+      "description": "The entrance templar directs visitors into Selune's protected temple.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34422,
+      "name": "a young man",
+      "keyword": "man",
+      "description": "A young survivor grieves in the sanctuary; no reviewed reassurance or escort completion exists.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34423,
+      "name": "a young woman",
+      "keyword": "woman",
+      "description": "A survivor protects a child in the sanctuary; their presence is scene context rather than rescue proof.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34424,
+      "name": "a small child",
+      "keyword": "small",
+      "description": "The frightened child asks for a parent. No reviewed parent-reunion endpoint is implemented.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34425,
+      "name": "a wounded templar",
+      "keyword": "wounded",
+      "description": "The wounded templar moans. Bandaging or healing is not wired to a local zone-story receipt.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34428,
+      "name": "a necromancer",
+      "keyword": "mage",
+      "description": "The necromancer speaks of the Barony's aims and may carry the requested proof head at the burning stable.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34438,
+      "name": "Harv",
+      "keyword": "harv",
+      "description": "Harv still has an implemented shop behind the alley panel despite saying he is packing. His shop stock is separate from quest ingredients.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34439,
+      "name": "a dark priest",
+      "keyword": "priest",
+      "description": "The chanting dark priest may carry one of the mayor's five requested heads. The nearby corpse pile is scenery, not rescue proof.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34440,
+      "name": "a squire",
+      "keyword": "squire",
+      "description": "The knight's squire tends equipment and discusses his master. Questions provide context without earning a keyword achievement.",
+      "topics": [
+        "hi",
+        "hello",
+        "master",
+        "gear"
+      ]
+    },
+    {
+      "mob_vnum": 34443,
+      "name": "the trapper",
+      "keyword": "man",
+      "description": "Ask the campsite trapper about each clothing recipe. His four paid services cannot settle under active accounting; the free five-material headdress stays a separate service.",
+      "topics": [
+        "caps",
+        "cap",
+        "boot",
+        "boots",
+        "headdress",
+        "scarf",
+        "scarves",
+        "cloaks",
+        "clothing",
+        "service",
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34445,
+      "name": "the mayor",
+      "keyword": "mayor",
+      "description": "Ask the mayor about help, magic and the village's treasure. He requires five distinct enemy heads and awards a bracer plus moonstone; his wife-rescue request has no reviewed separate endpoint.",
+      "topics": [
+        "giant",
+        "giants",
+        "creatures",
+        "magic",
+        "treasure",
+        "prized",
+        "help",
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34446,
+      "name": "the witch",
+      "keyword": "witch",
+      "description": "Ask the witch about errands, potions, poisons and the next recipe. She performs seven independent exact hand-ins. Her separate table-driven summon-familiar teaching is currently unavailable under active accounting; ambient cat lessons are not keyword achievements.",
+      "topics": [
+        "next",
+        "poison",
+        "poisons",
+        "hi",
+        "hello",
+        "errands",
+        "errand",
+        "yes",
+        "potion",
+        "potions"
+      ]
+    },
+    {
+      "mob_vnum": 34448,
+      "name": "a redbird",
+      "keyword": "bird",
+      "description": "Redbirds may carry the exact red feathers used in the headdress. A greeting is scene flavor.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34449,
+      "name": "a blackbird",
+      "keyword": "blackbird",
+      "description": "Blackbirds may carry the exact black feathers used in the headdress. A greeting is scene flavor.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34450,
+      "name": "a yellowbird",
+      "keyword": "yellowbird",
+      "description": "Yellowbirds may carry the exact yellow feathers used in the headdress. A greeting is scene flavor.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34453,
+      "name": "a striped fish",
+      "keyword": "fish",
+      "description": "Red-striped fish may carry red scales. The witch also needs the distinct bluegill scales for one experiment.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34456,
+      "name": "a bird",
+      "keyword": "bird",
+      "description": "The flightless bird provides wildlife context; it does not supply the boobrie's required plumage.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34457,
+      "name": "a hare",
+      "keyword": "hare",
+      "description": "The hare provides wildlife context without a reviewed local recovery or delivery quest.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34472,
+      "name": "a boobrie",
+      "keyword": "boobrie",
+      "description": "The gigantic boobrie supplies the headdress's exact plumage; ordinary colored feathers do not substitute.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34474,
+      "name": "an otter",
+      "keyword": "otter",
+      "description": "The otter provides brook wildlife context without a reviewed local retrieval or delivery quest.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34476,
+      "name": "an elven girl",
+      "keyword": "elven",
+      "description": "The elven girl may carry the exact blood drop used with the three potion outputs. Its printed name does not imply a tracked personal harvesting event.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 34416,
+      "name": "Rolane",
+      "keyword": "rolane",
+      "description": "Rolane prays in the inner sanctum and carries a token of Selune. His empty native Q placeholder is excluded from achievements; no reviewed ward or prayer completion is recorded.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 34434,
+      "name": "the mayor's wife",
+      "keyword": "woman",
+      "description": "The mayor's wife is placed bound beside the Bloodied Knight. The reviewed source has no local escape, escort or reunion endpoint; the head delivery does not prove her rescue.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "proof-against-the-siege-leaders",
+      "title": "Proof Against the Siege Leaders",
+      "category": "story",
+      "summary": "Help the mayor identify those responsible for the siege by delivering five distinct enemy heads together. His exact reward is the Longhollow bracer and an exquisite moonstone. This receipt proves the hand-in, not personal kills, a rescued wife or a restored village. Supplied proofs qualify.",
+      "contracts": [
+        {
+          "giver_vnum": 34445,
+          "completion_key": "give=I:34427,I:34428,I:34429,I:34430,I:34431;receive=I:34452,I:34464;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-34427",
+          "kind": "carried_item",
+          "item_vnums": [
+            34427
+          ],
+          "count": 1,
+          "text": "Carry the Bloodied Knight's head",
+          "hint": "The Bloodied Knight in the mansion's upstairs chamber may carry this exact head. His squire and the nearby captive wife do not supply it. Shared stock can be absent even when the knight is present."
+        },
+        {
+          "id": "item-34428",
+          "kind": "carried_item",
+          "item_vnums": [
+            34428
+          ],
+          "count": 1,
+          "text": "Carry the necromancer's head",
+          "hint": "The necromancer at the burning stable may carry this exact head. His skeletal horses and zombie companion are separate creatures, not substitute proofs."
+        },
+        {
+          "id": "item-34429",
+          "kind": "carried_item",
+          "item_vnums": [
+            34429
+          ],
+          "count": 1,
+          "text": "Carry the Fomorian chieftain's head",
+          "hint": "Follow the briar path and rocky route to the cavern complex. The chieftain in its deepest chamber may carry this exact head. Ordinary Fomorians and guards do not substitute."
+        },
+        {
+          "id": "item-34430",
+          "kind": "carried_item",
+          "item_vnums": [
+            34430
+          ],
+          "count": 1,
+          "text": "Carry the enchantress's head",
+          "hint": "The enchantress in the caverns' bedroom chamber may carry this exact head. The advisor and his maps provide scene guidance, not this proof."
+        },
+        {
+          "id": "item-34431",
+          "kind": "carried_item",
+          "item_vnums": [
+            34431
+          ],
+          "count": 1,
+          "text": "Carry the dark priest's head",
+          "hint": "The chanting dark priest in Market Square may carry this exact head. Temple priests, the captive wife and decorative corpses are not this offering."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34445,
+              "completion_key": "give=I:34427,I:34428,I:34429,I:34430,I:34431;receive=I:34452,I:34464;disappear=0"
+            }
+          ],
+          "text": "Deliver all five distinct heads to the mayor",
+          "hint": "Find the mayor in the clearing north of the village. Carry one of each exact head directly, outside containers or equipment, and offer them together. The reward is the bracer plus moonstone. The recorded delivery does not confirm killing the leaders yourself, rescuing the wife or ending the siege."
+        }
+      ]
+    },
+    {
+      "id": "recognition-by-selunes-solar",
+      "title": "Recognition by Selune's Solar",
+      "category": "story",
+      "summary": "Bring the Longhollow bracer to Solar in the inner sanctum for the star woven symbol of Selune. The mayor's preceding delivery is optional preparation; the physical bracer is required. The moonstone is a different reward and is not accepted. Solar disappears after the exchange; spoken titles are not an additional title-system award.",
+      "contracts": [
+        {
+          "giver_vnum": 34417,
+          "completion_key": "give=I:34452;receive=I:34453;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "mayors-recognition",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34445,
+              "completion_key": "give=I:34427,I:34428,I:34429,I:34430,I:34431;receive=I:34452,I:34464;disappear=0"
+            }
+          ],
+          "text": "Optional: earn the mayor's recognition",
+          "hint": "The mayor exchanges the five distinct heads for a bracer and moonstone. This receipt explains one bracer source but cannot replace a bracer already spent or lost. A supplied bracer qualifies without this history.",
+          "optional": true
+        },
+        {
+          "id": "item-34452",
+          "kind": "carried_item",
+          "item_vnums": [
+            34452
+          ],
+          "count": 1,
+          "text": "Carry the bracer bearing the Longhollow symbol",
+          "hint": "Use the exact bracer awarded by the mayor, or a supplied copy. The exquisite moonstone is not a substitute, including one obtained in another zone. Keep the bracer directly carried for Solar's exchange."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34417,
+              "completion_key": "give=I:34452;receive=I:34453;disappear=1"
+            }
+          ],
+          "text": "Offer the Longhollow bracer to Solar",
+          "hint": "Reach Selune's inner sanctum above the sanctuary. Solar may be absent from the current shared population and disappears after accepting the bracer. The star woven symbol is the actual item reward; no separate wife-rescue, personal-kill or title flag is required. Supplied bracers qualify."
+        }
+      ]
+    },
+    {
+      "id": "the-first-potion-experiment",
+      "title": "The First Potion Experiment",
+      "category": "request",
+      "summary": "Help the witch complete her first experiment with a small bat wing, one cricket-leg pair, one snake skin and briar root. She rewards a slender vial of red fluid and explains the next recipe. The four-ingredient delivery is independent; the vial is physical input for the later shadowy mist.",
+      "contracts": [
+        {
+          "giver_vnum": 34446,
+          "completion_key": "give=I:34411,I:34412,I:34413,I:34432;receive=I:34443;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-34411",
+          "kind": "carried_item",
+          "item_vnums": [
+            34411
+          ],
+          "count": 1,
+          "text": "Carry 1 × bat wing",
+          "hint": "A giant bat in the grassy field may carry this small bat wing. The much larger dragazhar wing scrap is a different ingredient."
+        },
+        {
+          "id": "item-34412",
+          "kind": "carried_item",
+          "item_vnums": [
+            34412
+          ],
+          "count": 1,
+          "text": "Carry 1 × pair of cricket legs",
+          "hint": "The cricket near the brook carries this exact pair of legs as one object, not two separate legs."
+        },
+        {
+          "id": "item-34413",
+          "kind": "carried_item",
+          "item_vnums": [
+            34413
+          ],
+          "count": 1,
+          "text": "Carry 1 × snake skins",
+          "hint": "The red-and-black snake near the campsite brook may carry this exact skin. Its ordinary global stock cap is one. The witch needs one; boots need four distinct skins at once, and spending a skin on one recipe removes it from the other."
+        },
+        {
+          "id": "item-34432",
+          "kind": "carried_item",
+          "item_vnums": [
+            34432
+          ],
+          "count": 1,
+          "text": "Carry 1 × briar root",
+          "hint": "Look for loose briar root on the hidden briar path west of the grass. The briar entrance is an ordinary openable exit, not a gloves or magical-belt check."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34446,
+              "completion_key": "give=I:34411,I:34412,I:34413,I:34432;receive=I:34443;disappear=0"
+            }
+          ],
+          "text": "Deliver the complete offering to the witch",
+          "hint": "Find the witch at the stone shrine. Carry every exact item directly, outside containers or equipment, and offer them together. The native recipes are independent matching hand-ins; questions and earlier stages are guidance, not required personal history."
+        }
+      ]
+    },
+    {
+      "id": "the-green-potion-experiment",
+      "title": "The Green Potion Experiment",
+      "category": "request",
+      "summary": "Bring frog eyes, owl eyes, wild tulip bulb, fiddler spider web and green moss for the tiny green-fluid vial. The witch narrates it after her first experiment, but the native hand-in does not require that earlier receipt. Keep the exact vial for the later mist; its narrated darkvision effect needs content review.",
+      "contracts": [
+        {
+          "giver_vnum": 34446,
+          "completion_key": "give=I:34410,I:34419,I:34442,I:34454,I:34455;receive=I:34444;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-34410",
+          "kind": "carried_item",
+          "item_vnums": [
+            34410
+          ],
+          "count": 1,
+          "text": "Carry 1 × frog eyes",
+          "hint": "The bullfrog near the brook carries this exact pair of eyes as one object. Tree frogs and other eyes do not substitute."
+        },
+        {
+          "id": "item-34419",
+          "kind": "carried_item",
+          "item_vnums": [
+            34419
+          ],
+          "count": 1,
+          "text": "Carry 1 × pair of owl eyes",
+          "hint": "The giant owl at the southern edge of the grass carries the exact pair of owl eyes. The other owl placement has no eye reset; owl presence alone does not promise stock."
+        },
+        {
+          "id": "item-34442",
+          "kind": "carried_item",
+          "item_vnums": [
+            34442
+          ],
+          "count": 1,
+          "text": "Carry 1 × wild tulip bulb",
+          "hint": "The exact loose tulip bulb may lie along the forest approach. Decorative flowers in room descriptions do not substitute."
+        },
+        {
+          "id": "item-34454",
+          "kind": "carried_item",
+          "item_vnums": [
+            34454
+          ],
+          "count": 1,
+          "text": "Carry 1 × fiddler spider web",
+          "hint": "Look for the exact loose web in the central grass. No separate spider kill or web-harvesting action is required by the reviewed source."
+        },
+        {
+          "id": "item-34455",
+          "kind": "carried_item",
+          "item_vnums": [
+            34455
+          ],
+          "count": 1,
+          "text": "Carry 1 × green moss",
+          "hint": "The exact loose moss may lie at the northern forest entrance. It is ordinary ground stock, not a separate growth or harvesting objective."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34446,
+              "completion_key": "give=I:34410,I:34419,I:34442,I:34454,I:34455;receive=I:34444;disappear=0"
+            }
+          ],
+          "text": "Deliver the complete offering to the witch",
+          "hint": "Find the witch at the stone shrine. Carry every exact item directly, outside containers or equipment, and offer them together. The native recipes are independent matching hand-ins; questions and earlier stages are guidance, not required personal history."
+        }
+      ]
+    },
+    {
+      "id": "the-fishscale-potion-experiment",
+      "title": "The Fishscale Potion Experiment",
+      "category": "request",
+      "summary": "Bring both distinct fishscale colors, loose razor vine root and a dragazhar wing scrap. The native reward is a shimmering bubbling vial plus 25,000 copper through the existing native item and wallet reward path. This recipe charges no fee. No earlier experiment or glove check is required by the reviewed native contract.",
+      "contracts": [
+        {
+          "giver_vnum": 34446,
+          "completion_key": "give=I:34422,I:34423,I:34440,I:34441;receive=C:25000,I:34445;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-34422",
+          "kind": "carried_item",
+          "item_vnums": [
+            34422
+          ],
+          "count": 1,
+          "text": "Carry 1 × blue fishscales",
+          "hint": "Bluegills in the eastern brook may carry these exact scales. The red-striped fish supplies the different red scales."
+        },
+        {
+          "id": "item-34423",
+          "kind": "carried_item",
+          "item_vnums": [
+            34423
+          ],
+          "count": 1,
+          "text": "Carry 1 × red fishscales",
+          "hint": "Red-striped fish along the eastern brook may carry these exact scales. Fish eggs and bluegill scales do not substitute."
+        },
+        {
+          "id": "item-34440",
+          "kind": "carried_item",
+          "item_vnums": [
+            34440
+          ],
+          "count": 1,
+          "text": "Carry 1 × razor vine root",
+          "hint": "Look for the exact loose razor root where the forest path reaches the grassy field. The attached razor vine is scenery. Gloves and handling injury are described in lore, but no reviewed local script enforces a gloves prerequisite."
+        },
+        {
+          "id": "item-34441",
+          "kind": "carried_item",
+          "item_vnums": [
+            34441
+          ],
+          "count": 1,
+          "text": "Carry 1 × dragazhar wing scrap",
+          "hint": "The dragazhar in the northern grass may carry this exact bloody scrap. The smaller giant bat's wing is a different ingredient."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34446,
+              "completion_key": "give=I:34422,I:34423,I:34440,I:34441;receive=C:25000,I:34445;disappear=0"
+            }
+          ],
+          "text": "Deliver the complete offering to the witch",
+          "hint": "Find the witch at the stone shrine. Carry every exact item directly, outside containers or equipment, and offer them together. The native recipes are independent matching hand-ins; questions and earlier stages are guidance, not required personal history."
+        }
+      ]
+    },
+    {
+      "id": "the-shadowy-mist",
+      "title": "The Shadowy Mist",
+      "category": "story",
+      "summary": "Combine the witch's three distinct physical potion outputs with the exact blood drop for shadowy mist. Supplied ingredients qualify without earlier experiment receipts. Batch-changing effects are described in prose; the reviewed output has fixed potion values. This finale records its own delivery, not completion of every earlier stage.",
+      "contracts": [
+        {
+          "giver_vnum": 34446,
+          "completion_key": "give=I:34439,I:34443,I:34444,I:34445;receive=I:34446;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "first-experiment",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34446,
+              "completion_key": "give=I:34411,I:34412,I:34413,I:34432;receive=I:34443;disappear=0"
+            }
+          ],
+          "text": "Optional: complete the first potion experiment",
+          "hint": "This earlier recorded delivery explains a producer route. The later recipe still needs the physical output. Supplied exact outputs qualify without personal preparation history.",
+          "optional": true
+        },
+        {
+          "id": "green-experiment",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34446,
+              "completion_key": "give=I:34410,I:34419,I:34442,I:34454,I:34455;receive=I:34444;disappear=0"
+            }
+          ],
+          "text": "Optional: complete the green potion experiment",
+          "hint": "This earlier recorded delivery explains a producer route. The later recipe still needs the physical output. Supplied exact outputs qualify without personal preparation history.",
+          "optional": true
+        },
+        {
+          "id": "fishscale-experiment",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34446,
+              "completion_key": "give=I:34422,I:34423,I:34440,I:34441;receive=C:25000,I:34445;disappear=0"
+            }
+          ],
+          "text": "Optional: complete the fishscale potion experiment",
+          "hint": "This earlier recorded delivery explains a producer route. The later recipe still needs the physical output. Supplied exact outputs qualify without personal preparation history.",
+          "optional": true
+        },
+        {
+          "id": "item-34443",
+          "kind": "carried_item",
+          "item_vnums": [
+            34443
+          ],
+          "count": 1,
+          "text": "Carry 1 × slender red-fluid vial",
+          "hint": "The witch's first four-ingredient experiment produces this exact vial. Keep it for the combined mist recipe instead of consuming it, or obtain a supplied copy. An earlier receipt cannot replace a spent vial."
+        },
+        {
+          "id": "item-34444",
+          "kind": "carried_item",
+          "item_vnums": [
+            34444
+          ],
+          "count": 1,
+          "text": "Carry 1 × tiny green-fluid vial",
+          "hint": "The witch's frog/owl/tulip/web/moss experiment produces this exact vial. Keep it for the combined mist recipe, or obtain a supplied copy. Its darkvision claim needs a content review; journal progress does not prove an applied spell."
+        },
+        {
+          "id": "item-34445",
+          "kind": "carried_item",
+          "item_vnums": [
+            34445
+          ],
+          "count": 1,
+          "text": "Carry 1 × shimmering bubbling vial",
+          "hint": "The witch's fishscale/razor-root/dragazhar experiment produces this exact vial plus a supported native cash reward. Keep the vial for the mist recipe, or use a supplied copy without personal producer history. Receiving coins is different from paying a mixed item/coin offering."
+        },
+        {
+          "id": "item-34439",
+          "kind": "carried_item",
+          "item_vnums": [
+            34439
+          ],
+          "count": 1,
+          "text": "Carry 1 × drop of virgin blood",
+          "hint": "The elven girl in the grass north of the shrine may carry this exact blood drop. It is ordinary carried stock, not a reviewed player harvesting or first-blood event; supplied stock qualifies."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34446,
+              "completion_key": "give=I:34439,I:34443,I:34444,I:34445;receive=I:34446;disappear=0"
+            }
+          ],
+          "text": "Deliver the complete offering to the witch",
+          "hint": "Find the witch at the stone shrine. Carry every exact item directly, outside containers or equipment, and offer them together. The native recipes are independent matching hand-ins; questions and earlier stages are guidance, not required personal history."
+        }
+      ]
+    },
+    {
+      "id": "vipers-delight",
+      "title": "Viper's Delight",
+      "category": "request",
+      "summary": "Bring two distinct venom sacs and raw mandrake root for the filled root called Viper's Delight in the witch's dialogue. The ordinary sac stock cap is one, so repeat collection is not yet qualified. Weapon-dipping instructions are lore without a reviewed local implementation; the output currently uses an ordinary potion prototype.",
+      "contracts": [
+        {
+          "giver_vnum": 34446,
+          "completion_key": "give=I:34406,I:34406,I:34433;receive=I:34449;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-34406",
+          "kind": "carried_item",
+          "item_vnums": [
+            34406
+          ],
+          "count": 2,
+          "text": "Carry 2 × venom sacs",
+          "hint": "The viper near the southern brook may carry one venom sac. The recipe needs two distinct sacs, but its ordinary global stock cap is one. Waiting with one live sac does not ordinarily create the second; source replenishment needs repair or existing supplied stock."
+        },
+        {
+          "id": "item-34433",
+          "kind": "carried_item",
+          "item_vnums": [
+            34433
+          ],
+          "count": 1,
+          "text": "Carry 1 × mandrake root",
+          "hint": "Loose mandrake root may lie in the western grass. The hollow root already filled with venom is a finished output, not this raw root."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34446,
+              "completion_key": "give=I:34406,I:34406,I:34433;receive=I:34449;disappear=0"
+            }
+          ],
+          "text": "Deliver the complete offering to the witch",
+          "hint": "Find the witch at the stone shrine. Carry every exact item directly, outside containers or equipment, and offer them together. The native recipes are independent matching hand-ins; questions and earlier stages are guidance, not required personal history."
+        }
+      ]
+    },
+    {
+      "id": "the-lotus-and-nightshade-experiment",
+      "title": "The Lotus and Nightshade Experiment",
+      "category": "request",
+      "summary": "Bring lotus leaves, a clump of nightshade and a red mushroom for a hollowed mushroom head filled with paste. The witch then explains the rare-bloom combination. This hand-in is independent of Viper's Delight; the filled head is required as a physical ingredient for the later finale.",
+      "contracts": [
+        {
+          "giver_vnum": 34446,
+          "completion_key": "give=I:34434,I:34435,I:34436;receive=I:34447;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-34434",
+          "kind": "carried_item",
+          "item_vnums": [
+            34434
+          ],
+          "count": 1,
+          "text": "Carry 1 × lotus leaves",
+          "hint": "Loose lotus leaves lie in the southern grass near the shrine. The shrine's cauldron is scenery, not a separate ingredient."
+        },
+        {
+          "id": "item-34435",
+          "kind": "carried_item",
+          "item_vnums": [
+            34435
+          ],
+          "count": 1,
+          "text": "Carry 1 × clump of nightshade",
+          "hint": "Loose nightshade may grow in the grass north of the shrine. The object is one clump, not a count of individual leaves."
+        },
+        {
+          "id": "item-34436",
+          "kind": "carried_item",
+          "item_vnums": [
+            34436
+          ],
+          "count": 1,
+          "text": "Carry 1 × red mushroom",
+          "hint": "Look for the loose red mushroom in the western grass near the briar entry. Its later hollowed paste-filled head is a different output."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34446,
+              "completion_key": "give=I:34434,I:34435,I:34436;receive=I:34447;disappear=0"
+            }
+          ],
+          "text": "Deliver the complete offering to the witch",
+          "hint": "Find the witch at the stone shrine. Carry every exact item directly, outside containers or equipment, and offer them together. The native recipes are independent matching hand-ins; questions and earlier stages are guidance, not required personal history."
+        }
+      ]
+    },
+    {
+      "id": "the-kiss-of-talona-blend",
+      "title": "The Kiss of Talona Blend",
+      "category": "story",
+      "summary": "Bring both distinct prepared outputs and the exact loose Kiss of Talona bloom for a glowing leaf with red spores. The rooted vine is not the offering. Supplied outputs qualify without preparation history. The narrated poison and changing effects need content review: the actual reward is an armor prototype, and this receipt proves the final hand-in only.",
+      "contracts": [
+        {
+          "giver_vnum": 34446,
+          "completion_key": "give=I:34438,I:34447,I:34449;receive=I:34448;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "viper-preparation",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34446,
+              "completion_key": "give=I:34406,I:34406,I:34433;receive=I:34449;disappear=0"
+            }
+          ],
+          "text": "Optional: prepare Viper's Delight",
+          "hint": "This earlier recorded delivery explains a producer route. The later recipe still needs the physical output. Supplied exact outputs qualify without personal preparation history.",
+          "optional": true
+        },
+        {
+          "id": "lotus-preparation",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34446,
+              "completion_key": "give=I:34434,I:34435,I:34436;receive=I:34447;disappear=0"
+            }
+          ],
+          "text": "Optional: complete the lotus and nightshade experiment",
+          "hint": "This earlier recorded delivery explains a producer route. The later recipe still needs the physical output. Supplied exact outputs qualify without personal preparation history.",
+          "optional": true
+        },
+        {
+          "id": "item-34449",
+          "kind": "carried_item",
+          "item_vnums": [
+            34449
+          ],
+          "count": 1,
+          "text": "Carry 1 × venom-filled mandrake root",
+          "hint": "The witch exchanges two venom sacs and raw mandrake root for this exact filled root. Keep it for the bloom combination, or use a supplied copy. A raw root or one venom sac is not a substitute."
+        },
+        {
+          "id": "item-34447",
+          "kind": "carried_item",
+          "item_vnums": [
+            34447
+          ],
+          "count": 1,
+          "text": "Carry 1 × paste-filled mushroom head",
+          "hint": "The witch exchanges lotus leaves, nightshade and a red mushroom for this exact head. Keep it for the bloom combination, or use a supplied copy. The ordinary red mushroom does not substitute."
+        },
+        {
+          "id": "item-34438",
+          "kind": "carried_item",
+          "item_vnums": [
+            34438
+          ],
+          "count": 1,
+          "text": "Carry 1 × Kiss of Talona bloom",
+          "hint": "The exact loose Kiss of Talona bloom may appear beside the northern brook. The rooted flowering vine nearby is a different, non-takeable object and cannot satisfy the recipe. No reviewed cutting, picking or magical garden-access script creates the bloom."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34446,
+              "completion_key": "give=I:34438,I:34447,I:34449;receive=I:34448;disappear=0"
+            }
+          ],
+          "text": "Deliver the complete offering to the witch",
+          "hint": "Find the witch at the stone shrine. Carry every exact item directly, outside containers or equipment, and offer them together. The native recipes are independent matching hand-ins; questions and earlier stages are guidance, not required personal history."
+        }
+      ]
+    },
+    {
+      "id": "a-raccoon-fur-cap",
+      "title": "A Raccoon Fur Cap",
+      "category": "service",
+      "summary": "The campsite trapper makes this clothing from exact raw materials for 1,000 copper (10 gold). The mixed coin/item offering is currently unavailable under active accounting. This is a clothing service, separate from the siege and witch stories; it awards no zone achievement or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 34443,
+          "completion_key": "give=C:1000,I:34426;receive=I:34451;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-34426",
+          "kind": "carried_item",
+          "item_vnums": [
+            34426
+          ],
+          "count": 1,
+          "text": "Carry 1 × raccoon skin",
+          "hint": "The raccoon near the northern brook carries this exact skin. The finished fur cap is a different object."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34443,
+              "completion_key": "give=C:1000,I:34426;receive=I:34451;disappear=0"
+            }
+          ],
+          "text": "Commission the clothing from the trapper",
+          "hint": "Carry all exact materials directly and visit the campsite trapper. The actual native price is 1,000 copper (10 gold). Mixed coin/item settlement is currently unavailable under active accounting. Duplicate counts mean distinct physical items. This clothing service does not complete the siege or award an achievement."
+        }
+      ]
+    },
+    {
+      "id": "four-skins-for-snakeskin-boots",
+      "title": "Four Skins for Snakeskin Boots",
+      "category": "service",
+      "summary": "The campsite trapper makes this clothing from exact raw materials for 2,000 copper (20 gold), although his dialogue says 15 gold. The mixed coin/item offering is currently unavailable under active accounting. This is a clothing service, separate from the siege and witch stories; it awards no zone achievement or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 34443,
+          "completion_key": "give=C:2000,I:34413,I:34413,I:34413,I:34413;receive=I:34450;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-34413",
+          "kind": "carried_item",
+          "item_vnums": [
+            34413
+          ],
+          "count": 4,
+          "text": "Carry 4 × snake skins",
+          "hint": "The red-and-black snake near the campsite brook may carry this exact skin. Its ordinary global stock cap is one. The witch needs one; boots need four distinct skins at once, and spending a skin on one recipe removes it from the other."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34443,
+              "completion_key": "give=C:2000,I:34413,I:34413,I:34413,I:34413;receive=I:34450;disappear=0"
+            }
+          ],
+          "text": "Commission the clothing from the trapper",
+          "hint": "Carry all exact materials directly and visit the campsite trapper. The actual native price is 2,000 copper (20 gold), although his dialogue says 15 gold. Mixed coin/item settlement is currently unavailable under active accounting. Duplicate counts mean distinct physical items. This clothing service does not complete the siege or award an achievement."
+        }
+      ]
+    },
+    {
+      "id": "the-trappers-rare-headdress",
+      "title": "The Trapper's Rare Headdress",
+      "category": "service",
+      "summary": "The campsite trapper makes this clothing from exact raw materials for no coins. The rare headdress needs five distinct material kinds together; supplied materials qualify. This is a clothing service, separate from the siege and witch stories; it awards no zone achievement or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 34443,
+          "completion_key": "give=I:34401,I:34414,I:34415,I:34416,I:34417;receive=I:34421;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-34401",
+          "kind": "carried_item",
+          "item_vnums": [
+            34401
+          ],
+          "count": 1,
+          "text": "Carry 1 × boobrie plumage",
+          "hint": "The gigantic boobrie in the eastern brook carries this exact plumage. Ordinary birds and their colored feathers are separate ingredients."
+        },
+        {
+          "id": "item-34414",
+          "kind": "carried_item",
+          "item_vnums": [
+            34414
+          ],
+          "count": 1,
+          "text": "Carry 1 × sabertooth head",
+          "hint": "The sabertooth tiger near the western briar entry carries this exact head when present. The finished headdress, enemy heads and similarly named trophies do not substitute."
+        },
+        {
+          "id": "item-34415",
+          "kind": "carried_item",
+          "item_vnums": [
+            34415
+          ],
+          "count": 1,
+          "text": "Carry 1 × black feather",
+          "hint": "The blackbirds in the central grass may carry this exact feather. Red and yellow feathers must be separate exact kinds."
+        },
+        {
+          "id": "item-34416",
+          "kind": "carried_item",
+          "item_vnums": [
+            34416
+          ],
+          "count": 1,
+          "text": "Carry 1 × red feather",
+          "hint": "The redbirds in the central grass may carry this exact feather. Black and yellow feathers must be separate exact kinds."
+        },
+        {
+          "id": "item-34417",
+          "kind": "carried_item",
+          "item_vnums": [
+            34417
+          ],
+          "count": 1,
+          "text": "Carry 1 × yellow feather",
+          "hint": "The yellowbirds in the central grass may carry this exact feather. Red and black feathers must be separate exact kinds."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34443,
+              "completion_key": "give=I:34401,I:34414,I:34415,I:34416,I:34417;receive=I:34421;disappear=0"
+            }
+          ],
+          "text": "Commission the clothing from the trapper",
+          "hint": "Carry all exact materials directly and visit the campsite trapper. The actual native price is no coins. Duplicate counts mean distinct physical items. This clothing service does not complete the siege or award an achievement."
+        }
+      ]
+    },
+    {
+      "id": "two-furs-for-a-fox-scarf",
+      "title": "Two Furs for a Fox Scarf",
+      "category": "service",
+      "summary": "The campsite trapper makes this clothing from exact raw materials for 1,000 copper (10 gold). The mixed coin/item offering is currently unavailable under active accounting. This is a clothing service, separate from the siege and witch stories; it awards no zone achievement or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 34443,
+          "completion_key": "give=C:1000,I:34418,I:34418;receive=I:34420;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-34418",
+          "kind": "carried_item",
+          "item_vnums": [
+            34418
+          ],
+          "count": 2,
+          "text": "Carry 2 × fox furs",
+          "hint": "The red fox near the northern grass may carry one fox fur. The scarf needs two distinct furs, but its ordinary global stock cap is one; this source mismatch needs repair or existing supplied stock. The fur's copied description mentions a panther, but the panther skin is a different kind."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34443,
+              "completion_key": "give=C:1000,I:34418,I:34418;receive=I:34420;disappear=0"
+            }
+          ],
+          "text": "Commission the clothing from the trapper",
+          "hint": "Carry all exact materials directly and visit the campsite trapper. The actual native price is 1,000 copper (10 gold). Mixed coin/item settlement is currently unavailable under active accounting. Duplicate counts mean distinct physical items. This clothing service does not complete the siege or award an achievement."
+        }
+      ]
+    },
+    {
+      "id": "a-panther-skin-cloak",
+      "title": "A Panther Skin Cloak",
+      "category": "service",
+      "summary": "The campsite trapper makes this clothing from exact raw materials for 2,000 copper (20 gold). The mixed coin/item offering is currently unavailable under active accounting. This is a clothing service, separate from the siege and witch stories; it awards no zone achievement or daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 34443,
+          "completion_key": "give=C:2000,I:34409;receive=I:34408;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-34409",
+          "kind": "carried_item",
+          "item_vnums": [
+            34409
+          ],
+          "count": 1,
+          "text": "Carry 1 × panther skin",
+          "hint": "The black panther in the grass near the brook carries this exact bloody skin when present. The finished panther cloak is not raw skin."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 34443,
+              "completion_key": "give=C:2000,I:34409;receive=I:34408;disappear=0"
+            }
+          ],
+          "text": "Commission the clothing from the trapper",
+          "hint": "Carry all exact materials directly and visit the campsite trapper. The actual native price is 2,000 copper (20 gold). Mixed coin/item settlement is currently unavailable under active accounting. Duplicate counts mean distinct physical items. This clothing service does not complete the siege or award an achievement."
+        }
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "reason": "Rolane's native Q block has no offering, reward or success text. It is an incomplete placeholder, not a prayer, rescue, ward or story completion.",
+      "contracts": [
+        {
+          "giver_vnum": 34416,
+          "completion_key": "give=;receive=;disappear=0"
+        }
+      ]
+    }
+  ]
+}

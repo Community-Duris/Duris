@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 41 authored journals.
+2668 distinct Q contracts; 42 authored journals.
 
 Regenerate with:
 
@@ -131,7 +131,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Underground Lava Caves (`lavcav`) | 2 | 4 | 1 | Fallback | [1 × a pair of platinum horns → a golden wrist chain](../../areas/qst/lavcav.qst#L43) | — |
 | The Arcaneum of L'srillizzin (`library`) | 6 | 14 | 0 | Fallback | [1 × a mystical tome with glowing elemental glyphs; 1 × an illithid-skin spellbook of wyld magick; 1 × a leather-bound book covered in shifting shadows; other required items → a mystical tome of the otherworldly scholars](../../areas/qst/library.qst#L137) | — |
 | The Lizardman Swamps of Clavikord (`lizard`) | 2 | 2 | 0 | Fallback | [1 × the severed head of Sslith → a bracelet of lights](../../areas/qst/lizard.qst#L14) | — |
-| Defense of Longhollow (`long`) | 15 | 59 | 6 | Fallback | [1 × the bloody head of a knight; 1 × the bloody head of the necromancer; 1 × the bloody head of the chieftan; other required items → a bracer bearing the Longhollow symbol, an exquisite moonstone](../../areas/qst/long.qst#L333) | — |
+| Defense of Longhollow (`long`) | 15 | 59 | 6 | Yes | [1 × the bloody head of a knight; 1 × the bloody head of the necromancer; 1 × the bloody head of the chieftan; other required items → a bracer bearing the Longhollow symbol, an exquisite moonstone](../../areas/qst/long.qst#L333) | — |
 | The Ancient Halls of Ironstar (`lornecro`) | 7 | 15 | 2 | Fallback | [1 × the mold of a small mithril parrying dagger; 1 × a scroll of demonhide; 1 × a broken demonic weapon called 'The Fury of Demons' → a blazing dagger called 'The Fury of Demons'](../../areas/qst/lornecro.qst#L124) | — |
 | The Tower of Darkness (`lortower`) | 7 | 11 | 2 | Fallback | [5 × a black iron two-handed sword; 1 × a gold locket → a black iron shield of Dubneth](../../areas/qst/lortower.qst#L119) | — |
 | Lylr-Meop (`lylr`) | 1 | 1 | 0 | Fallback | [1 × an ogre's scalp → a pair of drow skin boots](../../areas/qst/lylr.qst#L11) | inn, money_changer, world_quest |

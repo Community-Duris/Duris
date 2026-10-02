@@ -321,7 +321,44 @@ assert any(r["command"] == "O" and r["arguments"][1:5] == [80747, 1, 80785, 100]
 assert any(r["command"] == "M" and r["arguments"][1:5] == [80735, 1, 80775, 100] for r in claw["reset_commands"])
 assert any(r["command"] == "G" and r["arguments"][1:5] == [80733, 1, 0, 100] for r in claw["reset_commands"])
 assert not any(r["command"] in ("O", "P", "G", "E") and r["arguments"][1] == 80734 for r in claw["reset_commands"])
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn"):
+long = inventory_module.area_evidence(ROOT, "long")
+assert len(long["requests"]) == 15 and len(long["dialogue"]) == 59
+assert len(long["reset_commands"]) == 213 and len(long["mobs"]) == 77 and len(long["items"]) == 74
+assert long["zone"]["reset_mode"] == 2 and not long["special_assignments"]
+long_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "long")
+long_contacts = {c["mob_vnum"]: c for c in long_mapping["contacts"]}
+assert len(long_contacts) == 41 and {"master", "gear"} <= set(long_contacts[34440]["topics"])
+assert "master's" not in long_contacts[34440]["topics"]
+assert all("qc_action" not in c["topics"] for c in long_contacts.values())
+long_responses = [b for b in inventory_module.native_blocks(ROOT)
+                  if b["source"] == "areas/qst/long.qst" and b["kind"] == "M"]
+assert len(long_responses) == 63
+long_addressed = [b for b in long_responses if "qc_action" not in b["body"][0].split("~")[0].split()]
+assert len(long_addressed) == 60
+for response in long_addressed:
+    assert set(response["body"][0].rstrip("~").split()) & set(long_contacts[response["giver_vnum"]]["topics"])
+for vnum, contact in long_contacts.items():
+    assert contact["keyword"] in long["mobs"][vnum]["keywords"]
+long_stories = {s["id"]: s for s in long_mapping["stories"]}
+assert long_stories["proof-against-the-siege-leaders"]["contracts"] == [{"giver_vnum": 34445, "completion_key": "give=I:34427,I:34428,I:34429,I:34430,I:34431;receive=I:34452,I:34464;disappear=0"}]
+assert long_stories["recognition-by-selunes-solar"]["contracts"] == [{"giver_vnum": 34417, "completion_key": "give=I:34452;receive=I:34453;disappear=1"}]
+assert long_mapping["exclusions"][0]["contracts"] == [{"giver_vnum": 34416, "completion_key": "give=;receive=;disappear=0"}]
+cash_request = next(r for r in long["requests"] if ("I", 34445) in r["block"]["receive"])
+assert ("C", 25000) in cash_request["block"]["receive"] and cash_request["definition"]["daily_eligible"]
+paid = [r for r in long["requests"] if any(k == "C" for k, _ in r["block"]["give"])]
+assert len(paid) == 4 and all(r["definition"]["daily_exclusion"] == "Unsupported durable offering" for r in paid)
+parent = room = None
+duplicate_sources = {}
+for reset in long["reset_commands"]:
+    command, values = reset["command"], reset["arguments"]
+    if command in ("M", "F"):
+        parent, room = values[1], values[3]
+    elif command == "G" and values[1] in (34406, 34413, 34418):
+        duplicate_sources[values[1]] = (parent, room, values[2], values[4])
+assert duplicate_sources == {34406: (34452, 34435, 1, 75), 34413: (34451, 34410, 1, 80), 34418: (34466, 34419, 1, 80)}
+assert sum(r["command"] == "D" for r in long["reset_commands"]) == 14
+assert all(r["arguments"][3] == 0 for r in long["reset_commands"] if r["command"] == "D")
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

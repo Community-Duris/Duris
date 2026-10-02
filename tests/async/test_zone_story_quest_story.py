@@ -15,7 +15,7 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1921
+assert report["daily_unit_count"] == 1920
 assert mapping["schema_version"] == 3 and mapping["stories"][0]["steps"][0]["optional"]
 assert sum(s["category"] == "service" for s in mapping["stories"]) == 12
 assert len(mapping["exclusions"]) == 1 and len(mapping["exclusions"][0]["contracts"]) == 40
@@ -99,6 +99,27 @@ claw_final = claw["stories"][0]
 assert [t["item_vnums"] for t in claw_final["steps"][:-1]] == [[80700], [80733], [80734]]
 assert [t.get("optional", False) for t in claw_final["steps"][:-1]] == [True, True, False]
 assert all(s["steps"][-1]["contracts"] == s["contracts"] for s in claw["stories"])
+long = next(m for m in catalog["story_mappings"] if m["source_area"] == "long")
+assert long["schema_version"] == 3 and long["revision"] == 1
+assert report["eligible_by_zone"]["344"] == 9 and len(long["stories"]) == 14
+assert sum(s["category"] == "story" for s in long["stories"]) == 4
+assert sum(s["category"] == "request" for s in long["stories"]) == 5
+assert sum(s["category"] == "service" for s in long["stories"]) == 5
+assert sum(t.get("optional", False) for s in long["stories"] for t in s["steps"]) == 6
+long_stories = {s["id"]: s for s in long["stories"]}
+assert [t["item_vnums"] for t in long_stories["proof-against-the-siege-leaders"]["steps"][:-1]] == [[n] for n in range(34427, 34432)]
+solar = long_stories["recognition-by-selunes-solar"]
+assert solar["steps"][0]["optional"] and solar["steps"][1]["item_vnums"] == [34452]
+assert long_stories["four-skins-for-snakeskin-boots"]["steps"][0]["count"] == 4
+assert long_stories["two-furs-for-a-fox-scarf"]["steps"][0]["count"] == 2
+assert long_stories["vipers-delight"]["steps"][0]["count"] == 2
+mist = long_stories["the-shadowy-mist"]
+assert all(t["optional"] for t in mist["steps"][:3])
+assert [t["item_vnums"] for t in mist["steps"][3:-1]] == [[34443], [34444], [34445], [34439]]
+blend = long_stories["the-kiss-of-talona-blend"]
+assert all(t["optional"] for t in blend["steps"][:2])
+assert [t["item_vnums"] for t in blend["steps"][2:-1]] == [[34449], [34447], [34438]]
+assert all(s["steps"][-1]["contracts"] == s["contracts"] for s in long["stories"])
 new_mappings = {m["source_area"]: m for m in catalog["story_mappings"] if m["source_area"] in new_areas}
 assert set(new_mappings) == new_areas and all(m["coverage"] == "complete" for m in new_mappings.values())
 assert sum(d["source_area"] in new_areas for d in catalog["definitions"]) == 86
