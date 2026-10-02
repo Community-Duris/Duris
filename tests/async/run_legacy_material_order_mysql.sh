@@ -6,11 +6,11 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 NAME="duris-accounting-schema-material-order-$$-$RANDOM"
 PASSWORD="material-order-$$-$RANDOM"
 IMAGE="${MATERIAL_ORDER_DB_IMAGE:-mysql:8.0}"
-case "$IMAGE" in mysql:8.0|mariadb:10.11) ;; *) echo 'unsupported test image' >&2; exit 2;; esac
+[[ "$IMAGE" =~ ^(mysql:8\.0(\.[0-9]+)?|mariadb:10\.11(\.[0-9]+)?)(@sha256:[0-9a-f]{64})?$ ]] || { echo 'unsupported test image' >&2; exit 2; }
 cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
 trap cleanup EXIT HUP INT TERM
 if [[ "$IMAGE" == mariadb:* ]]; then ROOT_ENV=MARIADB_ROOT_PASSWORD; else ROOT_ENV=MYSQL_ROOT_PASSWORD; fi
-docker run -d --name "$NAME" -e "$ROOT_ENV=$PASSWORD" "$IMAGE" >/dev/null
+docker run -d --name "$NAME" -e "$ROOT_ENV=$PASSWORD" "$IMAGE" --innodb-use-native-aio=OFF >/dev/null
 mysql_clone() {
     docker exec -i "$NAME" sh -c 'MYSQL_PWD="${MYSQL_ROOT_PASSWORD:-$MARIADB_ROOT_PASSWORD}" exec mysql -u root -N -B "$@"' sh "$@"
 }
