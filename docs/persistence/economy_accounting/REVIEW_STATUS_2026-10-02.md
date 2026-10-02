@@ -946,3 +946,82 @@ Full money value/source reconstruction, active journeys, flatfile parity,
 captured-clone/full-world, erasure, remote custody and measured workload remain
 open. The original combat RED and declined inactive spell boundary are retained;
 coverage_complete=False and release BLOCKED.
+
+
+## SQL restore denomination history after native commerce
+
+A genuine committed native shop purchase reproduced a restore false refusal.
+Its wallet changed from (0,0,0,1), revision 4, to (0,0,8,0), revision 5;
+the bank stayed (2,0,0,0) while revision 7 advanced to 8. The shop transaction
+retains its economic root, receipt, exact account effects and original item UID,
+but emits no legacy currency-ledger row. Revision qualification passed while
+the previous legacy-only SUM value query raised restore_currency_value_mismatch.
+The native RED is retained in `tmp/native-shop-money-restore-red.local.log`.
+
+The restore qualifier now walks the same committed native/economic witnesses
+through their denomination before/after vectors. Each before-image must match
+the previous after-image, and the final vector must match native authority at
+its witnessed current revision. Native ledger before-images derive from the
+exact after-image minus its delta using DECIMAL(65,0). Economic effects retain
+their actual vectors. A bridge deduplicates only identical root, transition and
+vectors; disagreement refuses. NULL/negative vectors and checked copper totals
+beyond signed 64-bit refuse without SQL arithmetic wrap. Events at/before the
+opening cut are excluded. Full uint64 native revision comparison is unchanged.
+No native gameplay, activation, production state or declined spell path changes.
+
+Both engines pass the final native-purchase probe: economic-only commerce,
+current-value corruption, NULL bank value, changed economic before-image,
+weighted copper overflow, exact repair, a matching synthetic legacy bridge,
+conflicting bridge refusal, later opening cut and unchanged final authority.
+The bridge row is an explicitly synthetic fault probe; the actual shop emitted
+none. The test-only purchase-cut selector stops the existing native SQL harness
+after a committed buy without altering its default full buy/sell/replay/rollback
+fixture. The full buy/sell probe also passes on both engines, including late
+replay, insufficient funds, native rollback and paused-epoch refusal. Two
+successful roots and the original UID return to keeper custody; exact values
+and receipt history survive the independent read-only checks.
+Native component fixtures select a synthetic accounting lineage internally;
+these are not active-epoch server/player qualification or an activation baseline.
+
+The complete ten-case native recovery suite passes in 321.980 seconds with both
+SQL engines enabled, including full dump/import, schema/history/value checks,
+exact interrupted legacy-money replay, WAL/flatfile recovery, receipt corruption
+refusals, private-checkout isolation and isolated service boot. Native source and
+SQL/flatfile artifacts remain `5d6cf93...`, `3ed76722...` and `4d913107...`.
+The separate revision-history SELECT probe passes on both engines after sharing
+the witness selector. Native Linux migration, backup-policy and remediation
+checks pass 24/40/17 cases. The first migration-test invocation under Windows
+failed POSIX ownership, symlink and shell prerequisites; the native Linux run
+passes all 24, without changing their checks. All 14 accounting fixtures and
+matrix --check pass; changed C++ lines match clang-format 18.
+
+QA roots: `/opt/duris-accounting-native-shop-restore-money-review/source`,
+`/opt/duris-accounting-native-shop-restore-money-full-trade-review/source`, and
+`/opt/duris-accounting-diagnostics-integration-820607ce/source`.
+Logs: `tmp/native-shop-money-restore-latest.local.log`,
+`tmp/native-shop-money-full-trade.local.log`,
+`tmp/restore-native-money-values-recovery.local.log`,
+`tmp/restore-money-values-revision-regression.local.log`, and
+`tmp/restore-money-focused-native.local.log`.
+Qualifier SHA-256 `981084fda98177a8ec5a92446834190e92adde8033e2bc10ea0ef33c467efddf`;
+native money probe SHA-256
+`6eb6054a65c3cd9d615420781230d12970a7bf1609f7c6450ba80ddac153f528`;
+recovery log SHA-256
+`91a19264311348368a676b6065c798bdea8d76f96914b018be2d46ed403e1a6f`.
+
+The full default native shop transaction probe also passed separately on both
+engines after all 53 migrations: exact custody/payload, keeper cash exceptions,
+realized price, buy/sell atomicity, outbox, exact/late replay, insufficient funds,
+rollback faults and paused-epoch refusal. Log:
+`tmp/diagnostics-shop-dual-sql.local.log`, SHA-256
+`738dac01a6fc05f959526dbb0a4abfa3c30587dd6ef7bff7ea9ba2fa40215990`.
+These close a bounded restored wallet/bank value omission and refresh named
+native components. Full holdings/source reconstruction, active player journeys,
+flatfile parity, captured-clone/full-world, erasure, remote custody and measured
+workload gates remain open. Frozen `88d3b364c` broad regression is in progress;
+it does not contain this later qualifier/test change. Coverage remains
+coverage_complete=False and release BLOCKED.
+
+Final `native-shop-money-restore-latest.local.log` SHA-256 `55a304880c6b71091d7cd0a55d2abf5ac168a30cac9464207407cb7edd00c98d`.
+
+Final `native-shop-money-full-trade.local.log` SHA-256 `d694e8c77a9bc5248167c5063b36067e0876fc517fefc5580ef7d277a2d631fd`.

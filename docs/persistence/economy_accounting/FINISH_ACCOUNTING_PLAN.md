@@ -62,6 +62,14 @@ qualification is still required. The diagnostics integration now also passes
 both strict production builds, all ten native recovery cases and the nested
 locker journey on both SQL engines at native source `5d6cf93...`. These bounded
 proofs remain separate from the frozen failed broad runs and full R1-R8 gates.
+A native economic-only shop purchase reproduced a value restore refusal despite
+valid committed money revisions. The restore qualifier now walks actual native
+and economic denomination before/after witnesses instead of summing only legacy
+currency deltas. Both engines pass native-purchase and full buy/sell
+corruption, exact-repair, bridge and later-opening probes. All ten native recovery
+cases pass in 321.980 seconds. These remain native component/recovery checks,
+not active-epoch player qualification. The frozen `88d3b364c` broad regression is
+also in progress and does not contain this subsequent value qualifier change.
 
 The later frozen `79540e65d` broad run also finished: 826 passed, 11 skipped
 and two stale source-contract assertions failed in 6,127.39 seconds. NPC cash
