@@ -56,6 +56,11 @@ def tombstone_preflight(path, p, captured):
 
 @contextlib.contextmanager
 def private_database(candidate):
+    socket = candidate / "mysql.sock"
+    # Linux sockaddr_un reserves one byte for the terminating NUL. Refuse
+    # before creating/initializing a database that cannot bind its socket.
+    backup.require(len(os.fsencode(socket)) <= 107,
+                   "isolated_database_socket_path_too_long")
     datadir = candidate / "mysql"
     datadir.mkdir(mode=0o700)
     env = clean_environment(candidate)
@@ -65,7 +70,6 @@ def private_database(candidate):
                env=env)
     exports = candidate / "exports"
     exports.mkdir(mode=0o700)
-    socket = candidate / "mysql.sock"
     args = ["mariadbd", "--no-defaults", "--datadir=" + str(datadir),
             "--socket=" + str(socket), "--pid-file=" + str(candidate / "mysql.pid"),
             "--skip-networking", "--skip-log-bin", "--event-scheduler=OFF",

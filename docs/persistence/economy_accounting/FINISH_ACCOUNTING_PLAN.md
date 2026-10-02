@@ -51,6 +51,11 @@ but the first MariaDB boon attempt has an unexplained owner-revision failure.
 The fixture now retains exact acknowledged source rows before assertions for
 that investigation. Production conflict-release attempts remain RED; no gate
 or inactive selector is changed.
+All nine native disposable backup/restore integration cases now pass on the
+same strict SQL/flatfile source, including real MariaDB dump/import, journal
+recovery, isolated server boot and corruption refusals. Restore also preflights
+the Linux socket byte bound before initialization. Captured-clone/full-world,
+MySQL restore, remote custody and active-accounting lifecycle gates remain open.
 
 The disposable playtime journey now honors a validated `TEST_DB_PORT` in both
 native connections and SQL clients. Its outdated temporary-table probe is

@@ -492,3 +492,38 @@ failure capture for further investigation. These TEST_MUD-only fixture results
 do not promote production conflict release or active accounting. Both original
 production-profile attempts remain RED, and the broad 839-test frozen run is
 still in progress.
+
+## Native backup/restore qualification and socket preflight
+
+The opt-in native recovery suite now runs in the WSL qualification environment:
+user/network/mount namespaces and private tmpfs restore mounts are available.
+The matching real MariaDB 10.11.14 dump client is extracted under the owned QA
+prefix and exposed only inside a private mount namespace; no host package or
+production configuration is replaced. The strict SQL/flatfile artifacts retain
+the recorded SHA-256 values `abfc8124...` and `de5f8c10...`, with native source
+tree `2fa0d98dac56a1687e4af4314da7ac9b327a670d`.
+
+The first full run passed eight cases but failed the SQL restore: its extended
+qualification TMPDIR made the candidate socket pathname too long. A separate
+120-byte native reproducer captures MariaDB's explicit refusal above 107 bytes.
+The restore owner now refuses an overlong encoded pathname before creating or
+initializing its datadir or launching a daemon. Three regressions cover 108-byte
+refusal without side effects, multibyte names, and admission at 107 bytes. All
+39 backup policy tests and the 225-table/50-store lifecycle validator pass.
+
+With a supported temporary path, all nine native integration cases pass in
+194.345 seconds. They qualify exact flatfile pending/legacy bank transaction
+recovery, first-player WAL recovery without a persisted baseline, corrupted-WAL
+refusal and retained quarantine, native locker/spell receipts, lazy-catalog
+corruption refusal, foreign-owned checkout staging, and isolated healthy server
+boot/shutdown. The MariaDB case captures a real full dump, imports it into a
+new private socket-only daemon, verifies canonical schema/history and retained
+values, boots the matching SQL server in an isolated namespace, and then proves
+identity, balance-baseline and migration-checksum corruption refuse. Source
+authority and captured generations remain unchanged.
+
+These are synthetic disposable native recovery drills; they do not qualify a
+captured production/staging generation, full-world player login, a MySQL restore
+drill, active-accounting evidence in every domain, remote backup custody or
+operator erasure propagation. No production data, accounting activation or
+deployment changes. Docker integration and the remaining R1-R8 gates stay open.
