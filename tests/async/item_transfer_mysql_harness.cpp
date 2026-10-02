@@ -11,6 +11,7 @@
 #include "player/player_snapshot.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_snapshot_repository.h"
+#include "player/player_save_journal.h"
 #include "player/player_load_repository.h"
 #include "persistence/persistence_observability.h"
 
@@ -21,6 +22,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <limits>
 #include <mysql.h>
 #include <span>
@@ -2135,6 +2137,7 @@ void check_craft_conservation(MYSQL *connection)
 	player_snapshot progression = reloaded.snapshot;
 	progression.schema_version = PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
 	progression.revision = 2;
+	progression.encoded_size_bound = PLAYER_SNAPSHOT_MAX_BYTES;
 	progression.components = PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_SKILLS |
 				 PLAYER_COMPONENT_AFFECTS | PLAYER_COMPONENT_TROPHIES;
 	const uint64_t awarded_xp =
@@ -2154,10 +2157,26 @@ void check_craft_conservation(MYSQL *connection)
 	assert(scalar(connection,
 		      "SELECT applied_revision FROM player_craft_progression WHERE pid=551") == 2);
 	progression.revision = 1;
+	experience->signed_value = static_cast<int64_t>(awarded_xp - 7000);
+	experience->unsigned_value = awarded_xp - 7000;
 	const auto obsolete = player_snapshot_repository_apply(connection, progression);
 	assert(obsolete.outcome == player_save_apply_outcome::stale_revision &&
 	       obsolete.durable_revision == 2 && obsolete.operation_receipts_verified);
 	assert(scalar(connection, "SELECT exp FROM player_data WHERE pid=551") == awarded_xp);
+	char replay_directory[] = "/tmp/duris-obsolete-craft-XXXXXX";
+	assert(mkdtemp(replay_directory));
+	assert(player_save_journal_init(replay_directory));
+	assert(player_save_journal_append(progression) == player_save_journal_result::ok);
+	assert(player_save_journal_replay(
+		       [](const player_snapshot &snapshot, void *context) {
+			       return player_snapshot_repository_apply(
+				       static_cast<MYSQL *>(context), snapshot);
+		       },
+		       connection) == player_save_journal_result::ok);
+	assert(!player_save_journal_pid_quarantined(551));
+	assert(player_save_journal_health_copy().records == 0);
+	player_save_journal_shutdown();
+	std::filesystem::remove_all(replay_directory);
 	progression.craft_receipts[0].experience = 7001;
 	assert(player_snapshot_repository_apply(connection, progression).outcome ==
 	       player_save_apply_outcome::terminal_failure);
