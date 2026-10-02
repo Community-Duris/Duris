@@ -66,7 +66,7 @@ This checkpoint publishes the completed review fixes directly to
   validator requires both; removing either is rejected. SQL and flatfile recipe
   recovery policies must also remain protected and retained; nine policy-edit
   fault cases that previously passed are now refused. Twenty lifecycle,
-  seven erasure, and six export regressions pass. The inventory now counts 43
+  seven erasure, and six export regressions pass. The inventory now counts 47
   non-database stores, 225 SQL tables, and 42 Redis surfaces, with destructive
   rules and shared disclosure still disabled pending controller decisions.
 
@@ -121,6 +121,15 @@ This checkpoint publishes the completed review fixes directly to
   production builds pass for `9fd3b77b1`; all 1,210 native source files match
   that committed tree. Its actual flatfile mortal physical and retained-pouch
   recipe Craft/Forge journey also passes copyover and two cold restarts.
+
+- Native flatfile player wallet/progression records, account bank records, and
+  both current and legacy transaction journals now have separate required
+  lifecycle entries. All four omissions fail the inventory regression before
+  the fix. The validator requires their exact locators and rejects twelve
+  edits that remove protection or select reset/deactivation. Twenty lifecycle,
+  seven erasure and six export checks pass; disclosure/controller decisions
+  stay pending and destructive rules remain disabled. Other native domain
+  catalogs still require inventory review.
 
 ## Verification and its limits
 
