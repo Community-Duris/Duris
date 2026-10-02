@@ -31,6 +31,7 @@ This checkpoint publishes the completed review fixes directly to
 | Null-output publication regression | Passed using the actual native movement module after `0464613a1`. |
 | Combat continuation and quarantine restore | Passed after integrating the upstream recovery evidence. Quarantine archives retain both original component frames and keep recovery fenced on conflicting evidence. |
 | Writer census | 2,806 lexical occurrences, 2,748 unique sites, 863 routes, zero unmapped sites; 52 coverage-contract tests passed on the preceding census snapshot. |
+| Recipe flatfile restore | Passed through the actual native restore decoder: complete recovery, checksum damage, missing obligation/root, future revision, and invalid receipt filename. |
 | Latest migration integration | Runtime manifest validator and all 34 native boot/migration contract tests passed with head 0053 and 225 tables. Canonical and staging schema fingerprints are retained; engine qualification of the newly extended master history is pending. |
 
 Prior build and component passes do not establish an all-green result at this
@@ -43,9 +44,10 @@ The accounting release validator remains **blocked**: 750 runtime/projection
 writer routes still lack the required qualification. The generated coverage
 matrix describes that gap; a complete census alone cannot close it.
 
-Recipe restore qualification and mortal Craft/Forge restart journeys are still
-in progress. Their unfinished local fixtures and proposed mini-mode startup
-initialization fix are preserved separately and are not part of this checkpoint.
+Recipe flatfile restore qualification now passes with a complete canonical
+inventory save and explicitly requested progression receipts. Mortal Craft/Forge
+restart journeys and the proposed mini-mode startup initialization fix remain
+in progress and are not yet published.
 The latest merged sources also require fresh strict builds and broader regression
 coverage. Earlier full-suite failures have not been superseded by a complete
 passing run.
