@@ -5,6 +5,7 @@
 #undef main
 #include "flatfile/flatfile_account_repository.h"
 #include "flatfile/flatfile_authority_transaction.h"
+#include "flatfile/flatfile_item_uid_allocator.h"
 #include "flatfile/flatfile_store.h"
 #include "player/player_save_journal.h"
 #include "item/locker_receipt.h"
@@ -16,6 +17,24 @@ void logit(const char *, const char *, ...) {}
 static std::vector<uint8_t> fixture_bytes(const char *text)
 {
 	return { text, text + std::strlen(text) };
+}
+
+static void seed_fixture_item_allocator(const fs::path &root)
+{
+	// The snapshot/craft/WAL fixtures use UIDs 100 through 202. Reserve them
+	// before publishing custody, as a real server does, so a restored service
+	// can continue allocation without reissuing any of those identities.
+	for (const auto &directory : { root, root / "metadata" })
+	{
+		fs::create_directories(directory);
+		fs::permissions(directory, fs::perms::owner_all, fs::perm_options::replace);
+	}
+	uint64_t first = 0;
+	std::string error;
+	require(flatfile_item_uid_reserve(root.string(), 202, &first, &error) ==
+				flatfile_item_uid_result::ok &&
+			first == 1,
+		"synthetic item UID reservation failed: " + error);
 }
 
 static critical_command fixture_currency_command(bool deposit = false)
@@ -102,6 +121,7 @@ int main(int argc, char **argv)
 	if (mode == "seed-craft")
 	{
 		require(!fs::exists(root), "craft seed requires an absent disposable root");
+		seed_fixture_item_allocator(root);
 		craft_progression_matrix(root, true);
 		fs::create_directories(root / "identities/accounts");
 		fs::permissions(root / "identities/accounts", fs::perms::owner_all,
@@ -318,6 +338,7 @@ int main(int argc, char **argv)
 	for (const auto &entry : fs::recursive_directory_iterator(root))
 		fs::permissions(entry.path(), fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
+	seed_fixture_item_allocator(root);
 	flatfile_account_record account;
 	account.name = "Account-One";
 	account.email = "fixture@example.test";

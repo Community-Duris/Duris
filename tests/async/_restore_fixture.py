@@ -15,7 +15,7 @@ def build(destination):
     # sections and therefore has a smaller link dependency set.
     names = list(dict.fromkeys(native.SOURCES + [
         "flatfile_collector_repository", "collector_command", "collector_codec",
-        "collector_policy", "collector_accounting",
+        "collector_policy", "collector_accounting", "flatfile_item_uid_allocator",
     ]))
     sources = []
     for name in names:

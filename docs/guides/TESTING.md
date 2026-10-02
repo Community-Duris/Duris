@@ -27,7 +27,7 @@ text presence cannot prove runtime reachability, a branch's effect, or transacti
 atomicity. Prefer an executable fixture for a behavioral requirement.
 
 The shared `contract_text` helpers normalize formatting whitespace while retaining
-token boundaries and lexical states. Code-shaped expectations cannot be satisfied
+identifier/number boundaries and lexical states. Code-shaped expectations cannot be satisfied
 by a comment or a string containing the same statement. Use `literal=True` when
 SQL, log or user-facing text intentionally contains code punctuation or control
 keywords. Slice complete lexical regions; starting in the middle of a quoted

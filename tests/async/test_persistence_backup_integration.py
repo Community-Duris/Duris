@@ -424,7 +424,6 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
             with mock.patch.dict(os.environ, env, clear=True):
                 manifest = migrations.load_manifest()
                 executor = migrations.MysqlExecutor(manifest)
-                executor.command.insert(1, "--no-defaults")
                 executor.adopt("fresh_bootstrap")
                 migrations.run_pending(manifest, executor)
             sql(env, "INSERT INTO accounts(account_name,email,confirmed) VALUES('SyntheticRestore','fixture@example.test',1);"
