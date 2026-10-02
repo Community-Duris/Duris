@@ -161,6 +161,12 @@ void enhance(P_char ch, P_obj source, P_obj material)
 		cost = enhance_cost_high_amount;
 	}
 
+	if (cost < 0)
+	{
+		send_to_char("The enhancement price is outside the supported range.\r\n", ch);
+		return;
+	}
+
 	if (GET_MONEY(ch) < cost)
 	{
 		snprintf(buf, MAX_STRING_LENGTH,
@@ -268,6 +274,13 @@ void enhance(P_char ch, P_obj source, P_obj material)
 		return;
 	}
 
+	if (cost > 0 && SUB_MONEY(ch, cost, 0) != 0)
+	{
+		extract_obj(robj);
+		send_to_char("The enhancement payment could not be accepted.\r\n", ch);
+		return;
+	}
+
 	// Remove Curse, Secret, add Invis
 	if (IS_SET(robj->extra_flags, ITEM_SECRET))
 	{
@@ -283,7 +296,6 @@ void enhance(P_char ch, P_obj source, P_obj material)
 		REMOVE_BIT(robj->extra_flags, ITEM_INVISIBLE);
 	}
 	SET_BIT(robj->extra_flags, ITEM_NOREPAIR);
-	SUB_MONEY(ch, cost, 0);
 	send_to_char("Your pockets feel &+Wlighter&n.\r\n", ch);
 
 	act("&+BYour enhancement is a success! You now have &n$p&+B!", FALSE, ch, robj, 0, TO_CHAR);
@@ -648,8 +660,12 @@ static bool perform_superior_enhancement(P_char ch, P_obj source, P_obj pouch,
 		}
 	}
 
-	/* All availability checks precede every state mutation, preserving atomicity. */
-	SUB_MONEY(ch, cost, 0);
+	/* Refused wallet admission must precede material or item mutation. */
+	if (cost > 0 && SUB_MONEY(ch, cost, 0) != 0)
+	{
+		send_to_char("The enhancement payment could not be accepted.\r\n", ch);
+		return FALSE;
+	}
 	if (!pouch)
 		for (i = 0; i < plan->material_count; i++)
 			vnum_from_inv(ch, plan->materials[i].vnum, plan->materials[i].count);
