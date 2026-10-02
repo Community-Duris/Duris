@@ -13,10 +13,10 @@ named stories without changing native receipt IDs. Twin Towers replaces 84
 contracts with 10 achievement units and 3 daily groups, excluding 40 returned
 offerings and displaying 24 supporting contracts as 12 non-achievement services.
 The global projection now has
-2,319 achievement units and 1,926 daily candidate units after adding starter/town
+2,300 achievement units and 1,921 daily candidate units after adding starter/town
 mappings and deeper journals, equipment/crafting services,
-intermediate outcomes, and explicit missing-item exclusions. There are 40
-area sidecars and 2,503 projected units including services and administrative
+intermediate outcomes, and explicit missing-item exclusions. There are 41
+area sidecars and 2,490 projected units including services and administrative
 content. Other areas
 retain native-contract fallback; these counts do not claim full semantic review.
 Ailvio now projects its 78 equivalent two-fish recipes into one family-feeding
@@ -54,7 +54,11 @@ respectively, with exact source/access/recipe guidance and separate services.
 Neverwinter Woods groups five equal-offering reward variants into one five-rune
 recovery family. The current native selection is the ruby eyepatch; historical
 variants count once and optional bridge preparation does not invent travel history.
-Seventeen source-comprehensive areas remain distinct from played
+The Clawed Caverns adds one king-story achievement, six shaping/paid-clue
+services and thirteen excluded returns. Exact final shards, optional keys and
+complete custom switch/death/transformation guidance preserve supplied deliveries
+while keeping unsafe custom-source and paid-clue paths unqualified.
+Eighteen source-comprehensive areas remain distinct from played
 active-world qualification.
 All raw definitions, receipt identities, zone registry and source fingerprint
 remain unchanged. Comprehensive source dossiers for these areas are tracked in

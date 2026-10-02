@@ -1,0 +1,438 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "clwcvrn",
+  "coverage": "complete",
+  "introduction": "The chrysloin grow and shape living crystals, but their king fears the imprisoned mage who created them. The rainbow-key route is the local progression story. Colored-crystal shaping, moss preparation and the sage's paid clue are separate services; returned wrong-color offerings are feedback.",
+  "orientation": [
+    "The entrance golem blocks ordinary north passage for levels 21 through 50. Inside, the crystal groves and moss clearings provide exact ground materials. Look for loose stock; descriptions of gems welded to stone do not implement an extra mining or harvest quest.",
+    "Match each crystal to its maker: violet for a collar, blue for a shield, green for a javelin and red for an earring. The local chrysloin shaman makes a mossy potion. These services remain separate from the king's story.",
+    "A concealed stone path reaches the spire gates. The burly guards' glowing crystal shard unlocks the entrance. Follow the crystal hallways to the throne room and ask the king about his kind, worries and the drow mage. Questions provide guidance, not achievements for every keyword.",
+    "A gap below the white crystal farm leads into wet lower caverns. Beyond the brackish-water pool, the hot crystal is a hazardous remote switch: push it to unblock a west passage elsewhere in the lower cavern. The switch itself does not move you or complete a quest.",
+    "The lower guardian carries the rainbow crystal key. Its intended death pile is a container, different from old blue remains and wearable shard piles. Recover the exact key, or use a supplied copy; the intact key is not accepted by the king as a finale.",
+    "The hidden ceiling trapdoor in the spire leads to the mage's quarters, then a concealed wall reaches his library. His normal ward blocks attacks and casting. Giving him the rainbow key creates exact rainbow shards on the floor and removes him. This custom exchange still needs reliable accounting and failure recovery; the king can accept supplied shards directly.",
+    "The sage's 2,000-copper paid clue is optional and currently unavailable under active accounting. Her topic guidance remains useful. The amber and hidden vaults have their own keys and treasures; they are optional exploration rather than king-story prerequisites.",
+    "Bring the exact rainbow shards to the king for his mask. Carry offerings directly, outside containers or equipment. Current supplies show readiness; the successful recorded delivery completes the story while accounting is active. It does not prove a personal kill, learned clue or the entire narrated route."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 80706,
+      "name": "a violet chrysloin",
+      "keyword": "violet",
+      "description": "Shapes the violet crystal into a collar; other listed colors are returned.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80707,
+      "name": "a blue chrysloin",
+      "keyword": "blue",
+      "description": "Shapes the flat blue crystal into a shield.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80708,
+      "name": "a green chrysloin",
+      "keyword": "green",
+      "description": "Shapes a long green crystal into a javelin. Two ordinary placements share this recipient kind.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80709,
+      "name": "a red chrysloin",
+      "keyword": "red",
+      "description": "Shapes the small jagged red crystal into an earring.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80710,
+      "name": "a chrysloin shaman",
+      "keyword": "shaman",
+      "description": "Prepares a mossy potion from one underworld moss. The king's separate shaman is a different recipient.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80724,
+      "name": "the chrysloin king",
+      "keyword": "king",
+      "description": "Ask about his kind and the drow mage, then deliver exact rainbow shards for the rainbow mask. He returns the intact key.",
+      "topics": [
+        "hello",
+        "hi",
+        "kind",
+        "worries",
+        "concern",
+        "chrysloin",
+        "drow",
+        "mage"
+      ]
+    },
+    {
+      "mob_vnum": 80726,
+      "name": "a drow mage",
+      "keyword": "mage",
+      "description": "The imprisoned mage reacts to the rainbow key by destroying it, creating shards on the library floor and disappearing. This custom exchange needs a reliable failure/recovery path; his present ward blocks normal attack and casting commands.",
+      "topics": [
+        "hello",
+        "hi",
+        "trapped",
+        "prisoner",
+        "prison",
+        "chrysloin"
+      ]
+    },
+    {
+      "mob_vnum": 80727,
+      "name": "a svirfneblin sage",
+      "keyword": "sage",
+      "description": "Ask about secrets or knowledge. Her paid clue costs two platinum, removes her and is unavailable under active accounting. It is optional guidance.",
+      "topics": [
+        "hello",
+        "hi",
+        "secrets",
+        "knowledge",
+        "cavern",
+        "caverns",
+        "secret"
+      ]
+    },
+    {
+      "mob_vnum": 80735,
+      "name": "a crystal guardian",
+      "keyword": "guardian",
+      "description": "The lower-cavern guardian carries the rainbow key. Its death procedure is intended to leave its belongings in a crystal-shard container; recovery depends on that custom source. Its description alone does not implement a northward movement block.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 80739,
+      "name": "a giant stone golem",
+      "keyword": "golem",
+      "description": "The entrance golem blocks ordinary northward passage for players at levels 21 through 50. This is an entry restriction, not a condition of the king's final exchange.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "the-rainbow-key-and-the-king",
+      "title": "The Rainbow Key and the King",
+      "category": "story",
+      "summary": "Help resolve the chrysloin king's concern by bringing him the exact rainbow crystal shards. The narrated route leads through a hot-crystal switch and guardian's key to the imprisoned mage, whose key exchange creates shards and removes him. Supplied shards qualify. The king's recorded delivery does not prove a personal guardian victory, mage kill, learned secret or every earlier journey.",
+      "contracts": [
+        {
+          "giver_vnum": 80724,
+          "completion_key": "give=I:80734;receive=I:80728;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "spire-access",
+          "kind": "carried_item",
+          "item_vnums": [
+            80700
+          ],
+          "count": 1,
+          "text": "Optional: prepare the glowing shard for the crystal spire gate",
+          "hint": "The burly guards carry this exact glowing shard outside the spire. The concealed stone path leads to the crystal gates. Keep the shard carried or held to unlock them. An already open gate or supplied shards need not repeat this access route.",
+          "optional": true
+        },
+        {
+          "id": "rainbow-key",
+          "kind": "carried_item",
+          "item_vnums": [
+            80733
+          ],
+          "count": 1,
+          "text": "Optional: recover the guardian's rainbow crystal key",
+          "hint": "A gap below the white crystal farm leads into the lower caverns. Push the hot crystal beyond the brackish-water pool to open a distant west passage; touching it burns. The guardian beyond the passage carries the rainbow key, which may be left inside its crystal-shard pile after death. This custom source and the mage's key exchange still need qualification; the key alone cannot complete the king's delivery.",
+          "optional": true
+        },
+        {
+          "id": "rainbow-shards",
+          "kind": "carried_item",
+          "item_vnums": [
+            80734
+          ],
+          "count": 1,
+          "text": "Carry the shards of rainbow crystal",
+          "hint": "These are the exact rainbow shards produced by giving the rainbow crystal key to the imprisoned drow mage in the spire's hidden library. His exchange removes the key before confirming the output, so its failure/recovery path needs repair. The intact key and ordinary crystal-shard piles do not substitute. Supplied rainbow shards qualify."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80724,
+              "completion_key": "give=I:80734;receive=I:80728;disappear=0"
+            }
+          ],
+          "text": "Deliver the rainbow shards to the chrysloin king",
+          "hint": "Seek the king in the crystal throne room. Carry the rainbow shards directly, outside containers or equipment, and offer them for the rainbow mask. This completes the delivery once; it does not record a personal kill or the earlier custom key transformation."
+        }
+      ]
+    },
+    {
+      "id": "violet-collar",
+      "title": "Shape a Violet Crystal Collar",
+      "category": "service",
+      "summary": "Bring one violet crystal to the violet chrysloin for a crystal collar. This is a separate shaping/preparation service, not another step required by the king. Supplied materials qualify.",
+      "contracts": [
+        {
+          "giver_vnum": 80706,
+          "completion_key": "give=I:80712;receive=I:80715;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material",
+          "kind": "carried_item",
+          "item_vnums": [
+            80712
+          ],
+          "count": 1,
+          "text": "Carry one violet crystal",
+          "hint": "Find this exact material as ordinary ground stock in the violet groves, or use a supplied copy. Other crystal colors and similarly named finished equipment do not substitute. Availability depends on shared stock; no separate harvest command is required."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80706,
+              "completion_key": "give=I:80712;receive=I:80715;disappear=0"
+            }
+          ],
+          "text": "Offer the material to the violet chrysloin",
+          "hint": "Carry it directly and offer it for a crystal collar. Each colored maker shapes its own color and returns the other listed colors. This service awards no zone achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "blue-shield",
+      "title": "Shape a Blue Crystal Shield",
+      "category": "service",
+      "summary": "Bring one large flat blue crystal to the blue chrysloin for a shield of blue crystal. This is a separate shaping/preparation service, not another step required by the king. Supplied materials qualify.",
+      "contracts": [
+        {
+          "giver_vnum": 80707,
+          "completion_key": "give=I:80708;receive=I:80709;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material",
+          "kind": "carried_item",
+          "item_vnums": [
+            80708
+          ],
+          "count": 1,
+          "text": "Carry one large flat blue crystal",
+          "hint": "Find this exact material as ordinary ground stock in the blue grove, or use a supplied copy. Other crystal colors and similarly named finished equipment do not substitute. Availability depends on shared stock; no separate harvest command is required."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80707,
+              "completion_key": "give=I:80708;receive=I:80709;disappear=0"
+            }
+          ],
+          "text": "Offer the material to the blue chrysloin",
+          "hint": "Carry it directly and offer it for a shield of blue crystal. Each colored maker shapes its own color and returns the other listed colors. This service awards no zone achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "green-javelin",
+      "title": "Shape a Green Crystal Javelin",
+      "category": "service",
+      "summary": "Bring one long green crystal to the green chrysloin for a short crystal javelin. This is a separate shaping/preparation service, not another step required by the king. Supplied materials qualify.",
+      "contracts": [
+        {
+          "giver_vnum": 80708,
+          "completion_key": "give=I:80716;receive=I:80718;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material",
+          "kind": "carried_item",
+          "item_vnums": [
+            80716
+          ],
+          "count": 1,
+          "text": "Carry one long green crystal",
+          "hint": "Find this exact material as ordinary ground stock in either green grove, or use a supplied copy. Other crystal colors and similarly named finished equipment do not substitute. Availability depends on shared stock; no separate harvest command is required."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80708,
+              "completion_key": "give=I:80716;receive=I:80718;disappear=0"
+            }
+          ],
+          "text": "Offer the material to the green chrysloin",
+          "hint": "Carry it directly and offer it for a short crystal javelin. Each colored maker shapes its own color and returns the other listed colors. This service awards no zone achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "red-earring",
+      "title": "Shape a Red Crystal Earring",
+      "category": "service",
+      "summary": "Bring one small jagged red crystal to the red chrysloin for a jagged crystal earring. This is a separate shaping/preparation service, not another step required by the king. Supplied materials qualify.",
+      "contracts": [
+        {
+          "giver_vnum": 80709,
+          "completion_key": "give=I:80710;receive=I:80711;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material",
+          "kind": "carried_item",
+          "item_vnums": [
+            80710
+          ],
+          "count": 1,
+          "text": "Carry one small jagged red crystal",
+          "hint": "Find this exact material as ordinary ground stock in the red grove, or use a supplied copy. Other crystal colors and similarly named finished equipment do not substitute. Availability depends on shared stock; no separate harvest command is required."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80709,
+              "completion_key": "give=I:80710;receive=I:80711;disappear=0"
+            }
+          ],
+          "text": "Offer the material to the red chrysloin",
+          "hint": "Carry it directly and offer it for a jagged crystal earring. Each colored maker shapes its own color and returns the other listed colors. This service awards no zone achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "moss-potion",
+      "title": "Prepare a Mossy Potion",
+      "category": "service",
+      "summary": "Bring one underworld moss to the chrysloin shaman for a mossy potion. This is a separate shaping/preparation service, not another step required by the king. Supplied materials qualify.",
+      "contracts": [
+        {
+          "giver_vnum": 80710,
+          "completion_key": "give=I:80706;receive=I:80707;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material",
+          "kind": "carried_item",
+          "item_vnums": [
+            80706
+          ],
+          "count": 1,
+          "text": "Carry one underworld moss",
+          "hint": "Find this exact material as ordinary ground stock in the mossy clearings, or use a supplied copy. Other crystal colors and similarly named finished equipment do not substitute. Availability depends on shared stock; no separate harvest command is required."
+        },
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80710,
+              "completion_key": "give=I:80706;receive=I:80707;disappear=0"
+            }
+          ],
+          "text": "Offer the material to the chrysloin shaman",
+          "hint": "Carry it directly and offer it for a mossy potion. Each colored maker shapes its own color and returns the other listed colors. This service awards no zone achievement or daily credit."
+        }
+      ]
+    },
+    {
+      "id": "the-sages-paid-secret",
+      "title": "The Sage's Paid Secret",
+      "category": "service",
+      "summary": "The svirfneblin sage's native price is 2,000 copper, equal to two platinum. Her paid clue identifies the hot crystal as a switch and removes her afterward. This coin offering is currently unavailable under active accounting; her ordinary conversation remains guidance. Paying is not required for the king's delivery.",
+      "contracts": [
+        {
+          "giver_vnum": 80727,
+          "completion_key": "give=C:2000;receive=;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 80727,
+              "completion_key": "give=C:2000;receive=;disappear=1"
+            }
+          ],
+          "text": "Obtain the sage's paid switch clue",
+          "hint": "The sage is initially near the hot crystal and can wander. Her stated two-or-three-platinum range resolves to a fixed 2,000-copper contract. Active accounting currently cannot settle this coin-only offering. The switch can be discovered independently; a printed clue is not recorded learning or a required story stage."
+        }
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "reason": "Wrong-color shaping feedback and intact-key rejection return the offered item; neither completes a story nor awards daily credit.",
+      "contracts": [
+        {
+          "giver_vnum": 80706,
+          "completion_key": "give=I:80708;receive=I:80708;disappear=0"
+        },
+        {
+          "giver_vnum": 80706,
+          "completion_key": "give=I:80710;receive=I:80710;disappear=0"
+        },
+        {
+          "giver_vnum": 80706,
+          "completion_key": "give=I:80716;receive=I:80716;disappear=0"
+        },
+        {
+          "giver_vnum": 80707,
+          "completion_key": "give=I:80710;receive=I:80710;disappear=0"
+        },
+        {
+          "giver_vnum": 80707,
+          "completion_key": "give=I:80712;receive=I:80712;disappear=0"
+        },
+        {
+          "giver_vnum": 80707,
+          "completion_key": "give=I:80716;receive=I:80716;disappear=0"
+        },
+        {
+          "giver_vnum": 80708,
+          "completion_key": "give=I:80708;receive=I:80708;disappear=0"
+        },
+        {
+          "giver_vnum": 80708,
+          "completion_key": "give=I:80710;receive=I:80710;disappear=0"
+        },
+        {
+          "giver_vnum": 80708,
+          "completion_key": "give=I:80712;receive=I:80712;disappear=0"
+        },
+        {
+          "giver_vnum": 80709,
+          "completion_key": "give=I:80708;receive=I:80708;disappear=0"
+        },
+        {
+          "giver_vnum": 80709,
+          "completion_key": "give=I:80712;receive=I:80712;disappear=0"
+        },
+        {
+          "giver_vnum": 80709,
+          "completion_key": "give=I:80716;receive=I:80716;disappear=0"
+        },
+        {
+          "giver_vnum": 80724,
+          "completion_key": "give=I:80733;receive=I:80733;disappear=0"
+        }
+      ]
+    }
+  ]
+}

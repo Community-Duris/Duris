@@ -15,7 +15,7 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1926
+assert report["daily_unit_count"] == 1921
 assert mapping["schema_version"] == 3 and mapping["stories"][0]["steps"][0]["optional"]
 assert sum(s["category"] == "service" for s in mapping["stories"]) == 12
 assert len(mapping["exclusions"]) == 1 and len(mapping["exclusions"][0]["contracts"]) == 40
@@ -90,6 +90,15 @@ assert runes["steps"][0]["optional"] and runes["steps"][0]["item_vnums"] == [990
 assert [t["item_vnums"] for t in runes["steps"][1:-1]] == [[n] for n in range(99002, 99007)]
 assert all(t["count"] == 1 for t in runes["steps"][1:-1])
 assert runes["steps"][-1]["contracts"] == runes["contracts"] and not moria["exclusions"]
+claw = next(m for m in catalog["story_mappings"] if m["source_area"] == "clwcvrn")
+assert claw["schema_version"] == 3 and claw["revision"] == 1
+assert report["eligible_by_zone"]["807"] == 1 and len(claw["stories"]) == 7
+assert sum(s["category"] == "service" for s in claw["stories"]) == 6
+assert len(claw["exclusions"]) == 1 and len(claw["exclusions"][0]["contracts"]) == 13
+claw_final = claw["stories"][0]
+assert [t["item_vnums"] for t in claw_final["steps"][:-1]] == [[80700], [80733], [80734]]
+assert [t.get("optional", False) for t in claw_final["steps"][:-1]] == [True, True, False]
+assert all(s["steps"][-1]["contracts"] == s["contracts"] for s in claw["stories"])
 new_mappings = {m["source_area"]: m for m in catalog["story_mappings"] if m["source_area"] in new_areas}
 assert set(new_mappings) == new_areas and all(m["coverage"] == "complete" for m in new_mappings.values())
 assert sum(d["source_area"] in new_areas for d in catalog["definitions"]) == 86

@@ -301,7 +301,27 @@ assert rune_sources == {99002: (99003, 99017, 1, 100), 99003: (99004, 99043, 1, 
                        99004: (99005, 99070, 1, 100), 99005: (99006, 99158, 1, 100),
                        99006: (99007, 99185, 1, 100)}
 assert any(r["command"] == "D" and r["arguments"][1:4] == [99251, 1, 0] for r in moria["reset_commands"])
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria"):
+claw = inventory_module.area_evidence(ROOT, "clwcvrn")
+assert len(claw["requests"]) == 20 and len(claw["dialogue"]) == 8
+assert len(claw["reset_commands"]) == 171 and len(claw["mobs"]) == 40 and len(claw["items"]) == 55
+assert claw["zone"]["reset_mode"] == 2 and len(claw["special_assignments"]) == 4
+claw_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "clwcvrn")
+claw_contacts = {c["mob_vnum"]: c for c in claw_mapping["contacts"]}
+assert len(claw_contacts) == 10
+for response in claw["dialogue"]:
+    assert set(response["body"][0].rstrip("~").split()) & set(claw_contacts[response["giver_vnum"]]["topics"])
+for vnum, contact in claw_contacts.items():
+    assert contact["keyword"] in claw["mobs"][vnum]["keywords"]
+returns = [r["block"]["binding"] for r in claw["requests"] if r["block"]["give"] == r["block"]["receive"]]
+assert claw_mapping["exclusions"][0]["contracts"] == returns and len(returns) == 13
+assert {s["contracts"][0]["giver_vnum"] for s in claw_mapping["stories"] if s["category"] == "service"} == {80706, 80707, 80708, 80709, 80710, 80727}
+assert claw_mapping["stories"][0]["contracts"] == [{"giver_vnum": 80724, "completion_key": "give=I:80734;receive=I:80728;disappear=0"}]
+assert any(r["command"] == "D" and r["arguments"][1:4] == [80773, 3, 12] for r in claw["reset_commands"])
+assert any(r["command"] == "O" and r["arguments"][1:5] == [80747, 1, 80785, 100] for r in claw["reset_commands"])
+assert any(r["command"] == "M" and r["arguments"][1:5] == [80735, 1, 80775, 100] for r in claw["reset_commands"])
+assert any(r["command"] == "G" and r["arguments"][1:5] == [80733, 1, 0, 100] for r in claw["reset_commands"])
+assert not any(r["command"] in ("O", "P", "G", "E") and r["arguments"][1] == 80734 for r in claw["reset_commands"])
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

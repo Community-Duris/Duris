@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 40 &&
-				tracker.summary_for(7, 42).total == 2319,
+		require(catalog.story_mappings.size() == 41 &&
+				tracker.summary_for(7, 42).total == 2300,
 			"native story projection disagreed with the complete source audit");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -1148,6 +1148,73 @@ int main(int argc, char **argv)
 				restored_runes.progress_for_zone(7, 42, 990).completed == 1 &&
 				restored_runes.progress_for_zone(7, 42, 990).total == 1,
 			"Neverwinter reward-family recovery changed progress");
+		const auto &claw_final = story_for("clwcvrn", "the-rainbow-key-and-the-king");
+		const auto &claw_blue = story_for("clwcvrn", "blue-shield");
+		const auto &claw_violet = story_for("clwcvrn", "violet-collar");
+		const auto &claw_sage = story_for("clwcvrn", "the-sages-paid-secret");
+		const auto &claw =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "clwcvrn"; });
+		service supplied_claw(catalog);
+		require(supplied_claw.discover_zone(7, 42, 807, 80700, 100, "arrival") ==
+				result::applied,
+			"Clawed Caverns discovery failed");
+		supplies.carried.clear();
+		journal = supplied_claw.render_journal(7, 42, 807, 10, 1, 102, false, false,
+						       &supplies);
+		require(journal.find("] " + claw_final.title + "\r\n") == std::string::npos,
+			"Clawed Caverns discovery exposed an unseen king's story");
+		for (const auto &contact : claw.contacts)
+			require(supplied_claw.meet_npc(7, 42, contact.mob_vnum, 80700, 101) ==
+					result::applied,
+				"Clawed Caverns fixture encounter failed");
+		const auto claw_section = [&](const auto &story)
+		{
+			const auto at = journal.find("] " + story.title + "\r\n");
+			require(at != std::string::npos, "Clawed Caverns journal row missing");
+			const auto end = journal.find("\r\n  [", at);
+			return journal.substr(at, end == std::string::npos ? end : end - at);
+		};
+		const auto before_claw_read = supplied_claw.serialize_state();
+		supplies.carried[80733] = supplies.carried[80730] = supplies.carried[80708] = 1;
+		journal = supplied_claw.render_journal(7, 42, 807, 10, 1, 102, false, false,
+						       &supplies);
+		require(claw_section(claw_final).find("Next: " + claw_final.steps[2].text) !=
+					std::string::npos &&
+				claw_section(claw_blue).find("Next: " +
+							     claw_blue.steps.back().text) !=
+					std::string::npos &&
+				claw_section(claw_violet)
+						.find("Next: " + claw_violet.steps[0].text) !=
+					std::string::npos &&
+				claw_section(claw_sage).find(
+					"currently unavailable under active accounting") !=
+					std::string::npos,
+			"intact key/pile replaced rainbow shards, wrong color readied shaping, or fee warning was absent");
+		supplies.carried.clear();
+		supplies.carried[80734] = 1;
+		journal = supplied_claw.render_journal(7, 42, 807, 10, 1, 103, false, false,
+						       &supplies);
+		require(claw_section(claw_final).find("Next: " + claw_final.steps.back().text) !=
+					std::string::npos &&
+				supplied_claw.serialize_state() == before_claw_read,
+			"supplied rainbow shards needed optional keys/history or readiness mutated progress");
+		for (const auto &request : claw.stories)
+			if (request.category == "service")
+				record(supplied_claw, request.contracts.front(), request.id.c_str(),
+				       807, 80700);
+		for (const auto &[id, reason] : claw.exclusions)
+			record(supplied_claw, id, id.c_str(), 807, 80700);
+		require(supplied_claw.progress_for_zone(7, 42, 807).completed == 0 &&
+				supplied_claw.progress_for_zone(7, 42, 807).total == 1,
+			"Clawed Caverns shaping, paid clue or returned offers awarded achievements");
+		record(supplied_claw, claw_final.contracts.front(), "claw-supplied-final", 807,
+		       80750);
+		service restored_claw(catalog);
+		require(restored_claw.deserialize_state(supplied_claw.serialize_state(), &error) &&
+				restored_claw.progress_for_zone(7, 42, 807).completed == 1 &&
+				restored_claw.progress_for_zone(7, 42, 807).total == 1,
+			"Clawed Caverns recovery changed the independent final delivery");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

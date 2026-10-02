@@ -42,9 +42,10 @@ neither every branch nor every historical prerequisite.
 | 15 | Twin Keeps of Devastated Tharnadia | [Comprehensive source dossier](zone-stories/TWIN_KEEPS_OF_DEVASTATED_THARNADIA.md): 30 Q/QA exchanges, 86 M/MA blocks, 451 rooms, 123 mobiles, 121 objects, 1,614 resets, Zorana handler and bounded foreign continuations | Revision 1: 29 achievements plus one service, 24 contacts/all 37 addressable families, fifteen optional producer checks, distinct shards, physical receipt and complete crystal/message/access guidance | Active sources; mixed potion fee; confirmed switch/key/travel/retrieval; recipient/epic-reset episodes; conditional sources, personal versus supplied proof and selected prose repairs |
 | 16 | Bloodstone Keep | [Comprehensive source dossier](zone-stories/BLOODSTONE_KEEP.md): 65 Q/QA exchanges, 158 native blocks, 918 rooms, 255 mobiles, 300 objects, 34 shops, 1,624 resets, complete local special code and bounded foreign producers/consumers | Revision 1: 31 achievements, 32 services/two exclusions, twenty contacts/all 74 addressed families, 35 optional producer checks; complete local, artifact and alchemy guidance | Active supply; absent ordinary makers/missing components; exact source/access/transform episodes; mixed earring fee, unfinished Pellops/orphan gameplay and selected prose/assignment repair |
 | 17 | Neverwinter Woods | [Comprehensive source dossier](zone-stories/NEVERWINTER_WOODS.md): seven Q/M blocks, 335 rooms, 38 mobiles, 75 objects, three shops, 424 resets, all 28 assigned routines and complete mirror-maze topology | Revision 1: five native bindings → one story/achievement/daily unit; seven contacts/both topic families; optional bridge wand, exact runes and current ruby-eyepatch reward | Active sources, cap-one/current recipient, selected-reward terms, checked maze topology, confirmed passage, source/gift history and orphan endpoints |
-| 18–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 18 | The Clawed Caverns | [Comprehensive source dossier](zone-stories/THE_CLAWED_CAVERNS.md): twenty Q/eight M, 89 rooms, forty mobiles, 55 objects, 171 resets/all 106 grouped families; all five specials, 26 mobile/one object binding including computed range | Revision 1: one rainbow-delivery story, six services/thirteen excluded returns, ten contacts/all topics; optional keys and complete custom switch/death/mage/access guidance | Active stock, target-safe damage/recipient parsing, committed death-container and key/output/recipient retirement, confirmed travel and paid-clue wallet settlement |
+| 19–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is the Clawed Caverns, followed by the Defense of Longhollow.
+The next area is the Defense of Longhollow, followed by the Black Pearl.
 Their earlier native bindings do not establish comprehensive
 source review. Do not advance a zone's status
 merely because the map parses, the Q denominator matches, or a candidate item
@@ -54,6 +55,9 @@ graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-CLAW-TARGET / HOT-SWITCH | Burn wrapper applies damage before checking the named object; mage give branch parses an object without validating the recipient. Native dispatcher visits nearby procedures before normal command execution. | Resolve actor/object/recipient and command before effects or consumption. Add target/alias/wrong-command, other nearby objects/recipients, fatal/protected damage and repeated-use fixtures while preserving remote switch and difficulty. |
+| ZSQ-CLAW-TRANSFORM / DEATH-DISPOSITION | Mage extracts the key before output confirmation and removes itself on read failure. Guardian directly creates a nested death container/money without committed custody or decay; generic shatter text does not create rainbow proof. | Commit exact input/output and recipient episode as one recoverable transform; publish prose/removal after success. Define committed nested death placement/currency/decay and fallback/recovery with missing/wrong prototypes/room and publication failure; preserve supplied final proofs and avoid false personal-kill credit. |
+| ZSQ-CLAW-SERVICES / ACCESS | Five shaping/moss routes and fixed 2,000-copper disappearing sage are support; thirteen returns are feedback. Entry compares levels 21–50 and trust on NPC; vault fragility prose does not set break chance. | Qualify active stock/recipient episodes and paid wallet/clue settlement. Preserve deliberate level/door policy, correct actor/prose decisions with builder and confirmed travel. Optional paid clue/vault/producer route must not gate the king's exact-shard receipt. |
 | ZSQ-NW-REWARD | All five rune exchanges have identical offerings. Native prepending plus first-complete matching select the ruby eyepatch, without a reward-choice step. | Keep one recovery family and all historical bindings. Builder chooses fixed reward/retirement or explicit selection; freeze chosen binding/output and attempt before consuming exact owned runes, with retry/recovery and revision fixtures. |
 | ZSQ-NW-MAZE / TOPOLOGY | All 36 raw maze rooms lead internally; exterior entries have no inbound reverse. Boundary search examines the actor rather than each candidate; reset passes virtual identity as real index and assumes reciprocal exits. | Freeze intended 6×6/wrap/exterior topology with builder. Add validated old/new reciprocal transitions, alternate real-index and missing-edge fixtures, failed/repeated moves and confirmed player-passage events; preserve probability/difficulty. Source gaps do not prove a played crash. |
 | ZSQ-NW-ACCESS / ORPHANS | Wand inscription says wave but trigger is use; bridge resets open. Agatha debt/horseshoe, farm/logging/escort promises have no local outcomes; actual horseshoes have Wicks-owned foreign consumer. | Decide barrier versus reset and align command prose without imposing new cost. Qualify actual source/access/return episodes; author absent endpoints or keep as lore. Preserve owned foreign receipts and separate optional exploration from Malchor's finale. |
@@ -690,3 +694,55 @@ no activation, migration, DB/server operation or merge occurred. Seventeen of
 220 roadmap areas are source-comprehensive, with 203 pending. Continue with the
 Clawed Caverns, then the Defense of Longhollow; active-world qualification remains
 open.
+
+### Clawed Caverns checkpoint — October 2, 2026
+
+Priority 18 (`clwcvrn`) is source-comprehensive at journal revision 1. Reviewed
+all twenty Q/eight M blocks, 89 rooms, forty mobiles, 55 objects, 171 resets/
+all 106 grouped families and the entire 309-line local implementation. All five
+procedures and 26 mobile/one object binding, including the computed 23-kind
+death range, were reviewed with shared dispatch, death/custody, switch, movement,
+keys and quest matching. There is no local shop. Foreign review is bounded to
+the reciprocal Underdark entry and actual 827 livingstone prototype.
+
+The initial crafting-only proposal is expanded to the actual king story:
+remote hot switch → guardian rainbow key → imprisoned mage's key-to-shards
+transformation/removal → exact shards for king's rainbow mask. One story,
+five shaping/moss services, one paid clue service and thirteen excluded returns
+explain all twenty native bindings. Ten contacts cover all eight addressed
+families. Optional glowing/rainbow keys preserve supplied final shards; no
+native receipt is invented for the custom transformation or personal kill.
+
+Concrete additions to the plan cover named-target validation before hot-crystal
+damage and mage consumption, committed nested guardian death/currency disposition,
+recoverable exact key/output and recipient retirement, confirmed passage/retrieval
+and paid-clue settlement. The mage removes the key before confirming output and
+extracts itself even on creation failure. The normal ward blocks attack/casting;
+its custom extraction is not a combat kill. Entrance levels, unlocked/locked/
+concealed doors, remote push command and zero-break-chance vault keys are documented
+without imposing them on supplied-shard delivery. Returned-kind rewards may be
+replacement instances, so feedback must preserve lineage rather than mint personal
+source credit. No active-world journey or played crash is claimed.
+
+Verification passed:
+
+- `test_zone_story_quest_production_catalog.py`: exact snapshot/inventory,
+  eighteen evidence indices, complete contact/topic/binding ownership, source
+  placements and no ordinary rainbow-shard reset producer.
+- `test_zone_story_quest_story.py`: all 41 maps/schemas 1/2/3; unseen-king
+  visibility, intact-key/ordinary-pile rejection from readiness, exact shaping
+  colors, authored coin-only-service warning, supplied shards without optional
+  keys/history, side-effect-free reads, service/return exclusion and recovered
+  final delivery. Shared-row assertions inspect the owning story/service.
+- `test_zone_story_quest_production.py`, harness formatting/check, whitespace,
+  reviewed local links and cached SQL server build. A transient WSL connection
+  failure during the first format invocation cleared on retry; formatting and
+  native checks completed successfully.
+
+The catalog has 41 authored journals, 2,300 achievement units, 1,921 potential
+daily units and 2,490 rows including services/administrative content. All 2,668
+raw definitions, registry/revision/fingerprint and the other forty journals are
+unchanged. Accounting remains mandatory; no activation, migration, DB/server
+operation or merge occurred. Eighteen of 220 roadmap areas are source-comprehensive,
+with 202 pending. Continue with the Defense of Longhollow, then the Black Pearl;
+active-world source/transform/access qualification remains open.
