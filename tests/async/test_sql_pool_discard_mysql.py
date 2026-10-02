@@ -116,7 +116,7 @@ def compile_sql(binary):
     source.write_text(HARNESS)
     flags = shlex.split(subprocess.check_output(["mysql_config", "--cflags"], text=True))
     libs = shlex.split(subprocess.check_output(["mysql_config", "--libs"], text=True))
-    subprocess.run([os.environ.get("CXX", "g++-14"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+    subprocess.run([os.environ.get("CXX", "g++"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
                     "-pthread", "-Isrc", *flags, str(source), "src/sql/sql_pool.c", *libs, "-o", str(binary)], cwd=ROOT, check=True)
 
 

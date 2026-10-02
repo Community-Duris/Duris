@@ -14,7 +14,7 @@ def compile_sql(binary, *, load_source=None, query_source=None, extra_flags=()):
     flags = shlex.split(subprocess.check_output(['mysql_config', '--cflags'], text=True))
     libs = shlex.split(subprocess.check_output(['mysql_config', '--libs'], text=True))
     subprocess.run([
-        os.environ.get('CXX', 'g++-14'), '-std=c++20', '-Wall', '-Wextra', '-Wpedantic',
+        os.environ.get('CXX', 'g++'), '-std=c++20', '-Wall', '-Wextra', '-Wpedantic',
         '-Werror', '-pthread', '-ffunction-sections', '-fdata-sections', '-Isrc', *flags,
         *extra_flags, 'tests/async/player_death_recovery_mysql_harness.cpp',
         str(load_source or ROOT / 'src/player/player_load_repository.c'),
@@ -27,7 +27,8 @@ def compile_sql(binary, *, load_source=None, query_source=None, extra_flags=()):
         'src/player/player_save_journal.c',
         'src/sql/item_extra_descr_codec.c', 'src/persistence/player_death_restitution_command.c',
         'src/persistence/persistence_observability.c', 'src/persistence/economic_sql_lifecycle_guard.c',
-        '-Wl,--gc-sections', '-Wl,--wrap=mysql_real_query', *libs, '-lcrypto', '-o', str(binary)
+        '-Wl,--gc-sections', '-Wl,--wrap=mysql_real_query,--wrap=mysql_stmt_init,--wrap=mysql_stmt_execute,--wrap=mysql_stmt_close',
+        *libs, '-lcrypto', '-o', str(binary)
     ], cwd=ROOT, check=True)
 
 

@@ -18,18 +18,18 @@ sql = (SRC / "sql.h").read_text()
 
 # (declaration, format-index, first-vararg-index)
 EXPECTED = [
-    (prototypes, "voiddebug(constchar*format,...)", 1, 2),
-    (prototypes, "voiddebug(constchar*,...)", 1, 2),
-    (prototypes, "voidlogexp(constchar*,...)", 1, 2),
-    (prototypes, "voidereglog(intlevel,constchar*format,...)", 2, 3),
-    (prototypes, "voidloginlog(int,constchar*,...)", 2, 3),
-    (prototypes, "voidstatuslog(int,constchar*,...)", 2, 3),
-    (prototypes, "voidbanlog(int,constchar*,...)", 2, 3),
-    (prototypes, "voidepiclog(int,constchar*,...)", 2, 3),
-    (prototypes, "voidwizlog(intlevel,constchar*,...)", 2, 3),
-    (prototypes, "voidlogit(constchar*,constchar*,...)", 2, 3),
-    (utility, "voidlogit(constchar*,constchar*,...)", 2, 3),
-    (sql, "voidsql_log(P_charch,constchar*kind,constchar*format,...)", 3, 4),
+    (prototypes, "void debug(const char *format,...)", 1, 2),
+    (prototypes, "void debug(const char *,...)", 1, 2),
+    (prototypes, "void logexp(const char *,...)", 1, 2),
+    (prototypes, "void ereglog(int level,const char *format,...)", 2, 3),
+    (prototypes, "void loginlog(int,const char *,...)", 2, 3),
+    (prototypes, "void statuslog(int,const char *,...)", 2, 3),
+    (prototypes, "void banlog(int,const char *,...)", 2, 3),
+    (prototypes, "void epiclog(int,const char *,...)", 2, 3),
+    (prototypes, "void wizlog(int level,const char *,...)", 2, 3),
+    (prototypes, "void logit(const char *,const char *,...)", 2, 3),
+    (utility, "void logit(const char *,const char *,...)", 2, 3),
+    (sql, "void sql_log(P_char ch,const char *kind,const char *format,...)", 3, 4),
 ]
 
 for source, declaration, fmt_index, first_arg in EXPECTED:
@@ -38,7 +38,7 @@ for source, declaration, fmt_index, first_arg in EXPECTED:
 
 # The declarations in prototypes.h and utility.h must agree, or one translation
 # unit would lose the checking the other has.
-assert contains(prototypes, "voidlogit(constchar*,constchar*,...)__attribute__")
-assert contains(utility, "voidlogit(constchar*,constchar*,...)__attribute__")
+assert contains(prototypes, "void logit(const char *,const char *,...)__attribute__")
+assert contains(utility, "void logit(const char *,const char *,...)__attribute__")
 
 print(f"printf format attributes present on {len(EXPECTED)} logging declarations")

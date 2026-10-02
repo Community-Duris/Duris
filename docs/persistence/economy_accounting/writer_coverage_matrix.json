@@ -18058,7 +18058,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1960
+          1961
         ],
         "file": "src/item/enhance.c",
         "function": "load_enhance_index",
@@ -20660,7 +20660,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2089
+          2090
         ],
         "file": "src/item/enhance.c",
         "function": "enhance_on_npc_item_reset_skipped",

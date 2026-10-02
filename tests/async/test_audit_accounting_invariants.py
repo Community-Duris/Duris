@@ -107,5 +107,147 @@ class TestAccountingInvariants(unittest.TestCase):
         self.assertIn("not authorized for reason", str(ctx.exception))
 
 
+    def test_multi_operation_accounting_fixture(self):
+        """Audit one synthetic fixture with sequential postings across five domains:
+        1. Quest reward (issuance -> wallet)
+        2. Shop trade (wallet -> merchant, custody change)
+        3. Auction bid & escrow (wallet -> auction_escrow)
+        4. Outbid refund (auction_escrow -> wallet)
+        5. Bank deposit (wallet -> bank)
+        """
+        journey_fixture = {
+            "id": "e2e_qualification_journey",
+            "lineage": "33333333333333333333333333333333",
+            "epoch": "44444444444444444444444444444444",
+            "holdings": {
+                "player_wallet": {
+                    "kind": "wallet",
+                    "identity": 1001,
+                    "balance": [0, 0, 0, 0],
+                },
+                "player_bank": {
+                    "kind": "bank",
+                    "identity": 1001,
+                    "balance": [0, 0, 0, 0],
+                },
+                "auction_vault": {
+                    "kind": "auction_escrow",
+                    "identity": 5001,
+                    "balance": [0, 0, 0, 0],
+                },
+                "reward_issuance": {
+                    "kind": "issuance",
+                    "identity": 9001,
+                    "balance": [0, 0, 0, 0],
+                },
+                "shop_counterparty": {
+                    "kind": "wallet",
+                    "identity": 2002,
+                    "balance": [0, 0, 0, 0],
+                },
+            },
+            "custody": {
+                "99999": {
+                    "kind": "player",
+                    "identity": 1001,
+                    "parent": 0,
+                    "root": 99999,
+                }
+            },
+            "operations": [
+                # Step 1: Quest reward gives 5 gold (500 copper) to player wallet
+                {
+                    "operation_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "reason": "quest_reward",
+                    "actor": "domain",
+                    "source_event": "e0000000000000000000000000000001",
+                    "postings": [
+                        {"account": "reward_issuance", "delta": [0, 0, -5, 0]},
+                        {"account": "player_wallet", "delta": [0, 0, 5, 0]},
+                    ],
+                    "items": [],
+                    "children": [],
+                },
+                # Step 2: Shop purchase of item 99999 for 2 gold (200 copper)
+                {
+                    "operation_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                    "reason": "shop_buy",
+                    "actor": "domain",
+                    "source_event": "e0000000000000000000000000000002",
+                    "postings": [
+                        {"account": "player_wallet", "delta": [0, 0, -2, 0]},
+                        {"account": "shop_counterparty", "delta": [0, 0, 2, 0]},
+                    ],
+                    "items": [
+                        {
+                            "event_index": 0,
+                            "operation_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                            "uid": 99999,
+                            "action": "transfer",
+                            "before": {
+                                "kind": "player",
+                                "identity": 1001,
+                                "parent": 0,
+                                "root": 99999,
+                            },
+                            "after": {
+                                "kind": "shopkeeper",
+                                "identity": 2002,
+                                "parent": 0,
+                                "root": 99999,
+                            },
+                        }
+                    ],
+                    "children": [],
+                },
+                # Step 3: Auction bid of 2 gold from player wallet into auction escrow
+                {
+                    "operation_id": "cccccccccccccccccccccccccccccccc",
+                    "reason": "auction_bid",
+                    "actor": "domain",
+                    "source_event": "e0000000000000000000000000000003",
+                    "postings": [
+                        {"account": "player_wallet", "delta": [0, 0, -2, 0]},
+                        {"account": "auction_vault", "delta": [0, 0, 2, 0]},
+                    ],
+                    "items": [],
+                    "children": [],
+                },
+                # Step 4: Outbid refund returned from auction escrow to player wallet
+                {
+                    "operation_id": "dddddddddddddddddddddddddddddddd",
+                    "reason": "auction_outbid",
+                    "actor": "domain",
+                    "source_event": "e0000000000000000000000000000004",
+                    "postings": [
+                        {"account": "auction_vault", "delta": [0, 0, -2, 0]},
+                        {"account": "player_wallet", "delta": [0, 0, 2, 0]},
+                    ],
+                    "items": [],
+                    "children": [],
+                },
+                # Step 5: Bank deposit of remaining 3 gold into player bank
+                {
+                    "operation_id": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "reason": "bank_transfer",
+                    "actor": "domain",
+                    "source_event": None,
+                    "postings": [
+                        {"account": "player_wallet", "delta": [0, 0, -3, 0]},
+                        {"account": "player_bank", "delta": [0, 0, 3, 0]},
+                    ],
+                    "items": [],
+                    "children": [],
+                },
+            ],
+        }
+
+        # Validate that the entire synthetic journey preserves all double-entry and anti-duplication invariants
+        stats = self.auditor.audit_fixture(journey_fixture, "e2e_qualification_journey")
+        self.assertEqual(stats["operations_checked"], 5)
+        self.assertEqual(stats["zero_sum_verified"], 5)
+        self.assertEqual(stats["source_events_verified"], 4)
+        self.assertEqual(stats["items_checked"], 1)
+
 if __name__ == "__main__":
     unittest.main()

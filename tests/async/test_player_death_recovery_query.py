@@ -7,6 +7,8 @@ import shlex
 import subprocess
 import tempfile
 import unittest
+from _source_contract import function_bodies
+from contract_text import index
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
@@ -14,6 +16,9 @@ LOAD_REPOSITORY = (SRC / "player/player_load_repository.c").read_text()
 QUERY_SOURCE = (SRC / "player/player_death_recovery_query.c").read_text()
 QUERY_HEADER = (SRC / "player/player_death_recovery_query.h").read_text()
 ACCOUNT = (SRC / "account/account.c").read_text()
+LOAD_EXECUTORS = function_bodies(LOAD_REPOSITORY, r"\bexecute_player_load\s*\(")
+assert len(LOAD_EXECUTORS) == 1, "the shared load executor must have one definition"
+LOAD_EXECUTION = LOAD_EXECUTORS[0]
 
 
 class DeathRecoveryContracts(unittest.TestCase):
@@ -24,7 +29,7 @@ class DeathRecoveryContracts(unittest.TestCase):
             binary = Path(directory) / "query-harness"
             subprocess.run(
                 [
-                    os.environ.get("CXX", "g++-14"),
+                    os.environ.get("CXX", "g++"),
                     "-std=c++20",
                     "-Wall",
                     "-Wextra",
@@ -99,13 +104,8 @@ class DeathRecoveryContracts(unittest.TestCase):
         )
 
     def test_gate_fails_closed_before_item_pet_reads_or_materialization(self):
-        gate_start = LOAD_REPOSITORY.index(
-            "std::vector<player_death_conflict_case> retained_cases;",
-            LOAD_REPOSITORY.index("player_load_repository_execute"),
-        )
-        gate = LOAD_REPOSITORY[
-            gate_start : LOAD_REPOSITORY.index("// Status and identity are the only mandatory player-load domain")
-        ]
+        gate_start = LOAD_EXECUTION.index("std::vector<player_death_conflict_case> retained_cases;")
+        gate = LOAD_EXECUTION[gate_start : LOAD_EXECUTION.index("load_components(connection")]
         self.assertNotIn("if (request.include_items)", gate)
         self.assertIn("player_death_conflict_list(connection, result.pid, 0", gate)
         self.assertIn("player_load_recovery_gate::retained_conflict", gate)
@@ -114,14 +114,14 @@ class DeathRecoveryContracts(unittest.TestCase):
         self.assertIn("clear_items_and_pets(&result)", gate)
         self.assertIn('execute(connection, "ROLLBACK", &result)', gate)
         self.assertIn("return result", gate)
-        gate_start = LOAD_REPOSITORY.index('!execute(connection, "START TRANSACTION"')
-        identity_lock = LOAD_REPOSITORY.index('" LOCK IN SHARE MODE"', gate_start)
-        first_snapshot_read = LOAD_REPOSITORY.index('if (!load_status(connection, request, &result))', identity_lock)
+        gate_start = index(LOAD_EXECUTION, 'execute(connection, "START TRANSACTION", &result)')
+        identity_lock = LOAD_EXECUTION.index('" LOCK IN SHARE MODE"', gate_start)
+        first_snapshot_read = index(LOAD_EXECUTION, 'if (!load_status(connection, request, &result, recovery_inspection))', identity_lock)
         self.assertLess(gate_start, identity_lock)
         self.assertLess(identity_lock, first_snapshot_read)
         self.assertLess(
             first_snapshot_read,
-            LOAD_REPOSITORY.index("player_death_conflict_list(connection, result.pid, 0", gate_start),
+            LOAD_EXECUTION.index("player_death_conflict_list(connection, result.pid, 0", gate_start),
         )
         self.assertLess(
             LOAD_REPOSITORY.index("player_death_conflict_list(connection, result.pid, 0"),
@@ -132,9 +132,9 @@ class DeathRecoveryContracts(unittest.TestCase):
             LOAD_REPOSITORY.index("load_pets(connection, &result)"),
         )
 
-        query_dispatch = LOAD_REPOSITORY[
-            LOAD_REPOSITORY.index("if (request.death_recovery_query.kind !=") :
-            LOAD_REPOSITORY.index('if (!execute(connection, "SET TRANSACTION ISOLATION LEVEL')
+        query_dispatch = LOAD_EXECUTION[
+            LOAD_EXECUTION.index("if (request.death_recovery_query.kind !=") :
+            index(LOAD_EXECUTION, 'execute(connection, "SET TRANSACTION ISOLATION LEVEL')
         ]
         self.assertIn("player_death_recovery_query_execute", query_dispatch)
         self.assertIn("return result", query_dispatch)
@@ -225,9 +225,9 @@ class DeathRecoveryContracts(unittest.TestCase):
         self.assertIn("request.include_pets = false", submit)
         self.assertIn("player_load_pipeline_submit(request)", submit)
 
-        query_dispatch = LOAD_REPOSITORY[
-            LOAD_REPOSITORY.index("if (request.death_recovery_query.kind !=") :
-            LOAD_REPOSITORY.index('if (!execute(connection, "SET TRANSACTION ISOLATION LEVEL')
+        query_dispatch = LOAD_EXECUTION[
+            LOAD_EXECUTION.index("if (request.death_recovery_query.kind !=") :
+            index(LOAD_EXECUTION, 'execute(connection, "SET TRANSACTION ISOLATION LEVEL')
         ]
         self.assertNotIn("load_items(", query_dispatch)
         self.assertNotIn("load_pets(", query_dispatch)

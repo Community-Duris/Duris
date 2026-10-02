@@ -18,7 +18,7 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
-from contract_text import index as code_index
+from contract_text import code_text, index as code_index
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC_ROOT = ROOT / "src"
@@ -63,7 +63,9 @@ def source(name: str | os.PathLike[str]) -> Path:
 
 def extract_function(name: str | os.PathLike[str], signature: str) -> str:
     """Extract one C/C++ function body selected by its exact signature prefix."""
+    signature = code_text(signature)
     def definition_location(candidate: str) -> int:
+        candidate = code_text(candidate)
         offset = 0
         while True:
             location = code_index(candidate, signature, offset)
@@ -93,11 +95,12 @@ def extract_function(name: str | os.PathLike[str], signature: str) -> str:
         if len(definitions) != 1:
             raise AssertionError(f"expected one production definition for {signature}: {len(definitions)}")
         text, start = definitions[0]
+    structure = code_text(text)
     depth = 0
-    for end in range(text.index("{", start), len(text)):
-        if text[end] == "{":
+    for end in range(structure.index("{", start), len(structure)):
+        if structure[end] == "{":
             depth += 1
-        elif text[end] == "}":
+        elif structure[end] == "}":
             depth -= 1
             if not depth:
                 return text[start : end + 1]

@@ -70,7 +70,8 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
             sources.append(str(found[0]))
         subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
                         "-D__NO_MYSQL__", "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
-                        "-DDURIS_FLATFILE_TRANSACTION_FAULT_TEST", "-Isrc", "-Isrc/no_mysql",
+                        "-DDURIS_FLATFILE_TRANSACTION_FAULT_TEST", "-DDURIS_FLATFILE_ACCOUNTING_TEST",
+                        "-Isrc", "-Isrc/no_mysql",
                         "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
                         "tests/async/persistence_restore_fixture.cpp", *sources, "-lcrypto", "-lz", "-pthread",
                         "-o", str(cls.fixture)], cwd=ROOT, check=True)

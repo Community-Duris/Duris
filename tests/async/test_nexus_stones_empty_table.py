@@ -27,11 +27,11 @@ assert not contains(sql, "mysql_num_rows(res)<1"), \
 for name, branch in (("flatfile", flat), ("mariadb", sql)):
     assert contains(branch, "update_nexus_stat_mods();"), \
         f"{name} nexus loader must refresh stat modifiers"
-    assert index(branch, "update_nexus_stat_mods();") < index(branch, "returnTRUE;"), \
+    assert index(branch, "update_nexus_stat_mods();") < index(branch, "return TRUE;"), \
         f"{name} nexus loader must refresh stat modifiers before succeeding"
 
 # Genuine failures are still rejected.
-assert contains(sql, "if(!qry(") and contains(sql, "returnFALSE;")
+assert contains(sql, "if(!qry(") and contains(sql, "return FALSE;")
 assert contains(sql, "if(!res)")
 
 print("nexus stone empty-table load contract passed")
