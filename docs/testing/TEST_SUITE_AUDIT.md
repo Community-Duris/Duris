@@ -12,6 +12,11 @@ The starting checkout was `5c157f693` on `experimental-accounting`. The audit br
 also incorporates base-branch changes through `db2822706`, including three new
 salvage regressions. Those salvage changes belong to the base branch.
 
+After validation was frozen, the base advanced to `e831cf7bf` with separate currency
+receipt work. `git merge-tree --write-tree` found no text conflicts with the audit
+branch. This report covers the tested branch snapshot through `db2822706`; execution
+against that later combined currency tree remains a draft-review qualification.
+
 The starting inventory had 859 Python entry scripts: 857 `test_*.py` files and two
 `*_test.py` files. The old runner selected 832, excluded 25 with explicit manual
 prerequisites, and overlooked the two suffix-named telemetry scripts. After three
