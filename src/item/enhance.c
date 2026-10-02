@@ -1181,7 +1181,7 @@ void thanksgiving_proc(P_char ch)
 static void enhance_load_essence_drop(P_char ch, P_char killer)
 {
 	int reward = 0;
-	int moblvl = GET_LEVEL(ch);
+	int64_t moblvl = GET_LEVEL(ch);
 
 	if (!enhance_essence_drop_enabled)
 		return;
@@ -1214,8 +1214,9 @@ static void enhance_load_essence_drop(P_char ch, P_char killer)
 		}
 		if (number(1, primary_roll_max) < moblvl)
 		{
-			debug("enhancematload: mob: '%s' (%d) moblvl %d%s", J_NAME(ch),
-			      GET_VNUM(ch), moblvl, IS_ELITE(ch) ? " ELITE." : ".");
+			debug("enhancematload: mob: '%s' (%d) moblvl %lld%s", J_NAME(ch),
+			      GET_VNUM(ch), static_cast<long long>(moblvl),
+			      IS_ELITE(ch) ? " ELITE." : ".");
 			if (number(1, max_roll_max) < moblvl)
 			{
 				switch (number(1, 8))
