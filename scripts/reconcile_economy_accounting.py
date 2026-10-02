@@ -1849,32 +1849,49 @@ class Reconciler:
                 self.emit("missing_native_item", uid=uid)
             elif any(current.get(field) != state[field] for field in state):
                 self.emit("stale_native_item", uid=uid)
+        topology = {}
+        edge_mismatches = {}
         for (uid,), item in native.items():
-            # Native topology is independent of the available origin/history
-            # proof. Check each direct edge once, including history-scoped UIDs
-            # and tombstones, before walking ancestors for cycle/root checks.
+            # Check every direct edge independently of origin/history proof.
             parent_uid = item.get("parent")
-            if parent_uid is not None and (parent_uid,) not in native:
+            if parent_uid is None:
+                topology[uid] = ("root", item.get("uid"), False)
+                continue
+            parent = native.get((parent_uid,))
+            if parent is None:
                 self.emit("orphan_item_parent", uid=uid, parent_uid=parent_uid)
-            visited = set()
-            position = item
-            while position.get("parent") is not None:
-                if position.get("uid") in visited:
-                    self.emit("cyclic_native_topology", uid=uid)
+                topology[uid] = ("orphan", None, False)
+                continue
+            edge_mismatches[uid] = (item.get("root") != parent.get("root") or
+                                    item.get("owner") != parent.get("owner"))
+        # Resolve each node once without recursion. Memoizing terminal roots,
+        # missing ancestors and cycles bounds work even on corrupt deep cuts.
+        for (uid,) in native:
+            path = []
+            positions = {}
+            position = uid
+            while position not in topology:
+                if position in positions:
+                    cycle_start = positions[position]
+                    cycle = path[cycle_start:]
+                    mismatch = any(edge_mismatches[node] for node in cycle)
+                    for node in cycle:
+                        topology[node] = ("cycle", None, mismatch)
+                    path = path[:cycle_start]
                     break
-                visited.add(position.get("uid"))
-                parent = native.get((position.get("parent"),))
-                if parent is None:
-                    break  # orphan_item_parent was reported above.
-                if (item.get("state") == "live" and
-                        (position.get("root") != parent.get("root") or
-                         position.get("owner") != parent.get("owner"))):
-                    self.emit("inconsistent_native_topology", uid=uid)
-                    break
-                position = parent
-            else:
-                if item.get("state") == "live" and position.get("uid") != item.get("root"):
-                    self.emit("inconsistent_native_topology", uid=uid)
+                positions[position] = len(path)
+                path.append(position)
+                position = native[(position,)]["parent"]
+            for node in reversed(path):
+                kind, terminal, mismatch = topology[native[(node,)]["parent"]]
+                topology[node] = (kind, terminal, mismatch or edge_mismatches[node])
+        for (uid,), item in native.items():
+            kind, terminal, mismatch = topology[uid]
+            if item.get("state") == "live" and (mismatch or (
+                    kind == "root" and terminal != item.get("root"))):
+                self.emit("inconsistent_native_topology", uid=uid)
+            elif kind == "cycle":
+                self.emit("cyclic_native_topology", uid=uid)
 
 
 def bounded_rows(rows: list[dict], limit: int) -> dict:
