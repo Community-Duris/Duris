@@ -19,6 +19,7 @@
 #include <iostream>
 #include <iterator>
 #include <map>
+#include <set>
 #include <string>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -908,6 +909,7 @@ static void custody_history(const fs::path &root)
 	{
 		std::string error;
 		unsigned live = 0;
+		std::set<uint64_t> live_uids;
 		for (uint64_t pid : { 42, 77 })
 		{
 			uint64_t revision = 0;
@@ -918,17 +920,19 @@ static void custody_history(const fs::path &root)
 			if (owner_revision[pid] == 0)
 			{
 				require(status == flatfile_item_repository_result::not_found,
-					"unexpected owner");
+					"custody history unexpected owner");
 				continue;
 			}
 			require(status == flatfile_item_repository_result::ok &&
 					revision == owner_revision[pid],
 				"custody history owner revision: " + error);
 			require(rows.size() == size_t(pid == owner ? 2 : 0),
-				"two owners or missing live UID");
+				"custody history two owners or missing live UID");
 			for (const auto &row : rows)
 			{
 				++live;
+				require(live_uids.insert(row.item_uid).second,
+					"custody history duplicate live UID");
 				require((row.item_uid == 100 || row.item_uid == 101) &&
 						row.owner.id == owner &&
 						row.state == item_custody_state::active &&
@@ -942,7 +946,8 @@ static void custody_history(const fs::path &root)
 					"custody history UID topology/model disagreement");
 			}
 		}
-		require(live == 2, "live UID cardinality");
+		require(live == 2 && live_uids == std::set<uint64_t>{ 100, 101 },
+			"custody history live UID cardinality");
 	};
 	verify();
 	for (unsigned step = 0; step < 12; ++step)
