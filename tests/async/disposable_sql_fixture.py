@@ -83,6 +83,12 @@ class DisposableSQL:
         environment = dict(self.environment, **{prefix + "_ROOT_PASSWORD": self.password,
                                                prefix + "_ROOT_HOST": "%"})
         network = private_network()
+        # Private fixtures must not depend on a shared host's scarce kernel AIO
+        # slots. Blocking InnoDB I/O retains transaction/fsync semantics. MySQL's
+        # unused X listener would otherwise collide in a shared runner namespace.
+        server_options = ["--event-scheduler=OFF", "--innodb-use-native-aio=OFF"]
+        if prefix == "MYSQL":
+            server_options.append("--mysqlx=OFF")
         args = ["run", "--pull=never", "--detach", "--restart=no", "--name", self.name,
                 "--label", LABEL + "=" + self.token, "--cpus=2", "--memory=1536m",
                 "--env", prefix + "_ROOT_PASSWORD", "--env", prefix + "_ROOT_HOST"]
@@ -91,9 +97,9 @@ class DisposableSQL:
                 probe.bind(("127.0.0.1", 0))
                 port = probe.getsockname()[1]
             args += ["--network", network, self.identity["id"], "--port=" + str(port),
-                     "--bind-address=127.0.0.1", "--event-scheduler=OFF"]
+                     "--bind-address=127.0.0.1", *server_options]
         else:
-            args += ["--publish", "127.0.0.1::3306", self.identity["id"], "--event-scheduler=OFF"]
+            args += ["--publish", "127.0.0.1::3306", self.identity["id"], *server_options]
         try:
             self.container = docker(*args, environment=environment)
             if not network:
@@ -102,7 +108,8 @@ class DisposableSQL:
                     raise RuntimeError("SQL fixture was not published exclusively on loopback")
                 port = int(mapping.rsplit(":", 1)[1])
             self.environment.update(DB_PORT=str(port), TEST_DB_PORT=str(port))
-            self.record("created", image=self.identity, container=self.container)
+            self.record("created", image=self.identity, container=self.container,
+                        server_options=server_options)
             deadline = time.monotonic() + 90
             while True:
                 result = self.sql("SELECT 1", selected=False, check=False)
