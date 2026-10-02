@@ -51,17 +51,26 @@ This checkpoint publishes the completed review fixes directly to
   exact ordinary and boundary debits, free valid quotes, and insufficient funds.
   Both strict production profiles pass. Compound enhancement accounting and
   same-UID durable mutation remain outstanding.
+- Superior material planning now widens item-value arithmetic, rejects negative
+  values and non-finite or unrepresentable scaled quantities, and checks duplicate
+  material totals before addition. The production planning regression reproduces
+  signed overflow before the fix and passes with float-cast, undefined-behavior,
+  and address sanitizers afterward. Ordinary fractional scaling stays intact.
+- Superior stat caps now stop at the persisted signed-byte maximum and refuse
+  invalid multipliers. Native boundary tests cover ordinary tiers, large finite
+  multipliers, and non-finite inputs. Both production profiles pass for these
+  fixes; all 1,210 source files match committed tree `49f76401c`.
 
 ## Verification and its limits
 
 | Check | Current evidence |
 | --- | --- |
-| Strict SQL and flatfile production builds | Passed for `2e5852e41`; all 1,210 native source files match its committed tree. Recipe gameplay uses the separately qualified `ad5bc52bf` builds. |
+| Strict SQL and flatfile production builds | Passed for `49f76401c`; all 1,210 native source files match its committed tree. Recipe gameplay uses the separately qualified `ad5bc52bf` builds. |
 | Recipe SQL receipts and fault recovery | Passed on disposable MySQL 8.0 and MariaDB 10.11 before the latest upstream integration. |
 | Integrated focused runtime checks | All 16 selected checks passed after the first upstream integration, including the ASan/UBSan prompt fixture. |
 | Null-output publication regression | Passed using the actual native movement module after `0464613a1`. |
 | Combat continuation and quarantine restore | Passed after integrating the upstream recovery evidence. Quarantine archives retain both original component frames and keep recovery fenced on conflicting evidence. |
-| Writer census | Refreshed for `2e5852e41`: 2,805 lexical occurrences, 2,747 unique sites, 863 routes, zero unmapped sites. Coverage contracts and artifact freshness pass after reanchoring the affected enhancement check. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
+| Writer census | Refreshed for `49f76401c`: 2,805 lexical occurrences, 2,747 unique sites, 863 routes, zero unmapped sites. Coverage contracts and artifact freshness pass after reanchoring the affected enhancement check. Content-keyed parsing caches at most 32 source strings and refreshes after source edits. |
 | Recipe flatfile restore | Passed through the actual native restore decoder: complete recovery, checksum damage, missing obligation/root, future revision, and invalid receipt filename. |
 | Mortal recipe gameplay | Physical and retained-pouch Craft/Forge passed on flatfile and both SQL engines with exact XP, output UIDs and counters through copyover and two cold restarts. |
 | Latest migration integration | Runtime manifest validator and all 34 native boot/migration contract tests passed with head 0053 and 225 tables. All three histories converge on the pinned schema on disposable MySQL 8.0.46 and MariaDB 10.11.14, including preserved master receipts/runtime payloads, append/replay, shell/compiled boot, restore selection, and tamper refusal. The fixture uses the current sealed baseline with the master prefix; a captured production clone remains outside this proof. |
@@ -80,8 +89,8 @@ Recipe flatfile restore and mortal Craft/Forge restart qualification are
 published, along with mini-mode startup and save-admission fixes. Broader recipe
 variants and active accounting journeys still need qualification. Current
 strict builds pass. The full 822-test regression run uses a frozen `8be8b55c0`
-snapshot and is in progress; the subsequent enhancement-price fix has separate
-native sanitizer and production-build evidence. Earlier full-suite failures
+snapshot and is in progress. The subsequent enhancement price, material, and
+stat bounds fixes have separate native sanitizer and production-build evidence. Earlier full-suite failures
 have not yet been superseded by a complete passing run.
 
 Paid same-UID superior enhancement, remaining pouch writers, day-one quest and
