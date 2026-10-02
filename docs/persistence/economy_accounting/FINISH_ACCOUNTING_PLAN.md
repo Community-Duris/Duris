@@ -41,6 +41,12 @@ save/death/crash/copyover journey and item/spell/XP receipt probes now pass on
 both SQL engines using the strict frozen-candidate executable. These qualify
 the measured inactive-accounting routes, not complete economic accounting.
 
+The character-deletion journey also honors its selected disposable SQL port.
+Its native MariaDB refusal and rollback checks pass, but the successful retry
+ends in reconciliation after player deletion because `-s` skips the zone-story
+tracker's special-procedure bootstrap. That lifecycle dependency remains open;
+the port repair does not qualify successful deletion or erasure.
+
 Stopped quarantine recovery from upstream `5c157f693` is integrated with the
 review fixes. Version-2 archives retain original frames and frozen grant
 commands; native commit proofs gate resolution and later-save revalidation.

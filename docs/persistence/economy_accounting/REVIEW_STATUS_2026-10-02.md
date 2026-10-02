@@ -227,3 +227,20 @@ characters on an actual native server and database. It does not qualify active
 economic roots, all item/currency routes, database interruption, full-world
 clone login, flatfile parity, or complete R1-R8 acceptance. The automatic frozen
 candidate suite remains in progress and is separate evidence.
+
+## Disposable deletion journey port routing
+
+`run_mysql_deletion_journey.py` also hardcoded port 3306 in the native connection
+and omitted the SQL client's port. It now validates `TEST_DB_PORT` before any
+connection and routes both clients explicitly. Two connection-free tests pass;
+custom/default routing and all seven invalid-port cases fail before repair
+without opening a connection. An actual MariaDB instance on the selected owned
+port passes the soft-delete and late-cleanup injected failures, retaining the
+mapping and inventory through rollback and playable reconnect.
+
+The successful retry remains RED: durable player cleanup completes but the
+server reports reconciliation because `zone_story_quest_runtime` is not ready
+under the journey's `-s` boot. Its bootstrap currently lives in mobile special-
+procedure assignment, which that option skips. This is a separate R8 lifecycle
+dependency to repair and requalify; neither successful SQL deletion nor economic
+identity/alias erasure is qualified by the port fix. No production rows changed.
