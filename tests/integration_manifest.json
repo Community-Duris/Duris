@@ -520,7 +520,9 @@
       "required_cases": [
         "script"
       ],
-      "arguments": [],
+      "arguments": [
+        "--legacy-persistence"
+      ],
       "environment": {
         "DURIS_MATRIX_SQL_BINARY": "{sql_binary}"
       },
@@ -528,7 +530,10 @@
       "covers": [
         "test_death_resurrection_mysql_journey.py"
       ],
-      "required_markers": []
+      "required_markers": [
+        "PASS inactive-accounting death/resurrection persistence",
+        "RELEASE ACCOUNTING COVERAGE BLOCKED:"
+      ]
     },
     {
       "id": "pa_copyover_sql",
