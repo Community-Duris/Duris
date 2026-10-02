@@ -936,7 +936,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
             self.assertEqual(self.routes[route_id]["disposition"], "runtime_mutation_route")
             self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]
                             ["must_block_on_activation"])
-        self.assertIn("double-extract", self.routes["artifact.fixit_template_probe"]
+        self.assertIn("once", self.routes["artifact.fixit_template_probe"]
                       ["source_classification"])
 
     def test_mob_behavior_item_sites_separate_world_creation_from_equipment_relink(self) -> None:

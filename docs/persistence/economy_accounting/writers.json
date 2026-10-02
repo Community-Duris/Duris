@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "681ba51cdd879f6f50b93672f8fa519dacdab95d",
+  "source_commit": "673144158fbd770f4f8efd5190a4e2814f83a876",
   "census_complete": true,
   "writers": [
     {
@@ -965,9 +965,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Staff binding repair reads temporary prototypes; the SQL branch extracts one before using its description and may extract it again, a use-after-free/double-extract defect, but these sites do not retire a selected admitted UID.",
-      "authority_boundary": "Keep the prototype unpublished; repair the SQL temporary-object lifetime before using this maintenance command.",
-      "current_support": "Source review only; exclusion and caller reachability need executable proof.",
+      "classification": "Staff binding repair keeps temporary prototypes alive through its report and extracts each existing prototype once afterward; these sites do not retire a selected admitted UID.",
+      "authority_boundary": "Keep the prototype unpublished and alive through reporting; release it once when present.",
+      "current_support": "Native production-function regression passes six prototype lifetime scenarios with ASan/UBSan and leak detection using isolated database boundaries; this does not qualify a live SQL backend or active accounting route.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -982,7 +982,9 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_combat_artifact_persistence.py"
+      ],
       "sites": [
         [
           "src/guild/artifact.c",
@@ -1001,11 +1003,6 @@
         ],
         [
           "src/guild/artifact.c",
-          4635,
-          "item_lifecycle"
-        ],
-        [
-          "src/guild/artifact.c",
           4646,
           "item_lifecycle"
         ]
@@ -1014,7 +1011,7 @@
       "reachability_evidence": "arti_fixit_sql source branch reviewed; these sites only touch temporary objects or dummy character projections.",
       "native_effects": {
         "holding_effect": "No coin balance change at these sites; artifact binding/timer metadata may change in nearby code.",
-        "custody_effect": "Staff binding repair reads temporary prototypes; the SQL branch extracts one before using its description and may extract it again, a use-after-free/double-extract defect, but these sites do not retire a selected admitted UID.",
+        "custody_effect": "Staff binding repair keeps temporary prototypes alive through its report and extracts each existing prototype once afterward; these sites do not retire a selected admitted UID.",
         "native_state_targets": [
           "runtime artifact object graph",
           "artifact tracking and saved owner where applicable",
@@ -52922,12 +52919,6 @@
       "line": 4631,
       "family": "item_lifecycle",
       "excerpt": "arti = read_object(vnum, VIRTUAL);"
-    },
-    {
-      "path": "src/guild/artifact.c",
-      "line": 4635,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(arti);"
     },
     {
       "path": "src/guild/artifact.c",

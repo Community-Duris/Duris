@@ -45,27 +45,27 @@
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2806,
-    "current_unique_path_line_family_sites": 2748,
+    "current_occurrences": 2805,
+    "current_unique_path_line_family_sites": 2747,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "681ba51cdd879f6f50b93672f8fa519dacdab95d",
+    "draft_source_commit": "673144158fbd770f4f8efd5190a4e2814f83a876",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2748,
+    "draft_unique_sites": 2747,
     "family_occurrences": {
       "coin_assignment": 160,
       "coin_bulk_mutation": 16,
       "direct_cash_assignment": 12,
       "economic_submit": 186,
-      "item_lifecycle": 1141,
+      "item_lifecycle": 1140,
       "item_publication": 1064,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
       "sql_economy": 55
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 863-row registry maps 2748 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
-    "mapped_sites_still_present": 2748,
-    "mapped_unique_sites_from_draft_rows": 2748,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 863-row registry maps 2747 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2747,
+    "mapped_unique_sites_from_draft_rows": 2747,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "681ba51cdd879f6f50b93672f8fa519dacdab95d",
+  "repository_head": "673144158fbd770f4f8efd5190a4e2814f83a876",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -1016,7 +1016,7 @@
       "blocking_policy_after_activation": {
         "decision": "not_a_playable_economy_or_custody_writer",
         "must_block_on_activation": false,
-        "required_policy": "Binding repair uses provisional templates for display; its SQL branch currently has use-after-free and double-extract paths that require repair."
+        "required_policy": "Binding repair keeps provisional templates alive through reporting and extracts each existing template once afterward."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": false,
@@ -1034,11 +1034,11 @@
       "disposition": "non_writer_candidate",
       "double_entry_evidence": {
         "existing_evidence": [],
-        "note": "Binding repair uses provisional templates for display; its SQL branch currently has use-after-free and double-extract paths that require repair.",
+        "note": "Binding repair keeps provisional templates alive through reporting and extracts each existing template once afterward.",
         "status": "not_applicable",
         "unified_operation_postings_observed": false
       },
-      "exclusion_reason": "Binding repair uses provisional templates for display; its SQL branch currently has use-after-free and double-extract paths that require repair.",
+      "exclusion_reason": "Binding repair keeps provisional templates alive through reporting and extracts each existing template once afterward.",
       "id": "artifact.fixit_template_probe",
       "native_effects": {
         "custody_effect": "none",
@@ -1056,7 +1056,7 @@
         "function": "arti_fixit_sql",
         "original_draft_symbol": "arti_fixit_sql"
       },
-      "source_classification": "Staff binding repair reads temporary prototypes; the SQL branch extracts one before using its description and may extract it again, a use-after-free/double-extract defect, but these sites do not retire a selected admitted UID.",
+      "source_classification": "Staff binding repair keeps temporary prototypes alive through its report and extracts each existing prototype once afterward; these sites do not retire a selected admitted UID.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
