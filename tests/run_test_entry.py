@@ -30,10 +30,11 @@ def execute(path: Path, mode: str, output: Path, minimum: int) -> int:
     active: dict[tuple[int, int], dict] = {}
     called: set[str] = set()
     started = time.monotonic()
+    complete = False
 
     def save() -> None:
         output.write_text(json.dumps({"cases": records, "collected": collected,
-                                     "called": sorted(called)}), encoding="utf-8")
+                                     "called": sorted(called), "complete": complete}), encoding="utf-8")
 
     def case_id(test) -> str:
         return test.id().removeprefix("__main__.")
@@ -147,6 +148,7 @@ def execute(path: Path, mode: str, output: Path, minimum: int) -> int:
         for name in sorted(set(functions) & called):
             records.append({"id": name, "status": "passed" if code == 0 else "unresolved",
                             "evidence": "function invocation"})
+    complete = True
     save()
     return code
 

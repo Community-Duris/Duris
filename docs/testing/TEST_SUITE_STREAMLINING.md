@@ -42,7 +42,10 @@ The runner launches each entry through a private adapter while preserving its
 arguments, working directory and import path. Unittest results include case names,
 outcomes, durations and skip reasons. Collected and executed identities must agree;
 a successful zero-case suite or a failed suite with a successful process exit is
-rejected. A recorded minimum protects against accidental removal from a suite.
+rejected. Observed skips remain visible when unittest redirects its console
+summary. Successful entries must acknowledge completed observation; os._exit(0)
+cannot bypass final validation, including after successful cases. A recorded
+minimum protects against accidental removal from a suite.
 
 Standalone drivers are explicitly one entry-level case. Their native assertions
 are not presented as independently observed Python cases. Plain declared function
@@ -82,6 +85,8 @@ fault state are never cached. DURIS_REGRESSION_BUILD_CACHE=off retains uncached
 standalone execution; compiled outputs still reside below bin.
 
 Native build records distinguish object compilation, linking and lookup.
+Cache-off builds aggregate fingerprinting, compilation and linking in the compile
+field rather than separating those phases.
 Server records distinguish build and lookup. JSON entry phases include the
 remainder as entry_other: runtime, fixture setup, other subprocesses and assertions
 are not separately measured inside unchanged drivers.
@@ -184,5 +189,56 @@ protected by the existing server-artifact suite. The outer runner exercises real
 child processes for discovery, missing entry points, named results, strict skips,
 resource/lock overlap, duration priority, timeout and cancellation.
 
-Final command outcomes and performance measurements are recorded after execution.
-Raw JSON/XML/logs remain ignored artifacts under bin/streamline.
+The complete safe gate ran against 886bd827 after merging development base
+4d027735. make test-all -j2 TEST_JOBS=2 TEST_CPU_BUDGET=4 TEST_MEMORY_MB=4096
+passed all maintained builds/native checks and completed 835 Python entries:
+824 passed, 11 explicitly skipped, no failures or pending work. The Python phase
+took 3402.24 seconds (56 minutes 42 seconds); preceding build/world setup is
+outside that timing. It recorded 1846 observations, including function invocations
+and opaque entries, rather than 1846 independent native assertions.
+
+Review during qualification reproduced two reporting defects: hidden unittest
+summaries lost skip accounting, and premature zero exits bypassed observation.
+Both were fixed in subsequent focused commits. The final executable test code is
+5360389f; its src tree remains c8804d6b and its tests tree is 0762828c.
+Every automatic unittest entry was rerun after the completion protocol change:
+129 passed, 9 explicitly skipped, no failures across 138 entries in 187.68 seconds.
+The run includes all 14 runner cases and all 6 real native-artifact cases. The
+complete gate's 697 script entries each had their final entry record; this is
+compatibility evidence for the added acknowledgement, not a fresh body execution.
+The final fast profile was also rerun separately: 366 passed, 1 whole-entry skip,
+no failures across 367 entries in 32.08 seconds after world/tool setup. It recorded
+986 observations, with the additional partial SQL/systemd skips visible. Raw reports identify the
+separate attempts; no passing rerun replaces the initial failure evidence.
+
+The unchanged player-repository driver, including native and quarantine recovery
+assertions, was measured under the same frozen sources, compiler/options,
+environment and container limits with a fresh private cache:
+
+| Build setting | Entire entry | Compilation | Linking | Lookup |
+| --- | ---: | ---: | ---: | ---: |
+| off | 65.77 s | 52.29 s aggregate build/lookup | included | included |
+| cold | 42.77 s | 25.58 s | 0.46 s | 4.01 s |
+| warm | 15.14 s | 0 s | 0 s | 1.98 s |
+
+All three attempts passed. The warm run reused all 55 inspector objects and ran
+the existing runtime assertions. Runtime/setup/remainder stayed approximately
+13 seconds; the removed work was compilation. In the complete gate the accounting
+store reused 13 authority objects and compiled its own driver in 4.42 seconds.
+These measurements qualify this fixture improvement; they are not a controlled
+before/after comparison of the entire historical suite.
+
+The interrupted-builder regression was also run with a deliberately injected
+early-publication fault. It rejected stale value 99 where reverted source required
+42. Runner regressions reject zero-case collection, disconnected entry points,
+ignored unittest failures, hidden skips, and premature exits before/during/after
+cases. Real child-process tests qualify resource overlap, locks, timing priority,
+timeout cleanup and cancellation.
+
+The 11 whole-entry skips and additional partial skips are integration boundaries:
+disposable SQL, privileged restore, and non-root user-systemd capabilities were
+not provisioned. The 25 manual entries remain excluded from core. Their complete
+execution belongs to the prepared matrix above.
+
+Raw JSON/XML/logs remain ignored artifacts under bin/streamline and are retained
+outside the owned qualification container before cleanup.
