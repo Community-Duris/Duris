@@ -611,3 +611,16 @@ test's expected locations makes all 52 writer contracts pass. Route counts and
 coverage/activation policy remain unchanged. The second failure is the stale
 help-document assertion in `test_supported_server_build_contract.py`; its
 repair is tracked separately. The frozen 8c997b00d run remains in progress.
+
+
+## Help-build documentation contract repair
+
+The other frozen broad-run failure asserted the old phrase "Without MySQL
+(`-D__NO_MYSQL__` builds)" after the help integration documented the maintained
+`PERSISTENCE_BACKEND=flatfile` target and its `__NO_MYSQL__` define instead. The
+contract now verifies those explicit build facts across normalized prose, while
+retaining all dependency, authority and client-free content-path checks. The
+focused build contract passes. Native code, help behavior and documentation
+remain unchanged; the strict builds and native help proofs recorded above are
+separate evidence. The frozen 79540e65d report remains 826/11/2, and 8c997b00d
+already contains the same stale writer assertion while its run continues.

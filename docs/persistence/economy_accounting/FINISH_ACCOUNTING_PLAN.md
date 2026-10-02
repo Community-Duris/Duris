@@ -39,7 +39,8 @@ The later frozen `79540e65d` broad run also finished: 826 passed, 11 skipped
 and two stale source-contract assertions failed in 6,127.39 seconds. NPC cash
 assignments still match the classified registry; their expected locations in
 the test now match the boot-integration source, and all 52 writer contracts
-pass. The help-build wording check is the other reported failure. This remains
+pass. The help-build contract now checks the documented flatfile make target
+and compiler define and passes its focused check. This remains
 a failed full run plus a focused repair; the frozen `8c997b00d` run continues.
 
 The frozen candidate `fbd9f5035` completed `make test-all`: 822 passed, 11
