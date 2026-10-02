@@ -159,6 +159,16 @@ NATIVE_FLATFILE_AUTHORITY_STORES = {
     "file:flatfile-player-domain-journal",
     "file:flatfile-legacy-currency-journal",
 }
+CORE_TRANSACTION_RECOVERY_STORES = {
+    "database:critical_operation_inbox",
+    "database:critical_outbox",
+    "database:critical_outbox_delivery_dedupe",
+    "file:player_save_journal",
+    "file:critical_command_journal",
+    "file:persistence_fallback",
+    "file:persistence_fallback_quarantine",
+    "file:flatfile-authority-journal",
+}
 MAX_MANIFEST_BYTES = 2 * 1024 * 1024
 MAX_SCHEMA_BYTES = 8 * 1024 * 1024
 MAX_REDIS_REGISTRY_BYTES = 64 * 1024
@@ -510,6 +520,13 @@ def validate_manifest(manifest: dict, expected_tables: set[str],
             raise ValidationError(f"{entry_id} dependencies must be a unique list")
         if not isinstance(entry["protected_record"], bool):
             raise ValidationError(f"{entry_id} protected_record must be boolean")
+        if (entry_id.startswith(("database:economic_", "file:economic-")) or
+                entry_id in CORE_TRANSACTION_RECOVERY_STORES) and (
+                not entry["protected_record"] or entry["season_action"] != "retain" or
+                entry["terminal_action"] != "retain"):
+            raise ValidationError(
+                f"protected store {entry_id}: core transaction recovery must remain protected and retained"
+            )
         if entry_id in RECIPE_PROGRESSION_RECOVERY_STORES and (
                 not entry["protected_record"] or entry["season_action"] != "retain" or
                 entry["terminal_action"] != "retain"):

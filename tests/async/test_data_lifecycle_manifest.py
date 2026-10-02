@@ -231,6 +231,29 @@ class LifecycleManifestTest(unittest.TestCase):
                             "coupled player recovery must remain protected and retained",
                         )
 
+    def test_core_transaction_recovery_protection_cannot_be_removed(self) -> None:
+        shared = {
+            "database:critical_operation_inbox", "database:critical_outbox",
+            "database:critical_outbox_delivery_dedupe", "file:player_save_journal",
+            "file:critical_command_journal", "file:persistence_fallback",
+            "file:persistence_fallback_quarantine", "file:flatfile-authority-journal",
+        }
+        stores = {row["id"] for row in self.manifest["entries"]
+                  if row["id"].startswith(("database:economic_", "file:economic-"))} | shared
+        self.assertEqual(len(stores), 33)
+        for entry_id in sorted(stores):
+            for field, value in (("protected_record", False), ("season_action", "reset_delete"),
+                                 ("terminal_action", "deactivate")):
+                with self.subTest(store=entry_id, field=field):
+                    changed = json.loads(json.dumps(self.manifest))
+                    target = next(row for row in changed["entries"] if row["id"] == entry_id)
+                    target[field] = value
+                    with tempfile.TemporaryDirectory() as temporary:
+                        self.assert_rejected(
+                            self.run_validator(self.write_manifest(Path(temporary), changed)),
+                            "core transaction recovery must remain protected and retained",
+                        )
+
     def test_journal_archive_and_fences_are_protected_recovery_evidence(self) -> None:
         for name in ("file:player_save_quarantine_archive", "file:player_save_quarantine_policy"):
             entry = self.entry(name)
