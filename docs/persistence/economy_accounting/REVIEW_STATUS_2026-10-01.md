@@ -61,6 +61,13 @@ This checkpoint publishes the completed review fixes directly to
   multipliers, and non-finite inputs. Both production profiles pass for these
   fixes; all 1,210 source files match committed tree `49f76401c`.
 
+- Flatfile `.craft` application receipts and `.craft-obligation` frozen terms
+  now have separate protected retention/export inventory entries. The lifecycle
+  validator requires both; removing either is rejected. Fifteen lifecycle,
+  seven erasure, and six export regressions pass. The inventory now counts 39
+  non-database stores, 225 SQL tables, and 42 Redis surfaces, with destructive
+  rules and shared disclosure still disabled pending controller decisions.
+
 ## Verification and its limits
 
 | Check | Current evidence |
