@@ -61,6 +61,7 @@
 #include "economy/auction_houses.h"
 #include "economy/boon.h"
 #include "persistence/copyover.h"
+#include "net/transport.h"
 #include "combat/ctf.h"
 #include "world/epic.h"
 #include "world/epic_task_catalog.h"
@@ -451,6 +452,7 @@ int main(int argc, char **argv)
 	int pos = 1;
 	const char *dir;
 	int migrate_mode = 0;
+	bool persistent_transport = false;
 
 	port = DFLT_PORT;
 	dir = DFLT_DIR;
@@ -482,6 +484,12 @@ int main(int argc, char **argv)
 
 	while ((pos < argc) && (*(argv[pos]) == '-'))
 	{
+		if (!strcmp(argv[pos], "--persistent-transport"))
+		{
+			persistent_transport = true;
+			pos++;
+			continue;
+		}
 		if (!strcmp(argv[pos], "--minimal"))
 		{
 			mini_mode = 1;
@@ -613,6 +621,10 @@ int main(int argc, char **argv)
 		sslport = static_cast<int>(parsed_tls_port);
 	}
 	logit(LOG_STATUS, "Using TLS telnet port %d.", sslport);
+	if (!transport_world_configure())
+		fatal_boot_error("transport", "Invalid inherited transport capability");
+	if (persistent_transport && !transport_world_active())
+		return transport_frontend_main(argc, argv, port, sslport);
 
 	char persistence_error[2048];
 	if (!persistence_mode_configure(persistence_error, sizeof(persistence_error)))
@@ -1391,6 +1403,8 @@ static void dispatch_session_input(P_desc descriptor, P_char character, char *in
 {
 	if (!session_input_route_dispatches(route))
 		return;
+	if (descriptor->transport_command)
+		descriptor->transport_command_started = true;
 	if (character)
 		character->specials.timer = 0;
 	descriptor->prompt_mode = TRUE;
@@ -1658,7 +1672,16 @@ static void network_wait_until(game_loop_pulse_context &ctx, uint64_t deadline_u
 		}
 		if (now_us >= deadline_us)
 			return;
-		service_network_turn(ctx, network_timeout_ms(deadline_us, now_us));
+		if (transport_world_active())
+		{
+			// Logical session slots are not socket FDs. IPC application dispatch
+			// stays at the connection boundary; completion hints may wake the wait.
+			pollfd wake{ network_wakeup_fd(), POLLIN, 0 };
+			if (poll(&wake, 1, network_timeout_ms(deadline_us, now_us)) > 0)
+				network_wakeup_drain();
+		}
+		else
+			service_network_turn(ctx, network_timeout_ms(deadline_us, now_us));
 	}
 }
 
@@ -1671,6 +1694,14 @@ static bool run_connection_phase(game_loop_pulse_context &ctx)
 		request_shutdown(type, "Launcher", "signal from launcher");
 	}
 	persistence_log_poll();
+	if (transport_world_active())
+	{
+		transport_world_pump();
+		ctx.connections_us =
+			latency_trace_elapsed_us(ctx.loop_time_begin_us, loop_monotonic_us());
+		return true;
+	}
+
 	if ((*ctx.last_desc_per_hour_reset + 3600) <= time(0))
 	{
 		max_descs_this_hour = used_descs;
@@ -1794,7 +1825,8 @@ static void run_session_input_phase(game_loop_pulse_context &ctx)
 		}
 
 		/* WebSocket ping/pong dead connection detection */
-		if (point->websocket && point->ws_state == WS_STATE_OPEN)
+		if (point->websocket && !point->transport_session &&
+		    point->ws_state == WS_STATE_OPEN)
 		{
 			time_t now = time(0);
 
@@ -1967,7 +1999,8 @@ static void run_output_phase(game_loop_pulse_context &ctx)
 			close_socket(point);
 			continue;
 		}
-		if (point->websocket && websocket_flush_output(point) < 0)
+		if (point->websocket && !point->transport_session &&
+		    websocket_flush_output(point) < 0)
 		{
 			close_socket(point);
 			continue;
@@ -2001,6 +2034,7 @@ static void run_output_phase(game_loop_pulse_context &ctx)
 	latency_trace_record("prompts", prompts_us, loop_tick);
 
 	ctx.prompts_us = prompts_us;
+	transport_world_finish_pulse();
 }
 
 static void log_telemetry_health_event(const telemetry_health_event &event)
@@ -2438,6 +2472,7 @@ void game_loop(int port, int sslport)
 	struct host_answer host_ans_buf;
 	int s, S;
 	int WS; /* WebSocket listener socket */
+	bool copyover_recovered = false;
 	int accept_debug = getenv("DURIS_ACCEPT_DEBUG") != NULL;
 	unsigned long accept_debug_pulse = 0;
 
@@ -2454,12 +2489,15 @@ void game_loop(int port, int sslport)
 	dead_desc_pool = mm_create("SOCKET", sizeof(struct descriptor_data),
 				   offsetof(struct descriptor_data, next),
 				   mm_find_best_chunk(sizeof(struct descriptor_data), 25, 110));
+	if (!transport_world_boot(copyover_boot != 0))
+		fatal_boot_error("transport", "World transport handshake failed");
 
 	// copyover recovery - pool must exist first
 	if (copyover_boot)
 	{
-		if (copyover_recover(&recovered_mother_desc, &recovered_mother_desc_ssl,
-				     &recovered_ws_desc))
+		copyover_recovered = copyover_recover(
+			&recovered_mother_desc, &recovered_mother_desc_ssl, &recovered_ws_desc);
+		if (copyover_recovered)
 		{
 			copyover_restore_combat();
 			// recalculate avg mob level now that mobs are restored
@@ -2523,7 +2561,11 @@ void game_loop(int port, int sslport)
 #endif
 
 	// use recovered sockets if copyover, otherwise create new ones
-	if (copyover_boot && recovered_mother_desc >= 0)
+	if (transport_world_active() && (!copyover_boot || copyover_recovered))
+	{
+		s = S = WS = -1;
+	}
+	else if (copyover_boot && recovered_mother_desc >= 0)
 	{
 		logit(LOG_STATUS, "Using recovered sockets from copyover");
 		s = recovered_mother_desc;
@@ -2562,6 +2604,7 @@ void game_loop(int port, int sslport)
 	ws_desc = WS;
 	copyover_boot = 0;
 	copyover_clear_boot();
+	transport_world_ready();
 	for (P_desc receipt_desc = descriptor_list; receipt_desc; receipt_desc = receipt_desc->next)
 		if (receipt_desc->character && receipt_desc->connected == CON_PLAYING)
 			locker_identify_replay(receipt_desc->character);
@@ -2631,6 +2674,7 @@ resume_game_loop:
 		kingdom_flush_persistent_state();
 		if (!copyover_save(s, S, WS))
 		{
+			transport_world_abort();
 			persistence_alert(AVATAR, "player_save", "copyover", "none", "none",
 					  "terminal_save_failed", "shutdown_cancelled=1");
 			shutdownflag = 0;
@@ -3434,6 +3478,7 @@ void close_socket(struct descriptor_data *d)
 	int is_morphed = d->character ? IS_MORPH(d->character) : 0;
 	char Gbuf1[MAX_STRING_LENGTH];
 	time_t ct;
+	transport_descriptor_closed(d);
 	if (d && d->player_load_request_id)
 		player_load_pipeline_cancel(d->player_load_request_id);
 	account_recovery_descriptor_closed(d);
@@ -3450,7 +3495,7 @@ void close_socket(struct descriptor_data *d)
 
 	if (d->sslses)
 		ssl_close(d->sslses);
-	if (d->descriptor)
+	if (d->descriptor && !(d->transport_session && transport_world_active()))
 		close(d->descriptor);
 	flush_queues(d);
 	--used_descs;
@@ -3614,7 +3659,7 @@ void close_socket(struct descriptor_data *d)
 			tmp->next = d->next;
 	}
 
-	if (d->descriptor)
+	if (d->descriptor && !(d->transport_session && transport_world_active()))
 		shutdown(d->descriptor, 2);
 
 	if (d->showstr_head)
@@ -3882,7 +3927,8 @@ int new_descriptor(int s, int conn_type)
 							 MAX_QUEUE_LENGTH - 1;
 	// newd->connected = CON_HOST_LOOKUP;
 	newd->wait = 1;
-	resolve_descriptor_hostname_async(strip_ansi(newd->host).c_str(), desc);
+	if (!transport_frontend_active())
+		resolve_descriptor_hostname_async(strip_ansi(newd->host).c_str(), desc);
 	*newd->host2 = '\0';
 	newd->prompt_mode = FALSE;
 	*newd->buf = '\0';
@@ -3928,6 +3974,7 @@ int new_descriptor(int s, int conn_type)
 	}
 
 	descriptor_list = newd;
+	transport_frontend_accepted(newd);
 
 	if (conn_type == 1) // ssl - always use CON_SSLNEGO, let game loop handle greet
 	{
@@ -3945,7 +3992,14 @@ int new_descriptor(int s, int conn_type)
 		 * greeting so responsive clients can answer immediately, but never
 		 * hold the login screen behind an RFC 1091 response. */
 		ttype_negotiate(newd);
-		greet(newd);
+		if (transport_frontend_active())
+		{
+			STATE(newd) = CON_GET_TERM;
+			advertise_mccp(newd);
+			gmcp_negotiate(newd);
+		}
+		else
+			greet(newd);
 	}
 
 	return 0;
@@ -3969,7 +4023,14 @@ static void greet(P_desc newd)
 		return;
 	}
 
+	if (newd->transport_session && transport_world_active() && newd->websocket)
+	{
+		STATE(newd) = CON_GET_ACCT_NAME;
+		return;
+	}
 	select_terminal(newd, "");
+	if (newd->transport_session && transport_world_active())
+		return;
 
 	advertise_mccp(newd);
 	gmcp_negotiate(newd);
@@ -4555,6 +4616,8 @@ static void note_player_input_activity(P_desc t, const char *input)
 
 static void process_line(P_desc t, char *in)
 {
+	if (transport_frontend_input(t, 1, in, strlen(in)))
+		return;
 	char out[MAX_QUEUE_LENGTH * 3]; // max expansion
 	char buffer[MAX_STRING_LENGTH];
 #ifdef SMART_PROMPT
@@ -4614,6 +4677,16 @@ static void process_line(P_desc t, char *in)
 
 		snoop_by_ptr = snoop_by_ptr->next;
 	}
+}
+
+void comm_transport_line(P_desc d, char *line)
+{
+	process_line(d, line);
+}
+
+void comm_transport_greet(P_desc d)
+{
+	greet(d);
 }
 
 /*

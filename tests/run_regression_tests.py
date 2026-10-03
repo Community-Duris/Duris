@@ -26,6 +26,7 @@ HEARTBEAT_SECONDS = 30.0
 TERMINATE_GRACE_SECONDS = 2.0
 RESOURCE_INTENSIVE_TEST_NAMES = frozenset(
     {
+        "test_persistent_transport_journey.py",
         "test_player_quarantine_restore.py",
         "test_account_recovery_journey.py",
         "test_creation_prompt_journey.py",

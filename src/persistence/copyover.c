@@ -13,6 +13,7 @@
 #include "core/utils.h"
 #include "persistence/copyover.h"
 #include "persistence/copyover_codec.h"
+#include "net/transport.h"
 #include "combat/training_dummy.h"
 #include "world/generated_npc_state.h"
 #include "item/item_movement_transaction.h"
@@ -241,6 +242,8 @@ static int write_desc_entry(FILE *fp, P_desc d)
 
 static bool copyover_descriptor_is_eligible(P_desc d)
 {
+	if (transport_world_active())
+		return transport_descriptor_eligible(d);
 	return d != nullptr && d->descriptor > 0 && d->connected == CON_PLAYING &&
 	       d->character != nullptr && !d->websocket && !d->sslses;
 }
@@ -587,8 +590,7 @@ static void count_copyover_items(int *num_descs, int *num_mobs, int *num_objs, i
 	// count valid descriptors (telnet only, playing state)
 	for (d = descriptor_list; d; d = d->next)
 	{
-		if (d->descriptor > 0 && d->connected == CON_PLAYING && d->character &&
-		    !d->websocket && !d->sslses)
+		if (copyover_descriptor_is_eligible(d))
 		{
 			(*num_descs)++;
 		}
@@ -686,7 +688,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	// Only playing plain-Telnet descriptors can survive exec. Leave every
 	// connection on the live process if even one would be dropped.
 	for (d = descriptor_list; d; d = d->next)
-		if (d->descriptor >= 0 &&
+		if (!transport_world_active() && d->descriptor >= 0 &&
 		    (d->connected != CON_PLAYING || !d->character || d->websocket || d->sslses))
 		{
 			logit(LOG_STATUS,
@@ -696,6 +698,13 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 				"\r\n*** Copyover cancelled: a connection cannot survive this handoff; server remains live. ***\r\n");
 			return false;
 		}
+
+	if (!transport_world_quiesce())
+	{
+		notify_copyover_failure(
+			"\r\n*** Copyover cancelled: a connection cannot survive this handoff; server remains live. ***\r\n");
+		return false;
+	}
 
 	logit(LOG_STATUS, "copyover: saving world state...");
 	logit(LOG_STATUS, "copyover: world=%p top_of_world=%d", (void *)world, top_of_world);
@@ -831,6 +840,13 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		return false;
 	}
+	if (transport_world_active() && fchmod(fileno(fp), 0600))
+	{
+		fclose(fp);
+		unlink(copyover_tmp);
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
+	}
 
 	// write header
 	memset(&header, 0, sizeof(header));
@@ -856,8 +872,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	// write descriptors
 	for (d = descriptor_list; d; d = d->next)
 	{
-		if (d->descriptor > 0 && d->connected == CON_PLAYING && d->character &&
-		    !d->websocket && !d->sslses)
+		if (copyover_descriptor_is_eligible(d))
 		{
 			if (!write_desc_entry(fp, d))
 			{
@@ -1023,6 +1038,11 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	{
 		if (d->descriptor < 0 || d->connected != CON_PLAYING || !d->character)
 			continue;
+		if (d->transport_session && transport_world_active())
+		{
+			write_to_descriptor(d, "\r\n*** Copyover in progress... ***\r\n");
+			continue;
+		}
 		if (d->websocket)
 		{
 			notify_ws_copyover(d);
@@ -1055,6 +1075,11 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	if (!persistence_log_drain(3000))
 		fprintf(stderr,
 			"PERSISTENCE: copyover log drain timed out; diagnostic records may be lost.\n");
+	if (!transport_world_commit(COPYOVER_FILE))
+	{
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
+	}
 
 	// exec new binary
 	snprintf(exec_buf, sizeof(exec_buf), "%d", RUNNING_PORT);
@@ -1106,7 +1131,9 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	// try to tell players
 	for (d = descriptor_list; d; d = d->next)
 	{
-		if (d->descriptor > 0)
+		if (d->transport_session && transport_world_active())
+			write_to_descriptor(d, "\r\n*** Copyover FAILED! ***\r\n");
+		else if (d->descriptor > 0)
 		{
 			raw_write_to_fd(d->descriptor, "\r\n*** Copyover FAILED! ***\r\n");
 		}
@@ -1249,6 +1276,13 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		*mother_desc_ssl = -1;
 	if (ws_desc)
 		*ws_desc = -1;
+	if (!transport_world_verify_file(COPYOVER_FILE))
+	{
+		logit(LOG_STATUS,
+		      "copyover_recover: authenticated transport handoff digest rejected");
+		copyover_in_progress = 0;
+		return 0;
+	}
 
 	fp = fopen(COPYOVER_FILE, "rb");
 	if (!fp)
@@ -1288,17 +1322,26 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 			      dead_desc_pool ? (unsigned long)dead_desc_pool->objs_used : 0UL,
 			      dead_desc_pool ? (unsigned long)dead_desc_pool->pages_owned : 0UL,
 			      dead_desc_pool ? dead_desc_pool->size : 0UL);
-			close(desc_entry.fd);
+			if (!transport_world_active())
+				close(desc_entry.fd);
 			goto copyover_recover_fail;
 		}
 		memset(d, 0, sizeof(struct descriptor_data));
 
 		d->descriptor = desc_entry.fd;
 
-		// check if fd is still valid socket
+		if (transport_world_active() &&
+		    !transport_restore_descriptor(d, desc_entry.player_name))
+		{
+			mm_release(dead_desc_pool, d);
+			goto copyover_recover_fail;
+		}
+
+		// Legacy ownership still requires an inherited client socket.
 		int sock_type;
 		socklen_t optlen = sizeof(sock_type);
-		if (getsockopt(d->descriptor, SOL_SOCKET, SO_TYPE, &sock_type, &optlen) < 0)
+		if (!transport_world_active() &&
+		    getsockopt(d->descriptor, SOL_SOCKET, SO_TYPE, &sock_type, &optlen) < 0)
 		{
 			logit(LOG_STATUS,
 			      "copyover: fd=%d is NOT a valid socket for %s host=%s! errno=%d",
@@ -1307,12 +1350,14 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 			mm_release(dead_desc_pool, d);
 			continue;
 		}
-		logit(LOG_STATUS, "copyover: fd=%d is valid socket type=%d", d->descriptor,
-		      sock_type);
-
-		nonblock(d->descriptor);
-		int opt = 1;
-		setsockopt(d->descriptor, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
+		if (!transport_world_active())
+		{
+			logit(LOG_STATUS, "copyover: fd=%d is valid socket type=%d", d->descriptor,
+			      sock_type);
+			nonblock(d->descriptor);
+			int opt = 1;
+			setsockopt(d->descriptor, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
+		}
 
 		strlcpy(d->host, desc_entry.host, sizeof(d->host));
 		strlcpy(d->host2, desc_entry.host2, sizeof(d->host2));
@@ -1325,7 +1370,8 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		d->prompt_mode = FALSE;
 		d->connected = -1; // temp state until player loads
 		used_descs++;
-		check_cp437(d);
+		if (!transport_world_active())
+			check_cp437(d);
 
 		// load character
 		if (desc_entry.player_name[0])
@@ -1334,6 +1380,8 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 			if (ch)
 			{
 				d->character = ch;
+				if (transport_world_active() && !transport_restore_identity(d))
+					goto copyover_recover_fail;
 				ch->desc = d;
 				d->connected = CON_PLAYING;
 				d->next = descriptor_list;
@@ -1375,8 +1423,12 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 						desc_entry.fighting_name,
 						sizeof(ch->specials.copyover_fighting_name));
 
-				raw_write_to_fd(d->descriptor,
-						"\r\n*** Copyover complete! ***\r\n");
+				if (transport_world_active())
+					write_to_descriptor(d,
+							    "\r\n*** Copyover complete! ***\r\n");
+				else
+					raw_write_to_fd(d->descriptor,
+							"\r\n*** Copyover complete! ***\r\n");
 
 				logit(LOG_STATUS, "copyover: restored %s fd=%d room=%d fighting=%d",
 				      desc_entry.player_name, d->descriptor, save_room,
@@ -1386,6 +1438,8 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 			{
 				logit(LOG_STATUS, "copyover: failed to load %s",
 				      desc_entry.player_name);
+				if (transport_world_active())
+					goto copyover_recover_fail;
 				close(desc_entry.fd);
 				mm_release(dead_desc_pool, d);
 				used_descs--;
@@ -1577,6 +1631,14 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		}
 	}
 
+	if (transport_world_active())
+		for (d = descriptor_list; d; d = d->next)
+			if (!transport_restore_gameplay(d))
+			{
+				logit(LOG_STATUS,
+				      "copyover_recover: invalid transport player state");
+				goto copyover_recover_fail;
+			}
 	success = 1;
 
 	copyover_in_progress = 0;
