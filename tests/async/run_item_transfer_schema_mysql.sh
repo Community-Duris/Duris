@@ -73,7 +73,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
     src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
     src/persistence/quest_reward_obligation_repository.c \
     src/persistence/critical_command_journal.c src/persistence/critical_command_coordinator.c \
-    -Wl,--gc-sections -Wl,--wrap=mysql_real_query "${MYSQL_LIBS[@]}" -lcrypto -lz \
+    -Wl,--gc-sections -Wl,--wrap=mysql_real_query,--wrap=mysql_errno "${MYSQL_LIBS[@]}" -lcrypto -lz \
     -o "$TEST_BINARY"
 # The accounted lifecycle fixture retains many bounded item payloads in one
 # test frame. The usual 8 MiB shell stack can overflow before its SQL checks.

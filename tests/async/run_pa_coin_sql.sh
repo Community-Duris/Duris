@@ -86,7 +86,7 @@ done
 read -r -a MYSQL_CFLAGS <<< "$(mysql_config --cflags)"
 read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
 read -r -a CXX_CMD <<< "${CXX:-g++}"
-"${CXX_CMD[@]}" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fdata-sections -Wl,--gc-sections -Isrc \
+"${CXX_CMD[@]}" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,--wrap=mysql_real_query,--wrap=mysql_errno -Isrc \
     "${MYSQL_CFLAGS[@]}" tests/async/pa_coin_sql_harness.cpp \
     src/persistence/critical_command.c src/economy/currency_command.c src/world/epic_command.c \
     src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/item/item_transfer_repository.c src/economy/auction_command.c \
