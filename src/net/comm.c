@@ -1878,8 +1878,19 @@ static void run_output_phase(game_loop_pulse_context &ctx)
 	{
 		next_point = point->next;
 
-		// this code tries to skip players who have too much pending text.
-		// But, we currently boot them anyway...
+		/* Close at a safe loop boundary even when the socket is not writable
+		 * or its transport queue is stalled. Enqueue never frees a descriptor. */
+		if (point->output.overflowed || point->oob_input_overflowed)
+		{
+			logit(LOG_COMM, "Closing descriptor %d: application queue limit",
+			      point->descriptor);
+			if (point->websocket && point->ws_state == WS_STATE_OPEN)
+				websocket_send_close(point, WS_CLOSE_POLICY_VIOLATION,
+						     "Session queue limit");
+			point->write_failed = 1;
+			close_socket(point);
+			continue;
+		}
 		if (!FD_ISSET(point->descriptor, &output_set))
 			continue;
 
@@ -2859,6 +2870,8 @@ int get_from_q(struct txt_q *queue, char *dest)
 	if (!queue->head)
 		queue->tail = NULL;
 
+	queue->bytes -= strlen(tmp->text) + 1;
+	--queue->entries;
 	FREE(tmp->text);
 	FREE(tmp);
 
@@ -2893,6 +2906,8 @@ static int get_filtered_cmd_from_q(struct txt_q *queue, char *dest, bool (*allow
 		if (queue->tail == tmp)
 			queue->tail = prev;
 
+		queue->bytes -= strlen(tmp->text) + 1;
+		--queue->entries;
 		FREE(tmp->text);
 		FREE(tmp);
 
@@ -2929,6 +2944,8 @@ int get_casting_cmd_from_q(P_char ch, struct txt_q *queue, char *dest)
 		if (queue->tail == tmp)
 			queue->tail = prev;
 
+		queue->bytes -= strlen(tmp->text) + 1;
+		--queue->entries;
 		FREE(tmp->text);
 		FREE(tmp);
 
@@ -2962,61 +2979,136 @@ int get_pending_transaction_cmd_from_q(struct txt_q *queue, char *dest, bool ite
 	return get_from_q(queue, dest);
 }
 
-/*
- * flag: 0 - input queue, don't do any extra processing 1 - concat txt
- * onto preceding queue if possible
- * (trivial I know)
- */
-
+/* flag 0 appends a command; nonzero flags may merge application output. */
 void write_to_q(const char *txt, struct txt_q *queue, const int flag)
 {
-	struct txt_block *n_new;
-	unsigned int txtlen, taillen;
+	if (!queue || !txt)
+	{
+		logit(LOG_COMM, "call to write_to_q with bogus arguments");
+		return;
+	}
+	/* Output overflow is terminal; never grow a queue waiting to disconnect. */
+	if (flag && queue->overflowed)
+		return;
 
-	/* hmm, could it be this simple? JAB */
-	if (!queue)
+	const size_t string_limit = flag ? MAX_STRING_LENGTH : MAX_INPUT_LENGTH;
+	const size_t txtlen = strnlen(txt, string_limit);
+	if (txtlen == string_limit)
 	{
-		logit(LOG_COMM, "call to write_to_q with NULL queue");
+		queue->overflowed = true;
 		return;
 	}
-	if (!txt || ((txtlen = strlen(txt)) >= MAX_STRING_LENGTH))
+	const size_t taillen = queue->tail ? strlen(queue->tail->text) : 0;
+	const bool merge = flag && queue->tail && taillen < MAX_INPUT_LENGTH &&
+			   txtlen < MAX_INPUT_LENGTH - taillen;
+	const size_t growth = txtlen + (merge ? 0 : 1);
+	const size_t byte_limit = flag ? SESSION_OUTPUT_MAX_BYTES : SESSION_INPUT_MAX_BYTES;
+	const size_t entry_limit = flag ? SESSION_OUTPUT_MAX_ENTRIES : SESSION_INPUT_MAX_ENTRIES;
+	/* Check before CREATE/RECREATE, including a terminator for new entries.
+	 * Subtraction avoids wrapping even if a counter is already out of range. */
+	if (queue->bytes > byte_limit || growth > byte_limit - queue->bytes ||
+	    queue->entries > entry_limit || (!merge && queue->entries == entry_limit))
 	{
-		logit(LOG_COMM, "call to write_to_q with bogus string");
-		return;
+		queue->overflowed = true;
+		return; /* Reject newest input; all accepted commands retain their order. */
 	}
-	/* Q empty? */
-	if (!queue->head)
+	/* Rearm notices only when input admission resumes after substantial drain. */
+	if (!flag && queue->overflow_reported && queue->bytes <= SESSION_INPUT_MAX_BYTES / 2 &&
+	    queue->entries <= SESSION_INPUT_MAX_ENTRIES / 2)
 	{
+		queue->overflowed = false;
+		queue->overflow_reported = false;
+	}
+	if (merge)
+	{
+		RECREATE(queue->tail->text, char, taillen + txtlen + 1);
+		memcpy(queue->tail->text + taillen, txt, txtlen + 1);
+	}
+	else
+	{
+		struct txt_block *n_new;
 		CREATE(n_new, txt_block, 1, MEM_TAG_TXTBLK);
 		CREATE(n_new->text, char, txtlen + 1, MEM_TAG_BUFFER);
-
-		strcpy(n_new->text, txt);
-
+		memcpy(n_new->text, txt, txtlen + 1);
 		n_new->next = NULL;
-		queue->head = queue->tail = n_new;
-		return;
+		if (queue->tail)
+			queue->tail->next = n_new;
+		else
+			queue->head = n_new;
+		queue->tail = n_new;
+		++queue->entries;
 	}
+	queue->bytes += growth;
+}
 
-	taillen = strlen(queue->tail->text);
-
-	/* something already in Q so try to combine if possible */
-	if (flag && ((txtlen + taillen) < MAX_INPUT_LENGTH))
+/* Browser pastes may contain several commands in one message. Bound each line
+ * before copying it, and use the same admission limits as Telnet typeahead. */
+void queue_websocket_input(P_desc descriptor, const char *text)
+{
+	if (!descriptor || !text)
+		return;
+	do
 	{
-		/* combine this text with preceding text */
-		RECREATE(queue->tail->text, char, (txtlen + taillen + 1));
+		/* Once full, discard the rest of this paste without scanning every line. */
+		if (descriptor->input.bytes >= SESSION_INPUT_MAX_BYTES ||
+		    descriptor->input.entries >= SESSION_INPUT_MAX_ENTRIES)
+		{
+			descriptor->input.overflowed = true;
+			return;
+		}
+		const size_t length = strcspn(text, "\r\n");
+		if (length >= MAX_INPUT_LENGTH)
+			descriptor->input.overflowed = true;
+		else
+		{
+			char line[MAX_INPUT_LENGTH];
+			memcpy(line, text, length);
+			line[length] = '\0';
+			write_to_q(line, &descriptor->input, 0);
+		}
+		text += length;
+		if (!*text)
+			break;
+		if (*text++ == '\r' && *text == '\n')
+			++text;
+	} while (*text);
+}
 
-		strcat(queue->tail->text, txt);
-		return;
+/* OOB requests dispatch directly, without accumulating in the command queue.
+ * Give their work a separate per-pulse budget, including login/service routes. */
+bool admit_session_oob(P_desc descriptor, size_t bytes)
+{
+	if (!descriptor || descriptor->oob_input_overflowed)
+		return false;
+	if (descriptor->oob_input_tick != ne_event_tick)
+	{
+		descriptor->oob_input_tick = ne_event_tick;
+		descriptor->oob_input_bytes = 0;
+		descriptor->oob_input_entries = 0;
 	}
-	/* nope, it needs to be sent, just add a queue entry */
-	CREATE(n_new, txt_block, 1, MEM_TAG_TXTBLK);
-	CREATE(n_new->text, char, txtlen + 1, MEM_TAG_BUFFER);
+	if (descriptor->oob_input_bytes > SESSION_OOB_MAX_BYTES ||
+	    bytes > SESSION_OOB_MAX_BYTES - descriptor->oob_input_bytes ||
+	    descriptor->oob_input_entries >= SESSION_OOB_MAX_ENTRIES)
+	{
+		descriptor->oob_input_overflowed = true;
+		return false;
+	}
+	descriptor->oob_input_bytes += bytes;
+	++descriptor->oob_input_entries;
+	return true;
+}
 
-	strcpy(n_new->text, txt);
-
-	queue->tail->next = n_new;
-	queue->tail = n_new;
-	n_new->next = NULL;
+static void report_input_queue_overflow(P_desc descriptor)
+{
+	struct txt_q *queue = &descriptor->input;
+	if (queue->overflowed && !queue->overflow_reported)
+	{
+		SEND_TO_Q(
+			"Command queue limit reached; excess or overlong commands were discarded. "
+			"Wait for queued commands to finish before sending more.\r\n",
+			descriptor);
+		queue->overflow_reported = true;
+	}
 }
 
 /*
@@ -3062,6 +3154,12 @@ void flush_queues(P_desc d)
 		;
 	while (get_from_q(&d->input, str))
 		;
+	d->output = {};
+	d->input = {};
+	d->oob_input_tick = 0;
+	d->oob_input_bytes = 0;
+	d->oob_input_entries = 0;
+	d->oob_input_overflowed = false;
 }
 
 int wizconnectsite(char *name, char *player, int flag)
@@ -4290,6 +4388,9 @@ void clear_logs(P_char ch)
 
 int process_output(P_desc t)
 {
+	report_input_queue_overflow(t);
+	if (t->output.overflowed)
+		return -1;
 	char buf[MAX_STRING_LENGTH];
 	char buf2[MAX_STRING_LENGTH];
 	snoop_by_data *snoop_by_ptr;
@@ -4347,6 +4448,8 @@ int process_output(P_desc t)
 	bool had_prompt = t->prompt_mode && !defer_prompt;
 	if (had_prompt)
 		make_prompt(t);
+	if (t->output.overflowed)
+		return -1;
 
 	/* Cycle thru output queue */
 	while (get_from_q(&t->output, buf))
@@ -4375,12 +4478,21 @@ int process_output(P_desc t)
 				       TL_BLINK);
 		delete_doubledollar(buf);
 
-		descbuf += buf;
+		/* Rendering can expand color markup. Bound the aggregate before the
+		 * string append allocates, as well as bounding its queued source text. */
+		const size_t rendered_bytes = strlen(buf);
+		if (descbuf.size() > SESSION_OUTPUT_MAX_BYTES ||
+		    rendered_bytes > SESSION_OUTPUT_MAX_BYTES - descbuf.size())
+		{
+			t->output.overflowed = true;
+			return -1;
+		}
+		descbuf.append(buf, rendered_bytes);
 	}
 
 	{
 		int output_result = write_to_descriptor(t, descbuf.c_str());
-		if (output_result < 0 && !(t->websocket && output_result == WS_OUTPUT_QUEUE_FULL))
+		if (output_result < 0)
 			return (-1);
 	}
 
@@ -4581,9 +4693,7 @@ static void process_line(P_desc t, char *in)
 	}
 
 	/* handle '!' to repeat last command */
-	if ((*out != '!') || !*t->last_input || !t->character || t->connected)
-		memcpy(t->last_input, out, k + 1);
-	else
+	if (*out == '!' && *t->last_input && t->character && !t->connected)
 		strcpy(out, t->last_input);
 
 	if (t && t->character && IS_PC(t->character))
@@ -4591,7 +4701,11 @@ static void process_line(P_desc t, char *in)
 		t->character->only.pc->received_data += k;
 		receivedbytes += k;
 	}
+	const size_t previous_entries = t->input.entries;
 	write_to_q(out, &t->input, 0);
+	if (t->input.entries == previous_entries)
+		return;
+	strcpy(t->last_input, out);
 
 	snoop_by_data *snoop_by_ptr = t->snoop.snoop_by_list;
 

@@ -125,6 +125,8 @@ struct txt_q
 {
 	struct txt_block *head;
 	struct txt_block *tail;
+	size_t bytes;
+	size_t entries;
 };
 
 static void logit(int, const char *, ...) {}
@@ -157,6 +159,8 @@ static void push(struct txt_q *queue, const char *text)
 	else
 		queue->head = block;
 	queue->tail = block;
+	queue->bytes += strlen(text) + 1;
+	++queue->entries;
 }
 
 static void drain(struct txt_q *queue)
@@ -169,6 +173,8 @@ static void drain(struct txt_q *queue)
 		queue->head = next;
 	}
 	queue->tail = NULL;
+	queue->bytes = 0;
+	queue->entries = 0;
 }
 
 static void expect_text(const char *got, const char *want, const char *label)
