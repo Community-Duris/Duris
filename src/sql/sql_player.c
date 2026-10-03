@@ -13,6 +13,9 @@
 #include "sql/sql_corpse.h"
 #include "sql/sql_guild.h"
 #include "sql/sql_player_deletion.h"
+#include "sql/zone_story_quest_state_repository.h"
+#include "world/zone_story_quest_production.h"
+#include "world/zone_story_quest_runtime.h"
 #include "persistence/economic_sql_lifecycle_guard.h"
 #include "sql/sql_player.h"
 #include "sql/sql_player_migration.h"
@@ -5585,6 +5588,31 @@ bool sql_delete_account(const char *name)
 		}
 	}
 	mysql_free_result(result);
+
+	{
+		std::vector<uint32_t> pids;
+		try
+		{
+			pids.reserve(identities.size());
+			for (const auto &identity : identities)
+				pids.push_back(static_cast<uint32_t>(identity.first));
+		}
+		catch (const std::bad_alloc &)
+		{
+			goto fail;
+		}
+		if (!pids.empty())
+		{
+			const auto erased = sql_zone_story_quest_state_remove_player_aliases(
+				zone_story_quest_production::
+					ZONE_STORY_QUEST_PRODUCTION_CONTENT_REVISION,
+				zone_story_quest_runtime::current_season_id(), pids,
+				zone_story_quest_production::runtime_catalog());
+			if (erased != sql_zone_story_quest_state_result::ok &&
+			    erased != sql_zone_story_quest_state_result::not_found)
+				goto fail;
+		}
+	}
 
 	{
 		/* Snapshot persistence never writes custody authority. Resolve the exact
