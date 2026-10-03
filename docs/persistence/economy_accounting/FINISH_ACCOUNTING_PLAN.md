@@ -534,3 +534,13 @@ failures on the verified frozen native binary. The original failed broad run is
 preserved. Actual starter-kit and unchanged-budget build/inspector reproduction,
 current-head integrated qualification and all full R1-R8 gates remain open.
 See the October 3 review for exact scope, source and evidence pins.
+
+
+The read-only pending item-action reference query now passes the complete native
+scheduler/runtime sanitizer owner, six assertion-rejected guard/reference/mutation
+negatives and both strict production backend builds. It refuses before a drop
+could trigger resource-changing departure cleanup, but no drop caller uses it
+yet. Plan 1 retains actual preparation/publication/replay work and the separate
+restored-obligation hydration design. A repeat of the frozen failing creation
+scenario passes unchanged waits; intermittent/current-head qualification remains
+open. Exact evidence and scope are in the October 3 review status.

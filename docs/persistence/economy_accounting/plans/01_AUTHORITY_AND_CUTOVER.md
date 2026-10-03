@@ -158,10 +158,12 @@ no existing ordinary-drop gameplay route has been upgraded.
    allow the checkpoint to complete its own capture.
 2. Refuse native handler side effects outside the admitted shape: water, falling,
    no-ground, positive fall chance, airborne and transient cases. Inspect all
-   selected descendants for action source/adapter references through a new
-   read-only runtime predicate; `obj_from_char` cancellation can invoke adapter
-   finish before the physical unlink. No predicate exists yet. Do not consume
-   randomness or call room-placement helpers as a preflight.
+   selected descendants for action source/adapter references through the now
+   qualified read-only `item_actions_object_busy(uid)` predicate. Unknown/off-thread
+   queries refuse. `obj_from_char` removes the carrying-list link before its
+   departure hook can invoke a resource-changing adapter finish. Query before
+   any unlink and again before publication. The drop caller is not wired yet.
+   Do not consume randomness or call room-placement helpers as a preflight.
 3. After exact database ACK, recapture and compare the complete live graph,
    rebuild/freeze the command and bind the original-operation hold before
    coordinator submission. Proven refusal releases it; journal uncertainty
@@ -182,3 +184,15 @@ no existing ordinary-drop gameplay route has been upgraded.
    cleanup, coalescing, uncertain submission, post-COMMIT payload drift, ACK
    failure, reconnect/copyover and two cold boots on both engines. Preserve
    broader writer, activation, flatfile and workload gates.
+
+
+Restored-obligation design review found a separate login boundary: current
+`save_admitted(pid)==false` makes account/nanny loads request degraded recovery.
+A restored ordinary-drop hold must distinguish clean authoritative hydration
+from save/lifecycle admission; reuse of that flag would retain a degraded actor
+and can strand the fence after ACK. Preserve genuine quarantine, target, death
+and degraded gates. This is a proposal, not an implemented bypass. The restored
+room verifier must be explicitly actor independent, and original-operation hold
+release belongs after successful publication ACK in both the normal and
+`ack_pending` branches, before pending-owner erasure. Notifications must not
+hold durable ACK waiting for an absent actor.

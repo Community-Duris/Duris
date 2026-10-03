@@ -837,7 +837,7 @@ flatfile production binary SHA-256
 f0c37cd6d62caef1a5481ba90b28c74592cd5a4206f10f473481fc4ff2414964.
 The separate observer binary supplies exact native readback only under a test
 macro; production does not enable it. The original frozen broad result remains
-831 passed, 11 skipped and 17 failed; a current-head broad run and full R1–R8
+831 passed, 11 skipped and 17 failed; a current-head broad run and full R1â€“R8
 qualification remain required. Release and activation remain blocked.
 
 
@@ -1036,3 +1036,48 @@ Its 600-second supervised server-build and 180-second inspector timeouts also
 need serial reproduction without extending either budget. The frozen broad run
 continues at e58bb3296 and excludes subsequent source fixes; final current-head
 integrated qualification remains open.
+
+
+## Read-only pending item-action custody preflight
+
+Ordinary-drop preparation lacked a read-only way to refuse a selected source or
+adapter-referenced descendant. Its departure hook can run resource-changing
+finish handlers after `obj_from_char` has removed the carrying-list link. The
+new `item_actions_object_busy(uid)` checks all pending source and typed adapter
+references without cancelling, finishing or changing resources. Unknown IDs,
+off-thread calls and incomplete pending metadata refuse before unsafe access.
+No gameplay caller has been wired.
+
+The complete production scheduler/item-action owner passes under ASan/UBSan,
+including its original identities/costs/timing/cleanup tests and three new query
+groups. Source and adapter references, later pending entries, actual completion
+and cancellation, unchanged reservations/resources/events/entry state, and worker
+thread refusal pass. ASan/UBSan and ordering checks are not race-detector proof.
+Six query guard/reference/iteration/mutation negatives are assertion-rejected.
+Both strict production SQL and flatfile builds pass with their original flags.
+The native owner retains its original flags, passes 15 groups and compiles in
+35.713 seconds within the unchanged 600-second qualification budget. Its
+64 actual compile/extract/static dependency pins match the worktree. Specialist
+artifact `tmp/item-actions-busy-qualified-artifact.local.json` has SHA-256
+e4df4d2ea9890c8956720e00d8a55ee88688f17f333a647f588e2852c8701f82.
+
+Primary evidence: `tmp/item-action-reference-qualified-summary.local.json`, SHA-256
+e8adda45fce6b0dca6d142402464f3a39801af964ef8877b3a24e868ef65a6d8;
+529 current LF-normalized owner/source/hook/header inputs and 1,229 strict
+production source/Makefile inputs verified. Native component binary:
+8c594336059ac67633fedde3282afa451923bfa47b927bafbf5e49e5e2adc6e8.
+Production SQL: e60eb3f7e1041207f585ea964002b79e7a52eb531e6ffcc7f8e390e563e6cf2d;
+flatfile: 4cc3d9414a53f9b42ac19f7aa279ea9ea94ced080b7a939073aaf02eee1d6f1f.
+This qualifies the preflight API only; actual producer, physical handler refusal,
+held publication/ACK, restored lifecycle/replay and current-head gameplay remain
+open. Plan 1 records the distinct authoritative-hydration design requirement.
+
+The original invitation-labelled creation failure scenario now passes in
+32.920 seconds against the verified frozen e58bb3296 server with the published
+diagnostic-only fixture overlay and unchanged five-second waits. Reproduction
+log `tmp/creation-starter-kit-qualified-reproduction.local.log` has SHA-256
+cd8a6d1fb1988a09647f6eff8b86f6d2e6787c2ac74ca48d473c92d941eb23d0.
+The first repeat passed the initial kit wait but lacked the native linker wrapper
+for its later helper build; that environmental failure remains preserved.
+One passing repeat does not explain the original intermittent creation/network
+starter-kit timeout or qualify current-head gameplay. Those gates remain open.
