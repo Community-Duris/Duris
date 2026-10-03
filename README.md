@@ -66,6 +66,12 @@ outbox state, migration history, and lifecycle evidence. Redis is optional and l
 to reconstructible caches plus validated world-recovery generations. See the full
 [architecture guide](docs/reference/ARCHITECTURE.md) and [database guide](docs/reference/DATABASE.md).
 
+An opt-in `--persistent-transport` mode keeps client sockets and their TLS,
+Telnet/MCCP and WebSocket/compression state in a persistent parent while the
+single world process is replaced through authenticated durable copyover. See
+[Persistent transport](docs/network/PERSISTENT_TRANSPORT.md) for eligibility,
+launching, protocol bounds and recovery procedures.
+
 ## Quick start
 
 The maintained setup path is Debian/Ubuntu, matching the CI workflow and the
