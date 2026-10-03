@@ -1408,7 +1408,9 @@
       "covers": [
         "run_runtime_compatibility_mysql.sh"
       ],
-      "required_markers": []
+      "required_markers": [
+        "legacy server-reboot and kingdom-realm convergence, runtime full-schema, season fence, and history/table/engine/collation/index/column drift rejection ("
+      ]
     },
     {
       "id": "legacy_archive_columns_mysql",
