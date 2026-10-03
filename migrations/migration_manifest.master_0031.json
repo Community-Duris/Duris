@@ -798,6 +798,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "70cd9746ca79b3a788ec5bfa4f9f2a47e12dc88e3dd68ac8875386147ccc71b5",
       "verify_checksum": "48c1756b63378ad76e285d7734b3d359e6eed70a956992002435dfd2138ccae7"
+    },
+    {
+      "id": "0063_telemetry_battle_source",
+      "sequence": 63,
+      "description": "Retain exact battle source with the generation cursor and immutable identity reservation",
+      "apply": "immutable/0063_telemetry_battle_source.sql",
+      "verify": "immutable/0063_telemetry_battle_source.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "9fe2d8f82612d5ba3c65d9c23a96af6db7afd37eaaf29f5c30b23749d37bed60",
+      "verify_checksum": "e9c80c1363ec397bf684de2bae59b0a9d3da1faae1d34410df1f6c0d66310625"
     }
   ]
 }

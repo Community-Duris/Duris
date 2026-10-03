@@ -215,7 +215,8 @@ def _add_connection_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def _add_target_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--definition-version", type=int, required=True)
+    parser.add_argument("--definition-version", type=int, required=True,
+        help="1/2/3 are published report definitions; 5 prepares private battle source only")
     parser.add_argument("--generation", type=int, required=True)
     parser.add_argument("--environment-id", type=int, required=True)
     parser.add_argument("--season-id", type=int, required=True)

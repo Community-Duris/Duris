@@ -14,12 +14,13 @@ import math
 from typing import Any, Callable, Mapping, MutableMapping, Protocol, Sequence, cast
 
 try:
-    from . import observation_semantics as observations, identity_publication as identity_publication, battle_contract as battles, battle_contribution_contract as contributions
+    from . import observation_semantics as observations, identity_publication as identity_publication, battle_contract as battles, battle_contribution_contract as contributions, battle_source
 except ImportError:
     import observation_semantics as observations
     import identity_publication
     import battle_contract as battles
     import battle_contribution_contract as contributions
+    import battle_source
 
 try:  # Running as a package.
     from .rollup_definitions import (
@@ -319,6 +320,7 @@ class PageContribution:
     members: dict[tuple[Any, ...], MemberDelta] = field(default_factory=dict)
     observations: observations.ObservationPage = field(default_factory=observations.ObservationPage)
     identity_inputs: list[Mapping[str, Any]] = field(default_factory=list)
+    battle_inputs: list[Mapping[str, Any]] = field(default_factory=list)
     state_quality_flags: int = 0
     coverage_start_utc_usec: int | None = None
     coverage_end_utc_usec: int | None = None
@@ -912,7 +914,7 @@ def build_page_contributions(
         start_cursor=start_cursor,
         page_last_ingest_id=start_cursor,
         fetched_rows=len(rows),
-        estimated_bytes=0,
+        estimated_bytes=battle_source.HEADER_BYTE_BOUND if target.definition_version == battle_source.DEFINITION_VERSION else 0,
     )
     previous_ingest: int | None = None
     coverage_end_seen: int | None = prior_coverage_end_utc_usec
@@ -924,6 +926,38 @@ def build_page_contributions(
             contribution.estimated_bytes += identity_publication.INPUT_ROW_BYTE_BOUND
             if max_page_bytes is not None and contribution.estimated_bytes > max_page_bytes:
                 raise BoundsExceeded("retained identity input exceeds page byte budget")
+
+    def retain_battle_input(row):
+        nonlocal coverage_end_seen
+        if target.definition_version != battle_source.DEFINITION_VERSION:
+            return
+        kind = row["record_kind"]
+        if tuple(row[name] for name in battle_source.SOURCE_SCOPE[kind]) != target.scope_tuple[2:]:
+            return
+        prefix = {9: "", 10: "battle_", 11: "bc_"}[kind]
+        quality = _normalize_raw_quality(row[prefix + "quality_flags"])
+        occurrence = row["occurrence_utc_usec"]
+        if occurrence == UTC_UNKNOWN:
+            quality |= ROLLUP_QUALITY_UTC_UNKNOWN
+        else:
+            if coverage_end_seen is not None and occurrence < coverage_end_seen:
+                quality |= ROLLUP_QUALITY_LATE_INPUT
+            starts = [value for value in (contribution.coverage_start_utc_usec, occurrence) if value is not None]
+            ends = [value for value in (contribution.coverage_end_utc_usec, occurrence) if value is not None]
+            contribution.coverage_start_utc_usec = min(starts)
+            contribution.coverage_end_utc_usec = max(ends)
+            coverage_end_seen = occurrence if coverage_end_seen is None else max(coverage_end_seen, occurrence)
+        contribution.state_quality_flags |= quality
+        try:
+            retained = battle_source.retain_input(row, target.scope_tuple, quality)
+        except battle_source.SourceError as error:
+            raise SemanticError(str(error)) from error
+        # Reserve both retained values and source verification before the SQL
+        # transaction decodes this page; buffering raw rows is counted separately.
+        contribution.estimated_bytes += battle_source.PUBLICATION_INPUT_BYTE_BOUND
+        if max_page_bytes is not None and contribution.estimated_bytes > max_page_bytes:
+            raise BoundsExceeded("retained battle input exceeds page byte budget")
+        contribution.battle_inputs.append(retained)
 
     for row in rows:
         ingest_id = _validate_common_row(row, previous_ingest)
@@ -948,6 +982,7 @@ def build_page_contributions(
                 contributions.validate_raw_segment(row)
             except contributions.ContributionContractError as error:
                 raise SemanticError(str(error)) from error
+            retain_battle_input(row)
             # Existing definitions preserve their earlier amounts; a battle
             # study must join complete association evidence independently.
             continue
@@ -956,6 +991,7 @@ def build_page_contributions(
                 battles.validate_raw_fact(row)
             except battles.BattleContractError as error:
                 raise SemanticError(str(error)) from error
+            retain_battle_input(row)
             # Definitions 1/2/3 retain their earlier amounts. Shared battles
             # require complete packets and independent versioned publication.
             continue
@@ -965,6 +1001,7 @@ def build_page_contributions(
                 # Ownership is retained for the identity generation. It adds
                 # no duration or new metrics to the existing v1/v2 definitions.
                 if kind == 9:
+                    retain_battle_input(row)
                     if target.definition_version == identity_publication.DEFINITION_VERSION and (
                         observation["environment_id"], observation["season_id"]) == (target.environment_id, target.season_id):
                         _day, quality, _occurrence = observations.point_day(observation)
@@ -974,6 +1011,8 @@ def build_page_contributions(
                 # Version 1 keeps its playtime meaning while advancing over
                 # every valid family in the immutable mixed-kind input stream.
                 if target.definition_version == 1:
+                    continue
+                if target.definition_version == battle_source.DEFINITION_VERSION:
                     continue
                 if (observation["environment_id"], observation["season_id"]) != (target.environment_id, target.season_id):
                     continue
@@ -1026,6 +1065,12 @@ def build_page_contributions(
             continue
 
         contribution.state_quality_flags |= raw_quality
+        if target.definition_version == battle_source.DEFINITION_VERSION:
+            # Legacy families are outside this selected source window. Generic
+            # capture gaps still qualify its cursor, but produce no playtime rows.
+            if kind == GAP_KIND:
+                contribution.state_quality_flags |= ROLLUP_QUALITY_PROCESS_GAP
+            continue
         session_key = _session_key(row)
         if kind == GAP_KIND:
             if session_key is not None:
@@ -1169,6 +1214,7 @@ def build_page_contributions(
         + len(contribution.members)
         + contribution.observations.output_fanout
         + len(contribution.identity_inputs)
+        + len(contribution.battle_inputs)
     )
     if max_output_fanout is not None and contribution.output_fanout > max_output_fanout:
         raise BoundsExceeded(

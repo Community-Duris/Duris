@@ -23,7 +23,8 @@ work. A future production deployment is a separate operational decision.
 | Atomic identity effort and observed XP portfolio publication | Implemented and locally qualified | Migration 0060 adds exact bounded source retention tied to the cursor, a conserved publication header and two reports. Definition 3 consumes the reserved dated review and incident schema 2 in the same publication transaction. Both 60-step chains qualified the actual CLI, corrections, old generations, explicit unknown identity, source/publication rollback, real committed writes with lost acknowledgements, private roles, budget refusal, guarded reruns and exact fresh/restored fingerprints. Definitions 1/2 retain their earlier amounts. See [IDENTITY_PUBLICATION.md](IDENTITY_PUBLICATION.md). |
 | Durable shared-battle facts and loss review | Implemented and locally qualified | Migration 0061 maps all 70 canonical kind-10 fields with independent logical/transport replay, immutable configuration qualification and NULL family separation. Both 61-step chains qualified actual native packets, lost acknowledgements, header/scope/constraint refusals, exact quarantine evidence, guarded reruns, drift/restoration, private v3 review CLI and unchanged definitions 1/2/3. Outage v2 retains readable original v1 histories. Live capture and atomic battle publication remain separate requirements. See [BATTLES.md](BATTLES.md). |
 | Bounded shared-battle history and contribution linkage | Implemented and locally qualified | The pure reducer checks complete revision/fact history, actual cross-component alias bridges, conservative rosters/graphs, cumulative effort, exact effective contribution context and lifecycle cuts. Twenty regressions cover 6,468 pure source facts/23 journeys and native missing/conflicting/context/lifecycle/incident/budget cases. Native normal/ASan/UBSan and both actual SQL readbacks qualify 123 facts/38 packets/28 verified contribution links, five canonical battles and conserved 112/112 damage. It supplies the next atomic publisher and enables no report definition. See [BATTLES.md](BATTLES.md#bounded-history-qualification-for-publication). |
-| Historical battle exposure and retained-input/checkpoint contracts | Implemented and locally qualified | Thirty-nine regressions preserve the original history proof and add exact historical actor/scope/roster intervals, all eight native effort partitions, composition-aware coalescing, alias/inactivity/loss cuts and source count/digest/cursor/receipt/type/budget negatives. Normal, fresh ASan/UBSan and both private-writer SQL readbacks qualify the same source/exposure contracts and 28 contribution links. Actual SQL ingestion IDs/arrival labels survive source restoration; export-only arrival remains unknown. The 151-input source stage reserves 4,952,064 bytes internally. No persisted source checkpoint, atomic battle store or new catalog definition is enabled. See [BATTLES.md](BATTLES.md#historical-exposure-and-retained-source-checkpoint). |
+| Historical battle exposure and retained-input/checkpoint contracts | Implemented and locally qualified | Thirty-nine regressions preserve the original history proof and add exact historical actor/scope/roster intervals, all eight native effort partitions, composition-aware coalescing, alias/inactivity/loss cuts and source count/digest/cursor/receipt/type/budget negatives. Normal, fresh ASan/UBSan and both private-writer SQL readbacks qualify the same source/exposure contracts and 28 contribution links. Actual SQL ingestion IDs/arrival labels survive source restoration; export-only arrival remains unknown. The original 151-input value-contract stage reserves 4,952,064 bytes internally; persisted source is qualified in the following row. Atomic battle publication and report activation remain required. See [BATTLES.md](BATTLES.md#historical-exposure-and-retained-source-checkpoint). |
+| Persisted battle source and cursor checkpoint | Implemented and locally qualified | Migration 0063 requires state and immutable identity reservation, retains exact kind-9/10/11 inputs/counts/digest plus the original ingestion boundary, and commits the header with the existing page cursor transaction. Forty-five focused regressions and both full-63-step native-writer SQL journeys qualify selected values, rollback/lost acknowledgements, receipt/constraint guards, original arrival clocks, cursor/origin conflicts, explicit empty building windows, raw retention, bounded consistent reads, CLI preparation, private roles, guarded reruns and drift/restoration. The native selected window contains 153 inputs, including two ownership observations; matching/foreign synthetic ownership cases preserve scope and expand selected evidence once. Definition 5 prepares private source only: publication refuses and the report catalog stays 1/2/3. See [BATTLES.md](BATTLES.md#persisted-battle-source-preparation). |
 | Character/account/confirmed controller association | In progress | Dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation, authenticated source capture, identity wire handoff, reviewed SQL registration and immutable generation reservations are qualified. Atomic identity effort/report publication now consumes the reserved review and qualified ownership incident snapshot. Real personal source journeys and linkage coverage in the complete balance suites remain required. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
 | Shared battles and changing rosters | In progress | Native callbacks capture shared hostile, effective-support and proven formal-presence graphs through kind 10, and disjoint damage/healing/casting/opponent-link contributions through kind 11. Shared clocks, context/owner/group/mode/configuration cuts, immutable aliases, distinct NPC lifetimes, retained pet teardown, exact session exit and observed-prefix inactivity preserve measured amounts. Control remains unavailable in native contribution mask 27. Compact build/power/arena context, actual control/prevention/faction exposure, full published association/alias/loss coverage, typed outcomes, atomic balance publication and personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
@@ -1095,3 +1096,61 @@ the schema-4 contract seam but remains disabled in the catalog. All seven final
 requirements retain their unfinished native, identity, zone, progression, suite,
 #487 and actual personal-local gameplay/persistence/performance portions under
 #258. Technical acceptance continues to require no production or staging access.
+
+## Qualified persisted battle source preparation
+
+Migration 0063 now retains the actual selected kind-9/10/11 window in private
+tables. Its scoped unique producer receipt, exact canonical payload digest,
+selected family counts and rolling digest qualify the original source window
+against the locked generation cursor and immutable rebuild boundary. The version-2
+digest seed binds the original boundary as well as the four-part scope; changing
+the origin cannot relabel existing retained evidence as another verified window.
+Restrictive foreign keys require both
+state and immutable identity reservation. Explicit unknown identity is preserved
+as preparation and assigns no account/controller effort.
+
+Source inserts, count/digest/header updates and cursor advancement share the
+existing bounded page transaction, advisory lock and fixed keyset/retry/deadline
+path. Faults after source writes but before cursor update roll everything back.
+Lost acknowledgements before and after commit reconcile without duplicate
+receipts. Retained source survives raw retention. Consistent private reads
+reserve encoded buffering, decoded values and a sentinel before selecting rows,
+validate the exact state origin/cursor and whole source window, cap payload
+selection
+at one byte beyond its declared maximum, and release the transaction on every
+outcome. General report/game-writer roles cannot read either source table; the
+rollup role cannot update or delete retained inputs.
+
+Forty-five focused history/exposure/source tests passed. Both full-63-step
+MySQL 8.0.46 and MariaDB 10.11.14 native runtime/private-writer journeys passed
+the same persistence checks: the actual selected window contains two ownership
+observations, 123 association facts and 28 contribution segments (**153 inputs**).
+Every original field and arrival label restores exactly and reproduces every
+battle/history/actor/contribution/exposure value, with all 28 links verified and
+all eight effort measures conserved. An additional matching synthetic ownership
+observation is retained once (**154 inputs**); the foreign-scope observation
+advances only the global cursor. These storage fixtures establish no actual
+personal-server login or historical controller association.
+
+Both engines qualified missing reservation, cursor rollback, exact retry,
+lost acknowledgements, missing/changed payload and cursor/origin conflicts,
+an explicit empty building window with a nonzero original boundary, receipt/
+count/kind/foreign-key constraints, bounded reads, raw retention, maintained CLI
+preparation/publication refusal, private-role denials, guarded migration reruns,
+weakened payload/kind schema drift, read-transaction release and exact restored
+metadata. Engine-measured fingerprints are sealed for 252 protected tables and
+head 63 in all three migration histories and the compiled boot contract. Earlier
+sealed migration bytes/entries retain their original meanings. MySQL used the
+owned, auto-removed native-AIO workaround documented above; this remains SQL
+correctness proof, not a measured default-engine or game-server performance gate.
+
+Definition 5 accepts source preparation through the maintained `run` command.
+The report catalog remains 1/2/3 and definition-5 publication explicitly refuses
+until its battle projection exists. The next integration consumes the reserved
+dated identity review and independent schema-4 incident snapshot, publishes dated
+exposure/contribution/coverage stores atomically and qualifies immutable report
+generations, rollback/lost acknowledgements and restricted public reads. All
+seven completion requirements retain their unfinished native, identity, zone,
+progression, suite, #487 and actual personal-local gameplay/persistence/performance
+portions under #258. No production or staging access is needed for technical
+acceptance.

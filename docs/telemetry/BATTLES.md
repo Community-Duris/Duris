@@ -9,7 +9,8 @@ contract and canonical kind-11 writer are qualified separately below. A bounded
 history reducer also verifies retained lineage, effective contribution context,
 measured lifecycle boundaries and historical exposure intervals. A canonical
 source contract binds selected kind-9/10/11 values to a cursor checkpoint and
-rolling digest. Expanded context/control/prevention/faction
+rolling digest. Migration 0063 persists these private inputs with the existing
+generation cursor transaction and required identity reservation. Expanded context/control/prevention/faction
 sources, dated identity linkage and atomic balance projections remain under
 implementation.
 [Implementation status](IMPLEMENTATION_STATUS.md) retains the full accepted scope
@@ -705,10 +706,12 @@ it does not borrow occurrence UTC. Typed projection quality remains separate
 from the original fields. Decoder/type/exact-column/canonical-JSON checks refuse
 conflicting envelopes, duplicate JSON keys, unexpected fields and changed values.
 
-The generation seed uses `duris-battle-source-v1:` and its exact four-part scope.
+The generation seed uses `duris-battle-source-v2:`, its exact four-part scope and
+the original ingestion boundary encoded as an unsigned eight-byte value.
 Every selected ingestion ID and payload digest advances the rolling source
 digest. Family counts conserve the selected total, and verification requires the
-exact expected scope/watermark from the locked generation state. Cursor advancement
+exact expected scope, original boundary and watermark from the locked generation
+state. Every retained input must follow that original boundary. Cursor advancement
 over unselected families adds no fact. Missing/reordered/repeated receipts,
 changed payloads/counts/digests, scope/checkpoint mismatches and quality regression
 refuse the whole source value result. A published checkpoint cannot advance.
@@ -741,3 +744,86 @@ prevented the default fixture from starting. MariaDB 10.11.14 used its normal
 disposable setup. Both full 62-step chains and actual private-writer readbacks
 passed without changing sealed metadata. This fixture setting qualifies SQL
 correctness and supplies no default-engine or real-server performance proof.
+
+## Persisted battle source preparation
+
+Migration `0063_telemetry_battle_source` adds private `telemetry_battle_source`
+and `telemetry_battle_input` tables. The header retains the selected count,
+independent ownership/association/contribution counts, scoped rolling digest,
+original ingestion boundary, cursor and quality. The original boundary is also
+part of the digest seed and must match the state's immutable rebuild boundary.
+Inputs preserve the exact canonical kind-9/10/11 payload,
+original ingestion identity, producer receipt and separate occurrence/arrival
+labels. The input key and scoped unique producer receipt prevent a repeated
+source from becoming another retained fact. Neither table depends on a surviving
+raw fact: retained evidence remains available after raw retention.
+
+The header requires both the rollup state and immutable generation identity
+reservation through restrictive foreign keys. An explicit unknown identity
+reservation is valid preparation; it attributes no account/controller effort.
+The actual page transaction inserts selected source, updates counts/digest/header
+and advances the state cursor together. Failure after source writes but before
+cursor update rolls everything back. The existing advisory lock, fixed keyset
+bound, deadline and lost-acknowledgement reconciliation remain the execution
+path. Different generations keep independent source keys and scoped digests.
+
+Definition **5 is currently source preparation**. `RollupTarget` and the existing
+`run` command accept it; report definitions and the catalog remain **1/2/3**.
+Selected kind-9/10/11 facts receive their existing strict family validation and
+exact source encoding. Other valid families advance the global cursor without
+adding battle source or duplicate playtime/progression rows. Generic capture gaps
+retain uncertainty. Source preparation tracks selected occurrence bounds and
+late/unknown clock flags independently of SQL arrival and original source values.
+`publish` explicitly refuses definition 5 until its battle projection exists.
+A building source window is not a published balance report or healthy empty
+population proof.
+
+`read_battle_source` is a restricted rollup/publication API. It reads state,
+header and retained values in one consistent read-only snapshot and releases
+the transaction on success or failure. The expected original boundary and cursor,
+canonical fields,
+payload SHA-256, rolling digest and counts qualify the whole window. It reserves
+the encoded buffering fetch **and** decoded verification, including a sentinel,
+before selecting rows. Payload selection is capped at 8,193 bytes so an oversized
+value is refused rather than silently truncated into a valid payload. The 32 MiB
+default is a reservation, not a heap measurement. General report and game-writer
+roles receive no access to either private source table; the rollup principal has
+SELECT/INSERT on inputs and SELECT/INSERT/UPDATE on the building header.
+
+Forty-five focused history/exposure/source tests passed. A changed original
+boundary refuses source verification, including when a caller changes its
+expectation to match the changed header. The actual native writer
+fixture prepares **153 selected inputs**: two ownership observations, 123
+association facts and 28 contribution segments. All original source fields and
+arrival labels restore exactly, and the selected battle facts reproduce every
+history, actor, contribution and exposure value. An additional synthetic ownership
+observation expands the matching scope to 154 inputs; a foreign-scope observation
+advances the cursor without adding a fact. This fixture validates ownership source
+storage, not a running personal-server authentication journey.
+
+The disposable MySQL 8.0.46 and MariaDB 10.11.14 journeys cover the complete
+63-step chain, missing identity reservation, page retry, cursor rollback,
+acknowledgement loss before/after commit, missing/changed source and cursor/origin
+conflicts, an explicit empty building window with a nonzero original boundary,
+input/receipt/foreign-key constraints, bounded reads, raw retention,
+maintained CLI preparation/publication refusal, private roles, guarded schema
+reruns, weakened payload/kind drift, read-lock release and exact restored metadata.
+The MySQL fixture uses the owned native-AIO workaround documented above. No
+default-engine or actual game-server performance budget is established here.
+
+```sh
+python3 tests/async/test_telemetry_battle_history.py
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh --battle-runtime
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --battle-runtime
+```
+
+After applying migrations only to an explicit disposable local setup and
+preparing its restricted rollup role and identity reservation, the maintained
+`scripts/telemetry/rollup.py run --definition-version 5 --generation ...
+--environment-id ... --season-id ... --through-ingest-id ...` command prepares
+this source window. Existing explicit connection and invocation bounds apply.
+The next transaction must consume the reserved dated identity review and
+independent schema-4 incident snapshot, publish dated exposure/contribution/
+coverage stores atomically, and qualify immutable report generations, rollback,
+lost acknowledgements and restricted report reads. Remaining native evidence and
+all seven accepted completion requirements remain open under #258.

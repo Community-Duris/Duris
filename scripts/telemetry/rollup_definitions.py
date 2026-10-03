@@ -13,6 +13,9 @@ from typing import Any, Mapping
 
 DEFINITION_VERSION = 1
 SUPPORTED_DEFINITION_VERSIONS = frozenset({DEFINITION_VERSION, 2, 3})
+# Battle source preparation can build a cursor without offering a report or
+# publishing a generation. The catalog stays sealed until that projection exists.
+PREPARATION_DEFINITION_VERSION = 5
 
 PUBLICATION_BUILDING = 0
 PUBLICATION_PUBLISHED = 1
@@ -369,10 +372,11 @@ def validate_target(target: RollupTarget) -> None:
         target.definition_version, bool
     ):
         raise ValueError("definition_version must be an integer")
-    if target.definition_version not in SUPPORTED_DEFINITION_VERSIONS:
+    build_versions = SUPPORTED_DEFINITION_VERSIONS | {PREPARATION_DEFINITION_VERSION}
+    if target.definition_version not in build_versions:
         raise ValueError(
             f"unsupported rollup definition version {target.definition_version}; "
-            f"supported={sorted(SUPPORTED_DEFINITION_VERSIONS)}"
+            f"buildable={sorted(build_versions)}"
         )
     for name in ("generation", "environment_id", "season_id"):
         value = getattr(target, name)

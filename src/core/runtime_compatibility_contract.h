@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 250;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 252;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons',"
 	"'account_bound_rewards','account_characters','account_erasure_evidence',"
@@ -68,8 +68,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'ships','shop_trophy','shopkeeper_affects','shopkeeper_item_affects',"
 	"'shopkeeper_item_extra_descr','shopkeeper_items','shopkeepers','siege_item_affects',"
 	"'siege_item_extra_descr','siege_items','statistics','telemetry_account_lifetime',"
-	"'telemetry_account_token','telemetry_cohort_day','telemetry_cohort_member',"
-	"'telemetry_config','telemetry_generation_identity','telemetry_identity_association',"
+	"'telemetry_account_token','telemetry_battle_input','telemetry_battle_source',"
+	"'telemetry_cohort_day','telemetry_cohort_member','telemetry_config',"
+	"'telemetry_generation_identity','telemetry_identity_association',"
 	"'telemetry_identity_input','telemetry_identity_registry','telemetry_identity_reviewer',"
 	"'telemetry_incident','telemetry_incident_registry','telemetry_incident_registry_v2',"
 	"'telemetry_incident_registry_v3','telemetry_incident_registry_v4',"
@@ -85,9 +86,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'towns','world_quest_accomplished','zone_story_quest_state','zone_touch_outcome',"
 	"'zone_touch_outcome_participant','zone_touches','zone_trophy','zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"3a979c1d7b66f57e820db1087ade7f84bdbf2dc6b4ac988280aa3360eda8ed68";
+	"e6e649bdadbb7e4e7808ceff4159301331a9c8e12f100a09396375e1cc0f87d8";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"90a2741fc2425a0d2e06809fdbaa3ebd8f098325d4e6805b82b2cb14b6fdc520";
+	"895b47cfca7b0a3060a38f0363776065ded8a4b5a575cc35f60d1ef0f66173b2";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced by
@@ -115,34 +116,33 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * a durable quest XP receipt mask and migration 0048 adds per-recipient XP
  * entitlements. Migration 0049 adds player spell-effect receipts, 0051 adds
  * player item runtime state, and 0052 indexes quest item witness reads. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0062_telemetry_battle_contributions";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 62;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0063_telemetry_battle_source";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 63;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"70cd9746ca79b3a788ec5bfa4f9f2a47e12dc88e3dd68ac8875386147ccc71b5";
+	"9fe2d8f82612d5ba3c65d9c23a96af6db7afd37eaaf29f5c30b23749d37bed60";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"48c1756b63378ad76e285d7734b3d359e6eed70a956992002435dfd2138ccae7";
+	"e9c80c1363ec397bf684de2bae59b0a9d3da1faae1d34410df1f6c0d66310625";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"6dbc102fb8b9eb5265f6fc7bcc4829c7952cba04b0d4f3d5a2db8020689f92c3";
-constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID =
-	"0062_telemetry_battle_contributions";
-constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 62;
+	"adbba5e539aeba89734fea4e1d3031c3ebab8b985c043b1fa5dfde47a0795624";
+constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID = "0063_telemetry_battle_source";
+constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 63;
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_APPLY_CHECKSUM =
-	"70cd9746ca79b3a788ec5bfa4f9f2a47e12dc88e3dd68ac8875386147ccc71b5";
+	"9fe2d8f82612d5ba3c65d9c23a96af6db7afd37eaaf29f5c30b23749d37bed60";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM =
-	"48c1756b63378ad76e285d7734b3d359e6eed70a956992002435dfd2138ccae7";
+	"e9c80c1363ec397bf684de2bae59b0a9d3da1faae1d34410df1f6c0d66310625";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM =
-	"5ef5946158e710d1ba252eaca5fa34a09599da871d7b615e3e53f15bd9411992";
+	"38ddfc081573842d1449cd30fc6e128b4a4c3e6c007136161a9a725751ec8081";
 /* Master recorded runtime state at 0031; its accounting upgrade retains that prefix. */
-constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID = "0062_telemetry_battle_contributions";
-constexpr unsigned RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 62;
+constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID = "0063_telemetry_battle_source";
+constexpr unsigned RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 63;
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_APPLY_CHECKSUM =
-	"70cd9746ca79b3a788ec5bfa4f9f2a47e12dc88e3dd68ac8875386147ccc71b5";
+	"9fe2d8f82612d5ba3c65d9c23a96af6db7afd37eaaf29f5c30b23749d37bed60";
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_VERIFY_CHECKSUM =
-	"48c1756b63378ad76e285d7734b3d359e6eed70a956992002435dfd2138ccae7";
+	"e9c80c1363ec397bf684de2bae59b0a9d3da1faae1d34410df1f6c0d66310625";
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HISTORY_CHECKSUM =
-	"a6f8dcf1e1aa15b89b9213cf73f7055556c56c7968e3afb4564ec5e3eefb4823";
+	"b16404863026dbd68f94f904ae8c2d13b5dd5231eb6a30e0fe1a33f600d6589b";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_SQL =
-	"SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING utf8mb4))),16,'0')),CONVERT(migration_id USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(description USING utf8mb4))),16,'0')),CONVERT(description USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(compatibility USING utf8mb4))),16,'0')),CONVERT(compatibility USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history ORDER BY sequence_number LIMIT 63";
+	"SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING utf8mb4))),16,'0')),CONVERT(migration_id USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(description USING utf8mb4))),16,'0')),CONVERT(description USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(compatibility USING utf8mb4))),16,'0')),CONVERT(compatibility USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history ORDER BY sequence_number LIMIT 64";
 constexpr const char *RUNTIME_EXTRA_DESCRIPTION_GENERATION_SQL =
 	"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN "
 	"('player_item_extra_descr','player_pet_item_extra_descr') AND column_name='description_sha256' AND "

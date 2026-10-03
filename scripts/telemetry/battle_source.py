@@ -16,7 +16,7 @@ try:
     from . import battle_contract as battle, battle_contribution_contract as contribution
     from . import identity_history as identity, identity_publication, observation_semantics as observations, incident
     from .battle_history import HEADER
-    from .rollup_definitions import ROLLUP_QUALITY_MASK
+    from .rollup_definitions import PREPARATION_DEFINITION_VERSION, ROLLUP_QUALITY_MASK
 except ImportError:
     import battle_contract as battle
     import battle_contribution_contract as contribution
@@ -25,9 +25,9 @@ except ImportError:
     import observation_semantics as observations
     import incident
     from battle_history import HEADER
-    from rollup_definitions import ROLLUP_QUALITY_MASK
+    from rollup_definitions import PREPARATION_DEFINITION_VERSION, ROLLUP_QUALITY_MASK
 
-DEFINITION_VERSION = 5  # Independent incident schema 4; catalog activation is separate.
+DEFINITION_VERSION = PREPARATION_DEFINITION_VERSION  # Independent incident schema 4.
 SCOPE = observations.SCOPE
 REPLAY = identity_publication.REPLAY
 MAX_INPUTS = 16_384
@@ -37,7 +37,7 @@ PUBLICATION_INPUT_BYTE_BOUND = 32_768
 HEADER_BYTE_BOUND = 4_096
 DEFAULT_BYTE_LIMIT = 32 * 1024 * 1024
 INPUT_COLUMNS = (*SCOPE, "ingest_id", *REPLAY, "record_kind", "payload", "payload_digest")
-HEADER_COLUMNS = (*SCOPE, "input_watermark", "source_fact_count", "source_digest",
+HEADER_COLUMNS = (*SCOPE, "input_origin", "input_watermark", "source_fact_count", "source_digest",
     "ownership_count", "association_count", "contribution_count", "quality_flags", "publication_complete")
 SOURCE_COLUMNS = {
     9: (*identity_publication.SOURCE_COLUMNS[9], "ingested_utc_usec"),
@@ -87,8 +87,8 @@ def _canonical(value: Any) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
 
 
-def seed_digest(scope: tuple[int, int, int, int]) -> bytes:
-    return hashlib.sha256(b"duris-battle-source-v1:" + _canonical(_scope(scope))).digest()
+def seed_digest(scope: tuple[int, int, int, int], origin: int = 0) -> bytes:
+    return hashlib.sha256(b"duris-battle-source-v2:" + _canonical(_scope(scope)) + _integer(origin).to_bytes(8, "big")).digest()
 
 
 def advance_digest(digest: bytes, row: Mapping[str, Any]) -> bytes:
@@ -164,13 +164,14 @@ def decode_input(row: Mapping[str, Any], scope: tuple[int, int, int, int]) -> De
 def initial_header(scope: tuple[int, int, int, int], watermark: int = 0) -> dict[str, Any]:
     result = dict(zip(SCOPE, _scope(scope), strict=True))
     result.update({name: 0 for name in HEADER_COLUMNS[4:]})
-    result.update(input_watermark=_integer(watermark), source_digest=seed_digest(scope))
+    result.update(input_origin=_integer(watermark), input_watermark=watermark, source_digest=seed_digest(scope, watermark))
     return result
 
 
 def _header(header: Mapping[str, Any]) -> tuple[int, int, int, int]:
     _require(isinstance(header, Mapping) and set(header) == set(HEADER_COLUMNS), "battle_source_header_fields")
     scope = _scope(tuple(header[name] for name in SCOPE))
+    _integer(header["input_origin"])
     _integer(header["input_watermark"])
     _integer(header["source_fact_count"], upper=MAX_INPUTS)
     for name in COUNTS.values():
@@ -178,7 +179,8 @@ def _header(header: Mapping[str, Any]) -> tuple[int, int, int, int]:
     _quality(header["quality_flags"])
     _integer(header["publication_complete"], upper=1)
     _bytes(header["source_digest"], 32)
-    _require(sum(header[name] for name in COUNTS.values()) == header["source_fact_count"] <= header["input_watermark"],
+    _require(header["input_origin"] <= header["input_watermark"] and sum(header[name] for name in COUNTS.values()) ==
+        header["source_fact_count"] <= header["input_watermark"] - header["input_origin"],
         "battle_source_header_count")
     return scope
 
@@ -228,7 +230,7 @@ class VerifiedSource:
 
 
 def verify_source(header: Mapping[str, Any], inputs: Sequence[Mapping[str, Any]], *,
-                  expected_scope: tuple[int, int, int, int], expected_watermark: int,
+                  expected_scope: tuple[int, int, int, int], expected_watermark: int, expected_origin: int = 0,
                   max_total_bytes: int = DEFAULT_BYTE_LIMIT,
                   check_deadline: Callable[[], None] = lambda: None) -> VerifiedSource:
     """Verify the exact retained checkpoint against the locked generation state.
@@ -238,10 +240,11 @@ def verify_source(header: Mapping[str, Any], inputs: Sequence[Mapping[str, Any]]
     The SQL caller reserves its buffering fetch before invoking this function.
     """
     scope = _header(header)
-    _require(scope == _scope(expected_scope) and header["input_watermark"] == _integer(expected_watermark),
+    _require(scope == _scope(expected_scope) and header["input_watermark"] == _integer(expected_watermark) and
+        header["input_origin"] == _integer(expected_origin),
         "battle_source_state_checkpoint")
     reserved = _reservation(inputs, max_total_bytes, check_deadline)
-    digest, previous, receipts = seed_digest(scope), 0, set()
+    digest, previous, receipts = seed_digest(scope, expected_origin), expected_origin, set()
     counts, quality, facts, qualities = dict.fromkeys(COUNTS.values(), 0), 0, [], []
     for row in inputs:
         check_deadline()

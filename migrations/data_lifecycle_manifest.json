@@ -9167,6 +9167,69 @@
       "dependencies": [
         "database:telemetry_incident_registry_v4"
       ]
+    },
+    {
+      "id": "database:telemetry_battle_source",
+      "kind": "database_table",
+      "locator": "telemetry_battle_source",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_character_account_confirmed_controller_identity_or_generation_coverage",
+      "technical_purpose": "Private exact battle source count/digest/cursor tied to the immutable dated identity reservation; preparation is not report publication",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_generation_identity",
+        "database:telemetry_rollup_state"
+      ]
+    },
+    {
+      "id": "database:telemetry_battle_input",
+      "kind": "database_table",
+      "locator": "telemetry_battle_input",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_character_account_confirmed_controller_identity_or_generation_coverage",
+      "technical_purpose": "Private retained ownership, battle association and contribution inputs with original producer receipts and separate occurrence/arrival clocks",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_battle_source"
+      ]
     }
   ]
 }

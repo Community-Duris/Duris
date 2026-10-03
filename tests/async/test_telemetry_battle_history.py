@@ -20,11 +20,14 @@ from scripts.telemetry import battle_history as history
 from scripts.telemetry import battle_contract as battle
 from scripts.telemetry import battle_contribution_contract as contribution
 from scripts.telemetry import battle_source as source
+from scripts.telemetry.db_access import PyMySQLRollupDatabase, GenerationConflict
+from scripts.telemetry.rollup_engine import build_page_contributions, BoundsExceeded, SemanticError
 from test_telemetry_observations import ownership
 from scripts.telemetry.rollup_definitions import (
     ROLLUP_QUALITY_PROCESS_GAP, ROLLUP_QUALITY_INCIDENT_GAP,
     ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN, ROLLUP_QUALITY_UTC_UNKNOWN,
     ROLLUP_QUALITY_UTC_BACKWARD, ROLLUP_QUALITY_UTC_MISMATCH)
+from scripts.telemetry.rollup_definitions import RollupTarget, ROLLUP_QUALITY_LATE_INPUT, report_catalog
 
 
 def qualify_native_history(rows):
@@ -630,6 +633,84 @@ class BattleHistoryTests(unittest.TestCase):
         with self.assertRaisesRegex(source.SourceError, "duplicate_receipt"):
             source.verify_source(header, self.retained_inputs + [repeated],
                 expected_scope=self.source_scope, expected_watermark=row["ingest_id"])
+
+    def test_source_preparation_target_has_no_published_report_catalog(self):
+        target = RollupTarget(*self.source_scope)
+        self.assertEqual(target.scope_tuple, self.source_scope)
+        for version in (1, 2, 3):
+            self.assertTrue(report_catalog(version))
+        with self.assertRaises(ValueError):
+            report_catalog(source.DEFINITION_VERSION)
+        database = PyMySQLRollupDatabase(object())
+        with self.assertRaisesRegex(GenerationConflict, "preparation cannot publish"):
+            database.publish_generation(target)
+
+    def test_retained_source_origin_is_bound_to_the_selected_window(self):
+        origin = 1000
+        facts = [dict(row, ingest_id=row["ingest_id"] + origin) for row in self.source_window.facts]
+        inputs = [source.retain_input(row, self.source_scope, 0) for row in facts]
+        header = source.advance_header(source.initial_header(self.source_scope, origin), inputs, facts[-1]["ingest_id"])
+        restored = source.verify_source(header, inputs, expected_scope=self.source_scope,
+            expected_watermark=header["input_watermark"], expected_origin=origin)
+        self.assertEqual(restored.facts, tuple(facts))
+        with self.assertRaisesRegex(source.SourceError, "state_checkpoint"):
+            source.verify_source(header, inputs, expected_scope=self.source_scope,
+                expected_watermark=header["input_watermark"], expected_origin=origin - 1)
+        with self.assertRaisesRegex(source.SourceError, "missing_or_changed"):
+            source.verify_source(dict(header, input_origin=origin - 1), inputs, expected_scope=self.source_scope,
+                expected_watermark=header["input_watermark"], expected_origin=origin - 1)
+
+    def test_source_preparation_keeps_exact_selected_values_without_playtime_rows(self):
+        target = RollupTarget(*self.source_scope)
+        page = build_page_contributions(list(self.source_window.facts), target)
+        self.assertEqual(page.cursor, self.source_window.header["input_watermark"])
+        self.assertEqual(len(page.battle_inputs), 151)
+        self.assertEqual(page.output_fanout, 151)
+        self.assertFalse(page.sessions or page.player_days or page.cohorts or page.members or page.identity_inputs)
+        self.assertEqual(page.observations.output_fanout, 0)
+        restored = tuple(source.decode_input(row, self.source_scope).source for row in page.battle_inputs)
+        self.assertEqual(restored, self.source_window.facts)
+        self.assertGreaterEqual(page.estimated_bytes,
+            source.HEADER_BYTE_BOUND + len(restored) * source.PUBLICATION_INPUT_BYTE_BOUND)
+
+    def test_source_preparation_retains_ownership_and_skips_foreign_scope(self):
+        row = ownership(environment_id=self.scope[0], season_id=self.scope[1], ingest_id=1)
+        foreign = dict(row, environment_id=row["environment_id"] + 1, ingest_id=2, record_seq=2)
+        page = build_page_contributions([row, foreign], RollupTarget(*self.source_scope))
+        self.assertEqual(page.cursor, 2)
+        self.assertEqual(len(page.battle_inputs), 1)
+        self.assertEqual(source.decode_input(page.battle_inputs[0], self.source_scope).source,
+            {name: row[name] for name in source.SOURCE_COLUMNS[9]})
+        header = source.advance_header(source.initial_header(self.source_scope), page.battle_inputs, page.cursor)
+        self.assertEqual((header["source_fact_count"], header["ownership_count"], header["input_watermark"]), (1, 1, 2))
+
+    def test_source_preparation_clock_quality_is_separate_from_source_values(self):
+        raw = dict(self.source_window.facts[0])
+        target = RollupTarget(*self.source_scope)
+        page = build_page_contributions([raw], target, prior_coverage_end_utc_usec=raw["occurrence_utc_usec"] + 1)
+        decoded = source.decode_input(page.battle_inputs[0], self.source_scope)
+        self.assertTrue(decoded.projection_quality & ROLLUP_QUALITY_LATE_INPUT)
+        self.assertEqual(decoded.source, raw)
+        owned = ownership(environment_id=self.scope[0], season_id=self.scope[1], ingest_id=1,
+            occurrence_utc_usec=contribution.UTC_UNKNOWN, at_utc_usec=contribution.UTC_UNKNOWN)
+        page = build_page_contributions([owned], target)
+        self.assertTrue(page.state_quality_flags & ROLLUP_QUALITY_UTC_UNKNOWN)
+        self.assertIsNone(page.coverage_start_utc_usec)
+        self.assertIsNone(page.coverage_end_utc_usec)
+        self.assertEqual(source.decode_input(page.battle_inputs[0], self.source_scope).source["occurrence_utc_usec"],
+            contribution.UTC_UNKNOWN)
+
+    def test_source_preparation_budgets_and_selected_family_faults_refuse_page(self):
+        raw = dict(self.source_window.facts[0])
+        original = deepcopy(raw)
+        target = RollupTarget(*self.source_scope)
+        with self.assertRaises(BoundsExceeded):
+            build_page_contributions([raw], target, max_page_bytes=source.PUBLICATION_INPUT_BYTE_BOUND)
+        with self.assertRaises(BoundsExceeded):
+            build_page_contributions(list(self.source_window.facts[:2]), target, max_output_fanout=1)
+        with self.assertRaises(SemanticError):
+            build_page_contributions([dict(raw, battle_config_id=0)], target)
+        self.assertEqual(raw, original)
 
     def test_retained_ownership_values_stay_separate_from_battle_metrics(self):
         row = ownership(environment_id=self.scope[0], season_id=self.scope[1],
