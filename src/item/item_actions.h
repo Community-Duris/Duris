@@ -173,6 +173,10 @@ bool item_action_active(P_char actor);
 bool abort_item_action(P_char actor);
 size_t item_actions_pending();
 bool item_action_pending(uint64_t action_id);
+// Read-only game-thread preflight before changing an object's custody. Pending
+// source or typed adapter references may run resource-changing finish handlers
+// when the object departs. Unknown identities and off-thread queries refuse.
+bool item_actions_object_busy(uint64_t object_uid);
 
 // Fixed process counters; game thread only. No UID, vnum, player or target labels.
 enum class item_action_metric : size_t

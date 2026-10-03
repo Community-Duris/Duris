@@ -37,6 +37,61 @@ class SplitEconomyActivationContract(unittest.TestCase):
         # All cases inspect the same immutable checkout; scan it once.
         cls.census = coverage.load_validator().scan_sources(ROOT)
 
+    def current_site(self, path, family, fragment):
+        hits = [row for row in self.census if row["path"] == path and
+                row["family"] == family and fragment in row["excerpt"]]
+        self.assertEqual(len(hits), 1, (path, family, fragment, hits))
+        return (hits[0]["path"], hits[0]["line"], hits[0]["family"])
+
+    def test_exact_room_payload_component_is_scoped_and_unqualified(self):
+        inventory = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
+        rows = {row["id"]: row for row in inventory["writers"]}
+        ids = ("item.sql_room_payload_record", "recovery.sql_exact_room_hydration",
+               "recovery.sql_exact_room_placement", "recovery.sql_exact_room_stage_cleanup")
+        for route_id in ids:
+            row, route = rows[route_id], self.routes[route_id]
+            self.assertEqual(row["evidence"], [])
+            self.assertTrue(all(value["status"] == "unverified" and not value["evidence"]
+                                for value in row["backends"].values()))
+            self.assertFalse(route["double_entry_evidence"]["unified_operation_postings_observed"])
+            self.assertFalse(route["current_critical_command_schema"]["schema_2_gameplay_producer_connected"])
+            self.assertEqual(route["source"]["definition_lines"], coverage.source_definition_lines(
+                ROOT / route["source"]["file"], route["source"]["function"]))
+            self.assertTrue(route["source"]["definition_lines"])
+        component = self.routes[ids[0]]
+        self.assertEqual(component["current_critical_command_schema"]["current_schema"], 2)
+        self.assertEqual(component["double_entry_evidence"]["status"],
+                         "sql_payload_component_without_independent_accounting_root")
+        self.assertTrue(component["blocking_policy_after_activation"]["must_block_on_activation"])
+        site = self.current_site("src/persistence/sql_room_item_payload.c", "sql_economy",
+                                 "INSERT INTO sql_room_item_payload")
+        self.assertEqual(rows[ids[0]]["sites"], [list(site)])
+        self.assertEqual(sum(list(site) in row.get("sites", []) for row in rows.values()), 1)
+        for route_id in ids[1:3]:
+            self.assertEqual(rows[route_id]["sites"], [])
+            self.assertEqual(self.routes[route_id]["disposition"], "runtime_projection_route")
+            self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]["must_block_on_activation"])
+        cleanup = self.current_site("src/sql/sql_player.c", "item_lifecycle", "extract_obj(root, FALSE);")
+        self.assertEqual(rows[ids[3]]["sites"], [list(cleanup)])
+        self.assertEqual(sum(list(cleanup) in row.get("sites", []) for row in rows.values()), 1)
+        self.assertEqual(self.routes[ids[3]]["disposition"], "non_writer_candidate")
+        self.assertFalse(self.artifact["coverage_complete"])
+        self.assertEqual(self.artifact["playable_release_status"], "BLOCKED")
+
+    def test_source_provenance_distinguishes_candidate_from_published_source(self):
+        inventory = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
+        self.assertEqual(self.artifact["repository_head"], inventory["source_commit"])
+        candidate = inventory.get("candidate_worktree_evidence")
+        self.assertEqual(self.artifact["candidate_worktree_evidence"], candidate)
+        if candidate:
+            self.assertEqual(candidate["status"], "unpublished_candidate_worktree")
+            self.assertTrue(candidate["dirty_candidate"])
+            self.assertEqual(candidate["published_base_commit"], inventory["source_commit"])
+            self.assertRegex(candidate["scanned_source_tree_sha256"], r"^[0-9a-f]{64}$")
+            self.assertEqual(self.artifact["source_state"], "published_base_with_unpublished_candidate_worktree")
+        else:
+            self.assertEqual(self.artifact["source_state"], "registry_source_commit")
+
     def test_machine_counts_reconcile_to_route_rows(self) -> None:
         routes = self.artifact["routes"]
         counts = self.artifact["counts"]
@@ -531,9 +586,11 @@ class SplitEconomyActivationContract(unittest.TestCase):
                          {"auction.money_claim_compensation"})
         self.assertEqual(owners[("src/economy/auction_houses.c", 2967, "sql_economy")],
                          {"auction.money_claim_legacy"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 9508, "sql_economy")],
+        self.assertEqual(owners[self.current_site("src/sql/sql_player.c", "sql_economy",
+                                                 'snprintf(query, sizeof(query), "DELETE FROM saved_items')],
                          {"recovery.saved_sql_delete"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 10929, "sql_economy")],
+        self.assertEqual(owners[self.current_site("src/sql/sql_player.c", "sql_economy",
+                                                 "DELETE FROM saved_items WHERE id=%d AND item_key=")],
                          {"recovery.saved_sql"})
         shop_path = "src/persistence/economic_sql_shop_trade_transaction.c"
         for line in (887, 907, 940):
@@ -867,9 +924,11 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new SQL item load sites")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/sql/sql_player.c", 10171, "item_publication")],
+        self.assertEqual(owners[self.current_site("src/sql/sql_player.c", "item_publication",
+                                                 "equip_char(k->mob, k->equipment[slot], slot, 0);")],
                          {"recovery.sql_shopkeeper_catalog"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 11311, "item_publication")],
+        self.assertEqual(owners[self.current_site("src/sql/sql_player.c", "item_publication",
+                                                 "obj_to_room(obj, room);")],
                          {"recovery.sql_saved_item_hydration"})
         for route_id in ("recovery.sql_diff_proto_probe", "recovery.sql_temp_char_cleanup",
                          "recovery.sql_corpse_stage_cleanup",
@@ -942,8 +1001,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
                          "item.smelt_double", "item.npc_alchemist_vial_grant",
                          "item.thrusted_aura_decay", "item.enchant_failure_destroy"):
             self.assertEqual(self.routes[route_id]["disposition"], "runtime_mutation_route")
-            self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]
-                            ["must_block_on_activation"])
+            self.assertEqual(self.routes[route_id]["blocking_policy_after_activation"]
+                             ["must_block_on_activation"],
+                             route_id not in coverage.SCHEMA2_ALCHEMY_QUALIFIED_IDS)
         retired = {row["id"] for row in registry["retired_routes_551_661"]}
         self.assertTrue({"item.potion_mix", "item.potion_ingredients_sink",
                          "item.npc_alchemist_potion_grant", "item.poison_ingredients_sink",
@@ -952,10 +1012,16 @@ class SplitEconomyActivationContract(unittest.TestCase):
         for route_id in coverage.SCHEMA2_CRAFT_IDS:
             self.assertTrue(self.routes[route_id]["current_critical_command_schema"]
                             ["schema_2_gameplay_producer_connected"])
-            self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]
-                            ["must_block_on_activation"])
+            qualified = route_id in coverage.SCHEMA2_ALCHEMY_QUALIFIED_IDS
+            self.assertEqual(self.routes[route_id]["blocking_policy_after_activation"]
+                             ["must_block_on_activation"], not qualified)
             self.assertEqual(self.routes[route_id]["blocking_policy_after_activation"]["decision"],
+                             "allow_qualified_native_alchemy" if qualified else
                              "block_until_active_craft_journeys")
+            if qualified:
+                self.assertTrue(all(backend["status"] == "qualified" for backend in
+                                    self.routes[route_id]["backend_qualification"].values()))
+                self.assertTrue(self.routes[route_id]["recovery_evidence"])
         self.assertEqual(self.routes["item.npc_alchemist_vial_grant"]
                          ["blocking_policy_after_activation"]["decision"],
                          "refuse_before_allocation_until_native_source_and_root_exist")

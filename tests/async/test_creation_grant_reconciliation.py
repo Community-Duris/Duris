@@ -4,6 +4,7 @@
 import re
 import subprocess
 import tempfile
+import os
 from pathlib import Path
 from _paths import extract_function
 
@@ -131,6 +132,10 @@ print("[PASS] creation grant retry/reconciliation safety contracts")
 PIPELINE = (ROOT / "src/player/player_save_pipeline.c").read_text()
 CONFLICTS = function_body(MOVEMENT, "bool creation_grant_conflicts(")
 CAPTURE = function_body(PIPELINE, "static player_save_pipeline_result checkpoint_dirty_with_quest_xp(")
+LITERAL_STATE = PIPELINE[PIPELINE.index("struct literal_inventory_checkpoint"):
+                         PIPELINE.index("bool literal_inventory_blob(")]
+SANITIZER_FLAGS = (["-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie"]
+                   if os.environ.get("DURIS_TEST_SANITIZERS") == "1" else [])
 check("grant admission fences sealed recipient saves before movement admission",
       CONFLICTS.index("player_save_pipeline_sealed_save_pending") < CONFLICTS.index("movement_conflicts"))
 check("capture waits before queueing or sealing an unpublished grant",
@@ -142,6 +147,7 @@ harness = r'''
 #include <deque>
 #include <mutex>
 #include <unordered_map>
+#include <array>
 struct char_data { int pid; bool npc = false; };
 #define GET_PID(ch) ((ch)->pid)
 #define IS_NPC(ch) ((ch)->npc)
@@ -166,12 +172,28 @@ bool item_ownership_runtime_lookup(uint64_t, item_ownership_runtime_entry *) { r
 item_owner_identity creation_grant_owner(const pending_creation_grant &request) {
     return {request.to_room ? item_owner_type::room : item_owner_type::player, request.recipient_pid, 0};
 }
-''' + extract_function("player_save_pipeline.c", "bool player_save_pipeline_sealed_save_pending(") + '\n' + CONFLICTS + '\n' + extract_function("item_movement_transaction.c", "bool item_creation_grant_player_publication_pending(") + r'''
+''' + LITERAL_STATE + extract_function("player_save_pipeline.c", "bool player_save_pipeline_sealed_save_pending(") + '\n' + CONFLICTS + '\n' + extract_function("item_movement_transaction.c", "bool item_creation_grant_player_publication_pending(") + r'''
 int main() {
     char_data recipient{41}, other{42};
     pending_creation_grant grant{1001,41,false};
     health.initialized = true;
     assert(player_revision_hydrate(41, 7));
+    auto &literal = literal_inventory_checkpoints[0];
+    literal.token = {41, 71, 7001, 1};
+    assert(find_literal_inventory_locked(41) == &literal);
+    assert(player_save_pipeline_sealed_save_pending(41) && creation_grant_conflicts(grant));
+    assert(!player_save_pipeline_sealed_save_pending(42));
+    pending_creation_grant unrelated{1002,42,false};
+    assert(!creation_grant_conflicts(unrelated));
+    literal.held = true;
+    assert(player_save_pipeline_sealed_save_pending(41) && creation_grant_conflicts(grant));
+    assert(!creation_grant_conflicts(unrelated));
+    player_revision_snapshot lease_state = {};
+    assert(player_revision_snapshot_copy(41, &lease_state));
+    assert(lease_state.current_revision == 7 && lease_state.acknowledged_revision == 7 &&
+           !lease_state.dirty_components && !lease_state.queued_components);
+    literal_inventory_checkpoints.fill({});
+    assert(!player_save_pipeline_sealed_save_pending(41) && !creation_grant_conflicts(grant));
     player_revision_t revision;
     player_component_mask_t components;
     assert(player_revision_mark(41, PLAYER_COMPONENT_INVENTORY, &revision));
@@ -230,8 +252,9 @@ with tempfile.TemporaryDirectory(prefix="duris-grant-save-order-") as directory:
     program = Path(directory) / "ordering.cpp"
     binary = Path(directory) / "ordering"
     program.write_text(harness)
-    subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+    subprocess.run(["g++", *SANITIZER_FLAGS, "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
                     "-Isrc", str(program), "src/player/player_revision_state.c",
                     "-pthread", "-o", str(binary)], cwd=ROOT, check=True)
     subprocess.run([str(binary)], check=True)
 print("[PASS] deterministic save/grant ordering, inbound recipient, dirty progress, retained/worker/login/quarantine fences")
+print("[PASS] actual held and unheld literal leases seal their recipient without fencing unrelated PID grants")

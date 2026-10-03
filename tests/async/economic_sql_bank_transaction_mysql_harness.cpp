@@ -2,6 +2,9 @@
 #include "persistence/critical_command_repository.h"
 #include "economy/economic_gameplay_authority.h"
 #include "economic_sql_coordinator_fixture.h"
+#ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
+#include "sql/sql_pool.h"
+#endif
 #include <openssl/sha.h>
 
 #include <algorithm>
@@ -55,19 +58,100 @@ extern "C" unsigned int __wrap_mysql_errno(MYSQL *connection)
 
 namespace
 {
-MYSQL *connect_fixture();
+MYSQL *connect_fixture(unsigned long flags = 0);
 bool pool_enabled = false;
 bool lose_next_pooled_commit = false;
 size_t pool_acquisitions = 0, pool_releases = 0, pool_replacements = 0;
-void close_pooled(MYSQL *connection)
+void clear_pooled_fault(MYSQL *connection)
 {
 	if (connection == lost_commit_connection)
 		lost_commit_connection = nullptr;
 	if (connection == lose_commit_reply)
 		lose_commit_reply = nullptr;
+}
+#ifndef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
+void close_pooled(MYSQL *connection)
+{
+	clear_pooled_fault(connection);
 	mysql_close(connection);
 }
+#endif
 }
+#ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
+MYSQL *sql_open_configured_connection(unsigned long flags)
+{
+	return connect_fixture(flags);
+}
+void logit(const char *, const char *, ...) {}
+extern "C" MYSQL *__real_sql_pool_acquire(void);
+extern "C" void __real_sql_pool_release(MYSQL *);
+extern "C" MYSQL *__real_sql_pool_replace_connection(MYSQL *);
+extern "C" void __real_sql_pool_discard_connection(MYSQL *);
+extern "C" MYSQL *__wrap_sql_pool_acquire(void)
+{
+	if (!pool_enabled)
+		return nullptr;
+	auto *connection = __real_sql_pool_acquire();
+	assert(connection);
+	++pool_acquisitions;
+	if (lose_next_pooled_commit)
+	{
+		lose_next_pooled_commit = false;
+		lose_commit_reply = connection;
+	}
+	return connection;
+}
+extern "C" void __wrap_sql_pool_release(MYSQL *connection)
+{
+	if (connection)
+	{
+		assert(pool_enabled);
+		++pool_releases;
+		clear_pooled_fault(connection);
+	}
+	__real_sql_pool_release(connection);
+}
+extern "C" MYSQL *__wrap_sql_pool_replace_connection(MYSQL *connection)
+{
+	assert(pool_enabled && connection);
+	++pool_replacements;
+	const bool lost_reply = connection == lost_commit_connection;
+	const auto old_session = mysql_thread_id(connection);
+	clear_pooled_fault(connection);
+	auto *replacement = __real_sql_pool_replace_connection(connection);
+	if (lost_reply)
+		assert(replacement && old_session && mysql_thread_id(replacement) != old_session);
+	return replacement;
+}
+extern "C" void __wrap_sql_pool_discard_connection(MYSQL *connection)
+{
+	clear_pooled_fault(connection);
+	__real_sql_pool_discard_connection(connection);
+}
+
+namespace
+{
+void start_real_pool()
+{
+	assert(!pool_enabled && sql_pool_total() == 0);
+	assert(sql_pool_init(1) == 0);
+	assert(sql_pool_total() == 1 && sql_pool_available() == 1 && sql_pool_in_use() == 0);
+}
+void finish_real_pool()
+{
+	// Bypass admission observers: the full bank matrix deliberately ends disabled.
+	assert(!pool_enabled && sql_pool_in_use() == 0 && sql_pool_total() == 1);
+	auto *clean = __real_sql_pool_acquire();
+	assert(clean && sql_pool_in_use() == 1 &&
+	       !(clean->server_status & SERVER_STATUS_IN_TRANS) &&
+	       (clean->server_status & SERVER_STATUS_AUTOCOMMIT));
+	__real_sql_pool_release(clean);
+	assert(sql_pool_available() == 1 && sql_pool_in_use() == 0);
+	sql_pool_shutdown();
+	assert(sql_pool_total() == 0 && sql_pool_in_use() == 0 && !sql_pool_is_active());
+}
+}
+#else
 extern "C" MYSQL *sql_pool_acquire(void)
 {
 	if (!pool_enabled)
@@ -101,6 +185,7 @@ extern "C" MYSQL *sql_pool_replace_connection(MYSQL *connection)
 	close_pooled(connection);
 	return connect_fixture();
 }
+#endif
 
 namespace
 {
@@ -111,9 +196,12 @@ const char *required(const char *name)
 	return value;
 }
 
-MYSQL *connect_fixture()
+MYSQL *connect_fixture(unsigned long flags)
 {
 	// Guard before constructing any client. No option files or inherited socket.
+#ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
+	assert(!strcmp(required("TEST_DB_DISPOSABLE"), "1"));
+#endif
 	assert(!strcmp(required("ECONOMIC_ACCOUNTING_DISPOSABLE_SCHEMA"), "1"));
 	assert(!strcmp(required("DB_HOST"), "127.0.0.1"));
 	assert(!getenv("DB_SOCKET") || !*getenv("DB_SOCKET"));
@@ -128,13 +216,15 @@ MYSQL *connect_fixture()
 	auto *connection = mysql_init(nullptr);
 	assert(connection);
 	unsigned int timeout = 5, protocol = MYSQL_PROTOCOL_TCP;
+	const bool reconnect = false;
+	assert(!mysql_options(connection, MYSQL_OPT_RECONNECT, &reconnect));
 	assert(!mysql_options(connection, MYSQL_OPT_CONNECT_TIMEOUT, &timeout));
 	assert(!mysql_options(connection, MYSQL_OPT_READ_TIMEOUT, &timeout));
 	assert(!mysql_options(connection, MYSQL_OPT_WRITE_TIMEOUT, &timeout));
 	assert(!mysql_options(connection, MYSQL_OPT_PROTOCOL, &protocol));
 	assert(mysql_real_connect(connection, "127.0.0.1", required("DB_USER"),
 				  required("DB_PASSWD"), schema.c_str(),
-				  static_cast<unsigned int>(port), nullptr, 0));
+				  static_cast<unsigned int>(port), nullptr, flags));
 	return connection;
 }
 
@@ -242,6 +332,9 @@ int main()
 {
 	static_assert(!std::is_copy_constructible_v<economic_sql_bank_transaction>);
 	assert(mysql_library_init(0, nullptr, nullptr) == 0);
+#ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
+	start_real_pool();
+#endif
 	auto *connection = connect_fixture();
 	auto *observer = connect_fixture();
 	const auto lineage = new_id(), epoch = new_id(), bootstrap = new_id();
@@ -1110,6 +1203,10 @@ int main()
 	execute(connection, "DELETE FROM accounts WHERE account_name='" + account + "'");
 	mysql_close(observer);
 	mysql_close(connection);
+#ifdef DURIS_ECONOMIC_SQL_REAL_POOL_TEST
+	finish_real_pool();
+	puts("SQL actual pool bank: distinct lost-COMMIT replacement session, clean reborrow and zero-lease shutdown passed");
+#endif
 	mysql_library_end();
 	puts("SQL typed bank transaction: writes, evidence, rejection, rollback faults and retained verification passed");
 }
