@@ -45,6 +45,12 @@ assert "strtol" in COUNT
 assert "parsed < 1 || parsed > 50" in COUNT
 assert "*end" in COUNT
 assert "nothing was purchased" in BUY
+assert BUY.index("shop_purchase_parse(arg, request)") < BUY.index("get_obj_in_list_vis(")
+assert BUY.count("request.quantity") == 1
+assert "request.batch" in BUY
+assert "!sequence.batch || sequence.completed == 0" in COMPLETE
+assert "shop_purchase_stop_reason" in COMPLETE
+assert "nullptr, true" in COMPLETE
 assert "delivered to your inventory" not in BUY
 
 # Payment commits before a held grant only after cloning/capacity checks, and
