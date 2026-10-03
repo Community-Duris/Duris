@@ -9255,6 +9255,23 @@ Dispel Magic - Last Edited: 2007-04-20 14:02:09 by Unknown
 If successful, this spell will dispel some of the spells (if any)
 surrounding the victim or remove any enchantments on an object.
 
+Each eligible spell receives its own check. A successful check removes
+the spell. An ordinary timed spell that resists loses 10% of its remaining
+duration, with a minimum of one tick. Exhausting its duration ends it.
+
+Each active Minor Globe, Spirit Ward, Greater Spirit Ward, and Globe
+receives its own check, including wards from worn equipment. A ward that
+resists loses duration and capacity as if it absorbed a similar-circle
+damage spell, and may break. This wear causes no hit-point damage.
+Equipment wards return at their original renewal time; cast wards need
+a new cast.
+
+Magical barriers such as Wall of Stone lose both strength and duration
+when they resist. Both sides weaken together, and both disappear when
+the barrier is dispelled or exhausted. Messages identify spells and
+barriers that were dispelled, weakened, or broken. Protected effects
+remain protected; permanent effects have no duration to shorten.
+
 The following help topics also matched your search:
  Potion of Dispel Magic
 

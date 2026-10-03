@@ -11,10 +11,141 @@
 #include "item/objmisc.h"
 #include "world/vnum.obj.h"
 #include "world/specs.prototypes.h"
+#include "world/events.h"
+#include "net/gmcp.h"
+
+#include <algorithm>
+#include <set>
+#include <vector>
 
 extern P_index obj_index;
 extern P_room world;
 extern const int rev_dir[];
+extern Skill skills[];
+
+namespace
+{
+// Provisional balance for ordinary timed spells and barriers: ten percent of
+// the remaining duration, with a one-tick minimum in the timer's own units.
+int dispel_shortened_duration(int remaining, int one_tick)
+{
+	const int wear = std::max(one_tick, remaining / 10 + (remaining % 10 != 0));
+	return std::max(0, remaining - wear);
+}
+
+enum class duration_wear_result
+{
+	unchanged,
+	weakened,
+	exhausted
+};
+
+duration_wear_result wear_spell_duration(P_char victim, struct affected_type *af)
+{
+	P_nevent timer = NULL;
+	int remaining = af->duration;
+	const bool short_affect = IS_SET(af->flags, AFFTYPE_SHORT);
+	if (short_affect)
+	{
+		LOOP_EVENTS_CH(timer, victim->nevents)
+		{
+			if (timer->func == event_short_affect && timer->data &&
+			    static_cast<event_short_affect_data *>(timer->data)->af == af)
+			{
+				remaining = ne_event_time(timer);
+				break;
+			}
+		}
+	}
+	if (remaining < 0)
+		return duration_wear_result::unchanged;
+	const int shortened =
+		dispel_shortened_duration(remaining, short_affect ? PULSES_IN_TICK : 1);
+	if (shortened == 0)
+		return duration_wear_result::exhausted;
+	if (timer && !nevent_reschedule_after(nevent_handle_from_event(timer), shortened))
+		return duration_wear_result::unchanged;
+	if (short_affect && !timer)
+	{
+		event_short_affect_data data = { victim, af };
+		add_event(event_short_affect, shortened, victim, NULL, NULL, 0, &data,
+			  sizeof(data));
+	}
+	af->duration = shortened;
+	return duration_wear_result::weakened;
+}
+
+bool dispel_morph(P_char caster, P_char victim, int spell)
+{
+	if (spell != SPELL_CALL_OF_THE_WILD || !IS_MORPH(victim))
+		return false;
+	P_char original = victim->only.npc->orig_char;
+	act("$n suddenly changes shape, reforming into $N.", FALSE, victim, NULL, original,
+	    TO_NOTVICT);
+	send_to_char("You suddenly feel yourself going back to normal.\n", victim);
+	send_to_char("and you succeed!\n", caster);
+	act("and succeeds!", FALSE, caster, NULL, victim, TO_NOTVICT);
+	un_morph(victim);
+	return true;
+}
+
+void announce_spell_wear(P_char caster, P_char victim, int spell, bool exhausted)
+{
+	const char *name = spell > 0 && spell < MAX_SKILLS && skills[spell].name ?
+				   skills[spell].name :
+				   "magic";
+	const char *outcome = exhausted ? "exhausts" : "weakens";
+	const char *ending = exhausted ? "." : ", shortening its remaining duration.";
+	char message[256];
+	snprintf(message, sizeof(message), "&+YYour dispel %s $N's %.120s%s&n", outcome, name,
+		 ending);
+	act(message, FALSE, caster, NULL, victim, TO_CHAR);
+	snprintf(message, sizeof(message), "&+Y$n's dispel %s your %.120s%s&n", outcome, name,
+		 ending);
+	act(message, FALSE, caster, NULL, victim, TO_VICT);
+	snprintf(message, sizeof(message), "&+Y$n's dispel %s $N's %.120s.&n", outcome, name);
+	act(message, FALSE, caster, NULL, victim, TO_NOTVICT);
+}
+
+P_obj opposite_dispel_wall(P_obj wall)
+{
+	if (!OBJ_ROOM(wall))
+		return NULL;
+	const int room = wall->loc.room;
+	const int direction = wall->value[1];
+	if (direction < 0 || direction >= static_cast<int>(ARRAY_SIZE(world[room].dir_option)))
+		return NULL;
+	const auto exit = world[room].dir_option[direction];
+	if (!exit || exit->to_room == NOWHERE)
+		return NULL;
+	for (P_obj other = world[exit->to_room].contents; other; other = other->next_content)
+	{
+		if (other != wall && other->R_num == wall->R_num &&
+		    other->value[0] == world[room].number &&
+		    other->value[1] == rev_dir[direction] && other->value[3] == wall->value[3] &&
+		    other->value[5] == wall->value[5])
+			return other;
+	}
+	return NULL;
+}
+
+P_nevent dispel_wall_timer(P_obj wall)
+{
+	if (!wall)
+		return NULL;
+	P_nevent timer;
+	LOOP_EVENTS_OBJ(timer, wall->nevents)
+	{
+		if (timer->func == event_obj_affect && timer->data)
+		{
+			const auto af = *static_cast<obj_affect **>(timer->data);
+			if (af && af->type == TAG_OBJ_DECAY)
+				return timer;
+		}
+	}
+	return NULL;
+}
+} // namespace
 
 typedef struct
 {
@@ -145,10 +276,8 @@ static int CheckMobRemoveableSpellBits(P_char ch, RemoveableSpellBit *spellBits,
 void spell_dispel_magic(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 			P_char victim, P_obj obj)
 {
-	struct affected_type *af, *next_af_dude;
 	int mod, success = 0, nosave = 0;
-	P_obj temp_wall, next_obj;
-	P_char orig;
+	bool weakened_spell = false;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -182,50 +311,99 @@ void spell_dispel_magic(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 		act("$n tries to dispel your magic!", FALSE, ch, 0, victim, TO_VICT);
 		act("You try to dispel $N's magic.", FALSE, ch, 0, victim, TO_CHAR);
 		act("$n tries to dispel $N's magic!", FALSE, ch, 0, victim, TO_NOTVICT);
+		spell_ward_sync_timers(victim);
+		spell_ward_equipment_sync(victim);
 
-		for (af = victim->affected; af; af = next_af_dude)
+		// One check per ordinary spell, and one per active ward source. Snapshot
+		// identities because removing a multi-affect spell can unlink later rows.
+		std::vector<struct affected_type *> pending;
+		std::set<int> checked_spells;
+		for (auto af = victim->affected; af; af = af->next)
+			pending.push_back(af);
+		for (auto candidate : pending)
 		{
-			next_af_dude = af->next;
+			auto af = victim->affected;
+			while (af && af != candidate)
+				af = af->next;
+			if (!af)
+				continue;
 
-			// Equipment is a separate, non-dispellable source. It must not
-			// hide a following cast of the same ward from this attempt.
-			while (next_af_dude && next_af_dude->type == af->type &&
-			       !spell_ward_is_equipment(af))
+			if (spell_ward_is_managed(af))
 			{
-				next_af_dude = next_af_dude->next;
+				if (!spell_ward_is_active(af))
+					continue;
+				const bool saved = !nosave &&
+						   NewSaves(victim, SAVING_SPELL,
+							    IS_ELITE(ch) ? mod + 5 : mod);
+				const bool resisted = !nosave && !saved &&
+						      resists_spell(ch, victim);
+				const bool dispelled = !saved && !resisted;
+				// Burning Hands is the comparable second-circle packet. Bound
+				// legacy signed spell levels before rolling the same base dice.
+				const int wear_level = static_cast<int>(std::clamp(
+					level < 0 ? -static_cast<long long>(level) : level, 1LL,
+					255LL));
+				const int wear = dispelled ? 0 : 4 * dice(5 + wear_level / 10, 6);
+				const auto result =
+					spell_ward_dispel(ch, victim, af, dispelled, wear);
+				if (result == spell_ward_dispel_result::broken)
+					success = 1;
+				else if (result == spell_ward_dispel_result::weakened)
+					weakened_spell = true;
+				continue;
 			}
 
-			if (!IS_SET(af->flags, AFFTYPE_NODISPEL) && (af->type > 0))
+			if (!IS_SET(af->flags, AFFTYPE_NODISPEL) && af->type > 0 &&
+			    checked_spells.insert(af->type).second)
 			{
-				if (nosave ||
-				    !NewSaves(victim, SAVING_SPELL, (IS_ELITE(ch) ? mod + 5 : mod)))
+				const bool saved = !nosave &&
+						   NewSaves(victim, SAVING_SPELL,
+							    IS_ELITE(ch) ? mod + 5 : mod);
+				const bool resisted = !nosave && !saved &&
+						      resists_spell(ch, victim);
+				if (!saved && !resisted)
 				{
-					if (!nosave && resists_spell(ch, victim))
-					{
-						return;
-					}
-
 					success = 1;
 					wear_off_message(victim, af);
-					if ((af->type == SPELL_CALL_OF_THE_WILD) &&
-					    IS_MORPH(victim))
-					{
-						orig = victim->only.npc->orig_char;
-
-						act("$n suddenly changes shape, reforming into $N.",
-						    FALSE, victim, NULL, orig, TO_NOTVICT);
-						send_to_char(
-							"You suddenly feel yourself going back to normal.\n",
-							victim);
-
-						send_to_char("and you succeed!\n", ch);
-						act("and succeeds!", FALSE, ch, 0, victim,
-						    TO_NOTVICT);
-
-						un_morph(victim);
+					if (dispel_morph(ch, victim, af->type))
 						return;
-					}
 					affect_from_char(victim, af->type);
+				}
+				else
+				{
+					const int spell = af->type;
+					bool shortened = false;
+					for (auto part = victim->affected; part;)
+					{
+						auto next = part->next;
+						if (part->type == spell &&
+						    !IS_SET(part->flags, AFFTYPE_NODISPEL))
+						{
+							const auto result =
+								wear_spell_duration(victim, part);
+							shortened |=
+								result !=
+								duration_wear_result::unchanged;
+							if (result ==
+							    duration_wear_result::exhausted)
+							{
+								wear_off_message(victim, part);
+								if (dispel_morph(ch, victim, spell))
+									return;
+								affect_remove(victim, part);
+								success = 1;
+							}
+						}
+						part = next;
+					}
+					if (shortened)
+					{
+						weakened_spell = true;
+						announce_spell_wear(ch, victim, spell,
+								    !affected_by_spell(victim,
+										       spell));
+						gmcp_char_affects(victim);
+					}
 				}
 			}
 		}
@@ -256,12 +434,12 @@ void spell_dispel_magic(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 				  success :
 				  1;
 
-		if (!success)
+		if (!success && !weakened_spell)
 		{
 			send_to_char("&+Land you fail miserably...\n", ch);
 			act("&+Land fails miserably...&n", FALSE, ch, 0, victim, TO_NOTVICT);
 		}
-		else
+		else if (success)
 		{
 			send_to_char("&+Yand you have some &+Gsuccess!\r\n", ch);
 			act("&+Yand $e has some &+Gsuccess!&n", FALSE, ch, 0, victim, TO_NOTVICT);
@@ -288,30 +466,57 @@ void spell_dispel_magic(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 	/* second deal with "special" objects (conjurerer wall spells) */
 	if (obj->R_num == real_object(VOBJ_WALLS))
 	{
-		int dispelDmg = ((obj->value[3] == WALL_OUTPOST) ? 1 : number(level / 4, level));
-
-		if ((number(0, 5) > (obj->value[4] - level)) || IS_TRUSTED(ch) ||
-		    (IS_PC(ch) && obj->value[5] == GET_PID(ch)) ||
-		    (IS_NPC(ch) && obj->value[5] == GET_RNUM(ch)) || (dispelDmg >= obj->value[2]))
+		const int wall_level = static_cast<int>(
+			std::clamp(level < 0 ? -static_cast<long long>(level) : level, 1LL, 255LL));
+		const int dispel_damage = obj->value[3] == WALL_OUTPOST ?
+						  1 :
+						  number(std::max(1, wall_level / 4), wall_level);
+		P_obj other = opposite_dispel_wall(obj);
+		const int strength = other ? std::min(obj->value[2], other->value[2]) :
+					     obj->value[2];
+		P_nevent timer = dispel_wall_timer(obj);
+		P_nevent other_timer = dispel_wall_timer(other);
+		int remaining = timer ? ne_event_time(timer) : -1;
+		if (other_timer)
+			remaining = remaining < 0 ? ne_event_time(other_timer) :
+						    std::min(remaining, ne_event_time(other_timer));
+		const int shortened =
+			remaining < 0 ? -1 : dispel_shortened_duration(remaining, PULSES_IN_TICK);
+		const bool dispelled = (number(0, 5) > (obj->value[4] - wall_level)) ||
+				       IS_TRUSTED(ch) ||
+				       (IS_PC(ch) && obj->value[5] == GET_PID(ch)) ||
+				       (IS_NPC(ch) && obj->value[5] == GET_RNUM(ch));
+		if (dispelled || dispel_damage >= strength || shortened == 0)
 		{
-			/* clear the other side */
-			if (EXIT(ch, obj->value[1]))
-			{
-				for (temp_wall = world[EXIT(ch, obj->value[1])->to_room].contents;
-				     temp_wall; temp_wall = next_obj)
-				{
-					next_obj = temp_wall->next_content;
-					if ((temp_wall->R_num == obj->R_num) &&
-					    (temp_wall->value[1] == rev_dir[obj->value[1]]))
-					{
-						Decay(temp_wall);
-					}
-				}
-			}
+			act(dispelled ? "&+YYour magic dispels $p.&n" :
+					"&+YYour dispel breaks $p.&n",
+			    FALSE, ch, obj, NULL, TO_CHAR);
+			act(dispelled ? "&+Y$n's magic dispels $p.&n" :
+					"&+Y$n's dispel breaks $p.&n",
+			    FALSE, ch, obj, NULL, TO_ROOM);
+			if (other)
+				Decay(other);
 			Decay(obj);
 		}
 		else
-			obj->value[2] -= dispelDmg;
+		{
+			obj->value[2] = strength - dispel_damage;
+			if (other)
+				other->value[2] = obj->value[2];
+			if (timer)
+				nevent_reschedule_after(nevent_handle_from_event(timer), shortened);
+			if (other_timer)
+				nevent_reschedule_after(nevent_handle_from_event(other_timer),
+							shortened);
+			act(timer || other_timer ?
+				    "&+YYour dispel weakens $p, shortening its remaining duration.&n" :
+				    "&+YYour dispel weakens $p.&n",
+			    FALSE, ch, obj, NULL, TO_CHAR);
+			act(timer || other_timer ?
+				    "&+Y$n's dispel weakens $p, shortening its remaining duration.&n" :
+				    "&+Y$n's dispel weakens $p.&n",
+			    FALSE, ch, obj, NULL, TO_ROOM);
+		}
 		return;
 	}
 
