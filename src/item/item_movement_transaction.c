@@ -505,12 +505,8 @@ P_char find_live_player(uint32_t pid)
 
 P_char find_live_mobile(uint64_t runtime_id)
 {
-	if (!runtime_id)
-		return NULL;
-	for (P_char character = character_list; character; character = character->next)
-		if (IS_NPC(character) && character->runtime_id == runtime_id)
-			return character;
-	return NULL;
+	P_char character = find_character_by_runtime_id(runtime_id);
+	return character && IS_NPC(character) ? character : NULL;
 }
 
 bool trusted_steal_live_ready(P_char actor, uint64_t item_uid)

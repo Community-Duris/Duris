@@ -37,7 +37,7 @@ HARNESS = r'''
 #include "core/prototypes.h"
 #include <cstdio>
 #include "world/world_recovery_codec.h"
-#include "persistence/copyover.h"
+#include "persistence/copyover_codec.h"
 #include "item/item_ownership_runtime.h"
 #include <array>
 #include <atomic>
@@ -712,7 +712,8 @@ int main()
         lookup_entry.item_uid = mode == 3 ? 900 : 902;
         lookup_entry.root_item_uid = mode == 3 ? 900 : 901;
         lookup_entry.parent_item_uid = mode == 3 ? 0 : 901;
-        lookup_entry.vnum = OBJ_VNUM(&corpse);
+        P_obj corpse_pointer = &corpse;
+        lookup_entry.vnum = OBJ_VNUM(corpse_pointer);
         lookup_entry.owner = {mode == 5 ? item_owner_type::room : item_owner_type::corpse,
                               mode == 5 ? 100U : 77U, 12};
         lookup_entry.state = item_custody_state::active;
@@ -727,7 +728,12 @@ int main()
         P_obj restored = nullptr;
         if (file_copyover) {
             FILE *file = std::tmpfile(); assert(file);
-            assert(write_obj_entry(file, &corpse, buffer)); std::rewind(file);
+            copyover_header header = {};
+            header.num_objects = 1;
+            const int listeners[3] = {-1, -1, -1};
+            assert(copyover_codec_begin(file, header, listeners));
+            assert(write_obj_entry(file, &corpse, buffer));
+            assert(copyover_codec_finish(file, nullptr)); std::rewind(file);
             size_t consumed = 99;
             assert(!copyover_restore_obj_from_buffer(buffer.data(), size - 1, &consumed));
             assert(consumed == 0 && object_list == nullptr);
@@ -742,7 +748,9 @@ int main()
                 assert(!copyover_restore_obj_from_buffer(buffer.data(), size, &consumed));
                 assert(consumed == 0 && object_list == nullptr);
             }
-            restored = read_obj_entry(file);
+            copyover_decoded_state decoded;
+            assert(copyover_codec_read(file, &decoded, nullptr) && decoded.objects.size() == 1);
+            restored = copyover_restore_obj_from_buffer(decoded.objects[0].data(), decoded.objects[0].size(), &consumed);
             assert(hydrated_entries.size() == (lookup_succeeds ? 1U : 0U));
             if (lookup_succeeds) {
                 const auto &entry = hydrated_entries.front();
@@ -754,10 +762,10 @@ int main()
             }
             assert(std::fgetc(file) == EOF); std::fclose(file);
             FILE *truncated = std::tmpfile(); assert(truncated);
-            uint32_t length = size;
-            assert(std::fwrite(&length, sizeof(length), 1, truncated) == 1);
-            assert(std::fwrite(buffer.data(), size - 1, 1, truncated) == 1);
-            std::rewind(truncated); assert(!read_obj_entry(truncated)); std::fclose(truncated);
+            assert(copyover_codec_begin(truncated, header, listeners));
+            assert(write_obj_entry(truncated, &corpse, buffer));
+            // Incomplete/unsealed files are rejected before gameplay materialization.
+            assert(!copyover_codec_read(truncated, &decoded, nullptr)); std::fclose(truncated);
         } else {
             world_recovery_object_record record = {};
             std::memcpy(&record, buffer.data(), sizeof(record));
@@ -1025,7 +1033,7 @@ with tempfile.TemporaryDirectory(prefix="duris-world-recovery-") as temp_dir:
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror",
             "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
             "-ffunction-sections", "-fdata-sections", "-Isrc", str(source),
-            rel("world_recovery_pipeline.c"), rel("world_recovery_codec.c"), rel("generated_npc_state.c"), rel("generated_npc_runtime.c"), rel("pet_restore_state.c"),
+            rel("copyover_codec.c"), rel("world_recovery_pipeline.c"), rel("world_recovery_codec.c"), rel("generated_npc_state.c"), rel("generated_npc_runtime.c"), rel("pet_restore_state.c"),
             rel("redis_command_observability.c"),
             "-Wl,--gc-sections", "-lz", "-lbsd", "-pthread",
             "-o", str(binary),
