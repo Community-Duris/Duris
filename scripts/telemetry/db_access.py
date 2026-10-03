@@ -19,13 +19,14 @@ import math
 from typing import Any, Callable, Mapping, Sequence
 
 try:
-    from . import incident, identity_history as identity, observation_semantics as observations, identity_publication as identity_publication, battle_contract as battles
+    from . import incident, identity_history as identity, observation_semantics as observations, identity_publication as identity_publication, battle_contract as battles, battle_contribution_contract as contributions
 except ImportError:
     import incident
     import identity_history as identity
     import observation_semantics as observations
     import identity_publication
     import battle_contract as battles
+    import battle_contribution_contract as contributions
 
 try:  # Running as a package.
     from .rollup_definitions import (
@@ -418,7 +419,7 @@ RAW_COLUMNS = (
     "pulse_slot_count",
     "backend",
     "enabled",
-) + observations.PROGRESSION_RAW_COLUMNS + observations.ENCOUNTER_RAW_COLUMNS + observations.COMBAT_RAW_COLUMNS + observations.OWNERSHIP_RAW_COLUMNS + battles.FIELDS
+) + observations.PROGRESSION_RAW_COLUMNS + observations.ENCOUNTER_RAW_COLUMNS + observations.COMBAT_RAW_COLUMNS + observations.OWNERSHIP_RAW_COLUMNS + battles.FIELDS + contributions.FIELDS
 
 SESSION_COLUMNS = (
     "definition_version",
@@ -1844,9 +1845,9 @@ class PyMySQLRollupDatabase:
                     continue
                 verified, _, _ = self._execute(
                     "SELECT record_kind,occurrence_utc_usec,"
-                    "CASE WHEN record_kind=10 THEN battle_environment_id ELSE "
+                    "CASE WHEN record_kind=11 THEN bc_environment_id WHEN record_kind=10 THEN battle_environment_id ELSE "
                     "COALESCE(environment_id,encounter_environment_id,combat_environment_id) END AS environment_id,"
-                    "CASE WHEN record_kind=10 THEN battle_season_id ELSE "
+                    "CASE WHEN record_kind=11 THEN bc_season_id WHEN record_kind=10 THEN battle_season_id ELSE "
                     "COALESCE(season_id,encounter_season_id,combat_season_id) END AS season_id "
                     "FROM telemetry_interval WHERE boot_id=%s AND process_id=%s AND record_seq=%s LIMIT 1",
                     (row["verified_boot_id"], row["verified_process_id"], row["verified_record_seq"]),

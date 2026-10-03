@@ -171,6 +171,40 @@ class ContributionContractTests(unittest.TestCase):
         copied["bc_damage_dealt"] += 1
         self.assertNotEqual(copied, value)
 
+    @staticmethod
+    def raw_segment(value, sequence):
+        return dict(value, ingest_id=sequence, boot_id=value["bc_battle_boot_id"],
+                    process_id=value["bc_battle_process_id"], record_seq=sequence,
+                    record_kind=11, schema_version=1,
+                    occurrence_utc_usec=value["bc_decision_utc_usec"], ingested_utc_usec=1)
+
+    def test_raw_rows_bind_header_and_exclude_inactive_families(self):
+        for value in self.rows:
+            raw = self.raw_segment(value, 12345)
+            self.assertEqual(contract.validate_raw_segment(raw), value)
+            self.assertEqual(contract.validate_raw_segment(dict(raw, combat_damage_dealt=None)), value)
+            for name, wrong in (("record_kind", 10), ("schema_version", 2), ("record_seq", 0),
+                                ("boot_id", raw["boot_id"] + 1), ("process_id", True),
+                                ("occurrence_utc_usec", raw["occurrence_utc_usec"] + 1),
+                                ("combat_damage_dealt", 0), ("battle_boot_id", raw["boot_id"])):
+                with self.subTest(name=name):
+                    with self.assertRaises(contract.ContributionContractError):
+                        contract.validate_raw_segment(dict(raw, **{name: wrong}))
+
+    def test_earlier_rollup_definitions_validate_without_changing_amounts(self):
+        from scripts.telemetry.rollup_definitions import RollupTarget
+        from scripts.telemetry.rollup_engine import build_page_contributions, SemanticError
+        raw = self.raw_segment(self.value, 12345)
+        for version in (1, 2, 3):
+            target = RollupTarget(version, 1, self.value["bc_environment_id"], self.value["bc_season_id"])
+            result = build_page_contributions([raw], target, max_page_bytes=1000000)
+            self.assertEqual(result.page_last_ingest_id, 12345)
+            self.assertEqual(result.sessions, {})
+            self.assertEqual(result.player_days, {})
+            self.assertEqual(result.identity_inputs, [])
+            with self.assertRaises(SemanticError):
+                build_page_contributions([dict(raw, bc_effective_healing=21)], target)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -789,7 +789,7 @@ bytes; a payload measures 400 bytes, and its 65 canonical fields encode in 385
 bytes. Compile-time guards retain a 4 MiB module budget and the existing 512-byte
 payload/header bound.
 
-Seven independent native/Python contract regressions passed exact source-row
+Nine independent native/Python contract regressions passed exact source-row
 round trips, immutable layout, domain keys, all declared numeric boundaries,
 strict types/widths/lengths and semantic corruption. Unknown producer families
 remain unknown rather than measured zero. Unknown UTC retains `INT64_MIN`;
@@ -812,11 +812,11 @@ python3 tests/async/test_telemetry_contract_headers.py
 make -C src
 ```
 
-This module is compiled but not allocated/called by the runtime. Migration head
-61, record kinds 1–10 and report definitions 1/2/3 are unchanged. Native
-authoritative contribution capture, a separate typed durable contribution
-family with the existing replay/outage/incident contracts, exact association/
-alias/linkage coverage and atomic battle publication remain required. This
+The accumulator is compiled but not allocated/called by the runtime. The
+kind-11 durable contribution family is qualified below; record kinds 1–10 and
+report definitions 1/2/3 retain their contracts. Native authoritative contribution
+capture, exact association/alias/linkage coverage and atomic battle publication
+remain required. This
 qualification uses pure collector fixtures, not a running personal game server;
 it establishes no actual producer/control/prevention or performance coverage.
 All seven accepted identity/source-suite, full battle/context/population,
@@ -825,3 +825,86 @@ milestone/switching/comparable portfolio, four-suite/statistical, #487
 compatibility and personal-local gameplay/persistence/performance requirements
 retain their incomplete portions under #258. No production or staging access
 is needed for technical completion.
+
+## Qualified durable battle contribution family
+
+Record kind 11 now admits the sealed contribution payload through the canonical
+writer. All 65 fields retain their declared SQL widths and signedness; the
+complete tagged record remains within 512 bytes. The transport receipt is bound
+to the battle producer and the decision UTC label. Its domain key is the
+independent process-wide segment sequence, so a battle or actor alias cannot
+replay a contribution under a second receipt. Exact retries, conflicting
+receipts and uncertain pending representations retain the existing repository
+semantics. Reserved bytes are included in quarantine identity; unrelated union
+bytes and ABI padding are excluded. Configuration scope and captured semantic
+versions are qualified against the immutable configuration projection.
+
+The additive `0062_telemetry_battle_contributions` migration requires every
+kind-11 field and NULL columns for other families. Direct SQL checks retain
+native actor/context/association identity, metric availability, clock ordering,
+explicit uncertainty and healing/casting partitions, including unsigned 64-bit
+saturation boundaries. Earlier migrations and their manifest entries remain
+byte-identical. All three current migration histories, protected runtime
+inventory, boot constants and exact fresh/restored engine fingerprints agree at
+head 62 with 250 database tables and 51 non-database stores.
+
+Both disposable MariaDB 10.11.14 and MySQL 8.0.46 full-chain qualifications passed.
+The native writer generated actual disjoint damage, healing, control, casting
+and engagement segments with changed zone/association context. It verified all
+65 fields, source totals, unresolved casting, unknown/signed clocks,
+NULL-family separation, exact/conflicting domain and transport retries, a lost
+commit acknowledgement, configuration/header refusals, protected pending
+values and exact quarantine evidence. All eleven native record families and
+the frozen golden fixtures retain their behavior.
+
+The separate storage fixture also passed actual emitted pet/NPC, saturated
+counter, clock-uncertainty and source-gap rows, declared unavailable metrics,
+direct constraint refusals, private role negatives, the maintained incident
+registration CLI, retained corrections, lost reply recovery, atomic review
+rollback and immutable coverage snapshot retries. Guarded reruns preserve raw
+facts and reviews; altered column defaults and widened family checks are
+refused until explicitly restored. The restored metadata fingerprint equals
+the freshly migrated schema on each engine. New mixed-stream tests preserve
+definitions 1/2/3 amounts while strictly validating kind 11 and advancing their
+input cursor.
+
+Outage wire v3 includes families 1–11 without changing its 81,984-byte bound.
+Native and offline readers preserve v1/v2 bytes and enforce each earlier
+version's original family limit for both observed/failure masks. Private
+incident review schema v4 has an independent retained history for contribution
+loss. The existing snapshot seam selects v4 for future definitions beginning
+with 5, keeps v3 for definition 4 and preserves older selections. This seam
+does not add a definition to the current report catalog or publish a battle
+suite.
+
+```sh
+python3 tests/async/test_telemetry_battle_contribution_contract.py
+python3 tests/async/test_telemetry_battle_contributions.py --sanitize
+python3 tests/async/test_telemetry_transport.py
+python3 tests/async/test_telemetry_outage.py
+python3 tests/async/test_telemetry_incidents.py
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh --contribution-storage
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --contribution-storage
+python3 scripts/validate_runtime_compatibility.py
+python3 scripts/validate_data_lifecycle.py
+make -C src
+```
+
+The new queue journey passed normal, ASan and UBSan execution and retained the
+admitted immutable kind-11 payload through control-reserve admission and worker
+delivery. ThreadSanitizer could not start its trivial host capability probe;
+the harness was not run under TSAN and no TSAN pass is claimed.
+
+Native authoritative contribution capture and exact complete association/alias
+linkage are the next required work. They must include mode/configuration/group,
+pet ownership, leave/expiry/shutdown and capture-gap boundaries without copying
+old totals or extending observed durations. Full compact context/control/
+prevention/faction-population sources, typed death/escape/objective evidence,
+bounded atomic battle publication and actual personal-server source journeys
+remain open. All seven accepted identity/source-suite, PvE attempt/objective/
+interruption/reward, progression/rested/assistance/milestone/switching/comparable
+portfolio, four-suite/statistical, #487 compatibility and personal-local
+gameplay/persistence/performance requirements retain their incomplete portions
+under #258. Technical completion requires no production or staging access.

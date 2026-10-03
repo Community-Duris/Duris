@@ -504,6 +504,15 @@ fields record_fields(const telemetry_record &record)
 #undef TELEMETRY_BATTLE_FIELD
 		break;
 	}
+	case telemetry_record_kind::battle_contribution:
+	{
+		const auto &p = record.payload.battle_contribution;
+#define TELEMETRY_BC_FIELD(name, member, width, signed_value) \
+	number(values, telemetry_column_id::name, p.member);
+#include "telemetry/telemetry_battle_contribution_fields.inc"
+#undef TELEMETRY_BC_FIELD
+		break;
+	}
 	case telemetry_record_kind::coverage_gap:
 	{
 		const auto &p = record.payload.gap;
@@ -637,6 +646,12 @@ std::string signature(const telemetry_record &record)
 		break;
 	case telemetry_record_kind::battle:
 		for (auto byte : record.payload.battle.actor.actor.reserved)
+			value += ':' + std::to_string(byte);
+		break;
+	case telemetry_record_kind::battle_contribution:
+		value += ':' + std::to_string(record.payload.battle_contribution.reserved);
+		value += ':' + std::to_string(record.payload.battle_contribution.context.reserved);
+		for (auto byte : record.payload.battle_contribution.context.actor.actor.reserved)
 			value += ':' + std::to_string(byte);
 		break;
 	case telemetry_record_kind::configuration:
@@ -951,6 +966,35 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 				    " FROM telemetry_config WHERE environment_id=" +
 				    std::to_string(p.scope.environment_id) +
 				    " AND config_id=" + std::to_string(p.scope.config_id));
+		auto row = mysql_fetch_row(config.get());
+		if (!row || !equal_row(row, expected))
+			return telemetry_apply_outcome::rejected_invalid;
+	}
+
+	if (record.header.kind == telemetry_record_kind::battle_contribution)
+	{
+		const auto &p = record.payload.battle_contribution;
+		fields logical_key;
+		number(logical_key, telemetry_column_id::bc_battle_boot_id,
+		       p.context.battle.producer.boot_id);
+		number(logical_key, telemetry_column_id::bc_battle_process_id,
+		       p.context.battle.producer.process_id);
+		number(logical_key, telemetry_column_id::bc_segment_seq, p.sequence);
+		auto existing =
+			query("SELECT 1 FROM telemetry_interval WHERE " + where(logical_key));
+		// A domain replay must retain its original admitted transport receipt.
+		if (mysql_fetch_row(existing.get()))
+			return telemetry_apply_outcome::duplicate_conflict;
+		fields expected;
+		number(expected, telemetry_column_id::season_id, p.context.scope.season_id);
+		number(expected, telemetry_column_id::classifier_version,
+		       p.context.scope.classifier_version);
+		number(expected, telemetry_column_id::policy_version,
+		       p.context.scope.policy_version);
+		auto config = query("SELECT " + names(expected, true) +
+				    " FROM telemetry_config WHERE environment_id=" +
+				    std::to_string(p.context.scope.environment_id) +
+				    " AND config_id=" + std::to_string(p.context.scope.config_id));
 		auto row = mysql_fetch_row(config.get());
 		if (!row || !equal_row(row, expected))
 			return telemetry_apply_outcome::rejected_invalid;

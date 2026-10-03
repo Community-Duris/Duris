@@ -442,6 +442,51 @@ void reserve_and_loss_tests()
 	finish();
 }
 
+void contribution_admission_test()
+{
+	case_name = "sealed contribution uses control reserve and retains its immutable payload";
+	bind_and_init(config(4U, 1U, 2U, 1U));
+	for (std::uint64_t sequence = 1U; sequence <= 3U; ++sequence)
+		CHECK(telemetry_transport_enqueue(detail_record(sequence)).admission ==
+		      telemetry_queue_admission::accepted_detail);
+	telemetry_record record{};
+	record.header = detail_record(4U).header;
+	record.header.kind = telemetry_record_kind::battle_contribution;
+	auto &p = record.payload.battle_contribution;
+	p.context.battle = { record.header.key.producer, 1U };
+	p.context.scope = { 77U, 66U, 1U, 1U, 1U, -1, 0U };
+	p.context.actor.actor = { 55U, 55, 55U, telemetry_combat_actor_kind::player, {}, 20U };
+	p.context.actor.dimensions = { 1U, 2U, 3U, 4U, 5, 1U };
+	p.context.actor.context_version = TELEMETRY_BATTLE_ACTOR_CONTEXT_VERSION;
+	p.context.association_revision = p.last_association_revision = 1U;
+	p.context.association_fact_sequence = p.last_association_fact_sequence = 5U;
+	p.context.available_metrics = TELEMETRY_BC_DAMAGE;
+	p.context.side_status = telemetry_battle_side_status::qualified_observed_graph;
+	p.context.side = 1U;
+	p.context.mode = telemetry_encounter_mode::pvp;
+	p.sequence = 1U;
+	p.start_usec = 100U;
+	p.start_utc_usec = 1000;
+	p.cut = { 100U, 1000, 100U, 1000 };
+	p.counters.damage_dealt = 42U;
+	p.definition_version = TELEMETRY_BATTLE_CONTRIBUTION_VERSION;
+	p.end_reason = telemetry_battle_contribution_end::battle_ended;
+	CHECK(telemetry_record_is_valid(record));
+	CHECK(telemetry_transport_enqueue(record).admission ==
+	      telemetry_queue_admission::accepted_control_reserve);
+	// The admitted queue owns the original fixed record value.
+	p.counters.damage_dealt = 999U;
+	for (unsigned int attempt = 0U; attempt < 8U; ++attempt)
+		(void)telemetry_transport_pulse(100U + attempt);
+	CHECK(repository_state.calls == 2U);
+	const auto &stored = repository_state.observed[1].records[1];
+	CHECK(stored.header.kind == telemetry_record_kind::battle_contribution);
+	CHECK(stored.header.key.record_seq == 4U);
+	CHECK(stored.payload.battle_contribution.counters.damage_dealt == 42U);
+	CHECK(telemetry_transport_health_copy().applied_records == 4U);
+	finish();
+}
+
 void immutable_retry_and_ambiguous_tests()
 {
 	case_name = "immutable retry and ambiguous barrier";
@@ -807,6 +852,7 @@ int main()
 {
 	row_and_age_flush_tests();
 	reserve_and_loss_tests();
+	contribution_admission_test();
 	immutable_retry_and_ambiguous_tests();
 	validation_and_isolation_tests();
 	circuit_breaker_tests();

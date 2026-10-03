@@ -9,93 +9,11 @@
 
 inline constexpr std::size_t TELEMETRY_BATTLE_CONTRIBUTION_MAX_BATTLES = 128U;
 inline constexpr std::size_t TELEMETRY_BATTLE_CONTRIBUTION_MAX_ACTORS = 64U;
-inline constexpr std::uint16_t TELEMETRY_BATTLE_CONTRIBUTION_VERSION = 1U;
-inline constexpr std::uint32_t TELEMETRY_BC_DAMAGE = 1U;
-inline constexpr std::uint32_t TELEMETRY_BC_HEALING = 2U;
-inline constexpr std::uint32_t TELEMETRY_BC_CONTROL = 4U;
-inline constexpr std::uint32_t TELEMETRY_BC_CASTING = 8U;
-inline constexpr std::uint32_t TELEMETRY_BC_ENGAGEMENT = 16U;
-inline constexpr std::uint32_t TELEMETRY_BC_METRICS = 31U;
 inline constexpr std::size_t TELEMETRY_BATTLE_CONTRIBUTION_WIRE_BYTES = 0U
 #define TELEMETRY_BC_FIELD(name, member, width, signed_value) +width
 #include "telemetry/telemetry_battle_contribution_fields.inc"
 #undef TELEMETRY_BC_FIELD
 	;
-
-/* Exact association reference and native context, supplied by the owning
- * collector. Availability names reviewed producer families, not complete
- * historical coverage. Missing families have unknown, not measured-zero, totals. */
-struct telemetry_battle_contribution_context
-{
-	telemetry_battle_id battle;
-	telemetry_encounter_source scope;
-	telemetry_battle_actor_context actor;
-	telemetry_revision association_revision;
-	std::uint32_t association_fact_sequence;
-	std::uint32_t available_metrics;
-	telemetry_battle_side_status side_status;
-	telemetry_encounter_mode mode;
-	std::uint8_t side;
-	std::uint8_t reserved;
-	telemetry_quality_mask quality_flags;
-};
-
-struct telemetry_battle_contribution_counters
-{
-	std::uint64_t damage_dealt;
-	std::uint64_t damage_taken;
-	std::uint64_t healing_attempted;
-	std::uint64_t effective_healing;
-	std::uint64_t overhealing;
-	std::uint64_t healing_received;
-	std::uint64_t control_applications;
-	std::uint64_t control_received;
-	std::uint64_t casting_attempts;
-	std::uint64_t casting_completions;
-	std::uint64_t casting_aborts;
-	std::uint64_t casting_unresolved;
-	telemetry_duration_usec casting_elapsed_usec;
-	/* Observed opponent-link duration; it does not establish incoming pressure
-	 * or prevention and must not be relabeled as tanking. */
-	telemetry_duration_usec engaged_target_usec;
-};
-
-enum class telemetry_battle_contribution_end : std::uint8_t
-{
-	context_changed = 1,
-	actor_left = 2,
-	battle_ended = 3,
-	source_gap = 4,
-};
-
-struct telemetry_battle_contribution_cut
-{
-	telemetry_monotonic_usec observed_usec;
-	telemetry_utc_usec observed_utc_usec;
-	telemetry_monotonic_usec decision_usec;
-	telemetry_utc_usec decision_utc_usec;
-};
-
-/* One sealed disjoint segment, emitted once. Its process-wide segment sequence
- * is independent of battle/actor identity and the later transport receipt.
- * A battle-ID/context change seals the old totals; no cumulative amount is
- * copied into the new segment. Alias resolution is the publisher's job. */
-struct telemetry_battle_contribution_payload
-{
-	telemetry_battle_contribution_context context;
-	telemetry_sequence sequence;
-	telemetry_revision last_association_revision;
-	std::uint32_t last_association_fact_sequence;
-	std::uint32_t modifier_flags;
-	telemetry_monotonic_usec start_usec;
-	telemetry_utc_usec start_utc_usec;
-	telemetry_battle_contribution_cut cut;
-	telemetry_battle_contribution_counters counters;
-	telemetry_quality_mask quality_flags;
-	std::uint16_t definition_version;
-	telemetry_battle_contribution_end end_reason;
-	std::uint8_t reserved;
-};
 
 using telemetry_battle_contribution_sink =
 	bool (*)(void *, const telemetry_battle_contribution_payload &) noexcept;
@@ -150,10 +68,6 @@ struct telemetry_battle_contribution_state
 	telemetry_battle_contribution_slot slots[TELEMETRY_BATTLE_CONTRIBUTION_MAX_BATTLES];
 };
 
-bool telemetry_battle_contribution_context_is_valid(
-	const telemetry_battle_contribution_context &) noexcept;
-bool telemetry_battle_contribution_payload_is_valid(
-	const telemetry_battle_contribution_payload &) noexcept;
 /* Domain identity is (battle producer, process-wide segment sequence), not
  * (battle ID, actor ID) and not the transport's admitted receipt. */
 bool telemetry_battle_contribution_same_key(const telemetry_battle_contribution_payload &,
@@ -161,7 +75,7 @@ bool telemetry_battle_contribution_same_key(const telemetry_battle_contribution_
 bool telemetry_battle_contribution_equal(const telemetry_battle_contribution_payload &,
 					 const telemetry_battle_contribution_payload &) noexcept;
 /* Exact-length network order; decode clears its destination on every refusal.
- * This codec alone does not add a runtime record family or SQL projection. */
+ * Durable kind-11 records retain the same definition-1 fields. */
 bool telemetry_battle_contribution_encode(const telemetry_battle_contribution_payload &,
 					  std::uint8_t *, std::size_t) noexcept;
 bool telemetry_battle_contribution_decode(const std::uint8_t *, std::size_t,

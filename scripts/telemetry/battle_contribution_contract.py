@@ -2,13 +2,16 @@
 
 Intrinsic validation preserves exact fields and association references. It does
 not establish complete association packets, collector coverage, or publication.
-No runtime record tag or database projection is introduced here.
+Kind-11 SQL rows preserve the transport receipt and the domain segment key.
 """
 from __future__ import annotations
 
 from collections.abc import Mapping
 
-from . import battle_contract as battle
+try:
+    from . import battle_contract as battle
+except ImportError:
+    import battle_contract as battle
 
 DEFINITION_VERSION = 1
 UTC_UNKNOWN = -(1 << 63)
@@ -193,3 +196,21 @@ def decode_segment(wire: bytes) -> dict[str, int]:
         value[name] = int.from_bytes(wire[offset:offset + width], "big", signed=signed)
         offset += width
     return validate_segment(value)
+
+
+def validate_raw_segment(row: Mapping[str, int]) -> dict[str, int]:
+    """Strict kind-11 storage boundary, independent of earlier combat families."""
+    _require(isinstance(row, Mapping), "raw contribution mapping")
+    _require(type(row.get("record_kind")) is int and row["record_kind"] == 11, "raw contribution tag")
+    _require(type(row.get("schema_version")) is int and row["schema_version"] == 1, "raw contribution schema")
+    value = validate_segment({name: row.get(name) for name in FIELDS})
+    for name in ("boot_id", "process_id", "record_seq"):
+        _require(type(row.get(name)) is int and 0 < row[name] < (1 << 64), "raw contribution replay identity")
+    _require((row["boot_id"], row["process_id"]) == segment_key(value)[:2] and
+             type(row.get("occurrence_utc_usec")) is int and row["occurrence_utc_usec"] == value["bc_decision_utc_usec"],
+             "raw contribution producer/occurrence binding")
+    header = {"ingest_id", "boot_id", "process_id", "record_seq", "schema_version",
+              "record_kind", "occurrence_utc_usec", "ingested_utc_usec"}
+    _require(all(item is None for name, item in row.items() if name not in FIELDS and name not in header),
+             "raw contribution inactive family payload")
+    return value

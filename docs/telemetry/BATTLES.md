@@ -276,18 +276,17 @@ Ten executable journeys qualify counter conservation, actual complete associatio
 packets and aliases, PvP-to-mixed mode and configuration changes, changing
 pet owners/kinds, distinct NPC lifetimes, unresolved casting, observed-time
 censoring, backward clock/reference refusal, 64-actor/128-battle and sequence
-limits, saturation, sink failure, and allocation-free event/codec paths. Seven
+limits, saturation, sink failure, and allocation-free event/codec paths. Nine
 cross-language regressions round-trip every actual sealed field and qualify
 immutable layout, strict types/widths/lengths, semantic corruption, signed clocks,
 unknown metrics and logical keys. Normal and ASan/UBSan executions passed.
 
-This layer is compiled into the maintained server but is not yet allocated or
-called by the runtime. The existing record kinds 1–10, kind-8 encounter summaries,
-kind-10 association storage and report definitions retain their contracts. The
-next required integration connects this accumulator at authoritative gameplay
-and association boundaries, admits a separate typed contribution family through
-the native writer/replay/outage/incident contracts, and atomically publishes
-complete battle reports with source/linkage coverage. No timestamp join or
+The accumulator is compiled into the maintained server but is not yet allocated
+or called by the runtime. Its new kind-11 durable family is described below.
+Earlier record kinds, kind-8 encounter summaries, kind-10 association storage and
+report definitions retain their contracts. The next required integration connects
+this accumulator at authoritative gameplay and association boundaries and
+atomically publishes complete battle reports with source/linkage coverage. No timestamp join or
 prototype-based conversion of legacy kind-8 totals is acceptable. Actual
 personal-server journeys and performance qualification remain required.
 
@@ -341,6 +340,61 @@ and [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). Compact
 context/control/prevention/population sources, exact shared contribution linkage,
 bounded atomic projections and the complete personal-local gameplay/performance
 gate remain required. This layer alone publishes no battle balance result.
+
+## Durable contribution storage
+
+Migration `0062_telemetry_battle_contributions` adds record kind 11 with all 65
+definition-1 contribution fields in canonical typed nullable columns. Each kind-11
+row requires the complete payload; other record families require those columns
+to be NULL. The existing transport receipt remains the delivery identity. The
+separate unique `(bc_battle_boot_id,bc_battle_process_id,bc_segment_seq)` key
+prevents a second receipt from inventing another retained segment. Battle/actor
+aliases never change that key. Exact retries use the original receipt and fields;
+a conflicting retry remains a conflict.
+
+The header producer must match the battle producer. Its occurrence label is the
+segment's decision UTC; the start, observed prefix and decision clocks remain
+separate fields. Optional session/encounter links do not create legacy session
+or encounter projections. Native representation validation, immutable
+configuration qualification and SQL checks retain the context, association,
+quality, metric availability, actor identity and counter partitions. SQL uses
+decimal intermediates for counter sums to preserve unsigned 64-bit saturation
+boundaries without overflow. Reserved representation bytes remain part of
+uncertain-retry quarantine identity. Inactive union bytes and ABI padding do not.
+
+The complete manifest now has 62 steps and the runtime inventory has 250 database
+tables. Earlier sealed migrations remain byte-identical. The new verifier checks
+all column widths/defaults/order, the logical replay index, exact payload checks
+and independent private incident schema v4. Guarded reruns preserve retained
+facts/reviews and refuse existing schema drift instead of repairing it silently.
+
+```sh
+python3 tests/async/test_telemetry_battle_contribution_contract.py
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh --contribution-storage
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --contribution-storage
+```
+
+The native repository fixture generates actual disjoint segments with damage,
+healing, control, casting, engagement and a changed zone/association context. It
+checks every field through SQL, conserved totals, unresolved casting, signed
+clocks, exact/conflicting retries, lost acknowledgements, scope/header refusals,
+NULL family separation and quarantine evidence. The separate full-chain storage
+fixture covers actual emitted pet/NPC, saturated counter, clock uncertainty and
+source-gap rows, unavailable metrics, direct CHECK refusals, maintained review CLI,
+private permissions, retained corrections, atomic review rollback, immutable
+snapshot retries and fresh/restored schema fingerprints. Definitions 1/2/3
+strictly validate kind 11 and advance their cursor without adding its amounts.
+
+Outage ledger v3 and private incident schema v4 include contribution loss;
+earlier versions retain their original family limits. The common coverage
+snapshot seam selects v4 for future definitions beginning with 5 and keeps
+definition 4 on v3. The current report catalog still contains definitions 1/2/3.
+Neither this storage nor that seam publishes a battle report. Native runtime
+capture, complete association/alias linkage, context/prevention/population,
+atomic battle projections and actual personal-local gameplay/performance
+qualification remain required under the full expansion in #258.
 
 ## Bounds and qualification
 

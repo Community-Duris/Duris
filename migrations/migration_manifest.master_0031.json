@@ -788,6 +788,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "4dd602c9aa0ec861ce819bbb19c2555ae76c6ed55c9376df0300691bd15bbebc",
       "verify_checksum": "8238821bb4e16305f99662768ae4a95353987b3bd72c2652f98d262adb75a047"
+    },
+    {
+      "id": "0062_telemetry_battle_contributions",
+      "sequence": 62,
+      "description": "Persist battle contributions with exact segment replay and independent incident schema 4",
+      "apply": "immutable/0062_telemetry_battle_contributions.sql",
+      "verify": "immutable/0062_telemetry_battle_contributions.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "70cd9746ca79b3a788ec5bfa4f9f2a47e12dc88e3dd68ac8875386147ccc71b5",
+      "verify_checksum": "48c1756b63378ad76e285d7734b3d359e6eed70a956992002435dfd2138ccae7"
     }
   ]
 }

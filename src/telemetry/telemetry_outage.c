@@ -20,10 +20,12 @@ constexpr const char *LEDGER = "outages.ledger";
 constexpr const char *PENDING = "outages.pending";
 constexpr const char *LOCK = "outages.owner";
 constexpr unsigned char LEGACY_MAGIC[] = { 'D', 'M', 'S', 'T', 'L', 'J', '0', '1' };
-constexpr unsigned char MAGIC[] = { 'D', 'M', 'S', 'T', 'L', 'J', '0', '2' };
+constexpr unsigned char BATTLE_MAGIC[] = { 'D', 'M', 'S', 'T', 'L', 'J', '0', '2' };
+constexpr unsigned char MAGIC[] = { 'D', 'M', 'S', 'T', 'L', 'J', '0', '3' };
 using words = std::array<std::uint64_t, TELEMETRY_OUTAGE_DISK_WORDS>;
 constexpr std::uint64_t LEGACY_KINDS = (std::uint64_t{ 1U } << 10U) - 2U;
-constexpr std::uint64_t KNOWN_KINDS = (std::uint64_t{ 1U } << 11U) - 2U;
+constexpr std::uint64_t BATTLE_KINDS = (std::uint64_t{ 1U } << 11U) - 2U;
+constexpr std::uint64_t KNOWN_KINDS = (std::uint64_t{ 1U } << 12U) - 2U;
 words encode(const telemetry_outage_observation &value);
 
 struct file_guard
@@ -273,7 +275,12 @@ telemetry_outage_result load(telemetry_outage_journal &j, const char *name, bool
 	if (SHA256(data.data(), data.size() - sizeof(digest), digest) == nullptr)
 		return failure(j, telemetry_outage_result::io_failure, EIO);
 	const bool legacy = std::memcmp(data.data(), LEGACY_MAGIC, sizeof(LEGACY_MAGIC)) == 0;
-	if ((!legacy && std::memcmp(data.data(), MAGIC, sizeof(MAGIC)) != 0) ||
+	const bool battle_version = std::memcmp(data.data(), BATTLE_MAGIC, sizeof(BATTLE_MAGIC)) ==
+				    0;
+	const auto known_kinds = legacy		? LEGACY_KINDS :
+				 battle_version ? BATTLE_KINDS :
+						  KNOWN_KINDS;
+	if ((!legacy && !battle_version && std::memcmp(data.data(), MAGIC, sizeof(MAGIC)) != 0) ||
 	    std::memcmp(data.data() + data.size() - sizeof(digest), digest, sizeof(digest)) != 0)
 		return failure(j, telemetry_outage_result::corrupt, EBADMSG);
 	const auto generation = read_word(data.data() + 8U);
@@ -288,7 +295,7 @@ telemetry_outage_result load(telemetry_outage_journal &j, const char *name, bool
 		for (std::size_t field = 0U; field < fields.size(); ++field)
 			fields[field] =
 				read_word(data.data() + 32U + (index * fields.size() + field) * 8U);
-		if ((legacy && ((fields[9] | fields[36]) & ~LEGACY_KINDS) != 0U) ||
+		if ((((fields[9] | fields[36]) & ~known_kinds) != 0U) ||
 		    !decode(fields, j.observations[index]) ||
 		    (index + 1U < count &&
 		     j.observations[index].phase == telemetry_outage_phase::running))

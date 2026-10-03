@@ -18,11 +18,13 @@ UINT64_MAX = (1 << 64) - 1
 UTC_UNKNOWN = -(1 << 63)
 KNOWN_KINDS = (1 << 9) - 2
 # Sealed v1 inventories retain families 1..8; definition 3 retains independent
-# v2 ownership history. Definitions 4+ use v3, including shared battles (kind 10).
+# v2 ownership history. Definition 4 uses v3 shared-battle facts; definitions
+# 5+ require v4 contribution evidence. Earlier reviewed inventories stay sealed.
 REGISTRY_SCHEMAS = {
     1: (KNOWN_KINDS, 8, "telemetry_incident_registry", "telemetry_incident"),
     2: ((1 << 10) - 2, 9, "telemetry_incident_registry_v2", "telemetry_incident_v2"),
     3: ((1 << 11) - 2, 10, "telemetry_incident_registry_v3", "telemetry_incident_v3"),
+    4: ((1 << 12) - 2, 11, "telemetry_incident_registry_v4", "telemetry_incident_v4"),
 }
 QUALITY_INCIDENT_GAP = 1 << 27
 QUALITY_INVENTORY_UNKNOWN = 1 << 28
@@ -73,7 +75,7 @@ def schema_contract(version: Any) -> tuple[int, int, str, str]:
 def generation_schema(definition_version: int) -> int:
     if type(definition_version) is not int or not 1 <= definition_version < (1 << 32):
         raise IncidentError("invalid_definition_version")
-    return 3 if definition_version >= 4 else 2 if definition_version == 3 else 1
+    return 4 if definition_version >= 5 else 3 if definition_version == 4 else 2 if definition_version == 3 else 1
 
 
 def _stored_digest(value: Any, *, nullable: bool = False) -> bytes | None:
@@ -391,7 +393,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("packet", nargs="?", type=Path)
     parser.add_argument("--template", action="store_true")
-    parser.add_argument("--registry-schema-version", type=int, choices=(1, 2, 3),
+    parser.add_argument("--registry-schema-version", type=int, choices=(1, 2, 3, 4),
                         help="Template schema; registration uses the packet's explicit schema.")
     parser.add_argument("--register", action="store_true", help="append reviewed inventory through TELEMETRY_INCIDENT_DB_* credentials")
     args = parser.parse_args(argv)

@@ -146,7 +146,7 @@ The incident registrar additionally needs SELECT/INSERT on the two v2 input
 tables; the rollup needs SELECT. The report reader's authority stays on the same
 two published snapshot tables. It cannot read either private review history or
 raw ownership facts. Both new tables are protected in the retained lifecycle
-inventory, which now includes 246 database tables.
+inventory; migration 0059's complete inventory contained 246 database tables.
 
 Report definitions 1 and 2 use the v1 history. Definition 3 uses the v2 history
 and preserves the chosen reviewed inventory in the
@@ -181,10 +181,10 @@ history until a reviewer has evidence to narrow it.
 
 Migration `0061_telemetry_shared_battle_facts` adds independent
 `telemetry_incident_registry_v3` and `telemetry_incident_v3` histories for families
-1–10. A new definition beginning with 4 uses this explicit review schema.
+1–10. Definition 4 uses this explicit review schema.
 Definitions 1/2 and 3 retain their v1 and v2 review histories and published
 snapshots. A v3 packet, digest or correction cannot rewrite either earlier history.
-The current retained lifecycle inventory includes 248 database tables.
+Migration 0061's retained lifecycle inventory contained 248 database tables.
 
 The v3 bounds remain 64 incidents and 128 KiB. Kind-10 verified post-fix references
 must point to a committed raw record with the same explicit battle environment,
@@ -218,3 +218,39 @@ schema fingerprint equals the fresh migrated schema on each engine.
 The common snapshot seam is qualified for future definition 4; the balance
 catalog and atomic battle projections remain pending. A review does not publish
 a battle suite, recover missing gameplay facts or establish complete coverage.
+
+## Contribution-loss review contract
+
+Migration `0062_telemetry_battle_contributions` adds the independent
+`telemetry_incident_registry_v4` and `telemetry_incident_v4` histories for
+families 1–11. Each earlier schema keeps its original family limits, registry
+sequence and digest identity. The current retained lifecycle inventory contains
+250 database tables. The bounds remain 64 incidents and 128 KiB per packet.
+
+A kind-11 verified post-fix reference must match a real committed transport
+receipt, the explicit contribution environment/season and decision occurrence
+label. It cannot borrow legacy NULL session/encounter scope or substitute the
+segment's earlier observed endpoint. Corrections, explicit withdrawals,
+unknown tails and separate reconstruction retain the existing review semantics.
+
+```sh
+python3 scripts/telemetry/incident.py --template --registry-schema-version 4
+python3 scripts/telemetry/incident.py /private/path/reviewed-contribution-incidents.json --register
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh --contribution-storage
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --contribution-storage
+```
+
+The registrar needs SELECT/INSERT on the two private v4 input tables and SELECT
+on raw telemetry for the bounded verified-fact read. An external publisher needs
+SELECT on that history plus its existing published snapshot authority. Reports
+read the existing published snapshot tables and have no raw or private review
+access. The game writer has no incident registration authority.
+
+The common atomic snapshot/read seam selects schema v4 for future definitions
+beginning with 5, preserves v3 for definition 4 and preserves the older selections
+for definitions 1/2/3. The balance catalog and atomic battle outputs remain
+pending; seam qualification establishes no completed balance report. The local
+storage fixture exercises real CLI registration, committed reference refusals,
+rollback, exact retries after a lost commit reply, retained corrections,
+immutable snapshots, private permissions, guarded reruns and refusal/restoration
+of metadata drift. No production or staging access is needed.

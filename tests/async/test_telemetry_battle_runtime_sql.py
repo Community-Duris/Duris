@@ -96,7 +96,8 @@ def qualify() -> None:
                     raise AssertionError("writer privileges exceeded: " + statement)
             result = dict(status="passed", engine=os.environ.get("TELEMETRY_REPOSITORY_DB_IMAGE"),
                 normalized_metadata_fingerprint=fingerprint,
-                migration_head="0061_telemetry_shared_battle_facts", records=len(stored), packets=packets,
+                migration_head=json.loads((ROOT / "migrations/migration_manifest.json").read_text())["migrations"][-1]["id"],
+                battle_schema_migration="0061_telemetry_shared_battle_facts", records=len(stored), packets=packets,
                 battle_field_count=70, native_runtime=True, actual_worker=True,
                 native_sql_writer=True, private_writer=True, running_server=False)
             if artifact := os.environ.get("TELEMETRY_BATTLE_RUNTIME_RESULT"):

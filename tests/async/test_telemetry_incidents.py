@@ -69,8 +69,8 @@ class IncidentSemantics(unittest.TestCase):
         self.assertNotEqual(first["packet_digest"], second["packet_digest"])
         with self.assertRaisesRegex(incident.IncidentError, "stored_inventory_digest_mismatch"):
             incident.validate_stored(first, rows, registry_schema_version=2)
-        self.assertEqual([incident.generation_schema(v) for v in (1, 2, 3, 4, 5)], [1, 1, 2, 3, 3])
-        for version in (True, 0, 4, "2", None):
+        self.assertEqual([incident.generation_schema(v) for v in (1, 2, 3, 4, 5)], [1, 1, 2, 3, 4])
+        for version in (True, 0, 5, "2", None):
             with self.assertRaises(incident.IncidentError):
                 incident.template(version)
         p = packet(2)
@@ -103,12 +103,26 @@ class IncidentSemantics(unittest.TestCase):
             incident.validate_packet(p)
 
     def test_stored_digests_refuse_unbounded_integer_conversion(self):
-        for schema in (1, 2, 3):
+        for schema in (1, 2, 3, 4):
             meta, rows = incident.validate_packet(packet(schema))
             for value in (1 << 40, "11" * 32, b"x", bytearray(b"x" * 32)):
                 bad = dict(meta, packet_digest=value)
                 with self.assertRaises(incident.IncidentError):
                     incident.validate_stored(bad, rows, registry_schema_version=schema)
+
+    def test_contribution_family_uses_independent_v4_review_history(self):
+        p = packet(4)
+        p["incidents"][0].update(record_kind_mask=1 << 11, fix_reference_digest="44" * 32,
+            first_verified_postfix=dict(boot_id=11, process_id=22, record_seq=34,
+                                       record_kind=11, occurrence_utc_usec=None))
+        meta, rows = incident.validate_packet(p)
+        incident.validate_stored(meta, rows, registry_schema_version=4)
+        self.assertEqual(rows[0]["verified_record_kind"], 11)
+        for schema in (1, 2, 3):
+            p["registry_schema_version"] = schema
+            with self.assertRaisesRegex(incident.IncidentError, "unknown_record_family"):
+                incident.validate_packet(p)
+        self.assertEqual(len({incident.schema_contract(schema)[2:] for schema in (1, 2, 3, 4)}), 4)
 
     def test_unknown_end_and_backlog_stay_unknown(self):
         meta, rows = project(packet())

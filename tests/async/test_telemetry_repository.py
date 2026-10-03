@@ -62,7 +62,7 @@ def repository_mapping_contract() -> None:
     names = set(re.findall(r"TELEMETRY_COLUMN\(([a-z0-9_]+),", descriptor))
     serializer_lines, macro = [], False
     for line in repository.splitlines():
-        if line.startswith(("#define FIELD", "#define TELEMETRY_BATTLE_FIELD")):
+        if line.startswith(("#define FIELD", "#define TELEMETRY_BATTLE_FIELD", "#define TELEMETRY_BC_FIELD")):
             macro = True
         if not macro:
             serializer_lines.append(line)
@@ -121,9 +121,18 @@ def repository_mapping_contract() -> None:
     assert canonical_battle == migration_columns("0061_telemetry_shared_battle_facts.sql")
     assert set(canonical_battle) <= names
     battle = function_body(repository, "case telemetry_record_kind::battle:",
-                           "case telemetry_record_kind::coverage_gap:")
+                           "case telemetry_record_kind::battle_contribution:")
     assert '#include "telemetry/telemetry_battle_fields.inc"' in battle
     assert 'number(values, telemetry_column_id::name, p.member)' in battle
+    contribution_fields = (ROOT / "src/telemetry/telemetry_battle_contribution_fields.inc").read_text()
+    canonical_contribution = re.findall(r"TELEMETRY_BC_FIELD\(([a-z0-9_]+),", contribution_fields)
+    assert len(canonical_contribution) == len(set(canonical_contribution)) == 65
+    assert canonical_contribution == migration_columns("0062_telemetry_battle_contributions.sql")
+    assert set(canonical_contribution) <= names
+    contribution = function_body(repository, "case telemetry_record_kind::battle_contribution:",
+                                 "case telemetry_record_kind::coverage_gap:")
+    assert '#include "telemetry/telemetry_battle_contribution_fields.inc"' in contribution
+    assert 'number(values, telemetry_column_id::name, p.member)' in contribution
 
 
 def sql_environment() -> tuple[dict[str, str], list[str], str]:
@@ -345,6 +354,7 @@ def main():
         source = str(ROOT / "src/telemetry/telemetry_repository.c")
         failure_source = str(ROOT / "src/telemetry/telemetry_failure.c")
         battle_sources = [str(ROOT / "src/telemetry/telemetry_battle.c"),
+                          str(ROOT / "src/telemetry/telemetry_battle_contribution.c"),
                           str(ROOT / "src/telemetry/telemetry_battle_contract.c")]
         harness = str(ROOT / "tests/async/telemetry_repository_harness.cc")
         no_sql = tmp / "no_mysql"
