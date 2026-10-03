@@ -936,3 +936,103 @@ Production SQL: 41bd0dd301f1e594d58adb46d84b6093bef135b9d909fa501051328501e2f72c
 flatfile: 5a84db2dc851c73e80bcd05345529521ed18e7537440df0bda3aedd47987ecee.
 This closes one physical source-refusal defect, not actual player-drop producer,
 held publication/replay, current-head broad regression or full R1-R8 completion.
+
+## Scoped literal checkpoint and lifecycle ownership
+
+A generic ordinary recapture could replace a selected full-literal graph with a
+prototype-relative graph, and a local journal acknowledgment could be mistaken
+for the database source checkpoint. The new opt-in PID/runtime/root/generation
+scope retains its literal policy through newer ordinary captures and coalescing.
+It reports database acknowledgment only for the exact successful captured worker
+revision, with complete selected bytes and a clean revision/queue state. Fresh
+native graph mismatch or authoritative actor-map retirement refuses the token.
+
+A fresh quiesced scope can bind to one original operation ID. The hold blocks
+capture and terminal/death/target-login admission before revision or queue side
+effects; ordinary dirty marks continue advancing. Pre-admission cancellation
+cannot erase a held operation. Only its original operation ID releases it.
+Unheld scopes retire on stale identity, changed intent or terminal supersession;
+late completions cannot acknowledge a replacement scope. No gameplay caller uses
+this API yet. The eventual native transfer must still prove the actual physical
+source inside its atomic transaction; this API's database ACK is not that proof.
+
+Fresh disposable MySQL and MariaDB pass actual production capture, pipeline,
+journal, worker, repository and pool integration under ASan/UBSan: paused older
+SQL apply, newer coalescing/recapture, exact ACK, complete literal SQL payload and
+custody, real successful COMMIT reply loss, original-operation hold ownership,
+held terminal/death/login refusal, unrelated PID admission, immediate unregistered
+actor refusal, late old-runtime completion, changed intent cancellation, and two
+independent cold component reads with positive native journal replay/no quarantine.
+These are inactive component fixtures, not actual player-drop or full-world
+accounting journeys. Twelve disposable-target guard negatives and strict compile
+within 600 seconds pass. Both strict production backend builds pass.
+
+Flatfile begin/poll/hold refuse before capture, token mutation or save admission;
+a local flatfile journal completion cannot be labelled a database acknowledgment.
+The SQL-only generation declaration retains strict flatfile warning checks.
+
+Evidence: `tmp/literal-checkpoint-sql-only-native-final-summary.local.json`, SHA-256
+7bff5062f3840181754eb78b3995b8b3f43a8805a0a811b90c076cd789dc3c44;
+537 linked/runner/header inputs and 1,229 strict production source/Makefile inputs
+match the current worktree with explicitly LF-normalized hashes. Native raw
+compile hashes are retained separately. Actual native component binary:
+f0af34f9ba852f36dba337de0e4f45d5478cad99bdac3aaf085b1df1649cd676.
+Production SQL: 55145a53215d15a9e5fcb1e303e953535a850d057dfdd42aa374e99adf364970;
+flatfile: 01428fda7e29b8fa67e0db1a23f42f81b5bc3467f7347b6e886052e15d7d7c17.
+The final strict native compile passes in 270.943 seconds within the unchanged
+600-second budget. The save, stable death, public death and creation owners pass
+14/4/9/24 groups against final source; the stable extraction now ends at the
+actual array declaration rather than retaining an unmatched preprocessor guard.
+Their final artifact is
+`tmp/literal-checkpoint-sql-only-final-declaration-artifact.local.json`, SHA-256
+ef7a287e2680ceb92b18f686796ec64e205045fedee458c82cf4b01c2f553b7f.
+Eight earlier assertion-rejected native guard mutations and their exact helper
+body equivalence remain separate evidence. The separate
+ordinary-drop preparation, physical handler/action preflight, retained boolean
+publication, publication-ACK release and restored save/lifecycle obligation
+remain open, with implementation order recorded in Plan 1. Full R1-R8 and
+current-head integrated qualification remain open; accounting stays inactive.
+
+
+## Current room migration fixture owners
+
+Published f787dc9be refreshes the exact inventory owners to 226 tables and
+0055, preserving the room payload module in the supplemental SQL source set.
+The three focused owners, runtime compatibility, lifecycle registration and
+immutable migration histories pass. Evidence:
+`tmp/room55-inventory-owner-summary.local.json`, SHA-256
+00920885b2703b76d979961b294a9c995f1a780789bae4699f5358c18056c79f.
+
+Published 5f83fbc78 links the real exact room payload owner into the corpse,
+item-transfer and direct SQL gate native fixtures. Strict ASan/UBSan corpse and
+item owners pass in 210.378/137.428 seconds; actual client-linked SQL gate
+assertions pass. The gate still refuses closed SQL access, admits typed bank
+initialization and rejects null root connections. Evidence:
+`tmp/room-native-link-owner-qualified-summary.local.json`, SHA-256
+6feb53a93439dd5a608d96519e4dfdbe33eb0ea57e6fb0a70091b9821645a88f;
+571 current LF-normalized linked/compile-owner/header inputs verified. These
+repair frozen broad fixture failures; they do not relabel the original run.
+
+## Creation journey failure evidence
+
+Published 009085e12 captures bounded assertion, socket and shutdown-timeout
+failure evidence before isolated runtime cleanup. Client connection is inside
+the capture boundary. Password/email/environment secrets and bcrypt hashes are
+redacted before per-file or final tail limits. Default recovery log collection
+and the existing five-second prompt wait remain unchanged.
+
+Three controlled failures pass through real minimal isolated flatfile server
+boots, retaining native output/runtime witnesses after the temporary files have
+been removed. The frozen e58bb3296 binary is
+be18949354c85c25672e34189aff807f0c079fdc0934eac0bba8f85d46eb4a6c;
+the diagnostic overlay and scope are pinned in
+`tmp/creation-native-diagnostics-summary.local.json`, SHA-256
+d9542ded2934505ee25dcaa77d93ad2c4c013494e0e09d095fc8921f5519e130.
+This proves failure diagnostics, not starter-kit completion or current-head
+player gameplay. Initial boot failures retain their separate existing cleanup
+path. The frozen broad run's invitation-labelled failure was in its initial
+human warrior STAFF starter-kit wait, before restart/invitation/evil selection.
+Its 600-second supervised server-build and 180-second inspector timeouts also
+need serial reproduction without extending either budget. The frozen broad run
+continues at e58bb3296 and excludes subsequent source fixes; final current-head
+integrated qualification remains open.

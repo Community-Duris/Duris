@@ -5,6 +5,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import os
 
 from _paths import SRC
 
@@ -13,6 +14,8 @@ PIPELINE = (SRC / "player_save_pipeline.c").read_text()
 HEADER = (SRC / "player_save_pipeline.h").read_text()
 FIGHT = (SRC / "combat" / "fight.c").read_text()
 REVISION = (SRC / "player_revision_state.c").read_text()
+SANITIZER_FLAGS = (["-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie"]
+                   if os.environ.get("DURIS_TEST_SANITIZERS") == "1" else [])
 
 
 def section(text: str, start: str, end: str) -> str:
@@ -165,6 +168,14 @@ void make_snapshot(player_snapshot &snapshot, int pid, player_revision_t revisio
 
 HARNESS += fence_struct + "\n"
 HARNESS += "std::array<terminal_fence, PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS> terminal_fences = {};\n"
+literal_start = PIPELINE.index("struct literal_inventory_checkpoint")
+literal_array_end = PIPELINE.index("literal_inventory_checkpoints = {};", literal_start)
+literal_array_end += len("literal_inventory_checkpoints = {};")
+# Extract only actual storage; a backend guard around the next declaration
+# must not leak an unmatched preprocessor block into this component harness.
+HARNESS += PIPELINE[literal_start:literal_array_end] + "\n"
+HARNESS += section(PIPELINE, "literal_inventory_checkpoint *find_literal_inventory_locked(int pid)",
+                   "bool literal_inventory_blob(")
 HARNESS += find_fence + accounting + retained_scan + retain + requeue + ack_gate
 HARNESS += r'''
 }
@@ -199,10 +210,27 @@ int main()
     spell_receipt.operation_id.bytes[0] = 77;
     spell_receipt.effect_id = 6;
     captured.spell_effect_receipts.push_back(spell_receipt);
+    auto &literal = literal_inventory_checkpoints[0];
+    literal.token = {pid, 71, corpse_uid, 1};
+    literal.held = true;
+    player_revision_snapshot held_before = {}, held_after = {};
+    assert(player_revision_snapshot_copy(pid, &held_before));
+    const auto captures_before = health.captured;
+    assert(!retain_and_enqueue_death_snapshot(captured, corpse_uid, wallet_uid, operation));
+    assert(pending_append.empty() && !fence.death_snapshot && retained_bytes == 0 &&
+           health.captured == captures_before && literal.held);
+    assert(player_revision_snapshot_copy(pid, &held_after));
+    assert(held_before.current_revision == held_after.current_revision &&
+           held_before.queued_revision == held_after.queued_revision &&
+           held_before.queued_components == held_after.queued_components);
+    literal.token.pid = pid + 1;
+    assert(!find_literal_inventory_locked(pid) && find_literal_inventory_locked(pid + 1) == &literal);
     assert(!retain_and_enqueue_death_snapshot(captured, corpse_uid + 1,
                                               wallet_uid, operation));
     assert(pending_append.empty() && !fence.death_snapshot && retained_bytes == 0);
     assert(retain_and_enqueue_death_snapshot(captured, corpse_uid, wallet_uid, operation));
+    assert(literal.held && literal.token.pid == pid + 1);
+    literal_inventory_checkpoints.fill({});
     assert(pending_append.size() == 1);
     assert(fence.death_snapshot.has_value());
     assert(fence.death_snapshot->schema_version == PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION);
@@ -338,6 +366,7 @@ with tempfile.TemporaryDirectory(prefix="duris-stable-death-request-") as temp_d
     subprocess.run(
         [
             compiler,
+            *SANITIZER_FLAGS,
             "-std=c++20",
             "-Wall",
             "-Wextra",
@@ -358,3 +387,4 @@ with tempfile.TemporaryDirectory(prefix="duris-stable-death-request-") as temp_d
 print("[PASS] format-13 death request keeps revision, operation, corpse, wallet and spell receipt identity across failure/ambiguous retries")
 print("[PASS] journal/stale completions hold; exact database ACK releases the pinned request")
 print("[PASS] pinned memory is byte-bounded and capacity refusal can be safely reset")
+print("[PASS] held literal lease rejects retained death without queue/byte/revision changes; unrelated PID remains independent")

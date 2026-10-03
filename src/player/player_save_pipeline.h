@@ -107,6 +107,40 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
 player_save_pipeline_result player_save_pipeline_request(P_char ch,
 							 player_component_mask_t components,
 							 int save_intent, int room_vnum);
+// An opt-in SQL ordinary-drop checkpoint retains literal capture policy through
+// newer saves and coalescing. Database acknowledgment is separate from the
+// physical source proof required by the eventual transfer transaction.
+struct player_literal_inventory_token
+{
+	int32_t pid = 0;
+	uint64_t actor_runtime_id = 0;
+	uint64_t root_uid = 0;
+	uint64_t generation = 0;
+	bool operator==(const player_literal_inventory_token &) const = default;
+};
+
+enum class player_literal_inventory_state : uint8_t
+{
+	pending,
+	database_acknowledged,
+	refused,
+};
+
+player_literal_inventory_state
+player_save_pipeline_literal_inventory_begin(P_char actor, P_obj root, int room_vnum,
+					     player_literal_inventory_token *token_out);
+player_literal_inventory_state
+player_save_pipeline_literal_inventory_poll(const player_literal_inventory_token &token,
+					    P_char actor);
+// Hold blocks inventory capture, while dirty marks continue advancing normally.
+// Release requires the bound original operation ID; pre-admission cancel cannot
+// release an operation's publication obligation.
+bool player_save_pipeline_literal_inventory_hold(const player_literal_inventory_token &token,
+						 const critical_operation_id &operation_id);
+bool player_save_pipeline_literal_inventory_release(const player_literal_inventory_token &token,
+						    const critical_operation_id &operation_id);
+bool player_save_pipeline_literal_inventory_cancel(const player_literal_inventory_token &token);
+
 // Capture progression and its quest reward identities in one save-journal frame.
 // SQL applies the experience snapshot and receipt mask in the same transaction.
 player_save_pipeline_result

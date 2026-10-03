@@ -133,8 +133,52 @@ Actual production-pool fault/reconciliation checks and two complete-world cold
 boots on each SQL engine pass exact native UID, topology, payload and custody
 readback without Redis. Unsupported, stale and missing evidence still refuses.
 This closes the bounded historical room-payload storage/reconstruction gap.
-It does not qualify the ordinary gameplay producer: unstrung objects still lack
-a scoped full-literal checkpoint, the live callback still needs retained
-publication proof, and replay must verify an already restored graph or retain
-its obligation. These remain the next R1/R4/R8 work. See the October 3 review
+It does not qualify the ordinary gameplay producer: unstrung objects now have an opt-in scoped full-literal checkpoint component,
+but the actual drop producer does not use it. The live callback still needs
+retained publication proof, and replay must verify an already restored graph
+or retain its obligation. These remain the next R1/R4/R8 work. See the October 3 review
 status for pinned evidence and the independent current-head broad-run gate.
+
+## Scoped ordinary-drop owner implementation order
+
+The opt-in literal checkpoint component retains the selected graph's capture
+policy through newer ordinary saves/coalescing and requires the exact successful
+worker revision, fresh live bytes and a clean revision queue. A process-local
+PID/runtime/root/generation lease can bind to one original operation ID. Held
+leases retain save, terminal/death and target-login obligations; dirty marks
+continue. Immediate runtime-map retirement invalidates unheld callers. The native
+inactive component passes actual MySQL/MariaDB capture, pipeline, journal,
+repository and production-pool qualification. This is a producer prerequisite;
+no existing ordinary-drop gameplay route has been upgraded.
+
+1. Add a bounded preparation owner with identities and immutable terms, not live
+   pointers. Validate scope and current accounting admission before requesting
+   the literal checkpoint. Preserve the SQL wallet-root exclusion and all
+   inactive legacy paths. Preparation contributes command busy state but must
+   allow the checkpoint to complete its own capture.
+2. Refuse native handler side effects outside the admitted shape: water, falling,
+   no-ground, positive fall chance, airborne and transient cases. Inspect all
+   selected descendants for action source/adapter references through a new
+   read-only runtime predicate; `obj_from_char` cancellation can invoke adapter
+   finish before the physical unlink. No predicate exists yet. Do not consume
+   randomness or call room-placement helpers as a preflight.
+3. After exact database ACK, recapture and compare the complete live graph,
+   rebuild/freeze the command and bind the original-operation hold before
+   coordinator submission. Proven refusal releases it; journal uncertainty
+   retains the original ID and hold. Atomic native SQL source preparation still
+   supplies authoritative physical/custody proof; ACK is insufficient by itself.
+4. Validate live canonical bytes/topology and original runtime custody before
+   advancing the registry. Publish once through a retained boolean owner and
+   verify resulting room graph/custody. Release the scoped hold only after
+   coordinator publication ACK, in normal and ACK-retry paths, independent of
+   whether the original actor still exists.
+5. Restore schema-2 ordinary-drop obligations from durable commands after cold
+   room hydration. Verify already-restored original UIDs, exact bytes/topology
+   and after-custody without moving/advancing them again or repeating messages.
+   Missing or conflicting graphs remain held. Process-local tokens cannot be
+   reconstructed against a room root: a distinct restored save/lifecycle
+   obligation must survive until ACK while permitting authoritative hydration.
+6. Qualify the actual `do_drop` route, complete unstrung nested graphs, refusal
+   cleanup, coalescing, uncertain submission, post-COMMIT payload drift, ACK
+   failure, reconnect/copyover and two cold boots on both engines. Preserve
+   broader writer, activation, flatfile and workload gates.

@@ -511,3 +511,26 @@ and cold component reads pass; both strict production backend builds pass. The
 October 3 review status records the reproduced failure and source/binary hashes.
 Ordinary player-drop literal checkpoint, held publication and replay integration
 remain unfinished. The current inactive behavior and activation gates remain.
+
+### Scoped full-literal checkpoint prerequisite
+
+The opt-in literal scope now preserves selected complete bytes through ordinary
+recapture/coalescing and exact worker database ACK. Original-operation holds
+retain capture, terminal/death and target-login obligations while permitting dirty
+marks. Fresh actual-pool MySQL/MariaDB native pipeline/repository/journal/identity
+qualification and both strict production builds pass; see the October 3 review
+for exact source/binary evidence. The four existing save/creation/death owners pass against final source, including
+the real flatfile refusal guards. Flatfile begin/poll/hold refuse before side
+effects; an ordinary local journal completion cannot grant a database ACK. Plan 1 records remaining actual drop preparation,
+handler/action preflight, retained publication, ACK and restored lifecycle work.
+No gameplay route has been promoted and no accounting activation is authorized.
+
+
+Published fixture milestones f787dc9be and 5f83fbc78 repair exact 0055/226-table
+inventory and real room-payload native linkage; focused inventory, immutable
+history, sanitizer and direct SQL gates pass. Published 009085e12 retains bounded
+redacted creation failure evidence before cleanup, qualified with three controlled
+failures on the verified frozen native binary. The original failed broad run is
+preserved. Actual starter-kit and unchanged-budget build/inspector reproduction,
+current-head integrated qualification and all full R1-R8 gates remain open.
+See the October 3 review for exact scope, source and evidence pins.
