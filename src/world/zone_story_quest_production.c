@@ -366,7 +366,8 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 					while (keywords >> keyword)
 					{
 						std::transform(keyword.begin(), keyword.end(),
-							       keyword.begin(), [](unsigned char c)
+							       keyword.begin(),
+							       [](unsigned char c)
 							       { return std::tolower(c); });
 						found = found || keyword == contact.keyword;
 					}

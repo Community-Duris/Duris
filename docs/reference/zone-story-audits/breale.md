@@ -37,15 +37,15 @@ Comments are omitted; preprocessor branches are source leads, not evaluated runt
 
 | Kind | VNUM | Procedure | Source |
 | --- | ---: | --- | --- |
-| mob | 2613 | `breale_townsfolk` | [src/specs/specs.assign.c:333](../../../src/specs/specs.assign.c#L333) |
-| mob | 2614 | `breale_townsfolk` | [src/specs/specs.assign.c:334](../../../src/specs/specs.assign.c#L334) |
-| mob | 2619 | `breale_townsfolk` | [src/specs/specs.assign.c:335](../../../src/specs/specs.assign.c#L335) |
-| mob | 2620 | `breale_townsfolk` | [src/specs/specs.assign.c:336](../../../src/specs/specs.assign.c#L336) |
-| mob | 2621 | `breale_townsfolk` | [src/specs/specs.assign.c:337](../../../src/specs/specs.assign.c#L337) |
-| mob | 2622 | `breale_townsfolk` | [src/specs/specs.assign.c:338](../../../src/specs/specs.assign.c#L338) |
-| mob | 2623 | `breale_townsfolk` | [src/specs/specs.assign.c:339](../../../src/specs/specs.assign.c#L339) |
-| mob | 2624 | `breale_townsfolk` | [src/specs/specs.assign.c:340](../../../src/specs/specs.assign.c#L340) |
-| mob | 2625 | `breale_townsfolk` | [src/specs/specs.assign.c:341](../../../src/specs/specs.assign.c#L341) |
+| mob | 2613 | `breale_townsfolk` | [src/specs/specs.assign.c:332](../../../src/specs/specs.assign.c#L332) |
+| mob | 2614 | `breale_townsfolk` | [src/specs/specs.assign.c:333](../../../src/specs/specs.assign.c#L333) |
+| mob | 2619 | `breale_townsfolk` | [src/specs/specs.assign.c:334](../../../src/specs/specs.assign.c#L334) |
+| mob | 2620 | `breale_townsfolk` | [src/specs/specs.assign.c:335](../../../src/specs/specs.assign.c#L335) |
+| mob | 2621 | `breale_townsfolk` | [src/specs/specs.assign.c:336](../../../src/specs/specs.assign.c#L336) |
+| mob | 2622 | `breale_townsfolk` | [src/specs/specs.assign.c:337](../../../src/specs/specs.assign.c#L337) |
+| mob | 2623 | `breale_townsfolk` | [src/specs/specs.assign.c:338](../../../src/specs/specs.assign.c#L338) |
+| mob | 2624 | `breale_townsfolk` | [src/specs/specs.assign.c:339](../../../src/specs/specs.assign.c#L339) |
+| mob | 2625 | `breale_townsfolk` | [src/specs/specs.assign.c:340](../../../src/specs/specs.assign.c#L340) |
 
 ## Reset coverage
 

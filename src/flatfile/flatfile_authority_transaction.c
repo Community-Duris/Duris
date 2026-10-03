@@ -423,8 +423,18 @@ flatfile_authority_transaction_result
 flatfile_accounting_storage::commit(const std::string &root, const flatfile_authority_lock &lock,
 				    const std::vector<flatfile_authority_operation> &operations,
 				    std::string *error)
+{
+	return commit_with_outcome(root, lock, operations, error, nullptr);
+}
+
+flatfile_authority_transaction_result flatfile_accounting_storage::commit_with_outcome(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const std::vector<flatfile_authority_operation> &operations, std::string *error,
+	flatfile_authority_commit_outcome *outcome)
 try
 {
+	if (outcome)
+		*outcome = flatfile_authority_commit_outcome::not_published;
 	std::vector<uint8_t> bytes;
 	if (!lock.owns(root))
 		return flatfile_authority_transaction_result::invalid;
@@ -445,8 +455,27 @@ try
 	if (getenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT"))
 		return flatfile_authority_transaction_result::io_error;
 #endif
-	if (!flatfile_atomic_write(domains_directory(root), transaction_filename, bytes, error))
+	bool published = false;
+	bool durable = false;
+	try
+	{
+		durable = flatfile_atomic_write_with_publication(
+			domains_directory(root), transaction_filename, bytes, error, &published);
+	}
+	catch (const std::bad_alloc &)
+	{
+		if (outcome && published)
+			*outcome = flatfile_authority_commit_outcome::publication_uncertain;
+		throw;
+	}
+	if (!durable)
+	{
+		if (outcome && published)
+			*outcome = flatfile_authority_commit_outcome::publication_uncertain;
 		return flatfile_authority_transaction_result::io_error;
+	}
+	if (outcome)
+		*outcome = flatfile_authority_commit_outcome::committed;
 #ifdef DURIS_FLATFILE_AUTHORITY_FAULT_TEST
 	if (getenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_JOURNAL"))
 		return flatfile_authority_transaction_result::io_error;
@@ -482,8 +511,20 @@ flatfile_authority_transaction_result flatfile_authority_transaction_commit_oper
 	const std::string &root, const flatfile_authority_lock &lock,
 	const std::vector<flatfile_authority_operation> &operations, std::string *error)
 {
+	return flatfile_authority_transaction_commit_operations_with_outcome(root, lock, operations,
+									     error, nullptr);
+}
+
+flatfile_authority_transaction_result flatfile_authority_transaction_commit_operations_with_outcome(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const std::vector<flatfile_authority_operation> &operations, std::string *error,
+	flatfile_authority_commit_outcome *outcome)
+{
+	if (outcome)
+		*outcome = flatfile_authority_commit_outcome::not_published;
 	for (const auto &operation : operations)
 		if (operation.store == flatfile_authority_store::economic_evidence)
 			return flatfile_authority_transaction_result::invalid;
-	return flatfile_accounting_storage::commit(root, lock, operations, error);
+	return flatfile_accounting_storage::commit_with_outcome(root, lock, operations, error,
+								outcome);
 }

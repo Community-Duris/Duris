@@ -1,4 +1,6 @@
+#include "persistence/death_recovery_visibility.h"
 #include "account/password_async.h"
+#include "account/account_async.h"
 /*
  **************************************************************************
  *  File: comm.c                                             Part of Duris
@@ -8,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "core/game_loop_watchdog.h"
 #include "combat/attack_cadence.h"
 #include "world/world_singletons.h"
 #include "item/item_actions.h"
@@ -20,6 +23,8 @@
 #include "telemetry/telemetry_runtime.h"
 #include "net/comm.h"
 #include "net/session_input.h"
+#include "net/network_readiness.h"
+#include "net/network_wakeup.h"
 #include "net/output_style.h"
 #include "net/chat_presentation.h"
 #include "net/output_profiles.h"
@@ -57,6 +62,7 @@
 #include "economy/auction_houses.h"
 #include "economy/boon.h"
 #include "persistence/copyover.h"
+#include "net/transport.h"
 #include "combat/ctf.h"
 #include "world/epic.h"
 #include "world/epic_task_catalog.h"
@@ -170,7 +176,6 @@ extern const int max_ingame_good;
 extern const int max_ingame_evil;
 extern TimedShutdownData shutdownData;
 extern void timedShutdown(P_char ch, P_char, P_obj, void *data);
-extern void checkpointing(void);
 
 long sentbytes = 0;
 long receivedbytes = 0;
@@ -382,7 +387,6 @@ static void process_line(P_desc t, char *in);
 /* local globals */
 
 P_desc descriptor_list, next_to_process, next_save = 0;
-fd_set input_set, output_set, exc_set; /* for socket handling */
 int mini_mode = 0;
 int lawful = 0;
 int no_specials = 0;
@@ -439,10 +443,17 @@ static bool pager_style_fallback = false;
 
 int main(int argc, char **argv)
 {
+	if (!game_loop_watchdog_init())
+	{
+		fprintf(stderr, "Invalid launcher game-loop watchdog channel.\n");
+		return 78;
+	}
+
 	int port, sslport;
 	int pos = 1;
 	const char *dir;
 	int migrate_mode = 0;
+	bool persistent_transport = false;
 
 	port = DFLT_PORT;
 	dir = DFLT_DIR;
@@ -474,6 +485,12 @@ int main(int argc, char **argv)
 
 	while ((pos < argc) && (*(argv[pos]) == '-'))
 	{
+		if (!strcmp(argv[pos], "--persistent-transport"))
+		{
+			persistent_transport = true;
+			pos++;
+			continue;
+		}
 		if (!strcmp(argv[pos], "--minimal"))
 		{
 			mini_mode = 1;
@@ -605,6 +622,10 @@ int main(int argc, char **argv)
 		sslport = static_cast<int>(parsed_tls_port);
 	}
 	logit(LOG_STATUS, "Using TLS telnet port %d.", sslport);
+	if (!transport_world_configure())
+		fatal_boot_error("transport", "Invalid inherited transport capability");
+	if (persistent_transport && !transport_world_active())
+		return transport_frontend_main(argc, argv, port, sslport);
 
 	char persistence_error[2048];
 	if (!persistence_mode_configure(persistence_error, sizeof(persistence_error)))
@@ -942,6 +963,11 @@ int run_the_game(int port, int sslport)
 	if (!player_load_pipeline_init())
 		logit(LOG_STATUS,
 		      "Player load pipeline unavailable; existing-character login will use synchronous fallback.");
+#ifndef __NO_MYSQL__
+	if (!account_load_worker_init())
+		logit(LOG_STATUS,
+		      "Account load worker unavailable; interactive login will report busy.");
+#endif
 	if (!quest_reward_obligation_pipeline_init())
 		logit(LOG_STATUS,
 		      "Quest reward acknowledgement worker unavailable; obligations remain pending.");
@@ -1049,6 +1075,7 @@ int run_the_game(int port, int sslport)
 #endif
 
 	game_loop(port, sslport);
+	game_loop_watchdog_lifecycle(_reboot || _autoboot || _pwipe ? 'D' : 'S');
 	/* Flush dirty realms and reap the placed resource nodes while the
 	 * world and the store are still up. Idempotent and self-gating, so
 	 * a build with kingdoms disabled pays nothing here. */
@@ -1057,6 +1084,9 @@ int run_the_game(int port, int sslport)
 	redis_cleanup();
 	quest_reward_obligation_pipeline_shutdown();
 	player_load_pipeline_shutdown();
+	for (P_desc descriptor = descriptor_list; descriptor; descriptor = descriptor->next)
+		account_async_cancel(descriptor);
+	account_load_worker_shutdown();
 	collector_maintenance_shutdown();
 	collector_listing_pipeline_shutdown();
 	collector_presence_shutdown();
@@ -1073,7 +1103,7 @@ int run_the_game(int port, int sslport)
 	locker_identify_shutdown();
 	if (critical_coordinator_stopped)
 		critical_outbox_shutdown();
-	if (!_pwipe)
+	if (critical_coordinator_stopped && !_pwipe)
 	{
 		locker_async_shutdown();
 		player_save_pipeline_shutdown();
@@ -1141,13 +1171,13 @@ int run_the_game(int port, int sslport)
 
 /* Accept new connects, relay commands, and call 'heartbeat-functs' */
 
-#define MAX_ACCEPTS_PER_PULSE 32
+#define MAX_ACCEPTS_PER_TURN 32
 
 static int drain_new_connections(int listener, int conn_type, const char *label)
 {
 	int accepted_count = 0;
 
-	for (int attempt = 0; attempt < MAX_ACCEPTS_PER_PULSE; attempt++)
+	for (int attempt = 0; attempt < MAX_ACCEPTS_PER_TURN; attempt++)
 	{
 		if (new_descriptor(listener, conn_type) == 0)
 		{
@@ -1305,12 +1335,6 @@ struct game_loop_pulse_context
 	struct host_answer *host_answer;
 	unsigned long *accept_debug_pulse;
 	long *last_desc_per_hour_reset;
-	struct timeval *opt_time;
-	struct timeval *last_time;
-	struct timeval *null_time;
-	struct timeval *timeout;
-	sigset_t *signal_mask;
-	sigset_t *old_signal_mask;
 	bool accept_debug;
 	uint64_t loop_time_begin_us;
 	uint64_t loop_tick;
@@ -1329,7 +1353,8 @@ struct game_loop_pulse_context
 
 static bool session_input_authentication_pending(P_desc descriptor)
 {
-	return password_async_pulse(descriptor) || account_login_password_pulse(descriptor);
+	return account_async_pulse(descriptor) || password_async_pulse(descriptor) ||
+	       account_login_password_pulse(descriptor);
 }
 
 static void repair_session_command_gate(P_char character)
@@ -1379,6 +1404,8 @@ static void dispatch_session_input(P_desc descriptor, P_char character, char *in
 {
 	if (!session_input_route_dispatches(route))
 		return;
+	if (descriptor->transport_command)
+		descriptor->transport_command_started = true;
 	if (character)
 		character->specials.timer = 0;
 	descriptor->prompt_mode = TRUE;
@@ -1422,80 +1449,271 @@ static void dispatch_session_input(P_desc descriptor, P_char character, char *in
  * durable completions remain after that event phase.
  */
 
+/* Drain retained wire bytes only. Application output/prompt construction remains
+ * in run_output_phase() at the simulation boundary. */
+static int drain_network_transport(P_desc point)
+{
+	if (point->write_failed)
+		return -1;
+	if (point->connected == CON_SSLNEGO)
+		return 0;
+	if (network_transport_pending(point) &&
+	    (point->network_revents & network_write_interest(point)))
+	{
+		if ((!point->websocket && telnet_flush_output(point) < 0) ||
+		    (point->websocket && websocket_flush_output(point) < 0))
+		{
+			point->write_failed = 1;
+			return -1;
+		}
+	}
+	if (point->websocket && point->ws_state == WS_STATE_OPEN && point->ws_ping_queued &&
+	    point->ws_control_output_len == 0)
+	{
+		point->ws_ping_queued = 0;
+		point->ws_ping_outstanding = 1;
+		point->ws_pong_received = 0;
+		point->ws_last_ping = time(0);
+	}
+	if (point->websocket && point->ws_state == WS_STATE_CLOSING &&
+	    !network_transport_pending(point))
+		return -1;
+	return 0;
+}
+
+/* One bounded network turn: direct descriptor entries, one read per client,
+ * bounded accept/output/parser work, and no game commands or world callbacks.
+ * Every registered client gets a turn, so a busy client cannot take another
+ * read ahead of its peers. Never retain borrowed pointers across a turn. */
+static bool service_network_turn(game_loop_pulse_context &ctx, int timeout_ms)
+{
+	std::vector<pollfd> sockets = {
+		{ ctx.telnet_listener, POLLIN, 0 },
+		{ ctx.ssl_listener, POLLIN, 0 },
+		{ ctx.websocket_listener, POLLIN, 0 },
+		{ network_wakeup_fd(), POLLIN, 0 },
+	};
+	std::vector<P_desc> clients;
+	const uint64_t registration_us = loop_monotonic_us();
+	for (P_desc point = descriptor_list; point; point = point->next)
+	{
+		point->network_revents = 0;
+		const short interests = network_read_interest(point) |
+					network_write_interest(point);
+		sockets.push_back(
+			{ point->network_close_pending || !interests ? -1 : point->descriptor,
+			  static_cast<short>(interests | POLLPRI), 0 });
+		clients.push_back(point);
+		if (!point->network_close_pending && network_buffered_input(point))
+			timeout_ms = 0;
+		if (!point->network_close_pending && point->connected == CON_SSLNEGO &&
+		    point->tls_handshake_deadline_us)
+			timeout_ms =
+				MIN(timeout_ms, network_timeout_ms(point->tls_handshake_deadline_us,
+								   registration_us));
+	}
+	const int poll_result = poll(sockets.data(), sockets.size(), timeout_ms);
+	if (poll_result < 0)
+	{
+		if (errno != EINTR)
+		{
+			logit(LOG_COMM, "Network poll failed: %s", strerror(errno));
+			shutdownflag = 1;
+		}
+		return false;
+	}
+	// Assign results before accepting/closing anything. A reused descriptor
+	// number cannot inherit readiness from the previous connection.
+	for (size_t index = 0; index < clients.size(); ++index)
+		clients[index]->network_revents = sockets[index + 4].revents;
+	if (sockets[3].revents & POLLIN)
+		network_wakeup_drain();
+	for (size_t index = 0; index < 3; ++index)
+	{
+		if (sockets[index].revents & (POLLERR | POLLHUP | POLLNVAL))
+		{
+			logit(LOG_COMM, "Listener %d failed: poll events=%d", sockets[index].fd,
+			      sockets[index].revents);
+			shutdownflag = 1;
+			return false;
+		}
+	}
+	if (ctx.accept_debug &&
+	    ((++*ctx.accept_debug_pulse % 20) == 0 || (sockets[0].revents & POLLIN)))
+		logit(LOG_STATUS,
+		      "ACCEPT DEBUG: turn=%lu listener=%d poll_result=%d listener_ready=%d descriptors=%d",
+		      *ctx.accept_debug_pulse, ctx.telnet_listener, poll_result,
+		      (sockets[0].revents & POLLIN) ? 1 : 0, used_descs);
+
+	/* Nonblocking accept is the authoritative readiness check. */
+	// The boundary's zero-time poll also probes listeners, retaining the accept
+	// watchdog. Blocking waits drain only listeners reported ready.
+	if ((sockets[0].revents & POLLIN) || timeout_ms == 0)
+		drain_new_connections(ctx.telnet_listener, 0, "Telnet");
+	if ((sockets[1].revents & POLLIN) || timeout_ms == 0)
+		drain_new_connections(ctx.ssl_listener, 1, "SSL");
+	if (ctx.websocket_listener >= 0 && ((sockets[2].revents & POLLIN) || timeout_ms == 0))
+		drain_new_connections(ctx.websocket_listener, 2, "WebSocket");
+
+	for (P_desc point = descriptor_list; point; point = next_to_process)
+	{
+		next_to_process = point->next;
+		if (point->network_close_pending)
+			continue;
+		if (point->network_revents & (POLLERR | POLLNVAL | POLLPRI))
+		{
+			point->network_close_pending = 1;
+			continue;
+		}
+		if (point->connected == CON_SSLNEGO)
+		{
+			if (point->tls_handshake_deadline_us &&
+			    loop_monotonic_us() >= point->tls_handshake_deadline_us)
+			{
+				logit(LOG_COMM, "TLS handshake timed out on descriptor %d",
+				      point->descriptor);
+				point->network_close_pending = 1;
+				continue;
+			}
+			if (!(point->network_revents & (network_read_interest(point) | POLLHUP)))
+				continue;
+			command_latency_event ssl_event = {};
+			prepare_descriptor_latency_event(&ssl_event, COMMAND_LATENCY_SSL, point,
+							 NULL);
+			const uint64_t ssl_started_us = loop_monotonic_us();
+			const int ssl_result = ssl_negotiate(point->sslses);
+			command_latency_record(&ctx.command_latency, &ssl_event,
+					       latency_trace_elapsed_us(ssl_started_us,
+									loop_monotonic_us()));
+			if (ssl_result == 0)
+			{
+				point->tls_read_interest = 0;
+				point->tls_handshake_deadline_us = 0;
+				greet(point);
+			}
+			else if (ssl_result == 1)
+				point->tls_read_interest =
+					gnutls_record_get_direction(point->sslses) ? POLLOUT :
+										     POLLIN;
+			else
+				point->network_close_pending = 1;
+			continue;
+		}
+		// HUP is reported even without the requested readiness direction. A
+		// paused reader/retained TLS send must not spin on a terminal peer.
+		if ((point->network_revents & POLLHUP) && !network_read_interest(point))
+		{
+			point->network_close_pending = network_has_unoffered_input(point) ? 2 : 1;
+			continue;
+		}
+		// Resume a retained TLS send before allowing another TLS operation to
+		// overwrite its required retry direction.
+		if (drain_network_transport(point) < 0)
+		{
+			// A normal WebSocket close can follow queued application frames.
+			// Offer those at the boundary before retiring the connection, as for EOF.
+			point->network_close_pending =
+				point->websocket && point->ws_state == WS_STATE_CLOSING &&
+						!point->write_failed &&
+						point->ws_pending_application ?
+					2 :
+					1;
+			continue;
+		}
+		if (point->telnet_tls_retry)
+			continue;
+		if (point->websocket && websocket_input_paused(point))
+			continue;
+		if (!point->network_input_remaining && !network_buffered_input(point))
+			continue;
+		if (!(point->network_revents & (network_read_interest(point) | POLLHUP)) &&
+		    !network_buffered_input(point))
+			continue;
+		const int input_result = process_input(point);
+		if (input_result == NETWORK_INPUT_EOF)
+		{
+			// A read performed between pulses has not yet been offered to
+			// session input. Retain the old one-boundary opportunity before
+			// EOF teardown; input from an earlier boundary gets no extension.
+			point->network_close_pending = network_has_unoffered_input(point) ? 2 : 1;
+		}
+		else if (input_result < 0)
+		{
+			if (point->websocket && point->ws_state == WS_STATE_OPEN)
+			{
+				const int close_code = point->ws_error_code ?
+							       point->ws_error_code :
+							       WS_CLOSE_PROTOCOL_ERROR;
+				const char *reason =
+					close_code == WS_CLOSE_MESSAGE_TOO_BIG ? "Message too big" :
+					close_code == WS_CLOSE_INVALID_DATA    ? "Invalid data" :
+					close_code == WS_CLOSE_INTERNAL_ERROR  ? "Internal error" :
+										 "Protocol error";
+				websocket_close(point, close_code, reason);
+			}
+			else
+				point->network_close_pending = 1;
+		}
+	}
+	return true;
+}
+
+static void network_wait_until(game_loop_pulse_context &ctx, uint64_t deadline_us)
+{
+	for (;;)
+	{
+		if (shutdownflag)
+			return;
+		const uint64_t now_us = loop_monotonic_us();
+		if (!now_us)
+		{
+			logit(LOG_COMM, "Network deadline clock unavailable; requesting shutdown.");
+			shutdownflag = 1;
+			return;
+		}
+		if (now_us >= deadline_us)
+			return;
+		if (transport_world_active())
+		{
+			// Logical session slots are not socket FDs. IPC application dispatch
+			// stays at the connection boundary; completion hints may wake the wait.
+			pollfd wake{ network_wakeup_fd(), POLLIN, 0 };
+			if (poll(&wake, 1, network_timeout_ms(deadline_us, now_us)) > 0)
+				network_wakeup_drain();
+		}
+		else
+			service_network_turn(ctx, network_timeout_ms(deadline_us, now_us));
+	}
+}
+
 static bool run_connection_phase(game_loop_pulse_context &ctx)
 {
-	const int s = ctx.telnet_listener;
-	const int S = ctx.ssl_listener;
-	const int WS = ctx.websocket_listener;
-	char *buf = ctx.network_buffer;
-	struct host_answer &host_ans_buf = *ctx.host_answer;
-	unsigned long &accept_debug_pulse = *ctx.accept_debug_pulse;
-	long &last_desc_per_hour_reset = *ctx.last_desc_per_hour_reset;
-	struct timeval &null_time = *ctx.null_time;
-	sigset_t &mask = *ctx.signal_mask;
-	sigset_t &oldset = *ctx.old_signal_mask;
-	const bool accept_debug = ctx.accept_debug;
-	const uint64_t loop_tick = ctx.loop_tick;
-	command_latency_tracker &command_latency = ctx.command_latency;
-	P_desc point, next_point;
-
-	// check for signal-initiated shutdown (from launcher)
-	//PROFILE_START(process_signal_shutdown_pending);
 	if (signal_shutdown_pending)
 	{
-		int type = signal_shutdown_pending;
+		const int type = signal_shutdown_pending;
 		signal_shutdown_pending = 0;
 		request_shutdown(type, "Launcher", "signal from launcher");
 	}
-	//PROFILE_END(process_signal_shutdown_pending);
 	persistence_log_poll();
-	checkpointing();
+	if (transport_world_active())
+	{
+		transport_world_pump();
+		ctx.connections_us =
+			latency_trace_elapsed_us(ctx.loop_time_begin_us, loop_monotonic_us());
+		return true;
+	}
 
-	if ((last_desc_per_hour_reset + 3600) <= time(0))
+	if ((*ctx.last_desc_per_hour_reset + 3600) <= time(0))
 	{
 		max_descs_this_hour = used_descs;
-		last_desc_per_hour_reset = time(0);
+		*ctx.last_desc_per_hour_reset = time(0);
 	}
-	/*
-	    struct host_answer host_ans_buf;
-	*/
+	char *buf = ctx.network_buffer;
+	struct host_answer &host_ans_buf = *ctx.host_answer;
 	bzero(&host_ans_buf, sizeof(host_ans_buf));
-	/* Check for answers to hostname queuries */
-	/* just ignore errors (hope they are all "no message" errors) */
-#if 0
-    if (msgrcv(ipc_id, (struct msgbuf *) &host_ans_buf,
-               sizeof(struct host_answer) - sizeof(long),
-               MSG_HOST_ANS, IPC_NOWAIT) == -1)
-      host_ans_buf.desc = s;    /* so nothing happens  */
-#endif
-	/* Check what's happening out there */
-	FD_ZERO(&input_set);
-	FD_ZERO(&output_set);
-	FD_ZERO(&exc_set);
-
-	/* Get the file descriptors for asynchrnonous IO */
-
-#ifdef USE_ASYNCHRONOUS_IO
-	input_set = io_readfds;
-	output_set = io_writefds;
-	exc_set = io_exceptfds;
-#endif
-
-	/* Continue with original code */
-	PROFILE_START(connections);
-	const uint64_t connections_begin_us = loop_monotonic_us();
-	FD_SET(s, &input_set);
-	FD_SET(S, &input_set);
-	if (WS >= 0)
-		FD_SET(WS, &input_set); /* WebSocket listener */
-	for (point = descriptor_list; point; point = point->next)
+	for (P_desc point = descriptor_list, next_point; point; point = next_point)
 	{
-		/*
-		 * while we are looping through descriptors, it would be a
-		 * good time to see if the message answer we checked for
-		 * before matches
-		 */
-
+		next_point = point->next;
 		if ((point->descriptor == host_ans_buf.desc) &&
 		    !strncmp(host_ans_buf.addr, point->host /*+ 3 */, strlen(host_ans_buf.addr)))
 		{
@@ -1529,144 +1747,33 @@ static bool run_connection_phase(game_loop_pulse_context &ctx)
 				point->wait = 1;
 			}
 		}
-		FD_SET(point->descriptor, &input_set);
-		FD_SET(point->descriptor, &exc_set);
-		FD_SET(point->descriptor, &output_set);
 	}
-
-	sigprocmask(SIG_SETMASK, &mask, &oldset);
-
-	int select_result = select(FD_SETSIZE, &input_set, &output_set, &exc_set, &null_time);
-	if (accept_debug && ((++accept_debug_pulse % 20) == 0 || FD_ISSET(s, &input_set)))
+	PROFILE_START(connections);
+	const uint64_t connections_begin_us = loop_monotonic_us();
+	const bool ready = service_network_turn(ctx, 0);
+	// Application WebSocket actions and link-loss teardown retain the original
+	// connection phase boundary. close_socket() advances next_to_process if an
+	// application handler removes a later descriptor during reconnect/logout.
+	// An interrupted poll leaves this work staged for a successful boundary.
+	for (P_desc point = ready ? descriptor_list : NULL; point; point = next_to_process)
 	{
-		logit(LOG_STATUS,
-		      "ACCEPT DEBUG: pulse=%lu listener=%d select_result=%d listener_ready=%d descriptors=%d",
-		      accept_debug_pulse, s, select_result, FD_ISSET(s, &input_set) ? 1 : 0,
-		      used_descs);
-	}
-	if (select_result < 0)
-	{
-		perror("Select poll");
-		// bad file descriptor - find and nuke it so we dont loop forever
-		if (errno == EBADF)
-		{
-			struct descriptor_data *d, *next_d;
-			for (d = descriptor_list; d; d = next_d)
-			{
-				next_d = d->next;
-				if (fcntl(d->descriptor, F_GETFD) == -1 && errno == EBADF)
-				{
-					logit(LOG_STATUS,
-					      "ebadf: closing bad descriptor %d, host=%s, ws=%d, state=%d",
-					      d->descriptor, *d->host ? d->host : "null",
-					      d->websocket, d->connected);
-					close_socket(d);
-				}
-			}
-		}
-		sigprocmask(SIG_SETMASK, &oldset, 0);
-		return false;
-	}
-	sigprocmask(SIG_SETMASK, &oldset, 0);
-
-	/*
-	 ** Handle the asynchronous IO first.
-	 **
-	 ** Note that it is IMPORTANT that asynchronous is done before
-	 ** anything else.  Reason:  if we process something else, it
-	 ** is conceivable for the user to type in another command,
-	 ** i.e. "rent", then "kill receptionist", which will mean
-	 ** that the player will start attacking receptionist, but
-	 ** then he would have RENTED!!!!!!
-	 */
-
-#ifdef USE_ASYNCHRONOUS_IO
-	(void)io_processFDS(&input_set, &output_set, &exc_set);
-#endif
-
-	/* Respond to whatever might be happening */
-
-	/* Nonblocking accept is the authoritative readiness check. */
-	drain_new_connections(s, 0, "Telnet");
-	drain_new_connections(S, 1, "SSL");
-	if (WS >= 0)
-		drain_new_connections(WS, 2, "WebSocket");
-
-	/* kick out the freaky folks */
-	for (point = descriptor_list; point; point = next_point)
-	{
-		next_point = point->next;
-		if (FD_ISSET(point->descriptor, &exc_set))
-		{
-			logit(LOG_COMM, "Closing socket with exception.  FIXME!");
+		next_to_process = point->next;
+		if (point->network_close_pending == 1)
 			close_socket(point);
-		}
-		else if (FD_ISSET(point->descriptor, &input_set))
+		else
 		{
-			int input_result = 0;
-			if (point->connected != CON_SSLNEGO)
-				input_result = process_input(point);
-			if (input_result < 0)
-			{
-				if (point->websocket && point->ws_state == WS_STATE_OPEN)
-				{
-					int close_code = point->ws_error_code ?
-								 point->ws_error_code :
-								 WS_CLOSE_PROTOCOL_ERROR;
-					const char *reason =
-						close_code == WS_CLOSE_MESSAGE_TOO_BIG ?
-							"Message too big" :
-							(close_code == WS_CLOSE_INVALID_DATA ?
-								 "Invalid data" :
-								 (close_code == WS_CLOSE_INTERNAL_ERROR ?
-									  "Internal error" :
-									  "Protocol error"));
-					websocket_close(point, close_code, reason);
-				}
-				else
-				{
-					close_socket(point);
-				}
-			}
+			if (point->network_close_pending == 2)
+				point->network_close_pending = 1;
+			point->network_input_remaining = point->websocket ? WS_INPUT_BUFFER_SIZE :
+									    MAX_QUEUE_LENGTH - 1;
+			if (point->websocket)
+				websocket_dispatch_pending_input(point);
 		}
 	}
-	/* TLS negotiation belongs to the connection/readiness phase.  A session
-	 * that is still negotiating must not consume a command in this pulse. */
-	for (point = descriptor_list; point; point = next_point)
-	{
-		next_point = point->next;
-		if (point->connected != CON_SSLNEGO)
-			continue;
-		command_latency_event ssl_event = {};
-		prepare_descriptor_latency_event(&ssl_event, COMMAND_LATENCY_SSL, point, NULL);
-		const uint64_t ssl_started_us = loop_monotonic_us();
-		const int ssl_result = ssl_negotiate(point->sslses);
-		command_latency_record(&command_latency, &ssl_event,
-				       latency_trace_elapsed_us(ssl_started_us,
-								loop_monotonic_us()));
-		switch (ssl_result)
-		{
-		case 0:
-			greet(point);
-			break;
-		default:
-			close_socket(point);
-		case 1:
-			continue;
-		}
-	}
+	ctx.connections_us = latency_trace_elapsed_us(connections_begin_us, loop_monotonic_us());
+	latency_trace_record("connections", ctx.connections_us, ctx.loop_tick);
 	PROFILE_END(connections);
-	const uint64_t connections_us =
-		latency_trace_elapsed_us(connections_begin_us, loop_monotonic_us());
-	latency_trace_record("connections", connections_us, loop_tick);
-
-#if 0
-    if (debug_mode)
-      loop_debug();
-#endif
-
-	ctx.connections_us = connections_us;
-	return true;
+	return ready;
 }
 
 static void run_session_input_phase(game_loop_pulse_context &ctx)
@@ -1719,7 +1826,8 @@ static void run_session_input_phase(game_loop_pulse_context &ctx)
 		}
 
 		/* WebSocket ping/pong dead connection detection */
-		if (point->websocket && point->ws_state == WS_STATE_OPEN)
+		if (point->websocket && !point->transport_session &&
+		    point->ws_state == WS_STATE_OPEN)
 		{
 			time_t now = time(0);
 
@@ -1862,46 +1970,38 @@ static void run_output_phase(game_loop_pulse_context &ctx)
 	{
 		next_point = point->next;
 
-		// this code tries to skip players who have too much pending text.
-		// But, we currently boot them anyway...
-		if (!FD_ISSET(point->descriptor, &output_set))
+		/* Close at a safe loop boundary even when the socket is not writable
+		 * or its transport queue is stalled. Enqueue never frees a descriptor. */
+		if (point->output.overflowed || point->oob_input_overflowed)
+		{
+			logit(LOG_COMM, "Closing descriptor %d: application queue limit",
+			      point->descriptor);
+			if (point->websocket && point->ws_state == WS_STATE_OPEN)
+				websocket_send_close(point, WS_CLOSE_POLICY_VIOLATION,
+						     "Session queue limit");
+			point->write_failed = 1;
+			close_socket(point);
 			continue;
-
-		// skip ssl connections still negotiating
+		}
+		// Application output stays at this boundary. Retained bytes must
+		// drain first, following the transport/TLS readiness direction.
 		if (point->connected == CON_SSLNEGO)
 			continue;
-
-		if (!point->websocket && point->telnet_output_len)
+		if (drain_network_transport(point) < 0)
 		{
-			if (telnet_flush_output(point) < 0)
-			{
-				close_socket(point);
-				continue;
-			}
-			if (point->telnet_output_len)
-				continue;
+			close_socket(point);
+			continue;
 		}
-
-		/* Drain WebSocket bytes retained after a partial write/EAGAIN before
-		 * framing additional application output for this descriptor. */
-		if (point->websocket && point->ws_output_offset < point->ws_output_len)
-		{
-			if (websocket_flush_output(point) < 0)
-			{
-				point->write_failed = 1;
-				close_socket(point);
-				continue;
-			}
-			if (point->ws_output_offset < point->ws_output_len)
-				continue;
-		}
+		if (network_transport_pending(point))
+			continue;
 
 		if (process_output(point) < 0)
 		{
 			close_socket(point);
 			continue;
 		}
-		if (point->websocket && websocket_flush_output(point) < 0)
+		if (point->websocket && !point->transport_session &&
+		    websocket_flush_output(point) < 0)
 		{
 			close_socket(point);
 			continue;
@@ -1935,6 +2035,7 @@ static void run_output_phase(game_loop_pulse_context &ctx)
 	latency_trace_record("prompts", prompts_us, loop_tick);
 
 	ctx.prompts_us = prompts_us;
+	transport_world_finish_pulse();
 }
 
 static void log_telemetry_health_event(const telemetry_health_event &event)
@@ -2068,12 +2169,27 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 		artifact_guild_transaction_publish_outbox();
 		for (size_t index = 0; index < critical_completion_count; ++index)
 			if (critical_completions[index].outcome ==
-			    critical_apply_outcome::terminal_failure)
+				    critical_apply_outcome::terminal_failure ||
+			    ((critical_completions[index].outcome ==
+				      critical_apply_outcome::retryable_failure ||
+			      critical_completions[index].outcome ==
+				      critical_apply_outcome::ambiguous_commit) &&
+			     critical_completions[index].attempt >
+				     CRITICAL_COORDINATOR_MAX_RETRIES))
 				persistence_alert(
 					AVATAR, "critical_command", "completion", "none",
 					critical_failure_stage_name(
 						critical_completions[index].failure_stage),
-					"integrity_failure", "operation metadata redacted");
+					"integrity_failure",
+					"correlation=%s error=%u refusal=%s attempts=%u",
+					critical_completions[index].recovery_correlation[0] ?
+						critical_completions[index]
+							.recovery_correlation.data() :
+						"none",
+					critical_completions[index].error_code,
+					death_recovery_refusal_name(
+						critical_completions[index].error_code),
+					critical_completions[index].attempt);
 		player_save_pipeline_pulse();
 		quest_reward_recovery_pulse();
 		persistence_pulse_character_saves();
@@ -2246,11 +2362,6 @@ static void run_pulse_reset_phase(game_loop_pulse_context &ctx)
 	const uint64_t loop_time_begin_us = ctx.loop_time_begin_us;
 	const uint64_t loop_tick = ctx.loop_tick;
 	const uint64_t loop_start_mono_us = ctx.loop_start_mono_us;
-	struct timeval &opt_time = *ctx.opt_time;
-	struct timeval &last_time = *ctx.last_time;
-	struct timeval &timeout = *ctx.timeout;
-	sigset_t &mask = *ctx.signal_mask;
-	sigset_t &oldset = *ctx.old_signal_mask;
 	const uint64_t connections_us = ctx.connections_us;
 	const uint64_t command_sweep_us = ctx.command_sweep_us;
 	const uint64_t prompts_us = ctx.prompts_us;
@@ -2333,32 +2444,11 @@ static void run_pulse_reset_phase(game_loop_pulse_context &ctx)
 		latency_trace_snapshot_dump(stderr, &snapshot);
 		fflush(stderr);
 	}
-	memcpy(&timeout, &opt_time, sizeof(timeout));
-	const suseconds_t usec_spent = (suseconds_t)MIN(
-		loop_us == LATENCY_TRACE_DURATION_INVALID ? 0 : loop_us, (uint64_t)timeout.tv_usec);
-	timeout.tv_usec = MAX(0, timeout.tv_usec - usec_spent);
-
-	if (timeout.tv_sec || timeout.tv_usec)
-	{
-		/*
-		 * This keeps game from being a total processor hog by putting
-		 * it to sleep for the part of each 1/4 second that is not
-		 * used for game processing.
-		 */
-
-		sigprocmask(SIG_SETMASK, &mask, &oldset);
-
-		if (select(0, (fd_set *)0, (fd_set *)0, (fd_set *)0, &timeout) < 0)
-		{
-			sigprocmask(SIG_SETMASK, &oldset, 0);
-			if (errno == EINTR)
-				return; // interrupted by signal; the next pulse retries
-			perror("Select sleep");
-			return;
-		}
-		sigprocmask(SIG_SETMASK, &oldset, 0);
-	}
-	gettimeofday(&last_time, (struct timezone *)0); /* end of pulse reset */
+	// Pace from the monotonic pulse start. On an overrun discard missed wall
+	// slots and allow a full interval before the next logical simulation tick.
+	// Network readiness and completion hints wake this wait without advancing
+	// commands, combat, world events, or durable-completion publication.
+	network_wait_until(ctx, network_next_pulse_us(loop_time_begin_us, loop_monotonic_us()));
 	PROFILE_END(pulse_reset);
 
 	ctx.affect_us = affect_us;
@@ -2395,53 +2485,35 @@ void game_loop(int port, int sslport)
 	char buf[MAX_STRING_LENGTH];
 	char comm[MAX_INPUT_LENGTH];
 	P_desc point;
-	static struct timeval opt_time;
-	struct timeval last_time, timeout, null_time;
 	struct host_answer host_ans_buf;
-	sigset_t mask, oldset;
 	int s, S;
 	int WS; /* WebSocket listener socket */
+	bool copyover_recovered = false;
 	int accept_debug = getenv("DURIS_ACCEPT_DEBUG") != NULL;
 	unsigned long accept_debug_pulse = 0;
 
 	sentbytes = 0;
 	receivedbytes = 0;
-	null_time.tv_sec = 0;
-	null_time.tv_usec = 0;
-
-	opt_time.tv_usec = OPT_USEC; /* Init time values */
-	opt_time.tv_sec = 0;
-	gettimeofday(&last_time, (struct timezone *)0);
+	if (network_wakeup_fd() < 0)
+		fatal_boot_error("comm", "Could not initialize network completion wakeups");
 
 	avail_descs = MAX_CONNECTIONS;
 
 	snprintf(buf, MAX_STRING_LENGTH, "avail_descs set to: %d", avail_descs);
 	logit(LOG_STATUS, "%s", buf);
 
-	sigemptyset(&mask);
-	sigaddset(&mask, SIGUSR1);
-	sigaddset(&mask, SIGUSR2);
-	sigaddset(&mask, SIGINT);
-	sigaddset(&mask, SIGPIPE);
-	sigaddset(&mask, SIGHUP);
-	sigaddset(&mask, SIGALRM);
-	sigaddset(&mask, SIGTERM);
-	sigaddset(&mask, SIGURG);
-	sigaddset(&mask, SIGSEGV);
-
-#ifdef USE_ASYNCHRONOUS_IO
-	io_init();
-#endif
-
 	dead_desc_pool = mm_create("SOCKET", sizeof(struct descriptor_data),
 				   offsetof(struct descriptor_data, next),
 				   mm_find_best_chunk(sizeof(struct descriptor_data), 25, 110));
+	if (!transport_world_boot(copyover_boot != 0))
+		fatal_boot_error("transport", "World transport handshake failed");
 
 	// copyover recovery - pool must exist first
 	if (copyover_boot)
 	{
-		if (copyover_recover(&recovered_mother_desc, &recovered_mother_desc_ssl,
-				     &recovered_ws_desc))
+		copyover_recovered = copyover_recover(
+			&recovered_mother_desc, &recovered_mother_desc_ssl, &recovered_ws_desc);
+		if (copyover_recovered)
 		{
 			copyover_restore_combat();
 			// recalculate avg mob level now that mobs are restored
@@ -2505,7 +2577,11 @@ void game_loop(int port, int sslport)
 #endif
 
 	// use recovered sockets if copyover, otherwise create new ones
-	if (copyover_boot && recovered_mother_desc >= 0)
+	if (transport_world_active() && (!copyover_boot || copyover_recovered))
+	{
+		s = S = WS = -1;
+	}
+	else if (copyover_boot && recovered_mother_desc >= 0)
 	{
 		logit(LOG_STATUS, "Using recovered sockets from copyover");
 		s = recovered_mother_desc;
@@ -2544,6 +2620,7 @@ void game_loop(int port, int sslport)
 	ws_desc = WS;
 	copyover_boot = 0;
 	copyover_clear_boot();
+	transport_world_ready();
 	for (P_desc receipt_desc = descriptor_list; receipt_desc; receipt_desc = receipt_desc->next)
 		if (receipt_desc->character && receipt_desc->connected == CON_PLAYING)
 			locker_identify_replay(receipt_desc->character);
@@ -2551,6 +2628,9 @@ void game_loop(int port, int sslport)
 	long last_desc_per_hour_reset = time(0);
 	/* Main loop */
 resume_game_loop:
+	// A refused lifecycle operation returns to a bounded running deadline.
+	// This does not advance the completed-loop counter.
+	game_loop_watchdog_lifecycle('R');
 	while (!shutdownflag)
 	{
 		const uint64_t loop_time_begin_us = loop_monotonic_us();
@@ -2567,12 +2647,6 @@ resume_game_loop:
 		context.host_answer = &host_ans_buf;
 		context.accept_debug_pulse = &accept_debug_pulse;
 		context.last_desc_per_hour_reset = &last_desc_per_hour_reset;
-		context.opt_time = &opt_time;
-		context.last_time = &last_time;
-		context.null_time = &null_time;
-		context.timeout = &timeout;
-		context.signal_mask = &mask;
-		context.old_signal_mask = &oldset;
 		context.accept_debug = accept_debug;
 		context.loop_time_begin_us = loop_time_begin_us;
 		context.loop_tick = loop_tick;
@@ -2587,8 +2661,12 @@ resume_game_loop:
 		run_activity_phase(context);
 		run_combat_phase(context);
 		run_pulse_reset_phase(context);
+		game_loop_watchdog_completed();
 	}
 
+	// Cover the entire save/drain chain, including early refusal paths.
+	game_loop_watchdog_lifecycle(_copyover ? 'C' :
+						 (_reboot || _autoboot || _pwipe ? 'D' : 'S'));
 	if (_copyover)
 	{
 		if (!critical_command_coordinator_try_acquire_lifecycle_guard())
@@ -2612,6 +2690,7 @@ resume_game_loop:
 		kingdom_flush_persistent_state();
 		if (!copyover_save(s, S, WS))
 		{
+			transport_world_abort();
 			persistence_alert(AVATAR, "player_save", "copyover", "none", "none",
 					  "terminal_save_failed", "shutdown_cancelled=1");
 			shutdownflag = 0;
@@ -2836,6 +2915,8 @@ int get_from_q(struct txt_q *queue, char *dest)
 	if (!queue->head)
 		queue->tail = NULL;
 
+	queue->bytes -= strlen(tmp->text) + 1;
+	--queue->entries;
 	FREE(tmp->text);
 	FREE(tmp);
 
@@ -2870,6 +2951,8 @@ static int get_filtered_cmd_from_q(struct txt_q *queue, char *dest, bool (*allow
 		if (queue->tail == tmp)
 			queue->tail = prev;
 
+		queue->bytes -= strlen(tmp->text) + 1;
+		--queue->entries;
 		FREE(tmp->text);
 		FREE(tmp);
 
@@ -2906,6 +2989,8 @@ int get_casting_cmd_from_q(P_char ch, struct txt_q *queue, char *dest)
 		if (queue->tail == tmp)
 			queue->tail = prev;
 
+		queue->bytes -= strlen(tmp->text) + 1;
+		--queue->entries;
 		FREE(tmp->text);
 		FREE(tmp);
 
@@ -2939,61 +3024,136 @@ int get_pending_transaction_cmd_from_q(struct txt_q *queue, char *dest, bool ite
 	return get_from_q(queue, dest);
 }
 
-/*
- * flag: 0 - input queue, don't do any extra processing 1 - concat txt
- * onto preceding queue if possible
- * (trivial I know)
- */
-
+/* flag 0 appends a command; nonzero flags may merge application output. */
 void write_to_q(const char *txt, struct txt_q *queue, const int flag)
 {
-	struct txt_block *n_new;
-	unsigned int txtlen, taillen;
+	if (!queue || !txt)
+	{
+		logit(LOG_COMM, "call to write_to_q with bogus arguments");
+		return;
+	}
+	/* Output overflow is terminal; never grow a queue waiting to disconnect. */
+	if (flag && queue->overflowed)
+		return;
 
-	/* hmm, could it be this simple? JAB */
-	if (!queue)
+	const size_t string_limit = flag ? MAX_STRING_LENGTH : MAX_INPUT_LENGTH;
+	const size_t txtlen = strnlen(txt, string_limit);
+	if (txtlen == string_limit)
 	{
-		logit(LOG_COMM, "call to write_to_q with NULL queue");
+		queue->overflowed = true;
 		return;
 	}
-	if (!txt || ((txtlen = strlen(txt)) >= MAX_STRING_LENGTH))
+	const size_t taillen = queue->tail ? strlen(queue->tail->text) : 0;
+	const bool merge = flag && queue->tail && taillen < MAX_INPUT_LENGTH &&
+			   txtlen < MAX_INPUT_LENGTH - taillen;
+	const size_t growth = txtlen + (merge ? 0 : 1);
+	const size_t byte_limit = flag ? SESSION_OUTPUT_MAX_BYTES : SESSION_INPUT_MAX_BYTES;
+	const size_t entry_limit = flag ? SESSION_OUTPUT_MAX_ENTRIES : SESSION_INPUT_MAX_ENTRIES;
+	/* Check before CREATE/RECREATE, including a terminator for new entries.
+	 * Subtraction avoids wrapping even if a counter is already out of range. */
+	if (queue->bytes > byte_limit || growth > byte_limit - queue->bytes ||
+	    queue->entries > entry_limit || (!merge && queue->entries == entry_limit))
 	{
-		logit(LOG_COMM, "call to write_to_q with bogus string");
-		return;
+		queue->overflowed = true;
+		return; /* Reject newest input; all accepted commands retain their order. */
 	}
-	/* Q empty? */
-	if (!queue->head)
+	/* Rearm notices only when input admission resumes after substantial drain. */
+	if (!flag && queue->overflow_reported && queue->bytes <= SESSION_INPUT_MAX_BYTES / 2 &&
+	    queue->entries <= SESSION_INPUT_MAX_ENTRIES / 2)
 	{
+		queue->overflowed = false;
+		queue->overflow_reported = false;
+	}
+	if (merge)
+	{
+		RECREATE(queue->tail->text, char, taillen + txtlen + 1);
+		memcpy(queue->tail->text + taillen, txt, txtlen + 1);
+	}
+	else
+	{
+		struct txt_block *n_new;
 		CREATE(n_new, txt_block, 1, MEM_TAG_TXTBLK);
 		CREATE(n_new->text, char, txtlen + 1, MEM_TAG_BUFFER);
-
-		strcpy(n_new->text, txt);
-
+		memcpy(n_new->text, txt, txtlen + 1);
 		n_new->next = NULL;
-		queue->head = queue->tail = n_new;
-		return;
+		if (queue->tail)
+			queue->tail->next = n_new;
+		else
+			queue->head = n_new;
+		queue->tail = n_new;
+		++queue->entries;
 	}
+	queue->bytes += growth;
+}
 
-	taillen = strlen(queue->tail->text);
-
-	/* something already in Q so try to combine if possible */
-	if (flag && ((txtlen + taillen) < MAX_INPUT_LENGTH))
+/* Browser pastes may contain several commands in one message. Bound each line
+ * before copying it, and use the same admission limits as Telnet typeahead. */
+void queue_websocket_input(P_desc descriptor, const char *text)
+{
+	if (!descriptor || !text)
+		return;
+	do
 	{
-		/* combine this text with preceding text */
-		RECREATE(queue->tail->text, char, (txtlen + taillen + 1));
+		/* Once full, discard the rest of this paste without scanning every line. */
+		if (descriptor->input.bytes >= SESSION_INPUT_MAX_BYTES ||
+		    descriptor->input.entries >= SESSION_INPUT_MAX_ENTRIES)
+		{
+			descriptor->input.overflowed = true;
+			return;
+		}
+		const size_t length = strcspn(text, "\r\n");
+		if (length >= MAX_INPUT_LENGTH)
+			descriptor->input.overflowed = true;
+		else
+		{
+			char line[MAX_INPUT_LENGTH];
+			memcpy(line, text, length);
+			line[length] = '\0';
+			write_to_q(line, &descriptor->input, 0);
+		}
+		text += length;
+		if (!*text)
+			break;
+		if (*text++ == '\r' && *text == '\n')
+			++text;
+	} while (*text);
+}
 
-		strcat(queue->tail->text, txt);
-		return;
+/* OOB requests dispatch directly, without accumulating in the command queue.
+ * Give their work a separate per-pulse budget, including login/service routes. */
+bool admit_session_oob(P_desc descriptor, size_t bytes)
+{
+	if (!descriptor || descriptor->oob_input_overflowed)
+		return false;
+	if (descriptor->oob_input_tick != ne_event_tick)
+	{
+		descriptor->oob_input_tick = ne_event_tick;
+		descriptor->oob_input_bytes = 0;
+		descriptor->oob_input_entries = 0;
 	}
-	/* nope, it needs to be sent, just add a queue entry */
-	CREATE(n_new, txt_block, 1, MEM_TAG_TXTBLK);
-	CREATE(n_new->text, char, txtlen + 1, MEM_TAG_BUFFER);
+	if (descriptor->oob_input_bytes > SESSION_OOB_MAX_BYTES ||
+	    bytes > SESSION_OOB_MAX_BYTES - descriptor->oob_input_bytes ||
+	    descriptor->oob_input_entries >= SESSION_OOB_MAX_ENTRIES)
+	{
+		descriptor->oob_input_overflowed = true;
+		return false;
+	}
+	descriptor->oob_input_bytes += bytes;
+	++descriptor->oob_input_entries;
+	return true;
+}
 
-	strcpy(n_new->text, txt);
-
-	queue->tail->next = n_new;
-	queue->tail = n_new;
-	n_new->next = NULL;
+static void report_input_queue_overflow(P_desc descriptor)
+{
+	struct txt_q *queue = &descriptor->input;
+	if (queue->overflowed && !queue->overflow_reported)
+	{
+		SEND_TO_Q(
+			"Command queue limit reached; excess or overlong commands were discarded. "
+			"Wait for queued commands to finish before sending more.\r\n",
+			descriptor);
+		queue->overflow_reported = true;
+	}
 }
 
 /*
@@ -3036,9 +3196,17 @@ void flush_queues(P_desc d)
 	char str[MAX_STRING_LENGTH];
 
 	while (get_from_q(&d->output, str))
-		;
+	{
+	}
 	while (get_from_q(&d->input, str))
-		;
+	{
+	}
+	d->output = {};
+	d->input = {};
+	d->oob_input_tick = 0;
+	d->oob_input_bytes = 0;
+	d->oob_input_entries = 0;
+	d->oob_input_overflowed = false;
 }
 
 int wizconnectsite(char *name, char *player, int flag)
@@ -3328,9 +3496,11 @@ void close_socket(struct descriptor_data *d)
 	int is_morphed = d->character ? IS_MORPH(d->character) : 0;
 	char Gbuf1[MAX_STRING_LENGTH];
 	time_t ct;
+	transport_descriptor_closed(d);
 	if (d && d->player_load_request_id)
 		player_load_pipeline_cancel(d->player_load_request_id);
 	account_recovery_descriptor_closed(d);
+	account_async_cancel(d);
 	password_async_cancel(d);
 	password_login_release(d->login_password_job);
 	d->login_password_job = nullptr;
@@ -3343,7 +3513,7 @@ void close_socket(struct descriptor_data *d)
 
 	if (d->sslses)
 		ssl_close(d->sslses);
-	if (d->descriptor)
+	if (d->descriptor && !(d->transport_session && transport_world_active()))
 		close(d->descriptor);
 	flush_queues(d);
 	--used_descs;
@@ -3507,7 +3677,7 @@ void close_socket(struct descriptor_data *d)
 			tmp->next = d->next;
 	}
 
-	if (d->descriptor)
+	if (d->descriptor && !(d->transport_session && transport_world_active()))
 		shutdown(d->descriptor, 2);
 
 	if (d->showstr_head)
@@ -3578,85 +3748,6 @@ void nonblock(int s)
         * old/new socket code. 9/18/95  JAB                                                                                                                                                            \
         */
 
-static int proxy_peer_is_trusted(int desc)
-{
-	const char *trusted_ip = getenv("DURIS_TRUSTED_PROXY_IP");
-	struct sockaddr_storage peer;
-	struct in_addr trusted4;
-	struct in6_addr trusted6;
-	socklen_t peer_len = sizeof(peer);
-
-	if (!trusted_ip || !*trusted_ip ||
-	    getpeername(desc, (struct sockaddr *)&peer, &peer_len) < 0)
-		return 0;
-	if (peer.ss_family == AF_INET)
-		return inet_pton(AF_INET, trusted_ip, &trusted4) == 1 &&
-		       memcmp(&((struct sockaddr_in *)&peer)->sin_addr, &trusted4,
-			      sizeof(trusted4)) == 0;
-	if (peer.ss_family == AF_INET6)
-		return inet_pton(AF_INET6, trusted_ip, &trusted6) == 1 &&
-		       memcmp(&((struct sockaddr_in6 *)&peer)->sin6_addr, &trusted6,
-			      sizeof(trusted6)) == 0;
-	return 0;
-}
-
-/* parse proxy protocol v1 header - returns 1 if found, stores real ip */
-static int parse_proxy_protocol(int desc, char *real_ip, size_t ip_len)
-{
-	char buf[108];
-	char proto[8], src_ip[46], dst_ip[46], trailing;
-	int src_port, dst_port;
-	struct in_addr src4, dst4;
-	struct in6_addr src6, dst6;
-	ssize_t n;
-	int i;
-
-	/* peek first 6 bytes to check for "PROXY " */
-	n = recv(desc, buf, 6, MSG_PEEK);
-	if (n < 6 || strncmp(buf, "PROXY ", 6) != 0)
-		return 0;
-
-	/* read full line up to \r\n */
-	for (i = 0; i < (int)sizeof(buf) - 1; i++)
-	{
-		n = recv(desc, &buf[i], 1, 0);
-		if (n <= 0)
-			return 0;
-		if (buf[i] == '\n')
-		{
-			buf[i + 1] = '\0';
-			break;
-		}
-	}
-	buf[i] = '\0';
-	if (i > 0 && buf[i - 1] == '\r')
-		buf[i - 1] = '\0';
-
-	if (sscanf(buf, "PROXY %7s %45s %45s %d %d %c", proto, src_ip, dst_ip, &src_port, &dst_port,
-		   &trailing) != 5)
-		return 0;
-	if (src_port < 1 || src_port > 65535 || dst_port < 1 || dst_port > 65535)
-		return 0;
-	if (strcmp(proto, "TCP4") == 0)
-	{
-		if (inet_pton(AF_INET, src_ip, &src4) != 1 ||
-		    inet_pton(AF_INET, dst_ip, &dst4) != 1)
-			return 0;
-	}
-	else if (strcmp(proto, "TCP6") == 0)
-	{
-		if (inet_pton(AF_INET6, src_ip, &src6) != 1 ||
-		    inet_pton(AF_INET6, dst_ip, &dst6) != 1)
-			return 0;
-	}
-	else
-		return 0;
-
-	strncpy(real_ip, src_ip, ip_len - 1);
-	real_ip[ip_len - 1] = '\0';
-	return 1;
-}
-
 struct hostname_lookup_request
 {
 	char address[INET6_ADDRSTRLEN];
@@ -3695,8 +3786,8 @@ static void *hostname_lookup_worker(void *arg)
 			{
 				int write_ok = fprintf(f, "%s\n", hostname) >= 0;
 				int close_ok = fclose(f) == 0;
-				if (write_ok && close_ok)
-					rename(temp_path, final_path);
+				if (write_ok && close_ok && rename(temp_path, final_path) == 0)
+					network_wakeup_notify();
 			}
 		}
 		freeaddrinfo(result);
@@ -3767,35 +3858,22 @@ int new_descriptor(int s, int conn_type)
 	if ((desc = new_connection(s)) < 0)
 		return (-1);
 
-	if (desc >= FD_SETSIZE)
+	// Capacity counts live connections, never the numeric descriptor value.
+	if (used_descs >= avail_descs)
 	{
-		logit(LOG_COMM, "Accepted descriptor %d exceeds FD_SETSIZE %d; closing connection.",
-		      desc, FD_SETSIZE);
 		shutdown(desc, 2);
 		close(desc);
-		return (0);
+		return 0;
 	}
-
-	/* SSL connection - initialize TLS */
+	/* SSL connection - initialize TLS only after admission. */
 	if (conn_type == 1 && !(sslses = ssl_new(desc)))
 	{
 		shutdown(desc, 2);
 		close(desc);
-		return 0; // can legitimately fail if client sends garbage
+		return 0;
 	}
-
 	used_descs++;
-
-	if (used_descs >= avail_descs)
-	{
-		// shouldn't write anything before setup
-		// write(desc, "Sorry, the game is full...\r\n");
-		used_descs--;
-		shutdown(desc, 2);
-		close(desc);
-		return (0);
-	}
-	else if (used_descs > max_descs)
+	if (used_descs > max_descs)
 		max_descs = used_descs;
 
 	if (used_descs > max_descs_this_hour)
@@ -3833,14 +3911,6 @@ int new_descriptor(int s, int conn_type)
 			memmove(newd->host, mapped, strlen(mapped) + 1);
 		}
 
-		/* check for proxy protocol on websocket connections */
-		if (conn_type == 2 && proxy_peer_is_trusted(desc))
-		{
-			char proxy_ip[46];
-			if (parse_proxy_protocol(desc, proxy_ip, sizeof(proxy_ip)))
-				strlcpy(newd->host, proxy_ip, sizeof newd->host);
-		}
-
 		/*
 		 * things got ugly, 20k+ sites, so, split it into 2 files, a
 		 * sorted historical one and an unsorted 'recent' one.  Rather
@@ -3871,9 +3941,12 @@ int new_descriptor(int s, int conn_type)
 	 * init desc data
 	 */
 	newd->descriptor = desc;
+	newd->network_input_remaining = conn_type == 2 ? WS_INPUT_BUFFER_SIZE :
+							 MAX_QUEUE_LENGTH - 1;
 	// newd->connected = CON_HOST_LOOKUP;
 	newd->wait = 1;
-	resolve_descriptor_hostname_async(strip_ansi(newd->host).c_str(), desc);
+	if (!transport_frontend_active())
+		resolve_descriptor_hostname_async(strip_ansi(newd->host).c_str(), desc);
 	*newd->host2 = '\0';
 	newd->prompt_mode = FALSE;
 	*newd->buf = '\0';
@@ -3919,10 +3992,14 @@ int new_descriptor(int s, int conn_type)
 	}
 
 	descriptor_list = newd;
+	transport_frontend_accepted(newd);
 
 	if (conn_type == 1) // ssl - always use CON_SSLNEGO, let game loop handle greet
 	{
-		ssl_negotiate(sslses); // do first round immediately
+		newd->tls_read_interest = POLLIN;
+		newd->tls_handshake_deadline_us =
+			loop_monotonic_us() +
+			static_cast<uint64_t>(TLS_HANDSHAKE_TIMEOUT_MS) * 1000;
 		STATE(newd) = CON_SSLNEGO;
 	}
 	else if (conn_type == 2)
@@ -3933,7 +4010,14 @@ int new_descriptor(int s, int conn_type)
 		 * greeting so responsive clients can answer immediately, but never
 		 * hold the login screen behind an RFC 1091 response. */
 		ttype_negotiate(newd);
-		greet(newd);
+		if (transport_frontend_active())
+		{
+			STATE(newd) = CON_GET_TERM;
+			advertise_mccp(newd);
+			gmcp_negotiate(newd);
+		}
+		else
+			greet(newd);
 	}
 
 	return 0;
@@ -3957,7 +4041,14 @@ static void greet(P_desc newd)
 		return;
 	}
 
+	if (newd->transport_session && transport_world_active() && newd->websocket)
+	{
+		STATE(newd) = CON_GET_ACCT_NAME;
+		return;
+	}
 	select_terminal(newd, "");
+	if (newd->transport_session && transport_world_active())
+		return;
 
 	advertise_mccp(newd);
 	gmcp_negotiate(newd);
@@ -4266,6 +4357,9 @@ void clear_logs(P_char ch)
 
 int process_output(P_desc t)
 {
+	report_input_queue_overflow(t);
+	if (t->output.overflowed)
+		return -1;
 	char buf[MAX_STRING_LENGTH];
 	char buf2[MAX_STRING_LENGTH];
 	snoop_by_data *snoop_by_ptr;
@@ -4323,6 +4417,8 @@ int process_output(P_desc t)
 	bool had_prompt = t->prompt_mode && !defer_prompt;
 	if (had_prompt)
 		make_prompt(t);
+	if (t->output.overflowed)
+		return -1;
 
 	/* Cycle thru output queue */
 	while (get_from_q(&t->output, buf))
@@ -4344,17 +4440,28 @@ int process_output(P_desc t)
 		}
 
 		AnsiString abuf(buf);
+		if (t->term_type == TERM_GENERIC)
+			abuf.colorize(0);
 		abuf.term(buf, t->character && PLR3_FLAGGED(t->character, PLR3_UNDERLINE) ?
 				       TL_UNDERLINE :
 				       TL_BLINK);
 		delete_doubledollar(buf);
 
-		descbuf += buf;
+		/* Rendering can expand color markup. Bound the aggregate before the
+		 * string append allocates, as well as bounding its queued source text. */
+		const size_t rendered_bytes = strlen(buf);
+		if (descbuf.size() > SESSION_OUTPUT_MAX_BYTES ||
+		    rendered_bytes > SESSION_OUTPUT_MAX_BYTES - descbuf.size())
+		{
+			t->output.overflowed = true;
+			return -1;
+		}
+		descbuf.append(buf, rendered_bytes);
 	}
 
 	{
 		int output_result = write_to_descriptor(t, descbuf.c_str());
-		if (output_result < 0 && !(t->websocket && output_result == WS_OUTPUT_QUEUE_FULL))
+		if (output_result < 0)
 			return (-1);
 	}
 
@@ -4377,6 +4484,7 @@ int process_output(P_desc t)
 int process_input(P_desc t)
 {
 	int thisround, begin;
+	bool incomplete_telnet_command = false;
 	char *buf, *bp;
 
 	/* WebSocket connections use their own input processing */
@@ -4388,15 +4496,24 @@ int process_input(P_desc t)
 	begin = t->buflen;
 	if (begin < 0 || begin >= MAX_QUEUE_LENGTH)
 		panic_corruption("comm", "process_input: invalid buffer length %d", begin);
+	if (begin >= MAX_QUEUE_LENGTH - 1)
+	{
+		logit(LOG_COMM, "process_input: input buffer exhausted for descriptor %d.",
+		      t->descriptor);
+		return -1;
+	}
 	buf = t->buf;
+	const size_t read_capacity =
+		MIN(static_cast<size_t>(MAX_QUEUE_LENGTH - begin - 1), t->network_input_remaining);
+	if (!read_capacity)
+		return 0;
 
 	/*
 	 * Read in some stuff
 	 */
 	if (t->sslses)
 	{
-		thisround =
-			gnutls_record_recv(t->sslses, buf + begin, MAX_QUEUE_LENGTH - begin - 1);
+		thisround = gnutls_record_recv(t->sslses, buf + begin, read_capacity);
 		if (!thisround)
 		{
 			logit(LOG_COMM,
@@ -4404,7 +4521,7 @@ int process_input(P_desc t)
 			      (t->character) ? GET_NAME(t->character) : "NOCHAR",
 			      *t->host ? t->host : "unknown", t->descriptor, t->connected,
 			      t->sslses ? "yes" : "no");
-			return (-1);
+			return NETWORK_INPUT_EOF;
 		}
 		else if (thisround < 0)
 		{
@@ -4415,12 +4532,15 @@ int process_input(P_desc t)
 				      thisround, gnutls_strerror(thisround));
 				return (-1);
 			}
+			t->tls_read_interest = gnutls_record_get_direction(t->sslses) ? POLLOUT :
+											POLLIN;
 			return 0;
 		}
+		t->tls_read_interest = 0;
 	}
 	else
 	{
-		thisround = read(t->descriptor, buf + begin, MAX_QUEUE_LENGTH - begin - 1);
+		thisround = read(t->descriptor, buf + begin, read_capacity);
 		if (!thisround)
 		{
 			logit(LOG_COMM,
@@ -4428,11 +4548,11 @@ int process_input(P_desc t)
 			      (t->character) ? GET_NAME(t->character) : "NOCHAR",
 			      *t->host ? t->host : "unknown", t->descriptor, t->connected,
 			      t->sslses ? "yes" : "no");
-			return (-1);
+			return NETWORK_INPUT_EOF;
 		}
 		else if (thisround < 0)
 		{
-			if (errno != EAGAIN)
+			if (errno != EAGAIN && errno != EINTR)
 			{
 				logit(LOG_COMM, "process_input() CON_%d %s Read: %d Error: %d",
 				      t->connected, (t->character) ? GET_NAME(t->character) : "",
@@ -4443,6 +4563,7 @@ int process_input(P_desc t)
 		}
 	}
 
+	t->network_input_remaining -= thisround;
 	int len = begin + thisround;
 	buf[len] = 0; // safety vs broken code
 	bp = buf;
@@ -4467,6 +4588,7 @@ int process_input(P_desc t)
 			if (consumed <= 0)
 			{
 				/* Preserve a fragmented Telnet command for the next socket read. */
+				incomplete_telnet_command = true;
 				memmove(bp, buf + i, len - i);
 				bp += len - i;
 				goto incomplete;
@@ -4493,7 +4615,15 @@ int process_input(P_desc t)
 	}
 
 incomplete:
-	if (bp - buf > MAX_INPUT_LENGTH - 1)
+	const int buffered_length = static_cast<int>(bp - buf);
+	if (incomplete_telnet_command && buffered_length >= MAX_QUEUE_LENGTH - 1)
+	{
+		/* Do not strand a full, unterminated Telnet frame without read space. */
+		logit(LOG_COMM, "process_input: input buffer exhausted for descriptor %d.",
+		      t->descriptor);
+		return -1;
+	}
+	if (!incomplete_telnet_command && buffered_length > MAX_INPUT_LENGTH - 1)
 	{
 		// is it even a good idea to process it anyway?
 		*bp = 0;
@@ -4520,6 +4650,8 @@ static void note_player_input_activity(P_desc t, const char *input)
 
 static void process_line(P_desc t, char *in)
 {
+	if (transport_frontend_input(t, 1, in, strlen(in)))
+		return;
 	char out[MAX_QUEUE_LENGTH * 3]; // max expansion
 	char buffer[MAX_STRING_LENGTH];
 #ifdef SMART_PROMPT
@@ -4555,9 +4687,7 @@ static void process_line(P_desc t, char *in)
 	}
 
 	/* handle '!' to repeat last command */
-	if ((*out != '!') || !*t->last_input || !t->character || t->connected)
-		memcpy(t->last_input, out, k + 1);
-	else
+	if (*out == '!' && *t->last_input && t->character && !t->connected)
 		strcpy(out, t->last_input);
 
 	if (t && t->character && IS_PC(t->character))
@@ -4565,7 +4695,11 @@ static void process_line(P_desc t, char *in)
 		t->character->only.pc->received_data += k;
 		receivedbytes += k;
 	}
+	const size_t previous_entries = t->input.entries;
 	write_to_q(out, &t->input, 0);
+	if (t->input.entries == previous_entries)
+		return;
+	strcpy(t->last_input, out);
 
 	snoop_by_data *snoop_by_ptr = t->snoop.snoop_by_list;
 
@@ -4577,6 +4711,16 @@ static void process_line(P_desc t, char *in)
 
 		snoop_by_ptr = snoop_by_ptr->next;
 	}
+}
+
+void comm_transport_line(P_desc d, char *line)
+{
+	process_line(d, line);
+}
+
+void comm_transport_greet(P_desc d)
+{
+	greet(d);
 }
 
 /*

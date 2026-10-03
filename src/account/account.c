@@ -1,4 +1,5 @@
 #include "account/password_async.h"
+#include "account/account_async.h"
 /*************************************************************
  * account.c
  *************************************************************/
@@ -11,6 +12,7 @@
 #include "world/epic_transaction.h"
 #include "world/handler.h"
 #include "world/rested.h"
+#include "world/zone_story_quest_runtime.h"
 #include "world/zone_touch_transaction.h"
 #include "cmd/interp.h"
 #include "economy/auction_transaction.h"
@@ -43,6 +45,8 @@
 #include "item/objmisc.h"
 #include "magic/spells.h"
 #include "sql/sql_account.h"
+#include "sql/sql.h"
+#include "sql/sql_transaction.h"
 #include "sql/sql_player_identity.h"
 #include "player/player_name.h"
 #include "player/player_save_journal.h"
@@ -55,6 +59,7 @@
 #include "persistence/locker_async.h"
 #include "persistence/maintenance_scheduler.h"
 #include "persistence/persistence_observability.h"
+#include "persistence/economic_sql_lifecycle_guard.h"
 #include "flatfile/flatfile_account_adapter.h"
 #include "flatfile/flatfile_account_delete.h"
 #include "persistence/persistence_mode.h"
@@ -216,6 +221,14 @@ class account_deletion_drain_guard
 void remove_deleted_account_runtime(P_desc deleting_session,
 				    const std::vector<account_deletion_identity> &identities)
 {
+#ifndef _PFILE_
+	{
+		std::string error;
+		if (!zone_story_quest_runtime::refresh_after_erasure(&error))
+			logit(LOG_FILE,
+			      "account deletion: zone-story publication disabled after cache refresh failure");
+	}
+#endif
 	for (const auto &identity : identities)
 	{
 		item_ownership_runtime_forget_player_domain(identity.pid);
@@ -886,8 +899,39 @@ void select_accountname(P_desc d, char *arg)
 		}
 	}
 
+	account_async_cancel(d);
+	d->account->acct_name = check_and_clear(d->account->acct_name);
 	d->account->acct_name = str_dup(tmp_name);
 
+#ifndef __NO_MYSQL__
+	if (!account_async_start(
+		    d,
+		    [](P_desc completed, account_load_outcome outcome)
+		    {
+			    if (outcome == account_load_outcome::loaded)
+				    send_account_password_prompt(completed);
+			    else if (outcome == account_load_outcome::not_found)
+			    {
+				    verify_account_name(completed, NULL);
+				    STATE(completed) = CON_VERIFY_NEW_ACCT_NAME;
+			    }
+			    else
+			    {
+				    SEND_TO_Q(
+					    "There is an error with your account, please notify an immortal!\r\n",
+					    completed);
+				    statuslog(56, "&+RALERT&n: interactive account load failed");
+				    completed->account = free_account(completed->account);
+				    STATE(completed) = CON_FLUSH;
+			    }
+		    }))
+	{
+		SEND_TO_Q("Login is busy; please reconnect in a moment.\r\n", d);
+		d->account = free_account(d->account);
+		STATE(d) = CON_FLUSH;
+	}
+	return;
+#else
 	if (account_exists("Accounts", tmp_name))
 	{
 		if (read_account(d->account) == -1)
@@ -908,6 +952,7 @@ void select_accountname(P_desc d, char *arg)
 	verify_account_name(d, NULL);
 	STATE(d) = CON_VERIFY_NEW_ACCT_NAME;
 	return;
+#endif
 }
 
 void get_account_password(P_desc d, char *arg)
@@ -3037,7 +3082,7 @@ void account_player_load_complete(P_desc d, player_load_result result)
 		display_character_list(d);
 		return;
 	}
-	if (!player_save_pipeline_save_admitted(d->player_load_pid) &&
+	if (!player_save_pipeline_authoritative_hydration_admitted(d->player_load_pid) &&
 	    (result.outcome == player_load_outcome::applied ||
 	     result.outcome == player_load_outcome::degraded))
 	{
@@ -3568,8 +3613,24 @@ void verify_delete_account(P_desc d, char *arg)
 		return;
 	}
 
+#ifndef __NO_MYSQL__
 	if (!fenced)
 	{
+		// Admit the irreversible request before writing its durable fence. Hold
+		// the native lease through that write, then release it before draining
+		// worker saves; the deletion backend establishes its own admission.
+		economic_sql_currency_writer_guard fence_writer;
+		if (sql_in_transaction() ||
+		    economic_sql_currency_writer_guard::acquire(DB, &fence_writer))
+		{
+			SEND_TO_Q(
+				"\r\nAccount deletion is currently unavailable; no deletion fence "
+				"was written. Please retry or contact an immortal.\r\n",
+				d);
+			STATE(d) = CON_DISPLAY_ACCT_MENU;
+			display_account_menu(d, NULL);
+			return;
+		}
 		const char previous_block = d->account->acct_blocked;
 		d->account->acct_blocked = ACCOUNT_BLOCK_DELETION;
 		if (write_account(d->account) != 1)
@@ -3585,6 +3646,40 @@ void verify_delete_account(P_desc d, char *arg)
 		}
 		statuslog(56, "account deletion fenced (account=redacted)");
 	}
+#else
+	{
+		const char previous_block = d->account->acct_blocked;
+		d->account->acct_blocked = ACCOUNT_BLOCK_DELETION;
+		std::string error;
+		const auto result = flatfile_account_state_fence(d->account, fenced, &error);
+		if (result != flatfile_account_fence_result::ready)
+		{
+			if (!fenced && result == flatfile_account_fence_result::refused)
+			{
+				d->account->acct_blocked = previous_block;
+				SEND_TO_Q(
+					"\r\nAccount deletion could not establish its durable fence; no data "
+					"was deleted. Please contact an immortal.\r\n",
+					d);
+				STATE(d) = CON_DISPLAY_ACCT_MENU;
+				display_account_menu(d, NULL);
+			}
+			else
+			{
+				close_other_account_sessions(d);
+				SEND_TO_Q(
+					"\r\nAccount deletion fence publication is awaiting native "
+					"recovery. The request cannot be cancelled; retry the exact "
+					"account name or contact an immortal.\r\n",
+					d);
+				display_account_deletion_confirmation(d, true);
+			}
+			return;
+		}
+		if (!fenced)
+			statuslog(56, "account deletion fenced (account=redacted)");
+	}
+#endif
 
 	std::vector<account_deletion_identity> identities;
 	if (!capture_account_deletion_identities(d, &identities))

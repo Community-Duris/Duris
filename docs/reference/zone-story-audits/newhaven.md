@@ -36,9 +36,9 @@ Comments are omitted; preprocessor branches are source leads, not evaluated runt
 
 | Kind | VNUM | Procedure | Source |
 | --- | ---: | --- | --- |
-| obj | 35102 | `magic_pool` | [src/specs/specs.assign.c:1292](../../../src/specs/specs.assign.c#L1292) |
-| obj | 35103 | `magic_pool` | [src/specs/specs.assign.c:1293](../../../src/specs/specs.assign.c#L1293) |
-| room | 35264 | `inn` | [src/specs/specs.assign.c:2304](../../../src/specs/specs.assign.c#L2304) |
+| obj | 35102 | `magic_pool` | [src/specs/specs.assign.c:1280](../../../src/specs/specs.assign.c#L1280) |
+| obj | 35103 | `magic_pool` | [src/specs/specs.assign.c:1281](../../../src/specs/specs.assign.c#L1281) |
+| room | 35264 | `inn` | [src/specs/specs.assign.c:2292](../../../src/specs/specs.assign.c#L2292) |
 
 ## Reset coverage
 

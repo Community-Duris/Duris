@@ -3521,8 +3521,28 @@ Buy - Last Edited: 2014-09-11 01:08:14 by lohrr
 These commands are used for making purchases or selling items in the various shops
 found around Duris. The prices in these shops will be affected slightly by how
 personable you are and how charismatic you are.
-You can now buy <item> <container> <quantity> to buy up to 9 of an item at a time.
-Note: This doesn't work at the epic shop, as it's a special shop.
+Syntax: buy <item>
+        buy <item> quantity <1-50>
+        buy <item> quantity <1-50> into <container>
+        buy <item> <container> [quantity] (historical form)
+
+Produced stock marked [quantity 1-50] in list supports quantity orders.
+Use an item keyword or the numbered list selector, for example:
+  buy ration quantity 10
+  buy #3 quantity 10 into backpack
+  buy arrow quiver 50
+
+Without into, delivery is to your inventory. Containers must be carried,
+open, and able to hold the item. Quantities must be whole numbers from
+1 through 50; invalid quantities, destinations, or extra arguments buy
+nothing and charge nothing. Quantity orders do not work at the epic shop.
+
+The order shows quantity, destination, unit price, and total. Each copy
+completes before the next begins. A stopped order reports how many were
+delivered and the actual charge. Unpurchased copies are not charged.
+If delivery is rejected after payment, the result identifies the pending
+refund for that copy. If a committed delivery is delayed, wait or reconnect;
+do not buy it again.
 ==See also==
 * Shops
 * Value

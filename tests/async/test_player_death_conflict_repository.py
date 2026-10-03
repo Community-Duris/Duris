@@ -13,7 +13,8 @@ ROOT = Path(__file__).resolve().parents[2]
 def compile_sql(output, repository_source=None, snapshot_source=None, extra_flags=(), harness_source=None):
     flags = shlex.split(subprocess.check_output(["mysql_config", "--cflags"], text=True))
     libs = shlex.split(subprocess.check_output(["mysql_config", "--libs"], text=True))
-    subprocess.run([os.environ.get("CXX", "g++"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-pthread", "-Isrc", *flags, *extra_flags,
+    subprocess.run([os.environ.get("CXX", "g++"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-pthread",
+                    "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Isrc", *flags, *extra_flags,
                     str(harness_source or ROOT / "tests/async/player_death_conflict_repository_mysql_harness.cpp"),
                     str(repository_source or ROOT / "src/player/player_death_conflict_repository.c"),
                     str(snapshot_source or ROOT / "src/player/player_snapshot_repository.c"), "src/player/player_snapshot_codec.c",

@@ -70,7 +70,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         """
         report = runtime.validate()
         # Includes death evidence/recovery and SQL lifecycle tables.
-        self.assertEqual(report["current_table_count"], 225)
+        self.assertEqual(report["current_table_count"], 226)
         for table in ("player_death_disposition", "player_death_custody",
                       "player_death_conflict_evidence"):
             self.assertIn("'" + table + "'", self.header)
@@ -84,7 +84,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertIn("'economic_sql_activation_receipt'", self.header)
         self.assertIn("'economic_sql_global_activation'", self.header)
         self.assertEqual(report["migration_head"],
-                         "0054_discovered_zone_daily_state")
+                         "0056_discovered_zone_daily_state")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)
@@ -113,15 +113,15 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         import tempfile
         from unittest import mock
         value = runtime.load()
-        self.assertEqual(value["migration_head"]["sequence"], 54)
-        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 54)
+        self.assertEqual(value["migration_head"]["sequence"], 56)
+        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 56)
         self.assertEqual(value["staging_0045_migration_head"]["id"],
-                         "0054_discovered_zone_daily_state")
+                         "0056_discovered_zone_daily_state")
         self.assertNotEqual(value["migration_head"]["history_checksum"],
                             value["staging_0045_migration_head"]["history_checksum"])
-        self.assertEqual(value["master_0031_migration_head"]["sequence"], 54)
+        self.assertEqual(value["master_0031_migration_head"]["sequence"], 56)
         self.assertEqual(value["master_0031_migration_head"]["id"],
-                         "0054_discovered_zone_daily_state")
+                         "0056_discovered_zone_daily_state")
         self.assertEqual(len({value[field]["history_checksum"] for field in (
             "migration_head", "staging_0045_migration_head", "master_0031_migration_head")}), 3)
         with tempfile.TemporaryDirectory() as directory:
@@ -171,7 +171,14 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         game_loop = self.comm[self.comm.index("static bool run_connection_phase"):
                               self.comm.index("bool runtime_listener_address")]
         self.assertIn("redis_load_world_state", game_loop)
-        self.assertIn("drain_new_connections", game_loop)
+        self.assertIn("transport_world_pump", game_loop)
+        # Listener acceptance moved before run_connection_phase. Both the
+        # legacy poll boundary and transport pump remain behind verified boot.
+        acceptance = self.comm[self.comm.index("static int drain_new_connections"):
+                               self.comm.index("static bool run_connection_phase")]
+        for listener in ("ctx.telnet_listener", "ctx.ssl_listener",
+                         "ctx.websocket_listener"):
+            self.assertIn("drain_new_connections(" + listener, acceptance)
 
     def test_schema_fingerprint_and_redacted_reason_ids_are_enforced(self):
         self.assertIn("sql_verify_metadata_fingerprint", self.sql)

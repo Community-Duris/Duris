@@ -1,11 +1,13 @@
 #include "flatfile/flatfile_zone_story_quest_state.h"
 
 #include "flatfile/flatfile_store.h"
+#include "world/zone_story_quest_feature.h"
 
 #include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cerrno>
+#include <new>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -137,8 +139,35 @@ struct journal_cache
 	uint64_t file_bytes = 0;
 	size_t record_bytes = 0;
 	bool journal = false;
+	bool observed = false;
+	struct stat identity = {};
 };
 journal_cache cache;
+
+struct file_descriptor
+{
+	int fd = -1;
+	~file_descriptor()
+	{
+		if (fd >= 0)
+			close(fd);
+	}
+};
+struct state_lock
+{
+	int fd = -1;
+	~state_lock() { flatfile_lock_release(fd); }
+};
+flatfile_zone_story_quest_result recover(const std::string &root,
+					 const flatfile_authority_lock &lock, std::string *error)
+{
+	const auto result = flatfile_authority_transaction_recover(root, lock, error);
+	return result == flatfile_authority_transaction_result::ok ?
+		       flatfile_zone_story_quest_result::ok :
+	       result == flatfile_authority_transaction_result::io_error ?
+		       flatfile_zone_story_quest_result::io_error :
+		       flatfile_zone_story_quest_result::invalid;
+}
 
 bool read_at(int fd, uint64_t offset, uint8_t *data, size_t size)
 {
@@ -190,6 +219,23 @@ bool private_file(int fd, struct stat *info)
 {
 	return !fstat(fd, info) && S_ISREG(info->st_mode) && info->st_uid == geteuid() &&
 	       info->st_nlink == 1 && !(info->st_mode & 0077) && info->st_size >= 0;
+}
+bool cache_matches(const std::string &directory)
+{
+	if (!cache.observed || cache.directory != directory)
+		return false;
+	file_descriptor file{ open_state(directory, O_RDONLY) };
+	struct stat info = {};
+	return file.fd >= 0 && private_file(file.fd, &info) &&
+	       info.st_dev == cache.identity.st_dev && info.st_ino == cache.identity.st_ino &&
+	       info.st_size == cache.identity.st_size &&
+	       info.st_mtim.tv_sec == cache.identity.st_mtim.tv_sec &&
+	       info.st_mtim.tv_nsec == cache.identity.st_mtim.tv_nsec;
+}
+void observe_cache_file()
+{
+	file_descriptor file{ open_state(cache.directory, O_RDONLY) };
+	cache.observed = file.fd >= 0 && private_file(file.fd, &cache.identity);
 }
 std::vector<uint8_t> frame(uint32_t revision, const zone_story_quest_state::changes &updates)
 {
@@ -263,15 +309,17 @@ flatfile_zone_story_quest_result broken(std::string *error, const char *message)
 }
 }
 
-flatfile_zone_story_quest_result
-flatfile_zone_story_quest_state_load(const char *root, uint32_t expected_catalog_revision,
-				     std::string *state, std::string *error, bool *legacy)
+static flatfile_zone_story_quest_result load_state(const char *root,
+						   uint32_t expected_catalog_revision,
+						   std::string *state, std::string *error,
+						   bool *legacy)
 {
 	if (!root || !*root || !expected_catalog_revision || !state)
 		return broken(error, "invalid zone-story journal request");
 	cache = {};
 	cache.directory = state_directory(root);
-	const int fd = open_state(cache.directory, O_RDONLY);
+	file_descriptor file{ open_state(cache.directory, O_RDONLY) };
+	const int fd = file.fd;
 	if (fd < 0)
 	{
 		if (errno == ENOENT)
@@ -283,18 +331,18 @@ flatfile_zone_story_quest_state_load(const char *root, uint32_t expected_catalog
 	if (!private_file(fd, &info) || info.st_size < 12 || !read_at(fd, 0, header.data(), 12) ||
 	    !std::equal(state_magic.begin(), state_magic.end(), header.begin()))
 	{
-		close(fd);
 		return broken(error, "invalid zone-story journal metadata or header");
 	}
 	if (read_u32(header.data() + 8) != 3)
 	{
-		close(fd);
 		const auto result =
 			legacy_state_load(root, expected_catalog_revision, state, error);
 		if (result == flatfile_zone_story_quest_result::ok)
 		{
 			update_cache({ zone_story_quest_state::split_document(*state), true });
 			cache.file_bytes = info.st_size;
+			cache.identity = info;
+			cache.observed = true;
 			if (legacy)
 				*legacy = true;
 		}
@@ -313,7 +361,6 @@ flatfile_zone_story_quest_state_load(const char *root, uint32_t expected_catalog
 		    !std::equal(state_magic.begin(), state_magic.end(), header.begin()) ||
 		    read_u32(header.data() + 8) != 3)
 		{
-			close(fd);
 			return broken(error, "zone-story journal frame header is corrupt");
 		}
 		const auto revision = read_u32(header.data() + 12);
@@ -322,7 +369,6 @@ flatfile_zone_story_quest_state_load(const char *root, uint32_t expected_catalog
 		if (revision != expected_catalog_revision || size > state_maximum_bytes ||
 		    replace > 1 || (first && !replace))
 		{
-			close(fd);
 			return broken(error, "zone-story journal frame contract is invalid");
 		}
 		if (size > cache.file_bytes - offset - journal_header_size)
@@ -333,7 +379,6 @@ flatfile_zone_story_quest_state_load(const char *root, uint32_t expected_catalog
 		if (!read_at(fd, offset + journal_header_size,
 			     checked.data() + journal_digest_offset, size))
 		{
-			close(fd);
 			return broken(error, "zone-story journal read failed");
 		}
 		std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
@@ -347,7 +392,6 @@ flatfile_zone_story_quest_state_load(const char *root, uint32_t expected_catalog
 					     size),
 			    &values))
 		{
-			close(fd);
 			return broken(error,
 				      "zone-story journal checksum or record encoding is corrupt");
 		}
@@ -355,21 +399,21 @@ flatfile_zone_story_quest_state_load(const char *root, uint32_t expected_catalog
 		offset += journal_header_size + size;
 		first = false;
 	}
-	close(fd);
 	if (first || !cache.values.count("meta"))
 		return broken(error, "zone-story journal snapshot is missing");
 	cache.valid_bytes = offset;
 	cache.journal = true;
+	cache.identity = info;
+	cache.observed = true;
 	if (legacy)
 		*legacy = false;
 	*state = zone_story_quest_state::document(cache.values);
 	return flatfile_zone_story_quest_result::ok;
 }
 
-flatfile_zone_story_quest_result
-flatfile_zone_story_quest_records_save(const char *root, uint32_t catalog_revision,
-				       const zone_story_quest_state::changes &requested,
-				       std::string *error)
+static flatfile_zone_story_quest_result
+save_records_locked(const char *root, uint32_t catalog_revision,
+		    const zone_story_quest_state::changes &requested, std::string *error)
 {
 	if (!root || !*root || !catalog_revision)
 		return broken(error, "invalid zone-story journal location");
@@ -378,11 +422,10 @@ flatfile_zone_story_quest_records_save(const char *root, uint32_t catalog_revisi
 	    (requested.replace && metadata == requested.values.end()))
 		return broken(error, "zone-story journal metadata is missing");
 	const auto directory = state_directory(root);
-	if (cache.directory != directory)
+	if (!cache_matches(directory))
 	{
 		std::string ignored;
-		const auto loaded = flatfile_zone_story_quest_state_load(root, catalog_revision,
-									 &ignored, error);
+		const auto loaded = load_state(root, catalog_revision, &ignored, error, nullptr);
 		if (loaded != flatfile_zone_story_quest_result::ok &&
 		    loaded != flatfile_zone_story_quest_result::not_found && !requested.replace)
 			return loaded;
@@ -412,8 +455,9 @@ flatfile_zone_story_quest_records_save(const char *root, uint32_t catalog_revisi
 	}
 	if (!updates.replace && update_size > state_maximum_bytes)
 		return broken(error, "zone-story journal update is oversized");
-	int lock_fd = -1;
-	if (!flatfile_lock_acquire(directory, ".zone-story-quests.lock", &lock_fd, error))
+	state_lock state_file_lock;
+	if (!flatfile_lock_acquire(directory, ".zone-story-quests.lock", &state_file_lock.fd,
+				   error))
 		return flatfile_zone_story_quest_result::io_error;
 	bool saved = false;
 	if (updates.replace || !cache.journal ||
@@ -423,7 +467,6 @@ flatfile_zone_story_quest_records_save(const char *root, uint32_t catalog_revisi
 		zone_story_quest_state::apply(&values, updates);
 		if (!values.count("meta"))
 		{
-			flatfile_lock_release(lock_fd);
 			return broken(error, "zone-story journal metadata is missing");
 		}
 		const auto bytes = snapshot(catalog_revision, values);
@@ -437,7 +480,8 @@ flatfile_zone_story_quest_records_save(const char *root, uint32_t catalog_revisi
 	else
 	{
 		const auto bytes = frame(catalog_revision, updates);
-		const int fd = open_state(directory, O_RDWR);
+		file_descriptor file{ open_state(directory, O_RDWR) };
+		const int fd = file.fd;
 		struct stat info = {};
 		if (fd >= 0 && private_file(fd, &info) &&
 		    static_cast<uint64_t>(info.st_size) == cache.file_bytes &&
@@ -457,10 +501,7 @@ flatfile_zone_story_quest_records_save(const char *root, uint32_t catalog_revisi
 				cache.file_bytes = cache.valid_bytes;
 			}
 		}
-		if (fd >= 0)
-			close(fd);
 	}
-	flatfile_lock_release(lock_fd);
 	if (!saved)
 	{
 		if (error)
@@ -468,15 +509,104 @@ flatfile_zone_story_quest_records_save(const char *root, uint32_t catalog_revisi
 		return flatfile_zone_story_quest_result::io_error;
 	}
 	update_cache(updates);
+	observe_cache_file();
 	return flatfile_zone_story_quest_result::ok;
+}
+
+flatfile_zone_story_quest_result
+flatfile_zone_story_quest_state_load(const char *root, uint32_t expected_catalog_revision,
+				     std::string *state, std::string *error, bool *legacy)
+try
+{
+	if (!root || !*root || !expected_catalog_revision || !state)
+		return flatfile_zone_story_quest_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_zone_story_quest_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_zone_story_quest_result::ok)
+		return recovered;
+	return load_state(root, expected_catalog_revision, state, error, legacy);
+}
+catch (const std::bad_alloc &)
+{
+	errno = ENOMEM;
+	return flatfile_zone_story_quest_result::io_error;
+}
+
+flatfile_zone_story_quest_result
+flatfile_zone_story_quest_records_save(const char *root, uint32_t catalog_revision,
+				       const zone_story_quest_state::changes &updates,
+				       std::string *error)
+try
+{
+	if (!root || !*root || !catalog_revision)
+		return flatfile_zone_story_quest_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_zone_story_quest_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_zone_story_quest_result::ok)
+		return recovered;
+	return save_records_locked(root, catalog_revision, updates, error);
+}
+catch (const std::bad_alloc &)
+{
+	errno = ENOMEM;
+	return flatfile_zone_story_quest_result::io_error;
 }
 
 flatfile_zone_story_quest_result flatfile_zone_story_quest_state_save(const char *root,
 								      uint32_t catalog_revision,
 								      const std::string &state,
 								      std::string *error)
+try
 {
 	return flatfile_zone_story_quest_records_save(
 		root, catalog_revision, { zone_story_quest_state::split_document(state), true },
 		error);
+}
+catch (const std::bad_alloc &)
+{
+	errno = ENOMEM;
+	return flatfile_zone_story_quest_result::io_error;
+}
+
+flatfile_zone_story_quest_result flatfile_zone_story_quest_state_prepare_player_remove(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t catalog_revision,
+	uint32_t pid, flatfile_authority_operation *operation, std::string *error)
+try
+{
+	if (!operation || !pid || !catalog_revision || !lock.matches(root))
+		return flatfile_zone_story_quest_result::invalid;
+	*operation = {};
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_zone_story_quest_result::ok)
+		return recovered;
+	std::string before;
+	const auto loaded = load_state(root.c_str(), catalog_revision, &before, error, nullptr);
+	if (loaded != flatfile_zone_story_quest_result::ok)
+		return loaded;
+	zone_story_quest_feature::service state;
+	if (!state.deserialize_state(before, error) || !state.erase_character_all_seasons(pid, 1))
+		return flatfile_zone_story_quest_result::corrupt;
+	const std::string after = state.serialize_state(error);
+	if (after.empty())
+		return flatfile_zone_story_quest_result::io_error;
+	const auto after_values = zone_story_quest_state::split_document(after);
+	if (zone_story_quest_state::split_document(before) == after_values)
+		return flatfile_zone_story_quest_result::unchanged;
+	auto bytes = snapshot(catalog_revision, after_values);
+	if (bytes.size() > flatfile_authority_transaction_maximum_bytes)
+		return flatfile_zone_story_quest_result::invalid;
+	operation->store = flatfile_authority_store::domains;
+	operation->kind = flatfile_authority_operation_kind::write;
+	operation->filename = "zone-story-quests.state";
+	operation->bytes = std::move(bytes);
+	return flatfile_zone_story_quest_result::ok;
+}
+catch (const std::bad_alloc &)
+{
+	errno = ENOMEM;
+	return flatfile_zone_story_quest_result::io_error;
 }

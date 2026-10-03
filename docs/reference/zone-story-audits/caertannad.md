@@ -92,7 +92,7 @@ Comments are omitted; preprocessor branches are source leads, not evaluated runt
 
 | Kind | VNUM | Procedure | Source |
 | --- | ---: | --- | --- |
-| mob | 78476 | `caertannad_summon` | [src/specs/specs.assign.c:2225](../../../src/specs/specs.assign.c#L2225) |
+| mob | 78476 | `caertannad_summon` | [src/specs/specs.assign.c:2213](../../../src/specs/specs.assign.c#L2213) |
 
 ## Reset coverage
 

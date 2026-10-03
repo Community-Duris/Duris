@@ -48,7 +48,7 @@ save_chars = split_at(
 )[1]
 save_chars = save_chars.split("\nstatic ", 1)[0]
 assert contains(save_chars, "if (pid <= 0)")
-assert contains(save_chars, "component=mapping outcome=deferred")
+assert contains(save_chars, "component=mapping outcome=deferred", literal=True)
 assert not contains(save_chars, '"NULL"')
 
 

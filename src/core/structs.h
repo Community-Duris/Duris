@@ -1262,6 +1262,11 @@ struct pc_only_data
 	uint64_t bank_revision; /* Transactional shared account-bank domain revision. */
 	uint64_t wallet_revision; /* Transactional carried-wallet domain revision. */
 	bool death_custody_disputed; /* Runtime-only refused corpse handoff. */
+	uint64_t death_recovery_owner; /* Existing corpse owner relationship, diagnostics only. */
+	uint64_t death_recovery_since_usec;
+	uint64_t death_recovery_reports;
+	uint64_t death_recovery_last_alert_usec;
+	bool death_recovery_failure_reported;
 	uint64_t death_retry_corpse_uid; /* Runtime-only event admission fallback. */
 	uint64_t death_retry_due_usec;
 	int death_retry_delay;
@@ -1515,6 +1520,11 @@ struct char_data
 	 * makes the pointer safe to validate after scheduler-pool reuse. */
 	P_nevent world_activity_mundane_event;
 	unsigned long long world_activity_mundane_event_sequence;
+	/* Character maintenance uses the existing scheduler's owner cancellation. */
+	P_nevent character_maintenance_event;
+	unsigned long long character_maintenance_event_sequence;
+	unsigned long long character_maintenance_body_due;
+	bool character_maintenance_in_world;
 
 	struct char_player_data player; /* Normal data               */
 	struct player_disguise_data disguise;
@@ -1577,6 +1587,10 @@ struct txt_q
 {
 	struct txt_block *head;
 	struct txt_block *tail;
+	size_t bytes; /* allocated text bytes, including each terminating NUL */
+	size_t entries;
+	bool overflowed;
+	bool overflow_reported;
 };
 
 /* modes of connectedness */
@@ -1705,6 +1719,14 @@ typedef struct gnutls_session_int *gnutls_session_t;
 
 struct descriptor_data
 {
+	// A logical descriptor in the world has no client fd or transport state.
+	// The frontend uses the same ID with its real fd. Zero means legacy ownership.
+	uint64_t transport_session;
+	uint64_t transport_command;
+	uint64_t transport_ack;
+	uint64_t transport_output_sequence;
+	bool transport_command_started;
+	bool transport_authenticated;
 	// Session-local cosmetic state, zeroed on allocation/reconnect/copyover.
 	// Plain storage: descriptor allocation does not run C++ constructors.
 	uint64_t output_sequences[(size_t)OutputChannel::Count];
@@ -1729,6 +1751,10 @@ struct descriptor_data
 	char last_input[MAX_INPUT_LENGTH]; /* the last input         */
 	struct txt_q output; /* q of strings to send       */
 	struct txt_q input; /* q of unprocessed input     */
+	uint64_t oob_input_tick;
+	size_t oob_input_bytes;
+	size_t oob_input_entries;
+	bool oob_input_overflowed;
 	P_char character; /* linked to char             */
 	P_char original; /* original char              */
 	struct snoop_data snoop; /* to snoop people.           */
@@ -1741,6 +1767,7 @@ struct descriptor_data
 	P_acct account;
 	struct password_login_job *login_password_job;
 	struct password_request *password_request;
+	struct account_request *account_request;
 	bool login_password_websocket;
 	char *selected_char_name; /* temporary storage for character selection confirmation */
 	uint64_t player_load_request_id;
@@ -1759,6 +1786,12 @@ struct descriptor_data
 	char *out_compress_buf; /* MCCP output buffer */
 	z_stream *z_str; /* zlib internal state */
 	gnutls_session_t sslses; /* gnutls data, 0 if plain text */
+	short network_revents; /* current poll turn, never shared with workers */
+	int network_close_pending; /* 1: close at boundary; 2: first offer staged input */
+	size_t network_input_remaining; /* existing byte allowance per simulation pulse */
+	short tls_read_interest; /* handshake/receive retry direction */
+	short tls_write_interest; /* retained record-send retry direction */
+	uint64_t tls_handshake_deadline_us; /* monotonic admission timeout */
 	int movement_noise;
 	char client_str[MAX_INPUT_LENGTH]; /* CLIENT SPECIFIC STRING */
 	int last_map_update; /* CLIENT SPECIFIC INT */
@@ -1775,6 +1808,8 @@ struct descriptor_data
 	time_t ws_handshake_started;
 	char *ws_fragment_buffer;
 	size_t ws_fragment_len;
+	int ws_input_pending; /* frame budget left buffered parsing work */
+	struct websocket_pending_application *ws_pending_application;
 	unsigned char *ws_output_buffer;
 	size_t ws_output_len;
 	size_t ws_output_offset;

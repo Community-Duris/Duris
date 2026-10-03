@@ -630,6 +630,21 @@ flatfile_locker_result flatfile_locker_list(const std::string &root,
 	return flatfile_locker_result::ok;
 }
 
+flatfile_locker_result
+flatfile_locker_recovery_list_locked(const std::string &root, const flatfile_authority_lock &lock,
+				     std::vector<flatfile_locker_record> *lockers,
+				     std::string *error)
+{
+	if (!lock.matches(root) || !lockers)
+		return flatfile_locker_result::invalid;
+	locker_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_locker_result::ok)
+		return loaded;
+	*lockers = std::move(catalog.lockers);
+	return flatfile_locker_result::ok;
+}
+
 flatfile_locker_result flatfile_locker_read_coin(const std::string &root,
 						 const flatfile_authority_lock &lock,
 						 const item_owner_identity &owner, uint64_t uid,

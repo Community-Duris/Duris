@@ -120,9 +120,22 @@ flatfile_character_delete_result flatfile_character_delete(const std::string&, i
 void logit(int kind, const char*,...) { if(kind==LOG_PLAYER) { assert(!durable_active && !in_tx); ++audits; } }
 void statuslog(int, const char *fmt,...) { if(strstr(fmt,"deleted")) { assert(!durable_active && !in_tx); ++audits; } }
 void persistence_alert(int,const char*,const char*,const char*,const char*,const char*,const char*,...) {}
+static int writer_admission_error=0, writer_leases=0;
+static void *DB=reinterpret_cast<void *>(1);
+class economic_sql_currency_writer_guard {
+    bool held=false;
+public:
+    ~economic_sql_currency_writer_guard() { if(held) --writer_leases; }
+    static unsigned acquire(void *, economic_sql_currency_writer_guard *writer) {
+        assert(!in_tx && !writer->held);
+        if(writer_admission_error) return writer_admission_error;
+        writer->held=true; ++writer_leases; return 0;
+    }
+    bool is_valid_for(void *) const { return held && writer_leases==1; }
+};
 bool sql_in_transaction() { return in_tx; }
-bool sql_begin_transaction() { ++backend_calls; assert(!in_tx); in_tx=true; stage=0; txn_active=durable_active; txn_cleanup=durable_cleanup; return true; }
-bool sql_player_deletion_guard(int pid) { assert(pid==1 && in_tx && stage==0); ++guard_calls; return guard_failure==0; }
+bool sql_begin_transaction() { ++backend_calls; assert(!in_tx && writer_leases==1); in_tx=true; stage=0; txn_active=durable_active; txn_cleanup=durable_cleanup; return true; }
+bool sql_player_deletion_guard(int pid, const economic_sql_currency_writer_guard &writer) { assert(pid==1 && in_tx && stage==0 && writer.is_valid_for(DB)); ++guard_calls; return guard_failure==0; }
 bool cleanup() { assert(in_tx); if(++stage==fail_stage) return false; ++txn_cleanup; return true; }
 bool sql_soft_delete_character(int) { if(!cleanup())return false; txn_active=false; return true; }
 bool remove_all_artifacts_sql(P_char) { return cleanup(); }
@@ -130,7 +143,7 @@ bool remove_all_locker_access(P_char) { return cleanup(); }
 bool Guild::save() { assert(members==nullptr && member_count==1 && frags.frags==0); return cleanup(); }
 bool sql_delete_locker(int,int) { return cleanup(); }
 bool sql_delete_ship(const char*) { return cleanup(); }
-bool sql_delete_player(int, bool forget) { assert(!forget); return cleanup(); }
+bool sql_delete_player(int, bool forget, const economic_sql_currency_writer_guard *writer) { assert(!forget && writer && writer->is_valid_for(DB)); return cleanup(); }
 void player_revision_forget(int) { assert(!durable_active && !in_tx); }
 bool sql_commit() { assert(in_tx); if(commit_ok || commit_landed) {durable_active=txn_active; durable_cleanup=txn_cleanup;} if(!commit_ok)return false; in_tx=false; return true; }
 bool sql_rollback() { assert(in_tx); in_tx=false; return rollback_ok; }
@@ -161,6 +174,7 @@ main = r'''
 static void input(P_desc d,const char *s) { account_delete_char(d,const_cast<char*>(s)); }
 static void reset(Account &a,Descriptor &d) {
     mode=fail_stage=stage=frees=menus=refreshes=writes=audits=runtime_ships=loads=backend_calls=guard_calls=guard_failure=0;
+    assert(!writer_leases); writer_admission_error=0;
     in_tx=false; durable_active=txn_active=rollback_ok=commit_ok=refresh_ok=true;
     commit_landed=false; durable_cleanup=txn_cleanup=0;
     a.acct_character_list=(acct_chars*)calloc(1,sizeof(acct_chars));
@@ -177,6 +191,15 @@ static void dispose(Account &a) {
 }
 int main() {
     Account a; Descriptor d;
+    // Refused native accounting admission must precede BEGIN and all cleanup.
+    for(int failure:{1,2}) {
+        reset(a,d); writer_admission_error=failure; input(&d,"1"); input(&d,"yes"); released(d);
+        assert(!backend_calls && !guard_calls && !stage && !writer_leases);
+        assert(durable_active && durable_cleanup==0 && !audits && !runtime_ships && !writes);
+        assert(a.num_chars==1 && fixture_guild.member_count==1 && fixture_guild.frags.frags==7);
+        assert(d.output.find("did not complete")!=std::string::npos);
+        dispose(a);
+    }
     // Every SQL stage: soft-delete refusal through a late player-data cleanup failure.
     for(int failure=1;failure<=7;++failure) {
         reset(a,d); fail_stage=failure; input(&d,"1"); input(&d,"yes"); released(d);

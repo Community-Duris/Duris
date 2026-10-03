@@ -14,7 +14,9 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
 #include "sql/sql_pool.h"
+#include <atomic>
 #include <chrono>
+#include <new>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
@@ -23,6 +25,7 @@ HARNESS = r'''
 #include <type_traits>
 
 namespace {
+bool fail_factory = false, throw_factory = false;
 void require(bool ok, const std::string &message) {
     if (!ok) { std::cerr << "FAIL: " << message << '\n'; std::exit(1); }
 }
@@ -45,8 +48,10 @@ MYSQL *connect_fixture() {
     return connection;
 }
 void query(MYSQL *connection, const std::string &text) {
-    require(mysql_real_query(connection, text.data(), text.size()) == 0,
-            "query failed: " + text + " error=" + std::to_string(mysql_errno(connection)));
+    const int result = mysql_real_query(connection, text.data(), text.size());
+    require(result == 0,
+            "query failed: " + text + " error=" + std::to_string(mysql_errno(connection)) +
+            " " + mysql_error(connection));
     MYSQL_RES *rows = mysql_store_result(connection);
     if (rows) mysql_free_result(rows);
     else require(mysql_field_count(connection) == 0, "missing query result");
@@ -69,7 +74,10 @@ void assert_server_retired(MYSQL *observer, unsigned long id) {
     require(false, "retired server session/transaction remains live");
 }
 }
-MYSQL *sql_open_configured_connection(unsigned long) { return connect_fixture(); }
+MYSQL *sql_open_configured_connection(unsigned long) {
+    if (throw_factory) throw std::bad_alloc();
+    return fail_factory ? nullptr : connect_fixture();
+}
 void logit(const char *, const char *, ...) {}
 int main() {
     require(std::string(env("TEST_DB_DISPOSABLE")) == "1" &&
@@ -104,6 +112,49 @@ int main() {
         require(scalar(observer, "SELECT marker FROM read_pool_probe") == "2", "subsequent borrow did not commit");
         query(observer, "DELETE FROM read_pool_probe");
     }
+    // Replacement owns cleanup even when opening a new session fails or
+    // throws: the original transaction rolls back, and capacity stays usable.
+    for (int fault : {0, 1, 2}) {
+        MYSQL *bad = sql_pool_acquire(); require(bad != nullptr, "replacement borrow");
+        const auto id = mysql_thread_id(bad);
+        query(bad, "START TRANSACTION");
+        query(bad, "INSERT INTO read_pool_probe(marker) VALUES(1)");
+        fail_factory = fault == 0; throw_factory = fault == 1;
+        if (fault == 2) sql_pool_discard_connection(bad);
+        require(!sql_pool_replace_connection(bad), "failed replacement unexpectedly succeeded");
+        fail_factory = false; throw_factory = false;
+        require(sql_pool_in_use() == 0 && sql_pool_available() == 0, "failed replacement leaked lease");
+        assert_server_retired(observer, id);
+        require(scalar(observer, "SELECT COUNT(*) FROM read_pool_probe") == "0", "failed replacement committed row");
+        MYSQL *fresh = sql_pool_acquire(); require(fresh != nullptr, "replacement capacity recovery");
+        require(mysql_thread_id(fresh) != id && !(fresh->server_status & SERVER_STATUS_IN_TRANS), "dirty replacement reused");
+        query(fresh, "INSERT INTO read_pool_probe(marker) VALUES(2)");
+        sql_pool_release(fresh);
+        require(scalar(observer, "SELECT marker FROM read_pool_probe") == "2", "replacement write lost");
+        query(observer, "DELETE FROM read_pool_probe");
+    }
+
+    // Actual shutdown must complete after a closing replacement consumes its
+    // outstanding native session. The original pointer is never released again.
+    MYSQL *closing = sql_pool_acquire(); require(closing != nullptr, "shutdown borrow");
+    const auto closing_id = mysql_thread_id(closing);
+    query(closing, "START TRANSACTION");
+    query(closing, "INSERT INTO read_pool_probe(marker) VALUES(1)");
+    std::atomic<bool> shutdown_done{false};
+    std::thread closer([&] { sql_pool_shutdown(); shutdown_done = true; });
+    bool closing_seen = false;
+    const auto closing_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+    while (std::chrono::steady_clock::now() < closing_deadline) {
+        int active = 1;
+        require(!sql_pool_acquire_with_status(&active), "closing pool lent busy slot");
+        if (!active) { closing_seen = true; break; }
+    }
+    require(closing_seen && !shutdown_done, "shutdown did not fence borrower");
+    require(!sql_pool_replace_connection(closing), "closing replacement succeeded");
+    require(sql_pool_in_use() == 0, "closing replacement retained borrower");
+    closer.join(); require(shutdown_done && sql_pool_total() == 0, "shutdown remains pending");
+    assert_server_retired(observer, closing_id);
+    require(scalar(observer, "SELECT COUNT(*) FROM read_pool_probe") == "0", "shutdown committed row");
     sql_pool_shutdown();
     mysql_close(observer);
     std::cout << "PASS: real SQL pool retires open/killed sessions, rolls back their rows, and commits from replacement borrowers\n";
@@ -116,8 +167,9 @@ def compile_sql(binary):
     source.write_text(HARNESS)
     flags = shlex.split(subprocess.check_output(["mysql_config", "--cflags"], text=True))
     libs = shlex.split(subprocess.check_output(["mysql_config", "--libs"], text=True))
-    subprocess.run([os.environ.get("CXX", "g++-14"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
-                    "-pthread", "-Isrc", *flags, str(source), "src/sql/sql_pool.c", *libs, "-o", str(binary)], cwd=ROOT, check=True)
+    subprocess.run([os.environ.get("CXX", "g++"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+                    "-pthread", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
+                    "-fno-pie", "-no-pie", "-Isrc", *flags, str(source), "src/sql/sql_pool.c", *libs, "-o", str(binary)], cwd=ROOT, check=True)
 
 
 class PoolDiscardSQL(unittest.TestCase):

@@ -1441,15 +1441,38 @@ whitespace and the maintained server build. The invariant review verifies
 gateway keys and unchanged native definitions/revision/fingerprint/registry
 and all 54 earlier parsed maps.
 
-The accounting base has subsequently advanced to `100bee62f`; a read-only merge
-preview reports fifteen conflict files across migration/runtime compatibility,
-flat-file/SQL quest state, special assignment and their focused fixtures.
-The unmerged daily migration's sequence 54 now collides with the base's alchemy
-migration. Synchronize the feature branch with the dependency, preserve new
-accounting recovery/deletion behavior and saved journal encounters, allocate
-the unmerged daily migration after the current immutable base head, regenerate
-all compatibility histories and rerun focused integration/build checks before
-claiming merge readiness. This preview performs no merge or database operation.
+The accounting base advanced to `100bee62f`. The subsequent feature-branch
+integration resolves fifteen conflict files across migration/runtime
+compatibility, flat-file/SQL quest state, special assignment and their fixtures.
+Published alchemy/room migrations retain slots 54/55 and unchanged bytes; the
+unpublished daily step now appends at 56 in all three supported histories.
+Compiled history contracts and validators were regenerated together.
+
+Integration retains bounded record stores, saved discoveries/encounters and
+native receipt recovery while incorporating caller-owned deletion and authority
+locking. SQL erasure reads/locks every bucket, retains unrelated legacy records
+during conversion and never resolves the caller's transaction. Normal writes
+refuse an existing transaction and roll back only their own failed writes.
+Flat-file erasure uses the owner's existing journal, and a subsequent delta
+reloads a replaced snapshot to prevent resurrection. The accounting-owned boot
+path now handles a null service while accounting is inactive, including boots
+with specials disabled. Published migration histories are never silently changed.
+
+Focused erasure checks pass for legacy and current stores, cross-season names,
+discoveries/encounters, unrelated PIDs, caller rollback, retry and allocation
+cleanup; SQL exercised 1,626 allocation failures, including 47 after escaping.
+The 24 migration-runner and ten boot-compatibility tests, three-history static
+validator, schema/boot/serialization checks, 6,000-completion flat-file capacity
+check and maintained SQL server build pass. Full database-engine migration and
+played active-world journeys were not rerun during this integration.
+The broader character/account deletion fixture now follows the production
+catalog revision and passes corruption refusal/repair, all eighteen authority
+journal interruption boundaries, publication and retry checks. Twenty-two source
+indices were refreshed for assignment-line movement without changing bindings,
+classifications, world data or the source-comprehensive area count. Changed-line
+formatting is clean and whole-file checks pass for the feature diff; the general
+pre-commit comparison also sees inherited formatting drift in 23 incoming-only
+dependency files, which this integration does not rewrite.
 
 Current catalog: **55 journals, 1,753 achievement units, 1,519 potential daily
 units and 2,227 projected rows; 32 of 220 roadmap areas are source-comprehensive,

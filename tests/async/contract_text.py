@@ -7,7 +7,10 @@ is here", and it should keep passing when the formatter writes it as
 `obj->type == ITEM_CONTAINER` or wraps it across two lines.
 
 Every helper here ignores whitespace outside C/C++ strings and comments.
-Whitespace inside a string or comment remains contractual. `find`/`index`/`end`
+Whitespace inside a string or comment remains contractual. Code-shaped needles
+cannot be satisfied by a commented-out statement or text inside a literal.
+Use ``literal=True`` for an intentional text fragment containing code punctuation.
+Plain names and prose still support exact text matching. `find`/`index`/`end`
 report offsets into the ORIGINAL text, so slicing a region out of a file still
 works:
 
@@ -20,6 +23,8 @@ player).
 """
 
 import re
+from array import array
+from bisect import bisect_left
 from functools import lru_cache
 
 __all__ = ["squeeze", "contains", "count", "missing", "find", "index", "end", "before",
@@ -37,6 +42,14 @@ _COMMENT = "\x03"
 _RAW_PREFIXES = ('u8R"', 'uR"', 'UR"', 'LR"', 'R"')
 
 
+def _digit_separator(text, pos):
+	start = pos
+	while start and (text[start - 1].isalnum() or text[start - 1] in "_.'"):
+		start -= 1
+	return (start < pos and text[start].isdigit() and pos + 1 < len(text)
+	        and text[pos + 1].isalnum())
+
+
 def _significant_chars(text):
 	"""Yield (lexical-state marker, character, original offset).
 
@@ -47,11 +60,21 @@ def _significant_chars(text):
 	i = 0
 	while i < len(text):
 		if text[i].isspace():
-			i += 1
+			start = i
+			while i < len(text) and text[i].isspace():
+				i += 1
+			# Formatting may change the amount of whitespace, but it cannot
+			# join two identifiers/numbers into a different token.
+			if (start and i < len(text)
+			        and (text[start - 1].isalnum() or text[start - 1] == "_")
+			        and (text[i].isalnum() or text[i] == "_")):
+				yield _NORMAL, " ", start
 			continue
 
 		if text.startswith("//", i):
 			end_pos = text.find("\n", i + 2)
+			while end_pos >= 0 and text[:end_pos].endswith(("\\", "\\\r")):
+				end_pos = text.find("\n", end_pos + 1)
 			if end_pos < 0:
 				end_pos = len(text)
 			for pos in range(i, end_pos):
@@ -82,7 +105,7 @@ def _significant_chars(text):
 					i = end_pos
 					continue
 
-		if text[i] in "\"'":
+		if text[i] in "\"'" and not (text[i] == "'" and _digit_separator(text, i)):
 			quote = text[i]
 			end_pos = i + 1
 			while end_pos < len(text):
@@ -102,10 +125,36 @@ def _significant_chars(text):
 		i += 1
 
 
-@lru_cache(maxsize=64)
+@lru_cache(maxsize=16)
+def code_text(text, *, keep_literals=False):
+	"""Blank non-code without moving offsets or newlines; optionally retain literals."""
+	chars = list(text)
+	for marker, _, pos in _significant_chars(text):
+		if marker == _COMMENT or (marker == _QUOTED and not keep_literals):
+			if chars[pos] not in "\r\n":
+				chars[pos] = " "
+	return "".join(chars)
+
+
+def _plain_text(needle):
+	# A standalone identifier or human text may intentionally refer to a string
+	# value. Statements, expressions and braces must match the same lexical state.
+	return not re.search(r"[;{}()=<>]|->|::|\b(?:if|for|while|switch|return|throw)\b", needle)
+
+
+@lru_cache(maxsize=16)
+def _indexed(text):
+	"""Cache lexical states and original offsets together, avoiding repeated rescans."""
+	chars = []
+	offsets = array("Q")
+	for marker, char, original in _significant_chars(text):
+		chars.append(marker + char)
+		offsets.append(original)
+	return "".join(chars), offsets
+
+
 def _canonical(text):
-	"""Encode text without normal code whitespace and with lexical-state markers."""
-	return "".join(marker + char for marker, char, _ in _significant_chars(text))
+	return _indexed(text)[0]
 
 
 def _canonical_count(haystack, needle):
@@ -129,43 +178,45 @@ def _canonical_count(haystack, needle):
 
 def _original_offset(text, token_index):
 	"""Map a canonical logical-character index back into `text`."""
-	for current, (_, _, original) in enumerate(_significant_chars(text)):
-		if current == token_index:
-			return original
-	return len(text)
+	offsets = _indexed(text)[1]
+	return offsets[token_index] if token_index < len(offsets) else len(text)
 
 
-def _match(haystack, needle, start=0, stop=None):
+def _match(haystack, needle, start=0, stop=None, *, literal=False):
 	"""Return an original-text (start, end) pair, or (-1, -1)."""
-	stop = len(haystack) if stop is None else stop
-	segment = haystack[start:stop]
+	if start > len(haystack):
+		return -1, -1
+	start, stop, _ = slice(start, stop).indices(len(haystack))
+	if stop < start:
+		return -1, -1
 	canonical_needle = _canonical(needle)
 	canonical_pos = -1
 	if canonical_needle:
-		canonical_segment = _canonical(segment)
-		search_at = 0
+		canonical_haystack, offsets = _indexed(haystack)
+		search_at = bisect_left(offsets, start) * 2
+		search_stop = bisect_left(offsets, stop) * 2
 		while True:
-			candidate = canonical_segment.find(canonical_needle, search_at)
+			candidate = canonical_haystack.find(canonical_needle, search_at, search_stop)
 			if candidate < 0 or candidate % 2 == 0:
 				canonical_pos = candidate
 				break
 			search_at = candidate + 1
 
-	exact_pos = segment.find(needle)
+	exact_pos = haystack.find(needle, start, stop) if literal or _plain_text(needle) else -1
 	if canonical_pos < 0:
 		if exact_pos < 0:
 			return -1, -1
-		return start + exact_pos, start + exact_pos + len(needle)
+		return exact_pos, exact_pos + len(needle)
 
-	canonical_start = _original_offset(segment, canonical_pos // 2)
+	canonical_start = offsets[canonical_pos // 2]
 	logical_end = (canonical_pos + len(canonical_needle)) // 2 - 1
-	canonical_end = _original_offset(segment, logical_end) + 1
+	canonical_end = offsets[logical_end] + 1
 	if exact_pos >= 0 and exact_pos < canonical_start:
-		return start + exact_pos, start + exact_pos + len(needle)
-	return start + canonical_start, start + canonical_end
+		return exact_pos, exact_pos + len(needle)
+	return canonical_start, canonical_end
 
 
-def contains(haystack, needle):
+def contains(haystack, needle, *, literal=False):
 	"""True when `needle` appears, ignoring only normal code whitespace.
 
 	Non-string containers (a list of parsed entries, a set of names) fall back
@@ -175,12 +226,13 @@ def contains(haystack, needle):
 		return needle in haystack
 	if not _canonical(needle):
 		return True
-	return _match(haystack, needle)[0] >= 0
+	return _match(haystack, needle, literal=literal)[0] >= 0
 
 
-def count(haystack, needle):
+def count(haystack, needle, *, literal=False):
 	"""Occurrences of `needle`, ignoring only normal code whitespace."""
-	return max(haystack.count(needle), _canonical_count(haystack, needle))
+	canonical = _canonical_count(haystack, needle)
+	return max(haystack.count(needle), canonical) if literal or _plain_text(needle) else canonical
 
 
 def missing(haystack, needles):
@@ -188,26 +240,26 @@ def missing(haystack, needles):
 	return [n for n in needles if not contains(haystack, n)]
 
 
-def find(haystack, needle, start=0, stop=None):
+def find(haystack, needle, start=0, stop=None, *, literal=False):
 	"""Offset of `needle` ignoring normal code whitespace, or -1.
 
 	The offset is into `haystack` itself, so it can be used to slice.
 	`start`/`stop` bound the search the way str.find does.
 	"""
-	return _match(haystack, needle, start, stop)[0]
+	return _match(haystack, needle, start, stop, literal=literal)[0]
 
 
-def index(haystack, needle, start=0, stop=None):
+def index(haystack, needle, start=0, stop=None, *, literal=False):
 	"""Like `find`, but raises ValueError when the pattern is absent."""
-	pos = find(haystack, needle, start, stop)
+	pos = find(haystack, needle, start, stop, literal=literal)
 	if pos < 0:
 		raise ValueError(f"pattern not found: {needle!r}")
 	return pos
 
 
-def end(haystack, needle, start=0, stop=None):
+def end(haystack, needle, start=0, stop=None, *, literal=False):
 	"""Offset just past `needle`, or -1 when it is absent."""
-	return _match(haystack, needle, start, stop)[1]
+	return _match(haystack, needle, start, stop, literal=literal)[1]
 
 
 def section(haystack, opening, closing, start=0):

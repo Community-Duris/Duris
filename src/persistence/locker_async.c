@@ -15,6 +15,7 @@
  * carried by the locker character after LockerToPFile transitions.
  */
 
+#include "net/network_wakeup.h"
 #include "core/prototypes.h"
 #include "sql/sql_thread_init.h"
 #include "core/structs.h"
@@ -233,6 +234,7 @@ static void result_push_locked(const struct locker_async_result *r)
 		{
 			g_results[i] = *r;
 			g_results[i].used = 1;
+			network_wakeup_notify();
 			return;
 		}
 	}
@@ -692,9 +694,8 @@ static int repair_failed_connection(MYSQL **conn_io)
 	 * example, a dropped socket or a failed statement in a batch).  Discard
 	 * it rather than returning it to the shared worker pool. */
 	replacement = sql_pool_replace_connection(conn);
-	if (replacement)
-		*conn_io = replacement;
-	else
+	*conn_io = replacement;
+	if (!replacement)
 		logit(LOG_FILE, "locker_async: failed to replace poisoned persistence connection");
 	return 0;
 }

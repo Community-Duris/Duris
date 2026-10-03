@@ -86,8 +86,7 @@ done
 read -r -a MYSQL_CFLAGS <<< "$(mysql_config --cflags)"
 read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
 read -r -a CXX_CMD <<< "${CXX:-g++}"
-"${CXX_CMD[@]}" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread \
-    -ffunction-sections -fdata-sections -Wl,--gc-sections -Isrc \
+"${CXX_CMD[@]}" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,--wrap=mysql_real_query,--wrap=mysql_errno -Isrc \
     "${MYSQL_CFLAGS[@]}" tests/async/pa_coin_sql_harness.cpp \
     src/persistence/critical_command.c src/economy/currency_command.c src/world/epic_command.c \
     src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/item/item_transfer_repository.c src/economy/auction_command.c \
@@ -96,17 +95,27 @@ read -r -a CXX_CMD <<< "${CXX:-g++}"
     src/economy/boon_reward_command.c src/economy/boon_reward_repository.c \
     src/world/zone_touch_command.c src/world/zone_touch_repository.c \
     src/account/session_audit_command.c src/account/session_audit_repository.c \
-    src/economy/coin_transfer_command.c src/economy/coin_transfer_accounting.c \
-    src/item/economic_accounting_item_reference.c src/player/player_snapshot_codec.c \
+    src/economy/coin_transfer_command.c src/player/player_snapshot_codec.c \
     src/economy/collector_command.c src/economy/collector_codec.c \
     src/economy/collector_policy.c src/economy/collector_repository.c \
+    src/economy/collector_accounting.c \
     src/persistence/corpse_lifecycle_command.c src/persistence/corpse_lifecycle_repository.c \
     src/persistence/player_death_restitution_command.c src/persistence/player_death_restitution_repository.c \
-    src/player/player_load_repository.c src/player/player_load_topology.c src/player/player_death_recovery_query.c \
-    src/player/player_death_conflict_repository.c src/persistence/persistence_observability.c \
-    src/persistence/economic_accounting_repository.c src/persistence/economic_sql_bank_transaction.c \
-    src/economy/economic_currency_adapter.c src/economy/economic_accounting_types.c \
-    src/economy/economic_accounting_plan.c src/economy/economic_accounting_intent.c \
+    src/player/player_load_repository.c src/player/player_load_topology.c src/player/player_death_recovery_query.c src/player/player_death_conflict_repository.c src/persistence/persistence_observability.c \
+    src/player/player_save_journal.c src/persistence/quest_reward_obligation_repository.c \
+    src/persistence/economic_accounting_repository.c \
+    src/persistence/economic_sql_bank_transaction.c \
+    src/persistence/economic_sql_item_transfer_transaction.c \
+    src/persistence/economic_sql_collector_transaction.c src/persistence/economic_sql_shop_trade_transaction.c \
+    src/economy/economic_currency_adapter.c \
+    src/economy/economic_command_admission.c src/economy/item_transfer_accounting.c \
+    src/economy/coin_transfer_accounting.c src/item/economic_accounting_item_reference.c \
+    src/economy/shop_trade_command.c src/economy/shop_trade_accounting.c \
+    src/economy/economic_accounting_intent.c \
+    src/economy/economic_accounting_types.c \
+    src/economy/economic_accounting_plan.c \
     src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
-    "${MYSQL_LIBS[@]}" -lcrypto -o "$TMPDIR/pa_coin_sql_harness"
+    src/persistence/critical_command_journal.c src/persistence/critical_command_coordinator.c \
+    "${MYSQL_LIBS[@]}" -lcrypto -lz \
+    -o "$TMPDIR/pa_coin_sql_harness"
 "$TMPDIR/pa_coin_sql_harness"

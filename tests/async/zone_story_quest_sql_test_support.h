@@ -1,6 +1,7 @@
 #ifndef ZONE_STORY_QUEST_SQL_TEST_SUPPORT_H
 #define ZONE_STORY_QUEST_SQL_TEST_SUPPORT_H
 #include "sql/sql.h"
+#include "sql/sql_transaction.h"
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -10,6 +11,33 @@ MYSQL *DB = nullptr;
 namespace
 {
 int fail_insert = 0;
+bool transaction_active = false;
+}
+bool sql_in_transaction()
+{
+	return transaction_active;
+}
+bool sql_begin_transaction()
+{
+	assert(!transaction_active);
+	if (mysql_query(DB, "START TRANSACTION"))
+		return false;
+	return transaction_active = true;
+}
+bool sql_commit()
+{
+	assert(transaction_active);
+	if (mysql_query(DB, "COMMIT"))
+		return false;
+	transaction_active = false;
+	return true;
+}
+bool sql_rollback()
+{
+	assert(transaction_active);
+	const bool restored = !mysql_query(DB, "ROLLBACK");
+	transaction_active = false;
+	return restored;
 }
 MYSQL_RES *db_query_at(persistence_query_site, const char *format, ...)
 {

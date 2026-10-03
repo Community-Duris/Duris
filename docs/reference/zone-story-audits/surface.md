@@ -92,14 +92,14 @@ Comments are omitted; preprocessor branches are source leads, not evaluated runt
 
 | Kind | VNUM | Procedure | Source |
 | --- | ---: | --- | --- |
-| mob | 500129 | `Baltazo` | [src/specs/specs.assign.c:183](../../../src/specs/specs.assign.c#L183) |
-| mob | 500102 | `wh_corpse_to_object` | [src/specs/specs.assign.c:275](../../../src/specs/specs.assign.c#L275) |
-| mob | 500103 | `wh_corpse_to_object` | [src/specs/specs.assign.c:276](../../../src/specs/specs.assign.c#L276) |
-| mob | 500058 | `goodie_guardian` | [src/specs/specs.assign.c:484](../../../src/specs/specs.assign.c#L484) |
-| obj | 500055 | `tharnrifts_portal` | [src/specs/specs.assign.c:1289](../../../src/specs/specs.assign.c#L1289) |
-| room | 635260 | `ship_shop_proc` | [src/specs/specs.assign.c:2399](../../../src/specs/specs.assign.c#L2399) |
-| room | 584171 | `ship_shop_proc` | [src/specs/specs.assign.c:2400](../../../src/specs/specs.assign.c#L2400) |
-| room | 559633 | `ship_shop_proc` | [src/specs/specs.assign.c:2425](../../../src/specs/specs.assign.c#L2425) |
+| mob | 500129 | `Baltazo` | [src/specs/specs.assign.c:182](../../../src/specs/specs.assign.c#L182) |
+| mob | 500102 | `wh_corpse_to_object` | [src/specs/specs.assign.c:274](../../../src/specs/specs.assign.c#L274) |
+| mob | 500103 | `wh_corpse_to_object` | [src/specs/specs.assign.c:275](../../../src/specs/specs.assign.c#L275) |
+| mob | 500058 | `goodie_guardian` | [src/specs/specs.assign.c:483](../../../src/specs/specs.assign.c#L483) |
+| obj | 500055 | `tharnrifts_portal` | [src/specs/specs.assign.c:1277](../../../src/specs/specs.assign.c#L1277) |
+| room | 635260 | `ship_shop_proc` | [src/specs/specs.assign.c:2387](../../../src/specs/specs.assign.c#L2387) |
+| room | 584171 | `ship_shop_proc` | [src/specs/specs.assign.c:2388](../../../src/specs/specs.assign.c#L2388) |
+| room | 559633 | `ship_shop_proc` | [src/specs/specs.assign.c:2413](../../../src/specs/specs.assign.c#L2413) |
 
 ## Reset coverage
 

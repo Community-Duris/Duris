@@ -12,6 +12,8 @@ source rows intact, requires a durable retained-conflict death acknowledgement,
 then verifies account-menu recovery reads, cold-load refusal, and restart
 stability. Use --evidence-dir to choose where transcripts, ordered events, logs,
 and exact read-backs are retained; unassisted mode retains them by default.
+The guarded retained-conflict owner requires a TEST_MUD development executable;
+the disposable environment does not enable it in a production executable.
 """
 from pathlib import Path
 from collections import Counter
@@ -196,7 +198,9 @@ def run(server, reset_coins=False, boons=False, *, require_unassisted_recovery=F
             f'(owner_type=1 AND owner_id={player_id} AND owner_context_id=0))')
         assert exact_rows('item_owner_revision', owner_revision_where) == \
             owner_revisions_unaffected_before, \
-            'unrelated item-owner revision rows changed during wallet conversion'
+            ('unrelated item-owner revision rows changed during wallet conversion: ' +
+             repr({'before': owner_revisions_unaffected_before,
+                   'after': exact_rows('item_owner_revision', owner_revision_where)}))
         revision_after = {
             'system': number(
                 'SELECT revision FROM item_owner_revision WHERE owner_type=7 '
@@ -590,6 +594,7 @@ def run(server, reset_coins=False, boons=False, *, require_unassisted_recovery=F
                         record_state('retained_conflict_durable_ack')
 
                         state_at_ack = retained_state(pid)
+                        evidence['retained_state_after_ack'] = state_at_ack
                         assert len(state_at_ack['conflict_cases']) == 1
                         assert len(state_at_ack['death_dispositions']) == 1
                         wallet_conversion = verify_wallet_conversion(
@@ -785,7 +790,7 @@ if __name__=='__main__':
     parser.add_argument('--evidence-dir',type=Path,help='retain full runtime logs and synthetic custody evidence')
     args=parser.parse_args()
     if not os.getenv('TEST_DB_HOST'):
-        print('MariaDB live combat skipped: TEST_DB_HOST is not set')
+        print('SKIP: MariaDB live combat requires TEST_DB_HOST for a disposable fixture')
     else:
         (ROOT/'bin/tests').mkdir(parents=True,exist_ok=True)
         if not args.server:

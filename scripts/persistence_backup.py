@@ -144,9 +144,12 @@ def policy_load(path):
     fields = {"journal_roots", "version", "approved", "custodian", "schedule_seconds", "rpo_seconds",
               "hourly", "daily", "weekly", "max_bytes", "min_free_bytes",
               "drill_seconds", "root", "restore_root", "live_roots", "replica_root"}
-    optional = {"resume_published", "blocked_retry_seconds"}
+    optional = {"resume_published", "blocked_retry_seconds", "restore_database_engine"}
     require(fields <= set(p) and set(p) <= fields | optional and p["version"] == 1,
             "invalid_policy_fields")
+    require(type(p.get("restore_database_engine", "mariadb")) is str and
+            p.get("restore_database_engine", "mariadb") in ("mariadb", "mysql"),
+            "invalid_restore_database_engine")
     p.setdefault("resume_published", False)
     p.setdefault("blocked_retry_seconds", 3600)
     require(type(p["resume_published"]) is bool, "invalid_policy_recovery")

@@ -2,12 +2,13 @@
 """Real character deletion, transactional refusal and retry on disposable SQL.
 
 Set TEST_DB_HOST (loopback), TEST_DB_USER and TEST_DB_PASSWORD for a disposable
-server. No checkout .env or existing schema is used. --server selects a freshly
+server; TEST_DB_PORT defaults to 3306. No checkout .env or existing schema is used. --server selects a freshly
 built MariaDB executable. Only newly created synthetic schemas are touched.
 """
 from pathlib import Path
 import argparse
 import os
+import re
 import signal
 import subprocess
 import tempfile
@@ -20,12 +21,18 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def run(server):
-    database = 'deletion_journey_test_' + uuid.uuid4().hex[:12]
+    # The unchanged native exclusion prefix plus this schema must fit MySQL's
+    # 64-byte named-lock limit (MariaDB accepts the older 65-byte fixture name).
+    database = 'deletion_test_' + uuid.uuid4().hex[:12]
     host = os.environ['TEST_DB_HOST']
     assert host in ('127.0.0.1', 'localhost'), 'use a disposable loopback database'
+    port_text = os.environ.get('TEST_DB_PORT', '3306')
+    if not re.fullmatch(r'[0-9]{1,5}', port_text) or not 1 <= int(port_text) <= 65535:
+        raise RuntimeError('TEST_DB_PORT must be a TCP port from 1 to 65535')
+    port = str(int(port_text))
     environment = {
         'PATH': os.environ.get('PATH', '/usr/bin:/bin'),
-        'ENVIRONMENT': 'local', 'DB_HOST': host, 'DB_PORT': '3306',
+        'ENVIRONMENT': 'local', 'DB_HOST': host, 'DB_PORT': port,
         'DB_NAME': database, 'DB_USER': os.environ['TEST_DB_USER'],
         'DB_PASSWD': os.environ['TEST_DB_PASSWORD'],
         'DB_ALLOWED_TARGETS': host+'/'+database,
@@ -36,7 +43,8 @@ def run(server):
     }
     if 'LD_LIBRARY_PATH' in os.environ:
         environment['LD_LIBRARY_PATH'] = os.environ['LD_LIBRARY_PATH']
-    mysql = ['mysql', '--protocol=tcp', '-h', host, '-u', environment['DB_USER'], '-N', '-B']
+    mysql = ['mysql', '--protocol=tcp', '-h', host, '-P', port,
+             '-u', environment['DB_USER'], '-N', '-B']
 
     def sql(text, selected=True):
         return subprocess.check_output(mysql+([database] if selected else []), input=text,
@@ -97,6 +105,51 @@ def run(server):
                     pid = number("SELECT pid FROM player_data WHERE name='"+journey.CHARACTER+"'")
                     items_before = number(f'SELECT COUNT(*) FROM player_items WHERE pid={pid}')
                     assert items_before > 0
+                    # Account confirmation must refuse native read errors before
+                    # its irreversible blocked=2 fence, preserving normal login.
+                    blocked_before = number("SELECT blocked FROM accounts WHERE account_name='"+journey.ACCOUNT+"'")
+                    client.send('7'); client.expect('Re-enter your account password')
+                    client.send(journey.PASSWORD); client.expect('PERMANENT ACCOUNT DELETION', timeout=30)
+                    client.expect('CANCEL:')
+                    sql('RENAME TABLE economic_sql_lifecycle_installation TO account_fence_fixture_lifecycle_unavailable')
+                    try:
+                        client.send(journey.ACCOUNT)
+                        client.expect('no deletion fence was written.', timeout=30)
+                        client.expect('ACCOUNT MENU')
+                        assert number("SELECT blocked FROM accounts WHERE account_name='"+journey.ACCOUNT+"'") == blocked_before
+                        assert number(f'SELECT COUNT(*) FROM player_data WHERE pid={pid}') == 1
+                        assert number(f'SELECT COUNT(*) FROM account_characters WHERE pid={pid} AND deleted_at IS NULL') == 1
+                        assert number(f'SELECT COUNT(*) FROM player_items WHERE pid={pid}') == items_before
+                    finally:
+                        sql('RENAME TABLE account_fence_fixture_lifecycle_unavailable TO economic_sql_lifecycle_installation')
+                    client.send('0'); client.close()
+                    client = journey.reconnect_character(plain)
+                    client.send('inventory'); client.expect('You are carrying')
+                    client.send('save'); client.expect('Save complete for '+journey.CHARACTER+'.', timeout=30)
+                    client.send('quit'); client.expect('ACCOUNT MENU', timeout=30)
+                    print('account-fence-admission: native refusal preserved account fence, character and playable retry', flush=True)
+                    # A deliberately unavailable lifecycle table tests native SQL
+                    # admission with an inactive gameplay cache. Only this newly
+                    # created disposable schema is touched; restore before retry.
+                    choose_delete()
+                    assert number('SELECT COUNT(*) FROM economic_sql_lifecycle_installation') == 0
+                    sql('RENAME TABLE economic_sql_lifecycle_installation TO deletion_fixture_lifecycle_unavailable')
+                    try:
+                        client.send('yes')
+                        client.expect('Character deletion did not complete.', timeout=30)
+                        client.expect('ACCOUNT MENU')
+                        assert b'Character deleted successfully.' not in client.transcript
+                        assert number(f'SELECT COUNT(*) FROM player_data WHERE pid={pid}') == 1
+                        assert number(f'SELECT COUNT(*) FROM account_characters WHERE pid={pid} AND deleted_at IS NULL') == 1
+                        assert number(f'SELECT COUNT(*) FROM player_items WHERE pid={pid}') == items_before
+                    finally:
+                        sql('RENAME TABLE deletion_fixture_lifecycle_unavailable TO economic_sql_lifecycle_installation')
+                    client.send('0'); client.close()
+                    client = journey.reconnect_character(plain)
+                    client.send('inventory'); client.expect('You are carrying')
+                    client.send('save'); client.expect('Save complete for '+journey.CHARACTER+'.', timeout=30)
+                    client.send('quit'); client.expect('ACCOUNT MENU', timeout=30)
+                    print('lifecycle-admission: native refusal preserved mapping/inventory; repaired retry remains playable', flush=True)
                     for label, table, action in [('soft-delete', 'account_characters', 'UPDATE'),
                                                   ('late-cleanup', 'player_data', 'DELETE')]:
                         choose_delete()

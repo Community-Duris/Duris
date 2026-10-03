@@ -1629,6 +1629,14 @@ flatfile_player_domain_prepare_remove(const std::string &root, const flatfile_au
 {
 	if (!operation || !pid || !lock.matches(root))
 		return flatfile_player_domain_result::invalid;
+	// Deletion cannot erase native money or its authority lifetime through a
+	// legacy bundle once accounting is active. Hold the caller's exact lock.
+	const auto admission = flatfile_economic_legacy_domain_gate(root, lock, error);
+	if (admission)
+		return admission == EAGAIN ? flatfile_player_domain_result::conflict :
+		       admission == EIO || admission == ENOMEM ?
+					     flatfile_player_domain_result::io_error :
+					     flatfile_player_domain_result::invalid;
 	*operation = {};
 	const auto recovered = recover_authority(root, lock, error);
 	if (recovered != flatfile_player_domain_result::ok)
@@ -1651,6 +1659,14 @@ flatfile_player_domain_result flatfile_player_domain_prepare_account_remove(
 	std::string account;
 	if (!operations || !lock.matches(root) || !canonical_account(account_name, &account))
 		return flatfile_player_domain_result::invalid;
+	// Deletion cannot erase native money or its authority lifetime through a
+	// legacy bundle once accounting is active. Hold the caller's exact lock.
+	const auto admission = flatfile_economic_legacy_domain_gate(root, lock, error);
+	if (admission)
+		return admission == EAGAIN ? flatfile_player_domain_result::conflict :
+		       admission == EIO || admission == ENOMEM ?
+					     flatfile_player_domain_result::io_error :
+					     flatfile_player_domain_result::invalid;
 	operations->clear();
 	const auto recovered = recover_authority(root, lock, error);
 	if (recovered != flatfile_player_domain_result::ok)

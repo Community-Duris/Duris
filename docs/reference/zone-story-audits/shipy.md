@@ -71,14 +71,14 @@ Comments are omitted; preprocessor branches are source leads, not evaluated runt
 
 | Kind | VNUM | Procedure | Source |
 | --- | ---: | --- | --- |
-| mob | 43101 | `money_changer` | [src/specs/specs.assign.c:203](../../../src/specs/specs.assign.c#L203) |
-| mob | 43110 | `money_changer` | [src/specs/specs.assign.c:204](../../../src/specs/specs.assign.c#L204) |
-| room | 43198 | `ship_shop_proc` | [src/specs/specs.assign.c:2391](../../../src/specs/specs.assign.c#L2391) |
-| room | 43158 | `ship_shop_proc` | [src/specs/specs.assign.c:2392](../../../src/specs/specs.assign.c#L2392) |
-| room | 43118 | `ship_shop_proc` | [src/specs/specs.assign.c:2398](../../../src/specs/specs.assign.c#L2398) |
-| room | 43220 | `crew_shop_proc` | [src/specs/specs.assign.c:2407](../../../src/specs/specs.assign.c#L2407) |
-| room | 43221 | `crew_shop_proc` | [src/specs/specs.assign.c:2408](../../../src/specs/specs.assign.c#L2408) |
-| room | 43222 | `crew_shop_proc` | [src/specs/specs.assign.c:2409](../../../src/specs/specs.assign.c#L2409) |
+| mob | 43101 | `money_changer` | [src/specs/specs.assign.c:202](../../../src/specs/specs.assign.c#L202) |
+| mob | 43110 | `money_changer` | [src/specs/specs.assign.c:203](../../../src/specs/specs.assign.c#L203) |
+| room | 43198 | `ship_shop_proc` | [src/specs/specs.assign.c:2379](../../../src/specs/specs.assign.c#L2379) |
+| room | 43158 | `ship_shop_proc` | [src/specs/specs.assign.c:2380](../../../src/specs/specs.assign.c#L2380) |
+| room | 43118 | `ship_shop_proc` | [src/specs/specs.assign.c:2386](../../../src/specs/specs.assign.c#L2386) |
+| room | 43220 | `crew_shop_proc` | [src/specs/specs.assign.c:2395](../../../src/specs/specs.assign.c#L2395) |
+| room | 43221 | `crew_shop_proc` | [src/specs/specs.assign.c:2396](../../../src/specs/specs.assign.c#L2396) |
+| room | 43222 | `crew_shop_proc` | [src/specs/specs.assign.c:2397](../../../src/specs/specs.assign.c#L2397) |
 
 ## Reset coverage
 

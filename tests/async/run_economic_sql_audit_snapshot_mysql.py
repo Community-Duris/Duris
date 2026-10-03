@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 import economic_sql_audit_snapshot as exporter  # noqa: E402
 from economic_sql_audit_snapshot import capture  # noqa: E402
-from reconcile_economy_accounting import Reconciler  # noqa: E402
+from reconcile_economy_accounting import Reconciler, SnapshotError  # noqa: E402
 from test_economic_sql_audit_origins import EPOCH, LINEAGE, OPENING, OP, key, witness  # noqa: E402
 
 INSTALL = bytes.fromhex("77" * 16)
@@ -52,14 +52,14 @@ TABLES = (
     "CREATE TABLE economic_accounting_account_effect (operation_id BINARY(16),account_index INT,"
     "account_key BINARY(40),before_copper BIGINT,before_silver BIGINT,before_gold BIGINT,"
     "before_platinum BIGINT,after_copper BIGINT,after_silver BIGINT,after_gold BIGINT,"
-    "after_platinum BIGINT,before_revision BIGINT,after_revision BIGINT) ENGINE=InnoDB",
+    "after_platinum BIGINT,before_revision BIGINT UNSIGNED,after_revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_coin_posting (operation_id BINARY(16),line_index INT,"
     "account_index INT,child_index INT,delta_copper BIGINT,delta_silver BIGINT,delta_gold BIGINT,"
     "delta_platinum BIGINT,copper_value BIGINT) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_child (operation_id BINARY(16),child_index INT,"
     "child_operation_id BINARY(16),parent_index INT) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_item_reference (operation_id BINARY(16),event_index INT,"
-    "child_index INT,item_uid BIGINT,before_revision BIGINT,after_revision BIGINT,"
+    "child_index INT,item_uid BIGINT,before_revision BIGINT UNSIGNED,after_revision BIGINT UNSIGNED,"
     "legacy_operation_id BINARY(16),legacy_event_index INT) ENGINE=InnoDB",
     "CREATE TABLE economic_accounting_source_claim (lineage BINARY(16),source_event BINARY(48),"
     "operation_id BINARY(16)) ENGINE=InnoDB",
@@ -74,20 +74,25 @@ TABLES = (
     "lineage BINARY(16),claim_mapping_id BIGINT,beneficiary_pid BIGINT,amount BIGINT,"
     "claim_operation_id BINARY(16)) ENGINE=InnoDB",
     "CREATE TABLE player_data (pid BIGINT,copper BIGINT,silver BIGINT,gold BIGINT,platinum BIGINT,"
-    "wallet_revision BIGINT) ENGINE=InnoDB",
+    "wallet_revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE account_banks (id BIGINT,bank_copper BIGINT,bank_silver BIGINT,bank_gold BIGINT,"
-    "bank_platinum BIGINT,bank_revision BIGINT) ENGINE=InnoDB",
+    "bank_platinum BIGINT,bank_revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE auctions (id BIGINT,status VARCHAR(16),cur_price BIGINT,"
     "auction_revision BIGINT,winning_bidder_pid BIGINT) ENGINE=InnoDB",
     "CREATE TABLE auction_money_pickups (pid BIGINT,money BIGINT,"
-    "claim_revision BIGINT) ENGINE=InnoDB",
-    "CREATE TABLE shopkeepers (id BIGINT,cash BIGINT,shop_revision BIGINT) ENGINE=InnoDB",
+    "claim_revision BIGINT UNSIGNED) ENGINE=InnoDB",
+    "CREATE TABLE shopkeepers (id BIGINT,cash BIGINT,shop_revision BIGINT UNSIGNED) ENGINE=InnoDB",
+    "CREATE TABLE ships (id INT NOT NULL PRIMARY KEY,money INT NULL) ENGINE=InnoDB",
+    "CREATE TABLE guilds (id INT UNSIGNED NOT NULL PRIMARY KEY,"
+    "copper INT UNSIGNED NOT NULL,silver INT UNSIGNED NOT NULL,"
+    "gold INT UNSIGNED NOT NULL,platinum INT UNSIGNED NOT NULL,"
+    "outcome_revision BIGINT UNSIGNED NOT NULL) ENGINE=InnoDB",
     "CREATE TABLE item_current_owner (item_uid BIGINT,root_item_uid BIGINT,parent_item_uid BIGINT,"
-    "owner_type INT,owner_id BIGINT,owner_context_id BIGINT,item_revision BIGINT,state INT,"
+    "owner_type INT,owner_id BIGINT,owner_context_id BIGINT,item_revision BIGINT UNSIGNED,state INT,"
     "vnum INT,coin_payload MEDIUMBLOB) ENGINE=InnoDB",
     "CREATE TABLE item_ownership_ledger (operation_id BINARY(16),event_index INT,item_uid BIGINT,"
     "root_item_uid BIGINT,parent_item_uid BIGINT,to_owner_type INT,to_owner_id BIGINT,"
-    "to_owner_context_id BIGINT,item_revision BIGINT,from_owner_revision BIGINT,"
+    "to_owner_context_id BIGINT,item_revision BIGINT UNSIGNED,from_owner_revision BIGINT,"
     "reason_type INT) ENGINE=InnoDB",
 )
 
@@ -283,6 +288,86 @@ try:
         try:
             snapshot = capture(audit, LINEAGE, EPOCH)
             assert snapshot["complete"] is False and snapshot["quiescent"] is True
+            with setup.cursor() as cursor:
+                cursor.execute("INSERT INTO guilds VALUES "
+                               "(31,1,2,3,4,9),(32,0,0,0,0,10),"
+                               "(33,4294967295,4294967295,4294967295,4294967295,11)")
+            guild_snapshot = capture(audit, LINEAGE, EPOCH)
+            assert guild_snapshot["native"]["guild_treasuries"] == [
+                {"guild_id":31,"balance":[1,2,3,4]},
+                {"guild_id":32,"balance":[0,0,0,0]},
+                {"guild_id":33,"balance":[4294967295]*4}]
+            guild_counts = Reconciler().audit(guild_snapshot)["exception_counts"]
+            assert guild_counts["unsupported_native_guild_treasury"] == 3
+            assert guild_counts["missing_guild_money_revision"] == 3
+            guild_details = Reconciler().audit(guild_snapshot)["exceptions"]
+            assert {row["guild_id"] for row in guild_details if row["code"] in
+                    ("unsupported_native_guild_treasury", "missing_guild_money_revision")} == {31,32,33}
+            with setup.cursor() as cursor:
+                cursor.execute("UPDATE guilds SET copper=7 WHERE id=31")
+                cursor.execute("SELECT outcome_revision FROM guilds WHERE id=31")
+                assert cursor.fetchone()["outcome_revision"] == 9
+            changed_guild = capture(audit, LINEAGE, EPOCH)
+            assert changed_guild["native"]["guild_treasuries"][0]["balance"] == [7,2,3,4]
+            assert changed_guild["native"]["holdings"] == snapshot["native"]["holdings"]
+            assert changed_guild["complete"] is False
+            with setup.cursor() as cursor:
+                cursor.execute("DELETE FROM guilds")
+            assert capture(audit, LINEAGE, EPOCH) == snapshot
+            print("guild money changes independently of outcome_revision: raw native values and missing monetary revision reported",flush=True)
+            for alteration, restoration in (
+                    ("RENAME TABLE guilds TO guilds_hidden", "RENAME TABLE guilds_hidden TO guilds"),
+                    ("ALTER TABLE guilds ENGINE=MyISAM", "ALTER TABLE guilds ENGINE=InnoDB")):
+                with setup.cursor() as cursor:
+                    cursor.execute(alteration)
+                try:
+                    capture(audit, LINEAGE, EPOCH)
+                    raise AssertionError("missing/nontransactional guild source passed capture")
+                except exporter.ExportError:
+                    pass
+                finally:
+                    with setup.cursor() as cursor:
+                        cursor.execute(restoration)
+                assert capture(audit, LINEAGE, EPOCH) == snapshot
+            # Persisted coffers are real native value even without a supported
+            # accounting lifetime/revision. Capture IDs/value only, with no
+            # fabricated mapped holding or owner alias.
+            with setup.cursor() as cursor:
+                cursor.execute("INSERT INTO ships VALUES (25,7),(26,0),(27,NULL),(28,-1)")
+            ship_snapshot = capture(audit, LINEAGE, EPOCH)
+            assert ship_snapshot["native"]["ship_coffers"] == [
+                {"ship_id":25,"copper":7}, {"ship_id":26,"copper":0},
+                {"ship_id":27,"copper":None}, {"ship_id":28,"copper":-1}]
+            ship_counts = Reconciler().audit(ship_snapshot)["exception_counts"]
+            assert ship_counts["unsupported_native_ship_coffer"] == 4
+            assert ship_counts["missing_ship_coffer_revision"] == 4
+            assert ship_counts["unknown_native_ship_coffer"] == 1
+            assert ship_counts["invalid_native_ship_coffer"] == 1
+            with setup.cursor() as cursor:
+                cursor.execute("UPDATE ships SET money=11 WHERE id=25")
+            changed_ship = capture(audit, LINEAGE, EPOCH)
+            assert changed_ship["native"]["ship_coffers"][0]["copper"] == 11
+            assert changed_ship["native"]["holdings"] == snapshot["native"]["holdings"]
+            assert changed_ship["complete"] is False
+            with setup.cursor() as cursor:
+                cursor.execute("DELETE FROM ships")
+            assert capture(audit, LINEAGE, EPOCH) == snapshot
+            for alteration, restoration in (
+                    ("RENAME TABLE ships TO ships_hidden", "RENAME TABLE ships_hidden TO ships"),
+                    ("ALTER TABLE ships ENGINE=MyISAM", "ALTER TABLE ships ENGINE=InnoDB")):
+                with setup.cursor() as cursor:
+                    cursor.execute(alteration)
+                try:
+                    capture(audit, LINEAGE, EPOCH)
+                    raise AssertionError("missing/nontransactional ship source passed capture")
+                except exporter.ExportError:
+                    pass
+                finally:
+                    with setup.cursor() as cursor:
+                        cursor.execute(restoration)
+                assert capture(audit, LINEAGE, EPOCH) == snapshot
+            print("ship coffer value change: unsupported authority/revision reported; exact restore and mapped holdings retained",flush=True)
+
             assert len(snapshot["operations"]) == 3
             assert len(snapshot["receipts"]) == len(snapshot["operations"])
             assert all(row["status"] == 1 and row["result_code"] == 0 and
@@ -446,6 +531,283 @@ try:
                                    "unmapped_native_wallet": 1,
                                    "unauthorized_mapping_creation": 1}
             assert report["exception_counts"] == expected_exceptions, report
+            # Aggregate owner revisions count changes to many UIDs. They may
+            # differ from this UID's revision without changing its history.
+            # Money and pile item revisions are unsigned independently of
+            # signed coin denominations. Retain that distinction at the SQL cut.
+            money_maximum = 2**64 - 1
+            money_blob = bytearray(blob)
+            wallet_revision_offset = 192 + 72
+            pile_revision_offset = 192 + 2 * 112 + 72
+            first_item_offset = 192 + struct.unpack_from("<I", money_blob, 184)[0] * 112
+            pile_item_revision_offset = first_item_offset + 88 + 48
+            assert struct.unpack_from("<Q", money_blob, wallet_revision_offset)[0] == 4
+            assert struct.unpack_from("<Q", money_blob, pile_revision_offset)[0] == 1
+            assert struct.unpack_from("<Q", money_blob, first_item_offset + 88)[0] == 82
+            struct.pack_into("<Q", money_blob, wallet_revision_offset, money_maximum - 1)
+            struct.pack_into("<Q", money_blob, pile_revision_offset, money_maximum)
+            struct.pack_into("<Q", money_blob, pile_item_revision_offset, money_maximum)
+            with setup.cursor() as writer:
+                writer.execute("UPDATE economic_baseline_witness SET witness_digest=%s,"
+                               "canonical_witness=%s WHERE operation_id=%s",
+                               (hashlib.sha256(money_blob).digest(), bytes(money_blob), OP))
+                writer.execute("UPDATE player_data SET wallet_revision=%s WHERE pid=7",
+                               (money_maximum,))
+                writer.execute("UPDATE item_current_owner SET item_revision=%s WHERE item_uid=82",
+                               (money_maximum,))
+                writer.execute("UPDATE economic_accounting_account_effect SET before_revision=%s,"
+                               "after_revision=%s WHERE operation_id=%s AND account_index=0",
+                               (money_maximum - 1, money_maximum, root))
+            money_snapshot = capture(audit, LINEAGE, EPOCH)
+            assert Reconciler().audit(money_snapshot)["exception_counts"] == expected_exceptions
+            pile = money_snapshot["native"]["coin_piles"][0]
+            assert pile["uid"] == 82 and pile["revision"] == money_maximum
+            with setup.cursor() as writer:
+                writer.execute("UPDATE player_data SET wallet_revision=%s WHERE pid=7",
+                               (money_maximum - 1,))
+            stale_high_money = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert stale_high_money["exception_counts"]["stale_native_balance"] == 1
+            with setup.cursor() as writer:
+                writer.execute("UPDATE player_data SET wallet_revision=5 WHERE pid=7")
+                writer.execute("UPDATE item_current_owner SET item_revision=1 WHERE item_uid=82")
+                writer.execute("UPDATE economic_accounting_account_effect SET before_revision=4,"
+                               "after_revision=5 WHERE operation_id=%s AND account_index=0", (root,))
+                writer.execute("UPDATE economic_baseline_witness SET witness_digest=%s,"
+                               "canonical_witness=%s WHERE operation_id=%s",
+                               (hashlib.sha256(blob).digest(), blob, OP))
+            assert capture(audit, LINEAGE, EPOCH) == snapshot
+            print("SQL money uint64 boundary: wallet/pile authority, stale-revision refusal "
+                  "and baseline recovery passed", flush=True)
+            # Representable denomination fields may still overflow checked
+            # copper totals. These are corrupt disposable evidence/native rows;
+            # neither the exporter nor reconciler may wrap or auto-repair them.
+            for table, column, predicate, params in (
+                    ("economic_accounting_account_effect", "before_platinum",
+                     "operation_id=%s AND account_index=0", (root,)),
+                    ("economic_accounting_account_effect", "after_platinum",
+                     "operation_id=%s AND account_index=0", (root,)),
+                    ("player_data", "platinum", "pid=%s", (7,))):
+                for amount in (2**63 - 1, -(2**63)):
+                    with setup.cursor() as writer:
+                        writer.execute(f"UPDATE {table} SET {column}=%s WHERE {predicate}",
+                                       (amount, *params))
+                    corrupted = capture(audit, LINEAGE, EPOCH)
+                    try:
+                        Reconciler().audit(corrupted)
+                    except SnapshotError as error:
+                        assert str(error) == "copper overflow", error
+                    else:
+                        raise AssertionError("out-of-range weighted money vector was accepted")
+                    with setup.cursor() as writer:
+                        writer.execute(f"UPDATE {table} SET {column}=0 WHERE {predicate}", params)
+                    assert capture(audit, LINEAGE, EPOCH) == snapshot
+            print("SQL checked copper: native/effect overflow refusal and exact "
+                  "unchanged snapshot repair passed", flush=True)
+            # The native schema uses uint64 revisions. Qualify a complete
+            # witnessed move at UINT64_MAX, separately from owner counters.
+            maximum_revision = 2**64 - 1
+            high_revision_root = bytes.fromhex("c7" * 16)
+            high_blob = bytearray(blob)
+            item_offset = 192 + struct.unpack_from("<I", high_blob, 184)[0] * 112
+            assert struct.unpack_from("<Q", high_blob, item_offset)[0] == 81
+            assert struct.unpack_from("<Q", high_blob, item_offset + 48)[0] == 2
+            struct.pack_into("<Q", high_blob, item_offset + 48, maximum_revision - 1)
+            with setup.cursor() as writer:
+                writer.execute("UPDATE economic_baseline_witness SET witness_digest=%s,"
+                               "canonical_witness=%s WHERE operation_id=%s",
+                               (hashlib.sha256(high_blob).digest(), bytes(high_blob), OP))
+                writer.execute("UPDATE item_current_owner SET item_revision=%s WHERE item_uid=81",
+                               (maximum_revision,))
+                writer.execute("INSERT INTO economic_accounting_operation VALUES "
+                               "(%s,%s,%s,NULL,32,1,0,NULL,0,0,0,1,NULL)",
+                               (high_revision_root, LINEAGE, EPOCH))
+                writer.execute("INSERT INTO critical_operation_inbox "
+                               "(operation_id,status,result_code) VALUES (%s,1,0)",
+                               (high_revision_root,))
+                writer.execute("INSERT INTO economic_accounting_item_reference VALUES "
+                               "(%s,0,0,81,%s,%s,%s,0)",
+                               (high_revision_root, maximum_revision - 1,
+                                maximum_revision, high_revision_root))
+                writer.execute("INSERT INTO item_ownership_ledger VALUES "
+                               "(%s,0,81,81,NULL,1,7,0,%s,99,1)",
+                               (high_revision_root, maximum_revision))
+            high_snapshot = capture(audit, LINEAGE, EPOCH)
+            assert Reconciler().audit(high_snapshot)["exception_counts"] == expected_exceptions
+            high_event = next(row for row in high_snapshot["native"]["uid_history_events"]
+                              if row["uid"] == 81)
+            assert (high_event["before_revision"], high_event["revision"]) == (
+                maximum_revision - 1, maximum_revision)
+            with setup.cursor() as writer:
+                writer.execute("DELETE FROM economic_accounting_item_reference WHERE operation_id=%s",
+                               (high_revision_root,))
+            missing_high_reference = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert missing_high_reference["exception_counts"]["unreferenced_uid_event"] == 1
+            with setup.cursor() as writer:
+                writer.execute("DELETE FROM item_ownership_ledger WHERE operation_id=%s",
+                               (high_revision_root,))
+                writer.execute("DELETE FROM critical_operation_inbox WHERE operation_id=%s",
+                               (high_revision_root,))
+                writer.execute("DELETE FROM economic_accounting_operation WHERE operation_id=%s",
+                               (high_revision_root,))
+                writer.execute("UPDATE item_current_owner SET item_revision=2 WHERE item_uid=81")
+                writer.execute("UPDATE economic_baseline_witness SET witness_digest=%s,"
+                               "canonical_witness=%s WHERE operation_id=%s",
+                               (hashlib.sha256(blob).digest(), blob, OP))
+            assert capture(audit, LINEAGE, EPOCH) == snapshot
+            print("SQL UID uint64 boundary: witnessed exact move, missing-reference refusal "
+                  "and baseline recovery passed", flush=True)
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_ownership_ledger SET from_owner_revision=99 "
+                               "WHERE item_uid=84")
+            owner_revision_snapshot = capture(audit, LINEAGE, EPOCH)
+            assert Reconciler().audit(owner_revision_snapshot)["exception_counts"] == \
+                expected_exceptions
+            assert owner_revision_snapshot["native"]["uid_history_events"][0]["before_revision"] == 0
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_ownership_ledger SET from_owner_revision=0 "
+                               "WHERE item_uid=84")
+            # Impossible native revision zero must refuse the audit cut, then
+            # permit a fresh read after restoring only the fixture corruption.
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_ownership_ledger SET item_revision=0 "
+                               "WHERE item_uid=84")
+            try:
+                capture(audit, LINEAGE, EPOCH)
+            except exporter.ExportError as error:
+                assert str(error) == "invalid native item ledger revision", error
+            else:
+                raise AssertionError("zero native item revision was accepted")
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_ownership_ledger SET item_revision=1 "
+                               "WHERE item_uid=84")
+            assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
+                expected_exceptions
+            # A consistent current/history pair can still refer to a missing
+            # native parent. Lineage history must not bypass topology checks.
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_current_owner SET root_item_uid=999,"
+                               "parent_item_uid=999 WHERE item_uid=84")
+                writer.execute("UPDATE item_ownership_ledger SET root_item_uid=999,"
+                               "parent_item_uid=999 WHERE item_uid=84")
+            orphan_snapshot = capture(audit, LINEAGE, EPOCH)
+            orphan_report = Reconciler().audit(orphan_snapshot)
+            assert orphan_report["exception_counts"].get("orphan_item_parent") == 1, orphan_report
+            assert {"code": "orphan_item_parent", "uid": 84, "parent_uid": 999} in \
+                orphan_report["exceptions"]
+            assert "stale_native_item" not in orphan_report["exception_counts"], orphan_report
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_current_owner SET root_item_uid=84,"
+                               "parent_item_uid=NULL WHERE item_uid=84")
+                writer.execute("UPDATE item_ownership_ledger SET root_item_uid=84,"
+                               "parent_item_uid=NULL WHERE item_uid=84")
+            assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
+                expected_exceptions
+            # Re-creating a UID is invalid even if all revisions, references,
+            # roots and the final native row agree across the lineage cut.
+            duplicate_uid_root = bytes.fromhex("e6" * 16)
+            duplicate_uid_source = bytes.fromhex("b2" * 48)
+            with setup.cursor() as writer:
+                writer.execute("INSERT INTO economic_accounting_operation VALUES "
+                               "(%s,%s,%s,NULL,33,1,0,%s,0,0,0,1,NULL)",
+                               (duplicate_uid_root, LINEAGE, EPOCH, duplicate_uid_source))
+                writer.execute("INSERT INTO critical_operation_inbox "
+                               "(operation_id,status,result_code) VALUES (%s,1,0)",
+                               (duplicate_uid_root,))
+                writer.execute("INSERT INTO economic_accounting_source_claim VALUES (%s,%s,%s)",
+                               (LINEAGE, duplicate_uid_source, duplicate_uid_root))
+                writer.execute("INSERT INTO economic_accounting_item_reference VALUES "
+                               "(%s,0,0,84,1,2,%s,0)", (duplicate_uid_root, duplicate_uid_root))
+                writer.execute("INSERT INTO item_ownership_ledger VALUES "
+                               "(%s,0,84,84,NULL,1,7,0,2,1,2)", (duplicate_uid_root,))
+                writer.execute("UPDATE item_current_owner SET item_revision=2 WHERE item_uid=84")
+            duplicate_uid_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert duplicate_uid_report["exception_counts"] == {
+                **expected_exceptions, "duplicate_uid": 1}, duplicate_uid_report
+            # A destruction reason with live custody is corrupt even when the
+            # reference, revisions and final native state agree. The independent
+            # reader must diagnose it and recover after a valid retirement.
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_ownership_ledger SET reason_type=3 "
+                               "WHERE operation_id=%s", (duplicate_uid_root,))
+            supply_state_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert supply_state_report["exception_counts"] == {
+                **expected_exceptions, "invalid_item_supply_state": 1}, supply_state_report
+            with setup.cursor() as writer:
+                writer.execute("UPDATE economic_accounting_operation SET reason=34 "
+                               "WHERE operation_id=%s", (duplicate_uid_root,))
+                writer.execute("UPDATE item_ownership_ledger SET reason_type=3,"
+                               "to_owner_type=8,to_owner_id=0 WHERE operation_id=%s",
+                               (duplicate_uid_root,))
+                writer.execute("UPDATE item_current_owner SET state=2,owner_type=8,"
+                               "owner_id=0 WHERE item_uid=84")
+            assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
+                expected_exceptions
+            revived_uid_root = bytes.fromhex("e7" * 16)
+            revived_uid_source = bytes.fromhex("b3" * 48)
+            with setup.cursor() as writer:
+                writer.execute("INSERT INTO economic_accounting_operation VALUES "
+                               "(%s,%s,%s,NULL,32,1,0,%s,0,0,0,1,NULL)",
+                               (revived_uid_root, LINEAGE, EPOCH, revived_uid_source))
+                writer.execute("INSERT INTO critical_operation_inbox "
+                               "(operation_id,status,result_code) VALUES (%s,1,0)", (revived_uid_root,))
+                writer.execute("INSERT INTO economic_accounting_source_claim VALUES (%s,%s,%s)",
+                               (LINEAGE, revived_uid_source, revived_uid_root))
+                writer.execute("INSERT INTO economic_accounting_item_reference VALUES "
+                               "(%s,0,0,84,2,3,%s,0)", (revived_uid_root, revived_uid_root))
+                writer.execute("INSERT INTO item_ownership_ledger VALUES "
+                               "(%s,0,84,84,NULL,1,7,0,3,2,1)", (revived_uid_root,))
+                writer.execute("UPDATE item_current_owner SET item_revision=3,state=1,"
+                               "owner_type=1,owner_id=7 WHERE item_uid=84")
+            revived_uid_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert revived_uid_report["exception_counts"] == {
+                **expected_exceptions, "resurrected_item_uid": 1}, revived_uid_report
+            # A second, internally consistent destruction must not count the
+            # already retired UID as another supply expense.
+            with setup.cursor() as writer:
+                writer.execute("UPDATE economic_accounting_operation SET reason=34 "
+                               "WHERE operation_id=%s", (revived_uid_root,))
+                writer.execute("UPDATE item_ownership_ledger SET reason_type=3,"
+                               "to_owner_type=8,to_owner_id=0 WHERE operation_id=%s",
+                               (revived_uid_root,))
+                writer.execute("UPDATE item_current_owner SET state=2,owner_type=8,"
+                               "owner_id=0 WHERE item_uid=84")
+            duplicate_retirement_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert duplicate_retirement_report["exception_counts"] == {
+                **expected_exceptions, "duplicate_item_retirement": 1}, duplicate_retirement_report
+            with setup.cursor() as writer:
+                for table in ("economic_accounting_operation", "critical_operation_inbox",
+                              "economic_accounting_source_claim", "economic_accounting_item_reference",
+                              "item_ownership_ledger"):
+                    writer.execute(f"DELETE FROM {table} WHERE operation_id IN (%s,%s)",
+                                   (duplicate_uid_root, revived_uid_root))
+                writer.execute("UPDATE item_current_owner SET item_revision=1,state=1,"
+                               "owner_type=1,owner_id=7 WHERE item_uid=84")
+            assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
+                expected_exceptions
+            # A deep, unanchored native forest is still auditable. Its missing
+            # origins must remain explicit, and a corrupt cycle must terminate.
+            deep_first, deep_count = 1000, 1200
+            deep_last = deep_first + deep_count - 1
+            with setup.cursor() as writer:
+                writer.executemany("INSERT INTO item_current_owner VALUES "
+                                   "(%s,%s,%s,1,7,0,1,1,1,NULL)",
+                                   [(uid, deep_last, uid + 1 if uid < deep_last else None)
+                                    for uid in range(deep_first, deep_last + 1)])
+            deep_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert deep_report["exception_counts"] == {
+                **expected_exceptions, "unknown_legacy_origin": deep_count}, deep_report
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_current_owner SET parent_item_uid=%s WHERE item_uid=%s",
+                               (deep_first, deep_last))
+            cycle_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
+            assert cycle_report["exception_counts"] == {
+                **expected_exceptions, "unknown_legacy_origin": deep_count,
+                "cyclic_native_topology": deep_count}, cycle_report
+            with setup.cursor() as writer:
+                writer.execute("DELETE FROM item_current_owner WHERE item_uid BETWEEN %s AND %s",
+                               (deep_first, deep_last))
+            assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
+                expected_exceptions
             with setup.cursor() as writer:
                 writer.execute("INSERT INTO economic_accounting_operation VALUES "
                                "(%s,%s,%s,NULL,33,1,0,%s,0,0,0,1,NULL)",
@@ -465,6 +827,9 @@ try:
                                (prior_unlinked_operation,))
                 writer.execute("INSERT INTO item_current_owner VALUES "
                                "(86,86,NULL,8,0,0,2,2,1,NULL)")
+            with setup.cursor() as writer:
+                writer.execute("UPDATE item_ownership_ledger SET from_owner_revision=99 "
+                               "WHERE item_uid=86")
             historical_uid_snapshot = capture(audit, LINEAGE, EPOCH)
             assert historical_uid_snapshot["native"]["lineage_uid_reference_coverage"] == {
                 "rows": 2, "root_rows": 2}
@@ -662,12 +1027,17 @@ try:
                 pass
             with setup.cursor() as writer:
                 writer.execute("DELETE FROM item_current_owner WHERE item_uid=85")
+            with setup.cursor() as writer:
+                writer.execute("INSERT INTO ships VALUES (25,7)")
+                writer.execute("INSERT INTO guilds VALUES (31,1,2,3,4,9)")
             original = exporter.read_origins_in_transaction
 
             def concurrent_change(cursor, lineage, epoch):
                 origins = original(cursor, lineage, epoch)
                 with setup.cursor() as writer:
                     writer.execute("UPDATE player_data SET copper=3 WHERE pid=7")
+                    writer.execute("UPDATE ships SET money=11 WHERE id=25")
+                    writer.execute("UPDATE guilds SET copper=7 WHERE id=31")
                 return origins
 
             with mock.patch.object(exporter, "read_origins_in_transaction",
@@ -676,8 +1046,14 @@ try:
             wallet = next(row for row in fenced["native"]["holdings"]
                           if row["account_key"] == key(1, 7).hex())
             assert wallet["balance"] == [2, 0, 0, 0]
+            assert fenced["native"]["ship_coffers"] == [{"ship_id":25,"copper":7}]
+            assert capture(audit, LINEAGE, EPOCH)["native"]["ship_coffers"] == [{"ship_id":25,"copper":11}]
+            assert fenced["native"]["guild_treasuries"] == [{"guild_id":31,"balance":[1,2,3,4]}]
+            assert capture(audit, LINEAGE, EPOCH)["native"]["guild_treasuries"] == [{"guild_id":31,"balance":[7,2,3,4]}]
             with setup.cursor() as cursor:
                 cursor.execute("UPDATE player_data SET copper=2 WHERE pid=7")
+                cursor.execute("DELETE FROM ships")
+                cursor.execute("DELETE FROM guilds")
             with tempfile.TemporaryDirectory(prefix="duris-sql-audit-") as directory:
                 output = Path(directory) / "partial.json"
                 command = [sys.executable, str(ROOT / "scripts/economic_sql_audit_snapshot.py"),
@@ -693,6 +1069,44 @@ try:
                      str(output)], capture_output=True, text=True, timeout=30)
                 assert result.returncode == 1
                 assert json.loads(result.stdout)["exception_counts"] == expected_exceptions
+                with setup.cursor() as cursor:
+                    cursor.execute("INSERT INTO ships VALUES (25,7)")
+                before_ship_cli = capture(audit, LINEAGE, EPOCH)
+                ship_output = Path(directory) / "ship-partial.json"
+                subprocess.run(command[:-1]+[str(ship_output)], env=environment, check=True, timeout=30)
+                assert json.loads(ship_output.read_text(encoding="utf-8")) == before_ship_cli
+                ship_cli = subprocess.run(
+                    [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                     str(ship_output), "--limit", "0"], capture_output=True, text=True, timeout=30)
+                assert ship_cli.returncode == 1
+                ship_report = json.loads(ship_cli.stdout)
+                assert ship_report["exception_counts"]["unsupported_native_ship_coffer"] == 1
+                assert ship_report["exception_counts"]["missing_ship_coffer_revision"] == 1
+                assert ship_report["exceptions"] == []
+                assert capture(audit, LINEAGE, EPOCH) == before_ship_cli
+                with setup.cursor() as cursor:
+                    cursor.execute("DELETE FROM ships")
+                assert capture(audit, LINEAGE, EPOCH) == snapshot
+
+                with setup.cursor() as cursor:
+                    cursor.execute("INSERT INTO guilds VALUES (31,1,2,3,4,9)")
+                before_guild_cli = capture(audit, LINEAGE, EPOCH)
+                guild_output = Path(directory) / "guild-partial.json"
+                subprocess.run(command[:-1]+[str(guild_output)], env=environment, check=True, timeout=30)
+                assert json.loads(guild_output.read_text(encoding="utf-8")) == before_guild_cli
+                guild_cli = subprocess.run(
+                    [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                     str(guild_output), "--limit", "0"], capture_output=True, text=True, timeout=30)
+                assert guild_cli.returncode == 1
+                guild_report = json.loads(guild_cli.stdout)
+                assert guild_report["exception_counts"]["unsupported_native_guild_treasury"] == 1
+                assert guild_report["exception_counts"]["missing_guild_money_revision"] == 1
+                assert guild_report["exceptions"] == []
+                assert capture(audit, LINEAGE, EPOCH) == before_guild_cli
+                with setup.cursor() as cursor:
+                    cursor.execute("DELETE FROM guilds")
+                assert capture(audit, LINEAGE, EPOCH) == snapshot
+
             with setup.cursor() as cursor:
                 cursor.execute("DELETE FROM economic_accounting_coin_posting "
                                "WHERE operation_id=%s AND line_index=1", (root,))

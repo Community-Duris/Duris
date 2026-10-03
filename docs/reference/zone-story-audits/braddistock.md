@@ -28,7 +28,7 @@ Comments are omitted; preprocessor branches are source leads, not evaluated runt
 
 | Kind | VNUM | Procedure | Source |
 | --- | ---: | --- | --- |
-| obj | 1372 | `jet_black_maul` | [src/specs/specs.assign.c:1291](../../../src/specs/specs.assign.c#L1291) |
+| obj | 1372 | `jet_black_maul` | [src/specs/specs.assign.c:1279](../../../src/specs/specs.assign.c#L1279) |
 
 ## Reset coverage
 

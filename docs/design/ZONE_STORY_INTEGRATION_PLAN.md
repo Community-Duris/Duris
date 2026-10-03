@@ -315,6 +315,27 @@ inventing encounters, or admitting new daily credit. A frozen already-committed
 receipt retains its original recipients and eligibility through recovery; the
 current activation state must not rewrite its terms or cause reward duplication.
 
+Dependency integration must preserve this distinction during boot and deletion.
+The accounting base owns catalog boot in `boot_zone_story_quest_state()`, including
+boots with specials disabled; its status log must tolerate an accounting-gated
+null journal service. Character/account deletion borrows the owner's transaction
+or authority lock, removes personal records across seasons, and keeps unrelated
+players' names, discoveries, encounters and receipts. SQL erasure locks the whole
+bucket set, prepares writes before execution and leaves commit/rollback to the
+caller. Ordinary journal writes require their own transaction. Flat-file erasure
+stages one replacement snapshot in the existing authority journal; later delta
+writes reload a replaced file before updating cached facts. Failed refresh keeps
+publication disabled until authoritative state can be loaded successfully.
+
+The October 3 integration preserves published accounting migrations 0054
+(alchemy publication) and 0055 (room-item payload) and appends the unpublished
+daily-state migration at **0056**. Regenerate canonical, staging-0045 and
+master-0031 history contracts together; preserve published apply/verifier bytes
+and checksums. A development database already recording a prior feature slot
+needs a deliberately reviewed upgrade path. A history mismatch must fail boot;
+never silently relabel applied migrations. Source mapping continues independently
+of operational migration, accounting activation and active-world qualification.
+
 Implement and qualify the remaining additions in this order:
 
 0. **Active-world source admission.** Legacy reset item commands deliberately

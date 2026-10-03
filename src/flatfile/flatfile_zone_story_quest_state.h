@@ -2,6 +2,7 @@
 #define DURIS_FLATFILE_ZONE_STORY_QUEST_STATE_H
 
 #include "world/zone_story_quest_state_codec.h"
+#include "flatfile/flatfile_authority_transaction.h"
 #include <cstdint>
 #include <string>
 
@@ -12,6 +13,7 @@ enum class flatfile_zone_story_quest_result
 	invalid,
 	corrupt,
 	io_error,
+	unchanged,
 };
 
 flatfile_zone_story_quest_result
@@ -27,5 +29,10 @@ flatfile_zone_story_quest_result
 flatfile_zone_story_quest_records_save(const char *root, uint32_t catalog_revision,
 				       const zone_story_quest_state::changes &updates,
 				       std::string *error = nullptr);
+
+/* Borrow the character deletion lock; stage alias/history erasure in its journal. */
+flatfile_zone_story_quest_result flatfile_zone_story_quest_state_prepare_player_remove(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t catalog_revision,
+	uint32_t pid, flatfile_authority_operation *operation, std::string *error = nullptr);
 
 #endif

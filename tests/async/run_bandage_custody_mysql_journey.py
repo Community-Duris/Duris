@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""An ordinary bandage consumes one durable UID and permits save/restart."""
+"""An ordinary bandage retires one original UID through save and two restarts."""
 
 import argparse
 import os
@@ -101,7 +101,7 @@ def run(binary: Path) -> None:
                 DURIS_TLS_PORT=str(tls_port), DURIS_WEBSOCKET_PORT=str(websocket_port),
             )
             first_uids = set()
-            for phase in ("initial", "restart"):
+            for phase in ("initial", "restart", "second_restart"):
                 output_path = run_root / f"{phase}.out"
                 process, output = quest.boot(binary, run_root, environment,
                                              game_port, output_path)
@@ -135,18 +135,37 @@ def run(binary: Path) -> None:
                         journey.require(len(consumed) == 1,
                                         f"expected one consumed UID, found {consumed}")
                         consumed_uid = next(iter(consumed))
+                        remaining_uids = first_uids - consumed
                     else:
                         client = journey.reconnect_character(game_port)
-                        journey.require(len(active_bandages()) == len(first_uids) - 1,
-                                        "bandage custody changed on restart")
+                        journey.require(active_bandages() == remaining_uids,
+                                        "original bandage UIDs changed on restart")
                     client.send("save")
                     client.expect(f"Save complete for {journey.CHARACTER}.", timeout=30)
                     count = int(sql(f"SELECT COUNT(*) FROM player_items WHERE pid={player_id} "
                                     f"AND obj_uid={consumed_uid}"))
                     journey.require(count == 0, "consumed bandage remained in saved items")
+                    saved_uids = {int(row) for row in sql(
+                        f"SELECT obj_uid FROM player_items WHERE pid={player_id} "
+                        f"AND vnum={BANDAGE_VNUM}").splitlines() if row}
+                    journey.require(saved_uids == remaining_uids,
+                                    "saved bandages do not match the original surviving UIDs")
+                    journey.require(active_bandages() == remaining_uids,
+                                    "saving changed original bandage custody")
                     state = sql("SELECT owner_type,state FROM item_current_owner WHERE "
                                 f"item_uid={consumed_uid}")
                     journey.require(state == "8\t2", f"wrong bandage tombstone: {state}")
+                    retirement = sql(
+                        "SELECT HEX(operation_id),item_revision FROM item_ownership_ledger "
+                        f"WHERE item_uid={consumed_uid} AND to_owner_type=8")
+                    rows = retirement.splitlines()
+                    journey.require(len(rows) == 1 and len(rows[0].split("\t")[0]) == 32,
+                                    "bandage must have exactly one operation-scoped retirement")
+                    if phase == "initial":
+                        original_retirement = retirement
+                    else:
+                        journey.require(retirement == original_retirement,
+                                        "restart changed the bandage retirement operation/revision")
                     client.send("quit")
                     client.expect("ACCOUNT MENU", timeout=30)
                     client.send("0")
@@ -178,4 +197,4 @@ if __name__ == "__main__":
     parser.add_argument("--server", type=Path, required=True)
     args = parser.parse_args()
     run(args.server)
-    print("bandage custody save and cold restart passed")
+    print("bandage original UIDs, single retirement operation, save and two cold restarts passed")

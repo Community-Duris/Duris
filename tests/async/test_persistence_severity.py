@@ -12,6 +12,11 @@ fight = (ROOT / 'src/combat/fight.c').read_text()
 severity = re.search(r'enum class persistence_severity\s*\{.*?\};', header, re.S).group()
 reporter = utility[utility.index('static int persistence_alert_format_is_numeric('):
                    utility.index('unsigned long long persistence_next_item_uid(')]
+pipeline = (ROOT / 'src/player/player_save_pipeline.c').read_text()
+call_start = pipeline.index('"custody_payload_mismatch_rejected"')
+call_end = pipeline.index('custody_mismatches[index].pid', call_start)
+caller_format = ''.join(re.findall(r'"([^"]*)"', pipeline[call_start:call_end])[1:])
+assert '%s' not in caller_format
 harness = r'''
 #include <cassert>
 #include <cctype>
@@ -92,6 +97,13 @@ int main() {
     verify("alert", true);
     assert(logs[0].text.find("detail=retry=1") != std::string::npos);
 
+
+    logs.clear(); broadcasts.clear();
+    persistence_alert(57, "player_save", "redacted", "none", "none", "custody_payload_mismatch_rejected",
+                      @CUSTODY_FORMAT@, 9001, 42ULL, 3ULL, 6U, 0);
+    assert(logs[0].text.find("custody_diagnosis_code=6") != std::string::npos);
+    assert(logs[0].text.find("revision=42") != std::string::npos);
+    assert(logs[0].text.find("item_uid=") == std::string::npos);
     logs.clear(); broadcasts.clear();
     persistence_alert(57, "corpse", "corpse_owner", "none", "rate_event",
                       "rate_limit_action", "retry=%d", 1);
@@ -108,6 +120,7 @@ int main() {
     assert(broadcasts.size() == 3); // distinct failure key remains visible
 }
 '''
+harness = harness.replace('@CUSTODY_FORMAT@', '"' + caller_format + '"')
 with tempfile.TemporaryDirectory(prefix='persistence-severity-') as temp:
     source = Path(temp) / 'reporter.cpp'
     binary = Path(temp) / 'reporter'

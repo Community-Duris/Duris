@@ -52,7 +52,7 @@ Comments are omitted; preprocessor branches are source leads, not evaluated runt
 
 | Kind | VNUM | Procedure | Source |
 | --- | ---: | --- | --- |
-| room | 30511 | `inn` | [src/specs/specs.assign.c:2462](../../../src/specs/specs.assign.c#L2462) |
+| room | 30511 | `inn` | [src/specs/specs.assign.c:2450](../../../src/specs/specs.assign.c#L2450) |
 
 ## Reset coverage
 

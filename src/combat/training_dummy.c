@@ -476,16 +476,6 @@ void training_dummy_note_attacker(P_char dummy, P_char attacker)
 
 namespace
 {
-P_char training_dummy_find_runtime_character(uint64_t runtime_id)
-{
-	if (!runtime_id)
-		return nullptr;
-	for (P_char character = character_list; character; character = character->next)
-		if (character->runtime_id == runtime_id && char_in_list(character))
-			return character;
-	return nullptr;
-}
-
 bool training_dummy_fallback_candidate(P_char npc, P_char candidate, P_char rejected)
 {
 	if (!npc || !candidate || candidate == npc || candidate == rejected ||
@@ -526,7 +516,7 @@ void training_dummy_retarget_nonpet(P_char npc, P_char rejected)
 	 * actually threatened this NPC. Practicing alone cannot make them a tank. */
 	P_char recent =
 		training_dummy_is(rejected) ?
-			training_dummy_find_runtime_character(
+			find_character_by_runtime_id(
 				rejected->only.npc->training_dummy_last_attacker_runtime_id) :
 			nullptr;
 

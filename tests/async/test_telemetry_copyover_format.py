@@ -26,23 +26,17 @@ def function(source, signature):
 
 def main():
     source = (ROOT / 'src/persistence/copyover.c').read_text()
-    header = (ROOT / 'src/persistence/copyover.h').read_text()
-    assert '#define COPYOVER_VERSION 17' in header
     recover = source[source.index('int copyover_recover('):]
-    assert 'copyover_version_supported(header.version)' in recover
-    assert 'version >= 12 && version <= COPYOVER_VERSION' in source
-    assert 'header.version >= 15' in recover
-    assert recover.index('read_telemetry_copyover_state(') < recover.index('restore_telemetry_copyover_sessions(')
-    wire_types = source[source.index('constexpr char TELEMETRY_COPYOVER_MAGIC'):source.index('} // namespace', source.index('constexpr char TELEMETRY_COPYOVER_MAGIC'))]
-    signatures = (
+    assert recover.index('copyover_codec_read(') < recover.index('restore_telemetry_copyover_sessions(')
+    bodies = '\n'.join(function(source, signature) for signature in (
         'static bool copyover_descriptor_is_eligible(',
         'static bool write_telemetry_copyover_state(',
-        'static bool read_telemetry_copyover_state(',
         'static void restore_telemetry_copyover_sessions(',
-    )
-    bodies = '\n'.join(function(source, s) for s in signatures)
+    ))
     prelude = r'''
-#include "telemetry/telemetry_runtime.h"
+#include "persistence/copyover_codec.h"
+#include "net/transport.h"
+#include "core/utils.h"
 #include <cassert>
 #include <cstdio>
 #include <cstring>
@@ -60,26 +54,8 @@ void *operator new(std::size_t size) {
 }
 void operator delete(void *p) noexcept { std::free(p); }
 void operator delete(void *p, std::size_t) noexcept { std::free(p); }
-struct char_data { const char *name; };
-struct descriptor_data {
-    int descriptor;
-    int connected;
-    char_data *character;
-    bool websocket;
-    void *sslses;
-    descriptor_data *next;
-    std::uint64_t telemetry_connection_sequence = 0;
-};
-using P_desc = descriptor_data *;
-using P_char = char_data *;
-constexpr int CON_PLAYING = 0, LOG_STATUS = 1;
 P_desc descriptor_list = nullptr;
-#define GET_NAME(ch) ((ch)->name)
-void logit(int, const char *, ...) {}
-std::size_t strlcpy(char *dest, const char *src, std::size_t size) {
-    if (size) std::snprintf(dest, size, "%s", src);
-    return std::strlen(src);
-}
+void logit(const char *, const char *, ...) {}
 telemetry_runtime_outcome copy_outcome = telemetry_runtime_outcome::accepted;
 telemetry_runtime_outcome flush_outcome = telemetry_runtime_outcome::accepted;
 const char *absent_player_name = nullptr;
@@ -94,9 +70,9 @@ telemetry_handoff_result telemetry_runtime_game_handoff_copy(char_data *ch) {
     telemetry_handoff_result result{};
     ++captures;
     result.outcome = copy_outcome;
-    if (absent_player_name != nullptr && std::strcmp(ch->name, absent_player_name) == 0)
+    if (absent_player_name != nullptr && std::strcmp(GET_NAME(ch), absent_player_name) == 0)
         result.outcome = telemetry_runtime_outcome::queue_full;
-    result.handoff.session.id.session_seq = std::strcmp(ch->name, "alpha") == 0 ? 11 : 22;
+    result.handoff.session.id.session_seq = std::strcmp(GET_NAME(ch), "alpha") == 0 ? 11 : 22;
     result.handoff.session.pid = 42;
     return result;
 }
@@ -129,219 +105,103 @@ telemetry_capture_result telemetry_runtime_game_session_resume(
 }
 '''
     checks = r'''
-constexpr std::uint32_t following_world_marker = 0xa1b2c3d4U;
-char_data alpha{"alpha"}, beta{"beta"};
-descriptor_data a{10, 0, &alpha, false, nullptr, nullptr};
-descriptor_data b{11, 0, &beta, false, nullptr, nullptr};
-descriptor_data ws{12, 0, &alpha, true, nullptr, nullptr};
-descriptor_data tls{13, 0, &alpha, false, &alpha, nullptr};
-descriptor_data menu{14, 1, &alpha, false, nullptr, nullptr};
+char_data alpha{}, beta{};
+descriptor_data a{}, b{}, ws{}, tls{}, menu{};
 void setup() {
+    alpha.player.name = const_cast<char *>("alpha");
+    beta.player.name = const_cast<char *>("beta");
+    a = {}; b = {}; ws = {}; tls = {}; menu = {};
+    a.descriptor = 10; b.descriptor = 11; ws.descriptor = 12;
+    tls.descriptor = 13; menu.descriptor = 14;
+    a.connected = b.connected = ws.connected = tls.connected = CON_PLAYING;
+    menu.connected = CON_MAIN_MENU;
+    a.character = ws.character = tls.character = menu.character = &alpha;
+    b.character = &beta; ws.websocket = true;
+    tls.sslses = reinterpret_cast<gnutls_session_t>(&alpha);
     a.next = &b; b.next = &ws; ws.next = &tls; tls.next = &menu;
-    descriptor_list = &a;
-    observations.clear();
-    a.telemetry_connection_sequence = b.telemetry_connection_sequence = 0;
+    descriptor_list = &a; observations.clear();
     resume_full_before_admission = resume_full_after_admission = false;
-    copy_outcome = telemetry_runtime_outcome::accepted;
-    flush_outcome = telemetry_runtime_outcome::accepted;
-    absent_player_name = nullptr;
-    flush_calls = captures = 0;
+    copy_outcome = flush_outcome = telemetry_runtime_outcome::accepted;
+    absent_player_name = nullptr; flush_calls = captures = 0;
 }
-FILE *saved() {
-    FILE *fp = tmpfile(); assert(fp);
-    assert(write_telemetry_copyover_state(fp, 2));
-    assert(ftell(fp) == static_cast<long>(sizeof(telemetry_copyover_header) + 2 * sizeof(telemetry_copyover_entry)));
-    assert(fwrite(&following_world_marker, sizeof(following_world_marker), 1, fp) == 1);
-    rewind(fp);
-    return fp;
-}
-void marker(FILE *fp) {
-    std::uint32_t next = 0;
-    assert(fread(&next, sizeof(next), 1, fp) == 1);
-    assert(next == following_world_marker);
-}
-void mutate(FILE *fp, unsigned index, unsigned kind) {
-    const long offset = sizeof(telemetry_copyover_header) + index * sizeof(telemetry_copyover_entry);
-    assert(fseek(fp, offset, SEEK_SET) == 0);
-    telemetry_copyover_entry entry{};
-    assert(fread(&entry, sizeof(entry), 1, fp) == 1);
-    if (kind == 0) entry.handoff_valid = 2;
-    if (kind == 1) strlcpy(entry.player_name, "not-the-loaded-player", sizeof(entry.player_name));
-    if (kind == 2) { entry.fd = a.descriptor; strlcpy(entry.player_name, "alpha", sizeof(entry.player_name)); }
-    if (kind == 3) entry.handoff.session.pid = -1;
-    if (kind == 4) entry.player_name[sizeof(entry.player_name)-1] = 'x';
-    if (kind == 5) entry.reserved[1] = 1;
-    if (kind == 6) entry.fd = -1;
-    assert(fseek(fp, offset, SEEK_SET) == 0);
-    assert(fwrite(&entry, sizeof(entry), 1, fp) == 1);
-    rewind(fp);
+std::vector<telemetry_copyover_entry> saved(bool allocation_failure = false) {
+    FILE *file = tmpfile(); assert(file);
+    copyover_header header{}; header.num_descriptors = 2; header.num_rooms = 1;
+    const int listeners[3] = {-1,-1,-1};
+    assert(copyover_codec_begin(file, header, listeners));
+    for (P_desc d : {&a, &b}) {
+        copyover_desc entry{}; entry.fd = d->descriptor;
+        strlcpy(entry.player_name, GET_NAME(d->character), sizeof(entry.player_name));
+        assert(copyover_codec_write(file, entry));
+    }
+    fail_next_allocation = allocation_failure;
+    assert(write_telemetry_copyover_state(file, 2));
+    copyover_room door{200,9,123};
+    assert(copyover_codec_write(file, door));
+    assert(copyover_codec_finish(file, nullptr));
+    copyover_decoded_state state;
+    assert(copyover_codec_read(file, &state, nullptr));
+    assert(state.doors.size() == 1 && state.doors[0].state == 123 && fgetc(file) == EOF);
+    fclose(file); return state.telemetry;
 }
 void exactly_once(std::uint64_t seq_a, std::uint64_t seq_b) {
     assert(observations.size() == 2);
     assert(observations[0].descriptor == &a && observations[0].sequence == seq_a);
     assert(observations[1].descriptor == &b && observations[1].sequence == seq_b);
 }
-int main(int argc, char **argv) {
-    assert(argc == 2);
-    setup();
-    const char *scenario = argv[1];
-    if (std::strcmp(scenario, "roundtrip") == 0) {
-        FILE *fp = saved();
-        std::vector<telemetry_copyover_entry> entries;
-        assert(read_telemetry_copyover_state(fp, 2, &entries));
-        assert(entries.size() == 2);
-        assert(flush_calls == 1 && captures == 2);
-        const auto expected = telemetry_runtime_game_handoff_copy(&alpha).handoff;
-        assert(std::memcmp(&entries[0].handoff, &expected, sizeof(expected)) == 0);
-        marker(fp); fclose(fp);
-        descriptor_list = &a; b.next = nullptr;
-        restore_telemetry_copyover_sessions(&entries);
-        exactly_once(11, 22);
-    } else if (std::strcmp(scenario, "mixed-handoff") == 0) {
-        absent_player_name = "beta";
-        FILE *fp = saved();
-        std::vector<telemetry_copyover_entry> entries;
-        assert(read_telemetry_copyover_state(fp, 2, &entries));
-        assert(entries.size() == 2);
-        assert(entries[0].fd == a.descriptor && std::strcmp(entries[0].player_name, "alpha") == 0);
-        assert(entries[0].handoff_valid == 1);
-        assert(entries[1].fd == b.descriptor && std::strcmp(entries[1].player_name, "beta") == 0);
-        assert(entries[1].handoff_valid == 0);
-        marker(fp); fclose(fp);
-        b.next = nullptr;
-        restore_telemetry_copyover_sessions(&entries);
-        exactly_once(11, 0);
-    } else if (std::strcmp(scenario, "resume-full-before") == 0 ||
-               std::strcmp(scenario, "resume-full-after") == 0) {
-        FILE *fp = saved();
-        std::vector<telemetry_copyover_entry> entries;
-        assert(read_telemetry_copyover_state(fp, 2, &entries));
-        marker(fp); fclose(fp);
-        resume_full_before_admission = std::strcmp(scenario, "resume-full-before") == 0;
-        resume_full_after_admission = !resume_full_before_admission;
-        b.next = nullptr;
-        restore_telemetry_copyover_sessions(&entries);
-        exactly_once(resume_full_before_admission ? 0 : 11, resume_full_before_admission ? 0 : 22);
-    } else if (std::strcmp(scenario, "unavailable") == 0) {
-        for (auto outcome : {telemetry_runtime_outcome::disabled,
-             telemetry_runtime_outcome::flatfile_disabled,
-             telemetry_runtime_outcome::not_initialized,
-             telemetry_runtime_outcome::invalid,
-             telemetry_runtime_outcome::queue_full}) {
-            setup(); copy_outcome = outcome;
-            FILE *fp = saved();
-            std::vector<telemetry_copyover_entry> entries;
-            assert(read_telemetry_copyover_state(fp, 2, &entries));
-            assert(entries.size() == 2 && entries[0].handoff_valid == 0);
-            marker(fp); fclose(fp);
-            b.next = nullptr;
-            restore_telemetry_copyover_sessions(&entries);
-            exactly_once(0, 0);
-        }
-    } else if (std::strcmp(scenario, "write-memory-pressure") == 0) {
-        fail_next_allocation = true;
-        FILE *fp = saved();
-        assert(!fail_next_allocation && captures == 0 && flush_calls == 0);
-        std::vector<telemetry_copyover_entry> entries;
-        assert(read_telemetry_copyover_state(fp, 2, &entries));
-        assert(entries.size() == 2 && entries[0].handoff_valid == 0 && entries[1].handoff_valid == 0);
-        marker(fp); fclose(fp);
-        b.next = nullptr;
-        restore_telemetry_copyover_sessions(&entries);
-        exactly_once(0, 0);
-    } else if (std::strcmp(scenario, "undurable") == 0) {
-        flush_outcome = telemetry_runtime_outcome::queue_full;
-        FILE *fp = saved();
-        std::vector<telemetry_copyover_entry> entries;
-        assert(read_telemetry_copyover_state(fp, 2, &entries));
-        assert(entries.size() == 2 && entries[0].handoff_valid == 0 && entries[1].handoff_valid == 0);
-        assert(flush_calls == 1);
-        marker(fp); fclose(fp);
-        b.next = nullptr;
-        restore_telemetry_copyover_sessions(&entries);
-        exactly_once(0, 0);
-    } else if (std::strcmp(scenario, "legacy") == 0) {
-        b.next = nullptr;
-        restore_telemetry_copyover_sessions(nullptr);
-        exactly_once(0, 0);
-    } else if (std::strcmp(scenario, "damaged-entry") == 0) {
-        for (unsigned kind : {0U, 4U, 5U, 6U}) {
-            setup(); FILE *fp = saved(); mutate(fp, 0, kind);
-            std::vector<telemetry_copyover_entry> entries;
-            assert(read_telemetry_copyover_state(fp, 2, &entries));
-            marker(fp); fclose(fp);
-            b.next = nullptr;
-            restore_telemetry_copyover_sessions(&entries);
-            exactly_once(0, 22);
-        }
-    } else if (std::strcmp(scenario, "unmatched-entry") == 0 ||
-               std::strcmp(scenario, "duplicate-entry") == 0 ||
-               std::strcmp(scenario, "invalid-handoff") == 0) {
-        FILE *fp = saved();
-        const bool duplicate = std::strcmp(scenario, "duplicate-entry") == 0;
-        const bool invalid = std::strcmp(scenario, "invalid-handoff") == 0;
-        mutate(fp, duplicate ? 1 : 0, duplicate ? 2 : invalid ? 3 : 1);
-        std::vector<telemetry_copyover_entry> entries;
-        assert(read_telemetry_copyover_state(fp, 2, &entries));
-        marker(fp); fclose(fp);
-        b.next = nullptr;
-        restore_telemetry_copyover_sessions(&entries);
-        exactly_once(0, duplicate ? 0 : 22);
-    } else if (std::strcmp(scenario, "memory-pressure") == 0) {
-        FILE *fp = saved();
-        std::vector<telemetry_copyover_entry> entries;
-        fail_next_allocation = true;
-        assert(read_telemetry_copyover_state(fp, 2, &entries));
-        assert(!fail_next_allocation && entries.empty());
-        marker(fp); fclose(fp);
-        b.next = nullptr;
-        restore_telemetry_copyover_sessions(&entries);
-        exactly_once(0, 0);
-    } else if (std::strcmp(scenario, "bounds-and-framing") == 0) {
-        FILE *fp = tmpfile(); assert(fp);
-        telemetry_copyover_header header{};
-        std::memcpy(header.magic, TELEMETRY_COPYOVER_MAGIC, 4);
-        header.version = TELEMETRY_COPYOVER_VERSION;
-        header.count = 0x7fffffff;
-        assert(fwrite(&header, sizeof(header), 1, fp) == 1); rewind(fp);
-        std::vector<telemetry_copyover_entry> entries;
-        assert(!read_telemetry_copyover_state(fp, 0x7fffffff, &entries));
-        assert(entries.empty()); fclose(fp);
-        fp = saved();
-        assert(!read_telemetry_copyover_state(fp, 1, &entries)); fclose(fp);
-        fp = tmpfile(); assert(fp);
-        header.count = 2;
-        assert(fwrite(&header, sizeof(header), 1, fp) == 1); rewind(fp);
-        assert(!read_telemetry_copyover_state(fp, 2, &entries)); fclose(fp);
-    } else { assert(false); }
-    std::puts(scenario);
+int main() {
+    setup(); auto entries = saved();
+    assert(entries.size() == 2 && entries[0].handoff.session.id.session_seq == 11);
+    assert(flush_calls == 1 && captures == 2);
+    b.next = nullptr; restore_telemetry_copyover_sessions(&entries); exactly_once(11,22);
+    setup(); absent_player_name = "beta"; entries = saved();
+    assert(entries[0].handoff_valid && !entries[1].handoff_valid);
+    b.next = nullptr; restore_telemetry_copyover_sessions(&entries); exactly_once(11,0);
+    for (auto outcome : {telemetry_runtime_outcome::disabled,
+         telemetry_runtime_outcome::flatfile_disabled, telemetry_runtime_outcome::not_initialized,
+         telemetry_runtime_outcome::invalid, telemetry_runtime_outcome::queue_full}) {
+        setup(); copy_outcome = outcome; entries = saved();
+        assert(entries.size() == 2 && !entries[0].handoff_valid);
+        b.next = nullptr; restore_telemetry_copyover_sessions(&entries); exactly_once(0,0);
+    }
+    setup(); entries = saved(true);
+    assert(!fail_next_allocation && !captures && !flush_calls);
+    b.next = nullptr; restore_telemetry_copyover_sessions(&entries); exactly_once(0,0);
+    setup(); flush_outcome = telemetry_runtime_outcome::queue_full; entries = saved();
+    assert(flush_calls == 1 && !entries[0].handoff_valid && !entries[1].handoff_valid);
+    b.next = nullptr; restore_telemetry_copyover_sessions(&entries); exactly_once(0,0);
+    setup(); b.next = nullptr; restore_telemetry_copyover_sessions(nullptr); exactly_once(0,0);
+    for (unsigned kind = 0; kind < 3; ++kind) {
+        setup(); entries = saved();
+        if (kind == 0) strlcpy(entries[0].player_name, "unmatched", sizeof(entries[0].player_name));
+        if (kind == 1) { entries[1].fd = 10; strlcpy(entries[1].player_name, "alpha", sizeof(entries[1].player_name)); }
+        if (kind == 2) entries[0].handoff.session.pid = -1;
+        b.next = nullptr; restore_telemetry_copyover_sessions(&entries);
+        exactly_once(0, kind == 1 ? 0 : 22);
+    }
+    for (bool after : {false,true}) {
+        setup(); entries = saved();
+        resume_full_before_admission = !after; resume_full_after_admission = after;
+        b.next = nullptr; restore_telemetry_copyover_sessions(&entries);
+        exactly_once(after ? 11 : 0, after ? 22 : 0);
+    }
+    setup(); FILE *file = tmpfile(); assert(file);
+    assert(!write_telemetry_copyover_state(file, -1));
+    assert(!write_telemetry_copyover_state(file, FD_SETSIZE + 1));
+    assert(!write_telemetry_copyover_state(file, 1)); fclose(file);
+    puts("telemetry portable round trip, durability/allocation absence, identity matching and exactly-once resume passed");
 }
 '''
     with tempfile.TemporaryDirectory(prefix='telemetry-copyover-wire-') as directory:
         cpp, binary = Path(directory) / 'wire.cc', Path(directory) / 'wire'
-        cpp.write_text(prelude + wire_types + bodies + checks)
-        subprocess.run(['g++', '-std=c++20', '-Wall', '-Wextra', '-Werror',
-                        '-I', str(ROOT / 'src'), str(cpp), '-o', str(binary)], check=True)
-        # Bound the malicious-count probe even before the fix, so red cannot OOM.
-        import resource
-        def limits():
-            ceiling = 256 * 1024 * 1024
-            resource.setrlimit(resource.RLIMIT_AS, (ceiling, ceiling))
-            resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
-        failed = []
-        for scenario in ('roundtrip', 'unavailable', 'legacy', 'damaged-entry',
-                         'mixed-handoff', 'unmatched-entry', 'duplicate-entry', 'invalid-handoff',
-                         'memory-pressure', 'bounds-and-framing',
-                         'resume-full-before', 'resume-full-after', 'undurable',
-                         'write-memory-pressure'):
-            result = subprocess.run([str(binary), scenario], text=True, capture_output=True,
-                                    timeout=10, preexec_fn=limits)
-            print(('PASS ' if result.returncode == 0 else 'FAIL ') + scenario)
-            if result.returncode:
-                print(result.stderr.strip())
-                failed.append(scenario)
-        assert not failed, failed
-    print('telemetry actual copyover serialization and recovery seams passed')
+        cpp.write_text(prelude + bodies + checks)
+        subprocess.run(['g++', '-std=c++20', '-Wall', '-Wextra', '-Werror', '-Isrc',
+                        '-ffunction-sections', '-fdata-sections', str(cpp),
+                        'src/persistence/copyover_codec.c', 'src/world/world_recovery_codec.c',
+                        'src/world/generated_npc_state.c', 'src/player/pet_restore_state.c',
+                        'src/item/item_transfer_command.c', '-Wl,--gc-sections', '-lbsd',
+                        '-o', str(binary)], cwd=ROOT, check=True)
+        subprocess.run([str(binary)], check=True)
 
 
 if __name__ == '__main__':

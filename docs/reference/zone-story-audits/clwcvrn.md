@@ -53,10 +53,10 @@ Comments are omitted; preprocessor branches are source leads, not evaluated runt
 
 | Kind | VNUM | Procedure | Source |
 | --- | ---: | --- | --- |
-| mob | 80735 | `clwcvrn_golem_shatter` | [src/specs/specs.assign.c:322](../../../src/specs/specs.assign.c#L322) |
-| mob | 80739 | `clwcvrn_protect` | [src/specs/specs.assign.c:323](../../../src/specs/specs.assign.c#L323) |
-| mob | 80726 | `claw_cavern_drow_mage` | [src/specs/specs.assign.c:324](../../../src/specs/specs.assign.c#L324) |
-| obj | 80747 | `burn_touch_obj` | [src/specs/specs.assign.c:1739](../../../src/specs/specs.assign.c#L1739) |
+| mob | 80735 | `clwcvrn_golem_shatter` | [src/specs/specs.assign.c:321](../../../src/specs/specs.assign.c#L321) |
+| mob | 80739 | `clwcvrn_protect` | [src/specs/specs.assign.c:322](../../../src/specs/specs.assign.c#L322) |
+| mob | 80726 | `claw_cavern_drow_mage` | [src/specs/specs.assign.c:323](../../../src/specs/specs.assign.c#L323) |
+| obj | 80747 | `burn_touch_obj` | [src/specs/specs.assign.c:1727](../../../src/specs/specs.assign.c#L1727) |
 
 ## Reset coverage
 

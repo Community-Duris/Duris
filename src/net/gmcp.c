@@ -27,6 +27,7 @@
 #include "sql/sql.h"
 #include "net/websocket.h"
 #include "net/ws_auth.h"
+#include "net/transport.h"
 
 extern const int top_of_world;
 
@@ -88,6 +89,8 @@ static void gmcp_durisweb_auth_failure(struct descriptor_data *d)
 void gmcp_handle_input(struct descriptor_data *d, const char *data, size_t len)
 {
 	if (!d || !data || len == 0 || len > GMCP_MAX_INPUT_SIZE)
+		return;
+	if (transport_frontend_input(d, 3, data, len))
 		return;
 
 	if (len > 10 && strncmp(data, "Core.Hello", 10) == 0 && data[10] == ' ')

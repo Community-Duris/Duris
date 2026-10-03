@@ -65,6 +65,16 @@ Graceful shutdown from inside the game: immortal `shutdown` command
 and then removes. Copyover (`copyover` command) execs a fresh binary while
 keeping player connections alive via `copyover.dat`.
 
+With the opt-in `--persistent-transport` launcher option, a parent keeps client
+sockets, TLS and compression alive while only the world child is replaced.
+Signal the parent or its watchdog once for lifecycle operations; do not signal
+both executable PIDs. Non-playing or otherwise ineligible sessions veto planned
+copyover. The watchdog still measures completed world loops. See the
+[persistent transport guide](../network/PERSISTENT_TRANSPORT.md) for enabling the
+mode, authenticated restoration, bounded queues and recovery after either process
+fails. Default single-process copyover retains its all-or-nothing plain-Telnet
+eligibility guard.
+
 ### Executable rollback and callback labels
 
 Before an authorized clean build or rollout, identify the actual supervisor,
@@ -115,6 +125,83 @@ seconds between attempts, and invokes `cycle_mud.sh --production`. The launch fl
 refuses `ENVIRONMENT=local`; the unit cannot silently publish a development role as
 production. A deliberate `systemctl stop` remains stopped because systemd suppresses
 restart jobs requested by the service manager.
+
+`cycle_mud.sh` runs each game child under `scripts/game_loop_watchdog.py`. The
+observer uses its own monotonic clock and a private Unix datagram channel. The
+world thread increments a 64-bit counter only after the connection, session input,
+output, event, recurring persistence, activity, combat, and pulse-reset phases all
+finish. Worker threads and forked helpers cannot publish through the heartbeat
+API. Fresh timestamps with an unchanged counter, a listening socket, a live PID,
+and successful HTTP health probes do not renew the progress deadline.
+
+This detects a callback spinning forever, an interruptible blocking I/O wait, a
+deadlock, or a broken heartbeat channel that prevents another complete world loop.
+It also bounds game startup, copyover preparation/recovery, and shutdown drains.
+The observer starts **after** the launcher's schema verification, backup, and world
+generation steps; those operational steps are outside the game-loop watchdog.
+Launching `bin/server/dms` directly does not provide this external protection.
+
+Deadlines can be configured in the existing protected `.env`. Values are finite,
+positive seconds (fractional seconds are accepted), up to 86400, and are validated
+by `cycle_mud.sh --check-config` before any game starts:
+
+| Variable | Default | Deadline |
+| --- | ---: | --- |
+| `DURIS_WATCHDOG_STARTUP_SECONDS` | 300 | Spawn to first complete loop; also copyover exec boot to its first complete loop. |
+| `DURIS_WATCHDOG_STALL_SECONDS` | 30 | Time since the most recent increasing completed-loop heartbeat. |
+| `DURIS_WATCHDOG_COPYOVER_SECONDS` | 120 | Entire pre-exec save/drain/serialization operation. |
+| `DURIS_WATCHDOG_SHUTDOWN_SECONDS` | 60 | Entire terminal save/drain/worker-join operation, including a forwarded stop signal. |
+| `DURIS_WATCHDOG_ABORT_SECONDS` | 10 | Maximum wait after requesting a native core dump, before forced termination. |
+
+Only an explicit lifecycle transition grants its bounded grace. Repeated boot or
+drain records cannot renew it. A refused shutdown/copyover returns to the normal
+running deadline; another drain allowance requires another completed loop.
+Copyover keeps the same game PID, channel, and increasing counter across `exec`.
+Initialization also disarms a virtual checkpoint timer inherited from an older
+binary, since interval timers survive `exec`.
+A cold restart creates a new child and private channel, so old records cannot
+make the replacement healthy. If the observer dies, Linux's parent-death signal
+kills its game child, including across copyover, rather than leaving a world
+running without supervision.
+
+On expiry, the observer writes a reason, phase, last counter, and completed-loop
+age to the console/journal. A separate diagnostic process has a two-second budget
+to write an owner-only `logs/watchdog/<timestamp>-<game-pid>.txt` snapshot of the
+executable and process/thread `stat`, `status`, `wchan`, `syscall`, and kernel stack
+where permitted. Missing permissions are recorded. Reports stay outside rotated
+`logs/log/`; include them when investigating an incident and manage retention with
+the deployment's existing log policy. The observer then sends `SIGABRT` to the game
+for a native core dump, waits the configured abort budget, and sends `SIGKILL` if
+needed. Core availability/location depend on the host's core-dump policy; neither
+diagnostics nor termination calls the hung game thread. The game process group is
+cleaned up before its replacement starts.
+
+After a timeout on a game that previously completed a loop, the observer returns
+`56` (`mud hung reboot`). The launcher records that result, waits its existing ten
+seconds to prevent core flooding, and repeats its normal guarded boot, including
+persistence/Redis recovery. Recovery can lose state that never reached existing
+durable journals/checkpoints. A stalled intentional shutdown returns `0`, and a
+service-manager stop remains stopped. Watchdog failure never synthesizes the
+`55` exit code that triggers a player wipe.
+
+A timeout before any completed loop, invalid watchdog configuration, or a game
+that cannot exit after `SIGKILL` returns `78`. The launcher stops and the unit's
+`RestartPreventExitStatus=78` prevents an automatic boot loop. Inspect the watchdog
+report and boot logs, correct the cause, then explicitly restart the service.
+Ordinary exited-process recovery keeps the existing restart policy. Linux cannot
+force an uninterruptible kernel wait to finish; in that case detection and the
+kill request are possible, but replacement is refused while the old game remains.
+
+The unit stays `Type=simple` with the launcher as systemd's main process. It uses
+the external observer rather than `WatchdogSec`: systemd's documented watchdog
+starts after startup and requires periodic `WATCHDOG=1` notifications; notification
+access defaults to the main process. Configuring a watchdog for the launcher
+without forwarding completed-game-loop progress would measure the shell instead
+of the world. See [systemd.service(5), WatchdogSec and NotifyAccess](https://man7.org/linux/man-pages/man5/systemd.service.5.html).
+Keep `TimeoutStopSec` above the shutdown allowance plus two seconds of diagnostics,
+the abort/kill budgets, and the launcher's ten-second tail. The default 90 seconds
+covers the shipped values; raise it with an inspected systemd override if you
+increase those deadlines.
 
 Prepare the production `.env` and protected runtime directories before installation.
 The service account must own `.env`, which must remain mode `0600`. Complete the

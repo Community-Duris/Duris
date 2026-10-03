@@ -1,3 +1,4 @@
+#include "net/network_wakeup.h"
 #include "economy/collector_listing_pipeline.h"
 
 #include "economy/collector_catalog_source.h"
@@ -195,6 +196,7 @@ void worker_main()
 			inflight_id = 0;
 			record_result_locked(result);
 			completions.push_back(std::move(result));
+			network_wakeup_notify();
 			refresh_health_locked();
 		}
 	}

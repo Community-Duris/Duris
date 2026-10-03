@@ -205,6 +205,17 @@ void split_children_journey(const fs::path &path)
 	const auto stale = split_child_command(sender_before, second_before, 3, 4, 221);
 	const auto rejected = flatfile_accounting_coin_transaction::apply(root, stale);
 	assert(rejected.outcome == outcome::terminal_failure && rejected.error_code == ESTALE);
+	coin_transfer_payload stale_payload;
+	assert(coin_transfer_command_decode_payload(stale, &stale_payload));
+	coin_transfer_stale_result repair;
+	assert(rejected.result_size == COIN_TRANSFER_STALE_RESULT_BYTES &&
+	       coin_transfer_command_decode_stale_result(stale_payload, rejected.failure_stage,
+							 rejected.result_payload.data(),
+							 rejected.result_size, &repair));
+	assert(repair.endpoint_index == 0 && repair.wallet_stale && repair.bank_stale &&
+	       repair.current.wallet.amount[0] == 97 &&
+	       repair.current.wallet_revision == after_first.domains.wallet_revision &&
+	       repair.current.bank_revision == after_first.domains.bank_revision);
 	assert(retained(root, stale).plan.empty());
 	same(rejected, flatfile_accounting_coin_transaction::apply(root, stale));
 	assert(state(root).domains.wallet[0] == 97 && peer_state(root).domains.wallet[0] == 3 &&
@@ -1143,6 +1154,8 @@ int main(int argc, char **argv)
 		flatfile_accounting_coin_transaction::apply(root, stale_split);
 	assert(stale_pile_result.outcome == outcome::terminal_failure &&
 	       stale_pile_result.error_code == ESTALE);
+	assert(stale_pile_result.result_size == 0 &&
+	       stale_pile_result.failure_stage == critical_failure_stage::coin_revision_unknown);
 	const auto stale_pile_record = retained(root, stale_split);
 	assert(stale_pile_record.result_code == ESTALE && stale_pile_record.plan.empty());
 	const auto stale_pile_replay =

@@ -55,9 +55,9 @@ Comments are omitted; preprocessor branches are source leads, not evaluated runt
 
 | Kind | VNUM | Procedure | Source |
 | --- | ---: | --- | --- |
-| mob | 29025 | `lanella_heart` | [src/specs/specs.assign.c:283](../../../src/specs/specs.assign.c#L283) |
-| mob | 28961 | `timoro_die` | [src/specs/specs.assign.c:1145](../../../src/specs/specs.assign.c#L1145) |
-| room | 29103 | `inn` | [src/specs/specs.assign.c:2460](../../../src/specs/specs.assign.c#L2460) |
+| mob | 29025 | `lanella_heart` | [src/specs/specs.assign.c:282](../../../src/specs/specs.assign.c#L282) |
+| mob | 28961 | `timoro_die` | [src/specs/specs.assign.c:1144](../../../src/specs/specs.assign.c#L1144) |
+| room | 29103 | `inn` | [src/specs/specs.assign.c:2448](../../../src/specs/specs.assign.c#L2448) |
 
 ## Reset coverage
 

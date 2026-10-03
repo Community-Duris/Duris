@@ -1,14 +1,22 @@
 #!/usr/bin/env python3
-"""Issue #259: replay real SQL status snapshots against a connection-private table.
+"""Issue #259: replay real SQL status and item snapshots in a fresh journey schema.
 
 Requires the isolated journey DB environment. Called by test_mysql_playtime_journey;
-creates only a TEMPORARY player_data table shadowing the fixture schema's table.
+Uses the migrated tables and their foreign keys, then removes only its synthetic
+rows. Refuses schemas outside the fresh playtime journey namespace.
 """
 from pathlib import Path
+import os
+import re
 import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
+database = os.environ.get("DB_NAME", "")
+if (os.environ.get("DB_HOST") != "127.0.0.1" or
+        not re.fullmatch(r"playtime_test_[0-9a-f]{12}", database) or
+        os.environ.get("DB_ALLOWED_TARGETS") != "127.0.0.1/" + database):
+    raise RuntimeError("requires the fresh disposable playtime journey schema")
 HARNESS = r'''
 #include "player/player_snapshot_repository.h"
 #include "player/player_playtime.h"
@@ -37,8 +45,14 @@ int main() {
     auto sql = [&](const char *text) {
         if (mysql_query(db, text)) { std::cerr << mysql_error(db) << '\n'; std::abort(); }
     };
-    sql("CREATE TEMPORARY TABLE playtime_shape LIKE player_data");
-    sql("CREATE TEMPORARY TABLE player_data LIKE playtime_shape");
+    sql("SELECT (SELECT COUNT(*) FROM player_data WHERE pid=1) + "
+        "(SELECT COUNT(*) FROM item_current_owner WHERE item_uid IN (7001,7002,7003)) + "
+        "(SELECT COUNT(*) FROM player_items WHERE obj_uid IN (7001,7002,7003))");
+    MYSQL_RES *collision_rows = mysql_store_result(db);
+    assert(collision_rows);
+    MYSQL_ROW collision = mysql_fetch_row(collision_rows);
+    assert(collision && collision[0] && std::strcmp(collision[0], "0") == 0);
+    mysql_free_result(collision_rows);
     sql("INSERT INTO player_data(pid,name,played_time,save_revision) VALUES(1,'Playtimefixture',3600,1)");
     auto total = [&]() {
         sql("SELECT played_time FROM player_data WHERE pid=1");
@@ -72,10 +86,6 @@ int main() {
 
     // A complete item replacement must prove exact equivalence with active
     // custody before deleting the prior payload projection.
-    sql("CREATE TEMPORARY TABLE item_payload_shape LIKE player_items");
-    sql("CREATE TEMPORARY TABLE player_items LIKE item_payload_shape");
-    sql("CREATE TEMPORARY TABLE custody_shape LIKE item_current_owner");
-    sql("CREATE TEMPORARY TABLE item_current_owner LIKE custody_shape");
     sql("INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,"
         "owner_type,owner_id,owner_context_id,item_revision,vnum,state) "
         "VALUES(7001,7001,NULL,1,1,0,1,15,1),"
@@ -93,8 +103,12 @@ int main() {
     items.items[1].parent_index = 0;
     items.items[1].object_uid = 7002;
     items.items[1].vnum = 16;
-    assert(player_snapshot_repository_apply(db, items).outcome ==
-           player_save_apply_outcome::applied);
+    const auto items_applied = player_snapshot_repository_apply(db, items);
+    if (items_applied.outcome != player_save_apply_outcome::applied)
+        std::cerr << "item apply failed: outcome=" << static_cast<int>(items_applied.outcome)
+                  << " error=" << items_applied.error_code
+                  << " diagnosis=" << static_cast<int>(items_applied.custody_diagnosis) << '\n';
+    assert(items_applied.outcome == player_save_apply_outcome::applied);
     sql("SELECT COUNT(*) FROM player_items WHERE pid=1 AND obj_uid IN (7001,7002)");
     MYSQL_RES *payload_rows = mysql_store_result(db);
     assert(payload_rows);
@@ -134,6 +148,18 @@ int main() {
     payload_count = mysql_fetch_row(payload_rows);
     assert(payload_count && std::atoi(payload_count[0]) == 2);
     mysql_free_result(payload_rows);
+    sql("SELECT COUNT(*) FROM player_item_runtime_state runtime "
+        "JOIN player_items item ON item.id=runtime.item_id "
+        "WHERE item.pid=1 AND item.obj_uid IN (7001,7002)");
+    payload_rows = mysql_store_result(db);
+    assert(payload_rows);
+    payload_count = mysql_fetch_row(payload_rows);
+    assert(payload_count && std::atoi(payload_count[0]) == 2);
+    mysql_free_result(payload_rows);
+    sql("DELETE FROM player_items WHERE pid=1 AND obj_uid IN (7001,7002)");
+    sql("DELETE FROM item_current_owner WHERE item_uid=7002");
+    sql("DELETE FROM item_current_owner WHERE item_uid IN (7001,7003)");
+    sql("DELETE FROM player_data WHERE pid=1 AND name='Playtimefixture'");
     mysql_close(db);
     std::cout << "[PASS] real SQL snapshot apply, rollback-safe custody guard, inline coin exception, duplicate ACK and stale revision\n";
 }

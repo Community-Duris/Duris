@@ -46,8 +46,8 @@ Comments are omitted; preprocessor branches are source leads, not evaluated runt
 
 | Kind | VNUM | Procedure | Source |
 | --- | ---: | --- | --- |
-| room | 28281 | `stat_shops` | [src/specs/specs.assign.c:2332](../../../src/specs/specs.assign.c#L2332) |
-| room | 28197 | `crew_shop_proc` | [src/specs/specs.assign.c:2410](../../../src/specs/specs.assign.c#L2410) |
+| room | 28281 | `stat_shops` | [src/specs/specs.assign.c:2320](../../../src/specs/specs.assign.c#L2320) |
+| room | 28197 | `crew_shop_proc` | [src/specs/specs.assign.c:2398](../../../src/specs/specs.assign.c#L2398) |
 
 ## Reset coverage
 

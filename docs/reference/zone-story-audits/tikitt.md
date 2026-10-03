@@ -63,11 +63,11 @@ Comments are omitted; preprocessor branches are source leads, not evaluated runt
 
 | Kind | VNUM | Procedure | Source |
 | --- | ---: | --- | --- |
-| obj | 44170 | `artifact_hide` | [src/specs/specs.assign.c:1408](../../../src/specs/specs.assign.c#L1408) |
-| obj | 44179 | `madman_mangler` | [src/specs/specs.assign.c:1561](../../../src/specs/specs.assign.c#L1561) |
-| obj | 44172 | `madman_shield` | [src/specs/specs.assign.c:1562](../../../src/specs/specs.assign.c#L1562) |
-| obj | 44188 | `mentality_mace` | [src/specs/specs.assign.c:1563](../../../src/specs/specs.assign.c#L1563) |
-| obj | 44165 | `unmulti_altar` | [src/specs/specs.assign.c:2603](../../../src/specs/specs.assign.c#L2603) |
+| obj | 44170 | `artifact_hide` | [src/specs/specs.assign.c:1396](../../../src/specs/specs.assign.c#L1396) |
+| obj | 44179 | `madman_mangler` | [src/specs/specs.assign.c:1549](../../../src/specs/specs.assign.c#L1549) |
+| obj | 44172 | `madman_shield` | [src/specs/specs.assign.c:1550](../../../src/specs/specs.assign.c#L1550) |
+| obj | 44188 | `mentality_mace` | [src/specs/specs.assign.c:1551](../../../src/specs/specs.assign.c#L1551) |
+| obj | 44165 | `unmulti_altar` | [src/specs/specs.assign.c:2591](../../../src/specs/specs.assign.c#L2591) |
 
 ## Reset coverage
 

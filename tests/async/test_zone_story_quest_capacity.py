@@ -21,5 +21,6 @@ with tempfile.TemporaryDirectory(prefix="duris-zone-capacity-") as temporary:
                     "tests/async/zone_story_quest_capacity_harness.cpp", "src/world/zone_story_quest_feature.c",
                     "src/world/zone_story_quest_catalog.c", "src/world/zone_story_quest_tracking.c",
                     "src/flatfile/flatfile_zone_story_quest_state.c", "src/flatfile/flatfile_store.c",
+                    "src/flatfile/flatfile_authority_transaction.c",
                     *extra, "-lcrypto", "-o", str(binary)], cwd=ROOT, check=True)
     subprocess.run([str(binary), str(Path(temporary) / "state"), *([args.socket, args.database] if args.socket else [])], cwd=ROOT, check=True)

@@ -98,8 +98,15 @@ RACES = r'''
     // Deletion owns the row first. A publisher must wait for that same lock,
     // then refuse to publish evidence against the deleted identity.
     execute("DELETE FROM player_death_conflict_evidence WHERE pid=1");
-    require(sql_begin_transaction() && sql_player_deletion_guard(1), "begin deletion-first guard");
-    require(sql_delete_player(1, false), "guarded outer transaction deletion");
+    {
+    economic_sql_currency_writer_guard deletion_writer;
+    require(economic_sql_currency_writer_guard::acquire(DB, &deletion_writer) == 0, "deletion-first lease");
+    require(!deletion_writer.is_valid_for(publisher) && !deletion_writer.is_valid_for(observer),
+            "deletion lease validated a different live SQL session");
+    require(sql_begin_transaction() && sql_player_deletion_guard(1, deletion_writer), "begin deletion-first guard");
+    require(scalar_on(observer, "SELECT GET_LOCK('duris:economic_sql_currency_writers',0)") == "0",
+            "another SQL owner acquired the writer fence during deletion");
+    require(sql_delete_player(1, false, &deletion_writer), "guarded outer transaction deletion");
     bool publisher_saw_player = true;
     std::thread publishing([&] {
         require(mysql_thread_init() == 0, "publisher thread init");
@@ -116,6 +123,8 @@ RACES = r'''
     });
     await_server_lock_request(observer, publisher_id);
     require(sql_commit(), "commit deletion-first transaction");
+    require(scalar_on(observer, "SELECT GET_LOCK('duris:economic_sql_currency_writers',0)") == "0",
+            "deletion released its writer lease before terminal owner cleanup");
     publishing.join();
     require(!publisher_saw_player, "publisher admitted evidence for deleted identity");
     require(scalar("SELECT COUNT(*) FROM player_data") == "0" &&
@@ -123,6 +132,7 @@ RACES = r'''
     mysql_close(publisher);
     mysql_close(observer);
     std::cout << "PASS: deletion-first commit prevents a later publisher from finding the identity\n";
+    }
 '''
 
 
@@ -144,8 +154,8 @@ def compile_sql(binary, *, stale_view_control=False):
     source.write_text(fixture.PRELUDE + "\n#include <chrono>\n#include <thread>\n" + production + "\n" + harness)
     flags = shlex.split(subprocess.check_output(["mysql_config", "--cflags"], text=True))
     libs = shlex.split(subprocess.check_output(["mysql_config", "--libs"], text=True))
-    subprocess.run([os.environ.get("CXX", "g++-14"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
-                    "-pthread", "-Isrc", *flags, str(source), *libs, "-o", str(binary)], cwd=ROOT, check=True)
+    subprocess.run([os.environ.get("CXX", "g++"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+                    "-pthread", "-Isrc", *flags, str(source), "src/persistence/economic_sql_lifecycle_guard.c", *libs, "-o", str(binary)], cwd=ROOT, check=True)
 
 
 class DeleteSerializationSQL(unittest.TestCase):

@@ -36,6 +36,7 @@ else ifneq ($(BUILD_PROFILE),production)
 $(error BUILD_PROFILE must be development or production)
 endif
 CFLAGS += -D__NO_TESTS__    # exclude built-in test hooks from maintained builds
+CFLAGS += -DDURIS_PERSISTENT_TRANSPORT
 CFLAGS += $(EXTRA_CFLAGS)
 LDFLAGS += $(EXTRA_LDFLAGS)
 
@@ -94,6 +95,7 @@ SHIP_SRCS = \
 SHIP_OBJS = $(SHIP_SRCS:%.c=ships/%.o)
 
 OBJS =  $(SHIP_OBJS) \
+				 net/transport.o \
 				 item/item_actions.o \
 				 item/native_artifact_actions.o \
 				 item/tsunami_actions.o \
@@ -163,6 +165,8 @@ OBJS =  $(SHIP_OBJS) \
 				 account/racewar_admission.o \
 				 account/password_hash.o \
 				 account/password_async.o \
+				 account/account_load.o \
+				 account/account_async.o \
 				 account/account_recovery.o \
 				 account/account_recovery_nanny.o \
 				 account/account_reward.o \
@@ -267,6 +271,7 @@ OBJS =  $(SHIP_OBJS) \
 				net/command_latency.o \
 				 net/comm.o \
 				 persistence/copyover.o \
+				 persistence/copyover_codec.o \
 				 core/common.o \
 				 world/condition.o \
 				 world/bloodstains.o \
@@ -327,6 +332,7 @@ OBJS =  $(SHIP_OBJS) \
 				 guild/guildhall_procs.o \
 				 guild/guildhall_db.o \
 				 combat/grapple.o \
+				 world/character_maintenance.o \
 				 world/handler.o \
 				 world/hardcore.o \
 				 classes/innates.o \
@@ -433,6 +439,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/economic_sql_source_normalize.o \
 				 persistence/economic_sql_bank_transaction.o \
 				 persistence/economic_sql_item_transfer_transaction.o \
+				 persistence/sql_room_item_payload.o \
 				 persistence/critical_command_repository.o \
 				 persistence/quest_reward_obligation_repository.o \
 				 persistence/quest_reward_obligation_pipeline.o \
@@ -578,6 +585,7 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/shaman.o \
 				 economy/shop.o \
 				 core/signals.o \
+				 core/game_loop_watchdog.o \
 				 classes/skills.o \
 				 magic/smagic.o \
 				 classes/salchemist.o \

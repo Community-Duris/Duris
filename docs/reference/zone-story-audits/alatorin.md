@@ -811,11 +811,11 @@ Comments are omitted; preprocessor branches are source leads, not evaluated runt
 
 | Kind | VNUM | Procedure | Source |
 | --- | ---: | --- | --- |
-| obj | 83457 | `miners_helmet` | [src/specs/specs.assign.c:1309](../../../src/specs/specs.assign.c#L1309) |
-| obj | 83605 | `generic_parry_proc` | [src/specs/specs.assign.c:2063](../../../src/specs/specs.assign.c#L2063) |
-| obj | 83698 | `earring_powers` | [src/specs/specs.assign.c:2129](../../../src/specs/specs.assign.c#L2129) |
-| room | 83786 | `ship_shop_proc` | [src/specs/specs.assign.c:2389](../../../src/specs/specs.assign.c#L2389) |
-| mob | 83414 | `rentacleric` | [src/specs/specs.assign.c:2639](../../../src/specs/specs.assign.c#L2639) |
+| obj | 83457 | `miners_helmet` | [src/specs/specs.assign.c:1297](../../../src/specs/specs.assign.c#L1297) |
+| obj | 83605 | `generic_parry_proc` | [src/specs/specs.assign.c:2051](../../../src/specs/specs.assign.c#L2051) |
+| obj | 83698 | `earring_powers` | [src/specs/specs.assign.c:2117](../../../src/specs/specs.assign.c#L2117) |
+| room | 83786 | `ship_shop_proc` | [src/specs/specs.assign.c:2377](../../../src/specs/specs.assign.c#L2377) |
+| mob | 83414 | `rentacleric` | [src/specs/specs.assign.c:2627](../../../src/specs/specs.assign.c#L2627) |
 
 ## Reset coverage
 

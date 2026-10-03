@@ -47,9 +47,9 @@ Comments are omitted; preprocessor branches are source leads, not evaluated runt
 
 | Kind | VNUM | Procedure | Source |
 | --- | ---: | --- | --- |
-| mob | 76013 | `mob_do_rename_hook` | [src/specs/specs.assign.c:192](../../../src/specs/specs.assign.c#L192) |
-| obj | 76032 | `proc_whirlwinds` | [src/specs/specs.assign.c:1455](../../../src/specs/specs.assign.c#L1455) |
-| room | 76241 | `pet_shops` | [src/specs/specs.assign.c:2366](../../../src/specs/specs.assign.c#L2366) |
+| mob | 76013 | `mob_do_rename_hook` | [src/specs/specs.assign.c:191](../../../src/specs/specs.assign.c#L191) |
+| obj | 76032 | `proc_whirlwinds` | [src/specs/specs.assign.c:1443](../../../src/specs/specs.assign.c#L1443) |
+| room | 76241 | `pet_shops` | [src/specs/specs.assign.c:2354](../../../src/specs/specs.assign.c#L2354) |
 
 ## Reset coverage
 

@@ -27,10 +27,10 @@ Comments are omitted; preprocessor branches are source leads, not evaluated runt
 
 | Kind | VNUM | Procedure | Source |
 | --- | ---: | --- | --- |
-| mob | 22801 | `newbie_paladin` | [src/specs/specs.assign.c:1228](../../../src/specs/specs.assign.c#L1228) |
-| obj | 22803 | `stream_of_life` | [src/specs/specs.assign.c:2095](../../../src/specs/specs.assign.c#L2095) |
-| obj | 22800 | `newbie_sign1` | [src/specs/specs.assign.c:2096](../../../src/specs/specs.assign.c#L2096) |
-| obj | 22801 | `newbie_sign2` | [src/specs/specs.assign.c:2097](../../../src/specs/specs.assign.c#L2097) |
+| mob | 22801 | `newbie_paladin` | [src/specs/specs.assign.c:1227](../../../src/specs/specs.assign.c#L1227) |
+| obj | 22803 | `stream_of_life` | [src/specs/specs.assign.c:2083](../../../src/specs/specs.assign.c#L2083) |
+| obj | 22800 | `newbie_sign1` | [src/specs/specs.assign.c:2084](../../../src/specs/specs.assign.c#L2084) |
+| obj | 22801 | `newbie_sign2` | [src/specs/specs.assign.c:2085](../../../src/specs/specs.assign.c#L2085) |
 
 ## Reset coverage
 

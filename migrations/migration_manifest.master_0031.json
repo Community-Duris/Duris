@@ -710,11 +710,31 @@
       "verify_checksum": "aacc5516aed02ca8b8b3115a2e8c22ef3f113b299723ea249034971ceb50417a"
     },
     {
-      "id": "0054_discovered_zone_daily_state",
+      "id": "0054_alchemy_publication",
       "sequence": 54,
+      "description": "Retain poison Encrust and Harvester publication through player saves",
+      "apply": "immutable/0054_alchemy_publication.sql",
+      "verify": "immutable/0054_alchemy_publication.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "da69352e3ac62cdece4bcce661caa2fa98ad0c8ba3a487e1eed8211fb2629692",
+      "verify_checksum": "2bac3a0afe31dcc4468f525297a708b30ec05dfaa2e5e94832e1205e506a9b31"
+    },
+    {
+      "id": "0055_sql_room_item_payload",
+      "sequence": 55,
+      "description": "Retain exact immutable payload and season provenance for admitted ordinary room drops",
+      "apply": "immutable/0055_sql_room_item_payload.sql",
+      "verify": "immutable/0055_sql_room_item_payload.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "47608d67ec12401d2de2f74174b7739cbce7d942153618f0dbc4b6287769b877",
+      "verify_checksum": "bf2a03adde513bd954ac07e552ceb0329d4c98a056a7e30d05868b96fa07ac67"
+    },
+    {
+      "id": "0056_discovered_zone_daily_state",
+      "sequence": 56,
       "description": "Retain legacy quest state and permit discovered-zone daily receipts",
-      "apply": "immutable/0054_discovered_zone_daily_state.sql",
-      "verify": "immutable/0054_discovered_zone_daily_state.sh",
+      "apply": "immutable/0056_discovered_zone_daily_state.sql",
+      "verify": "immutable/0056_discovered_zone_daily_state.sh",
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "e2f41f9cffc51f0f9ec24639c6a69ad2a2f437af14d142ee463f6046ef70326e",
       "verify_checksum": "c6c645d85195fdf70ae558b937e31dca146d54e5d313eae0d1a9178eb139debe"

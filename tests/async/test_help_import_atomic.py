@@ -14,11 +14,24 @@ ROOT = Path(__file__).resolve().parents[2]
 @unittest.skipUnless(os.environ.get('TEST_DB_HOST'), 'requires disposable TEST_DB_HOST')
 class AtomicImport(unittest.TestCase):
     def test_rollback_and_consistent_publication(self):
+        host = os.environ.get('TEST_DB_HOST', '')
+        if os.environ.get('TEST_DB_DISPOSABLE') != '1' or host not in ('127.0.0.1', 'localhost'):
+            raise RuntimeError('requires an explicitly disposable loopback fixture')
+        port = os.environ.get('TEST_DB_PORT', '3306')
+        if (not port.isascii() or not port.isdigit() or len(port) > 5 or
+                not 1 <= int(port) <= 65535):
+            raise RuntimeError('TEST_DB_PORT must be an ASCII TCP port between 1 and 65535')
+        port = str(int(port))
+        for key in ('TEST_DB_USER', 'TEST_DB_PASSWORD'):
+            if not os.environ.get(key):
+                raise RuntimeError(key + ' is required for the owned fixture')
         schema = 'help_import_test_' + uuid.uuid4().hex[:12]
-        env = dict(os.environ, MYSQL_PWD='cache-test', DB_PASSWD='cache-test',
-                   DB_HOST=os.environ['TEST_DB_HOST'], DB_PORT='3306', DB_USER='root',
+        env = dict(os.environ, MYSQL_PWD=os.environ['TEST_DB_PASSWORD'],
+                   DB_PASSWD=os.environ['TEST_DB_PASSWORD'],
+                   DB_HOST=host, DB_PORT=port, DB_USER=os.environ['TEST_DB_USER'],
                    DB_NAME=schema, DB_SOCKET='')
-        mysql = ['mysql', '-h', env['DB_HOST'], '-uroot', '-N', '-B']
+        mysql = ['mysql', '--protocol=tcp', '-h', host, '-P', port,
+                 '-u', env['DB_USER'], '-N', '-B']
 
         def query(sql, database=True):
             return subprocess.run(mysql + ([schema] if database else []), input=sql,

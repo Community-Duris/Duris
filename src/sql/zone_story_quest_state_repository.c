@@ -1,10 +1,14 @@
 #include "sql/zone_story_quest_state_repository.h"
 #include "sql/sql.h"
+#include "sql/sql_transaction.h"
+#include "world/zone_story_quest_feature.h"
 #include <array>
 #include <charconv>
 #include <cerrno>
 #include <cstdlib>
 #include <limits>
+#include <memory>
+#include <new>
 #include <set>
 #include <zlib.h>
 
@@ -85,23 +89,57 @@ sql_zone_story_quest_state_result invalid(std::string *error, const char *messag
 		*error = message;
 	return sql_zone_story_quest_state_result::invalid;
 }
+#ifndef __NO_MYSQL__
+sql_zone_story_quest_state_result make_statement(uint32_t revision, unsigned id,
+						 const records &values, std::string *statement,
+						 size_t *stored_size, std::string *error)
+{
+	const std::string payload = packed_bucket(values);
+	if (payload.empty() || payload.size() >= 16U * 1024U * 1024U)
+	{
+		return invalid(error, "zone-story SQL bucket exceeds encoding capacity");
+	}
+	std::unique_ptr<char, decltype(&std::free)> escaped(sql_escape_string(payload.c_str()),
+							    &std::free);
+	if (!escaped)
+	{
+		if (error)
+			*error = "zone-story SQL bucket could not be escaped";
+		return sql_zone_story_quest_state_result::io_error;
+	}
+	*statement =
+		"INSERT INTO zone_story_quest_state "
+		"(state_id,state_version,catalog_revision,state_blob,updated_at) VALUES (" +
+		std::to_string(id) + ",2," + std::to_string(revision) + ",'" + escaped.get() +
+		"',UTC_TIMESTAMP(6)) ON DUPLICATE KEY UPDATE state_version=VALUES(state_version),"
+		"catalog_revision=VALUES(catalog_revision),state_blob=VALUES(state_blob),updated_at=VALUES(updated_at)";
+	*stored_size = payload.size();
+	return sql_zone_story_quest_state_result::ok;
+}
+#endif
 }
 
-sql_zone_story_quest_state_result
-sql_zone_story_quest_state_load(uint32_t expected_catalog_revision, std::string *state,
-				std::string *error, bool *legacy)
+static sql_zone_story_quest_state_result load_state(uint32_t expected_catalog_revision,
+						    std::string *state, std::string *error,
+						    bool *legacy, bool locked)
 {
 	if (!expected_catalog_revision || !state)
 		return invalid(error, "invalid zone-story SQL state request");
 #ifdef __NO_MYSQL__
 	(void)legacy;
+	(void)locked;
 	if (error)
 		*error = "SQL state repository is unavailable in a flat-file build";
 	return sql_zone_story_quest_state_result::io_error;
 #else
-	loaded_buckets = false;
-	MYSQL_RES *result = db_query("SELECT state_id,state_version,catalog_revision,state_blob "
-				     "FROM zone_story_quest_state ORDER BY state_id");
+	if (!locked)
+		loaded_buckets = false;
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> result(
+		db_query(
+			locked ?
+				"SELECT state_id,state_version,catalog_revision,state_blob FROM zone_story_quest_state ORDER BY state_id FOR UPDATE" :
+				"SELECT state_id,state_version,catalog_revision,state_blob FROM zone_story_quest_state ORDER BY state_id"),
+		&mysql_free_result);
 	if (!result)
 	{
 		if (error)
@@ -113,9 +151,9 @@ sql_zone_story_quest_state_load(uint32_t expected_catalog_revision, std::string 
 	bool aggregate = false;
 	size_t count = 0;
 	MYSQL_ROW row;
-	while ((row = mysql_fetch_row(result)))
+	while ((row = mysql_fetch_row(result.get())))
 	{
-		const unsigned long *lengths = mysql_fetch_lengths(result);
+		const unsigned long *lengths = mysql_fetch_lengths(result.get());
 		unsigned long id = 0, version = 0, revision = 0;
 		if (!lengths || !row[3] || !number(row[0], &id) || !number(row[1], &version) ||
 		    !number(row[2], &revision) || id < 1 || id > 255 ||
@@ -123,7 +161,6 @@ sql_zone_story_quest_state_load(uint32_t expected_catalog_revision, std::string 
 		    (revision != expected_catalog_revision &&
 		     !(revision == 1 && expected_catalog_revision == 2)))
 		{
-			mysql_free_result(result);
 			return invalid(
 				error,
 				"zone-story SQL state schema or catalog revision is invalid");
@@ -142,13 +179,11 @@ sql_zone_story_quest_state_load(uint32_t expected_catalog_revision, std::string 
 			records values;
 			if (version != 2 || !unpack_bucket(payload, &values))
 			{
-				mysql_free_result(result);
 				return invalid(error, "zone-story SQL bucket is corrupt");
 			}
 			for (const auto &[key, value] : values)
 				if (zone_story_quest_state::bucket(key) != id || value.empty())
 				{
-					mysql_free_result(result);
 					return invalid(
 						error,
 						"zone-story SQL record is in the wrong bucket");
@@ -157,30 +192,54 @@ sql_zone_story_quest_state_load(uint32_t expected_catalog_revision, std::string 
 			candidate_bytes[id] = payload.size();
 		}
 	}
-	mysql_free_result(result);
 	if (aggregate && count != 1)
 		return invalid(error, "mixed legacy and record zone-story SQL state");
 	if (count && !candidate[1].count("meta"))
 		return invalid(error, "zone-story SQL metadata is missing");
-	buckets = std::move(candidate);
-	stored_bytes = candidate_bytes;
-	loaded_buckets = true;
 	if (legacy)
 		*legacy = aggregate;
 	if (!count)
+	{
+		if (!locked)
+		{
+			buckets = {};
+			stored_bytes = {};
+			loaded_buckets = true;
+		}
 		return sql_zone_story_quest_state_result::not_found;
+	}
 	records values;
-	for (const auto &bucket : buckets)
+	for (const auto &bucket : candidate)
 		values.insert(bucket.begin(), bucket.end());
 	*state = zone_story_quest_state::document(values);
+	if (!locked)
+	{
+		buckets = std::move(candidate);
+		stored_bytes = candidate_bytes;
+		loaded_buckets = true;
+	}
 	return sql_zone_story_quest_state_result::ok;
 #endif
+}
+
+sql_zone_story_quest_state_result
+sql_zone_story_quest_state_load(uint32_t expected_catalog_revision, std::string *state,
+				std::string *error, bool *legacy)
+try
+{
+	return load_state(expected_catalog_revision, state, error, legacy, false);
+}
+catch (const std::bad_alloc &)
+{
+	errno = ENOMEM;
+	return sql_zone_story_quest_state_result::io_error;
 }
 
 sql_zone_story_quest_state_result
 sql_zone_story_quest_records_save(uint32_t catalog_revision,
 				  const zone_story_quest_state::changes &updates,
 				  std::string *error)
+try
 {
 	if (!catalog_revision)
 		return invalid(error, "zone-story SQL catalog revision is invalid");
@@ -190,6 +249,8 @@ sql_zone_story_quest_records_save(uint32_t catalog_revision,
 		*error = "SQL state repository is unavailable in a flat-file build";
 	return sql_zone_story_quest_state_result::io_error;
 #else
+	if (!DB || sql_in_transaction())
+		return invalid(error, "zone-story SQL writes require their own transaction");
 	if (!loaded_buckets && !updates.replace)
 		return invalid(error, "zone-story SQL state has not been loaded");
 	std::map<unsigned, records> changed;
@@ -229,27 +290,25 @@ sql_zone_story_quest_records_save(uint32_t catalog_revision,
 	{
 		// Fast compressed snapshots keep changed bucket writes small as receipts
 		// accumulate. Replacing a snapshot also physically removes erased data.
-		const std::string payload = packed_bucket(values);
-		if (payload.empty() || payload.size() >= 16U * 1024U * 1024U)
-			return invalid(error, "zone-story SQL bucket exceeds encoding capacity");
-		char *escaped = sql_escape_string(payload.c_str());
-		if (!escaped)
-		{
-			if (error)
-				*error = "zone-story SQL bucket could not be escaped";
-			return sql_zone_story_quest_state_result::io_error;
-		}
-		statements.push_back(
-			"INSERT INTO zone_story_quest_state "
-			"(state_id,state_version,catalog_revision,state_blob,updated_at) VALUES (" +
-			std::to_string(id) + ",2," + std::to_string(catalog_revision) + ",'" +
-			escaped +
-			"',UTC_TIMESTAMP(6)) ON DUPLICATE KEY UPDATE state_version=VALUES(state_version),"
-			"catalog_revision=VALUES(catalog_revision),state_blob=VALUES(state_blob),updated_at=VALUES(updated_at)");
-		free(escaped);
-		next_stored[id] = payload.size();
+		std::string statement;
+		size_t bytes = 0;
+		const auto prepared =
+			make_statement(catalog_revision, id, values, &statement, &bytes, error);
+		if (prepared != sql_zone_story_quest_state_result::ok)
+			return prepared;
+		statements.push_back(std::move(statement));
+		next_stored[id] = bytes;
 	}
-	bool saved = execute("START TRANSACTION");
+	struct transaction_scope
+	{
+		bool active = false;
+		~transaction_scope()
+		{
+			if (active)
+				sql_rollback();
+		}
+	} transaction;
+	bool saved = transaction.active = sql_begin_transaction();
 	for (const auto &statement : statements)
 	{
 		if (!saved)
@@ -257,10 +316,11 @@ sql_zone_story_quest_records_save(uint32_t catalog_revision,
 		saved = execute(statement);
 	}
 	if (saved)
-		saved = execute("COMMIT");
+		saved = sql_commit();
+	if (saved)
+		transaction.active = false;
 	if (!saved)
 	{
-		execute("ROLLBACK");
 		if (error)
 			*error = "zone-story SQL state transaction failed";
 		return sql_zone_story_quest_state_result::io_error;
@@ -274,11 +334,91 @@ sql_zone_story_quest_records_save(uint32_t catalog_revision,
 	return sql_zone_story_quest_state_result::ok;
 #endif
 }
+catch (const std::bad_alloc &)
+{
+	errno = ENOMEM;
+	return sql_zone_story_quest_state_result::io_error;
+}
 
 sql_zone_story_quest_state_result sql_zone_story_quest_state_save(uint32_t catalog_revision,
 								  const std::string &state,
 								  std::string *error)
+try
 {
 	return sql_zone_story_quest_records_save(
 		catalog_revision, { zone_story_quest_state::split_document(state), true }, error);
+}
+catch (const std::bad_alloc &)
+{
+	errno = ENOMEM;
+	return sql_zone_story_quest_state_result::io_error;
+}
+
+sql_zone_story_quest_state_result sql_zone_story_quest_state_remove_player_aliases(
+	uint32_t expected_catalog_revision, uint32_t current_season_id,
+	const std::vector<uint32_t> &pids, const zone_story_quest_catalog::catalog &catalog,
+	std::string *error)
+try
+{
+	if (!expected_catalog_revision || !current_season_id || pids.empty() || pids.size() > 1024)
+		return sql_zone_story_quest_state_result::invalid;
+	for (uint32_t pid : pids)
+		if (!pid)
+			return sql_zone_story_quest_state_result::invalid;
+#ifdef __NO_MYSQL__
+	(void)catalog;
+	(void)error;
+	return sql_zone_story_quest_state_result::io_error;
+#else
+	if (!DB || !sql_in_transaction())
+		return sql_zone_story_quest_state_result::invalid;
+	std::string before;
+	bool legacy = false;
+	const auto loaded = load_state(expected_catalog_revision, &before, error, &legacy, true);
+	if (loaded != sql_zone_story_quest_state_result::ok)
+		return loaded;
+	zone_story_quest_feature::service state;
+	if (catalog.content_revision != expected_catalog_revision ||
+	    !state.set_catalog(catalog, error) || !state.deserialize_state(before, error))
+		return sql_zone_story_quest_state_result::invalid;
+	for (uint32_t pid : pids)
+		if (!state.erase_character_all_seasons(pid, current_season_id))
+			return sql_zone_story_quest_state_result::invalid;
+	const std::string after = state.serialize_state(error);
+	if (after.empty())
+		return sql_zone_story_quest_state_result::io_error;
+	const auto previous = zone_story_quest_state::split_document(before);
+	const auto next = zone_story_quest_state::split_document(after);
+	if (previous == next)
+		return sql_zone_story_quest_state_result::ok;
+	std::array<records, 256> old_buckets, new_buckets;
+	for (const auto &[key, value] : previous)
+		old_buckets[zone_story_quest_state::bucket(key)].emplace(key, value);
+	for (const auto &[key, value] : next)
+		new_buckets[zone_story_quest_state::bucket(key)].emplace(key, value);
+	std::vector<std::string> statements;
+	for (unsigned id = 1; id <= 255; ++id)
+	{
+		if (old_buckets[id] == new_buckets[id] && (!legacy || new_buckets[id].empty()))
+			continue;
+		std::string statement;
+		size_t bytes = 0;
+		const auto prepared = make_statement(expected_catalog_revision, id, new_buckets[id],
+						     &statement, &bytes, error);
+		if (prepared != sql_zone_story_quest_state_result::ok)
+			return prepared;
+		statements.push_back(std::move(statement));
+	}
+	// The caller owns commit/rollback. Invalidate caches until authority is reloaded.
+	loaded_buckets = false;
+	for (const auto &statement : statements)
+		if (!execute(statement))
+			return sql_zone_story_quest_state_result::io_error;
+	return sql_zone_story_quest_state_result::ok;
+#endif
+}
+catch (const std::bad_alloc &)
+{
+	errno = ENOMEM;
+	return sql_zone_story_quest_state_result::io_error;
 }

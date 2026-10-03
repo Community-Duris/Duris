@@ -55,10 +55,10 @@ Comments are omitted; preprocessor branches are source leads, not evaluated runt
 
 | Kind | VNUM | Procedure | Source |
 | --- | ---: | --- | --- |
-| mob | 1709 | `world_quest` | [src/specs/specs.assign.c:2237](../../../src/specs/specs.assign.c#L2237) |
-| room | 1719 | `ship_shop_proc` | [src/specs/specs.assign.c:2238](../../../src/specs/specs.assign.c#L2238) |
-| room | 1736 | `inn` | [src/specs/specs.assign.c:2324](../../../src/specs/specs.assign.c#L2324) |
-| room | 1734 | `crew_shop_proc` | [src/specs/specs.assign.c:2405](../../../src/specs/specs.assign.c#L2405) |
+| mob | 1709 | `world_quest` | [src/specs/specs.assign.c:2225](../../../src/specs/specs.assign.c#L2225) |
+| room | 1719 | `ship_shop_proc` | [src/specs/specs.assign.c:2226](../../../src/specs/specs.assign.c#L2226) |
+| room | 1736 | `inn` | [src/specs/specs.assign.c:2312](../../../src/specs/specs.assign.c#L2312) |
+| room | 1734 | `crew_shop_proc` | [src/specs/specs.assign.c:2393](../../../src/specs/specs.assign.c#L2393) |
 
 ## Reset coverage
 

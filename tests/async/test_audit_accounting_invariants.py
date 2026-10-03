@@ -6,13 +6,14 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs/persistence/economy_accounting"
 
 sys.path.insert(0, str(ROOT / "scripts"))
-from audit_accounting_invariants import AccountingInvariantAuditor, AuditError
+from audit_accounting_invariants import AccountingInvariantAuditor, AuditError, parse_copper
 
 
 class TestAccountingInvariants(unittest.TestCase):
@@ -27,7 +28,15 @@ class TestAccountingInvariants(unittest.TestCase):
         self.assertGreater(len(fixtures), 0)
         for fix in fixtures:
             stats = self.auditor.audit_fixture(fix, fix.get("id", "test"))
-            self.assertGreaterEqual(stats["operations_checked"], 0)
+            expected_operations = len({op["operation_id"] for op in fix["operations"]})
+            self.assertEqual(stats["operations_checked"], expected_operations)
+            self.assertEqual(stats["zero_sum_verified"], expected_operations)
+
+    def test_exact_operation_replay_is_counted_once(self):
+        fixture = copy.deepcopy(self.golden["fixtures"][0])
+        expected = self.auditor.audit_fixture(fixture, "before_replay")
+        fixture["operations"].append(copy.deepcopy(fixture["operations"][0]))
+        self.assertEqual(self.auditor.audit_fixture(fixture, "exact_replay"), expected)
 
     def test_cli_execution_succeeds(self):
         res = subprocess.run(
@@ -91,12 +100,75 @@ class TestAccountingInvariants(unittest.TestCase):
             self.auditor.audit_fixture(fix, "self_child")
         self.assertIn("Self-referential child operation", str(ctx.exception))
 
+    def test_rejects_missing_or_zero_operation_identity(self):
+        for invalid in (None, False, 1, "", "0" * 32):
+            with self.subTest(operation_id=invalid):
+                fixture = copy.deepcopy(self.golden["fixtures"][0])
+                fixture["operations"][0]["operation_id"] = invalid
+                with self.assertRaises(AuditError):
+                    self.auditor.audit_fixture(fixture, "invalid_operation_id")
+        fixture = copy.deepcopy(self.golden["fixtures"][0])
+        del fixture["operations"][0]["operation_id"]
+        with self.assertRaises(AuditError):
+            self.auditor.audit_fixture(fixture, "missing_operation_id")
+
+    def test_rejects_invalid_child_identity(self):
+        for invalid in (None, False, 1, "", "0" * 32, "a" * 31, "A" * 32):
+            with self.subTest(child_id=invalid):
+                fixture = copy.deepcopy(self.golden["fixtures"][0])
+                operation = fixture["operations"][0]
+                operation["children"] = [{"operation_id": invalid,
+                                          "parent_id": operation["operation_id"]}]
+                with self.assertRaises(AuditError):
+                    self.auditor.audit_fixture(fixture, "invalid_child_id")
+        fixture = copy.deepcopy(self.golden["fixtures"][0])
+        operation = fixture["operations"][0]
+        operation["children"] = [{"parent_id": operation["operation_id"]}]
+        with self.assertRaises(AuditError):
+            self.auditor.audit_fixture(fixture, "missing_child_id")
+
+    def test_cli_rejects_invalid_evidence_without_traceback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "invalid.json"
+            for invalid in (None, "0" * 32):
+                with self.subTest(operation_id=invalid):
+                    fixture = copy.deepcopy(self.golden["fixtures"][0])
+                    fixture["operations"][0]["operation_id"] = invalid
+                    path.write_text(json.dumps({"fixtures": [fixture]}), encoding="utf-8")
+                    result = subprocess.run(
+                        [sys.executable, str(ROOT / "scripts/audit_accounting_invariants.py"),
+                         "--golden", str(path)], capture_output=True, text=True, check=False)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertIn("AUDIT FAILED", result.stderr)
+                    self.assertNotIn("Traceback", result.stderr)
+
     def test_detects_negative_opening_balance(self):
         fix = copy.deepcopy(self.golden["fixtures"][0])
         fix["holdings"]["wallet"]["balance"] = [0, 0, -1, 0]
         with self.assertRaises(AuditError) as ctx:
             self.auditor.audit_fixture(fix, "negative_balance")
         self.assertIn("Negative opening balance", str(ctx.exception))
+
+    def test_rejects_lossy_or_out_of_range_denominations(self):
+        for invalid in (True, False, 0.5, -0.5, "1", None, 2**63, -(2**63) - 1):
+            for location in ("holding", "posting"):
+                with self.subTest(invalid=invalid, location=location):
+                    fixture = copy.deepcopy(self.golden["fixtures"][0])
+                    if location == "holding":
+                        fixture["holdings"]["wallet"]["balance"][0] = invalid
+                    else:
+                        fixture["operations"][0]["postings"][0]["delta"][0] = invalid
+                    with self.assertRaises(AuditError):
+                        self.auditor.audit_fixture(fixture, "invalid_denomination")
+
+    def test_exact_integer_copper_bounds(self):
+        self.assertEqual(parse_copper([2**53 + 1, 0, 0, 0]), 2**53 + 1)
+        self.assertEqual(parse_copper([2**63 - 1, 0, 0, 0]), 2**63 - 1)
+        self.assertEqual(parse_copper([-(2**63), 0, 0, 0]), -(2**63))
+        for vector in ([2**63 - 1, 1, 0, 0], [-(2**63), -1, 0, 0],
+                       [0, 0, 0, 2**63 // 1000 + 1]):
+            with self.subTest(vector=vector), self.assertRaises(AuditError):
+                parse_copper(vector)
 
     def test_detects_unauthorized_account_kind(self):
         fix = copy.deepcopy(self.golden["fixtures"][0])
@@ -106,6 +178,148 @@ class TestAccountingInvariants(unittest.TestCase):
             self.auditor.audit_fixture(fix, "unauthorized_kind")
         self.assertIn("not authorized for reason", str(ctx.exception))
 
+
+    def test_multi_operation_accounting_fixture(self):
+        """Audit one synthetic fixture with sequential postings across five domains:
+        1. Quest reward (issuance -> wallet)
+        2. Shop trade (wallet -> merchant, custody change)
+        3. Auction bid & escrow (wallet -> auction_escrow)
+        4. Outbid refund (auction_escrow -> wallet)
+        5. Bank deposit (wallet -> bank)
+        """
+        accounting_fixture = {
+            "id": "multi_operation_auditor_fixture",
+            "lineage": "33333333333333333333333333333333",
+            "epoch": "44444444444444444444444444444444",
+            "holdings": {
+                "player_wallet": {
+                    "kind": "wallet",
+                    "identity": 1001,
+                    "balance": [0, 0, 0, 0],
+                },
+                "player_bank": {
+                    "kind": "bank",
+                    "identity": 1001,
+                    "balance": [0, 0, 0, 0],
+                },
+                "auction_vault": {
+                    "kind": "auction_escrow",
+                    "identity": 5001,
+                    "balance": [0, 0, 0, 0],
+                },
+                "reward_issuance": {
+                    "kind": "issuance",
+                    "identity": 9001,
+                    "balance": [0, 0, 0, 0],
+                },
+                "shop_counterparty": {
+                    "kind": "wallet",
+                    "identity": 2002,
+                    "balance": [0, 0, 0, 0],
+                },
+            },
+            "custody": {
+                "99999": {
+                    "kind": "player",
+                    "identity": 1001,
+                    "parent": 0,
+                    "root": 99999,
+                }
+            },
+            "operations": [
+                # Step 1: Quest reward gives 5 gold (500 copper) to player wallet
+                {
+                    "operation_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "reason": "quest_reward",
+                    "actor": "domain",
+                    "source_event": "e0000000000000000000000000000001",
+                    "postings": [
+                        {"account": "reward_issuance", "delta": [0, 0, -5, 0]},
+                        {"account": "player_wallet", "delta": [0, 0, 5, 0]},
+                    ],
+                    "items": [],
+                    "children": [],
+                },
+                # Step 2: Shop purchase of item 99999 for 2 gold (200 copper)
+                {
+                    "operation_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                    "reason": "shop_buy",
+                    "actor": "domain",
+                    "source_event": "e0000000000000000000000000000002",
+                    "postings": [
+                        {"account": "player_wallet", "delta": [0, 0, -2, 0]},
+                        {"account": "shop_counterparty", "delta": [0, 0, 2, 0]},
+                    ],
+                    "items": [
+                        {
+                            "event_index": 0,
+                            "operation_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                            "uid": 99999,
+                            "action": "transfer",
+                            "before": {
+                                "kind": "player",
+                                "identity": 1001,
+                                "parent": 0,
+                                "root": 99999,
+                            },
+                            "after": {
+                                "kind": "shopkeeper",
+                                "identity": 2002,
+                                "parent": 0,
+                                "root": 99999,
+                            },
+                        }
+                    ],
+                    "children": [],
+                },
+                # Step 3: Auction bid of 2 gold from player wallet into auction escrow
+                {
+                    "operation_id": "cccccccccccccccccccccccccccccccc",
+                    "reason": "auction_bid",
+                    "actor": "domain",
+                    "source_event": "e0000000000000000000000000000003",
+                    "postings": [
+                        {"account": "player_wallet", "delta": [0, 0, -2, 0]},
+                        {"account": "auction_vault", "delta": [0, 0, 2, 0]},
+                    ],
+                    "items": [],
+                    "children": [],
+                },
+                # Step 4: Outbid refund returned from auction escrow to player wallet
+                {
+                    "operation_id": "dddddddddddddddddddddddddddddddd",
+                    "reason": "auction_outbid",
+                    "actor": "domain",
+                    "source_event": "e0000000000000000000000000000004",
+                    "postings": [
+                        {"account": "auction_vault", "delta": [0, 0, -2, 0]},
+                        {"account": "player_wallet", "delta": [0, 0, 2, 0]},
+                    ],
+                    "items": [],
+                    "children": [],
+                },
+                # Step 5: Bank deposit of remaining 3 gold into player bank
+                {
+                    "operation_id": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                    "reason": "bank_transfer",
+                    "actor": "domain",
+                    "source_event": None,
+                    "postings": [
+                        {"account": "player_wallet", "delta": [0, 0, -3, 0]},
+                        {"account": "player_bank", "delta": [0, 0, 3, 0]},
+                    ],
+                    "items": [],
+                    "children": [],
+                },
+            ],
+        }
+
+        # Check the modeled postings and event counts; gameplay is tested separately.
+        stats = self.auditor.audit_fixture(accounting_fixture, "multi_operation_auditor_fixture")
+        self.assertEqual(stats["operations_checked"], 5)
+        self.assertEqual(stats["zero_sum_verified"], 5)
+        self.assertEqual(stats["source_events_verified"], 4)
+        self.assertEqual(stats["items_checked"], 1)
 
 if __name__ == "__main__":
     unittest.main()

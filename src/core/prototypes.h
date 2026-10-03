@@ -853,6 +853,10 @@ void boot_zones(int);
 void clear_char(P_char);
 uint64_t allocate_character_runtime_id();
 P_char find_character_by_runtime_id(uint64_t);
+// Publish only after initialization/list insertion; retire before teardown.
+void register_character_runtime_id(P_char);
+void unregister_character_runtime_id(P_char);
+bool character_runtime_index_is_consistent();
 void clear_object(P_obj);
 void ensure_pconly_pool(void);
 void free_char(P_char);
@@ -1031,7 +1035,7 @@ bool nevent_periodic_event_is_valid(P_nevent);
 
 /* new_events.c */
 
-bool check_nevents();
+bool check_nevents(bool check_character_index = true);
 
 // epic.c
 void refund_epic_skills(P_char ch);
@@ -3051,7 +3055,8 @@ struct time_info_data age(P_char);
 struct time_info_data mud_time_passed(time_t, time_t);
 struct time_info_data real_time_passed(time_t, time_t);
 struct time_info_data real_time_countdown(time_t, time_t, int);
-void ADD_MONEY(P_char, int);
+// Optional success text is copied into the currency continuation (at most 64 bytes, including NUL).
+void ADD_MONEY(P_char, int, const char *committed_message = nullptr);
 void CAP(char *);
 void DECAP(char *);
 void InitGrantFastLookup(void);

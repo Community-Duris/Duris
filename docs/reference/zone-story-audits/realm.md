@@ -42,11 +42,11 @@ Comments are omitted; preprocessor branches are source leads, not evaluated runt
 
 | Kind | VNUM | Procedure | Source |
 | --- | ---: | --- | --- |
-| mob | 14015 | `finn` | [src/specs/specs.assign.c:981](../../../src/specs/specs.assign.c#L981) |
-| mob | 14026 | `tree_spirit` | [src/specs/specs.assign.c:982](../../../src/specs/specs.assign.c#L982) |
-| mob | 14029 | `faerie` | [src/specs/specs.assign.c:983](../../../src/specs/specs.assign.c#L983) |
-| mob | 14048 | `cricket` | [src/specs/specs.assign.c:984](../../../src/specs/specs.assign.c#L984) |
-| mob | 14202 | `bridge_troll` | [src/specs/specs.assign.c:989](../../../src/specs/specs.assign.c#L989) |
+| mob | 14015 | `finn` | [src/specs/specs.assign.c:980](../../../src/specs/specs.assign.c#L980) |
+| mob | 14026 | `tree_spirit` | [src/specs/specs.assign.c:981](../../../src/specs/specs.assign.c#L981) |
+| mob | 14029 | `faerie` | [src/specs/specs.assign.c:982](../../../src/specs/specs.assign.c#L982) |
+| mob | 14048 | `cricket` | [src/specs/specs.assign.c:983](../../../src/specs/specs.assign.c#L983) |
+| mob | 14202 | `bridge_troll` | [src/specs/specs.assign.c:988](../../../src/specs/specs.assign.c#L988) |
 
 ## Reset coverage
 

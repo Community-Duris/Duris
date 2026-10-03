@@ -1,4 +1,6 @@
+#include "persistence/death_recovery_visibility.h"
 #include "persistence/critical_command_coordinator.h"
+#include "persistence/persistence_diagnostics.h"
 
 #include <algorithm>
 #include <chrono>
@@ -382,6 +384,7 @@ void retain_exhausted_retry_locked(const std::string &identity, operation_state 
 {
 	release_keys(identity, state.command);
 	state.phase = critical_operation_phase::blocked;
+	state.publication_completion = completion;
 	if (completion.outcome == critical_apply_outcome::ambiguous_commit)
 		++health.ambiguous;
 	++health.terminal_failures;
@@ -653,6 +656,10 @@ void finish_admission(const std::string &identity, critical_command_journal_resu
 		if (found == operations.end())
 			return;
 		operation_state &state = *found->second;
+		auto trace = persistence_command_trace(state.command,
+						       persistence_trace_stage::command_journal);
+		trace.outcome = static_cast<uint32_t>(result);
+		persistence_trace_record(trace);
 		admission_inflight_bytes = 0;
 		if (result == critical_command_journal_result::ok)
 		{
@@ -847,6 +854,10 @@ void worker_main()
 			retain_publication = state.retain_until_publication;
 			update_depth();
 		}
+		auto trace =
+			persistence_command_trace(command, persistence_trace_stage::command_apply);
+		trace.attempt = attempt;
+		persistence_trace_record(trace);
 		const uint64_t started = now_usec();
 		critical_apply_result applied = {};
 		try
@@ -862,11 +873,33 @@ void worker_main()
 		     applied.outcome == critical_apply_outcome::already_applied ||
 		     applied.outcome == critical_apply_outcome::terminal_failure))
 		{
-			if (critical_command_journal_checkpoint(command.operation_id) !=
-			    critical_command_journal_result::ok)
+			const auto checkpoint =
+				critical_command_journal_checkpoint(command.operation_id);
+			auto checkpoint_trace = trace;
+			checkpoint_trace.stage = persistence_trace_stage::command_checkpoint;
+			checkpoint_trace.outcome = static_cast<uint32_t>(checkpoint);
+			checkpoint_trace.error = applied.error_code;
+			checkpoint_trace.diagnosis = static_cast<uint32_t>(applied.failure_stage);
+			checkpoint_trace.durable_revision = applied.durable_revision;
+			checkpoint_trace.incident = checkpoint !=
+							    critical_command_journal_result::ok &&
+						    attempt > CRITICAL_COORDINATOR_MAX_RETRIES;
+			persistence_trace_record(checkpoint_trace);
+			if (checkpoint != critical_command_journal_result::ok)
 				applied = { critical_apply_outcome::retryable_failure,
 					    applied.durable_revision, applied.error_code };
 		}
+		// Report the effective completion, including a failed journal checkpoint.
+		trace.stage = persistence_trace_stage::command_result;
+		trace.outcome = static_cast<uint32_t>(applied.outcome);
+		trace.error = applied.error_code;
+		trace.diagnosis = static_cast<uint32_t>(applied.failure_stage);
+		trace.durable_revision = applied.durable_revision;
+		trace.incident = applied.outcome == critical_apply_outcome::terminal_failure ||
+				 ((applied.outcome == critical_apply_outcome::retryable_failure ||
+				   applied.outcome == critical_apply_outcome::ambiguous_commit) &&
+				  attempt > CRITICAL_COORDINATOR_MAX_RETRIES);
+		persistence_trace_record(trace);
 		critical_completion completion = { .operation_id = command.operation_id,
 						   .outcome = applied.outcome,
 						   .durable_revision = applied.durable_revision,
@@ -1153,6 +1186,8 @@ critical_submit_result critical_command_coordinator_submit_internal(critical_com
 		++health.overloads;
 		return critical_submit_result::overloaded;
 	}
+	persistence_trace_record(
+		persistence_command_trace(command, persistence_trace_stage::command_admitted));
 	++health.accepted;
 	update_depth();
 	// The operation and its per-key fence are now retained, but the journal
@@ -1287,6 +1322,10 @@ bool critical_command_coordinator_acknowledge_publication(const critical_operati
 		return false;
 	operation_state &state = *found->second;
 	state.publication_checkpointing = false;
+	auto trace =
+		persistence_command_trace(state.command, persistence_trace_stage::publication_ack);
+	trace.outcome = static_cast<uint32_t>(checkpoint);
+	persistence_trace_record(trace);
 	if (checkpoint != critical_command_journal_result::ok)
 		return false;
 	remove_fences(identity, state.command);
@@ -1327,7 +1366,7 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 			completion_delivery.front(critical_completion_channel::execution);
 		if (!front)
 			break;
-		const critical_completion completion = *front;
+		critical_completion completion = *front;
 		const std::string identity = operation_key(completion.operation_id);
 		auto found = operations.find(identity);
 		if (found == operations.end() || !operation_is_executing(*found->second) ||
@@ -1348,6 +1387,8 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 		completion_delivery.pop_front(critical_completion_channel::execution);
 		result_available.notify_one();
 		operation_state &state = *found->second;
+		(void)death_recovery_command_correlation(state.command,
+							 completion.recovery_correlation.data());
 		if (state.retain_until_publication && !retryable)
 		{
 			release_keys(identity, state.command);
@@ -1659,6 +1700,42 @@ critical_coordinator_health critical_command_coordinator_health_copy(void)
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
 	update_depth();
 	return health;
+}
+
+size_t critical_command_coordinator_recovery_copy(critical_recovery_case *cases, size_t capacity,
+						  size_t *total, size_t offset)
+{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	size_t copied = 0, found = 0;
+	const uint64_t now = now_usec();
+	for (const auto &[identity, operation] : operations)
+	{
+		(void)identity;
+		critical_recovery_case entry;
+		if (!death_recovery_command_correlation(operation->command, entry.correlation))
+			continue;
+		++found;
+		if (!cases || copied >= capacity || found <= offset)
+			continue;
+		entry.operation_id = operation->command.operation_id;
+		entry.attempts = operation->attempt;
+		entry.error_code = operation->publication_completion.error_code;
+		entry.owner = operation->phase == critical_operation_phase::publication_pending ?
+				      "item_movement_publication" :
+				      "critical_command";
+		entry.state = operation->phase == critical_operation_phase::blocked &&
+					      operation->attempt >
+						      CRITICAL_COORDINATOR_MAX_RETRIES ?
+				      "unresolved_retry_exhausted" :
+				      "unresolved";
+		entry.elapsed_msec = now >= operation->command.accepted_at_usec ?
+					     (now - operation->command.accepted_at_usec) / 1000 :
+					     0;
+		cases[copied++] = entry;
+	}
+	if (total)
+		*total = found;
+	return copied;
 }
 
 bool critical_command_coordinator_inject_completion_for_tests(const critical_completion &completion)

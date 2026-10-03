@@ -5,6 +5,7 @@
 #undef main
 #include "flatfile/flatfile_account_repository.h"
 #include "flatfile/flatfile_authority_transaction.h"
+#include "flatfile/flatfile_item_uid_allocator.h"
 #include "flatfile/flatfile_store.h"
 #include "player/player_save_journal.h"
 #include "item/locker_receipt.h"
@@ -16,6 +17,23 @@ void logit(const char *, const char *, ...) {}
 static std::vector<uint8_t> fixture_bytes(const char *text)
 {
 	return { text, text + std::strlen(text) };
+}
+
+static void seed_fixture_item_allocator(const fs::path &root)
+{
+	// The snapshot/craft/WAL fixtures use UIDs 100 through 202. Reserve them
+	// before publishing custody, as a real server does, so a restored service
+	// can continue allocation without reissuing any of those identities.
+	for (const auto &directory : { root, root / "metadata" })
+	{
+		fs::create_directories(directory);
+		fs::permissions(directory, fs::perms::owner_all, fs::perm_options::replace);
+	}
+	uint64_t first = 0;
+	std::string error;
+	const auto reserved = flatfile_item_uid_reserve(root.string(), 202, &first, &error);
+	require(reserved == flatfile_item_uid_result::ok && first == 1,
+		"synthetic item UID reservation failed: " + error);
 }
 
 static critical_command fixture_currency_command(bool deposit = false)
@@ -102,6 +120,7 @@ int main(int argc, char **argv)
 	if (mode == "seed-craft")
 	{
 		require(!fs::exists(root), "craft seed requires an absent disposable root");
+		seed_fixture_item_allocator(root);
 		craft_progression_matrix(root, true);
 		fs::create_directories(root / "identities/accounts");
 		fs::permissions(root / "identities/accounts", fs::perms::owner_all,
@@ -242,8 +261,37 @@ int main(int argc, char **argv)
 		seed_fixture_journals(root, pending, true);
 		return 0;
 	}
-	if (mode == "verify" || mode == "verify-wal" || mode == "verify-bank")
+	if (mode == "verify" || mode == "verify-wal" || mode == "verify-bank" ||
+	    mode == "verify-quarantined-wal")
 	{
+		const bool quarantined_wal = mode == "verify-quarantined-wal";
+		if (quarantined_wal)
+		{
+			const auto journal = root.parent_path() / "journals/players";
+			require(player_save_journal_init(journal.c_str()),
+				"restored quarantine journal did not initialize");
+			const auto health = player_save_journal_health_copy();
+			require(health.records == 0 && health.quarantined_bytes > 0 &&
+					player_save_journal_pid_quarantined(999) &&
+					!player_save_journal_pid_quarantined(42),
+				"unreplayable player lost its durable fence or blocked a healthy player");
+			player_snapshot missing;
+			require(flatfile_player_snapshot_read(root.string(), 999, &missing,
+							      &error) ==
+					flatfile_player_load_result::not_found,
+				"unreplayable partial save materialized a missing player");
+			player_load_request blocked;
+			blocked.request_id = 1;
+			blocked.pid = 999;
+			blocked.account_name = "Account-One";
+			blocked.deadline_usec =
+				persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+			const auto refused =
+				flatfile_player_load_repository_execute(root.string(), blocked);
+			require(refused.outcome == player_load_outcome::cancelled &&
+					refused.error_code == EPERM && refused.snapshot.pid == 0,
+				"restored quarantined player was admitted");
+		}
 		flatfile_account_record account;
 		require(flatfile_account_load(root.string(), "Account-One", &account, &error) ==
 					flatfile_account_result::ok &&
@@ -258,10 +306,11 @@ int main(int argc, char **argv)
 		const auto loaded = flatfile_player_load_repository_execute(root.string(), request);
 		require(loaded.outcome == player_load_outcome::applied &&
 				loaded.domains.wallet ==
-					std::array<uint64_t, 4>{ mode == "verify-bank" ? 6u :
-								 mode == "verify-wal"  ? 16u :
-											 11u,
-								 12, 13, 14 } &&
+					std::array<uint64_t, 4>{
+						mode == "verify-bank"			  ? 6u :
+						(mode == "verify-wal" || quarantined_wal) ? 16u :
+											    11u,
+						12, 13, 14 } &&
 				loaded.domains.epics == 15 &&
 				loaded.snapshot.revision == (mode == "verify-wal" ? 2u : 1u) &&
 				loaded.item_identities.size() == 2,
@@ -308,6 +357,8 @@ int main(int argc, char **argv)
 		}
 		require(!fs::exists(root / "domains/.critical-authority-transaction"),
 			"pending transaction was not retired");
+		if (quarantined_wal)
+			player_save_journal_shutdown();
 		return 0;
 	}
 	require((mode == "seed" || mode == "seed-first-wal") && !fs::exists(root),
@@ -318,6 +369,7 @@ int main(int argc, char **argv)
 	for (const auto &entry : fs::recursive_directory_iterator(root))
 		fs::permissions(entry.path(), fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
+	seed_fixture_item_allocator(root);
 	flatfile_account_record account;
 	account.name = "Account-One";
 	account.email = "fixture@example.test";

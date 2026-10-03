@@ -2400,9 +2400,10 @@ static player_load_result execute_player_load(MYSQL *connection, const player_lo
 					uint64_t discipline = 0, experience = 0,
 						 applied_revision = 0;
 					if (!lengths || !row[0] || lengths[0] != 16 ||
-					    !parse_unsigned(row[1], 2, &discipline) ||
+					    !parse_unsigned(row[1], 6, &discipline) ||
 					    !discipline ||
 					    !parse_unsigned(row[2], INT32_MAX, &experience) ||
+					    (discipline > 2 && experience) ||
 					    !parse_unsigned(row[3], result.snapshot.revision,
 							    &applied_revision) ||
 					    !applied_revision ||

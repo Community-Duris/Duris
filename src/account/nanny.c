@@ -1536,6 +1536,7 @@ void enter_game(P_desc d)
 	ch->desc = d;
 	ch->next = character_list;
 	character_list = ch;
+	register_character_runtime_id(ch);
 
 	// Need to walk through ch->affects, and drop AFFTYPE_OFFLINE timers.
 	for (afp1 = ch->affected; afp1; afp1 = afp2)
@@ -2648,7 +2649,7 @@ void nanny_player_load_complete(P_desc d, player_load_result result)
 		STATE(d) = CON_NAME;
 		return;
 	}
-	if (!player_save_pipeline_save_admitted(result.pid))
+	if (!player_save_pipeline_authoritative_hydration_admitted(result.pid))
 	{
 		result.outcome = player_load_outcome::degraded;
 		result.degraded_components |= PLAYER_LOAD_DEGRADED_RECOVERY;

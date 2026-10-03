@@ -301,17 +301,17 @@ Comments are omitted; preprocessor branches are source leads, not evaluated runt
 
 | Kind | VNUM | Procedure | Source |
 | --- | ---: | --- | --- |
-| mob | 29236 | `newbie_spellup_mob` | [src/specs/specs.assign.c:209](../../../src/specs/specs.assign.c#L209) |
-| mob | 29238 | `newbie_spellup_mob` | [src/specs/specs.assign.c:210](../../../src/specs/specs.assign.c#L210) |
-| mob | 29232 | `newbie_spellup_mob` | [src/specs/specs.assign.c:211](../../../src/specs/specs.assign.c#L211) |
-| mob | 29265 | `newbie_spellup_mob` | [src/specs/specs.assign.c:212](../../../src/specs/specs.assign.c#L212) |
-| obj | 29328 | `burbul_map_obj` | [src/specs/specs.assign.c:1315](../../../src/specs/specs.assign.c#L1315) |
-| obj | 29329 | `chyron_search_obj` | [src/specs/specs.assign.c:1316](../../../src/specs/specs.assign.c#L1316) |
-| room | 29280 | `pet_shops` | [src/specs/specs.assign.c:2348](../../../src/specs/specs.assign.c#L2348) |
-| room | 29282 | `pet_shops` | [src/specs/specs.assign.c:2349](../../../src/specs/specs.assign.c#L2349) |
-| obj | 29236 | `newbie_portal` | [src/specs/specs.assign.c:2350](../../../src/specs/specs.assign.c#L2350) |
-| room | 29305 | `inn` | [src/specs/specs.assign.c:2459](../../../src/specs/specs.assign.c#L2459) |
-| room | 29202 | `inn` | [src/specs/specs.assign.c:2465](../../../src/specs/specs.assign.c#L2465) |
+| mob | 29236 | `newbie_spellup_mob` | [src/specs/specs.assign.c:208](../../../src/specs/specs.assign.c#L208) |
+| mob | 29238 | `newbie_spellup_mob` | [src/specs/specs.assign.c:209](../../../src/specs/specs.assign.c#L209) |
+| mob | 29232 | `newbie_spellup_mob` | [src/specs/specs.assign.c:210](../../../src/specs/specs.assign.c#L210) |
+| mob | 29265 | `newbie_spellup_mob` | [src/specs/specs.assign.c:211](../../../src/specs/specs.assign.c#L211) |
+| obj | 29328 | `burbul_map_obj` | [src/specs/specs.assign.c:1303](../../../src/specs/specs.assign.c#L1303) |
+| obj | 29329 | `chyron_search_obj` | [src/specs/specs.assign.c:1304](../../../src/specs/specs.assign.c#L1304) |
+| room | 29280 | `pet_shops` | [src/specs/specs.assign.c:2336](../../../src/specs/specs.assign.c#L2336) |
+| room | 29282 | `pet_shops` | [src/specs/specs.assign.c:2337](../../../src/specs/specs.assign.c#L2337) |
+| obj | 29236 | `newbie_portal` | [src/specs/specs.assign.c:2338](../../../src/specs/specs.assign.c#L2338) |
+| room | 29305 | `inn` | [src/specs/specs.assign.c:2447](../../../src/specs/specs.assign.c#L2447) |
+| room | 29202 | `inn` | [src/specs/specs.assign.c:2453](../../../src/specs/specs.assign.c#L2453) |
 
 ## Reset coverage
 

@@ -26,6 +26,20 @@ and `receipts`. Every collection is required and limited to 100,000 rows. A
 source snapshot larger than either limit needs a reviewed partitioning method;
 truncating and setting `complete: true` is prohibited.
 
+Native money and item revisions are exact JSON integers in 0..UINT64_MAX,
+matching their unsigned native schema and wire fields. Boolean, negative or
+larger values are malformed evidence. This differs from signed denomination
+and copper-total ranges. Item events advance one revision; money effects retain
+their native before/after revision chain. Origins, current authority and retained
+creation/retirement roots must agree across the complete unsigned range.
+
+Each parsed denomination vector must have signed 64-bit fields and a checked
+signed 64-bit copper total using weights 1/10/100/1000. This includes native
+holdings, opening origins and account-effect before/after vectors, even if they
+match each other and the postings balance. An overflowing vector is malformed
+evidence: the CLI refuses with status 2 and copper overflow, including with
+`--limit 0`; it never wraps values or changes the input to make it reconcile.
+
 The partial SQL exporter also supplies `native_mapping_coverage`. It counts
 all `player_data` and `account_banks` rows, rows with no active SQL mapping in
 any lineage, native rows with multiple active mappings in the selected lineage,
@@ -36,6 +50,37 @@ diagnostic counts; an
 unmapped legacy row is a candidate for investigation, not proof that its
 balance belongs to the selected epoch. The remaining native classes and their
 lineage scope still require independent enumeration before `complete: true`.
+
+Persisted ship coffers are separate raw candidates: `native.ship_coffers`
+contains only `ship_id` and nullable signed-INT `copper`, with no owner alias,
+lineage, account key or fabricated revision. Every `ships` row is included,
+including zero/NULL/negative values. `native.ship_coffer_coverage` records rows,
+positive/zero/unknown/invalid rows and missing-revision rows. The independent
+reconciler validates identities, exact value bounds and uniqueness, recomputes
+these counts, and reports `unsupported_native_ship_coffer` and
+`missing_ship_coffer_revision` for each row; NULL also reports
+`unknown_native_ship_coffer`, and negative values `invalid_native_ship_coffer`.
+A partial SQL snapshot missing this collection reports
+`missing_ship_coffer_coverage`. Counts remain accurate with detail limit zero.
+The exporter requires the `ships` source to be present and InnoDB in the same
+read-only consistent cut. These candidates are outside mapped `native.holdings`;
+ship lifetimes, origins, revisions, gameplay writers and runtime-only funds
+remain unqualified. This evidence retains `complete: false`.
+
+Persisted guild treasuries are likewise separate raw candidates:
+`native.guild_treasuries` contains only `guild_id` and four unsigned-INT
+denominations in `balance`. Every `guilds` row is included, including zero
+and unloaded guilds. IDs are reusable native locators, not accounting lifetimes.
+`outcome_revision` tracks prestige/construction and is not a money revision.
+`native.guild_treasury_coverage` records rows, positive/zero rows and
+missing-revision rows. The independent reconciler validates unsigned bounds,
+unique IDs and exact collection shape, recomputes coverage and reports
+`unsupported_native_guild_treasury` and `missing_guild_money_revision` for
+each row. Missing SQL coverage reports `missing_guild_treasury_coverage`;
+counts remain intact with detail limit zero. The exporter requires `guilds`
+to be InnoDB within the same SELECT-only consistent cut. These raw values
+remain outside mapped holdings: enrollment, durable lifetimes, origins,
+monetary revisions and gameplay writers still need qualification.
 
 Its `source_claims` collection covers nonbaseline claims across the selected
 lineage, including claims from other epochs. The SQL rows carry their owning

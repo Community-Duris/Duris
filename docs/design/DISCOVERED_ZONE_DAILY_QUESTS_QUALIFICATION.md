@@ -152,21 +152,46 @@ formatting against the accounting base passed.
 
 ## Merge and rollout
 
-The feature PR targets `experimental-accounting` and includes its current
-`db2822706` state. Before merging this feature into master, merge accounting and
-reconcile any later accounting changes. Migration `0054_discovered_zone_daily_state`
+The feature PR targets `experimental-accounting` and now includes its
+`100bee62f` state. Before merging this feature into master, merge accounting and
+reconcile any later accounting changes. Migration `0056_discovered_zone_daily_state`
 is appended to the canonical, staging-0045, and master-0031 histories. It is
 additive, re-runnable, preserves v1 state, and allows v2 records without rewriting
 player facts during migration. The initial qualification above used the feature's
 then-current 0051 slot; review moved this unpublished migration to 0054 after the
-accounting branch consumed slots 0051 through 0053.
+accounting branch consumed slots 0051 through 0053. The October 3 integration
+moves the still-unpublished daily step to 0056 after published alchemy and
+room-item payload migrations 0054/0055. Its SQL/verifier bytes and checksums
+remain unchanged. All three histories and their compiled contracts use head 56.
+Already-applied development feature histories require a reviewed upgrade path;
+history mismatch continues to refuse boot instead of relabeling applied steps.
 
 MariaDB 10.11 engine integration was not run because that engine and Docker were
 unavailable in this environment. The existing MariaDB metadata fingerprint is
-unchanged by this feature; 0054 changes CHECK expressions rather than columns, indexes, or foreign
+unchanged by this feature; 0056 changes CHECK expressions rather than columns, indexes, or foreign
 keys. The dual-engine staging/tamper suite remains a useful check on a host with
 those engines. No CI wait or full repository burn-in was used for this focused
 feature qualification.
+
+The October 3 dependency integration was checked without database execution.
+The immutable runner passed 24 tests, boot compatibility passed ten tests and
+the static validator accepted all three histories at head 56 with the base's
+226-table fingerprints. Focused SQL-boundary tests verify legacy/bucket erasure,
+saved encounter/discovery cleanup, unrelated-player preservation, locked reads,
+caller-owned rollback/retry and 1,626 injected allocation failures. Flat-file
+checks verify actual legacy aggregate upgrade, staged erasure, torn frames,
+corruption refusal and cache invalidation after snapshot replacement. Accounting-
+inactive/no-specials boot and serialization allocation checks pass. The retained
+6,000-completion capacity fixture and maintained SQL server build pass; SQL
+store/capacity fixtures compile but were not executed against a database here.
+Earlier engine/restart evidence above applies to its stated earlier head.
+The integrated character/account deletion journey also passes all eighteen
+authority-journal interruption boundaries and runtime publication/retry cases.
+Source-line movement required regeneration of 22 evidence indices; area data,
+native catalog and authored sidecars remain unchanged. Formatting passes for
+changed lines and every feature-diff C/C++ file. The broader staged-file check
+reports 23 incoming-only accounting files with inherited whole-file drift;
+those dependency files were not reformatted here.
 
 Enable `ZONE_STORY_DAILY_ENABLED=true` deliberately after installing the accepted
 accounting/feature code and migration. Discovery and ordinary story tracking work

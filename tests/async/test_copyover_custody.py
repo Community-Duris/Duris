@@ -53,8 +53,39 @@ HARNESS = r'''
 #include "player/player_load_materialize.h"
 #include "core/mm.h"
 #include "telemetry/telemetry_runtime.h"
+#include "persistence/copyover_codec.h"
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <cerrno>
 #include <cstdarg>
+
+static int publication_fault = 0;
+static int worker_resumes = 0, redis_resumes = 0, queued_notices = 0, exec_attempts = 0;
+extern "C" int __real_fsync(int);
+extern "C" int __wrap_fsync(int fd) {
+    struct stat status{}; assert(fstat(fd, &status) == 0);
+    if ((publication_fault == 1 && S_ISREG(status.st_mode)) ||
+        (publication_fault == 2 && S_ISDIR(status.st_mode))) { errno = EIO; return -1; }
+    return __real_fsync(fd);
+}
+extern "C" int __real_rename(const char *, const char *);
+extern "C" int __wrap_rename(const char *from, const char *to) {
+    if (publication_fault == 3) { errno = EIO; return -1; }
+    return __real_rename(from, to);
+}
+extern "C" int __real_fclose(FILE *);
+extern "C" int __wrap_fclose(FILE *file) {
+    const int result = __real_fclose(file);
+    if (publication_fault == 4) { errno = EIO; return EOF; }
+    return result;
+}
+extern "C" size_t __real_fwrite(const void *, size_t, size_t, FILE *);
+extern "C" size_t __wrap_fwrite(const void *data, size_t size, size_t count, FILE *file) {
+    if (publication_fault == 5) { errno = ENOSPC; return 0; }
+    return __real_fwrite(data, size, count, file);
+}
 
 // This no-player custody fixture must never enter gameplay telemetry adapters.
 // Its clock is unavailable, so the telemetry durability barrier is not entered.
@@ -84,29 +115,30 @@ void flush_pending_ship_saves() {}
 bool drain_pending_ship_saves() { return true; }
 int locker_async_drain(int) { return 1; }
 void maintenance_scheduler_quiesce() {}
-void maintenance_scheduler_resume() {}
+void maintenance_scheduler_resume() { ++worker_resumes; }
 bool maintenance_scheduler_drain(uint64_t) { return true; }
 void critical_command_coordinator_quiesce() {}
-void critical_command_coordinator_resume() {}
+void critical_command_coordinator_resume() { ++worker_resumes; }
 bool critical_command_coordinator_drain(uint64_t) { return true; }
 void critical_outbox_quiesce() {}
-void critical_outbox_resume() {}
+void critical_outbox_resume() { ++worker_resumes; }
 bool critical_outbox_drain(uint64_t) { return true; }
 void player_save_pipeline_quiesce() {}
-void player_save_pipeline_resume() {}
+void player_save_pipeline_resume() { ++worker_resumes; }
 bool player_save_pipeline_drain(uint64_t) { return true; }
 bool redis_world_recovery_drain(uint64_t) { return true; }
 bool redis_world_recovery_prepare_copyover() { return true; }
-void redis_world_recovery_resume_after_copyover() {}
+void redis_world_recovery_resume_after_copyover() { ++redis_resumes; }
 bool persistence_flush_all_character_saves() { return true; }
 bool persistence_log_drain(unsigned timeout_ms) { assert(timeout_ms == 3000); return true; }
 
 // Empty-world boundaries: reaching these would make the fixture invalid.
+int write_to_descriptor(P_desc, const char *) { std::abort(); }
 bool persistence_save_character_terminal(P_char, int) { std::abort(); }
 bool persistence_save_character_terminal_database_acknowledged(P_char, int) { std::abort(); }
 int websocket_send_text(P_desc, const char *) { std::abort(); }
 int compress_end(P_desc, int) { std::abort(); }
-void write_to_q(const char *, txt_q *, int) { std::abort(); }
+void write_to_q(const char *, txt_q *, int) { ++queued_notices; }
 uint64_t persistence_observability_now_usec() { std::abort(); }
 uint64_t player_load_pipeline_next_request_id() { std::abort(); }
 bool player_save_journal_pid_quarantined(int) { return false; }
@@ -119,6 +151,7 @@ unsigned mm_find_best_chunk(int, int, int) { std::abort(); }
 mm_ds *mm_create(const char *, size_t, size_t, unsigned) { std::abort(); }
 void mm_release(mm_ds *, void *) { std::abort(); }
 void clear_char(P_char) { std::abort(); }
+void register_character_runtime_id(P_char) { std::abort(); }
 void free_char(P_char) { std::abort(); }
 void nonblock(int) { std::abort(); }
 void check_cp437(P_desc) { std::abort(); }
@@ -140,12 +173,14 @@ void bind_shopkeeper(P_char, int) { ++bind_shopkeeper_calls; }
 // the production save, publication, counting and recovery functions are intact.
 extern "C" int fixture_execl(const char *path, const char *, ...) noexcept
 {
+    ++exec_attempts;
+    if (publication_fault == 6) { errno = ENOENT; return -1; }
     assert(!std::strcmp(path, "bin/server/dms"));
     FILE *file = std::fopen(COPYOVER_FILE, "rb"); assert(file);
-    copyover_header header = {};
-    assert(std::fread(&header, sizeof(header), 1, file) == 1);
-    assert(header.version == COPYOVER_VERSION && header.num_objects == 1);
-    assert(!header.num_descriptors && !header.num_mobs);
+    copyover_decoded_state state;
+    assert(copyover_codec_read(file, &state, nullptr));
+    assert(state.header.version == COPYOVER_VERSION && state.header.num_objects == 1);
+    assert(!state.header.num_descriptors && !state.header.num_mobs);
     std::fclose(file);
     char executable[] = "/proc/self/exe", phase[] = "recover";
     char *args[] = {executable, phase, nullptr};
@@ -171,6 +206,89 @@ int main(int argc, char **argv)
 {
     rooms[0].number = 100; rooms[1].number = 200;
     object_indexes[0].virtual_number = 1000;
+    if (argc == 2 && !std::strcmp(argv[1], "publication-failures")) {
+        for (int fault : {1,2,3,4,5,6}) {
+            FILE *old = std::fopen(COPYOVER_FILE, "wb"); assert(old);
+            assert(std::fwrite("previous synthetic snapshot", 1, 27, old) == 27);
+            assert(std::fclose(old) == 0);
+            int sockets[2]; assert(socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) == 0);
+            assert(fcntl(sockets[0], F_SETFD, FD_CLOEXEC) == 0);
+            const int before = worker_resumes;
+            publication_fault = fault;
+            assert(!copyover_save(sockets[0], -1, -1));
+            publication_fault = 0;
+            assert(worker_resumes >= before + 4);
+            assert(access((std::string(COPYOVER_FILE) + ".tmp").c_str(), F_OK) != 0);
+            if (fault != 6) assert(fcntl(sockets[0], F_GETFD) == FD_CLOEXEC);
+            FILE *file = std::fopen(COPYOVER_FILE, "rb"); assert(file);
+            if (fault == 2 || fault == 6) {
+                copyover_decoded_state state;
+                assert(copyover_codec_read(file, &state, nullptr));
+                assert(state.header.version == 18);
+            } else {
+                char bytes[27]; assert(std::fread(bytes, 1, 27, file) == 27);
+                assert(!std::memcmp(bytes, "previous synthetic snapshot", 27));
+            }
+            std::fclose(file); close(sockets[0]); close(sockets[1]);
+        }
+        assert(exec_attempts == 1 && redis_resumes == 1);
+        // A stale temporary file or symlink is refused without truncating it.
+        const std::string temp = std::string(COPYOVER_FILE) + ".tmp";
+        assert(symlink(COPYOVER_FILE, temp.c_str()) == 0);
+        assert(!copyover_save(-1,-1,-1)); assert(unlink(temp.c_str()) == 0);
+        char_data player{}; descriptor_data descriptor{};
+        descriptor.character = &player; descriptor.descriptor = 10;
+        descriptor.connected = CON_PLAYING; descriptor_list = &descriptor;
+        for (int transport : {0,1,2}) {
+            descriptor.websocket = transport == 0;
+            descriptor.sslses = transport == 1 ? reinterpret_cast<gnutls_session_t>(&player) : nullptr;
+            descriptor.connected = transport == 2 ? CON_MAIN_MENU : CON_PLAYING;
+            assert(!copyover_save(-1,-1,-1));
+            assert(descriptor.descriptor == 10 && exec_attempts == 1);
+        }
+        descriptor_list = nullptr;
+        assert(queued_notices == 2); // Playing TLS/WebSocket clients receive the notice.
+        puts("[PASS] write/fsync/close/rename/directory sync/exec failures, symlink refusal and unsupported transports");
+        return 0;
+    }
+    if (argc == 2 && !std::strcmp(argv[1], "recovery-failures")) {
+        P_obj root = read_object(1000, VIRTUAL);
+        root->obj_uid = 900; root->type = ITEM_CORPSE;
+        obj_to_room(root, 0);
+        assert(item_ownership_runtime_hydrate(custody(900)));
+        std::vector<char> native(WORLD_RECOVERY_MAX_RECORD_BYTES);
+        const int size = copyover_write_obj_to_buffer(root, native.data(), native.size());
+        assert(size > 0);
+        const int32_t missing_room = 999;
+        memcpy(native.data(), &missing_room, 4);
+        FILE *file = std::fopen(COPYOVER_FILE, "w+b"); assert(file);
+        copyover_header header{}; header.num_objects = 1;
+        const int listeners[3] = {-1,-1,-1};
+        assert(copyover_codec_begin(file, header, listeners));
+        assert(copyover_codec_write_object(file, native.data(), size));
+        assert(copyover_codec_finish(file, nullptr)); std::fclose(file);
+        extract_obj(root, FALSE); item_ownership_runtime_reset();
+        int telnet = 3, tls = 4, websocket = 5;
+        assert(!copyover_recover(&telnet, &tls, &websocket));
+        assert(telnet == -1 && tls == -1 && websocket == -1);
+        assert(!object_list && !character_list && !descriptor_list);
+        assert(access(COPYOVER_FILE, F_OK) == 0 && !is_copyover_boot());
+        // A checksum failure is rejected before the first gameplay allocation.
+        file = std::fopen(COPYOVER_FILE, "r+b"); assert(file);
+        assert(fseek(file, 32, SEEK_SET) == 0);
+        const int original = fgetc(file); assert(original != EOF);
+        assert(fseek(file, 32, SEEK_SET) == 0); assert(fputc(original ^ 1, file) != EOF);
+        std::fclose(file);
+        assert(!copyover_recover(&telnet, &tls, &websocket));
+        assert(!object_list && !character_list && !descriptor_list && used_descs == 0);
+        assert(access(COPYOVER_FILE, F_OK) == 0);
+        assert(unlink(COPYOVER_FILE) == 0);
+        telnet = 3; tls = 4; websocket = 5;
+        assert(!copyover_recover(&telnet, &tls, &websocket));
+        assert(telnet == -1 && tls == -1 && websocket == -1);
+        puts("[PASS] recovery decode/materialization failure retains evidence and resets listeners without world mutation");
+        return 0;
+    }
     if (argc == 1) {
         P_obj corpse = read_object(1000, VIRTUAL);
         P_obj bag = read_object(1000, VIRTUAL);
@@ -199,17 +317,10 @@ int main(int argc, char **argv)
     // A newer in-memory custody revision must survive a rejected handoff;
     // all newly materialized objects must be rolled back atomically.
     FILE *file = std::fopen(COPYOVER_FILE, "rb"); assert(file);
-    assert(std::fseek(file, sizeof(copyover_header) + 3 * sizeof(int), SEEK_SET) == 0);
-    // Version 15 has a framed telemetry block even with zero descriptors.
-    struct { char magic[4]; uint32_t version; uint32_t count; } telemetry_header{};
-    assert(std::fread(&telemetry_header, sizeof(telemetry_header), 1, file) == 1);
-    assert(std::memcmp(telemetry_header.magic, "TLMY", 4) == 0);
-    assert(telemetry_header.version == 1 && telemetry_header.count == 0);
-    uint32_t size = 0;
-    assert(std::fread(&size, sizeof(size), 1, file) == 1);
-    assert(size <= WORLD_RECOVERY_MAX_RECORD_BYTES);
-    std::vector<char> buffer(size);
-    assert(std::fread(buffer.data(), size, 1, file) == 1);
+    copyover_decoded_state decoded;
+    assert(copyover_codec_read(file, &decoded, nullptr));
+    assert(decoded.objects.size() == 1);
+    const auto &buffer = decoded.objects[0];
     std::fclose(file);
     auto newer = custody(902); ++newer.item_revision;
     assert(item_ownership_runtime_hydrate(newer));
@@ -265,11 +376,14 @@ with tempfile.TemporaryDirectory(prefix="duris-copyover-custody-") as temp:
               "-fno-omit-frame-pointer", "-ffunction-sections", "-fdata-sections", "-Isrc", "-D__NO_MYSQL__"]
     subprocess.run(common + ["-Dexecl=fixture_execl", "-c", "src/persistence/copyover.c",
                             "-o", str(temp / "copyover.o")], cwd=ROOT, check=True)
-    subprocess.run(common + [str(source), str(temp / "copyover.o"),
-                   "src/world/world_recovery_pipeline.c", "src/world/world_recovery_codec.c", "src/world/generated_npc_state.c", "src/world/generated_npc_runtime.c",
+    subprocess.run(common + [str(source), str(temp / "copyover.o"), "src/core/game_loop_watchdog.c",
+                   "src/persistence/copyover_codec.c", "src/world/world_recovery_pipeline.c", "src/world/world_recovery_codec.c", "src/world/generated_npc_state.c", "src/world/generated_npc_runtime.c",
                    "src/player/pet_restore_state.c",
                             "src/item/item_ownership_runtime.c", "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c",
                             "src/redis/redis_command_observability.c", "-Wl,--gc-sections",
+                            "-Wl,--wrap=fsync", "-Wl,--wrap=rename", "-Wl,--wrap=fclose", "-Wl,--wrap=fwrite",
                             "-lz", "-pthread", "-lgnutls", "-lbsd", "-o", str(temp / "fixture")],
                    cwd=ROOT, check=True)
     subprocess.run([str(temp / "fixture")], cwd=temp, check=True, timeout=60)
+    subprocess.run([str(temp / "fixture"), "publication-failures"], cwd=temp, check=True, timeout=60)
+    subprocess.run([str(temp / "fixture"), "recovery-failures"], cwd=temp, check=True, timeout=60)

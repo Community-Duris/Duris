@@ -34,6 +34,13 @@ def hex_id(value: bytes | None) -> str | None:
     return value.hex() if value is not None else None
 
 
+def previous_item_revision(revision: int) -> int:
+    """Native custody increments each UID once, independently of owner counters."""
+    if type(revision) is not int or not 0 < revision < 2**64:
+        raise ExportError("invalid native item ledger revision")
+    return revision - 1
+
+
 def account_key(lineage: bytes, kind: int, lifetime: int, context: int) -> str:
     return (lineage + struct.pack("<HHQQ4x", 1, kind, lifetime, context)).hex()
 
@@ -343,7 +350,7 @@ def read_lineage_uid_references(cursor, lineage: bytes) -> tuple[list[dict], lis
     references = bounded(cursor,
         "SELECT r.operation_id,r.event_index,r.child_index,r.item_uid,r.before_revision,"
         "r.after_revision,r.legacy_operation_id,r.legacy_event_index,o.epoch,o.outcome,"
-        "o.item_event_count,l.item_uid AS ledger_uid,l.from_owner_revision,l.item_revision,"
+        "o.item_event_count,l.item_uid AS ledger_uid,l.item_revision,"
         "l.root_item_uid,l.parent_item_uid,l.to_owner_type,l.to_owner_id,"
         "l.to_owner_context_id,l.reason_type "
         "FROM economic_accounting_item_reference r "
@@ -371,7 +378,8 @@ def read_lineage_uid_references(cursor, lineage: bytes) -> tuple[list[dict], lis
             "operation_outcome": {1: "committed", 2: "rejected"}.get(row["outcome"], "unknown"),
             "operation_item_event_count": row["item_event_count"],
             "ledger_uid": row["ledger_uid"],
-            "ledger_before_revision": row["from_owner_revision"],
+            "ledger_before_revision": (previous_item_revision(row["item_revision"])
+                                       if row["ledger_uid"] is not None else None),
             "ledger_revision": row["item_revision"], "ledger_root": row["root_item_uid"],
             "ledger_parent": row["parent_item_uid"], "ledger_owner": owner,
             "ledger_state": state, "ledger_action": action})
@@ -456,7 +464,7 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
         rows = bounded(cursor,
             "SELECT l.operation_id,l.event_index,l.item_uid,l.root_item_uid,l.parent_item_uid,"
             "l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
-            "l.from_owner_revision,l.reason_type,o.epoch AS operation_epoch,"
+            "l.reason_type,o.epoch AS operation_epoch,"
             "o.outcome AS operation_outcome "
             "FROM item_ownership_ledger l "
             "JOIN economic_accounting_operation o ON o.operation_id=l.operation_id "
@@ -464,7 +472,7 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
             f"AND l.item_uid IN ({placeholders}) ORDER BY l.item_uid,l.item_revision",
             (lineage, *batch))
         for row in rows:
-            before_revision = row["from_owner_revision"]
+            before_revision = previous_item_revision(row["item_revision"])
             if before_revision < baseline_revisions.get(row["item_uid"], 0):
                 continue
             ledger_events += 1
@@ -497,13 +505,13 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
         rows = bounded(cursor,
             "SELECT l.operation_id,l.event_index,l.item_uid,l.root_item_uid,l.parent_item_uid,"
             "l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
-            "l.from_owner_revision,l.reason_type FROM item_ownership_ledger l "
+            "l.reason_type FROM item_ownership_ledger l "
             "LEFT JOIN economic_accounting_operation o ON o.operation_id=l.operation_id "
             "WHERE o.operation_id IS NULL "
             f"AND l.item_uid IN ({placeholders}) ORDER BY l.item_uid,l.item_revision",
             tuple(batch))
         for row in rows:
-            before_revision = row["from_owner_revision"]
+            before_revision = previous_item_revision(row["item_revision"])
             if before_revision < baseline_revisions.get(row["item_uid"], 0):
                 continue
             if len(unattributed_events) >= MAX_ROWS:
@@ -975,10 +983,57 @@ def auction_escrow_balance(status: str | None, price: int | None,
     return [price if has_winner else 0, 0, 0, 0]
 
 
+def read_ship_coffers(cursor) -> tuple[list[dict], dict]:
+    # Ships have persisted copper value but no qualified accounting lifetime or
+    # native revision. Never manufacture a mapping or export owner aliases.
+    rows = bounded(cursor, "SELECT id,money FROM ships ORDER BY id")
+    coffers = []
+    coverage = dict(rows=len(rows), positive_rows=0, zero_rows=0,
+                    unknown_rows=0, invalid_rows=0, missing_revision_rows=len(rows))
+    seen = set()
+    for row in rows:
+        identity, amount = row["id"], row["money"]
+        if (type(identity) is not int or not 1 <= identity < 2**31 or
+                identity in seen or
+                (amount is not None and
+                 (type(amount) is not int or not -(2**31) <= amount < 2**31))):
+            raise ExportError("invalid native ship coffer")
+        seen.add(identity)
+        coffers.append({"ship_id": identity, "copper": amount})
+        bucket = ("unknown_rows" if amount is None else "invalid_rows" if amount < 0
+                  else "zero_rows" if amount == 0 else "positive_rows")
+        coverage[bucket] += 1
+    return coffers, coverage
+
+
+def read_guild_treasuries(cursor) -> tuple[list[dict], dict]:
+    # Guild IDs are reusable native locators. outcome_revision belongs to
+    # prestige/construction and does not witness ordinary money writes.
+    rows = bounded(cursor, "SELECT id,copper,silver,gold,platinum FROM guilds ORDER BY id")
+    treasuries = []
+    coverage = dict(rows=len(rows), positive_rows=0, zero_rows=0,
+                    missing_revision_rows=len(rows))
+    seen = set()
+    for row in rows:
+        identity = row["id"]
+        balance = [row[unit] for unit in ("copper", "silver", "gold", "platinum")]
+        if (type(identity) is not int or not 1 <= identity < 2**32 or identity in seen or
+                any(type(amount) is not int or not 0 <= amount < 2**32 for amount in balance)):
+            raise ExportError("invalid native guild treasury")
+        seen.add(identity)
+        treasuries.append({"guild_id": identity, "balance": balance})
+        coverage["positive_rows" if any(balance) else "zero_rows"] += 1
+    return treasuries, coverage
+
+
 def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     native = {"holdings": [], "items": [], "coin_piles": [],
               "coin_pile_mappings": [], "pending_claim_sources": []}
-    gaps = ["coin_pile_creation_origin_and_lifecycle_source_completeness",
+    native["ship_coffers"], native["ship_coffer_coverage"] = read_ship_coffers(cursor)
+    native["guild_treasuries"], native["guild_treasury_coverage"] = read_guild_treasuries(cursor)
+    gaps = ["ship_coffer_lifetime_origin_revision_and_writer_qualification",
+            "guild_treasury_lifetime_origin_money_revision_and_writer_qualification",
+            "coin_pile_creation_origin_and_lifecycle_source_completeness",
             "escrow_claim_treasury_lifecycle_and_origin_reconciliation",
             "pending_claim_consumer_completeness_and_legacy_coverage",
             "unattributed_ownership_history",
@@ -1322,9 +1377,9 @@ def capture(connection, lineage: bytes, epoch: bytes) -> dict:
             "'economic_pending_claim_source','economic_sql_lifecycle_installation',"
             "'critical_operation_inbox','player_data',"
             "'account_banks','item_current_owner','item_ownership_ledger','auctions',"
-            "'auction_money_pickups','shopkeepers')")
+            "'auction_money_pickups','shopkeepers','ships','guilds')")
         engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
-        if len(engines) != 16 or any(engine != "InnoDB" for engine in engines.values()):
+        if len(engines) != 18 or any(engine != "InnoDB" for engine in engines.values()):
             raise ExportError("SQL audit source is missing or not InnoDB")
         has_realized_price = realized_price_column_available(cursor)
         evidence = read_evidence(cursor, lineage, epoch, has_realized_price)

@@ -17,6 +17,8 @@ with tempfile.TemporaryDirectory(prefix="duris-zone-sql-") as temporary:
     flags = subprocess.check_output(["mysql_config", "--cflags", "--libs"], text=True).split()
     subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-Isrc",
                     "tests/async/zone_story_quest_sql_store_harness.cpp",
-                    "src/sql/zone_story_quest_state_repository.c", *flags, "-lz", "-o", str(binary)],
+                    "src/sql/zone_story_quest_state_repository.c", "src/world/zone_story_quest_feature.c",
+                    "src/world/zone_story_quest_catalog.c", "src/world/zone_story_quest_tracking.c",
+                    *flags, "-lz", "-o", str(binary)],
                    cwd=ROOT, check=True)
     subprocess.run([str(binary), args.socket, args.database], cwd=ROOT, check=True)

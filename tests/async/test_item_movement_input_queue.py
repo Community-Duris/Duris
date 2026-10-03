@@ -87,6 +87,8 @@ container_reparent = CHECK_EQ_WORTH_USING.index(
 assert equip_check < authoritative_root_guard < container_reparent
 
 PRELUDE = r'''
+#define DURIS_CHARACTER_IDENTITY_TEST_PANIC_STUB
+#include "character_identity_test_fixture.h"
 #include "core/utils.h"
 #include "economy/economic_gameplay_authority.h"
 #include "item/item_movement_transaction.h"
@@ -349,6 +351,8 @@ static void push(struct txt_q *q, const char *text)
 	else
 		q->head = block;
 	q->tail = block;
+	q->bytes += strlen(text) + 1;
+	++q->entries;
 }
 
 static void drain(struct txt_q *q)
@@ -361,6 +365,8 @@ static void drain(struct txt_q *q)
 		q->head = next;
 	}
 	q->tail = NULL;
+	q->bytes = 0;
+	q->entries = 0;
 }
 
 static void expect_text(const char *got, const char *want, const char *label)
@@ -594,6 +600,7 @@ void command_interpreter(P_char actor, char *input)
 
 int main()
 {
+    fixture_check_runtime_identity_retirement();
 	pc_only_data player = {};
 	player.pid = 42;
 	char_data actor = {};
@@ -985,6 +992,7 @@ int main()
 	char_data mobile = {};
 	SET_BIT(mobile.specials.act, ACT_ISNPC);
 	mobile.runtime_id = 9001;
+	fixture_register_character(&mobile);
 	mobile.in_room = 0;
 	character_list = &mobile;
 	obj_data mobile_loot = {};
@@ -1065,13 +1073,20 @@ int main()
 	mobile_completion.result_size = mobile_encoded.size();
 	std::copy(mobile_encoded.begin(), mobile_encoded.end(),
 		  mobile_completion.result_payload.begin());
-	character_list = NULL;
+	fixture_retire_character(&mobile);
+	const auto retired_mobile_id = mobile.runtime_id;
+	// Reuse the same storage while the old command remains outstanding.
+	mobile.runtime_id = allocate_character_runtime_id();
+	fixture_register_character(&mobile);
+	assert(find_character_by_runtime_id(retired_mobile_id) == nullptr);
+	character_list = &mobile;
 	command_submitted = false;
 	item_movement_transaction_handle_completions(&mobile_completion, 1);
 	assert(vanished_mobile_callbacks == 1 && OBJ_ROOM(&abandoned_loot));
 	assert(item_movement_transaction_health_copy().pending == 0);
 	assert(item_ownership_runtime_lookup(106, &mobile_after));
 	assert(mobile_after.item_revision == 2 && mobile_after.owner_revision == 10);
+	fixture_retire_character(&mobile);
 	character_list = &actor;
 	// A vanished scavenger never becomes an aggregate owner: the durable claim
 	// advances the room revision in place, so the same live object remains
@@ -1602,7 +1617,9 @@ def main() -> int:
             [
                 "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-g",
                 "-O1", "-ffunction-sections", "-fdata-sections",
-                "-fsanitize=address,undefined", "-Isrc", str(source),
+                "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
+                "-pthread", "-Isrc", "-Itests/async", str(source),
+                rel("account/character_identity.c"),
                 rel("item_movement_transaction.c"),
                 rel("item_ownership_runtime.c"),
                 rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),

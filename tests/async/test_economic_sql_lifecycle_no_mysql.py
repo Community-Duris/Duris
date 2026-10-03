@@ -41,6 +41,7 @@ int main()
     assert(economic_sql_lifecycle_guard::acquire_runtime(nullptr, &authority) == ENOTSUP);
     assert(economic_sql_lifecycle_guard::acquire_maintenance(nullptr, &authority) == ENOTSUP);
     assert(economic_sql_currency_writer_guard::acquire(nullptr, &writer) == ENOTSUP);
+    assert(!writer.is_valid_for(nullptr));
     assert(economic_sql_accounting_lifecycle_transaction::install(
         nullptr, authority, request, &receipt) == ENOTSUP);
     uint64_t new_lineage_revision = 0;
