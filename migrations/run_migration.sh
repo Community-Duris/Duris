@@ -84,6 +84,20 @@ if ! [[ "$adopted_baselines" =~ ^[0-9]+$ ]]; then
     printf 'immutable baseline inventory is malformed; no steps applied\n' >&2
     exit 1
 fi
+immutable_markers=$adopted_baselines
+for table in mud_schema_history mud_schema_migration_state; do
+    exists=$("${MYSQL[@]}" -N -B -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='$table';")
+    if [[ "$exists" == 1 ]]; then
+        predicate=1
+        [[ "$table" == mud_schema_migration_state ]] && predicate='applied_count > 0'
+        markers=$("${MYSQL[@]}" -N -B -e "SELECT COUNT(*) FROM $table WHERE $predicate;")
+        if ! [[ "$markers" =~ ^[0-9]+$ ]]; then
+            printf 'immutable history inventory is malformed; no steps applied\n' >&2
+            exit 1
+        fi
+        immutable_markers=$((immutable_markers + markers))
+    fi
+done
 
 run_sql() {
     local desc="$1"
@@ -256,7 +270,7 @@ WHERE table_schema = DATABASE()
     echo "ok"
 }
 
-if [[ "$adopted_baselines" != 0 ]]; then
+if [[ "$immutable_markers" != 0 ]]; then
     TOTAL=4
     run_check "apply pending immutable migrations" python3 "$PROJECT_ROOT/scripts/migration_runner.py" run
     run_check "verify adopted immutable schema" "$SCRIPT_DIR/verify_runtime_compatibility.sh" --schema-only

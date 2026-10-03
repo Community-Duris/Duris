@@ -158,6 +158,39 @@ ENVIRONMENT=test DB_HOST=127.0.0.1 DB_PORT="$DB_PORT" DB_USER=root \
     DB_PASSWD="$PASSWORD" DB_NAME="$MIGRATED_DB" \
     python3 "$ROOT/scripts/migration_runner.py" run
 
+# Missing adoption rows must not send a partially damaged immutable database
+# back through legacy DDL. History or a nonzero state marker still owns it.
+MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$MIGRATED_DB" -e "
+CREATE TABLE regression_baseline_backup LIKE mud_schema_baselines;
+INSERT INTO regression_baseline_backup SELECT * FROM mud_schema_baselines;
+CREATE TABLE regression_history_backup LIKE mud_schema_history;
+INSERT INTO regression_history_backup SELECT * FROM mud_schema_history;"
+item_definition=$(MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" -N -B "$MIGRATED_DB" -e 'SHOW CREATE TABLE item_current_owner')
+history_state=$(MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" -N -B "$MIGRATED_DB" -e 'SELECT applied_count,HEX(history_checksum) FROM mud_schema_migration_state')
+for corruption in baseline baseline_and_history; do
+    MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$MIGRATED_DB" -e 'DELETE FROM mud_schema_baselines;'
+    if [[ "$corruption" == baseline_and_history ]]; then
+        MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$MIGRATED_DB" -e 'DELETE FROM mud_schema_history;'
+    fi
+    missing_log=$(mktemp "$drift_evidence/missing-$corruption.XXXXXX.log")
+    if MIGRATION_ENV_FILE="$CONFIG" "$ROOT/migrations/run_migration.sh" >"$missing_log" 2>&1; then
+        echo 'FAILED: missing immutable adoption evidence was accepted' >&2
+        exit 1
+    fi
+    if ! grep -q 'verified migration baseline is absent or stale' "$missing_log" ||
+       grep -q 'set database to server default' "$missing_log"; then
+        echo 'FAILED: missing immutable adoption evidence fell back to legacy DDL' >&2
+        exit 1
+    fi
+    [[ "$item_definition" == "$(MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" -N -B "$MIGRATED_DB" -e 'SHOW CREATE TABLE item_current_owner')" ]]
+    [[ "$history_state" == "$(MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" -N -B "$MIGRATED_DB" -e 'SELECT applied_count,HEX(history_checksum) FROM mud_schema_migration_state')" ]]
+    MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$MIGRATED_DB" -e '
+INSERT INTO mud_schema_baselines SELECT * FROM regression_baseline_backup;
+INSERT IGNORE INTO mud_schema_history SELECT * FROM regression_history_backup;'
+done
+MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$MIGRATED_DB" -e 'DROP TABLE regression_baseline_backup,regression_history_backup;'
+echo 'missing immutable adoption evidence: rejected without legacy DDL or state changes'
+
 extension_state=$(MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" -N -B "$MIGRATED_DB" -e \
     "SELECT CONCAT(COUNT(*), ':', MIN(note)) FROM imported_extension_probe;")
 [[ "$extension_state" == "1:preserved" ]]
