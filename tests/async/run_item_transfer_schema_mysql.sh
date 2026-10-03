@@ -21,7 +21,13 @@ MYSQL=(mysql "${MYSQL_SSL[@]}" -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0045_quest_reward_obligation.sql"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0051_player_item_runtime_state.sql"
 DB_NAME="$DB_NAME" "$ROOT/migrations/verify_collector_item_owner.sh"
-DB_NAME="$DB_NAME" "$ROOT/migrations/verify_item_ownership_schema.sh"
+# The full accounting schema has later provenance columns. Its sealed runtime
+# contract supersedes the older isolated item-ledger column census.
+if [[ $("${MYSQL[@]}" "$DB_NAME" -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='mud_schema_history'") == 1 ]]; then
+    DB_NAME="$DB_NAME" bash "$ROOT/migrations/verify_runtime_compatibility.sh" --schema-only
+else
+    DB_NAME="$DB_NAME" "$ROOT/migrations/verify_item_ownership_schema.sh"
+fi
 export ITEM_TRANSFER_TEST_DB_NAME="$DB_NAME"
 mkdir -p "$ROOT/bin/tests"
 TEST_BINARY="$ROOT/bin/tests/item_transfer_mysql_harness"
