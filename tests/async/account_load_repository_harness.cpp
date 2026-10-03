@@ -1,4 +1,5 @@
 #include "account/account_load.h"
+#include "sql/sql_exclusion_guard.h"
 #include "sql/sql_pool.h"
 #include <mysql/mysql.h>
 
@@ -15,6 +16,7 @@
 // by the production loader. There is no network or configured database access.
 static MYSQL connection = {};
 static int step = 0, fail_at = 0, repairs = 0, committed = 0, rolled_back = 0;
+static int lose_owner_after = 0;
 static unsigned int error_code = 0, injected_error = 1064;
 static bool rollback_fails = false, missing = false, empty = false;
 static bool discarded = false;
@@ -69,6 +71,8 @@ extern "C" int mysql_query(MYSQL *db, const char *query)
 		repairs = 0;
 		connection.server_status = SERVER_STATUS_AUTOCOMMIT;
 	}
+	if (step == lose_owner_after)
+		duris_sql_exclusion_guard_state_ref().lost = true;
 	return 0;
 }
 extern "C" unsigned long mysql_real_escape_string(MYSQL *, char *out, const char *input,
@@ -151,6 +155,8 @@ static void reset()
 	connection = {};
 	connection.server_status = SERVER_STATUS_AUTOCOMMIT;
 	step = fail_at = repairs = committed = rolled_back = 0;
+	lose_owner_after = 0;
+	duris_sql_exclusion_guard_state_ref().lost = false;
 	error_code = 0;
 	injected_error = 1064;
 	rollback_fails = missing = empty = discarded = false;
@@ -173,6 +179,27 @@ int main()
 	assert(result.snapshot.flags[3] == 6 && result.snapshot.ips.at(0).count == 9);
 	assert(result.snapshot.characters.at(0).secondary_class == 16);
 	assert(result.snapshot.characters.at(0).last_save == 104);
+	// Shared synchronous repair must preserve the original SQL ownership fence.
+	reset();
+	duris_sql_exclusion_guard_state_ref().lost = true;
+	assert(account_load_repair(&connection, "Example") == -1);
+	assert(!step && !repairs);
+	// Pool admission is not enough: ownership can disappear during any query.
+	// No later write or COMMIT may run, but rollback must remain available.
+	for (int loss = 0; loss < 10; ++loss)
+	{
+		reset();
+		if (loss == 0)
+			duris_sql_exclusion_guard_state_ref().lost = true;
+		else
+			lose_owner_after = loss;
+		result = account_load_execute(&connection, request());
+		assert(result.outcome != account_load_outcome::loaded);
+		assert(result.snapshot.name.empty() && result.snapshot.characters.empty());
+		assert(step == loss && !committed && !repairs);
+		assert(rolled_back == (loss >= 2));
+		assert(!(connection.server_status & SERVER_STATUS_IN_TRANS));
+	}
 	// Every required query (including transaction setup and commit) fails closed.
 	for (int failure = 1; failure <= 10; ++failure)
 	{

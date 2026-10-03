@@ -1,4 +1,5 @@
 #include "account/account_load.h"
+#include "sql/sql_exclusion_guard.h"
 #include "sql/sql_pool.h"
 #include "sql/sql_thread_init.h"
 
@@ -35,7 +36,7 @@ char *escape(MYSQL *connection, const char *name)
 bool repair_query(MYSQL *connection, const char *query, uint64_t deadline)
 {
 	return (!deadline || account_load_now_usec() < deadline) &&
-	       mysql_query(connection, query) == 0;
+	       duris_sql_exclusion_guard_allows(connection) && mysql_query(connection, query) == 0;
 }
 
 struct query_failure
@@ -48,6 +49,8 @@ void execute(MYSQL *connection, const std::string &query, uint64_t deadline)
 {
 	if (account_load_now_usec() >= deadline)
 		throw query_failure{ account_load_outcome::timed_out, ETIMEDOUT };
+	if (!duris_sql_exclusion_guard_allows(connection))
+		throw query_failure{ account_load_outcome::load_failed, EACCES };
 	if (mysql_query(connection, query.c_str()) != 0)
 		throw query_failure{ account_load_outcome::load_failed, mysql_errno(connection) };
 }
@@ -418,7 +421,8 @@ struct account_worker
 	}
 	void erase(account_load_job *job)
 	{
-		const auto found = std::find_if(jobs.begin(), jobs.end(), [job](const auto &entry)
+		const auto found = std::find_if(jobs.begin(), jobs.end(),
+						[job](const auto &entry)
 						{ return entry.get() == job; });
 		if (found != jobs.end())
 			jobs.erase(found);
