@@ -483,6 +483,19 @@
       "required_markers": []
     },
     {
+      "id": "spell_ward_persistence_journey",
+      "path": "tests/async/run_spell_ward_persistence_journey.py",
+      "provider": "sql",
+      "engines": ["mysql", "mariadb"],
+      "mode": "script",
+      "required_cases": ["script"],
+      "arguments": ["{sql_binary}"],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [],
+      "required_markers": ["weakened capacity, pulse lifetime, broken source UID and paused renewal survived SQL save, restart and exec copyover"]
+    },
+    {
       "id": "mysql_combat_journey",
       "path": "tests/async/test_mysql_combat_journey.py",
       "provider": "sql",

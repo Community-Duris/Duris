@@ -355,6 +355,14 @@ CREATE TABLE IF NOT EXISTS player_affects (
     location INT DEFAULT 0, level INT DEFAULT 0, bitvector1 BIGINT DEFAULT 0,
     bitvector2 BIGINT DEFAULT 0, bitvector3 BIGINT DEFAULT 0, bitvector4 BIGINT DEFAULT 0,
     bitvector5 BIGINT DEFAULT 0, custom_msg_char TEXT NULL, custom_msg_room TEXT NULL,
+    ward_source_uid BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    ward_full_duration INT NOT NULL DEFAULT 0,
+    ward_capacity BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    ward_capacity_max BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    ward_refresh_remaining INT NOT NULL DEFAULT 0,
+    ward_source_type TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    ward_source_worn TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    ward_active TINYINT UNSIGNED NOT NULL DEFAULT 0,
     PRIMARY KEY (id)
 ) ENGINE=InnoDB)SQL");
 	exec_sql(connection, R"SQL(

@@ -82,6 +82,19 @@ static struct mig_affect *parse_shopkeeper_affects(char **buf)
 		{
 			af->level = mig_getShort(buf);
 		}
+		if (aff_vers > 8)
+		{
+			/* Shopkeeper affect storage predates finite wards, but the bytes must
+			 * still be consumed so the following sections remain aligned. */
+			mig_getULL(buf);
+			mig_getInt(buf);
+			mig_getULL(buf);
+			mig_getULL(buf);
+			mig_getInt(buf);
+			MIG_GET_BYTE(*buf);
+			MIG_GET_BYTE(*buf);
+			MIG_GET_BYTE(*buf);
+		}
 
 		af->next = NULL;
 		if (!head)
