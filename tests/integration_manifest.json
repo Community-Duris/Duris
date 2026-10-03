@@ -1811,7 +1811,8 @@
         "test_player_literal_checkpoint_mysql.py"
       ],
       "required_markers": [
-        "PASS: actual native literal capture/pipeline/journal/worker/repository/pool; journal-only refusal;"
+        "PASS: actual native literal capture/pipeline/journal/worker/repository/pool; journal-only refusal;",
+        "PASS: supplied SQL fixture guard; 15 negative cases;"
       ],
       "schema_prefix": "economic_schema_test_",
       "migrated": true

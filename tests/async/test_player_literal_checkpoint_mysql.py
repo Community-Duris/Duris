@@ -179,6 +179,7 @@ def main() -> None:
     if args.self_test:
         self_test()
     elif args.qualify:
+        self_test()
         if not target_is_disposable(os.environ):
             parser.error("qualification requires the guarded disposable schema")
         work = ROOT / "bin/tests/player-literal-checkpoint"
