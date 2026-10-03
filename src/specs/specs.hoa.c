@@ -421,7 +421,7 @@ int hoa_death(P_char ch, P_char /*vict*/, int cmd, char * /*arg*/)
 	return FALSE;
 }
 
-int hoa_sin(P_char ch, P_char vict, int cmd, char * /*arg*/)
+int hoa_sin(P_char ch, P_char /*vict*/, int cmd, char * /*arg*/)
 {
 	P_char victim;
 	struct affected_type af;
@@ -434,13 +434,13 @@ int hoa_sin(P_char ch, P_char vict, int cmd, char * /*arg*/)
 		{
 			victim = GET_OPPONENT(ch);
 			if (!victim || GET_CLASS(victim, CLASS_PALADIN) || IS_TRUSTED(victim) ||
-			    check_freedom_of_movement(vict, true))
+			    check_freedom_of_movement(victim, true))
 				return FALSE;
 
 			act("&+rS&+Ri&+rn &+Lgets ahold of your sight and gazes deep within your soul.\n"
 			    "&+LSuddenly all your past sins seem to catch up to you!&n",
 			    FALSE, ch, 0, victim, TO_VICT);
-			act("&+rS&+Ri&+rn &+Lgets ahold of &N's sight and gazes deep within $S soul.\n"
+			act("&+rS&+Ri&+rn &+Lgets ahold of $N's sight and gazes deep within $S soul.\n"
 			    "&+LSuddenly all $S past sins seem to catch up to $M!&n",
 			    FALSE, ch, 0, victim, TO_NOTVICT);
 
