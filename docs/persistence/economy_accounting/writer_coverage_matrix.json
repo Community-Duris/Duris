@@ -6379,7 +6379,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          640
+          784
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_coin",
@@ -9300,7 +9300,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          995
+          1144
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_bank_payment",
@@ -9364,7 +9364,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          905
+          1054
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_bank_reward",
@@ -9922,7 +9922,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          956
+          1105
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_prepare_identify",
@@ -10295,7 +10295,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          781
+          930
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_prepared",
@@ -10487,7 +10487,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          455
+          599
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_publish_wallet",
@@ -10612,7 +10612,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          876
+          1025
         ],
         "file": "src/economy/currency_transaction.c",
         "function": "currency_transaction_submit_wallet_value",

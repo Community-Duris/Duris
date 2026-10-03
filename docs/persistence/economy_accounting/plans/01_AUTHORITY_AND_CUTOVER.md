@@ -108,9 +108,12 @@ callback reinserts the node, but the next ACK refuses the already-erased operati
 so the physical callback cannot retry and its journal/fences are already gone.
 Restored item endpoints also have a null callback that currently defaults to
 successful publication. The existing restart owner test expects this unsafe
-ACK without materializing the room pile. These findings are not yet an executed
-new native failure reproduction. SQL wallet-root qualification still excludes
-item endpoints; preserve that safety boundary and all inactive schema-1 behavior.
+ACK without materializing the room pile. These failures are now reproduced by
+a native actual-owner component with a controlled irreversible coordinator ACK;
+wallet-only replay is a passing control. The bounded fail-closed retention
+repair is in qualification and does not establish actual native pile publication.
+SQL wallet-root qualification still excludes item endpoints; preserve that
+safety boundary and all inactive schema-1 behavior.
 
 Repair physical verification/publication separately from post-ACK messages and
 bulk continuation. Keep explicit physical-ready/ACK-pending state and original
@@ -247,3 +250,33 @@ incoming 5c3bc0957 or physical publication, replay-observer registration,
 ordinary-drop gameplay, copyover, or the full R1-R8 release gates. Those owners
 remain open. Preserve immutable historical proof and the current admission
 exclusions while completing them.
+
+
+## Definite admission failure cleanup
+
+The real coordinator removes a definitely never-durably-admitted command before
+delivering its terminal admission-failure completion. Currency's schema-2 ACK
+then cannot succeed and its owner remains busy. Add a trusted explicit
+never-admitted disposition or a defined coordinator release contract, rather
+than interpreting arbitrary ACK=false as release permission. Prove actual
+journal quota/definite append refusal, zero domain applications, exactly one
+rejection notification/cleanup and no retained owner; uncertain append and
+committed publication remain held. This source-established gap is separate
+from physical-publication retention and is not yet a new integrated native RED.
+
+The future physical adapter must stage both pile endpoints before changing
+either, adjust the destination command after the source's owner revision, and
+validate unique native UID/type/vnum/amount/topology/location plus exact result
+revision. Newer metadata or an unloaded player is not native proof. Required
+corpse/saved-item projection writes belong to the publication durability proof,
+not a cosmetic post-ACK notification. Complete runtime item/owner revision
+publication needs an atomic primitive; generic placement/extraction hooks and
+fallible live string replacement require separate staged verification.
+
+Separate craft ACK-retry cleanup issue (source-established, unqualified): the
+first craft publication notifies its completion before ACK; if ACK fails, the
+generic ack_pending retry can notify completion again and omit the progression
+owner's acknowledged hook. After the definite-admission disposition repair,
+reproduce the actual owner sequence, retain physical/progression exactly once,
+run the acknowledgement cleanup once after its durable ACK and preserve rejection
+semantics. This is not fixed by the bounded coin publication repair or inventory.
