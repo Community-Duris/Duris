@@ -2176,20 +2176,25 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 				      critical_apply_outcome::ambiguous_commit) &&
 			     critical_completions[index].attempt >
 				     CRITICAL_COORDINATOR_MAX_RETRIES))
+			{
+				char summary[256] = {};
+				snprintf(summary, sizeof(summary),
+					 "correlation=%s error=%u refusal=%s attempts=%u",
+					 critical_completions[index].recovery_correlation[0] ?
+						 critical_completions[index]
+							 .recovery_correlation.data() :
+						 "none",
+					 critical_completions[index].error_code,
+					 death_recovery_refusal_name(
+						 critical_completions[index].error_code),
+					 critical_completions[index].attempt);
 				persistence_alert(
 					AVATAR, "critical_command", "completion", "none",
 					critical_failure_stage_name(
 						critical_completions[index].failure_stage),
 					"integrity_failure",
-					"correlation=%s error=%u refusal=%s attempts=%u",
-					critical_completions[index].recovery_correlation[0] ?
-						critical_completions[index]
-							.recovery_correlation.data() :
-						"none",
-					critical_completions[index].error_code,
-					death_recovery_refusal_name(
-						critical_completions[index].error_code),
-					critical_completions[index].attempt);
+					death_recovery_literal_detail(summary));
+			}
 		player_save_pipeline_pulse();
 		quest_reward_recovery_pulse();
 		persistence_pulse_character_saves();
