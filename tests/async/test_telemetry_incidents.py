@@ -152,6 +152,8 @@ class IncidentSemantics(unittest.TestCase):
             for data, reason in ((b"x" * (incident.MAX_PACKET_BYTES + 1), "packet_capacity"),
                                  (b'{"environment_id":1,"environment_id":2}', "duplicate_field"),
                                  (b"[" * 10_000 + b"]" * 10_000, "invalid_json"),
+                                 (b'{"environment_id":' + b"9" * 10_000 + b"}", "invalid_number"),
+                                 (b'{"environment_id":1e9999}', "invalid_number"),
                                  (b'{"environment_id":NaN}', "invalid_number")):
                 path.write_bytes(data)
                 with self.assertRaisesRegex(incident.IncidentError, reason):

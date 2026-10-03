@@ -169,7 +169,19 @@ def validate_packet(packet: Any) -> tuple[dict[str, Any], tuple[dict[str, Any], 
     return meta, tuple(rows)
 
 
-def load_packet(path: Path) -> Any:
+def load_evidence_packet(path: Path, *, max_bytes: int = MAX_PACKET_BYTES) -> Any:
+    """Shared bounded JSON decoding for reviewed evidence packet families."""
+    if type(max_bytes) is not int or not 1 <= max_bytes <= 1_048_576:
+        raise IncidentError("invalid_packet_bound")
+    def integer(text: str) -> int:
+        # Evidence families have only signed/unsigned 64-bit integer fields.
+        # Reserve at most 20 magnitude digits before int(), independently of
+        # the host Python version's optional decimal conversion limit.
+        if len(text.removeprefix("-")) > 20:
+            raise IncidentError("invalid_number")
+        return int(text)
+    def invalid_number(_text: str) -> Any:
+        raise IncidentError("invalid_number")
     def unique_pairs(pairs: Sequence[tuple[str, Any]]) -> dict[str, Any]:
         result: dict[str, Any] = {}
         for key, value in pairs:
@@ -179,15 +191,22 @@ def load_packet(path: Path) -> Any:
         return result
     try:
         with path.open("rb") as stream:
-            data = stream.read(MAX_PACKET_BYTES + 1)
-        if len(data) > MAX_PACKET_BYTES:
+            data = stream.read(max_bytes + 1)
+        if len(data) > max_bytes:
             raise IncidentError("packet_capacity")
-        packet = json.loads(data, object_pairs_hook=unique_pairs,
-                            parse_constant=lambda _value: (_ for _ in ()).throw(IncidentError("invalid_number")))
-        validate_packet(packet)
+        packet = json.loads(data, object_pairs_hook=unique_pairs, parse_int=integer,
+                            parse_float=invalid_number, parse_constant=invalid_number)
         return packet
-    except (UnicodeError, json.JSONDecodeError, RecursionError):
+    except IncidentError:
+        raise
+    except (UnicodeError, ValueError, RecursionError):
         raise IncidentError("invalid_json") from None
+
+
+def load_packet(path: Path) -> Any:
+    packet = load_evidence_packet(path)
+    validate_packet(packet)
+    return packet
 
 
 def occurrence_relation(row: Mapping[str, Any], start: int | None, end: int | None) -> int:

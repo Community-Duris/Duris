@@ -16,10 +16,10 @@ work. A future production deployment is a separate operational decision.
 | #567: reviewed incident coverage | Implemented and locally qualified | Consecutive retained inventory versions, nullable unknown ends, committed first verified post-fix references, explicit backlog/reconstruction dispositions and atomic published coverage snapshots. Reports preserve gaps, source uncertainty and bounded private-role separation. Full local MariaDB/MySQL chains, capacity, digest/permission negatives, lost commit replies and unchanged v1 totals qualified. Historical facts require evidence; synthetic fixtures do not establish a real incident history. See [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
 | Initial session qualification/capacity recovery | Implemented and locally qualified | Existing descriptor sweep and context/evidence adapters retry missing entry. Deferred copyover retains one handoff in descriptor memory; supplied keys/totals/revision survive. No earlier unobserved time or human activity is invented. True capacity refusal rolls back IDs; lifecycle queue loss retains admitted IDs. See [SESSION_LIFECYCLE.md](SESSION_LIFECYCLE.md). |
 | Publish existing progression/encounter/combat observations | Implemented and locally qualified | Definition 2 publishes five bounded projections from typed kinds 6–8. Cumulative participant/actor facts replace earlier measurements, threshold consumption stays separate from XP, unknown tails remain NULL, and published read-only snapshots retain incident coverage. Both engines passed the full 55-step chain and replay, rollback, constraints and role negatives. See [OBSERVATION_PROJECTIONS.md](OBSERVATION_PROJECTIONS.md). |
-| Character/account/confirmed controller association | Pending | Cached scoped tokens, authenticated account ownership, reviewed cross-account linkage and dated association versions. Unknown controllers remain unknown. |
+| Character/account/confirmed controller association | In progress | Offline dated review/correction, ownership cuts, same-producer attribution and unknown linkage are implemented and qualified. Remaining: account lifetime/token allocation, authenticated cache preparation and capture, wire handoff, restricted SQL registry/publication and real source journeys. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
 | Shared battles and changing rosters | Pending | Link opponents and support actors to a shared battle, retain mode/roster segments, ownership-aware pets, compact context, observed outcomes and censored boundaries. |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
-| Progression and portfolios | Pending | Rested/assistance provenance, earned/lost/restored/admin XP, milestone exposure and censoring, account/controller portfolio totals and union player-time. |
+| Progression and portfolios | In progress | Observed XP/level projections and offline exact account/controller effort union are qualified. Rested/assistance provenance, milestone exposure/censoring, published portfolio amounts, switching and comparable rates remain required. |
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
 | #487: economic projection compatibility | Pending audit and implementation | Reuse current accounting reconciliation where it meets acceptance; project canonical earned receipts without counting compatibility ledgers, transfers or openings as new rewards. |
 | #258: local observational acceptance and final runbook | In progress | Initial readiness/capacity recovery is implemented and qualified in executable fixtures. Remaining: dedicated roles/catalog, real session/progression readback, normal gameplay/save, failure/recovery and a single reproducible local qualification command. |
@@ -199,3 +199,35 @@ history, shared battles and context segments, zone attempts and canonical reward
 portfolio progression, the four balance suites and the final personal-server
 qualification remain in the accepted scope. Rates and population claims require
 those implementations and their covered denominators.
+
+## Qualified offline identity and effort semantics
+
+`test_telemetry_identity_history.py` passed 25 executable offline tests. Complete
+review packets use scoped opaque tokens, consecutive versions and preceding
+digests, known starts, nullable ends clipped to the reviewed window, explicit
+unknown linkage and retained withdrawal. Corrections preserve earlier versions;
+overlapping active associations, removed IDs, changed account identities, scope
+changes and conflicting retries refuse the candidate.
+
+Interval attribution preserves original session and observation producer keys.
+It never backfills account ownership before its first capture, never compares
+monotonic timestamps across copyover processes, and conserves measured duration
+through observed ownership and reviewed linkage cuts. Unknown or ambiguous UTC
+preserves character effort while withholding dated controller and complete union
+claims. Six overlapping linked characters produce six units of character effort
+and one unit of controller union; consecutive rotation produces the full
+non-overlapping union. Unknown controllers cannot form one combined person.
+Presence and active time remain independent, configurations remain separate, and
+replay/overlap/mixed-version/overflow negatives passed.
+
+The existing 13 incident tests passed after reusing its bounded evidence decoder;
+incident packets retain their original 128 KiB limit. Both packet families now
+classify excessive numeric encodings without exposing their private source or
+path. Identity packets and attribution/effort inputs have explicit finite bounds.
+
+These tests do not establish live account/controller collection or SQL publication.
+The account lifetime allocator, authenticated login preparation/cached tokens,
+live typed source and copyover handoff, restricted association registry and
+published generation integration still need implementation and real gameplay/SQL
+qualification. The existing runtime/schema remains at migration 0055. No
+production or staging access is required for those remaining checks.
