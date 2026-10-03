@@ -63,9 +63,11 @@ extern "C"
  * Signals one waiting acquirer.  No-op when conn is NULL. */
 	void sql_pool_release(MYSQL *conn);
 
-	/* Replace a pooled connection with a fresh handle after it has become
- * unusable. Returns the replacement handle on success, or NULL if the
- * pool is unavailable or reconnect fails. */
+	/* Consume a currently borrowed pooled connection after it becomes unusable.
+ * Returns a fresh borrowed handle on success, or NULL after closing/retiring
+ * and releasing the original lease on failure (including shutdown or a failed
+ * factory). Never access or release the original pointer after this call.
+ * Foreign or unborrowed handles are rejected without modifying any lease. */
 	MYSQL *sql_pool_replace_connection(MYSQL *conn);
 
 	/* ---- Stats (debug / monitoring) ---- */

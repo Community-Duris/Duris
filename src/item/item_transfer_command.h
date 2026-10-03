@@ -188,7 +188,7 @@ enum class item_spell_component_effect : uint32_t
 constexpr size_t item_transfer_continuation_limit(item_transfer_continuation_kind kind)
 {
 	return kind == item_transfer_continuation_kind::craft_recipe ?
-		       ITEM_TRANSFER_POUCH_CONTINUATION_MAX_BYTES + 32 :
+		       ITEM_TRANSFER_POUCH_CONTINUATION_MAX_BYTES + 52 :
 	       kind == item_transfer_continuation_kind::craft_pouch_usage ?
 		       ITEM_TRANSFER_POUCH_CONTINUATION_MAX_BYTES :
 		       ITEM_TRANSFER_CONTINUATION_MAX_BYTES;

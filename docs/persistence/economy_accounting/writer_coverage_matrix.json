@@ -7,27 +7,28 @@
     "Every supported MySQL/MariaDB and flat-file backend needs same-root state/evidence/receipt atomicity and verified post-commit publication/reconnect handling.",
     "Baseline/cutover, source-event dedupe, item UID lifetime, lifecycle retirement and restore/reconciliation remain activation blockers."
   ],
+  "candidate_worktree_evidence": null,
   "counts": {
     "dormant_writer_candidates": 14,
-    "draft_registry_rows": 864,
-    "function_definition_anchors_verified": 856,
-    "matrix_rows": 864,
+    "draft_registry_rows": 868,
+    "function_definition_anchors_verified": 860,
+    "matrix_rows": 868,
     "non_function_candidate_anchors": 8,
-    "non_writer_or_out_of_scope_candidates": 96,
+    "non_writer_or_out_of_scope_candidates": 97,
     "offline_operational_writer_routes": 3,
     "routes_with_current_schema_1_path": 85,
     "routes_with_schema_2_gameplay_producer": 15,
     "routes_with_unified_double_entry_evidence": 2,
-    "runtime_mutation_and_projection_routes": 751,
+    "runtime_mutation_and_projection_routes": 754,
     "supplemental_candidates_found": 0
   },
   "coverage_complete": false,
   "disposition_counts": {
     "dormant_writer_candidate": 14,
-    "non_writer_candidate": 96,
+    "non_writer_candidate": 97,
     "offline_operational_writer": 3,
-    "runtime_mutation_route": 687,
-    "runtime_projection_route": 64
+    "runtime_mutation_route": 688,
+    "runtime_projection_route": 66
   },
   "global_schema_and_accounting_evidence": {
     "critical_command_accounting_schema_2": "src/persistence/critical_command.h:10",
@@ -39,33 +40,33 @@
     "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified."
   },
   "known_unknowns": [
-    "The matrix reconciles 864 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
+    "The matrix reconciles 868 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
     "The lexical census is fully mapped; this does not establish that every reachable economic mutation has passed executable review.",
     "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2815,
-    "current_unique_path_line_family_sites": 2756,
+    "current_occurrences": 2817,
+    "current_unique_path_line_family_sites": 2758,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "4fffb07486c62cb8ea23fb4a39d3be46b9a3a521",
+    "draft_source_commit": "5f542e9cf769dfa7ef89e28ce4845d7495d4e1b3",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2756,
+    "draft_unique_sites": 2758,
     "family_occurrences": {
       "coin_assignment": 164,
       "coin_bulk_mutation": 16,
       "direct_cash_assignment": 12,
       "economic_submit": 187,
-      "item_lifecycle": 1146,
+      "item_lifecycle": 1147,
       "item_publication": 1063,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
-      "sql_economy": 55
+      "sql_economy": 56
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 864-row registry maps 2756 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
-    "mapped_sites_still_present": 2756,
-    "mapped_unique_sites_from_draft_rows": 2756,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 868-row registry maps 2758 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2758,
+    "mapped_unique_sites_from_draft_rows": 2758,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -77,7 +78,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "4fffb07486c62cb8ea23fb4a39d3be46b9a3a521",
+  "repository_head": "5f542e9cf769dfa7ef89e28ce4845d7495d4e1b3",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -588,7 +589,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1622
+          1597
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_enchant",
@@ -4216,7 +4217,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1688
+          1677
         ],
         "file": "src/classes/drannak.c",
         "function": "christmas_proc",
@@ -4273,7 +4274,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          811
+          800
         ],
         "file": "src/classes/drannak.c",
         "function": "create_recipe",
@@ -4283,10 +4284,42 @@
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
+      "backend_qualification": {
+        "flatfile": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        },
+        "mariadb": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        },
+        "mysql": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        }
+      },
       "blocking_policy_after_activation": {
-        "decision": "block_until_active_craft_journeys",
-        "must_block_on_activation": true,
-        "required_policy": "Physical crafts, pouch collection and virtual Encrust use the typed schema-2 owner, consumed-input crafting source, exact native retirement/admission and linked references on SQL and flatfile. Retained pouch counters share the native craft commit while preserving the original UID and custody. Native component, replay, rollback and held-publication proofs pass; qualify complete active-epoch server journeys before release."
+        "decision": "allow_qualified_native_alchemy",
+        "must_block_on_activation": false,
+        "required_policy": "Use the native schema-2 craft owner, exact input/output references, consumed-input source lifetime and durable alchemy publication receipt. Active flatfile, MySQL and MariaDB route journeys qualify retry, retained disconnect, copyover and cold recovery. This scoped proof does not authorize global activation or certify other crafts, NPC vial issuance or character initialization. Refuse unsupported metadata or stale custody before native mutation; never fall back to schema 1 under active authority."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
@@ -4344,7 +4377,7 @@
       "id": "class.drannak_pvp_store",
       "native_effects": {
         "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -4352,19 +4385,26 @@
         ]
       },
       "reason": "item_create",
+      "recovery_evidence": [
+        "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py",
+        "tests/async/test_issue_551_flatfile_craft.py",
+        "tests/async/item_transfer_mysql_harness.cpp"
+      ],
       "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          390
+          372
         ],
         "file": "src/classes/drannak.c",
         "function": "pvp_store",
         "original_draft_symbol": "pvp_store"
       },
-      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "source_classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -4415,7 +4455,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          886
+          875
         ],
         "file": "src/classes/drannak.c",
         "function": "random_recipe",
@@ -4472,7 +4512,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          927
+          916
         ],
         "file": "src/classes/drannak.c",
         "function": "random_zone_item",
@@ -9518,7 +9558,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3598
+          3599
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_steal",
@@ -9625,8 +9665,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          476,
-          12363
+          479,
+          12659
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_account_bank_deposit_balances",
@@ -9754,7 +9794,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2533
+          2534
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_deposit",
@@ -10129,7 +10169,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6301
+          6302
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_split",
@@ -10636,7 +10676,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2631
+          2632
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_withdraw",
@@ -14216,7 +14256,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1012
+          1027
         ],
         "file": "src/guild/guild.c",
         "function": "do_practice",
@@ -14275,7 +14315,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          495
+          510
         ],
         "file": "src/guild/guild.c",
         "function": "RobCash",
@@ -16110,7 +16150,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7686
+          7687
         ],
         "file": "src/cmd/actoth.c",
         "function": "ascend_committed",
@@ -16481,7 +16521,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1473
+          1484
         ],
         "file": "src/item/item_transfer_command.c",
         "function": "item_transfer_command_build",
@@ -17061,8 +17101,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2870,
-          2882
+          2884,
+          2896
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17432,7 +17472,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6916
+          6917
         ],
         "file": "src/cmd/actoth.c",
         "function": "try_to_donate",
@@ -17493,7 +17533,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6916
+          6917
         ],
         "file": "src/cmd/actoth.c",
         "function": "try_to_donate",
@@ -17677,7 +17717,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1771
+          1746
         ],
         "file": "src/classes/salchemist.c",
         "function": "event_enchant",
@@ -17687,10 +17727,42 @@
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
+      "backend_qualification": {
+        "flatfile": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        },
+        "mariadb": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        },
+        "mysql": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        }
+      },
       "blocking_policy_after_activation": {
-        "decision": "block_until_active_craft_journeys",
-        "must_block_on_activation": true,
-        "required_policy": "Physical crafts, pouch collection and virtual Encrust use the typed schema-2 owner, consumed-input crafting source, exact native retirement/admission and linked references on SQL and flatfile. Retained pouch counters share the native craft commit while preserving the original UID and custody. Native component, replay, rollback and held-publication proofs pass; qualify complete active-epoch server journeys before release."
+        "decision": "allow_qualified_native_alchemy",
+        "must_block_on_activation": false,
+        "required_policy": "Use the native schema-2 craft owner, exact input/output references, consumed-input source lifetime and durable alchemy publication receipt. Active flatfile, MySQL and MariaDB route journeys qualify retry, retained disconnect, copyover and cold recovery. This scoped proof does not authorize global activation or certify other crafts, NPC vial issuance or character initialization. Refuse unsupported metadata or stale custody before native mutation; never fall back to schema 1 under active authority."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
@@ -17750,7 +17822,7 @@
       "id": "item.encrust_failure_destroy",
       "native_effects": {
         "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -17759,26 +17831,65 @@
       },
       "reachability_evidence": "do_encrust source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_destroy",
+      "recovery_evidence": [
+        "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py",
+        "tests/async/test_issue_551_flatfile_craft.py",
+        "tests/async/item_transfer_mysql_harness.cpp"
+      ],
       "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          880
+          846
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
         "original_draft_symbol": "do_encrust"
       },
-      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "source_classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
+      "backend_qualification": {
+        "flatfile": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        },
+        "mariadb": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        },
+        "mysql": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        }
+      },
       "blocking_policy_after_activation": {
-        "decision": "block_until_active_craft_journeys",
-        "must_block_on_activation": true,
-        "required_policy": "Physical crafts, pouch collection and virtual Encrust use the typed schema-2 owner, consumed-input crafting source, exact native retirement/admission and linked references on SQL and flatfile. Retained pouch counters share the native craft commit while preserving the original UID and custody. Native component, replay, rollback and held-publication proofs pass; qualify complete active-epoch server journeys before release."
+        "decision": "allow_qualified_native_alchemy",
+        "must_block_on_activation": false,
+        "required_policy": "Use the native schema-2 craft owner, exact input/output references, consumed-input source lifetime and durable alchemy publication receipt. Active flatfile, MySQL and MariaDB route journeys qualify retry, retained disconnect, copyover and cold recovery. This scoped proof does not authorize global activation or certify other crafts, NPC vial issuance or character initialization. Refuse unsupported metadata or stale custody before native mutation; never fall back to schema 1 under active authority."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
@@ -17838,7 +17949,7 @@
       "id": "item.encrust_transform",
       "native_effects": {
         "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -17847,19 +17958,26 @@
       },
       "reachability_evidence": "do_encrust source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_create",
+      "recovery_evidence": [
+        "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py",
+        "tests/async/test_issue_551_flatfile_craft.py",
+        "tests/async/item_transfer_mysql_harness.cpp"
+      ],
       "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          880
+          846
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
         "original_draft_symbol": "do_encrust"
       },
-      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "source_classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -17900,7 +18018,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          880
+          846
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
@@ -18600,7 +18718,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1207
+          1182
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_fix",
@@ -18647,7 +18765,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1207
+          1182
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_fix",
@@ -18755,7 +18873,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1355
+          1356
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_forage",
@@ -18816,7 +18934,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1002
+          1003
         ],
         "file": "src/cmd/actoth.c",
         "function": "forage_sect",
@@ -18877,7 +18995,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1355
+          1356
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_forage",
@@ -19488,7 +19606,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2810
+          2811
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_hide",
@@ -19550,7 +19668,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3118
+          3132
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19612,7 +19730,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2930
+          2944
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20103,7 +20221,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3598
+          3599
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_steal",
@@ -20164,7 +20282,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7592
+          7593
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_lick",
@@ -20598,7 +20716,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2018
+          2027
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -20781,7 +20899,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7977
+          7978
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_old_descend",
@@ -20976,10 +21094,42 @@
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
+      "backend_qualification": {
+        "flatfile": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        },
+        "mariadb": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        },
+        "mysql": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        }
+      },
       "blocking_policy_after_activation": {
-        "decision": "block_until_active_craft_journeys",
-        "must_block_on_activation": true,
-        "required_policy": "Physical crafts, pouch collection and virtual Encrust use the typed schema-2 owner, consumed-input crafting source, exact native retirement/admission and linked references on SQL and flatfile. Retained pouch counters share the native craft commit while preserving the original UID and custody. Native component, replay, rollback and held-publication proofs pass; qualify complete active-epoch server journeys before release."
+        "decision": "allow_qualified_native_alchemy",
+        "must_block_on_activation": false,
+        "required_policy": "Use the native schema-2 craft owner, exact input/output references, consumed-input source lifetime and durable alchemy publication receipt. Active flatfile, MySQL and MariaDB route journeys qualify retry, retained disconnect, copyover and cold recovery. This scoped proof does not authorize global activation or certify other crafts, NPC vial issuance or character initialization. Refuse unsupported metadata or stale custody before native mutation; never fall back to schema 1 under active authority."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
@@ -21039,7 +21189,7 @@
       "id": "item.poison_mix",
       "native_effects": {
         "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -21048,19 +21198,26 @@
       },
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_create",
+      "recovery_evidence": [
+        "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py",
+        "tests/async/test_issue_551_flatfile_craft.py",
+        "tests/async/item_transfer_mysql_harness.cpp"
+      ],
       "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          558
+          518
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_mixpoison",
         "original_draft_symbol": "do_mixpoison"
       },
-      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "source_classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -21101,7 +21258,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          536
+          496
         ],
         "file": "src/classes/salchemist.c",
         "function": "print_poison_ingredients",
@@ -21333,7 +21490,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4637
+          4638
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_quaff",
@@ -21393,7 +21550,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1623
+          1624
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_quit",
@@ -21578,7 +21735,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4810
+          4811
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_recite",
@@ -22235,7 +22392,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1336
+          1311
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_smelt",
@@ -22296,7 +22453,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1336
+          1311
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_smelt",
@@ -22347,11 +22504,13 @@
       },
       "id": "item.sql_custody_apply",
       "native_effects": {
-        "custody_effect": "Creates or moves UID owner/revision rows and appends exact ownership history under the item-transfer command.",
+        "custody_effect": "Creates or moves native UID ownership/history under the existing item root. This transaction also owns scoped immutable room payload and transferred player projection retirement; no second custody authority.",
         "holding_effect": "Updates a money object's coin_payload when the typed item transfer changes its payload; any monetary source/sink requires a matching root account effect.",
         "native_state_targets": [
           "item_current_owner owner, revision and coin_payload",
-          "item_ownership_ledger"
+          "item_ownership_ledger",
+          "sql_room_item_payload through sql_room_item_payload_record",
+          "retire_player_projection removes selected transferred player_items"
         ]
       },
       "reachability_evidence": "item_transfer_repository_execute_at_offset is called by the named repository or saved-item path; the linked SQL source sites execute inside this route when its branch conditions pass.",
@@ -22359,13 +22518,13 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2359
+          2366
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_execute_at_offset",
         "original_draft_symbol": "item_transfer_repository_execute_at_offset"
       },
-      "source_classification": "SQL item repository admits or transfers UID ownership, appends custody history, and updates coin-pile payload for money objects; coin payload requires a matching money account effect.",
+      "source_classification": "SQL item repository admits or transfers UID ownership, appends custody history, and updates coin-pile payload for money objects; coin payload requires a matching money account effect. Admitted ordinary schema-2 drops also store exact room payload and retire selected stale carried projections in this transaction; no second custody authority.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -22420,7 +22579,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2983
+          3014
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_destroy_owners",
@@ -22712,7 +22871,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1511
+          1486
         ],
         "file": "src/classes/salchemist.c",
         "function": "thrusted_eq_proc",
@@ -22914,7 +23073,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3530
+          3531
         ],
         "file": "src/cmd/actoth.c",
         "function": "submit_trusted_steal",
@@ -24704,8 +24863,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          302,
-          5484
+          305,
+          5487
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_account",
@@ -24769,8 +24928,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          277,
-          1249
+          280,
+          1252
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_player",
@@ -30979,8 +31138,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          472,
-          12228
+          475,
+          12524
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_account_bank",
@@ -31040,8 +31199,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          242,
-          4137
+          245,
+          4140
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_status",
@@ -31958,7 +32117,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1904
+          1966
         ],
         "file": "src/persistence/copyover.c",
         "function": "copyover_restore_mob_from_buffer",
@@ -32020,7 +32179,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1233
+          1260
         ],
         "file": "src/persistence/copyover.c",
         "function": "copyover_recover",
@@ -33067,8 +33226,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          425,
-          11028
+          428,
+          11281
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33129,8 +33288,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          421,
-          9498
+          424,
+          9501
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_saved_item",
@@ -33191,8 +33350,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          417,
-          9444
+          420,
+          9447
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_saved_item",
@@ -33318,8 +33477,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          390,
-          8358
+          393,
+          8361
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -33366,8 +33525,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          390,
-          8358
+          393,
+          8361
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -33414,7 +33573,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          919
+          922
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_format_item_diff_fields_and_free_proto",
@@ -33477,7 +33636,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6348
+          6351
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_locker_items_filtered",
@@ -33540,8 +33699,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          260,
-          4591
+          263,
+          4594
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_items",
@@ -33604,8 +33763,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          560,
-          7209
+          563,
+          7212
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_private_chest_items",
@@ -33668,8 +33827,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          425,
-          11028
+          428,
+          11281
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33716,8 +33875,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          425,
-          11028
+          428,
+          11281
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -33780,7 +33939,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9586
+          9589
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -33842,7 +34001,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9586
+          9589
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -33889,7 +34048,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9538
+          9541
         ],
         "file": "src/sql/sql_player.c",
         "function": "discard_shopkeeper_restore_stage",
@@ -33936,7 +34095,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7358
+          7361
         ],
         "file": "src/sql/sql_player.c",
         "function": "free_temp_char",
@@ -36232,8 +36391,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          450,
-          11805
+          453,
+          12101
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_ship",
@@ -36292,8 +36451,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          442,
-          11687
+          445,
+          11983
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_ship",
@@ -36353,8 +36512,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          438,
-          11433
+          441,
+          11729
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_ship",
@@ -50673,7 +50832,7 @@
       "id": "item.craft_submit",
       "native_effects": {
         "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -50683,18 +50842,18 @@
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_create",
       "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2532
+          2541
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
         "original_draft_symbol": "item_movement_transaction_submit_craft"
       },
-      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "source_classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -50739,7 +50898,7 @@
       "id": "item.craft_publication",
       "native_effects": {
         "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -50749,7 +50908,7 @@
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_create",
       "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
@@ -50760,7 +50919,7 @@
         "function": "publish_craft",
         "original_draft_symbol": "publish_craft"
       },
-      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "source_classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -50870,7 +51029,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1637
+          1644
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "insert_craft_output_item",
@@ -50920,8 +51079,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          260,
-          4591
+          263,
+          4594
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_items",
@@ -50995,9 +51154,239 @@
       },
       "source_classification": "Material downgrade freezes the original carried input and two detached lower-tier outputs in one craft custody command. Missing prototypes or refused admission clean only detached candidates; success is reported after committed publication.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "sql_component_requires_qualified_root",
+        "must_block_on_activation": true,
+        "required_policy": "Apply only under the admitted item root with exact native source, successful retained provenance, current season and immutable bytes. Complete native route/restart qualification before admission; no generic fallback or activation."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": 2,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "Payload-only storage borrows the admitted item root transaction/session/source locks; no new custody, monetary posting or gameplay qualification. Missing literal text, native source or conflicting provenance refuses before mutation.",
+        "route_mode": "typed_schema_2_sql_payload_component_without_independent_accounting_root",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_mutation_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "src/persistence/sql_room_item_payload.c:sql_room_item_payload_record",
+          "src/item/item_transfer_repository.c:item_transfer_repository_execute_at_offset"
+        ],
+        "legacy_domain_evidence": [
+          "Payload participates in the existing typed item root; no new accounting root or posting."
+        ],
+        "note": "Source observed only; backend entries unverified and global activation blocked.",
+        "required_atomic_evidence": [
+          "Complete native gameplay, ACK and cold-boot qualification under the item owner"
+        ],
+        "status": "sql_payload_component_without_independent_accounting_root",
+        "unified_operation_postings_observed": false
+      },
+      "id": "item.sql_room_payload_record",
+      "native_effects": {
+        "custody_effect": "Immutable exact UID/revision payload and captured season provenance participates in the existing admitted schema-2 item root. item_current_owner remains sole custody/topology authority.",
+        "holding_effect": "No new monetary holding or posting.",
+        "native_state_targets": [
+          "sql_room_item_payload bytes/version/operation/season",
+          "existing item root transaction"
+        ]
+      },
+      "reachability_evidence": "Current named definition and reviewed enclosing item or boot caller; no backend qualification inferred.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          512
+        ],
+        "file": "src/persistence/sql_room_item_payload.c",
+        "function": "sql_room_item_payload_record",
+        "original_draft_symbol": "sql_room_item_payload_record"
+      },
+      "source_classification": "Immutable exact UID/revision payload and captured season provenance participates in the existing admitted schema-2 item root. item_current_owner remains sole custody/topology authority.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_projection_proof",
+        "must_block_on_activation": true,
+        "required_policy": "Projects a complete literal graph after successful schema-2 provenance, current season, UID/revision/topology and exact staged-byte checks; no accounting root is created. Refuse active-epoch publication until the committed root receipt, exact UID/owner/revision and live topology or slot state are verified."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root.",
+        "route_mode": "native_result_or_recovery_projection_without_new_accounting_root",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_projection_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "projection_only_no_new_postings",
+        "unified_operation_postings_observed": false
+      },
+      "id": "recovery.sql_exact_room_hydration",
+      "native_effects": {
+        "custody_effect": "Hydrates the complete detached retained graph after successful schema-2 provenance, current season, exact UID/revision/topology, literal fields and staged-byte checks.",
+        "holding_effect": "No new monetary holding or posting.",
+        "native_state_targets": [
+          "detached exact P_obj graph",
+          "runtime ownership hydration"
+        ]
+      },
+      "projection_rule": "Projects a complete literal graph after successful schema-2 provenance, current season, UID/revision/topology and exact staged-byte checks; no accounting root is created.",
+      "reachability_evidence": "Current named definition and reviewed enclosing item or boot caller; no backend qualification inferred.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          11095
+        ],
+        "file": "src/sql/sql_player.c",
+        "function": "sql_room_item_publish",
+        "original_draft_symbol": "sql_room_item_publish"
+      },
+      "source_classification": "Hydrates the complete detached retained graph after successful schema-2 provenance, current season, exact UID/revision/topology, literal fields and staged-byte checks.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_projection_proof",
+        "must_block_on_activation": true,
+        "required_policy": "Installs retained placement without replaying decay, falling, redirection or gameplay drop effects; no new custody or issuance is authorized. Refuse active-epoch publication until the committed root receipt, exact UID/owner/revision and live topology or slot state are verified."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root.",
+        "route_mode": "native_result_or_recovery_projection_without_new_accounting_root",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_projection_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "projection_only_no_new_postings",
+        "unified_operation_postings_observed": false
+      },
+      "id": "recovery.sql_exact_room_placement",
+      "native_effects": {
+        "custody_effect": "Installs retained room placement without gameplay drop hooks, decay, water redirect or falling, and recomputes derived lighting.",
+        "holding_effect": "No new monetary holding or posting.",
+        "native_state_targets": [
+          "P_obj loc/next_content",
+          "room contents and derived lighting"
+        ]
+      },
+      "projection_rule": "Installs retained placement without replaying decay, falling, redirection or gameplay drop effects; no new custody or issuance is authorized.",
+      "reachability_evidence": "Current named definition and reviewed enclosing item or boot caller; no backend qualification inferred.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          11052
+        ],
+        "file": "src/sql/sql_player.c",
+        "function": "sql_room_item_place_restored",
+        "original_draft_symbol": "sql_room_item_place_restored"
+      },
+      "source_classification": "Installs retained room placement without gameplay drop hooks, decay, water redirect or falling, and recomputes derived lighting.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "not_a_playable_economy_or_custody_writer",
+        "must_block_on_activation": false,
+        "required_policy": "Clears original UIDs only in the detached exact room tree before extracting its rejected root; durable payload and custody remain retained. Cleanup is not retirement."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": false,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": "not_applicable",
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "no live critical-command gameplay route",
+        "route_mode": "no live critical-command gameplay route",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "non_writer_candidate",
+      "double_entry_evidence": {
+        "existing_evidence": [],
+        "note": "Clears original UIDs only in the detached exact room tree before extracting its rejected root; durable payload and custody remain retained. Cleanup is not retirement.",
+        "status": "not_applicable",
+        "unified_operation_postings_observed": false
+      },
+      "exclusion_reason": "Clears original UIDs only in the detached exact room tree before extracting its rejected root; durable payload and custody remain retained. Cleanup is not retirement.",
+      "id": "recovery.sql_exact_room_stage_cleanup",
+      "native_effects": {
+        "custody_effect": "none",
+        "holding_effect": "none in this function for economy/custody scope",
+        "native_state_targets": []
+      },
+      "reachability_evidence": "Current named definition and reviewed enclosing item or boot caller; no backend qualification inferred.",
+      "reason": "item_move",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          11078
+        ],
+        "file": "src/sql/sql_player.c",
+        "function": "~sql_room_item_stage_guard",
+        "original_draft_symbol": "~sql_room_item_stage_guard"
+      },
+      "source_classification": "Clears original UIDs only on this failed detached stage and extracts its root without retiring native custody.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     }
   ],
   "schema_version": 1,
+  "source_state": "registry_source_commit",
   "top_dependencies": [
     {
       "dependency": "Freeze the complete writer registry, account/reason policy, actor/source provenance and typed intent facts; resolve all unclassified writer candidates.",

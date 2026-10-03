@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "4fffb07486c62cb8ea23fb4a39d3be46b9a3a521",
+  "source_commit": "5f542e9cf769dfa7ef89e28ce4845d7495d4e1b3",
   "census_complete": true,
   "writers": [
     {
@@ -512,7 +512,7 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1747,
+          1722,
           "money_helper"
         ]
       ],
@@ -3697,12 +3697,12 @@
       "sites": [
         [
           "src/classes/drannak.c",
-          1707,
+          1696,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          1707,
+          1696,
           "item_publication"
         ]
       ],
@@ -3739,12 +3739,12 @@
       "sites": [
         [
           "src/classes/drannak.c",
-          847,
+          836,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          861,
+          850,
           "item_publication"
         ]
       ],
@@ -3757,22 +3757,40 @@
       "reason": "item_create",
       "integration_issue": 480,
       "owner": "primary / #480",
-      "coverage": "legacy",
-      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
-      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
-      "current_support": "Active schema-2 admission, atomic native craft conservation, replay and rollback pass component/native tests on both SQL engines and flatfile. Real-server legacy craft/restart journeys pass separately; a full active-epoch gameplay journey remains unqualified. Virtual Chaos-pouch Encrust remains refused pending atomic pouch state updates.",
+      "coverage": "enforced",
+      "classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
+      "authority_boundary": "Existing native craft transaction and retained publication owner; durable player receipt/save before acknowledgement. Poison notch outcome is frozen before admission and applied without RNG.",
+      "current_support": "Active flatfile, MySQL8 and MariaDB10.11 gameplay passes exact poison/Encrust/Harvester conservation, retry, retained crash/disconnect publication, copyover and two cold restarts. Native pouch/alchemy success and zero-output failure, rollback, replay and frozen notching pass separately. Test-only scoped admission projection leaves #490 global activation unqualified.",
       "backends": {
         "mysql": {
-          "status": "unverified",
-          "evidence": []
+          "status": "qualified",
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ]
         },
         "mariadb": {
-          "status": "unverified",
-          "evidence": []
+          "status": "qualified",
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ]
         },
         "flatfile": {
-          "status": "unverified",
-          "evidence": []
+          "status": "qualified",
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ]
         }
       },
       "test_candidates": [
@@ -3781,41 +3799,49 @@
         "tests/async/run_alchemist_crafting_journey.py",
         "tests/async/test_item_transfer_accounting.py",
         "tests/async/item_transfer_mysql_harness.cpp",
-        "tests/async/test_publication_retention_runtime.py"
+        "tests/async/test_publication_retention_runtime.py",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py"
       ],
       "sites": [
         [
           "src/classes/drannak.c",
-          399,
+          381,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          415,
+          397,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          449,
+          431,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          457,
+          446,
           "economic_submit"
         ],
         [
           "src/classes/drannak.c",
-          462,
+          451,
           "item_lifecycle"
         ]
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py",
+        "tests/async/test_issue_551_flatfile_craft.py",
+        "tests/async/item_transfer_mysql_harness.cpp"
+      ],
       "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
       ],
       "native_effects": {
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
         "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
@@ -3855,12 +3881,12 @@
       "sites": [
         [
           "src/classes/drannak.c",
-          917,
+          906,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          921,
+          910,
           "item_lifecycle"
         ]
       ],
@@ -3897,12 +3923,12 @@
       "sites": [
         [
           "src/classes/drannak.c",
-          931,
+          920,
           "item_lifecycle"
         ],
         [
           "src/classes/drannak.c",
-          935,
+          924,
           "item_lifecycle"
         ]
       ],
@@ -8222,12 +8248,12 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          4054,
+          4055,
           "direct_cash_assignment"
         ],
         [
           "src/cmd/actoth.c",
-          4062,
+          4063,
           "money_helper"
         ]
       ],
@@ -8304,22 +8330,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          12208,
+          12504,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12395,
+          12691,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12476,
+          12772,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          12574,
+          12870,
           "sql_economy"
         ]
       ],
@@ -8395,12 +8421,12 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          2569,
+          2570,
           "economic_submit"
         ],
         [
           "src/cmd/actoth.c",
-          2620,
+          2621,
           "economic_submit"
         ]
       ],
@@ -8652,17 +8678,17 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          6288,
+          6289,
           "economic_submit"
         ],
         [
           "src/cmd/actoth.c",
-          6483,
+          6484,
           "money_helper"
         ],
         [
           "src/cmd/actoth.c",
-          6495,
+          6496,
           "money_helper"
         ]
       ],
@@ -9148,7 +9174,7 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          2676,
+          2677,
           "economic_submit"
         ]
       ],
@@ -12317,7 +12343,7 @@
       "sites": [
         [
           "src/guild/guild.c",
-          1009,
+          1024,
           "money_helper"
         ]
       ],
@@ -12361,12 +12387,12 @@
       "sites": [
         [
           "src/guild/guild.c",
-          508,
+          523,
           "money_helper"
         ],
         [
           "src/guild/guild.c",
-          514,
+          529,
           "money_helper"
         ]
       ],
@@ -13834,7 +13860,7 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          7706,
+          7707,
           "item_publication"
         ]
       ],
@@ -14150,7 +14176,7 @@
       "sites": [
         [
           "src/item/item_transfer_command.c",
-          1473,
+          1484,
           "economic_submit"
         ]
       ],
@@ -14575,32 +14601,32 @@
         ],
         [
           "src/item/item_movement_transaction.c",
-          2862,
+          2876,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2870,
+          2884,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2882,
+          2896,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3008,
+          3022,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3026,
+          3040,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          3084,
+          3098,
           "economic_submit"
         ],
         [
@@ -14869,12 +14895,12 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          6908,
+          6909,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          7113,
+          7114,
           "item_lifecycle"
         ]
       ],
@@ -14920,27 +14946,27 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          6904,
+          6905,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          6912,
+          6913,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          7034,
+          7035,
           "economic_submit"
         ],
         [
           "src/cmd/actoth.c",
-          7073,
+          7074,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          7109,
+          7110,
           "item_publication"
         ]
       ],
@@ -15112,7 +15138,7 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1819,
+          1794,
           "item_lifecycle"
         ]
       ],
@@ -15134,71 +15160,40 @@
       "reason": "item_destroy",
       "integration_issue": 482,
       "owner": "primary / #482",
-      "coverage": "legacy",
-      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
-      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
-      "current_support": "Active schema-2 admission, atomic native craft conservation, replay and rollback pass component/native tests on both SQL engines and flatfile. Real-server legacy craft/restart journeys pass separately; a full active-epoch gameplay journey remains unqualified. Virtual Chaos-pouch Encrust remains refused pending atomic pouch state updates.",
+      "coverage": "enforced",
+      "classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
+      "authority_boundary": "Existing native craft transaction and retained publication owner; durable player receipt/save before acknowledgement. Poison notch outcome is frozen before admission and applied without RNG.",
+      "current_support": "Active flatfile, MySQL8 and MariaDB10.11 gameplay passes exact poison/Encrust/Harvester conservation, retry, retained crash/disconnect publication, copyover and two cold restarts. Native pouch/alchemy success and zero-output failure, rollback, replay and frozen notching pass separately. Test-only scoped admission projection leaves #490 global activation unqualified.",
       "backends": {
         "mysql": {
-          "status": "unverified",
-          "evidence": []
+          "status": "qualified",
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ]
         },
         "mariadb": {
-          "status": "unverified",
-          "evidence": []
+          "status": "qualified",
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ]
         },
         "flatfile": {
-          "status": "unverified",
-          "evidence": []
-        }
-      },
-      "test_candidates": [
-        "tests/async/test_issue_551_crafting_conservation.py",
-        "tests/async/test_issue_551_flatfile_craft.py",
-        "tests/async/run_alchemist_crafting_journey.py",
-        "tests/async/test_item_transfer_accounting.py",
-        "tests/async/item_transfer_mysql_harness.cpp",
-        "tests/async/test_publication_retention_runtime.py"
-      ],
-      "sites": [],
-      "evidence": [],
-      "reachability_evidence": "do_encrust source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
-      "native_effects": {
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
-        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
-        "native_state_targets": [
-          "item_current_owner and item_ownership_ledger",
-          "player_items and player_item_runtime_state",
-          "flat-file custody and exact retained craft snapshots"
-        ]
-      },
-      "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
-      ]
-    },
-    {
-      "id": "item.encrust_transform",
-      "path": "src/classes/salchemist.c",
-      "symbol": "do_encrust",
-      "reason": "item_create",
-      "integration_issue": 482,
-      "owner": "primary / #482",
-      "coverage": "legacy",
-      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
-      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
-      "current_support": "Typed retained-pouch craft admission commits exact physical retirements, genuine output UIDs and bounded counter updates atomically. Native MySQL, MariaDB and flatfile repeated collection/replay tests pass; flatfile interrupted recovery and runtime publication retention pass. Integrated active-epoch gameplay remains unqualified.",
-      "backends": {
-        "mysql": {
-          "status": "unverified",
-          "evidence": []
-        },
-        "mariadb": {
-          "status": "unverified",
-          "evidence": []
-        },
-        "flatfile": {
-          "status": "unverified",
-          "evidence": []
+          "status": "qualified",
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ]
         }
       },
       "test_candidates": [
@@ -15208,44 +15203,20 @@
         "tests/async/test_item_transfer_accounting.py",
         "tests/async/item_transfer_mysql_harness.cpp",
         "tests/async/test_publication_retention_runtime.py",
-        "tests/async/test_chaos_pouch_ledger.py"
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py"
       ],
-      "sites": [
-        [
-          "src/classes/salchemist.c",
-          1009,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1041,
-          "economic_submit"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1056,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1061,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1127,
-          "economic_submit"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1132,
-          "item_lifecycle"
-        ]
+      "sites": [],
+      "evidence": [
+        "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py",
+        "tests/async/test_issue_551_flatfile_craft.py",
+        "tests/async/item_transfer_mysql_harness.cpp"
       ],
-      "evidence": [],
       "reachability_evidence": "do_encrust source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "native_effects": {
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
         "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
@@ -15254,7 +15225,114 @@
         ]
       },
       "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
+      ]
+    },
+    {
+      "id": "item.encrust_transform",
+      "path": "src/classes/salchemist.c",
+      "symbol": "do_encrust",
+      "reason": "item_create",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "enforced",
+      "classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
+      "authority_boundary": "Existing native craft transaction and retained publication owner; durable player receipt/save before acknowledgement. Poison notch outcome is frozen before admission and applied without RNG.",
+      "current_support": "Active flatfile, MySQL8 and MariaDB10.11 gameplay passes exact poison/Encrust/Harvester conservation, retry, retained crash/disconnect publication, copyover and two cold restarts. Native pouch/alchemy success and zero-output failure, rollback, replay and frozen notching pass separately. Test-only scoped admission projection leaves #490 global activation unqualified.",
+      "backends": {
+        "mysql": {
+          "status": "qualified",
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ]
+        },
+        "mariadb": {
+          "status": "qualified",
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ]
+        },
+        "flatfile": {
+          "status": "qualified",
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ]
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_issue_551_crafting_conservation.py",
+        "tests/async/test_issue_551_flatfile_craft.py",
+        "tests/async/run_alchemist_crafting_journey.py",
+        "tests/async/test_item_transfer_accounting.py",
+        "tests/async/item_transfer_mysql_harness.cpp",
+        "tests/async/test_publication_retention_runtime.py",
+        "tests/async/test_chaos_pouch_ledger.py",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py"
+      ],
+      "sites": [
+        [
+          "src/classes/salchemist.c",
+          975,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1012,
+          "economic_submit"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1027,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1032,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1102,
+          "economic_submit"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1107,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [
+        "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py",
+        "tests/async/test_issue_551_flatfile_craft.py",
+        "tests/async/item_transfer_mysql_harness.cpp"
+      ],
+      "reachability_evidence": "do_encrust source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
+      "native_effects": {
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
+        "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
+        "native_state_targets": [
+          "item_current_owner and item_ownership_ledger",
+          "player_items and player_item_runtime_state",
+          "flat-file custody and exact retained craft snapshots"
+        ]
+      },
+      "refusal_source_evidence": [
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
       ]
     },
     {
@@ -15286,42 +15364,42 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          962,
+          928,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          986,
+          952,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          993,
+          959,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1000,
+          966,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1022,
+          988,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1032,
+          998,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1052,
+          1023,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1139,
+          1114,
           "item_lifecycle"
         ]
       ],
@@ -16026,12 +16104,12 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1313,
+          1288,
           "item_publication"
         ],
         [
           "src/classes/salchemist.c",
-          1314,
+          1289,
           "item_lifecycle"
         ]
       ],
@@ -16075,17 +16153,17 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1267,
+          1242,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1274,
+          1249,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1277,
+          1252,
           "item_lifecycle"
         ]
       ],
@@ -16178,12 +16256,12 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          1378,
+          1379,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1382,
+          1383,
           "item_lifecycle"
         ]
       ],
@@ -16227,452 +16305,452 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          1016,
+          1017,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1019,
+          1020,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1022,
+          1023,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1025,
+          1026,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1028,
+          1029,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1031,
+          1032,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1034,
+          1035,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1037,
+          1038,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1040,
+          1041,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1043,
+          1044,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1046,
+          1047,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1049,
+          1050,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1052,
+          1053,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1055,
+          1056,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1059,
+          1060,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1069,
+          1070,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1072,
+          1073,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1075,
+          1076,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1078,
+          1079,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1081,
+          1082,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1084,
+          1085,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1087,
+          1088,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1091,
+          1092,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1100,
+          1101,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1103,
+          1104,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1106,
+          1107,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1109,
+          1110,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1112,
+          1113,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1115,
+          1116,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1118,
+          1119,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1121,
+          1122,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1124,
+          1125,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1127,
+          1128,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1130,
+          1131,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1133,
+          1134,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1136,
+          1137,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1139,
+          1140,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1143,
+          1144,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1152,
+          1153,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1155,
+          1156,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1158,
+          1159,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1161,
+          1162,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1164,
+          1165,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1167,
+          1168,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1170,
+          1171,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1173,
+          1174,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1176,
+          1177,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1179,
+          1180,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1182,
+          1183,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1185,
+          1186,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1188,
+          1189,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1191,
+          1192,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1194,
+          1195,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1203,
+          1204,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1206,
+          1207,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1209,
+          1210,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1212,
+          1213,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1215,
+          1216,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1218,
+          1219,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1221,
+          1222,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1224,
+          1225,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1227,
+          1228,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1231,
+          1232,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1240,
+          1241,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1243,
+          1244,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1246,
+          1247,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1249,
+          1250,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1252,
+          1253,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1255,
+          1256,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1258,
+          1259,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1262,
+          1263,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1271,
+          1272,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1274,
+          1275,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1277,
+          1278,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1280,
+          1281,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1283,
+          1284,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1286,
+          1287,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1289,
+          1290,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1292,
+          1293,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1295,
+          1296,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1298,
+          1299,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1301,
+          1302,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1304,
+          1305,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1313,
+          1314,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1316,
+          1317,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1319,
+          1320,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1322,
+          1323,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1325,
+          1326,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1329,
+          1330,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1347,
+          1348,
           "item_publication"
         ]
       ],
@@ -16716,12 +16794,12 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          1586,
+          1587,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1587,
+          1588,
           "item_publication"
         ]
       ],
@@ -17194,7 +17272,7 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          2913,
+          2914,
           "item_lifecycle"
         ]
       ],
@@ -17240,7 +17318,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          3135,
+          3149,
           "item_lifecycle"
         ]
       ],
@@ -17277,7 +17355,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          2986,
+          3000,
           "item_lifecycle"
         ]
       ],
@@ -17770,22 +17848,22 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          3904,
+          3905,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          3906,
-          "item_publication"
-        ],
-        [
-          "src/cmd/actoth.c",
-          3969,
+          3907,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
           3970,
+          "item_publication"
+        ],
+        [
+          "src/cmd/actoth.c",
+          3971,
           "item_publication"
         ]
       ],
@@ -17829,7 +17907,7 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          7606,
+          7607,
           "item_lifecycle"
         ]
       ],
@@ -18161,37 +18239,37 @@
         ],
         [
           "src/item/item_movement_transaction.c",
-          1951,
+          1960,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2018,
+          2027,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2166,
+          2175,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2239,
+          2248,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2444,
+          2453,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2517,
+          2526,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2525,
+          2534,
           "economic_submit"
         ],
         [
@@ -18350,7 +18428,7 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          8165,
+          8166,
           "item_publication"
         ]
       ],
@@ -18524,22 +18602,40 @@
       "reason": "item_create",
       "integration_issue": 482,
       "owner": "primary / #482",
-      "coverage": "legacy",
-      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
-      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
-      "current_support": "Active schema-2 admission, atomic native craft conservation, replay and rollback pass component/native tests on both SQL engines and flatfile. Real-server legacy craft/restart journeys pass separately; a full active-epoch gameplay journey remains unqualified. Virtual Chaos-pouch Encrust remains refused pending atomic pouch state updates.",
+      "coverage": "enforced",
+      "classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
+      "authority_boundary": "Existing native craft transaction and retained publication owner; durable player receipt/save before acknowledgement. Poison notch outcome is frozen before admission and applied without RNG.",
+      "current_support": "Active flatfile, MySQL8 and MariaDB10.11 gameplay passes exact poison/Encrust/Harvester conservation, retry, retained crash/disconnect publication, copyover and two cold restarts. Native pouch/alchemy success and zero-output failure, rollback, replay and frozen notching pass separately. Test-only scoped admission projection leaves #490 global activation unqualified.",
       "backends": {
         "mysql": {
-          "status": "unverified",
-          "evidence": []
+          "status": "qualified",
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ]
         },
         "mariadb": {
-          "status": "unverified",
-          "evidence": []
+          "status": "qualified",
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ]
         },
         "flatfile": {
-          "status": "unverified",
-          "evidence": []
+          "status": "qualified",
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ]
         }
       },
       "test_candidates": [
@@ -18548,29 +18644,37 @@
         "tests/async/run_alchemist_crafting_journey.py",
         "tests/async/test_item_transfer_accounting.py",
         "tests/async/item_transfer_mysql_harness.cpp",
-        "tests/async/test_publication_retention_runtime.py"
+        "tests/async/test_publication_retention_runtime.py",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py"
       ],
       "sites": [
         [
           "src/classes/salchemist.c",
-          628,
+          588,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          651,
+          617,
           "economic_submit"
         ],
         [
           "src/classes/salchemist.c",
-          657,
+          623,
           "item_lifecycle"
         ]
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py",
+        "tests/async/test_issue_551_flatfile_craft.py",
+        "tests/async/item_transfer_mysql_harness.cpp"
+      ],
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "native_effects": {
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
         "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
@@ -18579,7 +18683,7 @@
         ]
       },
       "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
       ]
     },
     {
@@ -18611,22 +18715,22 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          543,
+          503,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          552,
+          512,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          586,
+          546,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          590,
+          550,
           "item_lifecycle"
         ]
       ],
@@ -18821,27 +18925,27 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          4740,
+          4741,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          4752,
+          4753,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          4759,
+          4760,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          4768,
+          4769,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          4806,
+          4807,
           "item_lifecycle"
         ]
       ],
@@ -18885,32 +18989,32 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          1680,
+          1681,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          1683,
+          1684,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          1687,
+          1688,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          1699,
+          1700,
           "item_lifecycle"
-        ],
-        [
-          "src/cmd/actoth.c",
-          1704,
-          "item_publication"
         ],
         [
           "src/cmd/actoth.c",
           1705,
+          "item_publication"
+        ],
+        [
+          "src/cmd/actoth.c",
+          1706,
           "item_publication"
         ]
       ],
@@ -19053,17 +19157,17 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          4870,
+          4871,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          4911,
+          4912,
           "item_lifecycle"
         ],
         [
           "src/cmd/actoth.c",
-          4936,
+          4937,
           "item_lifecycle"
         ]
       ],
@@ -19685,57 +19789,87 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1397,
+          1372,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1400,
+          1375,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1403,
+          1378,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1406,
+          1381,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1409,
+          1384,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1412,
+          1387,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1415,
+          1390,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1418,
+          1393,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1421,
+          1396,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1424,
+          1399,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1427,
+          1402,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1405,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1408,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1411,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1414,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1417,
+          "item_lifecycle"
+        ],
+        [
+          "src/classes/salchemist.c",
+          1426,
           "item_lifecycle"
         ],
         [
@@ -19745,52 +19879,22 @@
         ],
         [
           "src/classes/salchemist.c",
-          1433,
+          1441,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1436,
+          1445,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1439,
+          1446,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1442,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1451,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1455,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1466,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1470,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1471,
-          "item_lifecycle"
-        ],
-        [
-          "src/classes/salchemist.c",
-          1472,
+          1447,
           "item_publication"
         ]
       ],
@@ -19834,17 +19938,17 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1368,
+          1343,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1372,
+          1347,
           "item_lifecycle"
         ],
         [
           "src/classes/salchemist.c",
-          1373,
+          1348,
           "item_publication"
         ]
       ],
@@ -19867,9 +19971,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "SQL item repository admits or transfers UID ownership, appends custody history, and updates coin-pile payload for money objects; coin payload requires a matching money account effect.",
+      "classification": "SQL item repository admits or transfers UID ownership, appends custody history, and updates coin-pile payload for money objects; coin payload requires a matching money account effect. Admitted ordinary schema-2 drops also store exact room payload and retire selected stale carried projections in this transaction; no second custody authority.",
       "authority_boundary": "Typed item-transfer command transaction and exact UID/revision checks; the repository component is not a separate gameplay producer.",
-      "current_support": "Direct SQL/domain behavior exists; complete root accounting and both-backend playable proof unverified.",
+      "current_support": "Schema-1 inactive behavior retained; admitted schema-2 custody owns atomic payload participation and stale player projection retirement. Complete native route/backends remain unqualified in this inventory.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -19890,22 +19994,22 @@
       "sites": [
         [
           "src/item/item_transfer_repository.c",
-          1382,
+          1389,
           "sql_economy"
         ],
         [
           "src/item/item_transfer_repository.c",
-          1415,
+          1422,
           "sql_economy"
         ],
         [
           "src/item/item_transfer_repository.c",
-          1499,
+          1506,
           "sql_economy"
         ],
         [
           "src/item/item_transfer_repository.c",
-          2106,
+          2113,
           "sql_economy"
         ]
       ],
@@ -19941,12 +20045,12 @@
       "sites": [
         [
           "src/item/item_transfer_repository.c",
-          3039,
+          3070,
           "economic_submit"
         ],
         [
           "src/item/item_transfer_repository.c",
-          3106,
+          3137,
           "economic_submit"
         ]
       ],
@@ -20178,7 +20282,7 @@
       "sites": [
         [
           "src/classes/salchemist.c",
-          1542,
+          1517,
           "item_lifecycle"
         ]
       ],
@@ -20339,27 +20443,27 @@
       "sites": [
         [
           "src/cmd/actoth.c",
-          3357,
+          3358,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          3375,
+          3376,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          3383,
+          3384,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          3425,
+          3426,
           "item_publication"
         ],
         [
           "src/cmd/actoth.c",
-          3576,
+          3577,
           "economic_submit"
         ]
       ],
@@ -21770,7 +21874,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          5869,
+          5872,
           "sql_economy"
         ]
       ],
@@ -27481,42 +27585,42 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          12232,
+          12528,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12233,
+          12529,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12234,
+          12530,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12235,
+          12531,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12266,
+          12562,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12267,
+          12563,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12268,
+          12564,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          12269,
+          12565,
           "coin_assignment"
         ]
       ],
@@ -27554,42 +27658,42 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          4267,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
-          4268,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
-          4269,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
           4270,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          4275,
+          4271,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          4276,
+          4272,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
-          4277,
+          4273,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
           4278,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          4279,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          4280,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          4281,
           "coin_assignment"
         ]
       ],
@@ -27988,7 +28092,7 @@
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          3016,
+          3030,
           "economic_submit"
         ],
         [
@@ -28454,22 +28558,22 @@
       "sites": [
         [
           "src/persistence/copyover.c",
-          2036,
+          2098,
           "item_lifecycle"
         ],
         [
           "src/persistence/copyover.c",
-          2038,
+          2100,
           "item_publication"
         ],
         [
           "src/persistence/copyover.c",
-          2053,
+          2115,
           "item_lifecycle"
         ],
         [
           "src/persistence/copyover.c",
-          2055,
+          2117,
           "item_publication"
         ]
       ],
@@ -28506,32 +28610,32 @@
       "sites": [
         [
           "src/persistence/copyover.c",
-          1465,
+          1519,
           "coin_assignment"
         ],
         [
           "src/persistence/copyover.c",
-          1497,
+          1551,
           "item_lifecycle"
         ],
         [
           "src/persistence/copyover.c",
-          1500,
+          1554,
           "item_publication"
         ],
         [
           "src/persistence/copyover.c",
-          1510,
+          1564,
           "item_lifecycle"
         ],
         [
           "src/persistence/copyover.c",
-          1513,
+          1567,
           "item_publication"
         ],
         [
           "src/persistence/copyover.c",
-          1991,
+          2053,
           "coin_assignment"
         ]
       ],
@@ -29408,7 +29512,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          10929,
+          10932,
           "sql_economy"
         ]
       ],
@@ -29446,7 +29550,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9508,
+          9511,
           "sql_economy"
         ]
       ],
@@ -29484,12 +29588,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9391,
+          9394,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          9471,
+          9474,
           "sql_economy"
         ]
       ],
@@ -29570,32 +29674,32 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          8496,
+          8499,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          8511,
+          8514,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          8550,
+          8553,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8612,
+          8615,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8787,
+          8790,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          8800,
+          8803,
           "item_publication"
         ]
       ],
@@ -29640,27 +29744,27 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          8492,
+          8495,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8507,
+          8510,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8692,
+          8695,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8783,
+          8786,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          8796,
+          8799,
           "item_lifecycle"
         ]
       ],
@@ -29705,12 +29809,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          924,
+          927,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          977,
+          980,
           "item_lifecycle"
         ]
       ],
@@ -29757,7 +29861,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          6438,
+          6441,
           "item_lifecycle"
         ]
       ],
@@ -29804,27 +29908,27 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          4669,
+          4672,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          4914,
+          4917,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          4940,
+          4943,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          4944,
+          4947,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          4950,
+          4953,
           "item_publication"
         ]
       ],
@@ -29871,12 +29975,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          7257,
+          7260,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          7316,
+          7319,
           "item_publication"
         ]
       ],
@@ -29921,22 +30025,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          10359,
+          10362,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          10431,
+          10434,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11166,
+          11462,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11311,
+          11607,
           "item_publication"
         ]
       ],
@@ -29981,27 +30085,27 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11235,
+          11531,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11282,
+          11578,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11300,
+          11596,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11306,
+          11602,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          11314,
+          11610,
           "item_lifecycle"
         ]
       ],
@@ -30049,22 +30153,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9691,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
-          9693,
-          "coin_assignment"
-        ],
-        [
-          "src/sql/sql_player.c",
-          9695,
+          9694,
           "coin_assignment"
         ],
         [
           "src/sql/sql_player.c",
           9696,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          9698,
+          "coin_assignment"
+        ],
+        [
+          "src/sql/sql_player.c",
+          9699,
           "coin_assignment"
         ]
       ],
@@ -30109,17 +30213,17 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9797,
+          9800,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          10133,
+          10136,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          10171,
+          10174,
           "item_publication"
         ]
       ],
@@ -30166,42 +30270,42 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          9551,
+          9554,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9557,
+          9560,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9567,
+          9570,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9809,
+          9812,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9880,
+          9883,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9928,
+          9931,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9938,
+          9941,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          9948,
+          9951,
           "item_lifecycle"
         ]
       ],
@@ -30246,22 +30350,22 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          7368,
+          7371,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          7369,
+          7372,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          7378,
+          7381,
           "item_publication"
         ],
         [
           "src/sql/sql_player.c",
-          7379,
+          7382,
           "item_lifecycle"
         ]
       ],
@@ -32169,7 +32273,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11815,
+          12111,
           "sql_economy"
         ]
       ],
@@ -32207,7 +32311,7 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11736,
+          12032,
           "ship_coffer_assignment"
         ]
       ],
@@ -32244,12 +32348,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          11480,
+          11776,
           "sql_economy"
         ],
         [
           "src/sql/sql_player.c",
-          11535,
+          11831,
           "sql_economy"
         ]
       ],
@@ -45538,9 +45642,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
-      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
-      "current_support": "Typed retained-pouch craft admission commits exact physical retirements, genuine output UIDs and bounded counter updates atomically. Native MySQL, MariaDB and flatfile repeated collection/replay tests pass; flatfile interrupted recovery and runtime publication retention pass. Integrated active-epoch gameplay remains unqualified.",
+      "classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
+      "authority_boundary": "Existing native craft transaction and retained publication owner; durable player receipt/save before acknowledgement. Poison notch outcome is frozen before admission and applied without RNG.",
+      "current_support": "Active flatfile, MySQL8 and MariaDB10.11 gameplay passes exact poison/Encrust/Harvester conservation, retry, retained crash/disconnect publication, copyover and two cold restarts. Native pouch/alchemy success and zero-output failure, rollback, replay and frozen notching pass separately. Test-only scoped admission projection leaves #490 global activation unqualified.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -45562,24 +45666,32 @@
         "tests/async/item_transfer_mysql_harness.cpp",
         "tests/async/test_publication_retention_runtime.py",
         "tests/async/test_chaos_pouch_ledger.py",
-        "tests/async/test_issue_551_flatfile_craft.py"
+        "tests/async/test_issue_551_flatfile_craft.py",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py"
       ],
       "sites": [
         [
           "src/item/item_movement_transaction.c",
-          2532,
+          2541,
           "economic_submit"
         ],
         [
           "src/item/item_movement_transaction.c",
-          2739,
+          2753,
           "economic_submit"
         ]
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py",
+        "tests/async/test_issue_551_flatfile_craft.py",
+        "tests/async/item_transfer_mysql_harness.cpp"
+      ],
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "native_effects": {
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
         "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
@@ -45588,7 +45700,7 @@
         ]
       },
       "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
       ]
     },
     {
@@ -45599,9 +45711,9 @@
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
-      "authority_boundary": "One retained craft operation commits native input retirement, output admission, crafting source claim and exact item references on SQL or flatfile.",
-      "current_support": "Active schema-2 admission, atomic native craft conservation, replay and rollback pass component/native tests on both SQL engines and flatfile. Real-server legacy craft/restart journeys pass separately; a full active-epoch gameplay journey remains unqualified. Virtual Chaos-pouch Encrust remains refused pending atomic pouch state updates.",
+      "classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
+      "authority_boundary": "Existing native craft transaction and retained publication owner; durable player receipt/save before acknowledgement. Poison notch outcome is frozen before admission and applied without RNG.",
+      "current_support": "Active flatfile, MySQL8 and MariaDB10.11 gameplay passes exact poison/Encrust/Harvester conservation, retry, retained crash/disconnect publication, copyover and two cold restarts. Native pouch/alchemy success and zero-output failure, rollback, replay and frozen notching pass separately. Test-only scoped admission projection leaves #490 global activation unqualified.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -45621,7 +45733,10 @@
         "tests/async/test_npc_alchemist_runtime.py",
         "tests/async/test_item_transfer_accounting.py",
         "tests/async/item_transfer_mysql_harness.cpp",
-        "tests/async/test_publication_retention_runtime.py"
+        "tests/async/test_publication_retention_runtime.py",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py",
+        "tests/async/test_issue_551_flatfile_craft.py"
       ],
       "sites": [
         [
@@ -45635,10 +45750,16 @@
           "item_publication"
         ]
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py",
+        "tests/async/test_issue_551_flatfile_craft.py",
+        "tests/async/item_transfer_mysql_harness.cpp"
+      ],
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "native_effects": {
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
         "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
@@ -45647,7 +45768,7 @@
         ]
       },
       "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
       ]
     },
     {
@@ -45733,7 +45854,7 @@
       "sites": [
         [
           "src/item/item_transfer_repository.c",
-          1648,
+          1655,
           "sql_economy"
         ]
       ],
@@ -45784,12 +45905,12 @@
       "sites": [
         [
           "src/sql/sql_player.c",
-          4749,
+          4752,
           "item_lifecycle"
         ],
         [
           "src/sql/sql_player.c",
-          4751,
+          4754,
           "item_lifecycle"
         ]
       ],
@@ -45869,6 +45990,177 @@
       "refusal_source_evidence": [
         "do_salvage checks economic_gameplay_authority::active() before calling downgrade_salvage_material; the branch preserves the input when either detached prototype or batch admission fails."
       ]
+    },
+    {
+      "id": "item.sql_room_payload_record",
+      "path": "src/persistence/sql_room_item_payload.c",
+      "symbol": "sql_room_item_payload_record",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Immutable exact UID/revision payload and captured season provenance participates in the existing admitted schema-2 item root. item_current_owner remains sole custody/topology authority.",
+      "authority_boundary": "Borrowed coordinator transaction/session and exact native source locks; no independent root, adoption or activation.",
+      "current_support": "Source observed only; native route and backend qualification remain unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_sql_room_item_payload.py"
+      ],
+      "sites": [
+        [
+          "src/persistence/sql_room_item_payload.c",
+          586,
+          "sql_economy"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Current named definition and reviewed enclosing item or boot caller; no backend qualification inferred.",
+      "native_effects": {
+        "holding_effect": "No new monetary holding or posting.",
+        "custody_effect": "Immutable exact UID/revision payload and captured season provenance participates in the existing admitted schema-2 item root. item_current_owner remains sole custody/topology authority.",
+        "native_state_targets": [
+          "sql_room_item_payload bytes/version/operation/season",
+          "existing item root transaction"
+        ]
+      }
+    },
+    {
+      "id": "recovery.sql_exact_room_hydration",
+      "path": "src/sql/sql_player.c",
+      "symbol": "sql_room_item_publish",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Hydrates the complete detached retained graph after successful schema-2 provenance, current season, exact UID/revision/topology, literal fields and staged-byte checks.",
+      "authority_boundary": "Selected immutable payload plus current native custody; projection creates no new root.",
+      "current_support": "Source observed only; native route and backend qualification remain unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_sql_room_item_publication_runtime.py"
+      ],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Current named definition and reviewed enclosing item or boot caller; no backend qualification inferred.",
+      "native_effects": {
+        "holding_effect": "No new monetary holding or posting.",
+        "custody_effect": "Hydrates the complete detached retained graph after successful schema-2 provenance, current season, exact UID/revision/topology, literal fields and staged-byte checks.",
+        "native_state_targets": [
+          "detached exact P_obj graph",
+          "runtime ownership hydration"
+        ]
+      }
+    },
+    {
+      "id": "recovery.sql_exact_room_placement",
+      "path": "src/sql/sql_player.c",
+      "symbol": "sql_room_item_place_restored",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Installs retained room placement without gameplay drop hooks, decay, water redirect or falling, and recomputes derived lighting.",
+      "authority_boundary": "Verified retained root and destination; no new custody or issuance.",
+      "current_support": "Source observed only; native route and backend qualification remain unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_sql_room_item_publication_runtime.py"
+      ],
+      "sites": [],
+      "evidence": [],
+      "reachability_evidence": "Current named definition and reviewed enclosing item or boot caller; no backend qualification inferred.",
+      "native_effects": {
+        "holding_effect": "No new monetary holding or posting.",
+        "custody_effect": "Installs retained room placement without gameplay drop hooks, decay, water redirect or falling, and recomputes derived lighting.",
+        "native_state_targets": [
+          "P_obj loc/next_content",
+          "room contents and derived lighting"
+        ]
+      }
+    },
+    {
+      "id": "recovery.sql_exact_room_stage_cleanup",
+      "path": "src/sql/sql_player.c",
+      "symbol": "~sql_room_item_stage_guard",
+      "reason": "item_move",
+      "integration_issue": 482,
+      "owner": "primary / #482",
+      "coverage": "legacy",
+      "classification": "Clears original UIDs only on this failed detached stage and extracts its root without retiring native custody.",
+      "authority_boundary": "No selected durable owner or payload row may be removed by failed materialization.",
+      "current_support": "Source observed only; native route and backend qualification remain unverified.",
+      "backends": {
+        "mysql": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "mariadb": {
+          "status": "unverified",
+          "evidence": []
+        },
+        "flatfile": {
+          "status": "unverified",
+          "evidence": []
+        }
+      },
+      "test_candidates": [
+        "tests/async/test_sql_room_item_publication_runtime.py"
+      ],
+      "sites": [
+        [
+          "src/sql/sql_player.c",
+          11083,
+          "item_lifecycle"
+        ]
+      ],
+      "evidence": [],
+      "reachability_evidence": "Current named definition and reviewed enclosing item or boot caller; no backend qualification inferred.",
+      "native_effects": {
+        "holding_effect": "No new monetary holding or posting.",
+        "custody_effect": "Clears original UIDs only on this failed detached stage and extracts its root without retiring native custody.",
+        "native_state_targets": [
+          "this attempt detached P_obj tree only"
+        ]
+      }
     }
   ],
   "census": [
@@ -46210,7 +46502,7 @@
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 457,
+      "line": 446,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_craft("
     },
@@ -46222,61 +46514,61 @@
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 399,
+      "line": 381,
       "family": "item_lifecycle",
       "excerpt": "orb = read_object(VOBJ_GREATER_ORB_MAGIC, VIRTUAL);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 415,
+      "line": 397,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(orb);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 449,
+      "line": 431,
       "family": "item_lifecycle",
       "excerpt": "orb = read_object(VOBJ_GREATER_ORB_MAGIC, VIRTUAL);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 462,
+      "line": 451,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(orb);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 847,
+      "line": 836,
       "family": "item_lifecycle",
       "excerpt": "objrecipe = read_object(400210, VIRTUAL);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 917,
+      "line": 906,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(reward);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 921,
+      "line": 910,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(reward);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 931,
+      "line": 920,
       "family": "item_lifecycle",
       "excerpt": "reward = read_object(real_object(getItemFromZone(GET_ZONE(ch))), REAL);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 935,
+      "line": 924,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(reward);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 1707,
+      "line": 1696,
       "family": "item_lifecycle",
       "excerpt": "obj_to_char(read_object(400217, VIRTUAL), mob);"
     },
@@ -46288,13 +46580,13 @@
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 861,
+      "line": 850,
       "family": "item_publication",
       "excerpt": "obj_to_char(objrecipe, ch);"
     },
     {
       "path": "src/classes/drannak.c",
-      "line": 1707,
+      "line": 1696,
       "family": "item_publication",
       "excerpt": "obj_to_char(read_object(400217, VIRTUAL), mob);"
     },
@@ -46834,99 +47126,117 @@
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1747,
+      "line": 1722,
       "family": "money_helper",
       "excerpt": "if (SUB_MONEY(ch, circle * 10000, 0) != 0)"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 651,
+      "line": 617,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_craft("
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1041,
+      "line": 1012,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_craft("
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1127,
+      "line": 1102,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_craft("
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 543,
+      "line": 503,
       "family": "item_lifecycle",
       "excerpt": "P_obj ingredient = read_object(ingredients[i], VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 552,
+      "line": 512,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(ingredient);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 586,
+      "line": 546,
       "family": "item_lifecycle",
       "excerpt": "P_obj poison_vial = read_object(poison_data[i].vnum, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 590,
+      "line": 550,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(poison_vial);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 628,
+      "line": 588,
       "family": "item_lifecycle",
       "excerpt": "P_obj output = read_object(poison_data[i].vnum, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 657,
+      "line": 623,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(output);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 962,
+      "line": 928,
       "family": "item_lifecycle",
       "excerpt": "jewel = read_object(static_cast<int>(jewel_vnum), VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 986,
+      "line": 952,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 993,
+      "line": 959,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1000,
+      "line": 966,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1009,
+      "line": 975,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1022,
+      "line": 988,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
+    },
+    {
+      "path": "src/classes/salchemist.c",
+      "line": 998,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(jewel);"
+    },
+    {
+      "path": "src/classes/salchemist.c",
+      "line": 1023,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(jewel);"
+    },
+    {
+      "path": "src/classes/salchemist.c",
+      "line": 1027,
+      "family": "item_lifecycle",
+      "excerpt": "P_obj new_item = read_object(1251, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
@@ -46936,223 +47246,205 @@
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1052,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(jewel);"
-    },
-    {
-      "path": "src/classes/salchemist.c",
-      "line": 1056,
-      "family": "item_lifecycle",
-      "excerpt": "P_obj new_item = read_object(1251, VIRTUAL);"
-    },
-    {
-      "path": "src/classes/salchemist.c",
-      "line": 1061,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(jewel);"
-    },
-    {
-      "path": "src/classes/salchemist.c",
-      "line": 1132,
+      "line": 1107,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(new_item);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1139,
+      "line": 1114,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(jewel);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1267,
+      "line": 1242,
       "family": "item_lifecycle",
       "excerpt": "P_obj needed = read_object(imat, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1274,
+      "line": 1249,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(needed);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1277,
+      "line": 1252,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(needed);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1314,
+      "line": 1289,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(t_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1368,
+      "line": 1343,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(first_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1372,
+      "line": 1347,
       "family": "item_lifecycle",
       "excerpt": "ash = read_object(2670, VIRTUAL);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1397,
+      "line": 1372,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400261, VIRTUAL); // medium iron"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1400,
+      "line": 1375,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400262, VIRTUAL); // large iron"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1403,
+      "line": 1378,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400264, VIRTUAL); // medium steel"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1406,
+      "line": 1381,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400265, VIRTUAL); // large steel"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1409,
+      "line": 1384,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400267, VIRTUAL); // medium copper"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1412,
+      "line": 1387,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400268, VIRTUAL); // large copper"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1415,
+      "line": 1390,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400270, VIRTUAL); // medium silver"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1418,
+      "line": 1393,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400271, VIRTUAL); // large silver"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1421,
+      "line": 1396,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400273, VIRTUAL); // medium gold"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1424,
+      "line": 1399,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400274, VIRTUAL); // large gold"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1427,
+      "line": 1402,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400276, VIRTUAL); // medium platinum"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1430,
+      "line": 1405,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400277, VIRTUAL); // large platinum"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1433,
+      "line": 1408,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400279, VIRTUAL); // medium mithril"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1436,
+      "line": 1411,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400280, VIRTUAL); // large mithril"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1439,
+      "line": 1414,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400282, VIRTUAL); // medium adamantium"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1442,
+      "line": 1417,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(400283, VIRTUAL); // large adamantium"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1451,
+      "line": 1426,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(362, VIRTUAL); // Alloy"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1455,
+      "line": 1430,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(2670, VIRTUAL); // Ash"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1466,
+      "line": 1441,
       "family": "item_lifecycle",
       "excerpt": "new_obj = read_object(362, VIRTUAL); // Alloy"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1470,
+      "line": 1445,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(first_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1471,
+      "line": 1446,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(second_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1542,
+      "line": 1517,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // A random eq arti?"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1819,
+      "line": 1794,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item, TRUE); // Not an arti, but ok."
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1313,
+      "line": 1288,
       "family": "item_publication",
       "excerpt": "obj_from_char(t_obj);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1373,
+      "line": 1348,
       "family": "item_publication",
       "excerpt": "obj_to_obj(ash, furnace);"
     },
     {
       "path": "src/classes/salchemist.c",
-      "line": 1472,
+      "line": 1447,
       "family": "item_publication",
       "excerpt": "obj_to_obj(new_obj, furnace);"
     },
@@ -48262,829 +48554,829 @@
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4062,
+      "line": 4063,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(ch,"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 6483,
+      "line": 6484,
       "family": "money_helper",
       "excerpt": "if (total_to_give > 0 && SUB_MONEY(ch, (int)(total_to_give * split_coin_value), 0) != 0)"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 6495,
+      "line": 6496,
       "family": "money_helper",
       "excerpt": "ADD_MONEY(gl->ch, (int)(share * split_coin_value));"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 2569,
+      "line": 2570,
       "family": "economic_submit",
       "excerpt": "if (!currency_transaction_submit("
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 2620,
+      "line": 2621,
       "family": "economic_submit",
       "excerpt": "if (!currency_transaction_submit("
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 2676,
+      "line": 2677,
       "family": "economic_submit",
       "excerpt": "ok = currency_transaction_submit("
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 3576,
+      "line": 3577,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit(thief, object, NULL, source, destination,"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 6288,
+      "line": 6289,
       "family": "economic_submit",
       "excerpt": "if (currency_transaction_submit_coin(actor, payload, money_split_child_completion,"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 7034,
+      "line": 7035,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit("
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4054,
+      "line": 4055,
       "family": "direct_cash_assignment",
       "excerpt": "victim->points.cash[vcoins]--;"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1016,
+      "line": 1017,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_ROOT, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1019,
+      "line": 1020,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_SPROUTS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1022,
+      "line": 1023,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BLUEBERRIES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1025,
+      "line": 1026,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_FOREST_TOADSTOOL, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1028,
+      "line": 1029,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_CRABAPPLES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1031,
+      "line": 1032,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_RASPBERRIES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1034,
+      "line": 1035,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_TREEROOT_MOSS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1037,
+      "line": 1038,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BROWN_TUBER, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1040,
+      "line": 1041,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_RED_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1043,
+      "line": 1044,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_NIGHTSHADE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1046,
+      "line": 1047,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_MANDRAKE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1049,
+      "line": 1050,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GARLIC, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1052,
+      "line": 1053,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_FAERIE_DUST, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1055,
+      "line": 1056,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_DRAGON_BLOOD, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1059,
+      "line": 1060,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GREEN_HERB, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1069,
+      "line": 1070,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_SWAMP_GRUB, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1072,
+      "line": 1073,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_MANGROVE_ROOT, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1075,
+      "line": 1076,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_SPROUTS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1078,
+      "line": 1079,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_NIGHTSHADE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1081,
+      "line": 1082,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_MANDRAKE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1084,
+      "line": 1085,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_FAERIE_DUST, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1087,
+      "line": 1088,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GREEN_HERB, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1091,
+      "line": 1092,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_HUMAN_BONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1100,
+      "line": 1101,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_ROOT, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1103,
+      "line": 1104,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BLUEBERRIES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1106,
+      "line": 1107,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_RASPBERRIES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1109,
+      "line": 1110,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_WIREGRASS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1112,
+      "line": 1113,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BROWN_TUBER, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1115,
+      "line": 1116,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_LICHEN, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1118,
+      "line": 1119,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_RED_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1121,
+      "line": 1122,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_NIGHTSHADE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1124,
+      "line": 1125,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_MANDRAKE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1127,
+      "line": 1128,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GARLIC, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1130,
+      "line": 1131,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_FAERIE_DUST, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1133,
+      "line": 1134,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_DRAGON_BLOOD, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1136,
+      "line": 1137,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GREEN_HERB, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1139,
+      "line": 1140,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_STRANGE_STONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1143,
+      "line": 1144,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_HUMAN_BONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1152,
+      "line": 1153,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_ROOT, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1155,
+      "line": 1156,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_SPROUTS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1158,
+      "line": 1159,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BLUEBERRIES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1161,
+      "line": 1162,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_CRABAPPLES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1164,
+      "line": 1165,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_RASPBERRIES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1167,
+      "line": 1168,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_WIREGRASS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1170,
+      "line": 1171,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BROWN_TUBER, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1173,
+      "line": 1174,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_LICHEN, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1176,
+      "line": 1177,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BLIND_CAVEWORM, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1179,
+      "line": 1180,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_MANDRAKE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1182,
+      "line": 1183,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GARLIC, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1185,
+      "line": 1186,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_FAERIE_DUST, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1188,
+      "line": 1189,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_DRAGON_BLOOD, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1191,
+      "line": 1192,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_STRANGE_STONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1194,
+      "line": 1195,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_HUMAN_BONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1203,
+      "line": 1204,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_ROOT, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1206,
+      "line": 1207,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BLUEBERRIES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1209,
+      "line": 1210,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_RASPBERRIES, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1212,
+      "line": 1213,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BROWN_TUBER, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1215,
+      "line": 1216,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_LICHEN, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1218,
+      "line": 1219,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BLIND_CAVEWORM, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1221,
+      "line": 1222,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_FAERIE_DUST, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1224,
+      "line": 1225,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_DRAGON_BLOOD, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1227,
+      "line": 1228,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_STRANGE_STONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1231,
+      "line": 1232,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_HUMAN_BONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1240,
+      "line": 1241,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_ROOT, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1243,
+      "line": 1244,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BLIND_CAVEWORM, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1246,
+      "line": 1247,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GREEN_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1249,
+      "line": 1250,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_PURPLE_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1252,
+      "line": 1253,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_PINK_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1255,
+      "line": 1256,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_MANDRAKE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1258,
+      "line": 1259,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GARLIC, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1262,
+      "line": 1263,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_FAERIE_DUST, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1271,
+      "line": 1272,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_MANGROVE_ROOT, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1274,
+      "line": 1275,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_FOREST_TOADSTOOL, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1277,
+      "line": 1278,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_TREEROOT_MOSS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1280,
+      "line": 1281,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_RED_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1283,
+      "line": 1284,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GREEN_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1286,
+      "line": 1287,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_BLUE_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1289,
+      "line": 1290,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_PURPLE_MUSHROOMS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1292,
+      "line": 1293,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_NIGHTSHADE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1295,
+      "line": 1296,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_MANDRAKE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1298,
+      "line": 1299,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GARLIC, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1301,
+      "line": 1302,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_DRAGON_BLOOD, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1304,
+      "line": 1305,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_GREEN_HERB, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1313,
+      "line": 1314,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_EDIBLE_ROOT, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1316,
+      "line": 1317,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_WIREGRASS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1319,
+      "line": 1320,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_DESERT_GRASS, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1322,
+      "line": 1323,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_NIGHTSHADE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1325,
+      "line": 1326,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_STRANGE_STONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1329,
+      "line": 1330,
       "family": "item_lifecycle",
       "excerpt": "forage_obj = read_object(VOBJ_FORAGE_HUMAN_BONE, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1378,
+      "line": 1379,
       "family": "item_lifecycle",
       "excerpt": "treeobj = read_object(VOBJ_FORAGE_FIRST + number(0, VOBJ_FORAGE_NUM_TYPES - 1),"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1382,
+      "line": 1383,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(treeobj);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1586,
+      "line": 1587,
       "family": "item_lifecycle",
       "excerpt": "treeobj = read_object(20, VIRTUAL);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1683,
+      "line": 1684,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Transient artifacts?"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1699,
+      "line": 1700,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, TRUE); // Transient artifacts?"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 2913,
+      "line": 2914,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(tobj);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4740,
+      "line": 4741,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(bottle);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4759,
+      "line": 4760,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(bottle);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4768,
+      "line": 4769,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(bottle);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4806,
+      "line": 4807,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(bottle);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4911,
+      "line": 4912,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(scroll);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4936,
+      "line": 4937,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(scroll);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 6908,
+      "line": 6909,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 7113,
+      "line": 7114,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj_to_put);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 7606,
+      "line": 7607,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1347,
+      "line": 1348,
       "family": "item_publication",
       "excerpt": "obj_to_char(forage_obj, ch);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1587,
+      "line": 1588,
       "family": "item_publication",
       "excerpt": "obj_to_room(treeobj, ch->in_room);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1680,
+      "line": 1681,
       "family": "item_publication",
       "excerpt": "obj = unequip_char(ch, l);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 1687,
+      "line": 1688,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, ch->in_room);"
-    },
-    {
-      "path": "src/cmd/actoth.c",
-      "line": 1704,
-      "family": "item_publication",
-      "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/cmd/actoth.c",
       "line": 1705,
       "family": "item_publication",
+      "excerpt": "obj_from_char(obj);"
+    },
+    {
+      "path": "src/cmd/actoth.c",
+      "line": 1706,
+      "family": "item_publication",
       "excerpt": "obj_to_room(obj, ch->in_room);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 3357,
+      "line": 3358,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 3375,
+      "line": 3376,
       "family": "item_publication",
       "excerpt": "unequip_char(victim, actual_slot);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 3383,
+      "line": 3384,
       "family": "item_publication",
       "excerpt": "obj_from_room(object);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 3425,
+      "line": 3426,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, thief);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 3904,
+      "line": 3905,
       "family": "item_publication",
       "excerpt": "obj = unequip_char(victim, eq_pos);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 3906,
+      "line": 3907,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, ch);"
-    },
-    {
-      "path": "src/cmd/actoth.c",
-      "line": 3969,
-      "family": "item_publication",
-      "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/cmd/actoth.c",
       "line": 3970,
       "family": "item_publication",
+      "excerpt": "obj_from_char(obj);"
+    },
+    {
+      "path": "src/cmd/actoth.c",
+      "line": 3971,
+      "family": "item_publication",
       "excerpt": "obj_to_char(obj, ch);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4752,
+      "line": 4753,
       "family": "item_publication",
       "excerpt": "unequip_char(ch, HOLD);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 4870,
+      "line": 4871,
       "family": "item_publication",
       "excerpt": "unequip_char(ch, HOLD);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 6904,
+      "line": 6905,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 6912,
+      "line": 6913,
       "family": "item_publication",
       "excerpt": "obj_to_obj(object, well);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 7073,
+      "line": 7074,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj_to_put);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 7109,
+      "line": 7110,
       "family": "item_publication",
       "excerpt": "obj_to_obj(obj_to_put, sub_object);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 7706,
+      "line": 7707,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, wear), ch);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 7706,
+      "line": 7707,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, wear), ch);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 8165,
+      "line": 8166,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, k), ch);"
     },
     {
       "path": "src/cmd/actoth.c",
-      "line": 8165,
+      "line": 8166,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, k), ch);"
     },
@@ -53374,19 +53666,19 @@
     },
     {
       "path": "src/guild/guild.c",
-      "line": 508,
+      "line": 523,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(ch, wallet, 0);"
     },
     {
       "path": "src/guild/guild.c",
-      "line": 514,
+      "line": 529,
       "family": "money_helper",
       "excerpt": "SUB_MONEY(ch, cost, 0);"
     },
     {
       "path": "src/guild/guild.c",
-      "line": 1009,
+      "line": 1024,
       "family": "money_helper",
       "excerpt": "return SUB_MONEY(ch, cost, 0) == 0;"
     },
@@ -53890,97 +54182,97 @@
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 1951,
+      "line": 1960,
       "family": "economic_submit",
       "excerpt": "!item_movement_transaction_submit(actor, root, target_parent, source,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2018,
+      "line": 2027,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2166,
+      "line": 2175,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2239,
+      "line": 2248,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2444,
+      "line": 2453,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2517,
+      "line": 2526,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_batch("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2525,
+      "line": 2534,
       "family": "economic_submit",
       "excerpt": "return item_movement_transaction_submit_batch(actor, roots, root_count, target_container,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2532,
+      "line": 2541,
       "family": "economic_submit",
       "excerpt": "bool item_movement_transaction_submit_craft("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2739,
+      "line": 2753,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2862,
+      "line": 2876,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2870,
+      "line": 2884,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2882,
+      "line": 2896,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3008,
+      "line": 3022,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object, P_char recipient,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3016,
+      "line": 3030,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_player_before_entry_with_completion("
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3026,
+      "line": 3040,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3084,
+      "line": 3098,
       "family": "economic_submit",
       "excerpt": "bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room,"
     },
@@ -54022,13 +54314,13 @@
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 2986,
+      "line": 3000,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/item/item_movement_transaction.c",
-      "line": 3135,
+      "line": 3149,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
@@ -54154,7 +54446,7 @@
     },
     {
       "path": "src/item/item_transfer_command.c",
-      "line": 1473,
+      "line": 1484,
       "family": "economic_submit",
       "excerpt": "bool item_transfer_command_build(critical_command *command, critical_operation_id operation_id,"
     },
@@ -54166,43 +54458,43 @@
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 3039,
+      "line": 3070,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 3106,
+      "line": 3137,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, *payload,"
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1382,
+      "line": 1389,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,\""
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1415,
+      "line": 1422,
       "family": "sql_economy",
       "excerpt": "\"UPDATE item_current_owner SET root_item_uid=?,parent_item_uid=IF(?=0,NULL,?),\""
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1499,
+      "line": 1506,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO item_ownership_ledger(operation_id,event_index,item_uid,root_item_uid,\""
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1648,
+      "line": 1655,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,\""
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 2106,
+      "line": 2113,
       "family": "sql_economy",
       "excerpt": "\"UPDATE item_current_owner SET coin_payload=? WHERE item_uid=? AND item_revision=?\";"
     },
@@ -56200,61 +56492,61 @@
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 1465,
+      "line": 1519,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(mob) = mob_entry.gold;"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 1991,
+      "line": 2053,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(mob) = mob_entry.gold;"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 1497,
+      "line": 1551,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(mob_entry.equipment_vnums[w], VIRTUAL);"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 1510,
+      "line": 1564,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(inv_entries[c].vnum, VIRTUAL);"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 2036,
+      "line": 2098,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(mob_entry.equipment_vnums[w], VIRTUAL);"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 2053,
+      "line": 2115,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(inv_entry.vnum, VIRTUAL);"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 1500,
+      "line": 1554,
       "family": "item_publication",
       "excerpt": "equip_char(mob, obj, w, 0);"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 1513,
+      "line": 1567,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, mob);"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 2038,
+      "line": 2100,
       "family": "item_publication",
       "excerpt": "equip_char(mob, obj, w, 0);"
     },
     {
       "path": "src/persistence/copyover.c",
-      "line": 2055,
+      "line": 2117,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, mob);"
     },
@@ -56365,6 +56657,12 @@
       "line": 1326,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO item_ownership_ledger(operation_id,event_index,item_uid,root_item_uid,parent_item_uid,\""
+    },
+    {
+      "path": "src/persistence/sql_room_item_payload.c",
+      "line": 586,
+      "family": "sql_economy",
+      "excerpt": "\"INSERT INTO sql_room_item_payload(item_uid,item_revision,payload_version,operation_id,season_epoch,payload) VALUES(\" +"
     },
     {
       "path": "src/player/player_load_items.c",
@@ -60106,481 +60404,487 @@
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4267,
+      "line": 4270,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(ch) = sql_row_int(row, col++, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4268,
+      "line": 4271,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(ch) = sql_row_int(row, col++, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4269,
+      "line": 4272,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(ch) = sql_row_int(row, col++, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4270,
+      "line": 4273,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(ch) = sql_row_int(row, col++, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4275,
+      "line": 4278,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4276,
+      "line": 4279,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4277,
+      "line": 4280,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4278,
+      "line": 4281,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9691,
+      "line": 9694,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(mob) = remaining / 1000;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9693,
+      "line": 9696,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(mob) = remaining / 100;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9695,
+      "line": 9698,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(mob) = remaining / 10;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9696,
+      "line": 9699,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(mob) = remaining % 10;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12232,
+      "line": 12528,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12233,
+      "line": 12529,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12234,
+      "line": 12530,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12235,
+      "line": 12531,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(ch) = 0;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12266,
+      "line": 12562,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(ch) = parsed.copper;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12267,
+      "line": 12563,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(ch) = parsed.silver;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12268,
+      "line": 12564,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(ch) = parsed.gold;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12269,
+      "line": 12565,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(ch) = parsed.platinum;"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11736,
+      "line": 12032,
       "family": "ship_coffer_assignment",
       "excerpt": "ship->money = atoi(row[8]);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 924,
+      "line": 927,
       "family": "item_lifecycle",
       "excerpt": "P_obj proto = read_object(obj->R_num, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 977,
+      "line": 980,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(proto);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4669,
+      "line": 4672,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(vnum, VIRTUAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4749,
+      "line": 4752,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4751,
+      "line": 4754,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(items[loaded], FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 6438,
+      "line": 6441,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7257,
+      "line": 7260,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7369,
+      "line": 7372,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7379,
+      "line": 7382,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8492,
+      "line": 8495,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cur_corpse, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8507,
+      "line": 8510,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cur_corpse, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8550,
+      "line": 8553,
       "family": "item_lifecycle",
       "excerpt": "cur_corpse = read_object(corpse_rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8612,
+      "line": 8615,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8692,
+      "line": 8695,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8783,
+      "line": 8786,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cur_corpse, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8796,
+      "line": 8799,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(cur_corpse, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9551,
+      "line": 9554,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9557,
+      "line": 9560,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9567,
+      "line": 9570,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(item->obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9797,
+      "line": 9800,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9809,
+      "line": 9812,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9880,
+      "line": 9883,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9928,
+      "line": 9931,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9938,
+      "line": 9941,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9948,
+      "line": 9951,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10133,
+      "line": 10136,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10359,
+      "line": 10362,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10431,
+      "line": 10434,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11166,
+      "line": 11083,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(root, FALSE);"
+    },
+    {
+      "path": "src/sql/sql_player.c",
+      "line": 11462,
       "family": "item_lifecycle",
       "excerpt": "P_obj obj = read_object(rnum, REAL);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11235,
+      "line": 11531,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11282,
+      "line": 11578,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11300,
+      "line": 11596,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11306,
+      "line": 11602,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11314,
+      "line": 11610,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4914,
+      "line": 4917,
       "family": "item_publication",
       "excerpt": "obj_to_obj(items[i], items[j]);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4940,
+      "line": 4943,
       "family": "item_publication",
       "excerpt": "equip_char(ch, items[i], slot, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4944,
+      "line": 4947,
       "family": "item_publication",
       "excerpt": "obj_to_char(items[i], ch);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 4950,
+      "line": 4953,
       "family": "item_publication",
       "excerpt": "obj_to_char(items[i], ch);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7316,
+      "line": 7319,
       "family": "item_publication",
       "excerpt": "obj_to_obj(obj, chest_obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7368,
+      "line": 7371,
       "family": "item_publication",
       "excerpt": "P_obj obj = unequip_char(ch, i);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 7378,
+      "line": 7381,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8496,
+      "line": 8499,
       "family": "item_publication",
       "excerpt": "obj_to_room(cur_corpse, cur_room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8511,
+      "line": 8514,
       "family": "item_publication",
       "excerpt": "obj_to_room(cur_corpse, cur_room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8787,
+      "line": 8790,
       "family": "item_publication",
       "excerpt": "obj_to_room(cur_corpse, cur_room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 8800,
+      "line": 8803,
       "family": "item_publication",
       "excerpt": "obj_to_room(cur_corpse, cur_room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10171,
+      "line": 10174,
       "family": "item_publication",
       "excerpt": "equip_char(k->mob, k->equipment[slot], slot, 0);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11311,
+      "line": 11607,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, room);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 5869,
+      "line": 5872,
       "family": "sql_economy",
       "excerpt": "\"DELETE FROM ships WHERE LOWER(owner_name)=LOWER('%s')\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9391,
+      "line": 9394,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO saved_items (\""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9471,
+      "line": 9474,
       "family": "sql_economy",
       "excerpt": "snprintf(del_query, sizeof(del_query), \"DELETE FROM saved_items WHERE item_key='%s'\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 9508,
+      "line": 9511,
       "family": "sql_economy",
       "excerpt": "snprintf(query, sizeof(query), \"DELETE FROM saved_items WHERE item_key='%s'\", esc_key);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 10929,
+      "line": 10932,
       "family": "sql_economy",
       "excerpt": "\"DELETE FROM saved_items WHERE id=%d AND item_key='%s'\", source_root_id,"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11480,
+      "line": 11776,
       "family": "sql_economy",
       "excerpt": "\"insert into ships (owner_name, ship_name, ship_class, frags, anchor_room, time_played, mainsail, race, money, flags) \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11535,
+      "line": 11831,
       "family": "sql_economy",
       "excerpt": "\"update ships set owner_name='%s', ship_name='%s', ship_class=%d, frags=%d, anchor_room=%d, time_played=%d, mainsail=%d, race=%d, money=%d, flags=%lu \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 11815,
+      "line": 12111,
       "family": "sql_economy",
       "excerpt": "snprintf(query, sizeof(query), \"delete from ships where owner_name='%s'\", esc_owner);"
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12208,
+      "line": 12504,
       "family": "sql_economy",
       "excerpt": "\"insert ignore into account_banks (account_name, racewar) values ('%s', %d)\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12395,
+      "line": 12691,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set bank_copper=bank_copper+%d, \""
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12476,
+      "line": 12772,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set %s = %s - %d where account_name='%s' and racewar=%d and %s >= %d\","
     },
     {
       "path": "src/sql/sql_player.c",
-      "line": 12574,
+      "line": 12870,
       "family": "sql_economy",
       "excerpt": "\"update account_banks set bank_copper=bank_copper-%d, \""
     },
@@ -62803,5 +63107,10 @@
       "reason": "Direct collection extraction was removed; shared craft publication now retires committed inputs after the retained pouch counter update."
     }
   ],
-  "source_tree": "2fa0d98dac56a1687e4af4314da7ac9b327a670d"
+  "source_tree": "0d7a9be161b837a3b4f4483d7e8099d18a6b8df7",
+  "scoped_qualification_551": {
+    "base_commit": "a461b989016cb40fff2e1573720c6c9288e6427b",
+    "evidence": "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+    "scope": "Native poison, Encrust success/failure and Harvester active accounting and retained publication. #490 global activation census and #568 initialization remain separate."
+  }
 }

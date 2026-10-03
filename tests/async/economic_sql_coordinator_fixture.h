@@ -12,8 +12,10 @@
 #include <string>
 #include <thread>
 
-inline critical_apply_result exercise_sql_coordinator(critical_command command, const char *family,
-						      bool lose_commit_reply = false)
+inline critical_apply_result
+exercise_sql_coordinator(critical_command command, const char *family,
+			 bool lose_commit_reply = false,
+			 critical_apply_outcome first_outcome = critical_apply_outcome::applied)
 {
 	assert(economic_command_admission_supported(command));
 	std::string directory = std::string("/tmp/duris-economic-") + family + "-XXXXXX";
@@ -54,13 +56,19 @@ inline critical_apply_result exercise_sql_coordinator(critical_command command, 
 	assert(critical_command_coordinator_submit_for_publication(command) ==
 	       critical_submit_result::awaiting_durability);
 	const auto applied = completion();
-	assert(applied.outcome == (lose_commit_reply ? critical_apply_outcome::already_applied :
-						       critical_apply_outcome::applied));
+	assert(applied.outcome ==
+	       (lose_commit_reply ? critical_apply_outcome::already_applied : first_outcome));
 	if (lose_commit_reply)
 	{
 		assert(!reply_pending);
 		assert(critical_command_coordinator_health_copy().ambiguous == 1);
 		assert(critical_command_coordinator_health_copy().retries == 1);
+	}
+	else
+	{
+		// Distinguish native pooled reconciliation from synthetic ambiguity.
+		assert(critical_command_coordinator_health_copy().ambiguous == 0);
+		assert(critical_command_coordinator_health_copy().retries == 0);
 	}
 	auto conflict = command;
 	++conflict.accepted_at_usec;

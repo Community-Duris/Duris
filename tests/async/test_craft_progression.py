@@ -24,9 +24,18 @@ HARNESS = r'''
 P_room world = nullptr;
 int top_of_world = -1;
 int notches = 0, xp = 0, saves = 0;
+int notices = 0;
+void send_to_char(const char *, P_char) { ++notices; }
+void send_to_char_f(P_char, const char *, ...) { ++notices; }
+void act(const char *, int, P_char, P_obj, void *, int) { ++notices; }
+void wizlog(int, const char *, ...) { ++notices; }
 player_save_pipeline_result save_result = player_save_pipeline_result::capture_failed;
 bool notch_skill(P_char, int skill, float chance) {
- assert((skill == SKILL_CRAFT || skill == SKILL_FORGE) && chance == 50); ++notches; return true;
+ assert(((skill == SKILL_CRAFT || skill == SKILL_FORGE) && chance == 50) ||
+        (skill == SKILL_MIXPOISON && chance == 6.25)); ++notches; return true;
+}
+bool skill_notch_apply(P_char, int skill, const skill_notch_outcome &) {
+ assert(skill==SKILL_MIXPOISON); ++notches; return true;
 }
 int gain_exp(P_char, P_char, int amount, int kind) {
  assert(kind == EXP_BOON); xp += amount; return 0;
@@ -69,6 +78,36 @@ int main() {
   assert(craft_progression_hooks.publish(id(1), &actor, terms)==craft_progression_publication_result::ready);
   assert(notches==1 && xp==7000 && saves==2);
  }
+ // Alchemy freezes output count, including partial batches and a zero-output
+ // failure. Its publication checkpoint shares the existing save receipt owner.
+ for (auto discipline : {craft_recipe_discipline::poison, craft_recipe_discipline::encrust,
+                        craft_recipe_discipline::encrust_failure, craft_recipe_discipline::harvester}) {
+  craft_progression_initialize(); terms.discipline=discipline; terms.experience=0;
+  terms.notch = discipline==craft_recipe_discipline::poison ? skill_notch_outcome{70,71,1000,0} : skill_notch_outcome{};
+  terms.output_count=discipline==craft_recipe_discipline::encrust_failure ? 0 :
+                     discipline==craft_recipe_discipline::poison ? 64 : 1;
+  std::vector<uint8_t> encoded; craft_recipe_continuation decoded_alchemy;
+  assert(craft_recipe_continuation_encode(terms,&encoded) && encoded[0]==2);
+  assert(craft_recipe_continuation_decode(encoded,&decoded_alchemy));
+  assert(decoded_alchemy.output_count==terms.output_count && decoded_alchemy.discipline==discipline);
+  notches=xp=saves=notices=0;
+  assert(craft_progression_hooks.publish(id(6),&actor,terms)==craft_progression_publication_result::waiting);
+  for (int retry=0;retry<10;++retry)
+   assert(craft_progression_hooks.publish(id(6),&actor,terms)==craft_progression_publication_result::waiting);
+  assert(notches==(discipline==craft_recipe_discipline::poison ? 1 : 0) && xp==0 && saves==1);
+  std::vector<player_craft_receipt_snapshot> receipts;
+  assert(craft_progression_hooks.pending(7,&receipts) && receipts.size()==1);
+  craft_progression_hooks.saved(7,true,receipts.data(),receipts.size());
+  assert(craft_progression_hooks.publish(id(6),&actor,terms)==craft_progression_publication_result::ready);
+  craft_progression_hooks.notify(&actor,true,terms); assert(notices>0);
+  craft_progression_initialize();
+  assert(craft_progression_hooks.recover(7,receipts.data(),receipts.size()));
+  assert(craft_progression_hooks.publish(id(6),&actor,terms)==craft_progression_publication_result::ready);
+  assert(notches==(discipline==craft_recipe_discipline::poison ? 1 : 0) && xp==0 && saves==1);
+  encoded[32]=discipline==craft_recipe_discipline::poison ? 65 : 2;
+  assert(!craft_recipe_continuation_decode(encoded,&decoded_alchemy));
+ }
+ terms.discipline=craft_recipe_discipline::craft; terms.experience=7000; terms.output_count=0; terms.notch={};
  // A slow admitted save must keep its revision rather than be superseded on
  // every 500ms publication pulse. A failed exact completion rearms capture.
  craft_progression_initialize(); notches=xp=saves=0;
@@ -109,6 +148,7 @@ int main() {
  snapshot.craft_receipts={receipt}; snapshot.schema_version=PLAYER_SNAPSHOT_SCHEMA_VERSION;
  assert(player_snapshot_encode(snapshot,&bytes)!=player_snapshot_codec_result::ok);
  // Terminal death preserves the progression proof alongside custody and evidence.
+ snapshot.craft_receipts.push_back({id(6),5,0});
  snapshot.schema_version=PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION;
  snapshot.components=PLAYER_CHECKPOINT_COMPONENT_ALL; snapshot.save_intent=RENT_DEATH;
  snapshot.death.emplace(); snapshot.death->operation_id=id(4);
@@ -120,7 +160,7 @@ int main() {
  corpse.values[CORPSE_FLAGS]=PC_CORPSE; snapshot.death->corpse={corpse};
  assert(player_snapshot_encode(snapshot,&bytes)==player_snapshot_codec_result::ok);
  assert(player_snapshot_decode(bytes.data(),bytes.size(),&decoded)==player_snapshot_codec_result::ok);
- assert(decoded.death && decoded.craft_receipts.size()==1 && decoded.craft_receipts[0].experience==10);
+ assert(decoded.death && decoded.craft_receipts.size()==2 && decoded.craft_receipts[0].experience==10);
  snapshot.schema_version=PLAYER_SNAPSHOT_DEATH_CRAFT_EVIDENCE_SCHEMA_VERSION;
  snapshot.death->conflict_evidence.emplace(); auto &evidence=*snapshot.death->conflict_evidence;
  evidence.player_items.columns={"id","pid","obj_uid","vnum","container_id"};
@@ -131,10 +171,11 @@ int main() {
  evidence.item_owner_revision.columns={"owner_type","owner_id","owner_context_id","revision"};
  assert(player_snapshot_encode(snapshot,&bytes)==player_snapshot_codec_result::ok);
  assert(player_snapshot_decode(bytes.data(),bytes.size(),&decoded)==player_snapshot_codec_result::ok);
- assert(decoded.death->conflict_evidence && decoded.craft_receipts.size()==1);
+ assert(decoded.death->conflict_evidence && decoded.craft_receipts.size()==2);
  bytes.pop_back();
  assert(player_snapshot_decode(bytes.data(),bytes.size(),&decoded)!=player_snapshot_codec_result::ok);
- assert(decoded.craft_receipts.size()==1 && decoded.death->conflict_evidence);
+ assert(decoded.craft_receipts.size()==2 && decoded.death->conflict_evidence);
+ snapshot.craft_receipts={receipt};
  // Wire rejection preserves the caller's frozen continuation.
  std::vector<uint8_t> wire; assert(craft_recipe_continuation_encode(terms,&wire));
  craft_recipe_continuation decoded_terms; assert(craft_recipe_continuation_decode(wire,&decoded_terms));

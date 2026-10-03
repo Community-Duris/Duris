@@ -54,6 +54,7 @@ DORMANT_WRITERS = {
     "player.confiscate_all_dormant": "Compiled bulk rent confiscation helper has no in-tree callsite; its direct inventory extraction requires bounded UID retirement if revived.",
 }
 NON_WRITERS = {
+    "recovery.sql_exact_room_stage_cleanup": "Clears original UIDs only in the detached exact room tree before extracting its rejected root; durable payload and custody remain retained. Cleanup is not retirement.",
     "macro.checked_item_publication_declaration": "The checked obj_to_char prototype declares an interface; only its implementation and callers can publish a live item.",
     "account.cleanup_temp_char": "restoreCharOnly loads a temporary PC solely for account/browser display; every in-tree caller frees that temporary character graph, so extracting its copied items is not a durable custody retirement.",
     "player.new_character_zero": "init_char assigns an initial zero wallet to a newly allocated PC before its first durable baseline; no existing holding is retired.",
@@ -152,6 +153,8 @@ NON_WRITERS = {
     "special.flying_citadel_unreachable_move": "flying_citadel returns FALSE unconditionally before the room-to-room object movement; the two calls cannot execute in this build.",
 }
 PROJECTION_ROUTES = {
+    "recovery.sql_exact_room_hydration": "Projects a complete literal graph after successful schema-2 provenance, current season, UID/revision/topology and exact staged-byte checks; no accounting root is created.",
+    "recovery.sql_exact_room_placement": "Installs retained placement without replaying decay, falling, redirection or gameplay drop effects; no new custody or issuance is authorized.",
     "quest.durable_offering_publication": "Removes the live offering objects only after the committed item-destruction result is checked; it must retain a recoverable quest reward obligation.",
     "currency.bank_live_projection": "Publishes validated bank authority into retained endpoint and connected shared-account player views; no account_banks row or source balance changes here.",
     "currency.wallet_live_projection": "Publishes a committed wallet result or validated stale authority to live PC and GMCP state with a monotonic revision check; no new native value is created here.",
@@ -272,6 +275,10 @@ SCHEMA2_CRAFT_IDS = {
     "item.poison_mix", "item.encrust_transform", "item.encrust_failure_destroy",
     "class.drannak_pvp_store", "item.craft_submit", "chaos.pouch_collection",
 }
+SCHEMA2_ALCHEMY_QUALIFIED_IDS = {
+    "item.poison_mix", "item.encrust_transform", "item.encrust_failure_destroy",
+    "class.drannak_pvp_store",
+}
 SCHEMA2_ITEM_TRANSFER_IDS = SCHEMA2_CRAFT_IDS | {
     "item.command_movement", "item.bulk_movement", "item.movement_submit",
     "item.trusted_steal", "item.creation_completion",
@@ -283,6 +290,7 @@ SCHEMA2_SQL_SHOP_COMPONENT_IDS = {
     "shop.sql_native_item_events", "shop.sql_native_balances",
 }
 SCHEMA2_ITEM_REPOSITORY_COMPONENT_IDS = {"item.sql_custody_apply"}
+SCHEMA2_SQL_ROOM_PAYLOAD_COMPONENT_IDS = {"item.sql_room_payload_record"}
 MIXED_SPELL_ITEM_IDS = {
     "spell.minor_creation_fallback", "spell.flame_blade_grant",
     "spell.shield_grant", "spell.food_grant",
@@ -311,8 +319,8 @@ SQL_ROUTE_TARGETS = {
     },
     "item.sql_custody_apply": {
         "holding_effect": "Updates a money object's coin_payload when the typed item transfer changes its payload; any monetary source/sink requires a matching root account effect.",
-        "custody_effect": "Creates or moves UID owner/revision rows and appends exact ownership history under the item-transfer command.",
-        "native_state_targets": ["item_current_owner owner, revision and coin_payload", "item_ownership_ledger"],
+        "custody_effect": "Creates or moves native UID ownership/history under the existing item root. This transaction also owns scoped immutable room payload and transferred player projection retirement; no second custody authority.",
+        "native_state_targets": ["item_current_owner owner, revision and coin_payload", "item_ownership_ledger", "sql_room_item_payload through sql_room_item_payload_record", "retire_player_projection removes selected transferred player_items"],
     },
     "death.corpse_sql_apply": {
         "holding_effect": "Ensures the destination bank row and applies the corpse wallet plan within the lifecycle transaction; bank-row creation alone is not issuance.",
@@ -427,10 +435,11 @@ def source_definition_lines(path: Path, function: str | None) -> list[int]:
     code = mask_cpp(source)
     result: list[int] = []
     parts = function.rsplit("::", 1)
-    special_member = (len(parts) == 2 and
+    special_member = function.startswith("~") or (len(parts) == 2 and
                       parts[1] in {parts[0].rsplit("::", 1)[-1],
                                    "~" + parts[0].rsplit("::", 1)[-1]})
-    for match in re.finditer(r"\b" + re.escape(function) + r"\s*\(", code):
+    boundary = r"(?<!\w)" if function.startswith("~") else r"\b"
+    for match in re.finditer(boundary + re.escape(function) + r"\s*\(", code):
         open_paren = code.find("(", match.start())
         depth = 0
         close_paren = -1
@@ -588,6 +597,9 @@ def schema_record(route_id: str, disposition: str) -> dict:
     elif route_id in SCHEMA2_SQL_SHOP_COMPONENT_IDS:
         current = 2
         mode = "typed_schema_2_sql_shop_native_component_without_qualified_gameplay_route"
+    elif route_id in SCHEMA2_SQL_ROOM_PAYLOAD_COMPONENT_IDS:
+        current = 2
+        mode = "typed_schema_2_sql_payload_component_without_independent_accounting_root"
     elif route_id == "currency.split":
         current = 1
         mode = "schema_1_when_inactive_schema_2_sequential_coin_children_when_active"
@@ -677,6 +689,8 @@ def schema_record(route_id: str, disposition: str) -> dict:
         interpretation = "The SQL transaction component records typed schema-2 coin effects and balanced postings. Pooled dispatch/reconcile and player-visible publication are separate qualification gates; flat-file coin accounting remains unqualified."
     elif route_id in SCHEMA2_SQL_SHOP_COMPONENT_IDS:
         interpretation = "This SQL component writes native shop balances or item custody within an owning typed schema-2 shop root. Complete route qualification, publication/restart proof and flat-file parity remain separate gates."
+    elif route_id in SCHEMA2_SQL_ROOM_PAYLOAD_COMPONENT_IDS:
+        interpretation = "Payload-only storage borrows the admitted item root transaction/session/source locks; no new custody, monetary posting or gameplay qualification. Missing literal text, native source or conflicting provenance refuses before mutation."
     elif route_id in SCHEMA2_ITEM_REPOSITORY_COMPONENT_IDS:
         interpretation = "The SQL item repository applies schema-1 commands when inactive and can apply a typed schema-2 item transfer under an owning root when active. This repository function is a component, not a gameplay producer or a complete money-valued coin route; root accounting, flat-file parity and playable acceptance remain separate gates."
     elif route_id in SOURCE_QUALIFIED_SPELL_GRANT_IDS:
@@ -694,6 +708,8 @@ def schema_record(route_id: str, disposition: str) -> dict:
 
 
 def double_entry(route_id: str, disposition: str, schema: dict) -> dict:
+    if route_id in SCHEMA2_SQL_ROOM_PAYLOAD_COMPONENT_IDS:
+        return {"status": "sql_payload_component_without_independent_accounting_root", "unified_operation_postings_observed": False, "legacy_domain_evidence": ["Payload participates in the existing typed item root; no new accounting root or posting."], "required_atomic_evidence": ["Complete native gameplay, ACK and cold-boot qualification under the item owner"], "global_evidence": ["src/persistence/sql_room_item_payload.c:sql_room_item_payload_record", "src/item/item_transfer_repository.c:item_transfer_repository_execute_at_offset"], "note": "Source observed only; backend entries unverified and global activation blocked."}
     if disposition == "non_writer_candidate":
         return {"status": "not_applicable", "unified_operation_postings_observed": False, "existing_evidence": [], "note": NON_WRITERS[route_id]}
     if route_id in SCHEMA2_SQL_COIN_COMPONENT_IDS:
@@ -775,6 +791,9 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
     if disposition == "non_writer_candidate":
         decision = "not_a_playable_economy_or_custody_writer"
         policy = NON_WRITERS[route_id]
+    elif route_id in SCHEMA2_ALCHEMY_QUALIFIED_IDS:
+        decision = "allow_qualified_native_alchemy"
+        policy = "Use the native schema-2 craft owner, exact input/output references, consumed-input source lifetime and durable alchemy publication receipt. Active flatfile, MySQL and MariaDB route journeys qualify retry, retained disconnect, copyover and cold recovery. This scoped proof does not authorize global activation or certify other crafts, NPC vial issuance or character initialization. Refuse unsupported metadata or stale custody before native mutation; never fall back to schema 1 under active authority."
     elif route_id in SCHEMA2_CRAFT_IDS:
         decision = "block_until_active_craft_journeys"
         policy = "Physical crafts, pouch collection and virtual Encrust use the typed schema-2 owner, consumed-input crafting source, exact native retirement/admission and linked references on SQL and flatfile. Retained pouch counters share the native craft commit while preserving the original UID and custody. Native component, replay, rollback and held-publication proofs pass; qualify complete active-epoch server journeys before release."
@@ -787,6 +806,9 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
     elif route_id in SCHEMA2_SQL_SHOP_COMPONENT_IDS:
         decision = "sql_component_requires_qualified_root"
         policy = "Apply only under the owning typed schema-2 shop root. Qualify pooled apply/reconcile, same-root native and accounting evidence, publication/restart, and flat-file parity before enabling the whole gameplay route."
+    elif route_id in SCHEMA2_SQL_ROOM_PAYLOAD_COMPONENT_IDS:
+        decision = "sql_component_requires_qualified_root"
+        policy = "Apply only under the admitted item root with exact native source, successful retained provenance, current season and immutable bytes. Complete native route/restart qualification before admission; no generic fallback or activation."
     elif disposition == "dormant_writer_candidate":
         decision = "keep_unreachable_or_block_if_reactivated"
         if route_id == "currency.bank_single_projection":
@@ -815,7 +837,8 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
                       "item.pet_teardown_unload", "item.ascension_equipment_relink",
                       "recovery.sql_player_item_hydration", "recovery.sql_locker_item_hydration",
                       "recovery.sql_private_chest_hydration", "recovery.sql_corpse_hydration",
-                      "recovery.sql_saved_item_hydration", "world.zone_reset_equip_relink",
+                      "recovery.sql_saved_item_hydration", "recovery.sql_exact_room_hydration",
+                      "recovery.sql_exact_room_placement", "world.zone_reset_equip_relink",
                       "world.copyover_item_materialization", "recovery.flat_room_item_projection",
                       "mob.thief_weapon_relink", "mob.better_object_relink",
                       "mob.hunter_weapon_relink", "player.flat_terminal_inventory_unload",
@@ -938,6 +961,9 @@ def build() -> dict:
             route["reachability_evidence"] = raw["reachability_evidence"]
         if raw.get("refusal_source_evidence"):
             route["refusal_source_evidence"] = raw["refusal_source_evidence"]
+        if route_id in SCHEMA2_ALCHEMY_QUALIFIED_IDS:
+            route["backend_qualification"] = raw["backends"]
+            route["recovery_evidence"] = raw["evidence"]
         if route_id in NON_WRITERS:
             route["exclusion_reason"] = NON_WRITERS[route_id]
         if route_id in PROJECTION_ROUTES:
@@ -971,6 +997,8 @@ def build() -> dict:
         "schema_version": 1,
         "artifact_kind": "source_reviewed_economy_item_writer_coverage_matrix",
         "repository_head": source_commit,
+        "source_state": "published_base_with_unpublished_candidate_worktree" if registry.get("candidate_worktree_evidence") else "registry_source_commit",
+        "candidate_worktree_evidence": registry.get("candidate_worktree_evidence"),
         "coverage_complete": False,
         "playable_release_status": "BLOCKED",
         "method": {

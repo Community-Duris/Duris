@@ -2,11 +2,10 @@
 """First-connection currency with empty and populated bank authority, retry and reload."""
 
 import pathlib
-import subprocess
 import tempfile
 
 from test_flatfile_combat_journey import (
-    ROOT, INSPECTOR, CHARACTER, build_flatfile_server, inspect_authority,
+    ROOT, CHARACTER, build_flatfile_server, build_inspector, inspect_authority,
     reconnect_character, require, run_journey,
 )
 
@@ -58,8 +57,7 @@ def verify_first_session(client, port, state_root, populated_bank):
 
 
 if __name__ == "__main__":
-    subprocess.run(["python3", "tests/async/test_flatfile_player_repository.py",
-                    "--build-inspector", str(INSPECTOR)], cwd=ROOT, check=True, timeout=180)
+    build_inspector()
     with tempfile.TemporaryDirectory(prefix="flatfile-first-session-",
                                      dir=ROOT / "bin/tests") as temporary:
         binary = build_flatfile_server(pathlib.Path(temporary))
