@@ -45,6 +45,7 @@ int real_room(int vnum) { return vnum >= 0 && vnum <= top_of_world ? vnum : NOWH
 int portal_door(P_obj, P_char, int, char *) { return 0; }
 int portal_wormhole(P_obj, P_char, int, char *) { return 0; }
 int portal_etherportal(P_obj, P_char, int, char *) { return 0; }
+int room_special(int, P_char, int, char *) { return 0; }
 static std::map<std::string, int> properties;
 int get_property(const char *key, int fallback) {
     auto it = properties.find(key); return it == properties.end() ? fallback : it->second;
@@ -192,7 +193,15 @@ int main() {
     far_data.R_num = -1; assert(world_activity_mob_is_timing_sensitive(&far));
     far_data.R_num = 1; assert(world_activity_mob_is_timing_sensitive(&far));
     far_data.R_num = 0; far.specials.act |= ACT_SENTINEL;
+    assert(world_activity_tier_for_room(far.in_room) == world_activity_tier::distant);
+    assert(world_activity_mundane_delay(&far, false, false) == 90);
+    assert(world_activity_mundane_delay(&far, false, true) == 30);
+    far.specials.act &= ~ACT_SENTINEL; world[259].funct = room_special;
+    assert(world_activity_mundane_delay(&far, false, false) == 90);
+    obj_data protected_clock{}; corpse(protected_clock, 259);
+    world_activity_object_enter(&protected_clock);
     assert(world_activity_mundane_delay(&far, false, false) == 30);
+    world_activity_object_leave(&protected_clock); world[259].funct = nullptr;
     // Ordinary zone adjacency uses all exits, not only a player's current room.
     pc.in_room = 256; world_activity_player_enter(&pc);
     assert(world_activity_tier_for_room(258) == world_activity_tier::nearby);
