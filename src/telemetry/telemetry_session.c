@@ -72,7 +72,14 @@ bool handoff_equal(const telemetry_session_handoff &left,
 	       producer_equal(left.previous_producer, right.previous_producer) &&
 	       left.last_checkpoint_revision == right.last_checkpoint_revision &&
 	       counters_equal(left.cumulative, right.cumulative) &&
-	       left.quality_flags == right.quality_flags;
+	       left.quality_flags == right.quality_flags &&
+	       left.ownership.account_token == right.ownership.account_token &&
+	       left.ownership.observed_at_utc_usec == right.ownership.observed_at_utc_usec &&
+	       left.ownership.quality_flags == right.ownership.quality_flags &&
+	       left.ownership.source == right.ownership.source &&
+	       left.ownership.reserved[0] == right.ownership.reserved[0] &&
+	       left.ownership.reserved[1] == right.ownership.reserved[1] &&
+	       left.ownership.reserved[2] == right.ownership.reserved[2];
 }
 
 bool transition_equal(const telemetry_connection_transition &left,
@@ -609,7 +616,8 @@ bool handoff_is_zero(const telemetry_session_handoff &handoff) noexcept
 	       telemetry_producer_id_is_zero(handoff.previous_producer) &&
 	       handoff.last_checkpoint_revision == 0U &&
 	       counters_equal(handoff.cumulative, telemetry_cumulative_counters{}) &&
-	       handoff.quality_flags == TELEMETRY_QUALITY_NONE;
+	       handoff.quality_flags == TELEMETRY_QUALITY_NONE &&
+	       telemetry_ownership_handoff_is_zero(handoff.ownership);
 }
 
 telemetry_session_state_result
@@ -1206,6 +1214,9 @@ telemetry_session_state_result telemetry_session_state_handoff_copy_at(
 	telemetry_session_slot &slot = state->slots[static_cast<std::size_t>(found)];
 	if (slot.lifecycle == telemetry_session_slot_lifecycle::closed)
 		return result_with(telemetry_session_state_outcome::not_found);
+	if (slot.ownership_has_sample &&
+	    now_monotonic_usec < slot.ownership_last_sample.at_monotonic_usec)
+		return result;
 	telemetry_quality_mask quality = slot.quality_flags;
 	if (!account_elapsed_to(slot, now_monotonic_usec, now_utc_usec, quality))
 		return result;
@@ -1236,6 +1247,21 @@ telemetry_session_state_result telemetry_session_state_handoff_copy_at(
 	handoff->quality_flags = slot.quality_flags | (state->pending_control_drops != 0U ?
 							       TELEMETRY_QUALITY_QUEUE_DROP :
 							       TELEMETRY_QUALITY_NONE);
+	if (slot.ownership_has_sample)
+	{
+		const auto &sample = slot.ownership_last_sample;
+		handoff->ownership.account_token =
+			slot.ownership_needs_anchor ? 0U : sample.account_token;
+		handoff->ownership.observed_at_utc_usec = sample.at_utc_usec;
+		handoff->ownership.source = handoff->ownership.account_token ?
+						    sample.source :
+						    telemetry_ownership_source::unavailable;
+		handoff->ownership.quality_flags = sample.quality_flags | slot.quality_flags;
+		if (slot.ownership_needs_anchor)
+			handoff->ownership.quality_flags |= TELEMETRY_QUALITY_CARDINALITY_OVERFLOW |
+							    TELEMETRY_QUALITY_QUEUE_DROP |
+							    TELEMETRY_QUALITY_SEQUENCE_GAP;
+	}
 	result.outcome = telemetry_session_state_outcome::accepted;
 	result_from_slot(result, slot);
 	return result;

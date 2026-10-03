@@ -248,6 +248,7 @@ constexpr bool telemetry_session_resume_is_valid(const telemetry_session_resume 
 		       std::numeric_limits<telemetry_checkpoint_revision>::max() &&
 	       telemetry_cumulative_counters_are_valid(prior.cumulative) &&
 	       telemetry_quality_mask_is_valid(prior.quality_flags) &&
+	       telemetry_ownership_handoff_is_valid(prior.ownership) &&
 	       (entry.quality_flags & prior.quality_flags) == prior.quality_flags;
 }
 

@@ -107,8 +107,8 @@ checks = {
     "copyover keeps materialized inventory attached": "reset_char(ch);" not in recover,
     "descriptor capture requires the player's actual pet link":
         "GET_MASTER(f->follower) == ch" in descriptor_capture,
-    "copyover v17 appends retry state while retaining old descriptor sizes":
-        "#define COPYOVER_VERSION 17" in (SRC / "copyover.h").read_text() and
+    "copyover v18 retains the v17 retry state and old descriptor sizes":
+        "#define COPYOVER_VERSION 18" in (SRC / "copyover.h").read_text() and
         "offsetof(copyover_desc, death_retry_pending)" in copyover and
         "copyover_desc_bytes_for_version(header.version)" in copyover and
         "fread(&desc_entry, desc_bytes, 1, fp)" in copyover,

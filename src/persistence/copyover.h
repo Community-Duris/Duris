@@ -12,7 +12,7 @@
 const char *copyover_state_file();
 #define COPYOVER_FILE copyover_state_file()
 #define COPYOVER_MAGIC "COPY"
-#define COPYOVER_VERSION 17 // death retry handoff; reads versions 12-16 too
+#define COPYOVER_VERSION 18 // telemetry identity handoff; reads versions 12-17 too
 
 // copyover file header
 struct copyover_header

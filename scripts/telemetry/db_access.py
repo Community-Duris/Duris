@@ -1667,6 +1667,8 @@ class PyMySQLRollupDatabase:
         a new version nor changed bytes can overwrite a prior review.
         """
         meta, rows = incident.validate_packet(packet)
+        schema_version = packet["registry_schema_version"]
+        _mask, _max_kind, registry_table, incident_table = incident.schema_contract(schema_version)
         scope = (meta["environment_id"], meta["season_id"])
         target = RollupTarget(1, 1, *scope)
         bounds = self._publication_bounds(None)
@@ -1675,14 +1677,15 @@ class PyMySQLRollupDatabase:
         try:
             self._ensure_connection()
             self._prepare_transaction_budget(bounds)
-            # Share the scope lock with publication so a review and a report
-            # snapshot cannot interleave. No raw or registry UPDATE is required.
+            # Serialize reviews in the existing definition-1 scope lock. Each
+            # immutable header and complete inventory commits together; readers
+            # of other definitions snapshot one committed retained version.
             self._acquire_advisory_lock(target, bounds.lock_timeout_s)
             acquired = True
             self._begin()
             existing, _, _ = self._execute(
                 "SELECT " + ",".join(incident.META_COLUMNS) +
-                " FROM telemetry_incident_registry FORCE INDEX(PRIMARY) "
+                " FROM " + registry_table + " FORCE INDEX(PRIMARY) "
                 "WHERE environment_id=%s AND season_id=%s ORDER BY registry_version DESC LIMIT 1",
                 scope,
             )
@@ -1691,23 +1694,24 @@ class PyMySQLRollupDatabase:
             # Exact retries remain valid after later reviews: look up this version
             # by its complete key rather than comparing only the latest version.
             exact, _, _ = self._execute(
-                "SELECT " + ",".join(incident.META_COLUMNS) + " FROM telemetry_incident_registry WHERE "
+                "SELECT " + ",".join(incident.META_COLUMNS) + " FROM " + registry_table + " WHERE "
                 "environment_id=%s AND season_id=%s AND registry_version=%s LIMIT 1",
                 (*scope, version),
             )
             if exact:
-                if bytes(exact[0]["packet_digest"]) != meta["packet_digest"]:
+                if incident._stored_digest(exact[0]["packet_digest"]) != meta["packet_digest"]:
                     raise incident.IncidentError("registry_version_conflict")
-                incident.validate_stored(exact[0], self._incident_registry_rows(scope, version))
+                incident.validate_stored(exact[0], self._incident_registry_rows(scope, version, schema_version),
+                                         registry_schema_version=schema_version)
                 self._rollback()
-                return {"status": "already_registered", "registry_version": version,
+                return {"status": "already_registered", "registry_schema_version": schema_version, "registry_version": version,
                         "incident_count": len(rows)}
             if (0 if previous is None else int(previous["registry_version"])) != meta["previous_registry_version"]:
                 raise incident.IncidentError("registry_version_conflict")
             prior_by_id = {}
             if previous is not None:
-                prior_rows = self._incident_registry_rows(scope, int(previous["registry_version"]))
-                incident.validate_stored(previous, prior_rows)
+                prior_rows = self._incident_registry_rows(scope, int(previous["registry_version"]), schema_version)
+                incident.validate_stored(previous, prior_rows, registry_schema_version=schema_version)
                 if not {int(r["incident_id"]) for r in prior_rows}.issubset({int(r["incident_id"]) for r in rows}):
                     raise incident.IncidentError("incident_removed_without_withdrawal")
                 prior_by_id = {int(r["incident_id"]): r for r in prior_rows}
@@ -1735,11 +1739,14 @@ class PyMySQLRollupDatabase:
                     (int(fact["environment_id"]), int(fact["season_id"])) != scope or
                     occurrence != row["verified_occurrence_utc_usec"]):
                     raise incident.IncidentError("postfix_fact_mismatch")
-            self._insert_review_rows("telemetry_incident_registry", incident.META_COLUMNS, (meta,))
+            self._insert_review_rows(registry_table, incident.META_COLUMNS, (meta,))
             full_rows = [dict(row, environment_id=scope[0], season_id=scope[1], registry_version=version) for row in rows]
-            self._insert_review_rows("telemetry_incident", ("environment_id", "season_id", "registry_version", *incident.INCIDENT_COLUMNS), full_rows)
+            self._insert_review_rows(incident_table, ("environment_id", "season_id", "registry_version", *incident.INCIDENT_COLUMNS), full_rows)
             self._commit()
-            return {"status": "registered", "registry_version": version, "incident_count": len(rows)}
+            return {"status": "registered", "registry_schema_version": schema_version, "registry_version": version, "incident_count": len(rows)}
+        except AmbiguousCommit:
+            self._drop_connection()
+            raise
         except Exception:
             self._rollback()
             raise
@@ -1762,10 +1769,12 @@ class PyMySQLRollupDatabase:
                       ",".join([value] * len(rows)),
                       tuple(row[name] for row in rows for name in columns))
 
-    def _incident_registry_rows(self, scope: tuple[int, int], version: int) -> list[Mapping[str, Any]]:
+    def _incident_registry_rows(self, scope: tuple[int, int], version: int,
+                                schema_version: int = incident.REGISTRY_SCHEMA_VERSION) -> list[Mapping[str, Any]]:
+        _mask, _max_kind, _registry_table, incident_table = incident.schema_contract(schema_version)
         rows, _, _ = self._execute(
             "SELECT " + ",".join(incident.INCIDENT_COLUMNS) +
-            " FROM telemetry_incident FORCE INDEX(PRIMARY) WHERE environment_id=%s AND season_id=%s "
+            " FROM " + incident_table + " FORCE INDEX(PRIMARY) WHERE environment_id=%s AND season_id=%s "
             "AND registry_version=%s ORDER BY incident_id LIMIT %s",
             (*scope, version, incident.MAX_INCIDENTS + 1),
         )
@@ -1779,15 +1788,17 @@ class PyMySQLRollupDatabase:
             self._read_incident_coverage(target)
             return
         scope = (target.environment_id, target.season_id)
+        schema_version = incident.generation_schema(target.definition_version)
+        _mask, _max_kind, registry_table, _incident_table = incident.schema_contract(schema_version)
         metas, _, _ = self._execute(
             "SELECT " + ",".join(incident.META_COLUMNS) +
-            " FROM telemetry_incident_registry FORCE INDEX(PRIMARY) WHERE environment_id=%s "
+            " FROM " + registry_table + " FORCE INDEX(PRIMARY) WHERE environment_id=%s "
             "AND season_id=%s ORDER BY registry_version DESC LIMIT 1", scope,
         )
         meta = metas[0] if metas else None
-        rows = [] if meta is None else [dict(row) for row in self._incident_registry_rows(scope, int(meta["registry_version"]))]
+        rows = [] if meta is None else [dict(row) for row in self._incident_registry_rows(scope, int(meta["registry_version"]), schema_version)]
         if meta is not None:
-            incident.validate_stored(meta, rows)
+            incident.validate_stored(meta, rows, registry_schema_version=schema_version)
         for row in rows:
             row["occurrence_relation"] = incident.occurrence_relation(
                 row, *incident.occurrence_window(state))
@@ -1808,7 +1819,8 @@ class PyMySQLRollupDatabase:
             " FROM telemetry_rollup_incident FORCE INDEX(PRIMARY) WHERE " + SCOPE_WHERE +
             " ORDER BY incident_id LIMIT %s", (*target.scope_tuple, incident.MAX_INCIDENTS + 1))
         window = None if state is None else incident.occurrence_window(state)
-        return incident.public_coverage(metas[0] if metas else None, rows, occurrence_window=window)
+        return incident.public_coverage(metas[0] if metas else None, rows, occurrence_window=window,
+                                       registry_schema_version=incident.generation_schema(target.definition_version))
 
     def publish_generation(
         self,

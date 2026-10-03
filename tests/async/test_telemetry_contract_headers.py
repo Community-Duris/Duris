@@ -270,7 +270,7 @@ static_assert(std::is_same_v<decltype(&telemetry_runtime_game_progression),
 static_assert(std::is_same_v<decltype(&telemetry_config_publish), config_signature>);
 constexpr telemetry_session_resume resume = [] {
     telemetry_session_resume value{};
-    value.handoff = {session, producer, 7U, totals, TELEMETRY_QUALITY_QUEUE_DROP};
+    value.handoff = {session, producer, 7U, totals, TELEMETRY_QUALITY_QUEUE_DROP, {}};
     value.entry = {session, copyover_connection, 10U, 1234,
                    {0U, 0U, 0U, 0U, -1, 0U}, sql_config.config_id,
                    sql_config.classifier_version, sql_config.policy_version,
@@ -278,6 +278,20 @@ constexpr telemetry_session_resume resume = [] {
     return value;
 }();
 static_assert(telemetry_session_resume_is_valid(resume));
+static_assert(std::is_trivially_copyable_v<telemetry_ownership_handoff>);
+static_assert(sizeof(telemetry_ownership_handoff) == 24U);
+static_assert([] {
+    auto value = resume;
+    value.handoff.ownership = {33U, TELEMETRY_UTC_UNKNOWN, TELEMETRY_QUALITY_LATE,
+                              telemetry_ownership_source::copyover, {}};
+    if (!telemetry_session_resume_is_valid(value)) return false;
+    value.handoff.ownership.account_token = 0U;
+    if (telemetry_session_resume_is_valid(value)) return false;
+    value.handoff.ownership.source = telemetry_ownership_source::unavailable;
+    if (!telemetry_session_resume_is_valid(value)) return false;
+    value.handoff.ownership.reserved[2] = 1U;
+    return !telemetry_session_resume_is_valid(value);
+}());
 static_assert([] {
     auto value = resume;
     value.handoff.last_checkpoint_revision = 0U;

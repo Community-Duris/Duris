@@ -5,7 +5,7 @@ reviewed account/controller associations and exact interval attribution for the
 accepted balance expansion. Native account lifetime/token preparation is implemented
 alongside that contract. Typed authenticated live capture, restricted SQL review
 registration and immutable generation identity reservations are implemented.
-Identity handoff and published effort/report integration remain required.
+Identity wire handoff is implemented. Published effort/report integration remains required.
 This module does not query current account ownership or identify a person from a
 name, email, IP address or device. The authoritative delivery record is
 [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
@@ -64,10 +64,12 @@ same point, and scope/session/subject mismatches refuse attribution.
 
 Copyover retains an original session identity, but starts another producer's
 monotonic clock. Old-producer ownership timestamps cannot label the new process's
-intervals. A fresh authenticated copyover observation can retain a known account
-token from the handoff; attribution begins at its new clock anchor. The account-load
-token cache and typed authenticated observations are implemented. The live identity
-handoff and report generation integration remain required.
+intervals. The wire retains the last observed account context, UTC boundary and
+quality. A fresh authenticated copyover observation uses the reloaded account
+authority; attribution begins at its new clock anchor. A transferred, missing,
+wrong-scope or deletion-fenced account cannot inherit authority from the saved
+token. The account-load token cache, typed observations and identity handoff are
+implemented. Report generation integration remains required.
 
 Controller attribution requires compatible UTC labels: both endpoints are known,
 their difference equals monotonic duration, and no clock-discontinuity or UTC
@@ -215,7 +217,7 @@ TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_reposi
 ```
 
 Durable preparation, typed authenticated capture and restricted review registration
-are implemented. Identity wire handoff, effort/report publication, character
+and identity wire handoff are implemented. Effort/report publication, character
 portfolios and their personal-local gameplay qualification remain required.
 
 ## Authenticated ownership source observations
@@ -273,9 +275,11 @@ TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_reposi
 
 Definitions 1 and 2 validate and advance past ownership without projecting account
 or controller amounts. Reviewed incident publication version 1 retains its sealed
-families 1–8 contract. The identity report generation must integrate kind-9 source
-loss/incident coverage, the reserved reviewed version and retained corrections,
-identity handoff and exact effort/portfolio publication. Those requirements and
+families 1–8 contract. Migration 0059 supplies an independent schema-v2 reviewed
+inventory including kind 9, using the existing incident snapshot tables for
+balance generations. The identity report generation must consume that coverage,
+the reserved reviewed version and retained corrections in exact effort/portfolio
+publication. Those requirements and
 the real personal-local gameplay gate remain in the accepted scope.
 
 ## Authenticated reviewed association registration
@@ -377,8 +381,8 @@ A reservation reports `balance_report_published=false` and
 count controllers, authorize causal claims, or establish source/incident completeness.
 The remaining balance generation must consume authenticated retained ownership
 facts, the reserved association version and kind-9 loss/incident coverage in its
-atomic published effort and portfolio reports. Identity wire handoff and the
-actual personal-local gameplay journeys remain required.
+atomic published effort and portfolio reports. The actual personal-local gameplay
+journeys remain required.
 
 The focused SQL qualification uses disposable MySQL 8.0.46 and MariaDB 10.11.14,
 including the complete immutable migration chain. It exercises absent, disabled,
@@ -397,3 +401,45 @@ python3 tests/async/test_telemetry_identity_history.py
 TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh --identity-review
 TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --identity-review
 ```
+
+## Copyover account context
+
+Outer copyover version 18 writes telemetry trailer version 2. The bounded handoff
+adds 24 bytes for the last observed account token, UTC label with an unknown sentinel,
+source and quality. It carries no monotonic timestamp or controller association.
+Only the old process's original session and prior producer establish continuity.
+Recovery retains this value in the existing descriptor/session storage, including
+deferred writer qualification or capacity admission; it does not resolve ownership
+from the wire. The reviewed controller association stays in the reserved report
+generation.
+
+An unavailable sample or pending overflow without a fresh anchor is exported as
+unknown ownership. Overflow retains cardinality/drop/sequence quality even after
+the retained raw boundaries have drained. An unadmitted boundary still prevents a
+successful handoff; a failed worker durability barrier writes an absent handoff.
+A handoff cut earlier than its ownership sample refuses instead of moving that
+sample into the past. No ownership context supplies elapsed copyover downtime.
+
+The reader consumes the exact sealed telemetry-v1 layout for outer versions
+15–17 and imports its session/revision/counters/quality with absent ownership
+context. Versions 12–14 use the existing absent-handoff path. New framing cannot
+be accepted under an old outer version, and old framing cannot be accepted under
+version 18. Invalid ownership source/token/reserved/quality fields discard that
+entry while preserving the next world section. Existing runtime validation
+handles other malformed continuity fields and falls back to an absent handoff.
+
+The focused commands are:
+
+```sh
+python3 tests/async/test_telemetry_copyover_format.py
+python3 tests/async/test_telemetry_session_state.py
+python3 tests/async/test_telemetry_gameplay_adapters.py --sanitize
+python3 tests/async/test_telemetry_contract_headers.py
+```
+
+They exercise the actual wire helpers, native state and transport/gameplay
+adapters. These fixtures qualify known, absent, unavailable and overflow context,
+legacy continuity and following-world alignment, conflicting resumes, fresh
+producer clocks, an actual reloaded-token change and unavailable cache/scope/
+deletion authority. They do not replace the final real server exec/save/readback
+journey on the personal local setup.

@@ -1131,7 +1131,8 @@ class ReportDatabase:
                              " FROM telemetry_rollup_incident FORCE INDEX(PRIMARY) WHERE " + predicate +
                              " ORDER BY incident_id LIMIT %s", (*parameters, incident.MAX_INCIDENTS + 1))
         return incident.public_coverage(metas[0] if metas else None, rows,
-                                        occurrence_window=incident.occurrence_window(state))
+                                        occurrence_window=incident.occurrence_window(state),
+                                        registry_schema_version=incident.generation_schema(target.definition_version))
 
     def read(self, request: ReportRequest) -> dict[str, Any]:
         request.validate()

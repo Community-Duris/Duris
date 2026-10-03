@@ -579,6 +579,18 @@ struct telemetry_cumulative_counters
 	telemetry_duration_usec linkdead_usec;
 };
 
+/* Last observed account context, never an authentication credential or a new
+ * process clock anchor. Source zero is absent (including legacy wire input).
+ * Unavailable/overflow retains an explicit unknown boundary. */
+struct telemetry_ownership_handoff
+{
+	std::uint64_t account_token;
+	telemetry_utc_usec observed_at_utc_usec;
+	telemetry_quality_mask quality_flags;
+	telemetry_ownership_source source;
+	std::uint8_t reserved[3];
+};
+
 /* Bounded copyover state; no monotonic timestamp crosses process incarnations.
  * Import retains totals and starts from a new observation's clock anchor.
  * Descriptors may hold this value while initial writer qualification completes. */
@@ -589,6 +601,7 @@ struct telemetry_session_handoff
 	telemetry_checkpoint_revision last_checkpoint_revision;
 	telemetry_cumulative_counters cumulative;
 	telemetry_quality_mask quality_flags;
+	telemetry_ownership_handoff ownership;
 };
 
 /* Common immutable record metadata. occurrence_utc_usec is not ingestion time. */
@@ -1034,6 +1047,31 @@ inline constexpr telemetry_quality_mask TELEMETRY_QUALITY_KNOWN =
 constexpr bool telemetry_quality_mask_is_valid(telemetry_quality_mask quality) noexcept
 {
 	return (quality & ~TELEMETRY_QUALITY_KNOWN) == 0U;
+}
+
+constexpr bool
+telemetry_ownership_handoff_is_zero(const telemetry_ownership_handoff &value) noexcept
+{
+	return value.account_token == 0U && value.observed_at_utc_usec == 0 &&
+	       value.quality_flags == 0U && static_cast<std::uint8_t>(value.source) == 0U &&
+	       value.reserved[0] == 0U && value.reserved[1] == 0U && value.reserved[2] == 0U;
+}
+
+constexpr bool
+telemetry_ownership_handoff_is_valid(const telemetry_ownership_handoff &value) noexcept
+{
+	if (telemetry_ownership_handoff_is_zero(value))
+		return true;
+	if (!telemetry_quality_mask_is_valid(value.quality_flags) || value.reserved[0] != 0U ||
+	    value.reserved[1] != 0U || value.reserved[2] != 0U)
+		return false;
+	if (value.source == telemetry_ownership_source::unavailable)
+		return value.account_token == 0U;
+	return value.account_token != 0U &&
+	       (value.source == telemetry_ownership_source::authenticated_login ||
+		value.source == telemetry_ownership_source::reconnect ||
+		value.source == telemetry_ownership_source::copyover ||
+		value.source == telemetry_ownership_source::ownership_changed);
 }
 
 constexpr bool telemetry_producer_id_is_zero(const telemetry_producer_id &id) noexcept

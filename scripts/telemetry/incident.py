@@ -17,6 +17,12 @@ INCIDENT_ROW_BYTE_BOUND = 2_048
 UINT64_MAX = (1 << 64) - 1
 UTC_UNKNOWN = -(1 << 63)
 KNOWN_KINDS = (1 << 9) - 2
+# Sealed v1 inventories retain families 1..8. Balance definitions 3+ use an
+# independent v2 review history including authenticated ownership (kind 9).
+REGISTRY_SCHEMAS = {
+    1: (KNOWN_KINDS, 8, "telemetry_incident_registry", "telemetry_incident"),
+    2: ((1 << 10) - 2, 9, "telemetry_incident_registry_v2", "telemetry_incident_v2"),
+}
 QUALITY_INCIDENT_GAP = 1 << 27
 QUALITY_INVENTORY_UNKNOWN = 1 << 28
 BACKLOG = {"unknown": 0, "none": 1, "delivered": 2, "abandoned": 3,
@@ -55,6 +61,26 @@ VERIFY_KEYS = frozenset({"boot_id", "process_id", "record_seq", "record_kind",
 
 class IncidentError(ValueError):
     """A payload-free evidence/contract failure."""
+
+
+def schema_contract(version: Any) -> tuple[int, int, str, str]:
+    if type(version) is not int or version not in REGISTRY_SCHEMAS:
+        raise IncidentError("unsupported_registry_version")
+    return REGISTRY_SCHEMAS[version]
+
+
+def generation_schema(definition_version: int) -> int:
+    if type(definition_version) is not int or not 1 <= definition_version < (1 << 32):
+        raise IncidentError("invalid_definition_version")
+    return 2 if definition_version >= 3 else 1
+
+
+def _stored_digest(value: Any, *, nullable: bool = False) -> bytes | None:
+    if nullable and value is None:
+        return None
+    if type(value) is not bytes or len(value) != 32:
+        raise IncidentError("invalid_stored_digest")
+    return value
 
 
 def _keys(value: Any, expected: frozenset[str]) -> Mapping[str, Any]:
@@ -101,8 +127,7 @@ def _range(first: int | None, last: int | None) -> None:
 
 def validate_packet(packet: Any) -> tuple[dict[str, Any], tuple[dict[str, Any], ...]]:
     p = _keys(packet, PACKET_KEYS)
-    if type(p["registry_schema_version"]) is not int or p["registry_schema_version"] != REGISTRY_SCHEMA_VERSION:
-        raise IncidentError("unsupported_registry_version")
+    known_kinds, max_kind, _registry_table, _incident_table = schema_contract(p["registry_schema_version"])
     meta = {name: _integer(p[name]) for name in ("environment_id", "season_id", "registry_version")}
     previous = _integer(p["previous_registry_version"], allow_zero=True)
     if previous == UINT64_MAX or meta["registry_version"] != previous + 1:
@@ -135,7 +160,7 @@ def validate_packet(packet: Any) -> tuple[dict[str, Any], tuple[dict[str, Any], 
         row["end_utc_usec"] = _utc(i["end_utc_usec"])
         _range(row["start_utc_usec"], row["end_utc_usec"])
         row["record_kind_mask"] = _integer(i["record_kind_mask"])
-        if row["record_kind_mask"] & ~KNOWN_KINDS:
+        if row["record_kind_mask"] & ~known_kinds:
             raise IncidentError("unknown_record_family")
         for name in ("evidence_digest", "fix_reference_digest"):
             row[name] = _digest(i[name], nullable=name == "fix_reference_digest")
@@ -151,7 +176,7 @@ def validate_packet(packet: Any) -> tuple[dict[str, Any], tuple[dict[str, Any], 
                 raise IncidentError("verification_without_fix")
             for source, dest in (("boot_id", "verified_boot_id"), ("process_id", "verified_process_id"),
                                  ("record_seq", "verified_record_seq"), ("record_kind", "verified_record_kind")):
-                row[dest] = _integer(v[source], maximum=8 if source == "record_kind" else UINT64_MAX)
+                row[dest] = _integer(v[source], maximum=max_kind if source == "record_kind" else UINT64_MAX)
             row["verified_occurrence_utc_usec"] = _utc(v["occurrence_utc_usec"])
             if not row["record_kind_mask"] & (1 << row["verified_record_kind"]):
                 raise IncidentError("verification_family_mismatch")
@@ -223,7 +248,8 @@ def _input_row(row: Mapping[str, Any]) -> dict[str, Any]:
     try:
         values = {name: row[name] for name in INPUT_INCIDENT_KEYS - {"first_verified_postfix"}}
         for name in ("fix_reference_digest", "evidence_digest"):
-            values[name] = None if values[name] is None else bytes(values[name]).hex()
+            value = _stored_digest(values[name], nullable=name == "fix_reference_digest")
+            values[name] = None if value is None else value.hex()
         values["backlog_disposition"] = {v: k for k, v in BACKLOG.items()}[row["backlog_disposition"]]
         values["observation_provenance"] = {v: k for k, v in PROVENANCE.items()}[row["observation_provenance"]]
         values["status"] = {v: k for k, v in STATUS.items()}[row["status"]]
@@ -235,14 +261,16 @@ def _input_row(row: Mapping[str, Any]) -> dict[str, Any]:
         raise IncidentError("invalid_stored_inventory") from None
 
 
-def validate_stored(meta: Mapping[str, Any], rows: Sequence[Mapping[str, Any]]) -> None:
+def validate_stored(meta: Mapping[str, Any], rows: Sequence[Mapping[str, Any]], *,
+                    registry_schema_version: int = REGISTRY_SCHEMA_VERSION) -> None:
+    schema_contract(registry_schema_version)
     try:
         packet = {name: meta[name] for name in PACKET_KEYS - {"registry_schema_version", "incidents"}}
         for name in ("reviewer_token", "review_evidence_digest"):
-            packet[name] = bytes(packet[name]).hex()
-        packet.update(registry_schema_version=REGISTRY_SCHEMA_VERSION, incidents=[_input_row(row) for row in rows])
+            packet[name] = _stored_digest(packet[name]).hex()
+        packet.update(registry_schema_version=registry_schema_version, incidents=[_input_row(row) for row in rows])
         computed, _ = validate_packet(packet)
-        if len(rows) != meta["incident_count"] or computed["packet_digest"] != bytes(meta["packet_digest"]):
+        if len(rows) != meta["incident_count"] or computed["packet_digest"] != _stored_digest(meta["packet_digest"]):
             raise IncidentError("stored_inventory_digest_mismatch")
     except (KeyError, TypeError):
         raise IncidentError("invalid_stored_inventory") from None
@@ -276,11 +304,13 @@ def publication_summary(scope: tuple[int, int, int, int], meta: Mapping[str, Any
 
 
 def public_coverage(meta: Mapping[str, Any] | None, rows: Sequence[Mapping[str, Any]], *,
-                    occurrence_window: tuple[int | None, int | None] | None = None) -> dict[str, Any]:
+                    occurrence_window: tuple[int | None, int | None] | None = None,
+                    registry_schema_version: int = REGISTRY_SCHEMA_VERSION) -> dict[str, Any]:
+    schema_contract(registry_schema_version)
     if meta is None:
         if rows:
             raise IncidentError("incomplete_publication")
-        return {"registry_schema_version": REGISTRY_SCHEMA_VERSION, "status": "not_published",
+        return {"registry_schema_version": registry_schema_version, "status": "not_published",
                 "registry_version": None, "quality_flags": QUALITY_INVENTORY_UNKNOWN,
                 "incident_inventory_complete": False, "zero_activity_implied": False, "incidents": []}
     if len(rows) > MAX_INCIDENTS or len(rows) != int(meta["incident_count"]):
@@ -299,13 +329,14 @@ def public_coverage(meta: Mapping[str, Any] | None, rows: Sequence[Mapping[str, 
     for source in rows:
         # Reuse the packet field contract for materialized rows. A projection
         # cannot bless an invalid enum, sentinel UTC or half-present key.
-        check = template()
+        check = template(registry_schema_version)
         check.update(reviewer_token="00" * 32, review_evidence_digest="00" * 32,
                      incidents=[_input_row(source)])
         validate_packet(check)
         row = {name: source[name] for name in INCIDENT_COLUMNS}
         for name in ("evidence_digest", "fix_reference_digest"):
-            row[name] = None if row[name] is None else bytes(row[name]).hex()
+            value = _stored_digest(row[name], nullable=name == "fix_reference_digest")
+            row[name] = None if value is None else value.hex()
         row["backlog_disposition"] = reverse_backlog[int(row["backlog_disposition"])]
         row["observation_provenance"] = reverse_provenance[int(row["observation_provenance"])]
         row["status"] = reverse_status[int(row["status"])]
@@ -317,10 +348,10 @@ def public_coverage(meta: Mapping[str, Any] | None, rows: Sequence[Mapping[str, 
     if not version and (rows or meta["registry_digest"] is not None):
         raise IncidentError("invalid_publication")
     return {
-        "registry_schema_version": REGISTRY_SCHEMA_VERSION,
+        "registry_schema_version": registry_schema_version,
         "status": "reviewed_inventory" if version else "not_registered",
         "registry_version": version or None,
-        "registry_digest": None if meta["registry_digest"] is None else bytes(meta["registry_digest"]).hex(),
+        "registry_digest": None if meta["registry_digest"] is None else _stored_digest(meta["registry_digest"]).hex(),
         "reviewed_from_utc_usec": meta["reviewed_from_utc_usec"],
         "reviewed_through_utc_usec": meta["reviewed_through_utc_usec"],
         "incident_count": int(meta["incident_count"]),
@@ -334,13 +365,14 @@ def public_coverage(meta: Mapping[str, Any] | None, rows: Sequence[Mapping[str, 
     }
 
 
-def template() -> dict[str, Any]:
-    return {"registry_schema_version": 1, "environment_id": 1, "season_id": 1,
+def template(registry_schema_version: int = REGISTRY_SCHEMA_VERSION) -> dict[str, Any]:
+    known_kinds, _max_kind, _registry_table, _incident_table = schema_contract(registry_schema_version)
+    return {"registry_schema_version": registry_schema_version, "environment_id": 1, "season_id": 1,
             "registry_version": 1, "previous_registry_version": 0,
             "reviewed_from_utc_usec": None, "reviewed_through_utc_usec": None,
             "reviewer_token": "REQUIRED-OPAQUE-SHA256", "review_evidence_digest": "REQUIRED-SHA256",
             "incidents": [{"incident_id": 1, "producer_boot_id": None, "producer_process_id": None,
-                           "start_utc_usec": None, "end_utc_usec": None, "record_kind_mask": KNOWN_KINDS,
+                           "start_utc_usec": None, "end_utc_usec": None, "record_kind_mask": known_kinds,
                            "first_record_seq": None, "last_record_seq": None,
                            "fix_reference_digest": None, "first_verified_postfix": None,
                            "backlog_disposition": "unknown", "observation_provenance": "unavailable",
@@ -351,20 +383,24 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("packet", nargs="?", type=Path)
     parser.add_argument("--template", action="store_true")
+    parser.add_argument("--registry-schema-version", type=int, choices=(1, 2),
+                        help="Template schema; registration uses the packet's explicit schema.")
     parser.add_argument("--register", action="store_true", help="append reviewed inventory through TELEMETRY_INCIDENT_DB_* credentials")
     args = parser.parse_args(argv)
     try:
         if args.template:
             if args.packet is not None or args.register:
                 raise IncidentError("invalid_command")
-            print(json.dumps(template(), indent=2, sort_keys=True))
+            print(json.dumps(template(args.registry_schema_version or REGISTRY_SCHEMA_VERSION), indent=2, sort_keys=True))
             return 0
         if args.packet is None:
             raise IncidentError("packet_required")
+        if args.registry_schema_version is not None:
+            raise IncidentError("schema_option_requires_template")
         packet = load_packet(args.packet)
         meta, _rows = validate_packet(packet)
         if not args.register:
-            print(json.dumps({"status": "valid_packet", "registry_version": meta["registry_version"],
+            print(json.dumps({"status": "valid_packet", "registry_schema_version": packet["registry_schema_version"], "registry_version": meta["registry_version"],
                               "incident_count": meta["incident_count"], "packet_digest": meta["packet_digest"].hex()}))
             return 0
         # Lazy imports keep validation/template operations connection-free.

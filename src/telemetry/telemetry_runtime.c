@@ -299,7 +299,8 @@ bool handoff_is_zero(const telemetry_session_handoff &handoff) noexcept
 	       handoff.cumulative.active_usec == 0U && handoff.cumulative.idle_usec == 0U &&
 	       handoff.cumulative.unknown_usec == 0U && handoff.cumulative.resident_usec == 0U &&
 	       handoff.cumulative.linkdead_usec == 0U &&
-	       handoff.quality_flags == TELEMETRY_QUALITY_NONE;
+	       handoff.quality_flags == TELEMETRY_QUALITY_NONE &&
+	       telemetry_ownership_handoff_is_zero(handoff.ownership);
 }
 
 char ascii_lower(char value) noexcept
@@ -2831,6 +2832,7 @@ telemetry_runtime_game_session_resume(struct char_data *character,
 	     supplied.session.season_id != R.session_scope_season_id ||
 	     supplied.session.environment_id != R.session_scope_environment_id ||
 	     !telemetry_producer_id_is_valid(supplied.previous_producer) ||
+	     !telemetry_ownership_handoff_is_valid(supplied.ownership) ||
 	     (supplied.previous_producer.boot_id == R.producer.boot_id &&
 	      supplied.previous_producer.process_id == R.producer.process_id)))
 		return game_capture_invalid();

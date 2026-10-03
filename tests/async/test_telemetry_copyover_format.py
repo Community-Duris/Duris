@@ -27,11 +27,12 @@ def function(source, signature):
 def main():
     source = (ROOT / 'src/persistence/copyover.c').read_text()
     header = (ROOT / 'src/persistence/copyover.h').read_text()
-    assert '#define COPYOVER_VERSION 17' in header
+    assert '#define COPYOVER_VERSION 18' in header
     recover = source[source.index('int copyover_recover('):]
     assert 'copyover_version_supported(header.version)' in recover
     assert 'version >= 12 && version <= COPYOVER_VERSION' in source
     assert 'header.version >= 15' in recover
+    assert 'header.version >= 18 ? TELEMETRY_COPYOVER_VERSION : 1U' in recover
     assert recover.index('read_telemetry_copyover_state(') < recover.index('restore_telemetry_copyover_sessions(')
     wire_types = source[source.index('constexpr char TELEMETRY_COPYOVER_MAGIC'):source.index('} // namespace', source.index('constexpr char TELEMETRY_COPYOVER_MAGIC'))]
     signatures = (
@@ -98,6 +99,10 @@ telemetry_handoff_result telemetry_runtime_game_handoff_copy(char_data *ch) {
         result.outcome = telemetry_runtime_outcome::queue_full;
     result.handoff.session.id.session_seq = std::strcmp(ch->name, "alpha") == 0 ? 11 : 22;
     result.handoff.session.pid = 42;
+    result.handoff.ownership.account_token = std::strcmp(ch->name, "alpha") == 0 ? 33 : 44;
+    result.handoff.ownership.observed_at_utc_usec = 1234;
+    result.handoff.ownership.source = telemetry_ownership_source::authenticated_login;
+    result.handoff.ownership.quality_flags = TELEMETRY_QUALITY_LATE;
     return result;
 }
 struct observation { P_desc descriptor; std::uint64_t sequence; };
@@ -172,6 +177,10 @@ void mutate(FILE *fp, unsigned index, unsigned kind) {
     if (kind == 4) entry.player_name[sizeof(entry.player_name)-1] = 'x';
     if (kind == 5) entry.reserved[1] = 1;
     if (kind == 6) entry.fd = -1;
+    if (kind == 7) entry.handoff.ownership.source = telemetry_ownership_source::unavailable;
+    if (kind == 8) entry.handoff.ownership.reserved[2] = 1;
+    if (kind == 9) entry.handoff.ownership.quality_flags = 1U << 10U;
+    if (kind == 10) entry.handoff.ownership.source = static_cast<telemetry_ownership_source>(0);
     assert(fseek(fp, offset, SEEK_SET) == 0);
     assert(fwrite(&entry, sizeof(entry), 1, fp) == 1);
     rewind(fp);
@@ -195,6 +204,62 @@ int main(int argc, char **argv) {
         assert(std::memcmp(&entries[0].handoff, &expected, sizeof(expected)) == 0);
         marker(fp); fclose(fp);
         descriptor_list = &a; b.next = nullptr;
+        restore_telemetry_copyover_sessions(&entries);
+        exactly_once(11, 22);
+    } else if (std::strcmp(scenario, "legacy-v1") == 0) {
+        FILE *fp = tmpfile(); assert(fp);
+        telemetry_copyover_header header{};
+        std::memcpy(header.magic, TELEMETRY_COPYOVER_MAGIC, 4);
+        header.version = 1; header.count = 2;
+        assert(fwrite(&header, sizeof(header), 1, fp) == 1);
+        for (P_desc d : {&a, &b}) {
+            telemetry_copyover_entry_v1 entry{};
+            entry.fd = d->descriptor;
+            strlcpy(entry.player_name, d->character->name, sizeof(entry.player_name));
+            entry.handoff_valid = 1;
+            entry.handoff.session = telemetry_runtime_game_handoff_copy(d->character).handoff.session;
+            entry.handoff.previous_producer = {123U, 456U};
+            entry.handoff.last_checkpoint_revision = 7U;
+            entry.handoff.cumulative = {100U, 10U, 80U, 10U, 100U, 0U};
+            entry.handoff.quality_flags = TELEMETRY_QUALITY_QUEUE_DROP;
+            assert(fwrite(&entry, sizeof(entry), 1, fp) == 1);
+        }
+        assert(ftell(fp) == static_cast<long>(sizeof(header) + 2 * sizeof(telemetry_copyover_entry_v1)));
+        assert(fwrite(&following_world_marker, sizeof(following_world_marker), 1, fp) == 1);
+        rewind(fp);
+        std::vector<telemetry_copyover_entry> entries;
+        assert(!read_telemetry_copyover_state(fp, 2, &entries)); // v18 cannot reinterpret old framing
+        rewind(fp);
+        assert(read_telemetry_copyover_state(fp, 2, &entries, 1));
+        assert(entries.size() == 2);
+        assert(telemetry_ownership_handoff_is_zero(entries[0].handoff.ownership));
+        assert(entries[0].handoff.previous_producer.process_id == 456U);
+        assert(entries[0].handoff.last_checkpoint_revision == 7U);
+        assert(entries[0].handoff.cumulative.active_usec == 10U);
+        assert(entries[0].handoff.cumulative.resident_usec == 100U);
+        assert(entries[0].handoff.quality_flags == TELEMETRY_QUALITY_QUEUE_DROP);
+        marker(fp); fclose(fp);
+        b.next = nullptr;
+        restore_telemetry_copyover_sessions(&entries);
+        exactly_once(11, 22);
+    } else if (std::strcmp(scenario, "unknown-ownership") == 0) {
+        FILE *fp = saved();
+        assert(fseek(fp, sizeof(telemetry_copyover_header), SEEK_SET) == 0);
+        telemetry_copyover_entry entry{};
+        assert(fread(&entry, sizeof(entry), 1, fp) == 1);
+        entry.handoff.ownership.account_token = 0;
+        entry.handoff.ownership.source = telemetry_ownership_source::unavailable;
+        entry.handoff.ownership.observed_at_utc_usec = TELEMETRY_UTC_UNKNOWN;
+        entry.handoff.ownership.quality_flags = TELEMETRY_QUALITY_CARDINALITY_OVERFLOW | TELEMETRY_QUALITY_QUEUE_DROP;
+        assert(fseek(fp, sizeof(telemetry_copyover_header), SEEK_SET) == 0);
+        assert(fwrite(&entry, sizeof(entry), 1, fp) == 1); rewind(fp);
+        std::vector<telemetry_copyover_entry> entries;
+        assert(read_telemetry_copyover_state(fp, 2, &entries));
+        assert(entries.size() == 2 && entries[0].handoff.ownership.account_token == 0);
+        assert(entries[0].handoff.ownership.source == telemetry_ownership_source::unavailable);
+        assert(entries[0].handoff.ownership.observed_at_utc_usec == TELEMETRY_UTC_UNKNOWN);
+        marker(fp); fclose(fp);
+        b.next = nullptr;
         restore_telemetry_copyover_sessions(&entries);
         exactly_once(11, 22);
     } else if (std::strcmp(scenario, "mixed-handoff") == 0) {
@@ -268,7 +333,7 @@ int main(int argc, char **argv) {
         restore_telemetry_copyover_sessions(nullptr);
         exactly_once(0, 0);
     } else if (std::strcmp(scenario, "damaged-entry") == 0) {
-        for (unsigned kind : {0U, 4U, 5U, 6U}) {
+        for (unsigned kind : {0U, 4U, 5U, 6U, 7U, 8U, 9U, 10U}) {
             setup(); FILE *fp = saved(); mutate(fp, 0, kind);
             std::vector<telemetry_copyover_entry> entries;
             assert(read_telemetry_copyover_state(fp, 2, &entries));
@@ -332,7 +397,7 @@ int main(int argc, char **argv) {
             resource.setrlimit(resource.RLIMIT_AS, (ceiling, ceiling))
             resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
         failed = []
-        for scenario in ('roundtrip', 'unavailable', 'legacy', 'damaged-entry',
+        for scenario in ('roundtrip', 'unavailable', 'legacy', 'legacy-v1', 'unknown-ownership', 'damaged-entry',
                          'mixed-handoff', 'unmatched-entry', 'duplicate-entry', 'invalid-handoff',
                          'memory-pressure', 'bounds-and-framing',
                          'resume-full-before', 'resume-full-after', 'undurable',

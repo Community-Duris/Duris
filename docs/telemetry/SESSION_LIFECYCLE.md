@@ -19,7 +19,7 @@ other PII in telemetry records.
 | Camp / rent / terminal unload | `src/cmd/actoth.c:do_camp`, rent callers, and `src/world/handler.c:extract_char_after_terminal_save` | Central `telemetry_runtime_game_session_exit` with `logout` for a live descriptor, otherwise `disconnect` | The handler runs only after the authoritative terminal save succeeds. A nonzero runtime session sequence prevents the explicit quit hook from being emitted twice. |
 | Idle exit | `src/world/limits.c` idle-rent path | `close_socket` detach/linkdead, then the central terminal-save exit hook | Socket close remains before `RENT_LINKDEAD` save, preserving the existing persistence order. AFK transition also requests a context observation. |
 | Admin kick / forced socket close | `src/net/comm.c:close_socket` | Same detach and linkdead adapters as link loss | This records the connection edge without treating a resident character as a logical logout. Any later terminal extraction closes the logical session. |
-| Copyover / process handoff | `src/persistence/copyover.c` | Runtime handoff/resume adapters | Version 15 stores bounded optional telemetry records alongside the existing world format; versions 12–14 resume with absent handoffs. |
+| Copyover / process handoff | `src/persistence/copyover.c` | Runtime handoff/resume adapters | Version 18 stores telemetry-v2 ownership context; versions 15–17 retain the sealed telemetry-v1 layout with absent ownership, and 12–14 resume with absent handoffs. |
 
 The copyover reader bounds telemetry allocation by `FD_SETSIZE`, the server's
 accepted-socket ceiling. Corrupt record fields are consumed and discarded without
@@ -42,9 +42,12 @@ does not establish human activity: the existing classifier retains unknown time
 until its evidence establishes another category.
 
 For copyover, one runtime-only handoff value per descriptor retains the original
-session key, cumulative counters and checkpoint revision while admission is
-unavailable. The old producer's monotonic clock never crosses that boundary.
-The copyover wire format and existing record kinds are unchanged. Detach or exit
+session key, cumulative counters, checkpoint revision and last observed ownership
+context while admission is unavailable. The old producer's monotonic clock never
+crosses that boundary. The new wire remains readable alongside its explicit v1
+layout. Ownership is reobserved from the authenticated reloaded account at a fresh
+clock; a saved token supplies no current authority. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md#copyover-account-context).
+Detach or exit
 clears the pending value; socket allocation/reuse zeroes the descriptor. After
 admission, later presence calls keep the same IDs and emit no second entry.
 True state-capacity refusal rolls back provisional IDs, permitting a later retry.

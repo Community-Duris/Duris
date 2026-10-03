@@ -863,12 +863,24 @@ void test_ownership_boundaries_and_copyover()
 		      .outcome == telemetry_session_state_outcome::accepted);
 	check_records_valid();
 	const telemetry_producer_id next_producer = { 921U, 1U };
+	CHECK(handoff.ownership.account_token == 0U);
+	CHECK(handoff.ownership.source == telemetry_ownership_source::unavailable);
+	CHECK(handoff.ownership.observed_at_utc_usec == 1040);
+	CHECK(telemetry_ownership_handoff_is_valid(handoff.ownership));
 	reset_fixture(next_producer, 1U, 1000U);
 	entry = make_enter(next_producer, 1U, 1U, 0U, 2000);
 	entry.session = handoff.session;
 	entry.quality_flags = handoff.quality_flags;
 	CHECK(telemetry_session_state_resume(&session_state, { handoff, entry }).records_accepted ==
 	      1U);
+	CHECK(!session_state.slots[0].ownership_has_sample);
+	CHECK(session_state.slots[0].resume_handoff_snapshot.ownership.source ==
+	      telemetry_ownership_source::unavailable);
+	auto conflicting_handoff = handoff;
+	conflicting_handoff.ownership.account_token = 99U;
+	conflicting_handoff.ownership.source = telemetry_ownership_source::copyover;
+	CHECK(telemetry_session_state_resume(&session_state, { conflicting_handoff, entry })
+		      .outcome == telemetry_session_state_outcome::invalid);
 	CHECK(telemetry_session_state_observe_ownership(&session_state, ownership(entry, 1U, 12U))
 		      .records_accepted == 1U);
 	const auto *fresh = find_record(telemetry_record_kind::ownership, 0U);
@@ -876,6 +888,42 @@ void test_ownership_boundaries_and_copyover()
 	CHECK(fresh->payload.ownership.at_monotonic_usec == 1U);
 	CHECK(fresh->header.key.producer.boot_id == next_producer.boot_id);
 	CHECK(fresh->payload.ownership.session.id.producer.boot_id == producer.boot_id);
+	check_records_valid();
+}
+
+void test_handoff_retains_known_and_uncertain_ownership()
+{
+	const telemetry_producer_id producer = { 924U, 1U };
+	reset_fixture(producer, 1U, 1000U);
+	const auto entry = make_enter(producer, 1U, 1U, 10U, 1010);
+	(void)telemetry_session_state_enter(&session_state, entry);
+	telemetry_session_handoff handoff{};
+	CHECK(telemetry_session_state_handoff_copy_at(&session_state, entry.session, &handoff, 10U,
+						      1010)
+		      .outcome == telemetry_session_state_outcome::accepted);
+	CHECK(telemetry_ownership_handoff_is_zero(handoff.ownership));
+	(void)telemetry_session_state_observe_ownership(&session_state, ownership(entry, 20U, 11U));
+	CHECK(telemetry_session_state_handoff_copy_at(&session_state, entry.session, &handoff, 19U,
+						      1019)
+		      .outcome == telemetry_session_state_outcome::invalid);
+	CHECK(telemetry_session_ref_is_zero(handoff.session));
+	CHECK(telemetry_session_state_handoff_copy_at(&session_state, entry.session, &handoff, 20U,
+						      1020)
+		      .outcome == telemetry_session_state_outcome::accepted);
+	CHECK(handoff.ownership.account_token == 11U);
+	CHECK(handoff.ownership.observed_at_utc_usec == 1020);
+	CHECK(handoff.ownership.source == telemetry_ownership_source::authenticated_login);
+	sink_state.reject = true;
+	(void)telemetry_session_state_observe_ownership(&session_state, ownership(entry, 30U, 12U));
+	(void)telemetry_session_state_observe_ownership(&session_state, ownership(entry, 40U, 13U));
+	sink_state.reject = false;
+	CHECK(telemetry_session_state_handoff_copy_at(&session_state, entry.session, &handoff, 50U,
+						      1050)
+		      .outcome == telemetry_session_state_outcome::accepted);
+	CHECK(session_state.slots[0].ownership_needs_anchor);
+	CHECK(handoff.ownership.account_token == 0U);
+	CHECK(handoff.ownership.source == telemetry_ownership_source::unavailable);
+	CHECK(handoff.ownership.quality_flags & TELEMETRY_QUALITY_SEQUENCE_GAP);
 	check_records_valid();
 }
 
@@ -958,6 +1006,7 @@ void test_pending_ownership_survives_logout_and_gates_handoff()
 int main()
 {
 	test_ownership_boundaries_and_copyover();
+	test_handoff_retains_known_and_uncertain_ownership();
 	test_ownership_backpressure_does_not_backdate_a_later_owner();
 	test_pending_ownership_survives_logout_and_gates_handoff();
 	test_utc_jumps_and_midnight();

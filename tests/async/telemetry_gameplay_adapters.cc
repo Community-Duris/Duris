@@ -862,6 +862,8 @@ void check_authenticated_ownership_path()
 	assert(descriptor.telemetry_connection_sequence != first_connection);
 	const auto handoff = telemetry_runtime_game_handoff_copy(&player);
 	assert(handoff.outcome == telemetry_runtime_outcome::accepted);
+	assert(handoff.handoff.ownership.account_token == 12U);
+	assert(handoff.handoff.ownership.source == telemetry_ownership_source::reconnect);
 	telemetry_monotonic_usec now{};
 	telemetry_utc_usec utc{};
 	assert(telemetry_runtime_now(&now, &utc));
@@ -902,6 +904,8 @@ void check_authenticated_ownership_path()
 	next_descriptor.character = &recovered;
 	next_descriptor.account = &account;
 	next_descriptor.connected = CON_PLAYING;
+	account.telemetry_account_token =
+		13U; // Real reloaded authority may differ from the old observation.
 	assert(telemetry_runtime_game_session_resume(&recovered, &next_descriptor, &handoff.handoff)
 		       .outcome == telemetry_runtime_outcome::accepted);
 	assert(telemetry_runtime_now(&now, &utc));
@@ -911,7 +915,7 @@ void check_authenticated_ownership_path()
 	telemetry_transport_unbind_for_tests();
 	assert(next_fake.ownership.size() == 1U);
 	const auto &resumed_owner = next_fake.ownership[0];
-	assert(resumed_owner.account_token == 12U &&
+	assert(resumed_owner.account_token == 13U &&
 	       resumed_owner.source == telemetry_ownership_source::copyover);
 	assert(resumed_owner.session.id.producer.boot_id ==
 	       handoff.handoff.session.id.producer.boot_id);
@@ -919,6 +923,38 @@ void check_authenticated_ownership_path()
 		       handoff.handoff.previous_producer.boot_id ||
 	       resumed_owner.connection.producer.process_id !=
 		       handoff.handoff.previous_producer.process_id);
+	for (unsigned missing = 0U; missing < 3U; ++missing)
+	{
+		fake_repository missing_fake{};
+		const telemetry_transport_repository_binding missing_repository = {
+			fake_init, fake_apply, fake_request_stop, fake_shutdown, &missing_fake
+		};
+		assert(telemetry_transport_bind_for_tests(&missing_repository, &clock) ==
+		       telemetry_transport_outcome::started);
+		telemetry_test_start_runtime(enabled_options());
+		char_data missing_player{};
+		missing_player.only.pc = &pc;
+		missing_player.in_room = -1;
+		descriptor_data missing_descriptor{};
+		missing_descriptor.character = &missing_player;
+		missing_descriptor.account = &account;
+		missing_descriptor.connected = CON_PLAYING;
+		account.telemetry_account_token = missing == 0U ? 0U : 13U;
+		account.telemetry_environment_id =
+			options.config.environment_id + (missing == 1U ? 1U : 0U);
+		account.acct_blocked = missing == 2U ? ACCOUNT_BLOCK_DELETION : 0;
+		assert(telemetry_runtime_game_session_resume(&missing_player, &missing_descriptor,
+							     &handoff.handoff)
+			       .outcome == telemetry_runtime_outcome::accepted);
+		assert(telemetry_runtime_now(&now, &utc));
+		assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+		       telemetry_runtime_outcome::accepted);
+		assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+		telemetry_transport_unbind_for_tests();
+		assert(missing_fake.ownership.size() == 1U);
+		assert(missing_fake.ownership[0].account_token == 0U);
+		assert(missing_fake.ownership[0].source == telemetry_ownership_source::unavailable);
+	}
 	std::puts(
 		"PASS: authenticated ownership observes scoped caches, transfers, unavailable identity and reconnect");
 }

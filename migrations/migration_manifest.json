@@ -758,6 +758,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "c26852c2c100806fae5a857a446f4ab9edcb829e43154a13f0352f28f2a7a8f1",
       "verify_checksum": "9b2aa9241bfa8d81e041e43370649088149e0ad447ef1de861035af1de02b4dc"
+    },
+    {
+      "id": "0059_telemetry_ownership_incident_coverage",
+      "sequence": 59,
+      "description": "Retain independent reviewed ownership-loss inventories for balance generations",
+      "apply": "immutable/0059_telemetry_ownership_incident_coverage.sql",
+      "verify": "immutable/0059_telemetry_ownership_incident_coverage.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "86d2e75f02cf3cc634f44d828eb4c80031ad6490348f55af7750aebaf7907b26",
+      "verify_checksum": "680ac451a977c2bd8d2deda428b40d499a80ca445211efef663832ffe63479a6"
     }
   ]
 }

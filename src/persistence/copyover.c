@@ -136,7 +136,7 @@ struct copyover_worker_resume_guard
 };
 
 constexpr char TELEMETRY_COPYOVER_MAGIC[4] = { 'T', 'L', 'M', 'Y' };
-constexpr std::uint32_t TELEMETRY_COPYOVER_VERSION = 1U;
+constexpr std::uint32_t TELEMETRY_COPYOVER_VERSION = 2U;
 struct telemetry_copyover_header
 {
 	char magic[4];
@@ -153,8 +153,29 @@ struct telemetry_copyover_entry
 	telemetry_session_handoff handoff;
 };
 
+/* Sealed telemetry v1 layout used by outer copyover versions 15..17. Do not
+ * read legacy bytes into the extended current handoff or consume world data. */
+struct telemetry_copyover_handoff_v1
+{
+	telemetry_session_ref session;
+	telemetry_producer_id previous_producer;
+	telemetry_checkpoint_revision last_checkpoint_revision;
+	telemetry_cumulative_counters cumulative;
+	telemetry_quality_mask quality_flags;
+};
+
+struct telemetry_copyover_entry_v1
+{
+	int fd;
+	char player_name[50];
+	std::uint8_t handoff_valid;
+	std::uint8_t reserved[3];
+	telemetry_copyover_handoff_v1 handoff;
+};
+
 static_assert(std::is_trivially_copyable_v<telemetry_copyover_header>);
 static_assert(std::is_trivially_copyable_v<telemetry_copyover_entry>);
+static_assert(std::is_trivially_copyable_v<telemetry_copyover_entry_v1>);
 } // namespace
 
 bool copyover_has_durable_shopkeepers()
@@ -360,20 +381,23 @@ static bool write_telemetry_copyover_state(FILE *fp, int expected_count)
 	return written == expected_count;
 }
 
-static bool read_telemetry_copyover_state(FILE *fp, int expected_count,
-					  std::vector<telemetry_copyover_entry> *entries)
+static bool
+read_telemetry_copyover_state(FILE *fp, int expected_count,
+			      std::vector<telemetry_copyover_entry> *entries,
+			      std::uint32_t expected_version = TELEMETRY_COPYOVER_VERSION)
 {
 	if (entries != nullptr)
 		entries->clear();
 	// Accepted game sockets are below FD_SETSIZE. Never allocate from an
 	// unchecked on-disk count, even when both headers contain the same value.
 	if (fp == nullptr || entries == nullptr || expected_count < 0 ||
-	    expected_count > FD_SETSIZE)
+	    expected_count > FD_SETSIZE || expected_version < 1U ||
+	    expected_version > TELEMETRY_COPYOVER_VERSION)
 		return false;
 	telemetry_copyover_header header{};
 	if (fread(&header, sizeof(header), 1, fp) != 1 ||
 	    memcmp(header.magic, TELEMETRY_COPYOVER_MAGIC, sizeof(header.magic)) != 0 ||
-	    header.version != TELEMETRY_COPYOVER_VERSION ||
+	    header.version != expected_version ||
 	    header.count != static_cast<std::uint32_t>(expected_count))
 		return false;
 	bool retain_entries = true;
@@ -390,7 +414,25 @@ static bool read_telemetry_copyover_state(FILE *fp, int expected_count,
 	for (std::uint32_t index = 0; index < header.count; ++index)
 	{
 		telemetry_copyover_entry entry{};
-		if (fread(&entry, sizeof(entry), 1, fp) != 1)
+		bool complete = false;
+		if (header.version == 1U)
+		{
+			telemetry_copyover_entry_v1 legacy{};
+			complete = fread(&legacy, sizeof(legacy), 1, fp) == 1;
+			entry.fd = legacy.fd;
+			memcpy(entry.player_name, legacy.player_name, sizeof(entry.player_name));
+			entry.handoff_valid = legacy.handoff_valid;
+			memcpy(entry.reserved, legacy.reserved, sizeof(entry.reserved));
+			entry.handoff.session = legacy.handoff.session;
+			entry.handoff.previous_producer = legacy.handoff.previous_producer;
+			entry.handoff.last_checkpoint_revision =
+				legacy.handoff.last_checkpoint_revision;
+			entry.handoff.cumulative = legacy.handoff.cumulative;
+			entry.handoff.quality_flags = legacy.handoff.quality_flags;
+		}
+		else
+			complete = fread(&entry, sizeof(entry), 1, fp) == 1;
+		if (!complete)
 		{
 			entries->clear();
 			return false; // truncated file: the following world section is unavailable
@@ -398,7 +440,8 @@ static bool read_telemetry_copyover_state(FILE *fp, int expected_count,
 		if (entry.fd <= 0 || entry.fd >= FD_SETSIZE ||
 		    entry.player_name[sizeof(entry.player_name) - 1U] != '\0' ||
 		    entry.handoff_valid > 1U || entry.reserved[0] != 0U ||
-		    entry.reserved[1] != 0U || entry.reserved[2] != 0U)
+		    entry.reserved[1] != 0U || entry.reserved[2] != 0U ||
+		    !telemetry_ownership_handoff_is_valid(entry.handoff.ownership))
 			continue; // consume the whole frame; this session resumes as absent
 		if (entry.handoff_valid == 0U)
 		{
@@ -1512,7 +1555,9 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 
 	if (header.version >= 15)
 	{
-		if (!read_telemetry_copyover_state(fp, header.num_descriptors, &telemetry_entries))
+		if (!read_telemetry_copyover_state(
+			    fp, header.num_descriptors, &telemetry_entries,
+			    header.version >= 18 ? TELEMETRY_COPYOVER_VERSION : 1U))
 		{
 			logit(LOG_STATUS,
 			      "copyover_recover: invalid telemetry session handoff state");

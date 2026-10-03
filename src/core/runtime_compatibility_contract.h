@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 240;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 242;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons',"
 	"'account_bound_rewards','account_characters','account_erasure_evidence',"
@@ -71,19 +71,20 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'telemetry_account_token','telemetry_cohort_day','telemetry_cohort_member',"
 	"'telemetry_config','telemetry_generation_identity','telemetry_identity_association',"
 	"'telemetry_identity_registry','telemetry_identity_reviewer','telemetry_incident',"
-	"'telemetry_incident_registry','telemetry_interval','telemetry_player_day',"
-	"'telemetry_quarantine','telemetry_reward_projection',"
-	"'telemetry_reward_projection_state','telemetry_rollup_combat_actor',"
-	"'telemetry_rollup_encounter','telemetry_rollup_encounter_participant',"
-	"'telemetry_rollup_incident','telemetry_rollup_incident_coverage',"
-	"'telemetry_rollup_level_event','telemetry_rollup_progression_day',"
-	"'telemetry_rollup_session','telemetry_rollup_state','telemetry_session','timers',"
-	"'towns','world_quest_accomplished','zone_story_quest_state','zone_touch_outcome',"
-	"'zone_touch_outcome_participant','zone_touches','zone_trophy','zones'";
+	"'telemetry_incident_registry','telemetry_incident_registry_v2','telemetry_incident_v2',"
+	"'telemetry_interval','telemetry_player_day','telemetry_quarantine',"
+	"'telemetry_reward_projection','telemetry_reward_projection_state',"
+	"'telemetry_rollup_combat_actor','telemetry_rollup_encounter',"
+	"'telemetry_rollup_encounter_participant','telemetry_rollup_incident',"
+	"'telemetry_rollup_incident_coverage','telemetry_rollup_level_event',"
+	"'telemetry_rollup_progression_day','telemetry_rollup_session','telemetry_rollup_state',"
+	"'telemetry_session','timers','towns','world_quest_accomplished',"
+	"'zone_story_quest_state','zone_touch_outcome','zone_touch_outcome_participant',"
+	"'zone_touches','zone_trophy','zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"0ad566dfdf29fc6d3042a0ccb1879587851e9500e70219d3653a39c79af0b81f";
+	"32fd376d0359d8acca79f6462b8bc3ab74a72f83e9b7265ea347ed30d4e1a043";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"5105c935e88237149f55d786378dfbf94116d90090673847b2a1861c33f0b4cd";
+	"f699a5487279e561b8d1705b76260bdcea5a57cc1eb820de1aa871d3e1285c1e";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced by
@@ -111,33 +112,35 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * a durable quest XP receipt mask and migration 0048 adds per-recipient XP
  * entitlements. Migration 0049 adds player spell-effect receipts, 0051 adds
  * player item runtime state, and 0052 indexes quest item witness reads. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0058_telemetry_identity_review";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 58;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0059_telemetry_ownership_incident_coverage";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 59;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"c26852c2c100806fae5a857a446f4ab9edcb829e43154a13f0352f28f2a7a8f1";
+	"86d2e75f02cf3cc634f44d828eb4c80031ad6490348f55af7750aebaf7907b26";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"9b2aa9241bfa8d81e041e43370649088149e0ad447ef1de861035af1de02b4dc";
+	"680ac451a977c2bd8d2deda428b40d499a80ca445211efef663832ffe63479a6";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"410e907628ae22246a83b0cdeef3226764f5ae3d75dac4180bce9ae4a4d8f4c2";
-constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID = "0058_telemetry_identity_review";
-constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 58;
+	"b493e8125d23023250f32ddbcdb1719fd71de67727940c21fcd27447ee540959";
+constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID =
+	"0059_telemetry_ownership_incident_coverage";
+constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 59;
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_APPLY_CHECKSUM =
-	"c26852c2c100806fae5a857a446f4ab9edcb829e43154a13f0352f28f2a7a8f1";
+	"86d2e75f02cf3cc634f44d828eb4c80031ad6490348f55af7750aebaf7907b26";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM =
-	"9b2aa9241bfa8d81e041e43370649088149e0ad447ef1de861035af1de02b4dc";
+	"680ac451a977c2bd8d2deda428b40d499a80ca445211efef663832ffe63479a6";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM =
-	"7b99813b3ce521c4c0629df08c866ede3ba0680af837ef75510345b4783da719";
+	"7d5cb17ad20b183fe8c325549302d5cb0568b29ce638d64818be6d621472aa68";
 /* Master recorded runtime state at 0031; its accounting upgrade retains that prefix. */
-constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID = "0058_telemetry_identity_review";
-constexpr unsigned RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 58;
+constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID =
+	"0059_telemetry_ownership_incident_coverage";
+constexpr unsigned RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 59;
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_APPLY_CHECKSUM =
-	"c26852c2c100806fae5a857a446f4ab9edcb829e43154a13f0352f28f2a7a8f1";
+	"86d2e75f02cf3cc634f44d828eb4c80031ad6490348f55af7750aebaf7907b26";
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_VERIFY_CHECKSUM =
-	"9b2aa9241bfa8d81e041e43370649088149e0ad447ef1de861035af1de02b4dc";
+	"680ac451a977c2bd8d2deda428b40d499a80ca445211efef663832ffe63479a6";
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HISTORY_CHECKSUM =
-	"db61472f86141fdf09f3d64ad42df2ac34c3c6f7a6f76801463d1aadba027f27";
+	"88e825e35912a8503f18ffc8100151261ef4d54bcbd4853f1c21df45f294a584";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_SQL =
-	"SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING utf8mb4))),16,'0')),CONVERT(migration_id USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(description USING utf8mb4))),16,'0')),CONVERT(description USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(compatibility USING utf8mb4))),16,'0')),CONVERT(compatibility USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history ORDER BY sequence_number LIMIT 59";
+	"SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING utf8mb4))),16,'0')),CONVERT(migration_id USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(description USING utf8mb4))),16,'0')),CONVERT(description USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(compatibility USING utf8mb4))),16,'0')),CONVERT(compatibility USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history ORDER BY sequence_number LIMIT 60";
 constexpr const char *RUNTIME_EXTRA_DESCRIPTION_GENERATION_SQL =
 	"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN "
 	"('player_item_extra_descr','player_pet_item_extra_descr') AND column_name='description_sha256' AND "

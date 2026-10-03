@@ -3,6 +3,10 @@
 Migration `0054_telemetry_incident_coverage` and `scripts/telemetry/incident.py`
 provide a reviewed inventory of telemetry gaps. Registration is an external
 operation; the game and its telemetry worker do not acquire this authority.
+Migration `0059_telemetry_ownership_incident_coverage` adds an independent schema-v2
+review history covering families 1–9, including authenticated account ownership.
+The sealed schema-v1 inventory still covers families 1–8. Both histories use the
+same validator, registrar and existing scoped publication snapshot tables.
 The worker's [outage ledger](OUTAGE_STORAGE.md) supplies bounded evidence for a
 review. A registration does not replay payloads or invent absent observations.
 
@@ -112,6 +116,46 @@ restores and report rebuild procedures must retain registry versions and publish
 snapshots together. At capacity, registration refuses rather than evicting history.
 An operator must review a future capacity/retention change; current code never
 purges incidents or rewrites an old registry version.
+
+## Ownership-loss review contract
+
+Schema v2 uses `telemetry_incident_registry_v2` and `telemetry_incident_v2`.
+Its registry version sequence is independent of v1. The packet's explicit
+`registry_schema_version` is part of its canonical digest; the same fields in
+different schemas cannot share review identity. Exact historical retries remain
+valid after a correction, all previous incident IDs must remain, and withdrawal
+is explicit. The bounds remain 64 incidents and 128 KiB. Family 9 and a committed
+kind-9 verified post-fix reference are accepted; family 10, future mask bits,
+partial references and a mismatched committed scope/kind/time are refused.
+
+Create its template with:
+
+```sh
+python3 scripts/telemetry/incident.py --template --registry-schema-version 2
+python3 scripts/telemetry/incident.py /private/path/reviewed-ownership-incidents.json --register
+```
+
+Registration selects its tables only from the validated schema constant. Its
+result states the schema and registry version. A lost commit acknowledgement
+drops the ambiguous connection; an exact retry on a fresh connection verifies
+the retained inventory. No current account name, token lookup or reconstructed
+ownership is added to an incident packet. Unknown tails, nullable clocks and
+separate reconstruction keep their existing coverage meaning.
+
+The incident registrar additionally needs SELECT/INSERT on the two v2 input
+tables; the rollup needs SELECT. The report reader's authority stays on the same
+two published snapshot tables. It cannot read either private review history or
+raw ownership facts. Both new tables are protected in the retained lifecycle
+inventory, which now includes 242 database tables.
+
+Report definitions 1 and 2 use the v1 history. New balance definitions beginning
+with 3 use the v2 history and preserve the chosen reviewed inventory in the
+existing `(definition, generation, environment, season)` snapshot. The common
+snapshot/read seam supports kind 9 and atomic parent/detail rollback. Definition
+3 is still disabled in the maintained rollup/report catalog until effort and
+portfolio publication are implemented. A qualified incident snapshot alone does
+not publish a balance report, establish complete ownership coverage or supply
+an account/controller effort denominator.
 
 The following qualification uses disposable local databases, both supported SQL
 engines, synthetic identities and committed facts. It reads no personal setup
