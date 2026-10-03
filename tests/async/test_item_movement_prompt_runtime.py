@@ -156,6 +156,8 @@ void write_to_q(const char *text, struct txt_q *q, const int)
     block->text = strdup(text);
     if (q->tail) q->tail->next = block; else q->head = block;
     q->tail = block;
+    q->bytes += strlen(text) + 1;
+    ++q->entries;
 }
 '''
 
@@ -416,6 +418,7 @@ def main():
         binary = Path(directory) / 'harness'
         source.write_text('\n'.join([PRELUDE,
             extract_function('comm.c', 'int get_from_q(struct txt_q *queue, char *dest)'),
+            extract_function('comm.c', 'static void report_input_queue_overflow('),
             extract_function('comm.c', 'int process_output(P_desc t)'), DRIVER]))
         # Keep both sanitizers; this functional fixture does not need optimized dependencies.
         subprocess.run(['g++', '-std=c++20', '-g', '-O0', '-ffunction-sections', '-fdata-sections',
