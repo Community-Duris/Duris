@@ -105,6 +105,29 @@ def run(server):
                     pid = number("SELECT pid FROM player_data WHERE name='"+journey.CHARACTER+"'")
                     items_before = number(f'SELECT COUNT(*) FROM player_items WHERE pid={pid}')
                     assert items_before > 0
+                    # Account confirmation must refuse native read errors before
+                    # its irreversible blocked=2 fence, preserving normal login.
+                    blocked_before = number("SELECT blocked FROM accounts WHERE account_name='"+journey.ACCOUNT+"'")
+                    client.send('7'); client.expect('Re-enter your account password')
+                    client.send(journey.PASSWORD); client.expect('PERMANENT ACCOUNT DELETION', timeout=30)
+                    client.expect('CANCEL:')
+                    sql('RENAME TABLE economic_sql_lifecycle_installation TO account_fence_fixture_lifecycle_unavailable')
+                    try:
+                        client.send(journey.ACCOUNT)
+                        client.expect('no deletion fence was written.', timeout=30)
+                        client.expect('ACCOUNT MENU')
+                        assert number("SELECT blocked FROM accounts WHERE account_name='"+journey.ACCOUNT+"'") == blocked_before
+                        assert number(f'SELECT COUNT(*) FROM player_data WHERE pid={pid}') == 1
+                        assert number(f'SELECT COUNT(*) FROM account_characters WHERE pid={pid} AND deleted_at IS NULL') == 1
+                        assert number(f'SELECT COUNT(*) FROM player_items WHERE pid={pid}') == items_before
+                    finally:
+                        sql('RENAME TABLE account_fence_fixture_lifecycle_unavailable TO economic_sql_lifecycle_installation')
+                    client.send('0'); client.close()
+                    client = journey.reconnect_character(plain)
+                    client.send('inventory'); client.expect('You are carrying')
+                    client.send('save'); client.expect('Save complete for '+journey.CHARACTER+'.', timeout=30)
+                    client.send('quit'); client.expect('ACCOUNT MENU', timeout=30)
+                    print('account-fence-admission: native refusal preserved account fence, character and playable retry', flush=True)
                     # A deliberately unavailable lifecycle table tests native SQL
                     # admission with an inactive gameplay cache. Only this newly
                     # created disposable schema is touched; restore before retry.
