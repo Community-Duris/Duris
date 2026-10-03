@@ -10,13 +10,10 @@
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "core/utils.h"
-#include <execinfo.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/time.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -27,7 +24,6 @@ extern void exit(int);
  */
 
 extern volatile sig_atomic_t tics;
-extern bool game_booted;
 extern int shutdownflag;
 // signal-initiated shutdown: 0=none, 1=shutdown, 2=reboot, 3=copyover
 extern volatile sig_atomic_t signal_shutdown_pending;
@@ -46,8 +42,6 @@ void reboot_request(int);
 void hupsig(int);
 void logsig(int);
 void reap(int);
-void checkpointing(void);
-static void checkpointing_signal(int);
 
 static void install_signal_handler(int signo, void (*handler)(int), int flags)
 {
@@ -65,9 +59,6 @@ static void install_signal_handler(int signo, void (*handler)(int), int flags)
 
 void signal_setup(void)
 {
-	struct itimerval itime;
-	struct timeval interval;
-
 	install_signal_handler(SIGUSR2, shutdown_request, SA_RESTART); // shutdown (no restart)
 	install_signal_handler(SIGUSR1, shutdown_notice, SA_RESTART); // copyover
 	install_signal_handler(SIGRTMIN, reboot_request, SA_RESTART); // reboot
@@ -84,88 +75,8 @@ void signal_setup(void)
 	/* new by fafhrd 11/28/99 */
 	install_signal_handler(SIGCHLD, reap, SA_RESTART | SA_NOCLDSTOP);
 
-	/*
-	   set up the deadlock-protection
-	 */
-
-	// Start timer 900 sec after boot starts (15 min).
-	interval.tv_sec = 900;
-	interval.tv_usec = 0;
-	itime.it_value = interval;
-	// And have timer check every 15 minutes.
-	itime.it_interval = interval;
-	// Changing this to 5 min since we don't need to hang for 15 min to know we're stuck.
-	itime.it_interval.tv_sec = 300;
-	if (setitimer(ITIMER_VIRTUAL, &itime, 0) < 0)
-	{
-		fatal_boot_error("signals", "setitimer(ITIMER_VIRTUAL) failed: %s",
-				 strerror(errno));
-	}
-	install_signal_handler(SIGVTALRM, checkpointing_signal, SA_RESTART);
-}
-
-static volatile sig_atomic_t checkpoint_strikes = 0;
-static volatile sig_atomic_t checkpoint_pending = 0;
-
-void checkpointing(void)
-{
-	if (!checkpoint_pending)
-	{
-		return;
-	}
-
-	if (checkpoint_strikes < 2)
-	{
-		logit(LOG_EXIT, "CHECKPOINT warning: tics not updated (strike %d)",
-		      (int)checkpoint_strikes);
-		checkpoint_pending = 0;
-		return;
-	}
-
-	logit(LOG_EXIT, "CHECKPOINT shutdown: tics not updated (%d strikes)",
-	      (int)checkpoint_strikes);
-
-	void *bt[64];
-	int n = backtrace(bt, 64);
-	int fd = open(LOG_EXIT, O_WRONLY | O_APPEND | O_CREAT, 0644);
-	if (fd >= 0)
-	{
-		char msg[64];
-		int len = snprintf(msg, sizeof(msg), "\n--- hung backtrace #%d ---\n",
-				   (int)checkpoint_strikes);
-		const ssize_t written = write(fd, msg, len);
-		(void)written;
-		backtrace_symbols_fd(bt, n, fd);
-		close(fd);
-	}
-
-	// The reason for this, is that we don't want to reboot into a hung-during-boot situation.
-	// In other words, if the mud hangs during a boot, we just want to die completely until it's fixed.
-	if (game_booted)
-	{
-		exit(56);
-	}
-	else
-	{
-		exit(-1);
-	}
-}
-
-static void checkpointing_signal(int signum)
-{
-	(void)signum;
-
-	if (!tics)
-	{
-		checkpoint_strikes = checkpoint_strikes + 1;
-		checkpoint_pending = 1;
-	}
-	else
-	{
-		tics = 0;
-		checkpoint_strikes = 0;
-		checkpoint_pending = 0;
-	}
+	// Completed-loop deadlines are enforced by the launcher's external
+	// observer. A signal handler cannot recover a callback that never returns.
 }
 
 // sigusr1 - copyover request from launcher

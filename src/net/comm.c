@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "core/game_loop_watchdog.h"
 #include "combat/attack_cadence.h"
 #include "world/world_singletons.h"
 #include "item/item_actions.h"
@@ -170,7 +171,6 @@ extern const int max_ingame_good;
 extern const int max_ingame_evil;
 extern TimedShutdownData shutdownData;
 extern void timedShutdown(P_char ch, P_char, P_obj, void *data);
-extern void checkpointing(void);
 
 long sentbytes = 0;
 long receivedbytes = 0;
@@ -439,6 +439,12 @@ static bool pager_style_fallback = false;
 
 int main(int argc, char **argv)
 {
+	if (!game_loop_watchdog_init())
+	{
+		fprintf(stderr, "Invalid launcher game-loop watchdog channel.\n");
+		return 78;
+	}
+
 	int port, sslport;
 	int pos = 1;
 	const char *dir;
@@ -1049,6 +1055,7 @@ int run_the_game(int port, int sslport)
 #endif
 
 	game_loop(port, sslport);
+	game_loop_watchdog_lifecycle(_reboot || _autoboot || _pwipe ? 'D' : 'S');
 	/* Flush dirty realms and reap the placed resource nodes while the
 	 * world and the store are still up. Idempotent and self-gating, so
 	 * a build with kingdoms disabled pays nothing here. */
@@ -1449,7 +1456,6 @@ static bool run_connection_phase(game_loop_pulse_context &ctx)
 	}
 	//PROFILE_END(process_signal_shutdown_pending);
 	persistence_log_poll();
-	checkpointing();
 
 	if ((last_desc_per_hour_reset + 3600) <= time(0))
 	{
@@ -2551,6 +2557,9 @@ void game_loop(int port, int sslport)
 	long last_desc_per_hour_reset = time(0);
 	/* Main loop */
 resume_game_loop:
+	// A refused lifecycle operation returns to a bounded running deadline.
+	// This does not advance the completed-loop counter.
+	game_loop_watchdog_lifecycle('R');
 	while (!shutdownflag)
 	{
 		const uint64_t loop_time_begin_us = loop_monotonic_us();
@@ -2587,8 +2596,12 @@ resume_game_loop:
 		run_activity_phase(context);
 		run_combat_phase(context);
 		run_pulse_reset_phase(context);
+		game_loop_watchdog_completed();
 	}
 
+	// Cover the entire save/drain chain, including early refusal paths.
+	game_loop_watchdog_lifecycle(_copyover ? 'C' :
+						 (_reboot || _autoboot || _pwipe ? 'D' : 'S'));
 	if (_copyover)
 	{
 		if (!critical_command_coordinator_try_acquire_lifecycle_guard())

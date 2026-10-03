@@ -577,6 +577,7 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/shaman.o \
 				 economy/shop.o \
 				 core/signals.o \
+				 core/game_loop_watchdog.o \
 				 classes/skills.o \
 				 magic/smagic.o \
 				 classes/salchemist.o \
