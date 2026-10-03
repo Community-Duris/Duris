@@ -26,9 +26,11 @@ def verify_shutdown_contract() -> None:
         assert f"return {status};" in run
 
 
-def main(*, exhaustion: bool = False) -> None:
+def main(*, exhaustion: bool = False, outage: bool = False) -> None:
     verify_shutdown_contract()
-    with tempfile.TemporaryDirectory(prefix="telemetry-runtime-") as directory:
+    artifacts = ROOT / "bin/tests"
+    artifacts.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="telemetry-runtime-", dir=artifacts) as directory:
         variants: list[tuple[str, bool, Path | None]] = [("flatfile", True, None)]
         for include_directory in (Path("/usr/include/mariadb"), Path("/usr/include/mysql")):
             if (include_directory / "mysql.h").is_file():
@@ -58,7 +60,8 @@ def main(*, exhaustion: bool = False) -> None:
             if mysql_include is not None:
                 command.append("-DTELEMETRY_TEST_STUB_REPOSITORY")
             command += [
-                str(ROOT / "tests/async" / ("telemetry_runtime_exhaustion.cc" if exhaustion
+                str(ROOT / "tests/async" / ("telemetry_runtime_outage.cc" if outage else
+                                          "telemetry_runtime_exhaustion.cc" if exhaustion
                                           else "telemetry_runtime_integration.cc")),
                 *[
                     str(ROOT / "src/telemetry" / name)
@@ -69,6 +72,7 @@ def main(*, exhaustion: bool = False) -> None:
                         "telemetry_encounter.c",
                         "telemetry_failure.c",
                         "telemetry_health.c",
+                        "telemetry_outage.c",
                         "telemetry_queue.c",
                         "telemetry_progression.c",
                         "telemetry_runtime.c",
@@ -80,6 +84,8 @@ def main(*, exhaustion: bool = False) -> None:
             ]
             if mysql_include is None:
                 command.append(str(ROOT / "src/telemetry/telemetry_repository.c"))
+            if outage:
+                command += ["-Wl,--wrap=write", "-Wl,--wrap=fsync"]
             command += [
                 "-lcrypto",
                 "-o",
@@ -92,7 +98,8 @@ def main(*, exhaustion: bool = False) -> None:
             print(completed.stdout, end="")
             print(completed.stderr, end="")
             completed.check_returncode()
-            marker = ("telemetry sequence-exhausted lifecycle consistency passed" if exhaustion
+            marker = ("telemetry runtime durable outage journey passed" if outage else
+                      "telemetry sequence-exhausted lifecycle consistency passed" if exhaustion
                       else "telemetry runtime lifecycle and copyover integration passed")
             assert marker in completed.stdout
 

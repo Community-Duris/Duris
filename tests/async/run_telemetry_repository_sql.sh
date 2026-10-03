@@ -2,6 +2,13 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+case "${1:-}" in
+    '') [[ $# == 0 ]] || exit 2; TEST_SCRIPT=test_telemetry_repository.py ;;
+    --incidents) [[ $# == 1 ]] || exit 2; TEST_SCRIPT=test_telemetry_incidents.py ;;
+    --observations) [[ $# == 1 ]] || exit 2; TEST_SCRIPT=test_telemetry_observations.py ;;
+    --identity) [[ $# == 1 ]] || exit 2; TEST_SCRIPT=test_telemetry_account_identity.py ;;
+    *) printf 'usage: run_telemetry_repository_sql.sh [--incidents|--observations|--identity]\n' >&2; exit 2 ;;
+esac
 IMAGE="${TELEMETRY_REPOSITORY_DB_IMAGE:-mariadb:10.11.14}"
 case "$IMAGE" in
     mysql:8.0.46|mariadb:10.11.14) ;;
@@ -91,4 +98,4 @@ TELEMETRY_REPOSITORY_PORT="$port" \
 TELEMETRY_REPOSITORY_USER=root \
 TELEMETRY_REPOSITORY_PASSWORD="$password" \
 TELEMETRY_REPOSITORY_DATABASE="$database" \
-python3 "$ROOT/tests/async/test_telemetry_repository.py" --sql-fixture
+python3 "$ROOT/tests/async/$TEST_SCRIPT" --sql-fixture

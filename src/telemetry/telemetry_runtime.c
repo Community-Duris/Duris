@@ -12,6 +12,7 @@
 #include "telemetry/telemetry_transport.h"
 #include "telemetry/telemetry_transport_private.h"
 #include "core/defines.h"
+#include "sql/sql_telemetry_account_identity.h"
 
 extern P_char get_linked_char(P_char ch, ush_int type);
 
@@ -1048,9 +1049,78 @@ bool all_admitted_records_durable() noexcept
 	       applied + health.stale_checkpoint_records;
 }
 
+struct worker_outage_guard
+{
+	telemetry_outage_journal journal{};
+	bool failed = false;
+
+	bool refuse(telemetry_monotonic_usec now) noexcept
+	{
+		failed = true;
+		telemetry_transport_fail_storage_for_worker(
+			now, journal.error_code != 0U ? journal.error_code :
+							static_cast<std::uint32_t>(EIO));
+		return false;
+	}
+
+	bool start() noexcept
+	{
+		const char *directory = std::getenv("TELEMETRY_OUTAGE_LEDGER_DIR");
+		if ((directory == nullptr || *directory == '\0') &&
+		    telemetry_transport_uses_test_repository())
+			return true;
+		telemetry_outage_observation registration{};
+		registration.producer = R.producer;
+		registration.environment_id = R.session_scope_environment_id;
+		registration.season_id = R.session_scope_season_id;
+		if (!production_clock_now(nullptr, &registration.registered_monotonic_usec,
+					  &registration.registered_utc_usec))
+			return refuse(0U);
+		registration.observed_monotonic_usec = registration.registered_monotonic_usec;
+		registration.observed_utc_usec = registration.registered_utc_usec;
+		if (telemetry_outage_open(&journal, directory, registration) !=
+		    telemetry_outage_result::ready)
+			return refuse(registration.observed_monotonic_usec);
+		return true;
+	}
+
+	bool checkpoint(bool terminal = false) noexcept
+	{
+		if (journal.current >= journal.count || failed)
+			return !failed;
+		auto observation = journal.observations[journal.current];
+		telemetry_monotonic_usec now = 0U;
+		telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+		// No fresh trustworthy clock/sample means no invented boundary. On exit
+		// leave the last running watermark for unknown-tail classification.
+		if (!production_clock_now(nullptr, &now, &utc) ||
+		    now < observation.observed_monotonic_usec ||
+		    (!terminal && now - observation.observed_monotonic_usec < 1'000'000U) ||
+		    !telemetry_transport_outage_copy_for_worker(&observation))
+			return true;
+		observation.observed_monotonic_usec = now;
+		observation.observed_utc_usec = utc;
+		if (terminal)
+			observation.phase = telemetry_outage_terminal_phase(observation);
+		if (telemetry_outage_checkpoint(&journal, observation) !=
+		    telemetry_outage_result::ready)
+			return refuse(now);
+		return true;
+	}
+
+	~worker_outage_guard() noexcept
+	{
+		(void)checkpoint(true);
+		telemetry_outage_close(&journal);
+	}
+};
+
 void worker_loop() noexcept
 {
 	worker_done_guard done;
+	worker_outage_guard outage;
+	if (!outage.start())
+		return;
 	for (;;)
 	{
 		if (R.worker_stop.load(std::memory_order_acquire))
@@ -1083,6 +1153,8 @@ void worker_loop() noexcept
 		}
 		else
 			(void)telemetry_transport_pulse(now);
+		if (!outage.checkpoint())
+			return;
 		const std::uint64_t observed_generation =
 			R.wake_generation.load(std::memory_order_acquire);
 		std::unique_lock<std::mutex> lock(R.wake_mutex);
@@ -2061,6 +2133,52 @@ bool game_connection_id(const struct descriptor_data *descriptor,
 	return telemetry_connection_id_is_valid(*connection);
 }
 
+bool game_connection_is_zero(const struct descriptor_data *descriptor) noexcept
+{
+	return descriptor != nullptr && descriptor->telemetry_connection_sequence == 0U &&
+	       descriptor->telemetry_connection_producer_boot_id == 0U &&
+	       descriptor->telemetry_connection_producer_process_id == 0U;
+}
+
+bool game_ids_are_zero(const struct char_data *character,
+		       const struct descriptor_data *descriptor) noexcept
+{
+	return character != nullptr && descriptor != nullptr &&
+	       character->telemetry_session_sequence == 0U &&
+	       character->telemetry_session_producer_boot_id == 0U &&
+	       character->telemetry_session_producer_process_id == 0U &&
+	       game_connection_is_zero(descriptor);
+}
+
+bool game_needs_presence(const struct char_data *character,
+			 const struct descriptor_data *descriptor) noexcept
+{
+	return descriptor != nullptr && (descriptor->telemetry_resume_pending != 0U ||
+					 game_ids_are_zero(character, descriptor) ||
+					 (character != nullptr && IS_PC(character) &&
+					  character->telemetry_session_sequence != 0U &&
+					  game_connection_is_zero(descriptor)));
+}
+
+bool game_entry_is_admitted(const telemetry_session_enter &entry) noexcept
+{
+	telemetry_session_state_view view{};
+	return telemetry_session_state_copy_view(&R.session, entry.session, &view) &&
+	       view.connected != 0U && view.closed == 0U &&
+	       view.connection.connection_seq == entry.connection.connection_seq &&
+	       view.connection.producer.boot_id == entry.connection.producer.boot_id &&
+	       view.connection.producer.process_id == entry.connection.producer.process_id;
+}
+
+void game_clear_pending_resume(struct descriptor_data *descriptor) noexcept
+{
+	if (descriptor != nullptr)
+	{
+		descriptor->telemetry_resume_pending = 0U;
+		descriptor->telemetry_pending_handoff = {};
+	}
+}
+
 bool game_zone_vnum(const struct char_data *character, std::int32_t *zone_vnum) noexcept
 {
 	if (zone_vnum == nullptr)
@@ -2235,6 +2353,60 @@ bool game_transition_payload(const struct char_data *character,
 	transition->reserved[2] = 0U;
 	transition->quality_flags = TELEMETRY_QUALITY_NONE;
 	return telemetry_connection_transition_is_valid(*transition);
+}
+
+telemetry_capture_result game_observe_ownership(
+	const struct char_data *character, const struct descriptor_data *descriptor,
+	telemetry_ownership_source source = telemetry_ownership_source::authenticated_login) noexcept
+{
+	telemetry_capture_result result{};
+	result.outcome = telemetry_runtime_outcome::accepted;
+	result.admission = telemetry_queue_admission::accepted_control_reserve;
+	// Login/copyover can admit a session before the descriptor becomes playing.
+	// Only an authenticated playing descriptor supplies an ownership observation.
+	if (character == nullptr || descriptor == nullptr || !IS_PC(character) ||
+	    character->only.pc == nullptr || descriptor->connected != CON_PLAYING ||
+	    (descriptor->original != nullptr ? descriptor->original : descriptor->character) !=
+		    character)
+		return result;
+	telemetry_session_enter entry{};
+	if (!ensure_current_config() || !game_enter_payload(character, descriptor, &entry) ||
+	    !game_entry_is_admitted(entry))
+		return game_capture_invalid();
+	telemetry_ownership_payload observation{};
+	observation.session = entry.session;
+	observation.connection = entry.connection;
+	observation.at_monotonic_usec = entry.at_monotonic_usec;
+	observation.at_utc_usec = entry.at_utc_usec;
+	observation.dimensions = entry.dimensions;
+	observation.config_id = entry.config_id;
+	observation.classifier_version = entry.classifier_version;
+	observation.policy_version = entry.policy_version;
+	observation.quality_flags = entry.quality_flags;
+	const auto *account = descriptor->account;
+	if (account != nullptr && account->acct_blocked == 0 &&
+	    account->telemetry_account_token != 0U &&
+	    account->telemetry_environment_id == entry.session.environment_id &&
+	    account->telemetry_season_id == entry.session.season_id)
+	{
+		unsigned matches = 0U, inspected = 0U;
+		const auto *member = account->acct_character_list;
+		for (; member != nullptr && inspected < MAX_CHARS_PER_ACCOUNT;
+		     member = member->next, ++inspected)
+			if (member->pid == entry.session.pid && member->blocked == 0)
+				++matches;
+		if (member != nullptr)
+			observation.quality_flags |= TELEMETRY_QUALITY_CARDINALITY_OVERFLOW;
+		else if (matches == 1U)
+			observation.account_token = account->telemetry_account_token;
+	}
+	observation.source = observation.account_token ? source :
+							 telemetry_ownership_source::unavailable;
+	result = capture_from_session(
+		telemetry_session_state_observe_ownership(&R.session, observation));
+	if (result.records_emitted)
+		wake_worker();
+	return result;
 }
 
 bool game_exit_payload(const struct char_data *character, const struct descriptor_data *descriptor,
@@ -2489,6 +2661,31 @@ combat_summary_capture_from_update(const telemetry_combat_summary_update &update
 
 } // namespace
 
+bool telemetry_runtime_account_prepare(struct acct_entry *account)
+{
+	if (!account)
+		return false;
+	account->telemetry_account_token = 0U;
+	account->telemetry_environment_id = 0U;
+	account->telemetry_season_id = 0U;
+#ifndef __NO_MYSQL__
+	if (!R.initialized || !R.enabled || R.shutdown_pending || !R.session_scope_environment_id ||
+	    !R.session_scope_season_id)
+		return false;
+	std::uint64_t token = 0U;
+	if (!sql_prepare_telemetry_account_token(account->acct_name, R.session_scope_environment_id,
+						 R.session_scope_season_id, &token) ||
+	    !token)
+		return false;
+	account->telemetry_account_token = token;
+	account->telemetry_environment_id = R.session_scope_environment_id;
+	account->telemetry_season_id = R.session_scope_season_id;
+	return true;
+#else
+	return false;
+#endif
+}
+
 telemetry_capture_result telemetry_runtime_game_enter(struct char_data *character,
 						      struct descriptor_data *descriptor)
 {
@@ -2496,15 +2693,25 @@ telemetry_capture_result telemetry_runtime_game_enter(struct char_data *characte
 		return game_capture_not_ready();
 	if (!ensure_current_config())
 		return disabled_capture(telemetry_runtime_outcome::queue_full);
-	if (character == nullptr || descriptor == nullptr || character->only.pc == nullptr)
+	if (character == nullptr || descriptor == nullptr || !IS_PC(character) ||
+	    character->only.pc == nullptr)
 		return game_capture_invalid();
+	if (descriptor->telemetry_resume_pending != 0U)
+		return telemetry_runtime_game_presence(character, descriptor);
 	if (character->telemetry_session_sequence != 0U)
 	{
+		telemetry_session_ref session{};
+		if (!game_session_ref(character, &session))
+			return game_capture_invalid();
+		if (!game_connection_is_zero(descriptor))
+			return telemetry_runtime_game_presence(character, descriptor);
 		if (!game_allocate_connection(descriptor))
 			return game_capture_invalid();
 		return telemetry_runtime_game_connection_transition(
 			character, descriptor, telemetry_connection_transition_kind::attached);
 	}
+	if (!game_ids_are_zero(character, descriptor))
+		return game_capture_invalid();
 	if (!game_allocate_session(character))
 		return game_capture_invalid();
 	if (!game_allocate_connection(descriptor))
@@ -2519,7 +2726,56 @@ telemetry_capture_result telemetry_runtime_game_enter(struct char_data *characte
 		game_clear_session(character);
 		return game_capture_invalid();
 	}
-	return telemetry_runtime_session_enter(enter);
+	telemetry_capture_result result = telemetry_runtime_session_enter(enter);
+	// A dropped lifecycle record can follow successful state admission. Keep
+	// those IDs, but roll back an entry that had no state slot to install.
+	if (!game_entry_is_admitted(enter))
+	{
+		game_clear_connection(descriptor);
+		game_clear_session(character);
+	}
+	else
+		merge_capture(result, game_observe_ownership(character, descriptor));
+	return result;
+}
+
+telemetry_capture_result telemetry_runtime_game_presence(struct char_data *character,
+							 struct descriptor_data *descriptor)
+{
+	if (!R.initialized || !R.enabled || R.shutdown_pending)
+		return game_capture_not_ready();
+	if (character == nullptr || descriptor == nullptr || !IS_PC(character) ||
+	    character->only.pc == nullptr || descriptor->connected != CON_PLAYING ||
+	    (descriptor->original != nullptr ? descriptor->original : descriptor->character) !=
+		    character)
+		return game_capture_invalid();
+	if (!game_needs_presence(character, descriptor))
+	{
+		telemetry_session_ref session{};
+		telemetry_connection_id connection{};
+		if (!game_session_ref(character, &session) ||
+		    !game_connection_id(descriptor, &connection))
+			return game_capture_invalid();
+		return game_observe_ownership(character, descriptor);
+	}
+	telemetry_capture_result result{};
+	if (descriptor->telemetry_resume_pending != 0U)
+	{
+		const bool supplied = descriptor->telemetry_resume_pending == 2U;
+		const telemetry_session_handoff handoff = descriptor->telemetry_pending_handoff;
+		result = telemetry_runtime_game_session_resume(character, descriptor,
+							       supplied ? &handoff : nullptr);
+		if (supplied && result.outcome == telemetry_runtime_outcome::invalid)
+			result = telemetry_runtime_game_session_resume(character, descriptor,
+								       nullptr);
+	}
+	else
+		result = telemetry_runtime_game_enter(character, descriptor);
+	if (character->telemetry_session_sequence != 0U &&
+	    descriptor->telemetry_connection_sequence != 0U &&
+	    descriptor->telemetry_resume_pending == 0U)
+		merge_capture(result, telemetry_runtime_game_context(character, descriptor));
+	return result;
 }
 
 telemetry_handoff_result telemetry_runtime_game_handoff_copy(struct char_data *character)
@@ -2544,8 +2800,8 @@ telemetry_runtime_game_session_resume(struct char_data *character,
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
-	if (character == nullptr || descriptor == nullptr || character->only.pc == nullptr ||
-	    !ensure_current_config())
+	if (character == nullptr || descriptor == nullptr || !IS_PC(character) ||
+	    character->only.pc == nullptr)
 		return game_capture_invalid();
 	if (descriptor->telemetry_connection_sequence != 0U ||
 	    descriptor->telemetry_connection_producer_boot_id != 0U ||
@@ -2578,6 +2834,13 @@ telemetry_runtime_game_session_resume(struct char_data *character,
 	     (supplied.previous_producer.boot_id == R.producer.boot_id &&
 	      supplied.previous_producer.process_id == R.producer.process_id)))
 		return game_capture_invalid();
+	// Store one value in the descriptor's own lifetime, without allocating or
+	// retaining a pointer to the copyover reader. A later observation retries
+	// this exact handoff; initial configuration unavailability is temporary.
+	descriptor->telemetry_resume_pending = absent ? 1U : 2U;
+	descriptor->telemetry_pending_handoff = supplied;
+	if (!ensure_current_config())
+		return disabled_capture(telemetry_runtime_outcome::queue_full);
 
 	if (absent)
 	{
@@ -2612,20 +2875,19 @@ telemetry_runtime_game_session_resume(struct char_data *character,
 	if (!absent)
 		entry.quality_flags |= supplied.quality_flags;
 	const telemetry_session_resume resume = { supplied, entry };
-	const telemetry_capture_result result = telemetry_runtime_session_resume(resume);
+	telemetry_capture_result result = telemetry_runtime_session_resume(resume);
 	// Queue loss and failed state admission share queue_full. Preserve game IDs
 	// only when a matching connected session actually exists; lifecycle queue
 	// loss after slot installation must not erase an admitted session.
-	telemetry_session_state_view view{};
-	const bool admitted =
-		telemetry_session_state_copy_view(&R.session, entry.session, &view) &&
-		view.connected != 0U && view.closed == 0U &&
-		view.connection.connection_seq == entry.connection.connection_seq &&
-		view.connection.producer.boot_id == entry.connection.producer.boot_id &&
-		view.connection.producer.process_id == entry.connection.producer.process_id;
+	const bool admitted = game_entry_is_admitted(entry);
 	if (admitted && (result.outcome == telemetry_runtime_outcome::accepted ||
 			 result.outcome == telemetry_runtime_outcome::queue_full))
+	{
+		game_clear_pending_resume(descriptor);
+		merge_capture(result, game_observe_ownership(character, descriptor,
+							     telemetry_ownership_source::copyover));
 		return result;
+	}
 	game_clear_connection(descriptor);
 	character->telemetry_session_sequence = old_session_sequence;
 	character->telemetry_session_producer_boot_id = old_session_boot_id;
@@ -2638,6 +2900,8 @@ telemetry_capture_result telemetry_runtime_game_context(struct char_data *charac
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
+	if (game_needs_presence(character, descriptor))
+		return telemetry_runtime_game_presence(character, descriptor);
 	if (character == nullptr || descriptor == nullptr || !ensure_current_config())
 		return game_capture_invalid();
 	telemetry_context_update update{};
@@ -2667,6 +2931,7 @@ telemetry_capture_result telemetry_runtime_game_context(struct char_data *charac
 	update.classifier_version = R.config.classifier_version;
 	update.policy_version = R.config.policy_version;
 	telemetry_capture_result result = telemetry_runtime_update_context(update);
+	merge_capture(result, game_observe_ownership(character, descriptor));
 	merge_capture(result, telemetry_runtime_game_encounter_observe(character));
 	if ((character->specials.act & PLR_AFK) != 0U)
 	{
@@ -2693,7 +2958,11 @@ telemetry_runtime_game_connection_transition(struct char_data *character,
 		return game_capture_not_ready();
 	if (character == nullptr || descriptor == nullptr)
 		return game_capture_invalid();
+	if (kind == telemetry_connection_transition_kind::detached)
+		game_clear_pending_resume(descriptor);
 	telemetry_connection_transition transition{};
+	const bool allocated = kind == telemetry_connection_transition_kind::attached &&
+			       descriptor->telemetry_connection_sequence == 0U;
 	if (kind == telemetry_connection_transition_kind::attached)
 	{
 		if (descriptor->telemetry_connection_sequence == 0U &&
@@ -2701,8 +2970,24 @@ telemetry_runtime_game_connection_transition(struct char_data *character,
 			return game_capture_invalid();
 	}
 	if (!game_transition_payload(character, descriptor, kind, &transition))
+	{
+		if (allocated)
+			game_clear_connection(descriptor);
 		return game_capture_invalid();
-	const telemetry_capture_result result = telemetry_runtime_connection_transition(transition);
+	}
+	telemetry_capture_result result = telemetry_runtime_connection_transition(transition);
+	if (kind == telemetry_connection_transition_kind::attached)
+	{
+		telemetry_session_enter entry{};
+		entry.session = transition.session;
+		entry.connection = transition.connection;
+		if (!game_entry_is_admitted(entry))
+			game_clear_connection(descriptor);
+		else
+			merge_capture(result, game_observe_ownership(
+						      character, descriptor,
+						      telemetry_ownership_source::reconnect));
+	}
 	if (kind == telemetry_connection_transition_kind::detached)
 		game_clear_connection(descriptor);
 	return result;
@@ -2716,6 +3001,7 @@ telemetry_capture_result telemetry_runtime_game_session_exit(struct char_data *c
 		return game_capture_not_ready();
 	if (character == nullptr)
 		return game_capture_invalid();
+	game_clear_pending_resume(descriptor);
 	telemetry_session_exit exit{};
 	if (!game_exit_payload(character, descriptor, reason, &exit))
 		return game_capture_invalid();
@@ -2731,10 +3017,21 @@ telemetry_capture_result telemetry_runtime_game_evidence(struct char_data *chara
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
+	telemetry_capture_result prepared{};
+	if (kind != telemetry_runtime_evidence_kind::linkdead &&
+	    game_needs_presence(character, descriptor))
+	{
+		prepared = telemetry_runtime_game_presence(character, descriptor);
+		if (game_needs_presence(character, descriptor))
+			return prepared;
+	}
 	telemetry_runtime_evidence evidence{};
 	if (!game_evidence_payload(character, descriptor, kind, &evidence))
 		return game_capture_invalid();
-	return telemetry_runtime_record_evidence(evidence);
+	if (kind != telemetry_runtime_evidence_kind::linkdead)
+		merge_capture(prepared, game_observe_ownership(character, descriptor));
+	merge_capture(prepared, telemetry_runtime_record_evidence(evidence));
+	return prepared;
 }
 
 telemetry_capture_result telemetry_runtime_game_encounter_begin(struct char_data *character,

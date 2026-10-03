@@ -46,6 +46,10 @@ SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0049_player_spell_effect_receipt.sql",
     ROOT / "migrations" / "immutable" / "0051_player_item_runtime_state.sql",
     ROOT / "migrations" / "immutable" / "0053_craft_progression.sql",
+    ROOT / "migrations" / "immutable" / "0054_telemetry_incident_coverage.sql",
+    ROOT / "migrations" / "immutable" / "0055_telemetry_observation_projections.sql",
+    ROOT / "migrations" / "immutable" / "0056_telemetry_account_identity.sql",
+    ROOT / "migrations" / "immutable" / "0057_telemetry_ownership_observations.sql",
 )
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("validate_data_lifecycle", VALIDATOR)
 VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)
@@ -107,10 +111,33 @@ class LifecycleManifestTest(unittest.TestCase):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["database_tables"], 225)
-        self.assertEqual(report["non_database_stores"], 50)
+        self.assertEqual(report["database_tables"], 236)
+        self.assertEqual(report["non_database_stores"], 51)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
+
+    def test_telemetry_outage_evidence_is_required_protected_and_retained(self) -> None:
+        entry_id = "file:telemetry_outage_ledger"
+        entry = self.entry(entry_id)
+        self.assertEqual(entry["locator"], "TELEMETRY_OUTAGE_LEDGER_DIR")
+        self.assertTrue(entry["protected_record"])
+        missing = json.loads(json.dumps(self.manifest))
+        missing["entries"] = [row for row in missing["entries"] if row["id"] != entry_id]
+        with tempfile.TemporaryDirectory() as temporary:
+            self.assert_rejected(
+                self.run_validator(self.write_manifest(Path(temporary), missing)),
+                "non-database coverage mismatch",
+            )
+        for field, value in (("protected_record", False), ("season_action", "reset_delete"),
+                             ("terminal_action", "deactivate")):
+            with self.subTest(field=field):
+                changed = json.loads(json.dumps(self.manifest))
+                next(row for row in changed["entries"] if row["id"] == entry_id)[field] = value
+                with tempfile.TemporaryDirectory() as temporary:
+                    self.assert_rejected(
+                        self.run_validator(self.write_manifest(Path(temporary), changed)),
+                        "telemetry coverage evidence must remain protected and retained",
+                    )
 
     def test_spell_receipts_are_protected_recovery_evidence(self) -> None:
         entry = self.entry("file:player-spell-receipts")

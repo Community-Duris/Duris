@@ -708,6 +708,46 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "4b17920b26cad6762637a1f3e0d7cb13d997e2f163b550c56b24363efa45aff1",
       "verify_checksum": "aacc5516aed02ca8b8b3115a2e8c22ef3f113b299723ea249034971ceb50417a"
+    },
+    {
+      "id": "0054_telemetry_incident_coverage",
+      "sequence": 54,
+      "description": "Retain reviewed telemetry incidents and published coverage snapshots",
+      "apply": "immutable/0054_telemetry_incident_coverage.sql",
+      "verify": "immutable/0054_telemetry_incident_coverage.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "87910e4bfdff86b1557ca5d390a58a15bf9373336b09dc8a6d15f36bebb6795b",
+      "verify_checksum": "7082566a54e2acd60496a90971761ff36fb606c0d9ccbd0eded9fc908b736e0d"
+    },
+    {
+      "id": "0055_telemetry_observation_projections",
+      "sequence": 55,
+      "description": "Project collected progression encounter and combat observations at definition 2",
+      "apply": "immutable/0055_telemetry_observation_projections.sql",
+      "verify": "immutable/0055_telemetry_observation_projections.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "b39e37286927c8f94cb32e3ca3aff73658a1a8f317e13f6d99d3b065ee04063c",
+      "verify_checksum": "6f5e2dd39410bb4a2417ecef028cecb2906abf15408b51dd9cfdff0ade630ce9"
+    },
+    {
+      "id": "0056_telemetry_account_identity",
+      "sequence": 56,
+      "description": "Retain private account lifetimes and scoped opaque telemetry account tokens",
+      "apply": "immutable/0056_telemetry_account_identity.sql",
+      "verify": "immutable/0056_telemetry_account_identity.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "72e84f8fcea1dee822d1f73a8275696da27d3079124a1bdf5a2dff86c27686a8",
+      "verify_checksum": "4f3d1d21ded4380197fea2917335af873786dc279a0b6778a236182b99795e24"
+    },
+    {
+      "id": "0057_telemetry_ownership_observations",
+      "sequence": 57,
+      "description": "Capture typed authenticated account ownership observations without adding effort",
+      "apply": "immutable/0057_telemetry_ownership_observations.sql",
+      "verify": "immutable/0057_telemetry_ownership_observations.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "6da0f3c861f1c8b49acfd982a314ed3a04267799a353942a061e8b1fa48327c5",
+      "verify_checksum": "029ab78e7c3c54ceceb21f54f86a502393aa32e0008332e2574bd50381b1515c"
     }
   ]
 }

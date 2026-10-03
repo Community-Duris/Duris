@@ -1715,6 +1715,8 @@ static void run_session_input_phase(game_loop_pulse_context &ctx)
 		/* update max_users_playing for "who" information */
 		if ((point->connected) == CON_PLAYING)
 		{
+			P_char telemetry_character = point->original ? point->original : t_ch;
+			(void)telemetry_runtime_game_presence(telemetry_character, point);
 			player_count++;
 			if (player_count > max_users_playing)
 				max_users_playing = player_count;

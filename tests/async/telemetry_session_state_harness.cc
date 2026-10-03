@@ -809,10 +809,157 @@ void test_utc_jumps_and_midnight()
 	check_records_valid();
 }
 
+telemetry_ownership_payload ownership(const telemetry_session_enter &entry,
+				      telemetry_monotonic_usec at, std::uint64_t token)
+{
+	telemetry_ownership_payload value{};
+	value.session = entry.session;
+	value.connection = entry.connection;
+	value.at_monotonic_usec = at;
+	value.at_utc_usec =
+		entry.at_utc_usec + static_cast<telemetry_utc_usec>(at - entry.at_monotonic_usec);
+	value.account_token = token;
+	value.source = token ? telemetry_ownership_source::authenticated_login :
+			       telemetry_ownership_source::unavailable;
+	value.dimensions = entry.dimensions;
+	value.config_id = entry.config_id;
+	value.classifier_version = entry.classifier_version;
+	value.policy_version = entry.policy_version;
+	return value;
+}
+
+void test_ownership_boundaries_and_copyover()
+{
+	const telemetry_producer_id producer = { 920U, 1U };
+	reset_fixture(producer, 1U, 1000U);
+	auto entry = make_enter(producer, 1U, 1U, 10U, 1010);
+	CHECK(telemetry_session_state_enter(&session_state, entry).records_accepted == 1U);
+	CHECK(telemetry_session_state_observe_ownership(&session_state, ownership(entry, 20U, 11U))
+		      .records_accepted == 1U);
+	CHECK(telemetry_session_state_observe_ownership(&session_state, ownership(entry, 21U, 11U))
+		      .outcome == telemetry_session_state_outcome::idempotent);
+	CHECK(telemetry_session_state_observe_ownership(&session_state, ownership(entry, 30U, 12U))
+		      .records_accepted == 1U);
+	CHECK(find_record(telemetry_record_kind::ownership, 0U)->payload.ownership.source ==
+	      telemetry_ownership_source::authenticated_login);
+	CHECK(find_record(telemetry_record_kind::ownership, 1U)->payload.ownership.source ==
+	      telemetry_ownership_source::ownership_changed);
+	CHECK(telemetry_session_state_observe_ownership(&session_state, ownership(entry, 30U, 13U))
+		      .outcome == telemetry_session_state_outcome::invalid);
+	CHECK(telemetry_session_state_observe_ownership(&session_state, ownership(entry, 40U, 0U))
+		      .records_accepted == 1U);
+	CHECK(find_record(telemetry_record_kind::ownership, 2U)->payload.ownership.source ==
+	      telemetry_ownership_source::unavailable);
+	auto bad = ownership(entry, 41U, 0U);
+	bad.source = telemetry_ownership_source::authenticated_login;
+	CHECK(!telemetry_ownership_payload_is_valid(bad));
+	bad = ownership(entry, 41U, 12U);
+	bad.reserved[6] = 1U;
+	CHECK(!telemetry_ownership_payload_is_valid(bad));
+	CHECK(session_state.slots[0].cumulative.resident_usec == 0U);
+	telemetry_session_handoff handoff{};
+	CHECK(telemetry_session_state_handoff_copy_at(&session_state, entry.session, &handoff, 50U,
+						      1050)
+		      .outcome == telemetry_session_state_outcome::accepted);
+	check_records_valid();
+	const telemetry_producer_id next_producer = { 921U, 1U };
+	reset_fixture(next_producer, 1U, 1000U);
+	entry = make_enter(next_producer, 1U, 1U, 0U, 2000);
+	entry.session = handoff.session;
+	entry.quality_flags = handoff.quality_flags;
+	CHECK(telemetry_session_state_resume(&session_state, { handoff, entry }).records_accepted ==
+	      1U);
+	CHECK(telemetry_session_state_observe_ownership(&session_state, ownership(entry, 1U, 12U))
+		      .records_accepted == 1U);
+	const auto *fresh = find_record(telemetry_record_kind::ownership, 0U);
+	CHECK(fresh->payload.ownership.source == telemetry_ownership_source::copyover);
+	CHECK(fresh->payload.ownership.at_monotonic_usec == 1U);
+	CHECK(fresh->header.key.producer.boot_id == next_producer.boot_id);
+	CHECK(fresh->payload.ownership.session.id.producer.boot_id == producer.boot_id);
+	check_records_valid();
+}
+
+void test_ownership_backpressure_does_not_backdate_a_later_owner()
+{
+	const telemetry_producer_id producer = { 922U, 1U };
+	reset_fixture(producer, 1U, 1000U);
+	const auto entry = make_enter(producer, 1U, 1U, 10U, 1010);
+	CHECK(telemetry_session_state_enter(&session_state, entry).records_accepted == 1U);
+	sink_state.reject = true;
+	CHECK(telemetry_session_state_observe_ownership(&session_state, ownership(entry, 20U, 11U))
+		      .outcome == telemetry_session_state_outcome::sink_rejected);
+	const auto original_key = session_state.slots[0].ownership_pending[0].header.key;
+	(void)telemetry_session_state_observe_ownership(&session_state, ownership(entry, 30U, 12U));
+	(void)telemetry_session_state_observe_ownership(&session_state, ownership(entry, 40U, 13U));
+	CHECK(session_state.slots[0].ownership_pending_count == 2U);
+	CHECK(session_state.slots[0].ownership_last_sample.account_token == 13U);
+	CHECK(session_state.slots[0].ownership_pending[1].payload.ownership.account_token == 0U);
+	CHECK(session_state.slots[0].ownership_pending[1].payload.ownership.at_monotonic_usec ==
+	      30U);
+	sink_state.reject = false;
+	sink_state.capacity = sink_state.count + 1U;
+	(void)telemetry_session_state_observe_ownership(&session_state, ownership(entry, 50U, 13U));
+	CHECK(session_state.slots[0].ownership_pending_count == 1U);
+	CHECK(session_state.slots[0].ownership_overflow);
+	sink_state.capacity = 512U;
+	CHECK(telemetry_session_state_observe_ownership(&session_state, ownership(entry, 60U, 13U))
+		      .records_accepted == 2U);
+	const auto *first = find_record(telemetry_record_kind::ownership, 0U);
+	const auto *unknown = find_record(telemetry_record_kind::ownership, 1U);
+	const auto *anchor = find_record(telemetry_record_kind::ownership, 2U);
+	CHECK(first && unknown && anchor && !find_record(telemetry_record_kind::ownership, 3U));
+	CHECK(first->header.key.record_seq > original_key.record_seq);
+	CHECK(first->payload.ownership.at_monotonic_usec == 20U &&
+	      first->payload.ownership.account_token == 11U);
+	CHECK(unknown->payload.ownership.at_monotonic_usec == 30U &&
+	      unknown->payload.ownership.account_token == 0U);
+	CHECK(unknown->payload.ownership.quality_flags & TELEMETRY_QUALITY_CARDINALITY_OVERFLOW);
+	CHECK(anchor->payload.ownership.at_monotonic_usec == 60U &&
+	      anchor->payload.ownership.account_token == 13U);
+	CHECK(anchor->payload.ownership.source == telemetry_ownership_source::ownership_changed);
+	CHECK(telemetry_session_state_observe_ownership(&session_state, ownership(entry, 70U, 13U))
+		      .records_accepted == 0U);
+	CHECK(session_state.slots[0].cumulative.resident_usec == 0U);
+	check_records_valid();
+}
+
+void test_pending_ownership_survives_logout_and_gates_handoff()
+{
+	const telemetry_producer_id producer = { 923U, 1U };
+	reset_fixture(producer, 1U, 1000U);
+	const auto entry = make_enter(producer, 1U, 1U, 10U, 1010);
+	(void)telemetry_session_state_enter(&session_state, entry);
+	sink_state.reject = true;
+	(void)telemetry_session_state_observe_ownership(&session_state, ownership(entry, 20U, 11U));
+	telemetry_session_handoff handoff{};
+	CHECK(telemetry_session_state_handoff_copy_at(&session_state, entry.session, &handoff, 30U,
+						      1030)
+		      .outcome == telemetry_session_state_outcome::sink_rejected);
+	CHECK(telemetry_session_ref_is_zero(handoff.session));
+	(void)telemetry_session_state_exit(&session_state,
+					   make_exit(entry.session, entry.connection, 40U, 1040));
+	CHECK(session_state.slots[0].ownership_pending_count == 1U);
+	auto other = make_enter(producer, 2U, 2U, 50U, 1050);
+	CHECK(telemetry_session_state_enter(&session_state, other).outcome ==
+	      telemetry_session_state_outcome::capacity_full);
+	sink_state.reject = false;
+	set_clock(60U, 1060);
+	CHECK(telemetry_session_state_retire_expired(&session_state).records_accepted == 1U);
+	CHECK(session_state.slots[0].ownership_pending_count == 0U);
+	CHECK(find_record(telemetry_record_kind::ownership, 0U)
+		      ->payload.ownership.at_monotonic_usec == 20U);
+	CHECK(telemetry_session_state_enter(&session_state, other).outcome ==
+	      telemetry_session_state_outcome::accepted);
+	check_records_valid();
+}
+
 } // namespace
 
 int main()
 {
+	test_ownership_boundaries_and_copyover();
+	test_ownership_backpressure_does_not_backdate_a_later_owner();
+	test_pending_ownership_survives_logout_and_gates_handoff();
 	test_utc_jumps_and_midnight();
 	test_connection_identity_replay();
 	test_resume_conflicts();

@@ -13,6 +13,11 @@ import time
 import math
 from typing import Any, Callable, Mapping, MutableMapping, Protocol, Sequence, cast
 
+try:
+    from . import observation_semantics as observations
+except ImportError:
+    import observation_semantics as observations
+
 try:  # Running as a package.
     from .rollup_definitions import (
         COHORT_DIMENSION_FIELDS,
@@ -309,6 +314,7 @@ class PageContribution:
     player_days: dict[tuple[Any, ...], PlayerDayDelta] = field(default_factory=dict)
     cohorts: dict[tuple[Any, ...], CohortDelta] = field(default_factory=dict)
     members: dict[tuple[Any, ...], MemberDelta] = field(default_factory=dict)
+    observations: observations.ObservationPage = field(default_factory=observations.ObservationPage)
     state_quality_flags: int = 0
     coverage_start_utc_usec: int | None = None
     coverage_end_utc_usec: int | None = None
@@ -451,7 +457,7 @@ def _validate_optional_enums(row: Mapping[str, Any]) -> None:
         "context_quality": range(5),
         "lifecycle": range(5),
         "end_reason": range(6),
-        "gap_reason": range(1, 7),
+        "gap_reason": range(1, 8),
         "backend": range(1, 3),
         "enabled": range(2),
     }
@@ -585,10 +591,10 @@ def _validate_common_row(row: Mapping[str, Any], previous_ingest_id: int | None)
     if previous_ingest_id is not None and ingest_id <= previous_ingest_id:
         raise CursorError("raw page ingest_id values must be strictly increasing")
     schema_version = row.get("schema_version")
-    if schema_version != 1:
+    if isinstance(schema_version, bool) or not isinstance(schema_version, int) or schema_version != 1:
         raise SemanticError(f"unsupported raw telemetry schema_version {schema_version!r}")
     kind = row.get("record_kind")
-    if isinstance(kind, bool) or not isinstance(kind, int) or kind not in range(1, 6):
+    if isinstance(kind, bool) or not isinstance(kind, int) or kind not in range(1, 10):
         raise SemanticError(f"unsupported raw telemetry record_kind {kind!r}")
     return ingest_id
 
@@ -918,7 +924,6 @@ def build_page_contributions(
                 f"raw page exceeds max_page_bytes={max_page_bytes}; cursor remains {start_cursor}"
             )
         kind = int(row["record_kind"])
-        _validate_optional_enums(row)
         replay_key = (
             _unsigned(row.get("boot_id"), "boot_id", allow_zero=False),
             _unsigned(row.get("process_id"), "process_id", allow_zero=False),
@@ -927,6 +932,34 @@ def build_page_contributions(
         if replay_key in seen_replay_keys:
             raise SemanticError("raw page contains a duplicate replay key")
         seen_replay_keys.add(replay_key)
+        if kind in (6, 7, 8, 9):
+            try:
+                observation = observations.validate_observation(row)
+                # Ownership is retained for the identity generation. It adds
+                # no duration or new metrics to the existing v1/v2 definitions.
+                if kind == 9:
+                    continue
+                # Version 1 keeps its playtime meaning while advancing over
+                # every valid family in the immutable mixed-kind input stream.
+                if target.definition_version == 1:
+                    continue
+                if (observation["environment_id"], observation["season_id"]) != (target.environment_id, target.season_id):
+                    continue
+                day, quality, occurrence = observations.point_day(observation)
+                if occurrence is not None:
+                    if coverage_end_seen is not None and occurrence < coverage_end_seen:
+                        quality |= ROLLUP_QUALITY_LATE_INPUT
+                    starts = [value for value in (contribution.coverage_start_utc_usec, occurrence) if value is not None]
+                    ends = [value for value in (contribution.coverage_end_utc_usec, occurrence) if value is not None]
+                    contribution.coverage_start_utc_usec = min(starts)
+                    contribution.coverage_end_utc_usec = max(ends)
+                    coverage_end_seen = occurrence if coverage_end_seen is None else max(coverage_end_seen, occurrence)
+                contribution.state_quality_flags |= quality
+                contribution.observations.add(observation, target, day, quality, occurrence)
+            except observations.ObservationError as error:
+                raise SemanticError(str(error)) from error
+            continue
+        _validate_optional_enums(row)
         environment, season = _row_scope(row)
         if (
             environment in (None, 0)
@@ -942,7 +975,7 @@ def build_page_contributions(
         raw_quality = _normalize_raw_quality(_raw_quality(row))
         if kind == GAP_KIND:
             gap_reason = row.get("gap_reason")
-            if isinstance(gap_reason, bool) or not isinstance(gap_reason, int) or gap_reason not in range(1, 7):
+            if isinstance(gap_reason, bool) or not isinstance(gap_reason, int) or gap_reason not in range(1, 8):
                 raise SemanticError("coverage gap has no valid gap_reason")
 
         if kind == CONFIGURATION_KIND:
@@ -1092,6 +1125,7 @@ def build_page_contributions(
         + len(contribution.player_days)
         + len(contribution.cohorts)
         + len(contribution.members)
+        + contribution.observations.output_fanout
     )
     if max_output_fanout is not None and contribution.output_fanout > max_output_fanout:
         raise BoundsExceeded(
@@ -1258,6 +1292,7 @@ def coverage_from_state_row(
     row: Mapping[str, Any],
     *,
     snapshot_high_watermark: int | None = None,
+    incident_coverage: Mapping[str, Any] | None = None,
 ) -> RollupCoverage:
     snapshot = (
         int(row.get("rebuild_through_ingest_id", 0))
@@ -1271,10 +1306,11 @@ def coverage_from_state_row(
         publication_status=int(row["publication_status"]),
         coverage_start_utc_usec=row.get("coverage_start_utc_usec"),
         coverage_end_utc_usec=row.get("coverage_end_utc_usec"),
-        quality_flags=int(row["quality_flags"]),
+        quality_flags=int(row["quality_flags"]) | (0 if incident_coverage is None else int(incident_coverage["quality_flags"])),
         provisional=bool(row["provisional"]),
         rebuild_from_ingest_id=int(row["rebuild_from_ingest_id"]),
         rebuild_through_ingest_id=int(row["rebuild_through_ingest_id"]),
+        incident_coverage=incident_coverage,
     )
 
 
@@ -1429,7 +1465,7 @@ class RollupEngine:
         max_runtime_s: float = REPORT_RUNTIME_DEFAULT_S,
     ) -> ReportSnapshot:
         target.__post_init__()
-        report_definition(report_name)
+        report_definition(report_name, target.definition_version)
         return self.database.read_report(
             target,
             report_name,

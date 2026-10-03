@@ -79,6 +79,10 @@ struct acct_entry
 	unsigned long int acct_flags3;
 	unsigned long int acct_flags4;
 	uint64_t persistence_revision;
+	/* Transient account-load preparation; never part of account save codecs. */
+	uint64_t telemetry_account_token;
+	uint64_t telemetry_environment_id;
+	uint64_t telemetry_season_id;
 
 	struct acct_entry *next;
 };

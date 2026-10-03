@@ -191,7 +191,7 @@ void check_copyover_generation_barrier_recovery()
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
 	const auto options = make_enabled_options();
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	const auto enter = make_enter(options.producer, options.config);
 	assert(telemetry_runtime_session_enter(enter).outcome ==
 	       telemetry_runtime_outcome::accepted);
@@ -278,8 +278,7 @@ void check_late_copyover_ack()
 	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
-	assert(telemetry_runtime_init(make_enabled_options()) ==
-	       telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(make_enabled_options());
 	telemetry_monotonic_usec now = 0U;
 	assert(production_monotonic_now(&now));
 	const auto deadline = now + 500'000U;
@@ -343,7 +342,7 @@ void check_exhausted_lifecycle(bool exiting, bool reattaching = false)
 	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
 	       telemetry_transport_outcome::started);
 	const auto options = make_enabled_options();
-	assert(telemetry_runtime_init(options) == telemetry_runtime_outcome::accepted);
+	telemetry_test_start_runtime(options);
 	auto enter = make_enter(options.producer, options.config);
 	assert(telemetry_runtime_now(&enter.at_monotonic_usec, &enter.at_utc_usec));
 	assert(telemetry_runtime_session_enter(enter).outcome ==

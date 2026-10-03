@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
 HARNESS = ROOT / "tests/async/telemetry_transport_harness.cc"
 REVIEW = ROOT / "tests/async/telemetry_transport_review.cc"
-REVIEW_CASES = ("worker-init", "control-reserve", "immutable-rejected-key",
+REVIEW_CASES = ("worker-init", "startup-admission", "control-reserve", "immutable-rejected-key",
                 "producer-order", "ambiguous-invalid-barrier", "missing-clock-flush",
                 "stop-init-race", "bounded-loss", "duplicate-results", "stop-worker-init", "mixed-retry-barrier",
                 "stop-invalid-init", "cancelled-empty-start", "disabled-init-loss")

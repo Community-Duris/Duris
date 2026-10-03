@@ -69,6 +69,17 @@ enum class telemetry_record_kind : std::uint8_t
 	progression = 6,
 	encounter = 7,
 	combat_summary = 8,
+	ownership = 9,
+};
+
+/* Observed authenticated descriptor ownership; preparation alone emits no fact. */
+enum class telemetry_ownership_source : std::uint8_t
+{
+	authenticated_login = 1,
+	reconnect = 2,
+	copyover = 3,
+	ownership_changed = 4,
+	unavailable = 5,
 };
 
 /* Progression facts keep XP arithmetic separate from level-threshold use. */
@@ -347,6 +358,8 @@ enum class telemetry_queue_admission : std::uint8_t
 	rejected_control_full = 6,
 	rejected_oversize = 7,
 	rejected_circuit_open = 8,
+	/* Worker startup has not yet validated the storage contract. */
+	rejected_not_ready = 9,
 };
 
 /*
@@ -566,6 +579,18 @@ struct telemetry_cumulative_counters
 	telemetry_duration_usec linkdead_usec;
 };
 
+/* Bounded copyover state; no monotonic timestamp crosses process incarnations.
+ * Import retains totals and starts from a new observation's clock anchor.
+ * Descriptors may hold this value while initial writer qualification completes. */
+struct telemetry_session_handoff
+{
+	telemetry_session_ref session;
+	telemetry_producer_id previous_producer;
+	telemetry_checkpoint_revision last_checkpoint_revision;
+	telemetry_cumulative_counters cumulative;
+	telemetry_quality_mask quality_flags;
+};
+
 /* Common immutable record metadata. occurrence_utc_usec is not ingestion time. */
 struct telemetry_record_header
 {
@@ -768,6 +793,22 @@ struct telemetry_combat_summary_payload
 	telemetry_quality_mask quality_flags;
 };
 
+struct telemetry_ownership_payload
+{
+	telemetry_session_ref session;
+	telemetry_connection_id connection;
+	telemetry_monotonic_usec at_monotonic_usec;
+	telemetry_utc_usec at_utc_usec;
+	telemetry_id account_token;
+	telemetry_ownership_source source;
+	std::uint8_t reserved[7];
+	telemetry_dimensions dimensions;
+	telemetry_config_id config_id;
+	std::uint32_t classifier_version;
+	std::uint32_t policy_version;
+	telemetry_quality_mask quality_flags;
+};
+
 union telemetry_record_payload
 {
 	telemetry_interval_payload interval;
@@ -778,6 +819,7 @@ union telemetry_record_payload
 	telemetry_progression_payload progression;
 	telemetry_encounter_payload encounter;
 	telemetry_combat_summary_payload combat_summary;
+	telemetry_ownership_payload ownership;
 };
 
 /* Fixed-size tagged value.  The active payload is selected by header.kind. */
@@ -847,7 +889,8 @@ constexpr bool telemetry_record_kind_is_valid(telemetry_record_kind kind) noexce
 	       kind == telemetry_record_kind::configuration ||
 	       kind == telemetry_record_kind::progression ||
 	       kind == telemetry_record_kind::encounter ||
-	       kind == telemetry_record_kind::combat_summary;
+	       kind == telemetry_record_kind::combat_summary ||
+	       kind == telemetry_record_kind::ownership;
 }
 
 constexpr bool telemetry_record_kind_is_control(telemetry_record_kind kind) noexcept
@@ -857,7 +900,8 @@ constexpr bool telemetry_record_kind_is_control(telemetry_record_kind kind) noex
 	       kind == telemetry_record_kind::coverage_gap ||
 	       kind == telemetry_record_kind::configuration ||
 	       kind == telemetry_record_kind::encounter ||
-	       kind == telemetry_record_kind::combat_summary;
+	       kind == telemetry_record_kind::combat_summary ||
+	       kind == telemetry_record_kind::ownership;
 }
 
 constexpr bool telemetry_lifecycle_kind_is_valid(telemetry_lifecycle_kind kind) noexcept
@@ -1506,6 +1550,27 @@ telemetry_combat_summary_payload_is_valid(const telemetry_combat_summary_payload
 	return summary.actor_pid == TELEMETRY_UNKNOWN_PID && summary.owner_subject_id == 0U;
 }
 
+constexpr bool
+telemetry_ownership_payload_is_valid(const telemetry_ownership_payload &value) noexcept
+{
+	if (!telemetry_session_ref_is_valid(value.session) ||
+	    !telemetry_connection_id_is_valid(value.connection) ||
+	    !telemetry_dimensions_are_valid(value.dimensions) || !value.config_id ||
+	    !value.classifier_version || !value.policy_version ||
+	    !telemetry_quality_mask_is_valid(value.quality_flags))
+		return false;
+	for (auto byte : value.reserved)
+		if (byte != 0U)
+			return false;
+	if (value.source == telemetry_ownership_source::unavailable)
+		return value.account_token == TELEMETRY_UNKNOWN_ID;
+	return value.account_token != TELEMETRY_UNKNOWN_ID &&
+	       (value.source == telemetry_ownership_source::authenticated_login ||
+		value.source == telemetry_ownership_source::reconnect ||
+		value.source == telemetry_ownership_source::copyover ||
+		value.source == telemetry_ownership_source::ownership_changed);
+}
+
 /* The switch reads only the union member selected by header.kind. */
 constexpr bool telemetry_record_is_valid(const telemetry_record &record) noexcept
 {
@@ -1529,6 +1594,13 @@ constexpr bool telemetry_record_is_valid(const telemetry_record &record) noexcep
 		return telemetry_encounter_payload_is_valid(record.payload.encounter);
 	case telemetry_record_kind::combat_summary:
 		return telemetry_combat_summary_payload_is_valid(record.payload.combat_summary);
+	case telemetry_record_kind::ownership:
+		return telemetry_ownership_payload_is_valid(record.payload.ownership) &&
+		       record.header.key.producer.boot_id ==
+			       record.payload.ownership.connection.producer.boot_id &&
+		       record.header.key.producer.process_id ==
+			       record.payload.ownership.connection.producer.process_id &&
+		       record.header.occurrence_utc_usec == record.payload.ownership.at_utc_usec;
 	case telemetry_record_kind::invalid:
 		break;
 	}
@@ -1536,6 +1608,7 @@ constexpr bool telemetry_record_is_valid(const telemetry_record &record) noexcep
 }
 
 static_assert(std::is_trivially_copyable_v<telemetry_record>);
+static_assert(std::is_trivially_copyable_v<telemetry_ownership_payload>);
 static_assert(std::is_standard_layout_v<telemetry_record>);
 static_assert(std::is_trivially_copyable_v<telemetry_config_snapshot>);
 static_assert(std::is_standard_layout_v<telemetry_config_snapshot>);

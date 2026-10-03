@@ -489,6 +489,7 @@ std::size_t telemetry_health_record_kind_mask_format(std::uint64_t mask, char *o
 		{ telemetry_record_kind::progression, "progression" },
 		{ telemetry_record_kind::encounter, "encounter" },
 		{ telemetry_record_kind::combat_summary, "combat-summary" },
+		{ telemetry_record_kind::ownership, "ownership" },
 	};
 	std::size_t used = 0U;
 	bool found = false;
