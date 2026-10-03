@@ -69,6 +69,11 @@ void test_roster_effort_and_idempotent_close()
 	sink_fixture sink{ {}, 0U, true };
 	const auto run = id(producer, 1U);
 	const auto run_source = source(900U);
+	telemetry_encounter_id current = id(producer, 999U);
+	CHECK(!telemetry_encounter_current(&state, participant(1), &current));
+	CHECK(current.sequence == 0U && current.producer.boot_id == 0U);
+	CHECK(!telemetry_encounter_current(nullptr, participant(1), &current));
+	CHECK(!telemetry_encounter_current(&state, participant(1), nullptr));
 	CHECK(telemetry_encounter_begin(&state, run, run_source, telemetry_encounter_mode::pve,
 					participant(1), 0U, 1U, emit_event, &sink)
 		      .outcome == telemetry_encounter_update_outcome::accepted);
@@ -79,10 +84,16 @@ void test_roster_effort_and_idempotent_close()
 			telemetry_encounter_mode::pve, participant(pid), 0U, 1U, emit_event, &sink);
 		CHECK(result.outcome == telemetry_encounter_update_outcome::joined_existing);
 	}
+	CHECK(telemetry_encounter_current(&state, participant(1), &current));
+	CHECK(current.sequence == run.sequence && current.producer.boot_id == producer.boot_id &&
+	      current.producer.process_id == producer.process_id);
 	CHECK(telemetry_encounter_leave(&state, participant(1),
 					telemetry_encounter_outcome::withdrawal, 1'800'000'000ULL,
 					2U, emit_event, &sink)
 		      .outcome == telemetry_encounter_update_outcome::accepted);
+	CHECK(!telemetry_encounter_current(&state, participant(1), &current));
+	CHECK(current.sequence == 0U && current.producer.process_id == 0U);
+	CHECK(telemetry_encounter_current(&state, participant(2), &current));
 	CHECK(telemetry_encounter_begin(&state, id(producer, 12U), run_source,
 					telemetry_encounter_mode::pve, participant(11),
 					1'800'000'000ULL, 2U, emit_event, &sink)
@@ -91,6 +102,8 @@ void test_roster_effort_and_idempotent_close()
 						      telemetry_encounter_outcome::success, 10U,
 						      3'600'000'000ULL, 3U, emit_event, &sink);
 	CHECK(closed.outcome == telemetry_encounter_update_outcome::accepted);
+	CHECK(!telemetry_encounter_current(&state, participant(2), &current));
+	CHECK(current.sequence == 0U && current.producer.boot_id == 0U);
 	CHECK(count_kind(sink, telemetry_encounter_event_kind::close) == 1U);
 	CHECK(count_kind(sink, telemetry_encounter_event_kind::participant_summary) == 11U);
 	std::uint64_t participant_total = 0U;

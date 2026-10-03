@@ -59,6 +59,7 @@ static bool do_group_add(P_char ch, P_char victim);
  * bounded adapter owns dimensions/classification; no gameplay state is changed. */
 static void telemetry_group_context_changed(struct group_list *group)
 {
+	telemetry_runtime_game_group_changed(group);
 	unsigned source_visited = 0U;
 	for (struct group_list *member = group; member && source_visited < 256U;
 	     member = member->next, ++source_visited)

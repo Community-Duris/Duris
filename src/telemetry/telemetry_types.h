@@ -469,6 +469,8 @@ struct telemetry_group_generation
 {
 	telemetry_producer_id producer;
 	telemetry_sequence sequence;
+	/* Zero with a valid lifetime means the observed roster revision exhausted. */
+	std::uint16_t revision = 0U;
 };
 
 struct telemetry_encounter_source

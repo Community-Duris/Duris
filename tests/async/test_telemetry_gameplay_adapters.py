@@ -25,10 +25,12 @@ def main(*, sanitize: bool = False) -> None:
             "-I",
             str(ROOT / "src"),
             str(ROOT / "tests/async/telemetry_gameplay_adapters.cc"),
+            str(ROOT / "src/account/character_identity.c"),
             *[
                 str(ROOT / "src/telemetry" / name)
                 for name in (
                     "telemetry_activity.c",
+                    "telemetry_battle.c",
                     "telemetry_combat_summary.c",
                     "telemetry_config.c",
                     "telemetry_encounter.c",

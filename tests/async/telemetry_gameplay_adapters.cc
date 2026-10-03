@@ -1,12 +1,15 @@
 #include "telemetry/telemetry_config_private.h"
 #include "telemetry/telemetry_runtime.h"
+#include "telemetry/telemetry_battle.h"
 #include "telemetry/telemetry_transport_private.h"
 #include "core/structs.h"
 #include "core/utils.h"
+#include "core/prototypes.h"
 
 #include "telemetry/telemetry_session.h"
 #include "telemetry_test_runtime.h"
 #include <memory>
+#include <limits>
 #include <atomic>
 #include <cassert>
 #include <chrono>
@@ -18,11 +21,16 @@
 #include <vector>
 
 P_room world = nullptr;
+P_char character_list = nullptr;
 struct zone_data *zone_table = nullptr;
 int top_of_zone_table = -1;
 int top_of_world = -1;
 P_char fixture_pet = nullptr;
 P_char fixture_pet_master = nullptr;
+void panic_corruption(const char *, const char *, ...)
+{
+	std::abort();
+}
 P_char get_linked_char(P_char character, ush_int link)
 {
 	return character == fixture_pet && link == LNK_PET ? fixture_pet_master : nullptr;
@@ -165,6 +173,14 @@ void check_disabled_game_path()
 		       .outcome != telemetry_runtime_outcome::accepted);
 	assert(player.telemetry_session_sequence == 0U);
 	assert(descriptor.telemetry_connection_sequence == 0U);
+	telemetry_battle_actor_context battle_context{};
+	battle_context.actor.actor_id = 123U;
+	assert(!telemetry_runtime_game_battle_actor(&player, &battle_context));
+	assert(battle_context.actor.actor_id == 0U);
+	group_list group{ &player, nullptr };
+	telemetry_runtime_game_group_changed(&group);
+	assert(group.telemetry_generation.sequence == 0U &&
+	       group.telemetry_generation.revision == 0U);
 	assert(telemetry_runtime_shutdown({ 0U, 0U, {} }) == telemetry_runtime_outcome::accepted);
 	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
 }
@@ -490,6 +506,278 @@ void check_group_generation_and_combat_entry()
 	top_of_world = top_of_zone_table = -1;
 	std::puts(
 		"PASS: formal group generations, both combat sides, NPC guards and pet PvP observations");
+}
+
+void check_native_battle_context()
+{
+	fake_repository fake{};
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	const auto options = enabled_options();
+	telemetry_test_start_runtime(options);
+	const auto producer = telemetry_runtime_producer_copy();
+	room_data rooms[3]{};
+	zone_data zones[2]{};
+	rooms[0].zone = rooms[1].zone = 0U;
+	rooms[2].zone = 1U;
+	zones[0].number = 1701;
+	zones[1].number = 1702;
+	world = rooms;
+	zone_table = zones;
+	top_of_world = 2;
+	top_of_zone_table = 1;
+	char_data player{}, member{}, npc{}, clone{};
+	pc_only_data player_pc{}, member_pc{};
+	npc_only_data npc_only{}, clone_only{};
+	player.only.pc = &player_pc;
+	member.only.pc = &member_pc;
+	player_pc.pid = 8501;
+	member_pc.pid = 8502;
+	npc.only.npc = &npc_only;
+	clone.only.npc = &clone_only;
+	npc.specials.act = clone.specials.act = ACT_ISNPC;
+	npc_only.R_num = clone_only.R_num = 77; // Identical prototype; no legacy instance ID.
+	npc.runtime_id = allocate_character_runtime_id();
+	clone.runtime_id = allocate_character_runtime_id();
+	for (auto *actor : { &player, &member, &npc, &clone })
+	{
+		actor->in_room = 0;
+		actor->player.level = 25;
+		actor->player.m_class = 3;
+		actor->player.race = 4;
+		actor->player.racewar = 5;
+	}
+	telemetry_battle_actor_context player_context{}, member_context{}, npc_context{},
+		clone_context{};
+	assert(telemetry_runtime_game_battle_actor(&player, &player_context));
+	assert(telemetry_battle_actor_context_is_valid(player_context));
+	assert(player_context.actor.actor_id == 8501U && player_context.group_key == 8501U &&
+	       player_context.group_revision == 0U && player_context.session.session_seq == 0U &&
+	       player_context.encounter.sequence == 0U && player.telemetry_session_sequence == 0U);
+	assert(player_context.quality_flags & TELEMETRY_QUALITY_CONTEXT_UNKNOWN);
+	assert(telemetry_runtime_game_battle_actor(&npc, &npc_context));
+	assert(telemetry_runtime_game_battle_actor(&clone, &clone_context));
+	assert(telemetry_battle_actor_context_is_valid(npc_context) &&
+	       telemetry_battle_actor_context_is_valid(clone_context));
+	assert(npc_context.actor.actor_id ==
+		       (TELEMETRY_BATTLE_NPC_GENERATION_TAG | npc.runtime_id) &&
+	       npc_context.actor.actor_id != clone_context.actor.actor_id);
+	assert(npc_context.group_key == 0U && npc_context.dimensions.group_size == 0U &&
+	       npc_context.session.session_seq == 0U && npc_context.encounter.sequence == 0U);
+	const auto previous_instance = npc_context.actor.actor_id;
+	npc.runtime_id =
+		allocate_character_runtime_id(); // Same address reused for the same prototype.
+	assert(telemetry_runtime_game_battle_actor(&npc, &npc_context));
+	assert(npc_context.actor.actor_id != previous_instance &&
+	       npc_context.actor.actor_id != clone_context.actor.actor_id);
+	const auto instance = npc.runtime_id;
+	for (auto unavailable : { std::uint64_t{ 0U }, TELEMETRY_BATTLE_NPC_GENERATION_TAG,
+				  std::numeric_limits<std::uint64_t>::max() })
+	{
+		npc.runtime_id = unavailable;
+		assert(!telemetry_runtime_game_battle_actor(&npc, &npc_context));
+		assert(npc_context.actor.actor_id == 0U && npc_context.context_version == 0U);
+	}
+	npc.runtime_id = instance;
+	assert(!telemetry_runtime_game_battle_actor(nullptr, &npc_context));
+	assert(!telemetry_runtime_game_battle_actor(&npc, nullptr));
+	assert(npc_context.actor.actor_id == 0U);
+
+	descriptor_data descriptor{};
+	descriptor.connected = CON_PLAYING;
+	descriptor.character = &player;
+	player.desc = &descriptor;
+	assert(telemetry_runtime_game_enter(&player, &descriptor).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_game_combat_engage(&player, &npc).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_game_battle_actor(&player, &player_context));
+	assert(player_context.session.session_seq == player.telemetry_session_sequence &&
+	       player_context.encounter.sequence != 0U &&
+	       player_context.encounter.producer.boot_id == producer.boot_id);
+	const auto session = player_context.session;
+	assert(telemetry_runtime_game_connection_transition(
+		       &player, &descriptor, telemetry_connection_transition_kind::detached)
+		       .outcome == telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_game_battle_actor(&player, &player_context));
+	assert(player_context.session.session_seq ==
+	       session.session_seq); // Linkdead is the same session.
+	assert(telemetry_runtime_game_session_exit(&player, nullptr,
+						   telemetry_session_end_reason::logout)
+		       .outcome == telemetry_runtime_outcome::accepted);
+	player.telemetry_session_sequence = session.session_seq;
+	player.telemetry_session_producer_boot_id = session.producer.boot_id;
+	player.telemetry_session_producer_process_id = session.producer.process_id;
+	assert(telemetry_runtime_game_battle_actor(&player, &player_context));
+	assert(player_context.session.session_seq ==
+	       0U); // A stale native tuple cannot link closed state.
+	player.telemetry_session_sequence = player.telemetry_session_producer_boot_id =
+		player.telemetry_session_producer_process_id = 0U;
+	assert(telemetry_runtime_game_encounter_leave(&player, telemetry_encounter_outcome::flee)
+		       .outcome == telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_game_battle_actor(&player, &player_context));
+	assert(player_context.encounter.sequence == 0U);
+	auto battle = std::make_unique<telemetry_battle_state>();
+	assert(telemetry_battle_state_init(
+		battle.get(), producer,
+		{ options.config.environment_id, options.config.season_id, options.config.config_id,
+		  options.config.classifier_version, options.config.policy_version, -1, 0U },
+		1000U));
+	std::vector<telemetry_battle_fact> facts;
+	facts.reserve(64);
+	const auto sink = [](void *context, const telemetry_battle_fact &fact) noexcept
+	{
+		static_cast<std::vector<telemetry_battle_fact> *>(context)->push_back(fact);
+		return true;
+	};
+
+	group_list member_node{ &member, nullptr }, group{ &player, &member_node };
+	player.group = member.group = &group;
+	telemetry_runtime_game_group_changed(&group);
+	assert(group.telemetry_generation.revision == 1U);
+	const auto generation = group.telemetry_generation;
+	assert(telemetry_runtime_game_battle_group_presence(&player, &member, &player_context,
+							    &member_context));
+	assert(player_context.group_key == generation.sequence &&
+	       player_context.group_key == member_context.group_key &&
+	       player_context.group_revision == 1U && member_context.group_revision == 1U);
+	const auto party_battle =
+		telemetry_battle_observe(battle.get(), telemetry_battle_relation::hostile,
+					 player_context, clone_context, 100U, 100U, sink, &facts);
+	assert(party_battle.outcome == telemetry_battle_outcome::accepted);
+	assert(telemetry_battle_observe(battle.get(), telemetry_battle_relation::group_presence,
+					player_context, member_context, 150U, 150U, sink, &facts)
+		       .outcome == telemetry_battle_outcome::accepted);
+	assert(facts.back().actor_count == 3U && facts.back().observed_owner_count == 2U &&
+	       facts.back().side_status == telemetry_battle_side_status::qualified_observed_graph);
+	assert(telemetry_battle_close(battle.get(), party_battle.battle,
+				      telemetry_battle_close_reason::shutdown, 300U, 300U, sink,
+				      &facts)
+		       .outcome == telemetry_battle_outcome::accepted);
+	bool saw_presence_only = false;
+	for (const auto &fact : facts)
+		if (fact.kind == telemetry_battle_fact_kind::actor_summary &&
+		    fact.actor.actor.actor_id == 8502U)
+		{
+			assert(fact.roles == TELEMETRY_BATTLE_ROLE_GROUP_PRESENCE &&
+			       fact.effort.present_usec == 150U &&
+			       fact.effort.contributor_usec == 0U &&
+			       fact.actor.session.session_seq == 0U);
+			saw_presence_only = true;
+		}
+	assert(saw_presence_only);
+	facts.clear();
+	member.in_room = 1; // Same zone and roster does not prove actual presence.
+	assert(!telemetry_runtime_game_battle_group_presence(&player, &member, &player_context,
+							     &member_context));
+	assert(player_context.actor.actor_id == 0U && member_context.actor.actor_id == 0U);
+	member.in_room = 0;
+	group.ch = &member;
+	member_node.ch = &player;
+	telemetry_runtime_game_group_changed(&group); // Accepted appointment retains the lifetime.
+	assert(group.telemetry_generation.sequence == generation.sequence &&
+	       group.telemetry_generation.revision == 2U);
+	assert(telemetry_runtime_game_battle_group_presence(&player, &member, &player_context,
+							    &member_context));
+	assert(player_context.group_revision == 2U && member_context.group_revision == 2U);
+	group.telemetry_generation.revision = std::numeric_limits<std::uint16_t>::max();
+	telemetry_runtime_game_group_changed(&group);
+	telemetry_runtime_game_group_changed(&group);
+	assert(group.telemetry_generation.revision == 0U &&
+	       group.telemetry_generation.sequence == generation.sequence);
+	assert(telemetry_runtime_game_battle_actor(&player, &player_context));
+	assert(player_context.group_key == 0U && player_context.group_revision == 0U &&
+	       (player_context.quality_flags & TELEMETRY_QUALITY_CONTEXT_OVERFLOW));
+	assert(telemetry_battle_actor_context_is_valid(player_context));
+	assert(!telemetry_runtime_game_battle_group_presence(&player, &member, &player_context,
+							     &member_context));
+	// A malformed native list supplies no roster relationship, even with cached metadata.
+	member_node.next = &group;
+	assert(telemetry_runtime_game_battle_actor(&player, &player_context));
+	assert(player_context.group_key == 0U &&
+	       (player_context.quality_flags & TELEMETRY_QUALITY_CARDINALITY_OVERFLOW));
+	member_node.next = nullptr;
+	player.group = member.group = nullptr;
+
+	// Native pet ownership changes keep one live actor; owners get no fabricated PC/session presence.
+	fixture_pet = &npc;
+	fixture_pet_master = &member;
+	member_pc.pid = 0;
+	assert(!telemetry_runtime_game_battle_actor(&npc, &npc_context));
+	assert(npc_context.actor.actor_id ==
+	       0U); // Invalid owner cannot masquerade as ordinary PvE.
+	member_pc.pid = 8502;
+	assert(telemetry_runtime_game_battle_actor(&npc, &npc_context));
+	assert(npc_context.actor.kind == telemetry_combat_actor_kind::pet &&
+	       npc_context.actor.owner_subject_id == 8502U &&
+	       npc_context.session.session_seq == 0U && npc_context.encounter.sequence == 0U &&
+	       npc_context.group_key == 0U);
+	assert(telemetry_runtime_game_battle_actor(&player, &player_context));
+	const auto joined =
+		telemetry_battle_observe(battle.get(), telemetry_battle_relation::hostile,
+					 player_context, npc_context, 400U, 400U, sink, &facts);
+	assert(joined.outcome == telemetry_battle_outcome::accepted &&
+	       facts.back().mode == telemetry_encounter_mode::pvp &&
+	       facts.back().actor_count == 2U && facts.back().observed_owner_count == 2U);
+	const auto pet_id = npc_context.actor.actor_id;
+	fixture_pet_master = nullptr;
+	assert(telemetry_runtime_game_battle_actor(&npc, &npc_context));
+	assert(npc_context.actor.actor_id == pet_id &&
+	       npc_context.actor.kind == telemetry_combat_actor_kind::npc &&
+	       npc_context.actor.owner_subject_id == 0U);
+	assert(telemetry_battle_context(battle.get(), npc_context, 500U, 500U, sink, &facts)
+		       .outcome == telemetry_battle_outcome::accepted);
+	assert(facts.back().mode == telemetry_encounter_mode::pve &&
+	       facts.back().actor_count == 2U && facts.back().observed_owner_count == 1U);
+	assert(telemetry_battle_close(battle.get(), joined.battle,
+				      telemetry_battle_close_reason::shutdown, 600U, 600U, sink,
+				      &facts)
+		       .outcome == telemetry_battle_outcome::accepted);
+	std::uint64_t pvp = 0U, pve = 0U;
+	for (const auto &fact : facts)
+		if (fact.kind == telemetry_battle_fact_kind::actor_summary)
+		{
+			pvp += fact.effort.pvp_usec;
+			pve += fact.effort.pve_usec;
+		}
+	assert(pvp == 200U && pve == 200U);
+	fixture_pet = fixture_pet_master = nullptr;
+
+	auto finish = []()
+	{
+		telemetry_monotonic_usec now = 0U;
+		telemetry_utc_usec utc = 0U;
+		assert(telemetry_runtime_now(&now, &utc));
+		assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+		       telemetry_runtime_outcome::accepted);
+		assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+		telemetry_transport_unbind_for_tests();
+	};
+	finish();
+	fake_repository next_fake{};
+	const telemetry_transport_repository_binding next_repository = {
+		fake_init, fake_apply, fake_request_stop, fake_shutdown, &next_fake
+	};
+	assert(telemetry_transport_bind_for_tests(&next_repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	telemetry_test_start_runtime(enabled_options());
+	player.group = member.group = &group;
+	assert(telemetry_runtime_game_battle_actor(&player, &player_context));
+	assert(player_context.group_revision == 1U &&
+	       (group.telemetry_generation.producer.boot_id != generation.producer.boot_id ||
+		group.telemetry_generation.producer.process_id != generation.producer.process_id));
+	finish();
+	assert(!telemetry_runtime_game_battle_actor(&player, &player_context));
+	assert(player_context.actor.actor_id == 0U);
+	world = nullptr;
+	zone_table = nullptr;
+	top_of_world = top_of_zone_table = -1;
+	std::puts(
+		"PASS: native live actor reuse, roster revisions/presence, session links and pet ownership cuts");
 }
 
 void check_staggered_checkpoint_cut()
@@ -1121,6 +1409,15 @@ void check_authenticated_ownership_path()
 		13U; // Real reloaded authority may differ from the old observation.
 	assert(telemetry_runtime_game_session_resume(&recovered, &next_descriptor, &handoff.handoff)
 		       .outcome == telemetry_runtime_outcome::accepted);
+	telemetry_battle_actor_context resumed_context{};
+	assert(telemetry_runtime_game_battle_actor(&recovered, &resumed_context));
+	assert(telemetry_battle_actor_context_is_valid(resumed_context));
+	assert(resumed_context.session.producer.boot_id ==
+		       handoff.handoff.session.id.producer.boot_id &&
+	       resumed_context.session.producer.process_id ==
+		       handoff.handoff.session.id.producer.process_id &&
+	       resumed_context.session.session_seq == handoff.handoff.session.id.session_seq &&
+	       resumed_context.encounter.sequence == 0U);
 	assert(telemetry_runtime_now(&now, &utc));
 	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
 	       telemetry_runtime_outcome::accepted);
@@ -1176,6 +1473,7 @@ void check_authenticated_ownership_path()
 
 int main()
 {
+	check_native_battle_context();
 	check_group_generation_and_combat_entry();
 	check_authenticated_ownership_path();
 	check_deferred_startup_presence();

@@ -22,7 +22,7 @@ work. A future production deployment is a separate operational decision.
 | Copyover ownership context and ownership-loss review | Implemented and locally qualified | Outer copyover 18/telemetry-v2 retains last observed account context without importing an old monotonic clock or using the token as current authority. Legacy framing, overflow/unknown context and actual reloaded-token/scope/deletion changes passed native and ASan/UBSan fixtures. Migration 0059 adds independent incident schema-v2 inputs for families 1–9 and reuses existing snapshots; both 59-step chains, CLI, capacity, replay, private roles, atomic snapshot rollback and exact fresh/restored fingerprints passed. Definition-3 integration is qualified below. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md) and [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
 | Atomic identity effort and observed XP portfolio publication | Implemented and locally qualified | Migration 0060 adds exact bounded source retention tied to the cursor, a conserved publication header and two reports. Definition 3 consumes the reserved dated review and incident schema 2 in the same publication transaction. Both 60-step chains qualified the actual CLI, corrections, old generations, explicit unknown identity, source/publication rollback, real committed writes with lost acknowledgements, private roles, budget refusal, guarded reruns and exact fresh/restored fingerprints. Definitions 1/2 retain their earlier amounts. See [IDENTITY_PUBLICATION.md](IDENTITY_PUBLICATION.md). |
 | Character/account/confirmed controller association | In progress | Dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation, authenticated source capture, identity wire handoff, reviewed SQL registration and immutable generation reservations are qualified. Atomic identity effort/report publication now consumes the reserved review and qualified ownership incident snapshot. Real personal source journeys and linkage coverage in the complete balance suites remain required. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
-| Shared battles and changing rosters | In progress | Native prerequisites retain producer-scoped formal group generations through appointment/departure and observe actual PCs on both accepted combat sides, including pet-owned PvP context and explicit NPC union guards. The pure bounded association module qualifies shared hostile/support/presence graphs, roster/mode/context cuts, pets, aliases, uncertainty and censored closure. Native battle callbacks, live NPC/group revisions, compact context/control/prevention/population sources, durable facts/contributions and atomic published projections remain required. See [BATTLES.md](BATTLES.md). |
+| Shared battles and changing rosters | In progress | Native prerequisites retain producer-scoped formal group generations through appointment/departure and observe actual PCs on both accepted combat sides, including pet-owned PvP context and explicit NPC union guards. The pure bounded association module qualifies shared hostile/support/presence graphs, roster/mode/context cuts, pets, aliases, uncertainty and censored closure. Native value adapters qualify existing live NPC lifetimes, actual formal-roster revisions/presence and admitted current session/encounter links. Native battle callbacks, compact context/control/prevention/population sources, durable facts/contributions and atomic published projections remain required. See [BATTLES.md](BATTLES.md). |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
 | Progression and portfolios | In progress | Observed XP/level projections and published exact account/controller effort unions and observed XP portfolio amounts are qualified. Rested/assistance provenance, milestone exposure/censoring, switching, canonical comparable rewards and rates remain required. |
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
@@ -538,10 +538,52 @@ C/C++ and all new source files passed repository formatting. The final maintaine
 remains unsupported on this host. No new schema or report definition is included
 in this increment; migration head 60 and existing persistent kinds 1–9 remain.
 
-Actual live actor/group revision capture, reviewed support/control/prevention and
+Shared native capture wiring, reviewed support/control/prevention and
 population producers, durable shared facts/contribution linkage, qualified
 publication and the final real personal-local gate remain required. Enabling
 telemetry currently emits the improved existing encounter observations; it does
 not emit the pure module's shared facts. [BATTLES.md](BATTLES.md) records the next
 integration gate and executable commands. This is progress on the complete
 accepted expansion, whose seven completion requirements remain open in #258.
+
+
+## Qualified native battle source values
+
+The native actor adapter reuses the maintained runtime-ID allocator instead of
+adding a second identity registry. NPCs with the same prototype and reused
+addresses receive distinct values when their runtime lifetimes change; pet
+ownership changes preserve the live actor. Zero/high-half lifetimes and invalid
+current PC owners are refused. The actual native group hook advances one roster
+revision before the post-mutation callbacks. Accepted appointment/departure
+retain the generation, refused operations supply no mutation callback, both pool
+allocation sites clear revision metadata, exhaustion remains unknown and a new
+observing producer allocates a fresh lifetime.
+
+Native party presence requires one exact bounded formal roster, distinct actors
+and a known shared room/zone/revision. A different room in the same zone fails;
+a cyclic list supplies unknown/cardinality quality. Optional PC session links
+must match admitted, unclosed state, including linkdead and a retained logical
+copyover session. Active current-producer encounters can be linked; closed or
+inactive history and forged native tuples cannot. Pets inherit no owner's PC
+session or encounter. Snapshot failure clears the returned values.
+
+The actual native adapters and maintained runtime-ID allocator passed normal
+and AddressSanitizer/UndefinedBehaviorSanitizer fixtures. Native presence values
+fed into the pure association engine retained presence-only effort separately
+from contribution and authentication. Ownership-loss context retained the same
+actor and conserved the preceding PvP/following PvE segments. Actual extracted
+group mutation fixtures qualified exactly one revision callback before roster/
+context notification, rejected operations and leader-departure metadata transfer.
+Active encounter lookup, existing combat boundaries, runtime lifecycle/copyover
+integration, standalone record/golden contracts and pure battle sanitizers passed.
+Touched C/C++ formatting and the final maintained `make -C src -j1` build passed.
+
+These are native value adapters, not an activated persistent shared collector.
+Migration head 60, kinds 1–9 and earlier published definitions retain their
+meanings. This increment introduces no SQL schema change. Its durable/native
+activation gate remains registering the adapters at reviewed hostile/support/
+control/prevention/context/leave/lifecycle boundaries, preserving attribution
+cuts and uncertainty, explicit shared contribution linkage, additive writer/
+schema/permissions/incident/lifecycle contracts and bounded atomic publication.
+The full #258 checklist and real personal-local gameplay/persistence/performance
+qualification remain required; no production or staging access is needed.

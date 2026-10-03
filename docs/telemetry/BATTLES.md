@@ -7,6 +7,10 @@ more accurate group encounters; enabling telemetry does not yet emit this module
 shared battle facts. [Implementation status](IMPLEMENTATION_STATUS.md) retains
 the complete accepted expansion and personal-local qualification requirement.
 
+Native actor, roster and actual-presence value adapters are also implemented
+and locally qualified. They supply values for the association module's pending
+capture wiring; they do not yet enqueue its facts.
+
 ## Association and actor identity
 
 A battle starts on a typed hostile interaction involving an observed player or
@@ -35,6 +39,42 @@ effort transfers once, and later terminal summaries belong to the canonical
 battle. A request to close the retired ID returns unavailable. Pre-bridge
 association uncertainty is retained as `CONTEXT_UNKNOWN`; a merge is not proof
 that the earlier components were one complete fight throughout their histories.
+
+## Native source values
+
+`telemetry_runtime_game_battle_actor` snapshots actual character context. For
+NPCs and pets it uses the server's existing `runtime_id`, whose maintained
+allocator supplies a fresh lifetime when `clear_char` prepares reused storage.
+The high-bit tag occupies a disjoint namespace from positive character PIDs;
+zero and runtime IDs at or above bit 63 are refused instead of truncated. Two
+instances of one prototype therefore remain distinct. Changing pet ownership
+retains the same live actor ID. An invalid current PC-owner link is refused
+instead of being classified as an ordinary PvE NPC. Existing kind-8 actor IDs
+retain their earlier meaning; the adapter does not reinterpret those records.
+
+The native formal-group hook advances a 16-bit roster revision once per
+accepted mutation, before roster and context callbacks. The first observation
+of a lifetime has revision 1. Appointment and leader departure retain its
+generation; both allocation sites clear reused revision metadata. Exhaustion
+sets revision 0 permanently for that lifetime. Shared context then supplies an
+unknown group relationship with `CONTEXT_OVERFLOW`; reading context cannot
+restart its revision. A fresh observing producer allocates a new lifetime.
+
+A supplied PC session must match admitted, unclosed runtime session state.
+Linkdead retains that logical session; a closed or fabricated native tuple
+does not supply a link. An encounter link requires the PC to be active in an
+observed current-producer encounter. Missing optional links remain absent with
+unknown context, and NPCs/pets inherit neither a PC session nor an owner's
+encounter. The context API allocates no authenticated session or participation.
+
+`telemetry_runtime_game_battle_group_presence` requires two distinct actors,
+one exact live formal head, one membership each in its bounded terminating
+list, one known shared room/zone and one current nonzero roster revision.
+Matching the zone and party while occupying different rooms fails the adapter.
+Malformed or cyclic lists supply no group relationship. The pure engine still
+requires the source to be an already active battle actor. Native value fixtures
+fed proven presence into that engine and kept presence-only effort separate
+from contributor time and authenticated session coverage.
 
 ## Sides, mode and exposure
 
@@ -115,8 +155,8 @@ inactivity bounds, inline expiry accounting, callback loss, row/actor/slot caps,
 and sequence exhaustion. Complete packets and duration conservation passed;
 normal, AddressSanitizer and UndefinedBehaviorSanitizer executions passed.
 
-The next integration gate is actual live NPC generation and group revision
-capture; reviewed hostile/support/control/prevention and presence callbacks;
+The next integration gate is registering the qualified native actor/roster/
+presence values at reviewed hostile/support/control/prevention boundaries;
 versioned persistent facts and contribution linkage through the existing queue,
 writer, replay and loss contracts; additive immutable schema/permissions/lifecycle
 registration; and bounded atomic balance publication. Qualify that gate on both

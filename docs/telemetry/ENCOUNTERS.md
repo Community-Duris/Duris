@@ -40,6 +40,13 @@ producers. Runtime initialization replaces cached metadata from an earlier
 producer; intentional copyover closes the old encounters with its explicit
 outcome. The group metadata is not serialized into records or copyover files.
 
+Runtime-only roster revisions now advance before the native group hook's
+post-mutation callbacks. The shared-battle value adapter uses those revisions,
+the existing live NPC runtime lifetimes and active observed encounter links.
+This does not add a roster revision to existing kind-7 storage or activate
+durable shared collection. See [BATTLES.md](BATTLES.md) for the native value
+contract and remaining integration gate.
+
 ## Events and metrics
 
 The bounded engine emits:

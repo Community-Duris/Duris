@@ -1,5 +1,6 @@
 #include "telemetry/telemetry_runtime.h"
 #include "telemetry/telemetry_activity.h"
+#include "telemetry/telemetry_battle.h"
 #include "core/structs.h"
 #include "core/utils.h"
 #include "telemetry/telemetry_config_private.h"
@@ -2105,8 +2106,9 @@ telemetry_capture_result game_capture_invalid() noexcept
 
 bool game_session_ref(const struct char_data *character, telemetry_session_ref *session) noexcept
 {
-	if (character == nullptr || session == nullptr || character->only.pc == nullptr ||
-	    character->only.pc->pid <= 0 || character->telemetry_session_sequence == 0U ||
+	if (character == nullptr || !IS_PC(character) || session == nullptr ||
+	    character->only.pc == nullptr || character->only.pc->pid <= 0 ||
+	    character->telemetry_session_sequence == 0U ||
 	    character->telemetry_session_producer_boot_id == 0U ||
 	    character->telemetry_session_producer_process_id == 0U)
 		return false;
@@ -2497,27 +2499,71 @@ game_encounter_participant(const struct char_data *character) noexcept
 	return participant;
 }
 
+bool game_group_generation_is_current(const telemetry_group_generation &generation) noexcept
+{
+	return generation.producer.boot_id == R.producer.boot_id &&
+	       generation.producer.process_id == R.producer.process_id &&
+	       (generation.sequence & TELEMETRY_GROUP_GENERATION_TAG) != 0U &&
+	       (generation.sequence & ~TELEMETRY_GROUP_GENERATION_TAG) != 0U;
+}
+
+telemetry_id game_group_generation(struct group_list *group) noexcept
+{
+	if (group == nullptr)
+		return TELEMETRY_UNKNOWN_ID;
+	auto &generation = group->telemetry_generation;
+	if (game_group_generation_is_current(generation))
+		return generation.sequence;
+	if (R.next_group_sequence == 0U || !telemetry_producer_id_is_valid(R.producer))
+		return TELEMETRY_UNKNOWN_ID;
+	generation = { R.producer, TELEMETRY_GROUP_GENERATION_TAG | R.next_group_sequence, 1U };
+	R.next_group_sequence = R.next_group_sequence == TELEMETRY_GROUP_GENERATION_TAG - 1U ?
+					0U :
+					R.next_group_sequence + 1U;
+	return generation.sequence;
+}
+
 telemetry_id game_encounter_group_key(const struct char_data *character) noexcept
 {
 	if (character != nullptr && character->group != nullptr)
-	{
-		auto &generation = character->group->telemetry_generation;
-		if (generation.producer.boot_id == R.producer.boot_id &&
-		    generation.producer.process_id == R.producer.process_id &&
-		    (generation.sequence & TELEMETRY_GROUP_GENERATION_TAG) != 0U &&
-		    (generation.sequence & ~TELEMETRY_GROUP_GENERATION_TAG) != 0U)
-			return generation.sequence;
-		if (R.next_group_sequence == 0U || !telemetry_producer_id_is_valid(R.producer))
-			return TELEMETRY_UNKNOWN_ID;
-		generation = { R.producer, TELEMETRY_GROUP_GENERATION_TAG | R.next_group_sequence };
-		R.next_group_sequence = R.next_group_sequence ==
-							TELEMETRY_GROUP_GENERATION_TAG - 1U ?
-						0U :
-						R.next_group_sequence + 1U;
-		return generation.sequence;
-	}
+		return game_group_generation(character->group);
 	const auto participant = game_encounter_participant(character);
 	return participant.subject_id;
+}
+
+void game_battle_group(const struct char_data *character,
+		       telemetry_battle_actor_context *context) noexcept
+{
+	if (character->group == nullptr)
+	{
+		context->group_key = context->actor.kind == telemetry_combat_actor_kind::player ?
+					     context->actor.actor_id :
+					     0U;
+		return;
+	}
+	unsigned memberships = 0U;
+	std::uint16_t visited = 0U;
+	const struct group_list *member = character->group;
+	for (; member != nullptr && visited < GAME_GROUP_MAX_NODES;
+	     member = member->next, ++visited)
+		memberships += member->ch == character;
+	if (member != nullptr || memberships != 1U || character->group->ch == nullptr)
+	{
+		context->quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
+		if (member != nullptr)
+			context->quality_flags |= TELEMETRY_QUALITY_CARDINALITY_OVERFLOW;
+		return;
+	}
+	const telemetry_id group_key = game_group_generation(character->group);
+	const auto revision = character->group->telemetry_generation.revision;
+	if (group_key == 0U || revision == 0U)
+	{
+		context->quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN |
+					  TELEMETRY_QUALITY_CONTEXT_OVERFLOW;
+		return;
+	}
+	context->group_key = group_key;
+	context->group_revision = revision;
 }
 
 bool game_encounter_source(const struct char_data *character,
@@ -2590,6 +2636,64 @@ telemetry_combat_actor_ref game_combat_actor(const struct char_data *character) 
 	}
 	actor.power_band = game_combat_power_band(character);
 	return actor;
+}
+
+bool game_battle_actor(const struct char_data *character,
+		       telemetry_battle_actor_context *context) noexcept
+{
+	context->context_version = TELEMETRY_BATTLE_ACTOR_CONTEXT_VERSION;
+	if (IS_PC(character))
+	{
+		context->actor = game_combat_actor(character);
+		if (!telemetry_combat_actor_ref_is_valid(context->actor))
+			return false;
+		telemetry_session_ref session{};
+		telemetry_session_state_view view{};
+		if (game_session_ref(character, &session) &&
+		    telemetry_session_state_copy_view(&R.session, session, &view) && !view.closed)
+			context->session = session.id;
+		else
+			context->quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
+		telemetry_encounter_id encounter{};
+		if (telemetry_encounter_current(&R.encounter, game_encounter_participant(character),
+						&encounter) &&
+		    encounter.producer.boot_id == R.producer.boot_id &&
+		    encounter.producer.process_id == R.producer.process_id)
+			context->encounter = encounter;
+		else
+			context->quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
+	}
+	else
+	{
+		/* clear_char assigns a fresh lifetime on every pool reuse. Refuse the
+		 * high-half boundary instead of truncating it into another actor. */
+		if (character->only.npc == nullptr || character->runtime_id == 0U ||
+		    character->runtime_id >= TELEMETRY_BATTLE_NPC_GENERATION_TAG)
+			return false;
+		context->actor.actor_id = TELEMETRY_BATTLE_NPC_GENERATION_TAG |
+					  character->runtime_id;
+		context->actor.actor_pid = TELEMETRY_UNKNOWN_PID;
+		context->actor.kind = telemetry_combat_actor_kind::npc;
+		context->actor.power_band = game_combat_power_band(character);
+		const P_char master = GET_MASTER(const_cast<P_char>(character));
+		if (master != nullptr && IS_PC(master))
+		{
+			if (master->only.pc == nullptr || master->only.pc->pid <= 0)
+				return false;
+			context->actor.kind = telemetry_combat_actor_kind::pet;
+			context->actor.owner_subject_id =
+				static_cast<telemetry_subject_id>(master->only.pc->pid);
+		}
+	}
+	game_dimensions(character, &context->dimensions, &context->quality_flags);
+	if (context->actor.kind != telemetry_combat_actor_kind::player &&
+	    character->group == nullptr)
+	{
+		context->dimensions.group_size = 0U;
+		context->quality_flags |= TELEMETRY_QUALITY_DIMENSION_UNKNOWN;
+	}
+	game_battle_group(character, context);
+	return true;
 }
 
 std::uint32_t game_combat_modifier_flags(const telemetry_combat_actor_ref &source,
@@ -2679,6 +2783,65 @@ combat_summary_capture_from_update(const telemetry_combat_summary_update &update
 }
 
 } // namespace
+
+void telemetry_runtime_game_group_changed(struct group_list *group) noexcept
+{
+	if (!R.initialized || !R.enabled || R.shutdown_pending || group == nullptr)
+		return;
+	const bool observed_lifetime =
+		game_group_generation_is_current(group->telemetry_generation);
+	if (game_group_generation(group) == 0U || !observed_lifetime)
+		return;
+	auto &revision = group->telemetry_generation.revision;
+	if (revision != 0U)
+		revision = revision == std::numeric_limits<std::uint16_t>::max() ? 0U :
+										   revision + 1U;
+}
+
+bool telemetry_runtime_game_battle_actor(const struct char_data *character,
+					 telemetry_battle_actor_context *context) noexcept
+{
+	if (context == nullptr)
+		return false;
+	*context = {};
+	if (!R.initialized || !R.enabled || R.shutdown_pending || character == nullptr ||
+	    !ensure_current_config())
+		return false;
+	if (game_battle_actor(character, context))
+		return true;
+	*context = {};
+	return false;
+}
+
+bool telemetry_runtime_game_battle_group_presence(
+	const struct char_data *source, const struct char_data *member,
+	telemetry_battle_actor_context *source_context,
+	telemetry_battle_actor_context *member_context) noexcept
+{
+	if (source_context != nullptr)
+		*source_context = {};
+	if (member_context != nullptr)
+		*member_context = {};
+	if (source == nullptr || member == nullptr || source == member ||
+	    source_context == nullptr || member_context == nullptr ||
+	    source_context == member_context || source->group == nullptr ||
+	    source->group != member->group || source->in_room < 0 ||
+	    source->in_room != member->in_room)
+		return false;
+	telemetry_battle_actor_context observed_source{}, observed_member{};
+	if (!telemetry_runtime_game_battle_actor(source, &observed_source) ||
+	    !telemetry_runtime_game_battle_actor(member, &observed_member) ||
+	    (observed_source.group_key & TELEMETRY_GROUP_GENERATION_TAG) == 0U ||
+	    observed_source.group_key != observed_member.group_key ||
+	    observed_source.group_revision == 0U ||
+	    observed_source.group_revision != observed_member.group_revision ||
+	    observed_source.dimensions.zone_vnum < 0 ||
+	    observed_source.dimensions.zone_vnum != observed_member.dimensions.zone_vnum)
+		return false;
+	*source_context = observed_source;
+	*member_context = observed_member;
+	return true;
+}
 
 bool telemetry_runtime_account_prepare(struct acct_entry *account)
 {
