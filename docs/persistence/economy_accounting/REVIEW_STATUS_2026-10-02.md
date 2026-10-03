@@ -1068,3 +1068,72 @@ RED logs: `tmp/audit-checked-copper-red.local.log` and
 `tests/async/run_economic_sql_audit_snapshot_mysql.py` SHA-256 `3245046af108dcbddce05fde82829c461f012edf274e5b3430ffd1efe4bb3e9c`.
 
 `tmp/audit-checked-copper-sql-green.local.log` SHA-256 `b0301057fb9ee46bf95c9c8e266478e845d0d47ed50f8f872fb294ec3c0e51db`.
+
+
+## Flatfile legacy deletion accounting admission
+
+The actual native player-domain removal helper prepared a wallet-removal operation
+under an active accounting control record. The new native fixture reproduces
+that RED before the fix; no complete typed erasure root exists at this boundary.
+Direct player-wallet/shared-bank removal now checks legacy admission under the
+borrowed authority lock before clearing outputs or staging operations. Whole
+character/account deletion checks the same gate before new compound removals,
+including accounts with no items or characters. Published authority journals
+remain recoverable; active control returns conflict, corrupt control refuses,
+and the existing inactive/paused legacy behavior remains available.
+
+The full native deletion harness passes with ASan/UBSan, warnings as errors,
+active/corrupt/empty-account refusal, unchanged native file bytes, unchanged
+preparation outputs on admission refusal, reopened-lock retry, exact external
+control repair, paused retry, the original 17-operation budget and interrupted
+character/account journal recovery. The metadata selector exists only in the
+native test executable through DURIS_FLATFILE_ACCOUNTING_TEST. It does not create
+a source-complete activation baseline or active-epoch player/server proof.
+The borrowed-read ASan/UBSan harness also passes, including allocation failures,
+exact retained receipts and recovery. Narrow component executables discard
+unreferenced removal APIs with linker sections instead of mocking accounting
+admission; domain, initial shared-bank hydration, locker payment/replay/recovery
+and playtime checks pass. The locker fixture's SQL half was explicitly skipped
+without its dedicated disposable SQL target and is not claimed here.
+
+Both strict production builds pass. The real mortal account-menu journey passes
+missing-authority refusal, unchanged snapshot/quest alias, playable retry,
+exactly-once deletion, alias erasure and a usable account after cold restart,
+with accounting inactive. Its first dispatch preceded completion of the new
+inspector build and stopped at a missing executable; the subsequent dispatch
+used the completed sanitizer inspector and passes without changing the journey.
+All ten native recovery/restore cases pass in 427.430 seconds at this source,
+including both SQL engine full dump/import/schema/history/value checks, exact
+legacy transaction replay, private foreign-owned checkout isolation and service
+boot. This refresh remains an isolated fixture/recovery result, not a captured
+full-world generation or complete accounting restore certification.
+
+Native source tree: 4968da540845b5679c72974a6a43b784259a4e3a.
+SQL binary SHA-256: 15b335def2225622fc164f7ad7a9c06afca29c164a6a1d3224551a2875f9daa2.
+Flatfile binary SHA-256: fdb67946a5ffb7aba346710399ae070c7c86af26ec6253c41a9f09db11b32a59.
+QA: /opt/duris-accounting-flat-delete-review/source and
+/opt/duris-accounting-flat-delete-build-review/source.
+RED log: tmp/flat-delete-admission-red.local.log, SHA-256
+03e32033e976050355a7e8f0c61a3cde64e63aa51f9dec3169dc4683a45809a1.
+Sanitizer GREEN log: tmp/flat-delete-admission-green.local.log, SHA-256
+a810781f0c9c5ec04456c50d5eb7d341a9c7fa5c69922d66df8183866cc75575.
+Borrowed-read log: tmp/flat-delete-borrowed-reads.local.log, SHA-256
+7dc3d65ae45ab29637fe5d5b2e8bbaf47244b2710655d515277452201b35d43f.
+Native build/component log: tmp/flat-delete-build-checks.local.log;
+strict build logs: tmp/flat-delete-strict-sql.local.log and
+tmp/flat-delete-strict-flatfile.local.log.
+Gameplay log: tmp/flat-delete-current-journey.local.log, SHA-256
+d5ee5d4e36237eb343692dc44306b34f850548d92f25e7215af7fc761d41f127.
+
+Only three source anchors shift in the generated matrix; counts and backend
+qualification statuses are unchanged. Refusal evidence is recorded for the two
+flatfile lifecycle routes without promoting them to complete accounting.
+SQL physical/account deletion admission and account-menu admission before
+publishing a durable deletion fence are separate unfinished boundaries. Typed
+erasure, non-personal identity retention, complete native/economic audit,
+source-complete active journeys, captured-clone/full-world and workload gates
+remain open. The earlier frozen 88d3b364c broad run is still progressing and
+cannot certify these changes. coverage_complete=False; release BLOCKED.
+
+Recovery log: tmp/flat-delete-native-recovery.local.log, SHA-256
+9f801895144b1bc5692422401de74255f15b09b0faf9799a649112480f1e3f92.

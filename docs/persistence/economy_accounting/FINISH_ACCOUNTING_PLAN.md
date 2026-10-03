@@ -79,6 +79,18 @@ cases pass in 321.980 seconds. These remain native component/recovery checks,
 not active-epoch player qualification. The frozen `88d3b364c` broad regression is
 also in progress and does not contain this subsequent value qualifier change.
 
+Flatfile legacy deletion now refuses active or corrupt accounting metadata under
+native authority locks, including direct wallet/bank removal and empty-account
+finalization. The pre-fix native fixture admitted a wallet removal operation.
+ASan/UBSan deletion/recovery checks, borrowed-lock reads, both strict production
+builds and the inactive real account-menu deletion/cold-restart journey pass.
+All ten native recovery/restore cases also pass in 427.430 seconds with both SQL
+engines, exact legacy replay and private service boot.
+This is bounded R6/R8 unsupported-writer refusal; typed erasure, SQL deletion
+admission, account-menu pre-fence admission, complete retention/audit and release
+qualification remain open. Native source is `4968da54...`; the frozen broad
+`88d3b364c` run does not contain these changes. See the October 2 review status.
+
 The later frozen `79540e65d` broad run also finished: 826 passed, 11 skipped
 and two stale source-contract assertions failed in 6,127.39 seconds. NPC cash
 assignments still match the classified registry; their expected locations in

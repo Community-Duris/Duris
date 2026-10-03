@@ -9818,7 +9818,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1800
+          1816
         ],
         "file": "src/flatfile/flatfile_player_domain_repository.c",
         "function": "apply_currency_command",
@@ -24458,10 +24458,14 @@
         ]
       },
       "reason": "lifecycle_retirement",
+      "refusal_source_evidence": [
+        "flatfile_economic_legacy_domain_gate runs under the deletion authority lock before preparing new removal operations; direct player/account domain removal repeats admission under that same lock.",
+        "tests/async/flatfile_character_delete_harness.cpp:accounting_deletion_refusals; tests/async/test_flatfile_character_delete.py (DURIS_TEST_SANITIZERS=1); tests/async/run_flatfile_deletion_journey.py (inactive real server)."
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          94
+          96
         ],
         "file": "src/flatfile/flatfile_account_delete.c",
         "function": "flatfile_account_delete",
@@ -24518,10 +24522,14 @@
         ]
       },
       "reason": "lifecycle_retirement",
+      "refusal_source_evidence": [
+        "flatfile_economic_legacy_domain_gate runs under the deletion authority lock before preparing new removal operations; direct player/account domain removal repeats admission under that same lock.",
+        "tests/async/flatfile_character_delete_harness.cpp:accounting_deletion_refusals; tests/async/test_flatfile_character_delete.py (DURIS_TEST_SANITIZERS=1); tests/async/run_flatfile_deletion_journey.py (inactive real server)."
+      ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          89
+          91
         ],
         "file": "src/flatfile/flatfile_character_delete.c",
         "function": "flatfile_character_delete",
