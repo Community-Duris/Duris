@@ -76,7 +76,9 @@ and WebSocket control frames keep their transport behavior. Socket failures stag
 descriptor teardown for the connection phase, retaining link-loss/save semantics;
 failed descriptors are excluded from the intervening waits. An orderly EOF after
 newly staged bytes first retains their existing single connection/session boundary
-opportunity; EOF after previously offered input gets no extension. An interrupted
+opportunity; a normal WebSocket close likewise preserves application messages
+queued before its close frame. Transport failures and EOF after previously
+offered input get no extension. An interrupted
 poll does not consume this opportunity. Queued gameplay output and prompts are
 framed in `run_output_phase`; existing direct protocol responses, including
 upgrade/welcome messages and Telnet negotiation, can send in network turns.
