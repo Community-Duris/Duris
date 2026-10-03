@@ -1093,6 +1093,7 @@ bool group_remove_member(P_char ch)
 			remove_aura_message(gl->ch, gl->ch);
 		gl->ch->group = NULL;
 		(void)telemetry_runtime_game_context(gl->ch, gl->ch->desc);
+		(void)telemetry_runtime_game_battle_context(gl->ch);
 		send_to_char("Your group has been disbanded.\n", gl->ch);
 		mm_release(dead_group_pool, gl);
 		gl = NULL;
@@ -1118,6 +1119,7 @@ bool group_remove_member(P_char ch)
 		fix_group_ranks(gl->ch);
 	update_groupies(ch);
 	(void)telemetry_runtime_game_context(ch, ch->desc);
+	(void)telemetry_runtime_game_battle_context(ch);
 	telemetry_group_context_changed(gl);
 	return TRUE;
 }

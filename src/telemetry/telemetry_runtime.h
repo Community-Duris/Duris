@@ -379,7 +379,7 @@ telemetry_capture_result telemetry_runtime_game_combat_engage(struct char_data *
 struct group_list;
 struct telemetry_battle_actor_context;
 /* Accepted formal-group mutation, called once before roster/context callbacks.
- * This advances runtime-only metadata and emits no shared-battle records. */
+ * Advance runtime metadata and cut existing observed battle actor contexts. */
 void telemetry_runtime_game_group_changed(struct group_list *) noexcept;
 /* Bounded native value adapters for the shared collector. NPC actor IDs use the
  * existing live runtime lifetime. Missing links remain absent; these calls do
@@ -392,6 +392,10 @@ bool telemetry_runtime_game_battle_group_presence(const struct char_data *,
 						  const struct char_data *,
 						  telemetry_battle_actor_context *,
 						  telemetry_battle_actor_context *) noexcept;
+/* Accepted source boundaries; no battle, session or participation is invented
+ * by a context update or a leave. Leave also operates during config gaps. */
+telemetry_capture_result telemetry_runtime_game_battle_context(struct char_data *);
+telemetry_capture_result telemetry_runtime_game_battle_leave(struct char_data *);
 telemetry_capture_result telemetry_runtime_game_encounter_group_sync(struct char_data *character);
 telemetry_capture_result telemetry_runtime_game_encounter_observe(struct char_data *character);
 telemetry_capture_result

@@ -60,6 +60,7 @@ constexpr telemetry_duration_usec FLUSH_OLDEST_USEC = TELEMETRY_FLUSH_OLDEST_USE
 constexpr telemetry_duration_usec RETIRE_AFTER_USEC = TELEMETRY_ACTIVE_WINDOW_USEC_MAX_PROPOSAL;
 constexpr telemetry_duration_usec WORKER_WAIT_USEC = 50'000U;
 constexpr std::uint16_t GAME_GROUP_MAX_NODES = 256U;
+constexpr telemetry_duration_usec BATTLE_INACTIVITY_GRACE_USEC = 30'000'000U;
 constexpr std::size_t REVIEWED_PROPERTY_CATALOG_MAX = 64U;
 constexpr std::size_t REVIEWED_PROPERTY_DIGEST_TEXT_BYTES =
 	TELEMETRY_CONFIG_PROPERTY_DIGEST_BYTES * 2U;
@@ -243,6 +244,7 @@ struct runtime_state
 	telemetry_progression_state progression{};
 	telemetry_encounter_state encounter{};
 	telemetry_combat_summary_state combat_summary{};
+	telemetry_battle_state battle{};
 	std::thread worker{};
 	std::atomic<bool> worker_stop{ false };
 	std::atomic<bool> worker_done{ false };
@@ -866,6 +868,127 @@ bool emit_combat_summary(void *raw_context,
 	return true;
 }
 
+struct battle_emit_context
+{
+	telemetry_capture_result result{};
+};
+
+bool emit_battle_fact(void *raw_context, const telemetry_battle_fact &fact) noexcept
+{
+	if (raw_context == nullptr)
+		return false;
+	auto &result = static_cast<battle_emit_context *>(raw_context)->result;
+	result.quality_flags |= fact.quality_flags;
+	telemetry_record record{};
+	record.header.schema_version = TELEMETRY_SCHEMA_VERSION;
+	record.header.kind = telemetry_record_kind::battle;
+	record.header.occurrence_utc_usec = fact.at_utc_usec;
+	record.payload.battle = fact;
+	if (!telemetry_battle_fact_is_valid(fact) ||
+	    !allocate_record_key(nullptr, record.header.kind, &record.header.key))
+	{
+		result.outcome = telemetry_runtime_outcome::invalid;
+		result.admission = telemetry_queue_admission::rejected_invalid;
+		++result.records_dropped;
+		return false;
+	}
+	const auto admission = telemetry_transport_enqueue(record);
+	if (admission.admission != telemetry_queue_admission::accepted_detail &&
+	    admission.admission != telemetry_queue_admission::accepted_control_reserve)
+	{
+		result.outcome = telemetry_runtime_outcome::queue_full;
+		result.admission = admission.admission;
+		++result.records_dropped;
+		return false;
+	}
+	if (result.records_emitted == 0U)
+		result.first_record = record.header.key;
+	result.last_record = record.header.key;
+	++result.records_emitted;
+	result.admission = admission.admission;
+	result.outcome = telemetry_runtime_outcome::accepted;
+	wake_worker();
+	return true;
+}
+
+telemetry_capture_result battle_capture_from_update(const telemetry_battle_update &update,
+						    const battle_emit_context &emitter) noexcept
+{
+	auto result = emitter.result;
+	result.quality_flags |= update.quality_flags;
+	switch (update.outcome)
+	{
+	case telemetry_battle_outcome::accepted:
+	case telemetry_battle_outcome::idempotent:
+	case telemetry_battle_outcome::not_found:
+		if (result.records_dropped == 0U)
+		{
+			result.outcome = telemetry_runtime_outcome::accepted;
+			if (result.records_emitted == 0U)
+				result.admission =
+					telemetry_queue_admission::accepted_control_reserve;
+		}
+		break;
+	case telemetry_battle_outcome::capacity_full:
+	case telemetry_battle_outcome::sink_rejected:
+		result.outcome = telemetry_runtime_outcome::queue_full;
+		if (result.records_emitted == 0U)
+			result.admission = telemetry_queue_admission::rejected_control_full;
+		break;
+	case telemetry_battle_outcome::invalid:
+	case telemetry_battle_outcome::duplicate_conflict:
+		result.outcome = telemetry_runtime_outcome::invalid;
+		result.admission = telemetry_queue_admission::rejected_invalid;
+		break;
+	}
+	return result;
+}
+
+bool battle_has_active() noexcept
+{
+	if (!R.battle.initialized)
+		return false;
+	for (const auto &slot : R.battle.slots)
+		if (slot.occupied)
+			return true;
+	return false;
+}
+
+void suspend_battle_capture(telemetry_monotonic_usec at, telemetry_utc_usec utc) noexcept
+{
+	if (!R.battle.initialized || R.battle.suspended)
+		return;
+	battle_emit_context emitter{};
+	(void)telemetry_battle_suspend(&R.battle, at, utc, emit_battle_fact, &emitter);
+}
+
+bool adopt_battle_config(const telemetry_config_snapshot &config) noexcept
+{
+	const telemetry_encounter_source scope = { config.environment_id,
+						   config.season_id,
+						   config.config_id,
+						   config.classifier_version,
+						   config.policy_version,
+						   -1,
+						   0U };
+	if (!R.battle.initialized)
+		return telemetry_battle_state_init(&R.battle, R.producer, scope,
+						   BATTLE_INACTIVITY_GRACE_USEC);
+	if (R.battle.scope.config_id == config.config_id && !R.battle.suspended)
+		return true;
+	telemetry_monotonic_usec at = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	if (!production_clock_now(nullptr, &at, &utc))
+		return false;
+	battle_emit_context emitter{};
+	const auto update =
+		telemetry_battle_reconfigure(&R.battle, scope, at, utc, emit_battle_fact, &emitter);
+	/* Source state commits even when its best-effort packets exceed admission
+	 * or mutation budgets. Their latched quality remains on subsequent facts. */
+	return update.outcome != telemetry_battle_outcome::invalid &&
+	       update.outcome != telemetry_battle_outcome::duplicate_conflict;
+}
+
 telemetry_capture_result disabled_capture(telemetry_runtime_outcome outcome) noexcept
 {
 	telemetry_capture_result result{};
@@ -932,7 +1055,8 @@ bool adopt_visible_config(const telemetry_config_snapshot &visible) noexcept
 	R.config_available = true;
 	if (!publish_activity_config(visible))
 		return false;
-	return telemetry_activity_state_config_is_admitted(&R.activity, visible.config_id);
+	return telemetry_activity_state_config_is_admitted(&R.activity, visible.config_id) &&
+	       adopt_battle_config(visible);
 }
 
 bool retry_pending_config(telemetry_config_state *state) noexcept
@@ -1004,7 +1128,7 @@ bool capture_reloaded_config(telemetry_config_state *state) noexcept
 	return false;
 }
 
-bool ensure_current_config() noexcept
+bool resolve_current_config() noexcept
 {
 	if (!R.enabled || R.shutdown_pending)
 		return false;
@@ -1020,8 +1144,22 @@ bool ensure_current_config() noexcept
 	return adopt_visible_config(visible);
 }
 
+bool ensure_current_config() noexcept
+{
+	if (resolve_current_config())
+		return true;
+	telemetry_monotonic_usec at = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	if (R.enabled && !R.shutdown_pending && production_clock_now(nullptr, &at, &utc))
+		suspend_battle_capture(at, utc);
+	return false;
+}
+
 void reload_observer(void *context) noexcept
 {
+	telemetry_monotonic_usec reload_at = 0U;
+	telemetry_utc_usec reload_utc = TELEMETRY_UTC_UNKNOWN;
+	const bool has_reload_clock = production_clock_now(nullptr, &reload_at, &reload_utc);
 	telemetry_config_state *state = static_cast<telemetry_config_state *>(context);
 	telemetry_config_reload_observer(state);
 	/* R.config is an admitted effective snapshot, never a fallback for a
@@ -1031,7 +1169,8 @@ void reload_observer(void *context) noexcept
 	R.config = {};
 	R.config_available = false;
 	R.reload_revision = 0U;
-	(void)capture_reloaded_config(state);
+	if (!capture_reloaded_config(state) && has_reload_clock)
+		suspend_battle_capture(reload_at, reload_utc);
 }
 
 bool all_admitted_records_durable() noexcept
@@ -1490,6 +1629,7 @@ telemetry_runtime_outcome telemetry_runtime_init(telemetry_runtime_options optio
 	R.next_session_sequence = 1U;
 	R.next_encounter_sequence = 1U;
 	R.next_group_sequence = 1U;
+	R.battle = {};
 	telemetry_encounter_state_init(&R.encounter);
 	telemetry_combat_summary_state_init(&R.combat_summary);
 	R.worker_stop.store(false, std::memory_order_release);
@@ -1936,6 +2076,14 @@ telemetry_pulse_result telemetry_runtime_pulse(telemetry_pulse_request pulse)
 	    activity_retired.outcome == telemetry_activity_outcome::invalid ||
 	    session_retired.outcome == telemetry_session_state_outcome::invalid)
 		result.outcome = telemetry_runtime_outcome::invalid;
+	if (battle_has_active())
+	{
+		battle_emit_context emitter{};
+		const auto expired = telemetry_battle_expire(&R.battle, pulse.now_monotonic_usec,
+							     pulse.occurrence_utc_usec,
+							     emit_battle_fact, &emitter);
+		add_pulse_capture(result, battle_capture_from_update(expired, emitter), false);
+	}
 	return result;
 }
 
@@ -2025,6 +2173,7 @@ telemetry_runtime_outcome telemetry_runtime_final_reap(void)
 	telemetry_encounter_state_init(&R.encounter);
 	telemetry_combat_summary_state_init(&R.combat_summary);
 	R.initialized = false;
+	R.battle = {};
 	R.enabled = false;
 	R.transport_started = false;
 	R.shutdown_pending = false;
@@ -2432,6 +2581,36 @@ bool game_exit_payload(const struct char_data *character, const struct descripto
 	return telemetry_session_exit_is_valid(*exit);
 }
 
+telemetry_capture_result game_battle_leave_at(const struct char_data *character,
+					      telemetry_monotonic_usec at,
+					      telemetry_utc_usec utc) noexcept
+{
+	/* Teardown needs the lifetime key, even while owner/session/configuration
+	 * context is unavailable. Share the session exit's actual observation cut. */
+	telemetry_battle_actor_key key{};
+	if (IS_PC(character) && character->only.pc != nullptr && character->only.pc->pid > 0)
+		key = { static_cast<telemetry_id>(character->only.pc->pid),
+			telemetry_combat_actor_kind::player };
+	else if (IS_NPC(character) && character->only.npc != nullptr &&
+		 character->runtime_id != 0U &&
+		 character->runtime_id < TELEMETRY_BATTLE_NPC_GENERATION_TAG)
+		key = { TELEMETRY_BATTLE_NPC_GENERATION_TAG | character->runtime_id,
+			telemetry_combat_actor_kind::npc };
+	else
+		return game_capture_invalid();
+	if (!R.battle.initialized)
+	{
+		telemetry_capture_result result{};
+		result.outcome = telemetry_runtime_outcome::accepted;
+		result.admission = telemetry_queue_admission::accepted_control_reserve;
+		return result;
+	}
+	battle_emit_context emitter{};
+	const auto observed =
+		telemetry_battle_leave(&R.battle, key, at, utc, emit_battle_fact, &emitter);
+	return battle_capture_from_update(observed, emitter);
+}
+
 bool map_runtime_evidence_kind(telemetry_runtime_evidence_kind runtime_kind,
 			       telemetry_activity_evidence_kind *activity_kind) noexcept
 {
@@ -2796,6 +2975,11 @@ void telemetry_runtime_game_group_changed(struct group_list *group) noexcept
 	if (revision != 0U)
 		revision = revision == std::numeric_limits<std::uint16_t>::max() ? 0U :
 										   revision + 1U;
+	std::uint16_t visited = 0U;
+	for (auto *member = group; member != nullptr && visited < GAME_GROUP_MAX_NODES;
+	     member = member->next, ++visited)
+		if (member->ch != nullptr)
+			(void)telemetry_runtime_game_battle_context(member->ch);
 }
 
 bool telemetry_runtime_game_battle_actor(const struct char_data *character,
@@ -3116,6 +3300,7 @@ telemetry_capture_result telemetry_runtime_game_context(struct char_data *charac
 	telemetry_capture_result result = telemetry_runtime_update_context(update);
 	merge_capture(result, game_observe_ownership(character, descriptor));
 	merge_capture(result, telemetry_runtime_game_encounter_observe(character));
+	merge_capture(result, telemetry_runtime_game_battle_context(character));
 	if ((character->specials.act & PLR_AFK) != 0U)
 	{
 		// Map the game status to the existing classifier's force-idle evidence;
@@ -3188,7 +3373,9 @@ telemetry_capture_result telemetry_runtime_game_session_exit(struct char_data *c
 	telemetry_session_exit exit{};
 	if (!game_exit_payload(character, descriptor, reason, &exit))
 		return game_capture_invalid();
-	const telemetry_capture_result result = telemetry_runtime_session_exit(exit);
+	telemetry_capture_result result =
+		game_battle_leave_at(character, exit.at_monotonic_usec, exit.at_utc_usec);
+	merge_capture(result, telemetry_runtime_session_exit(exit));
 	game_clear_connection(descriptor);
 	game_clear_session(character);
 	return result;
@@ -3260,6 +3447,98 @@ telemetry_capture_result telemetry_runtime_game_encounter_begin(struct char_data
 	return result;
 }
 
+namespace
+{
+telemetry_capture_result capture_battle_presence(struct char_data *anchor)
+{
+	telemetry_capture_result result{};
+	result.outcome = telemetry_runtime_outcome::accepted;
+	result.admission = telemetry_queue_admission::accepted_control_reserve;
+	std::uint32_t group_size = 0U;
+	if (anchor == nullptr || anchor->group == nullptr || !game_group_size(anchor, &group_size))
+		return result;
+	std::uint16_t visited = 0U;
+	for (auto *member = anchor->group; member != nullptr && visited < GAME_GROUP_MAX_NODES;
+	     member = member->next, ++visited)
+	{
+		telemetry_battle_actor_context source_context{}, member_context{};
+		if (!telemetry_runtime_game_battle_group_presence(anchor, member->ch,
+								  &source_context, &member_context))
+			continue;
+		telemetry_monotonic_usec at = 0U;
+		telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+		if (!game_time(&at, &utc))
+			continue;
+		battle_emit_context emitter{};
+		const auto observed = telemetry_battle_observe(
+			&R.battle, telemetry_battle_relation::group_presence, source_context,
+			member_context, at, utc, emit_battle_fact, &emitter);
+		merge_capture(result, battle_capture_from_update(observed, emitter));
+	}
+	return result;
+}
+
+telemetry_capture_result capture_battle_relation(struct char_data *source, struct char_data *target,
+						 telemetry_battle_relation relation)
+{
+	telemetry_battle_actor_context source_context{}, target_context{};
+	telemetry_monotonic_usec at = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	if (source == nullptr || target == nullptr || !R.battle.initialized ||
+	    !game_battle_actor(source, &source_context) ||
+	    !game_battle_actor(target, &target_context) || !game_time(&at, &utc))
+	{
+		auto result = game_capture_invalid();
+		result.quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
+		return result;
+	}
+	battle_emit_context emitter{};
+	const auto observed = telemetry_battle_observe(&R.battle, relation, source_context,
+						       target_context, at, utc, emit_battle_fact,
+						       &emitter);
+	auto result = battle_capture_from_update(observed, emitter);
+	if (observed.outcome == telemetry_battle_outcome::accepted ||
+	    observed.outcome == telemetry_battle_outcome::idempotent ||
+	    observed.outcome == telemetry_battle_outcome::sink_rejected)
+	{
+		merge_capture(result, capture_battle_presence(source));
+		if (source != target)
+			merge_capture(result, capture_battle_presence(target));
+	}
+	return result;
+}
+} // namespace
+
+telemetry_capture_result telemetry_runtime_game_battle_context(struct char_data *character)
+{
+	if (!R.initialized || !R.enabled || R.shutdown_pending)
+		return game_capture_not_ready();
+	if (character == nullptr || !ensure_current_config())
+		return game_capture_invalid();
+	telemetry_battle_actor_context actor{};
+	telemetry_monotonic_usec at = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	if (!game_battle_actor(character, &actor) || !game_time(&at, &utc))
+		return game_capture_invalid();
+	battle_emit_context emitter{};
+	const auto observed =
+		telemetry_battle_context(&R.battle, actor, at, utc, emit_battle_fact, &emitter);
+	return battle_capture_from_update(observed, emitter);
+}
+
+telemetry_capture_result telemetry_runtime_game_battle_leave(struct char_data *character)
+{
+	if (!R.initialized || !R.enabled || R.shutdown_pending)
+		return game_capture_not_ready();
+	if (character == nullptr)
+		return game_capture_invalid();
+	telemetry_monotonic_usec at = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	if (!game_time(&at, &utc))
+		return game_capture_invalid();
+	return game_battle_leave_at(character, at, utc);
+}
+
 telemetry_capture_result telemetry_runtime_game_combat_engage(struct char_data *source,
 							      struct char_data *target)
 {
@@ -3267,11 +3546,12 @@ telemetry_capture_result telemetry_runtime_game_combat_engage(struct char_data *
 		return game_capture_not_ready();
 	if (source == nullptr || target == nullptr || source == target || !ensure_current_config())
 		return game_capture_invalid();
-	const auto source_actor = game_combat_actor(source);
-	const auto target_actor = game_combat_actor(target);
-	if (!telemetry_combat_actor_ref_is_valid(source_actor) ||
-	    !telemetry_combat_actor_ref_is_valid(target_actor))
+	telemetry_battle_actor_context native_source{}, native_target{};
+	if (!game_battle_actor(source, &native_source) ||
+	    !game_battle_actor(target, &native_target))
 		return game_capture_invalid();
+	const auto source_actor = native_source.actor;
+	const auto target_actor = native_target.actor;
 	const auto mode = source_actor.owner_subject_id != 0U &&
 					  target_actor.owner_subject_id != 0U ?
 				  telemetry_encounter_mode::pvp :
@@ -3292,7 +3572,16 @@ telemetry_capture_result telemetry_runtime_game_combat_engage(struct char_data *
 			result = observed;
 		have_result = true;
 	}
-	return have_result ? result : game_capture_invalid();
+	const auto shared =
+		capture_battle_relation(source, target, telemetry_battle_relation::hostile);
+	if (have_result)
+		merge_capture(result, shared);
+	else
+		result = shared;
+	return have_result || source_actor.owner_subject_id != 0U ||
+			       target_actor.owner_subject_id != 0U ?
+		       result :
+		       game_capture_invalid();
 }
 
 telemetry_capture_result telemetry_runtime_game_encounter_group_sync(struct char_data *character)
@@ -3420,6 +3709,9 @@ telemetry_capture_result telemetry_runtime_game_encounter_leave(struct char_data
 			(void)telemetry_combat_summary_leave_actor(&R.combat_summary,
 								   update.encounter, actor, at);
 	}
+	if (outcome == telemetry_encounter_outcome::death ||
+	    outcome == telemetry_encounter_outcome::flee)
+		merge_capture(result, telemetry_runtime_game_battle_leave(character));
 	return result;
 }
 
@@ -3472,6 +3764,18 @@ telemetry_capture_result telemetry_runtime_encounter_close_all(telemetry_encount
 	const auto closed = telemetry_combat_summary_close_all(
 		&R.combat_summary, outcome, at, at_utc, emit_combat_summary, &summary_emitter);
 	merge_capture(result, combat_summary_capture_from_update(closed, summary_emitter));
+	if (R.battle.initialized && (outcome == telemetry_encounter_outcome::copyover ||
+				     outcome == telemetry_encounter_outcome::shutdown))
+	{
+		battle_emit_context battle_emitter{};
+		const auto battle_closed = telemetry_battle_close_all(
+			&R.battle,
+			outcome == telemetry_encounter_outcome::copyover ?
+				telemetry_battle_close_reason::copyover :
+				telemetry_battle_close_reason::shutdown,
+			at, at_utc, emit_battle_fact, &battle_emitter);
+		merge_capture(result, battle_capture_from_update(battle_closed, battle_emitter));
+	}
 	return result;
 }
 
@@ -3481,6 +3785,8 @@ void telemetry_runtime_game_combat_damage(struct char_data *source, struct char_
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending || !ensure_current_config())
 		return;
+	if (amount != 0U)
+		(void)capture_battle_relation(source, target, telemetry_battle_relation::hostile);
 	const auto source_actor = game_combat_actor(source);
 	const auto target_actor = game_combat_actor(target);
 	if (!telemetry_combat_actor_ref_is_valid(source_actor) ||
@@ -3501,6 +3807,8 @@ void telemetry_runtime_game_combat_healing(struct char_data *healer, struct char
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending || !ensure_current_config())
 		return;
+	if (effective != 0U && effective <= attempted)
+		(void)capture_battle_relation(healer, target, telemetry_battle_relation::support);
 	const auto healer_actor = game_combat_actor(healer);
 	const auto target_actor = game_combat_actor(target);
 	if (!telemetry_combat_actor_ref_is_valid(healer_actor) ||
@@ -3521,6 +3829,8 @@ void telemetry_runtime_game_combat_control(struct char_data *source, struct char
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending || !ensure_current_config())
 		return;
+	if (applications != 0U)
+		(void)capture_battle_relation(source, target, telemetry_battle_relation::hostile);
 	const auto source_actor = game_combat_actor(source);
 	const auto target_actor = game_combat_actor(target);
 	if (!telemetry_combat_actor_ref_is_valid(source_actor) ||
@@ -3582,6 +3892,7 @@ void telemetry_runtime_game_combat_context(struct char_data *actor_character) no
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending || !ensure_current_config())
 		return;
+	(void)telemetry_runtime_game_battle_context(actor_character);
 	const auto actor = game_combat_actor(actor_character);
 	if (!telemetry_combat_actor_ref_is_valid(actor))
 		return;

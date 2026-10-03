@@ -58,6 +58,7 @@ struct telemetry_battle_slot
 	std::uint16_t actor_count;
 	std::uint8_t occupied;
 	std::uint8_t overflow_announced;
+	std::uint8_t suspended;
 	telemetry_battle_side_status side_status;
 	telemetry_encounter_mode mode;
 	telemetry_monotonic_usec start_usec;
@@ -84,12 +85,28 @@ struct telemetry_battle_state
 	telemetry_monotonic_usec latest_monotonic_usec;
 	std::uint16_t terminal_next;
 	std::uint8_t initialized;
+	std::uint8_t suspended;
 	telemetry_battle_slot slots[TELEMETRY_BATTLE_MAX_ACTIVE];
 	telemetry_battle_terminal terminal[TELEMETRY_BATTLE_TERMINAL_CACHE];
 };
 
 bool telemetry_battle_state_init(telemetry_battle_state *, telemetry_producer_id,
 				 telemetry_encounter_source, telemetry_duration_usec) noexcept;
+
+/* Configuration boundaries retain battle IDs, rosters and cumulative effort.
+ * Checkpoints carry the context effective at the cut; effort accrued before
+ * that cut belongs to the preceding context. A same-scope retry emits nothing.
+ * Environment/season changes require the owning lifecycle boundary instead. */
+telemetry_battle_update telemetry_battle_reconfigure(telemetry_battle_state *,
+						     telemetry_encounter_source,
+						     telemetry_monotonic_usec, telemetry_utc_usec,
+						     telemetry_battle_sink, void *) noexcept;
+/* Call once when effective capture context becomes unavailable. Preserve the
+ * known prefix, mark the subsequent source gap and measure unknown mode until
+ * a qualified configuration resumes. This does not refresh hostile activity. */
+telemetry_battle_update telemetry_battle_suspend(telemetry_battle_state *, telemetry_monotonic_usec,
+						 telemetry_utc_usec, telemetry_battle_sink,
+						 void *) noexcept;
 
 telemetry_battle_update telemetry_battle_observe(telemetry_battle_state *,
 						 telemetry_battle_relation,

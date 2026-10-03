@@ -110,6 +110,7 @@ int telemetry_runtime_game_encounter_group_sync(P_char c) {
     callback_order.push_back(2); roster_updates.push_back(c); return 0;
 }
 int telemetry_runtime_game_encounter_leave(P_char, telemetry_encounter_outcome) { return 0; }
+int telemetry_runtime_game_battle_context(P_char ch) { assert(ch && !ch->group); return 0; }
 '''
     cases = r'''
 int last_size(P_char c) {

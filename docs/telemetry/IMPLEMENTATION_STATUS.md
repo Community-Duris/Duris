@@ -23,7 +23,7 @@ work. A future production deployment is a separate operational decision.
 | Atomic identity effort and observed XP portfolio publication | Implemented and locally qualified | Migration 0060 adds exact bounded source retention tied to the cursor, a conserved publication header and two reports. Definition 3 consumes the reserved dated review and incident schema 2 in the same publication transaction. Both 60-step chains qualified the actual CLI, corrections, old generations, explicit unknown identity, source/publication rollback, real committed writes with lost acknowledgements, private roles, budget refusal, guarded reruns and exact fresh/restored fingerprints. Definitions 1/2 retain their earlier amounts. See [IDENTITY_PUBLICATION.md](IDENTITY_PUBLICATION.md). |
 | Durable shared-battle facts and loss review | Implemented and locally qualified | Migration 0061 maps all 70 canonical kind-10 fields with independent logical/transport replay, immutable configuration qualification and NULL family separation. Both 61-step chains qualified actual native packets, lost acknowledgements, header/scope/constraint refusals, exact quarantine evidence, guarded reruns, drift/restoration, private v3 review CLI and unchanged definitions 1/2/3. Outage v2 retains readable original v1 histories. Live capture and atomic battle publication remain separate requirements. See [BATTLES.md](BATTLES.md). |
 | Character/account/confirmed controller association | In progress | Dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation, authenticated source capture, identity wire handoff, reviewed SQL registration and immutable generation reservations are qualified. Atomic identity effort/report publication now consumes the reserved review and qualified ownership incident snapshot. Real personal source journeys and linkage coverage in the complete balance suites remain required. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
-| Shared battles and changing rosters | In progress | Native prerequisites retain producer-scoped formal group generations through appointment/departure and observe actual PCs on both accepted combat sides, including pet-owned PvP context and explicit NPC union guards. The pure bounded association module qualifies shared hostile/support/presence graphs, roster/mode/context cuts, pets, aliases, uncertainty and censored closure. Native value adapters qualify existing live NPC lifetimes, actual formal-roster revisions/presence and admitted current session/encounter links. Portable packets and their kind-10 durable writer/replay/loss contracts are qualified across native/Python and both SQL engines. Native battle callbacks, compact context/control/prevention/population sources, exact shared contribution linkage and atomic published projections remain required. See [BATTLES.md](BATTLES.md). |
+| Shared battles and changing rosters | In progress | Native callbacks now capture shared hostile, effective-support and actual formal-presence relationships through the existing worker and kind-10 writer. Qualified source context, roster changes, teardown and censored lifecycle retain battle identity; configuration cuts preserve cumulative effort, and unavailable properties produce an explicit unknown-mode gap. Unique NPC/pet lifetimes, conservative sides, immutable aliases, canonical packets and independent replay/loss contracts remain qualified. Compact build/power/arena context, additional control/prevention and faction exposure sources, exact shared contribution linkage, atomic balance publication and actual personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
 | Progression and portfolios | In progress | Observed XP/level projections and published exact account/controller effort unions and observed XP portfolio amounts are qualified. Rested/assistance provenance, milestone exposure/censoring, switching, canonical comparable rewards and rates remain required. |
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
@@ -695,10 +695,74 @@ TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_reposi
 make -C src
 ```
 
-Live battle callbacks, compact context/control/prevention/faction sources, exact
-shared contribution linkage and bounded atomic projections remain required.
-This layer alone publishes no new balance suite. The complete identity, PvE
+The runtime capture qualification below connects the battle callbacks. Compact
+context/control/prevention/faction sources, exact shared contribution linkage
+and bounded atomic projections remain required. This layer alone publishes no
+new balance suite. The complete identity, PvE
 attempt/reward, progression/rested/milestone/switching, four-suite/statistical
 export, #487 compatibility and actual personal-local gameplay/persistence/
 performance requirements remain on #258's full checklist. There is no production
 or staging access dependency.
+
+## Qualified runtime shared-battle association capture
+
+Native hostile observations and positive effective healing support now feed the
+bounded shared-battle state through the existing queue and worker. Actual formal
+party presence remains separate from contribution and authenticated activity;
+a repeated hostile relationship can establish an arriving member's presence.
+Owned pets retain unique live identities without adding an owner's session or
+duplicating their owner-character denominator. Context and roster changes cut
+known state; accepted room removal, death/flee, extraction and session exit end
+observed presence. Session exit uses one actual source clock for both its session
+and battle boundaries. Copyover/shutdown remain censored closures.
+
+Admitted configuration changes preserve battle identity, actor roster, measured
+effort and the hostile-activity clock. Bounded actor-pair checkpoints seal the
+preceding context. Effective-property withdrawal preserves the known prefix,
+suspends relationships/context and records unknown-mode effort until qualified
+recovery; actor teardown still operates during the gap. Clock/revision refusal,
+callback loss and mutation-capacity exhaustion cannot repair historical coverage.
+The fixed state remains 1,719,392 bytes, with the same 128-battle, 64-actor and
+4,096-mutation-fact bounds.
+
+The actual runtime/queue/worker/native-writer fixture passed on both disposable
+full-61-step MariaDB 10.11.14 and MySQL 8.0.46 chains: 80 battle facts in 27 complete
+packets per engine, all 70 canonical values equal to SQL, correct absent-family
+NULLs and configuration qualification, empty quarantine and restricted writer
+denials. Temporary fixture databases and writer roles were removed. The fixture
+uses synthetic gameplay objects and a private connection-factory seam; it starts
+no real game server and leaves account identity unknown.
+
+Native gameplay and pure battle AddressSanitizer/UndefinedBehaviorSanitizer
+journeys passed, along with the 12 native/Python contract regressions. Executable
+accepted/refused room removal and group/member-removal journeys passed; native
+configuration withdrawal/recovery, copyover/exhaustion and durable outage fixtures
+passed in both client-free and SQL-header builds. Existing encounter/combat and
+gameplay source contracts, standalone public headers and frozen golden fixtures
+passed. The maintained server built with `make -C src -j1`; changed C/C++ lines
+passed the repository formatter. ThreadSanitizer remains unrun because its
+previous host capability probe could not initialize.
+
+```sh
+python3 tests/async/test_telemetry_gameplay_adapters.py --sanitize
+python3 tests/async/test_telemetry_battles.py --sanitize
+python3 tests/async/test_telemetry_battle_contract.py
+python3 tests/async/test_telemetry_room_hooks.py
+python3 tests/async/test_member_removal_runtime.py
+python3 tests/async/test_telemetry_runtime_integration.py
+python3 tests/async/test_telemetry_runtime_exhaustion.py
+python3 tests/async/test_telemetry_runtime_outage.py
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh --battle-runtime
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --battle-runtime
+make -C src
+```
+
+This completes association capture and its source/configuration boundaries, not
+the complete battle balance requirement. Compact power/build/arena context,
+actual control/prevention producer coverage, faction exposure, exact shared
+contribution linkage and atomic battle/report publication remain required.
+All seven accepted checklist items retain their remaining identity source/suite,
+PvE attempt/objective/reward, progression/rested/assistance/milestone/switching,
+four-suite/statistical, #487 compatibility and actual personal-local
+gameplay/persistence/performance requirements. Technical acceptance requires no
+production or staging access.

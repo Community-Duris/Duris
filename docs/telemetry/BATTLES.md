@@ -1,21 +1,13 @@
 # Shared battle association
 
-The pure association module and its kind-10 durable writer are implemented and
-locally qualified. Native runtime callbacks, shared contribution linkage and
-published balance projections remain under implementation. The existing runtime captures
-more accurate group encounters; enabling telemetry does not yet emit this module's
-shared battle facts. [Implementation status](IMPLEMENTATION_STATUS.md) retains
-the complete accepted expansion and personal-local qualification requirement.
-
-Native actor, roster and actual-presence value adapters are also implemented
-and locally qualified. They supply values for the association module's pending
-capture wiring; they do not yet enqueue its facts.
-
-The portable definition-1 fact, mutation-packet and numeric wire contract is also
-implemented and locally qualified. The additive storage integration below
-persists these facts independently of legacy encounters and retains older report
-definitions. Enabling telemetry still requires the pending native callback wiring
-before the game can emit shared-battle facts.
+Enabled, qualified telemetry now captures shared-battle facts at native hostile,
+effective-healing support, presence, context and lifecycle boundaries. Its bounded
+association engine, portable definition-1 packets and independent kind-10 writer
+preserve battle history and conservative uncertainty. This establishes live
+association capture; exact shared contribution linkage, expanded context/control/
+prevention/faction sources and atomic balance projections remain under implementation.
+[Implementation status](IMPLEMENTATION_STATUS.md) retains the full accepted scope
+and the actual personal-local gameplay qualification requirement.
 
 ## Association and actor identity
 
@@ -81,6 +73,44 @@ Malformed or cyclic lists supply no group relationship. The pure engine still
 requires the source to be an already active battle actor. Native value fixtures
 fed proven presence into that engine and kept presence-only effort separate
 from contributor time and authenticated session coverage.
+
+## Runtime capture and configuration boundaries
+
+The runtime owns the bounded association state and sends typed facts through
+the existing queue and worker. Capture performs no SQL or file I/O. Accepted
+combat entry, positive actual damage and the existing positive typed control
+callback observe hostile relationships. Healing attaches support only when its
+effective amount is positive and no greater than the attempted amount. The
+legacy kind-8 amounts retain their meaning; these relationship observations do
+not yet supply exact shared-battle damage/healing/control/prevention totals.
+
+Every qualified hostile/support observation can establish actual same-room formal
+party presence, including a member arriving while a previously observed hostile
+edge continues. Presence alone supplies neither contribution nor an authenticated
+session. Ordinary NPC-only combat cannot start a battle. Owned pet interactions
+use their maintained actor lifetime and actual current owner rather than a mob
+prototype or an invented owner's session.
+
+Accepted room removal ends observed presence before `NOWHERE`; an anchored dummy,
+explicit room veto, failed unlink or duplicate removal supplies no departure.
+Arrival context updates an already known actor without reactivating it; a later
+qualified observation can rejoin it. Group changes cut known contexts after the
+single accepted roster revision. Death/flee, extraction and session exit remove
+the observed actor; session exit shares its exact native observation clock.
+Copyover/shutdown emit censored closures and never infer a winner. Runtime
+inactivity uses a retained 30-second grace, closes at the last actual observation,
+and excludes the silent grace period from effort.
+
+An admitted configuration change retains battle IDs, roster and cumulative effort.
+It seals the preceding mode/context and checkpoints every retained actor in bounded
+pairs with final cuts; cumulative effort before each cut belongs to the preceding
+context. Environment/season changes require an owning lifecycle boundary. A
+failed effective-property reload checkpoints the known prefix and suspends
+relationship/context capture. Existing actor teardown remains available, and
+the gap accumulates unknown mode until a qualified configuration resumes.
+Configuration cuts never refresh the hostile-activity clock. Callback loss or
+mutation-capacity refusal stays latched on later facts and cannot restore
+qualified side coverage or erase the unknown gap.
 
 ## Sides, mode and exposure
 
@@ -224,7 +254,7 @@ TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_reposi
 
 Outage ledger v2 and independent incident review schema v3 include kind 10; older
 histories retain their family limits. See [OUTAGE_STORAGE.md](OUTAGE_STORAGE.md)
-and [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). Live battle capture, compact
+and [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). Compact
 context/control/prevention/population sources, exact shared contribution linkage,
 bounded atomic projections and the complete personal-local gameplay/performance
 gate remain required. This layer alone publishes no battle balance result.
@@ -232,7 +262,7 @@ gate remain required. This layer alone publishes no battle balance result.
 ## Bounds and qualification
 
 The state retains 128 battles, 64 actors per battle, a 64-entry terminal cache,
-and 4,096 normal mutation facts per battle. A mutation emits at most five facts;
+and 4,096 normal mutation facts per battle. A normal relationship mutation emits at most five facts;
 an unchanged relationship updates clocks without rows or graph reconstruction.
 Cuts retain revision, fact ordinal and expected count. A consumer must verify
 the complete packet and its terminal cut before treating that revision as
@@ -241,6 +271,12 @@ Mutation-budget overflow emits one partial cut; terminal summaries remain bounde
 and available for a best-effort close. Actor/merge capacity refusal preserves
 the existing components and makes their results partial. Sequence exhaustion
 refuses another identity.
+
+A configuration boundary checkpoints actor pairs in packets of at most three
+facts. A full 64-actor battle needs at most 96 facts; all 128 retained battles
+need at most 12,288 facts in one boundary operation. They consume the existing
+per-battle mutation budget and queue admission. Capacity is unchanged, and a
+refused frame or exceeded budget leaves explicit partial coverage.
 
 The qualified build measures 1,719,392 bytes for the complete fixed state and
 392 bytes for a fact. Compile-time guards cap the state at 2 MiB and keep a fact
@@ -257,6 +293,10 @@ python3 tests/async/test_telemetry_contract_headers.py
 python3 tests/async/test_telemetry_group_hooks.py
 python3 tests/async/test_telemetry_combat_hooks.py
 python3 tests/async/test_telemetry_gameplay_adapters.py --sanitize
+python3 tests/async/test_telemetry_room_hooks.py
+python3 tests/async/test_telemetry_runtime_integration.py
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh --battle-runtime
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --battle-runtime
 make -C src
 ```
 
@@ -277,12 +317,19 @@ length refusals, unknown clocks, NPC/pet attribution and copied receiver values.
 Standalone public headers retain C++20 compilation and the earlier golden
 record fixtures. Allocation traps include the native codec and packet receiver.
 
-The next integration gate is registering the qualified native actor/roster/
-presence values at reviewed hostile/support/control/prevention boundaries,
-linking actual shared contributions and publishing bounded atomic balance
-projections. The durable kind-10 writer/schema/replay/loss contracts are qualified
-above. Qualify the remaining capture/publication gate on both
-disposable SQL engines and real personal-local gameplay before claiming shared
-battle collection. Existing kinds 1–9, sealed migrations and report definitions
-retain their meanings. The four full balance suites and final personal-local
-gameplay/persistence/performance gate remain required by issue #258.
+The live gameplay-adapter fixture executes the actual runtime, queue, worker and
+native writer. Each disposable full-61-step MariaDB 10.11.14 and MySQL 8.0.46
+chain committed 80 battle facts in 27 complete packets. Every one of the 70
+canonical values matched SQL readback; inactive-family fields remained NULL,
+configuration references matched, and quarantine remained empty. The dedicated
+writer could not read gameplay accounts, delete gameplay rows or update raw/
+quarantine facts. The gameplay objects and private connection factory are test
+seams, and authenticated identity stays unknown. This proof starts no game
+server and does not replace the final real personal-server journey or measured
+gameplay/performance qualification.
+
+The next integration gate completes compact context, control/prevention and
+faction exposure sources, links actual shared contributions and publishes bounded
+atomic balance projections. Existing kinds 1–9, sealed migrations and report
+definitions retain their meanings. The four full balance suites and actual
+personal-local gameplay/persistence/performance gate remain required by issue #258.

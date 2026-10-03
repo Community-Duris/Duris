@@ -188,10 +188,11 @@ void classify(telemetry_battle_slot &slot) noexcept
 				pvp |= owned_pair;
 				pve |= !owned_pair;
 			}
-	slot.mode = pvp && pve ? telemetry_encounter_mode::mixed :
-		    pvp	       ? telemetry_encounter_mode::pvp :
-		    pve	       ? telemetry_encounter_mode::pve :
-				 telemetry_encounter_mode::unknown;
+	slot.mode = slot.suspended ? telemetry_encounter_mode::unknown :
+		    pvp && pve	   ? telemetry_encounter_mode::mixed :
+		    pvp		   ? telemetry_encounter_mode::pvp :
+		    pve		   ? telemetry_encounter_mode::pve :
+				     telemetry_encounter_mode::unknown;
 }
 
 std::uint16_t owner_count(const telemetry_battle_slot &slot, std::uint8_t side = 0U) noexcept
@@ -457,6 +458,79 @@ telemetry_battle_update refused(telemetry_battle_outcome outcome) noexcept
 	return result;
 }
 
+bool same_scope(const telemetry_encounter_source &a, const telemetry_encounter_source &b) noexcept
+{
+	return a.environment_id == b.environment_id && a.season_id == b.season_id &&
+	       a.config_id == b.config_id && a.classifier_version == b.classifier_version &&
+	       a.policy_version == b.policy_version && a.zone_vnum == b.zone_vnum &&
+	       a.group_key == b.group_key;
+}
+
+void combine(telemetry_battle_update &result, const telemetry_battle_update &part) noexcept
+{
+	/* A full 128-slot checkpoint has at most 12,288 facts, including cuts. */
+	result.facts_attempted += part.facts_attempted;
+	result.facts_accepted += part.facts_accepted;
+	result.quality_flags |= part.quality_flags;
+	if (part.outcome != telemetry_battle_outcome::accepted &&
+	    part.outcome != telemetry_battle_outcome::idempotent &&
+	    result.outcome != telemetry_battle_outcome::sink_rejected)
+		result.outcome = part.outcome;
+}
+
+telemetry_battle_update checkpoint_context(telemetry_battle_state &state,
+					   telemetry_monotonic_usec at, telemetry_utc_usec utc,
+					   telemetry_battle_sink sink, void *context) noexcept
+{
+	telemetry_battle_update result{};
+	for (auto &slot : state.slots)
+		if (slot.occupied)
+		{
+			seal(slot, at);
+			slot.last_observation_usec = at;
+			slot.last_observation_utc_usec = utc;
+			slot.suspended = state.suspended;
+			if (state.suspended)
+			{
+				slot.quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN |
+						      TELEMETRY_QUALITY_QUEUE_DROP;
+			}
+			classify(slot);
+			for (std::uint16_t actor = 0U; actor < slot.actor_count;)
+			{
+				packet pending{};
+				/* Existing normal packets allow two actor contexts and a cut. */
+				pending.append(
+					{ telemetry_battle_fact_kind::actor_context, actor++ });
+				if (actor < slot.actor_count)
+					pending.append({ telemetry_battle_fact_kind::actor_context,
+							 actor++ });
+				pending.append({ telemetry_battle_fact_kind::cut });
+				const auto part =
+					emit_packet(state, slot, pending, at, utc, sink, context);
+				combine(result, part);
+				if (part.outcome == telemetry_battle_outcome::capacity_full)
+					break;
+			}
+		}
+	return result;
+}
+
+bool context_boundary_is_ordered(telemetry_battle_state &state,
+				 telemetry_monotonic_usec at) noexcept
+{
+	if (!admit_time(state, at))
+		return false;
+	/* Reserve enough revisions for all actor pairs before publishing any slot. */
+	bool valid = true;
+	for (auto &slot : state.slots)
+		if (slot.occupied)
+			valid &= ordered(slot, at) &&
+				 slot.revision <= std::numeric_limits<telemetry_revision>::max() -
+							  ((slot.actor_count + 1U) / 2U);
+	return valid;
+}
+
 } // namespace
 
 bool telemetry_battle_state_init(telemetry_battle_state *state, telemetry_producer_id producer,
@@ -474,6 +548,45 @@ bool telemetry_battle_state_init(telemetry_battle_state *state, telemetry_produc
 	state->next_sequence = 1U;
 	state->initialized = 1U;
 	return true;
+}
+
+telemetry_battle_update
+telemetry_battle_reconfigure(telemetry_battle_state *state, telemetry_encounter_source scope,
+			     telemetry_monotonic_usec at, telemetry_utc_usec utc,
+			     telemetry_battle_sink sink, void *context) noexcept
+{
+	if (!ready(state, sink) || !telemetry_encounter_source_is_valid(scope) ||
+	    scope.zone_vnum != -1 || scope.group_key != 0U ||
+	    scope.environment_id != state->scope.environment_id ||
+	    scope.season_id != state->scope.season_id)
+		return refused(telemetry_battle_outcome::invalid);
+	if (same_scope(state->scope, scope) && !state->suspended)
+		return refused(telemetry_battle_outcome::idempotent);
+	if (!context_boundary_is_ordered(*state, at))
+		return refused(telemetry_battle_outcome::invalid);
+	/* Expired fights close under their preceding scope and observed end. */
+	auto result = telemetry_battle_expire(state, at, utc, sink, context);
+	state->scope = scope;
+	state->suspended = 0U;
+	combine(result, checkpoint_context(*state, at, utc, sink, context));
+	return result;
+}
+
+telemetry_battle_update telemetry_battle_suspend(telemetry_battle_state *state,
+						 telemetry_monotonic_usec at,
+						 telemetry_utc_usec utc, telemetry_battle_sink sink,
+						 void *context) noexcept
+{
+	if (!ready(state, sink))
+		return refused(telemetry_battle_outcome::invalid);
+	if (state->suspended)
+		return refused(telemetry_battle_outcome::idempotent);
+	if (!context_boundary_is_ordered(*state, at))
+		return refused(telemetry_battle_outcome::invalid);
+	auto result = telemetry_battle_expire(state, at, utc, sink, context);
+	state->suspended = 1U;
+	combine(result, checkpoint_context(*state, at, utc, sink, context));
+	return result;
 }
 
 telemetry_battle_update telemetry_battle_close(telemetry_battle_state *state,
@@ -543,7 +656,8 @@ telemetry_battle_observe(telemetry_battle_state *state, telemetry_battle_relatio
 			 const telemetry_battle_actor_context &target, telemetry_monotonic_usec at,
 			 telemetry_utc_usec utc, telemetry_battle_sink sink, void *context) noexcept
 {
-	if (!ready(state, sink) || !telemetry_battle_actor_context_is_valid(source) ||
+	if (!ready(state, sink) || state->suspended ||
+	    !telemetry_battle_actor_context_is_valid(source) ||
 	    !telemetry_battle_actor_context_is_valid(target) ||
 	    !context_scope_matches(source, state->producer) ||
 	    !context_scope_matches(target, state->producer) ||
@@ -770,7 +884,8 @@ telemetry_battle_update telemetry_battle_context(telemetry_battle_state *state,
 						 telemetry_utc_usec utc, telemetry_battle_sink sink,
 						 void *context) noexcept
 {
-	if (!ready(state, sink) || !telemetry_battle_actor_context_is_valid(actor) ||
+	if (!ready(state, sink) || state->suspended ||
+	    !telemetry_battle_actor_context_is_valid(actor) ||
 	    !context_scope_matches(actor, state->producer))
 		return refused(telemetry_battle_outcome::invalid);
 	if (!admit_time(*state, at))

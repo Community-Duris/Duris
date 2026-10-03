@@ -469,6 +469,29 @@ void loss_clock_and_cap_refusals()
 		       invalid); // No fresh slot can conceal a producer clock regression.
 	close(clock, initial.battle, 2000U);
 	assert(clock.facts.back().quality_flags & TELEMETRY_QUALITY_CLOCK_DISCONTINUITY);
+	fixture lost_gap;
+	const auto gap_battle =
+		observe(lost_gap, telemetry_battle_relation::hostile, player(1), player(2), 0U);
+	lost_gap.reject_after = 0;
+	assert(telemetry_battle_suspend(lost_gap.state.get(), 1000U, 1000, sink, &lost_gap)
+		       .outcome == telemetry_battle_outcome::sink_rejected);
+	assert(lost_gap.state->slots[0].mode == telemetry_encounter_mode::unknown);
+	lost_gap.reject_after = -1;
+	assert(telemetry_battle_leave(lost_gap.state.get(), actor_key(player(1)), 2000U, 2000, sink,
+				      &lost_gap)
+		       .outcome == telemetry_battle_outcome::accepted);
+	auto scope = lost_gap.state->scope;
+	++scope.config_id;
+	assert(telemetry_battle_reconfigure(lost_gap.state.get(), scope, 3000U, 3000, sink,
+					    &lost_gap)
+		       .outcome == telemetry_battle_outcome::accepted);
+	close(lost_gap, gap_battle.battle, 4000U);
+	assert(summary(lost_gap, 1U).effort.pvp_usec == 1000U &&
+	       summary(lost_gap, 1U).effort.unknown_mode_usec == 1000U);
+	assert(summary(lost_gap, 2U).effort.pvp_usec == 1000U &&
+	       summary(lost_gap, 2U).effort.unknown_mode_usec == 3000U);
+	complete_packets(lost_gap);
+
 	fixture capped;
 	const auto started =
 		observe(capped, telemetry_battle_relation::hostile, player(1), player(2), 0U);
@@ -513,6 +536,163 @@ void loss_clock_and_cap_refusals()
 	assert(telemetry_battle_close_all(slots.state.get(), telemetry_battle_close_reason::unknown,
 					  1000U, 33, sink, &slots)
 		       .outcome == telemetry_battle_outcome::invalid);
+}
+
+void configuration_boundaries_and_unavailable_context()
+{
+	fixture test;
+	const auto started =
+		observe(test, telemetry_battle_relation::hostile, player(1), player(2), 1000U);
+	auto scope = test.state->scope;
+	++scope.config_id;
+	const auto next_sequence = test.state->next_sequence;
+	{
+		allocation_guard no_allocation;
+		const auto changed = telemetry_battle_reconfigure(test.state.get(), scope, 2000U,
+								  2000, sink, &test);
+		assert(changed.outcome == telemetry_battle_outcome::accepted &&
+		       changed.facts_accepted == 3U);
+	}
+	assert(test.state->next_sequence == next_sequence &&
+	       test.facts.back().battle.sequence == started.battle.sequence);
+	assert(test.facts[5].scope.config_id == scope.config_id &&
+	       test.facts[5].effort.pvp_usec == 1000U);
+	assert(test.facts.back().last_engagement_monotonic_usec == 1000U);
+	const auto count = test.facts.size();
+	assert(telemetry_battle_reconfigure(test.state.get(), scope, 2500U, 2500, sink, &test)
+		       .outcome == telemetry_battle_outcome::idempotent);
+	assert(test.facts.size() == count);
+	{
+		allocation_guard no_allocation;
+		assert(telemetry_battle_suspend(test.state.get(), 3000U, 3000, sink, &test)
+			       .facts_accepted == 3U);
+	}
+	assert(test.facts.back().mode == telemetry_encounter_mode::unknown &&
+	       test.facts.back().side_status == telemetry_battle_side_status::partial);
+	assert(test.facts[count].effort.pvp_usec == 2000U &&
+	       test.facts[count].effort.unknown_mode_usec == 0U);
+	assert(telemetry_battle_suspend(test.state.get(), 3200U, 3200, sink, &test).outcome ==
+	       telemetry_battle_outcome::idempotent);
+	assert(observe(test, telemetry_battle_relation::hostile, player(1), player(2), 3200U)
+		       .outcome == telemetry_battle_outcome::invalid);
+	assert(telemetry_battle_context(test.state.get(), player(1), 3200U, 3200, sink, &test)
+		       .outcome == telemetry_battle_outcome::invalid);
+	assert(telemetry_battle_leave(test.state.get(), actor_key(player(1)), 3500U, 3500, sink,
+				      &test)
+		       .outcome == telemetry_battle_outcome::accepted);
+	assert(test.facts.back().mode == telemetry_encounter_mode::unknown);
+	++scope.config_id;
+	{
+		allocation_guard no_allocation;
+		assert(telemetry_battle_reconfigure(test.state.get(), scope, 4000U,
+						    TELEMETRY_UTC_UNKNOWN, sink, &test)
+			       .facts_accepted == 3U);
+	}
+	assert(test.state->suspended == 0U && test.state->next_sequence == next_sequence);
+	close(test, started.battle, 5000U);
+	assert(summary(test, 1U).effort.present_usec == 2500U);
+	assert(summary(test, 1U).effort.pvp_usec == 2000U &&
+	       summary(test, 1U).effort.unknown_mode_usec == 500U);
+	assert(summary(test, 2U).effort.present_usec == 4000U);
+	assert(summary(test, 2U).effort.pvp_usec == 2000U &&
+	       summary(test, 2U).effort.unknown_mode_usec == 2000U);
+	assert(test.facts.back().quality_flags & TELEMETRY_QUALITY_QUEUE_DROP);
+	complete_packets(test);
+
+	fixture expired;
+	const auto first =
+		observe(expired, telemetry_battle_relation::hostile, player(1), player(2), 1000U);
+	scope = expired.state->scope;
+	++scope.config_id;
+	assert(telemetry_battle_reconfigure(expired.state.get(), scope, 101000U, 101000, sink,
+					    &expired)
+		       .facts_accepted == 3U);
+	assert(expired.facts.back().kind == telemetry_battle_fact_kind::close &&
+	       expired.facts.back().close_reason == telemetry_battle_close_reason::inactivity);
+	assert(expired.facts.back().scope.config_id + 1U == scope.config_id &&
+	       expired.facts.back().observed_through_monotonic_usec == 1000U);
+	const auto fresh =
+		observe(expired, telemetry_battle_relation::hostile, player(1), player(2), 102000U);
+	assert(fresh.battle.sequence == first.battle.sequence + 1U &&
+	       expired.facts.back().scope.config_id == scope.config_id);
+	complete_packets(expired);
+}
+
+void configuration_refusal_loss_and_full_roster()
+{
+	fixture test;
+	graph(test, 1, 63, 1U);
+	auto scope = test.state->scope;
+	++scope.config_id;
+	const auto before = test.facts.size();
+	{
+		allocation_guard no_allocation;
+		const auto cut = telemetry_battle_reconfigure(test.state.get(), scope, 1000U, 1000,
+							      sink, &test);
+		assert(cut.outcome == telemetry_battle_outcome::accepted &&
+		       cut.facts_accepted == 96U);
+	}
+	assert(test.facts.size() == before + 96U && test.state->next_sequence == 2U);
+	unsigned actors = 0U;
+	for (std::size_t index = before; index < test.facts.size(); ++index)
+	{
+		const auto &row = test.facts[index];
+		assert(row.scope.config_id == scope.config_id &&
+		       row.last_engagement_monotonic_usec == 0U);
+		actors += row.kind == telemetry_battle_fact_kind::actor_context;
+		if (row.kind == telemetry_battle_fact_kind::actor_context)
+			assert(row.effort.present_usec == 1000U && row.effort.pve_usec == 1000U);
+	}
+	assert(actors == 64U);
+	complete_packets(test);
+	const auto count = test.facts.size();
+	auto invalid = scope;
+	++invalid.environment_id;
+	assert(telemetry_battle_reconfigure(test.state.get(), invalid, 2000U, 2000, sink, &test)
+		       .outcome == telemetry_battle_outcome::invalid);
+	invalid = scope;
+	++invalid.season_id;
+	assert(telemetry_battle_reconfigure(test.state.get(), invalid, 2000U, 2000, sink, &test)
+		       .outcome == telemetry_battle_outcome::invalid);
+	invalid = scope;
+	invalid.group_key = 1U;
+	assert(telemetry_battle_reconfigure(test.state.get(), invalid, 2000U, 2000, sink, &test)
+		       .outcome == telemetry_battle_outcome::invalid);
+	assert(test.facts.size() == count && test.state->scope.config_id == scope.config_id);
+	++scope.config_id;
+	assert(telemetry_battle_reconfigure(test.state.get(), scope, 999U, 999, sink, &test)
+		       .outcome == telemetry_battle_outcome::invalid);
+	assert(test.facts.size() == count && test.state->scope.config_id + 1U == scope.config_id);
+	test.reject_after = 1;
+	const auto lost =
+		telemetry_battle_reconfigure(test.state.get(), scope, 2000U, 2000, sink, &test);
+	assert(lost.outcome == telemetry_battle_outcome::sink_rejected &&
+	       lost.facts_attempted == 96U && lost.facts_accepted == 1U);
+	assert(lost.quality_flags & TELEMETRY_QUALITY_QUEUE_DROP);
+	assert(test.state->scope.config_id == scope.config_id && test.state->next_sequence == 2U);
+	test.reject_after = -1;
+	close(test, { { 101U, 202U }, 1U }, 3000U);
+	assert(summary(test, 1U).effort.present_usec == 3000U &&
+	       test.facts.back().side_status == telemetry_battle_side_status::partial);
+
+	fixture capped;
+	observe(capped, telemetry_battle_relation::hostile, player(1), player(2), 0U);
+	capped.state->slots[0].mutation_facts = TELEMETRY_BATTLE_MAX_MUTATION_FACTS;
+	scope = capped.state->scope;
+	++scope.config_id;
+	const auto overflow =
+		telemetry_battle_reconfigure(capped.state.get(), scope, 1000U, 1000, sink, &capped);
+	assert(overflow.outcome == telemetry_battle_outcome::capacity_full &&
+	       overflow.facts_attempted == 1U);
+	assert(capped.facts.back().quality_flags & TELEMETRY_QUALITY_CONTEXT_OVERFLOW);
+	complete_packets(capped);
+	++scope.config_id;
+	capped.state->slots[0].revision = std::numeric_limits<telemetry_revision>::max();
+	const auto retained = capped.facts.size();
+	assert(telemetry_battle_reconfigure(capped.state.get(), scope, 2000U, 2000, sink, &capped)
+		       .outcome == telemetry_battle_outcome::invalid);
+	assert(capped.facts.size() == retained &&
+	       capped.state->scope.config_id + 1U == scope.config_id);
 }
 
 void packet_loss_replay_and_malformed_values()
@@ -632,6 +812,8 @@ int main(int argc, char **argv)
 	source_scopes_roster_uncertainty_and_inline_expiry();
 	merge_at_capacity_and_sequence_exhaustion();
 	loss_clock_and_cap_refusals();
+	configuration_boundaries_and_unavailable_context();
+	configuration_refusal_loss_and_full_roster();
 	packet_loss_replay_and_malformed_values();
 	if (battle_contract_export)
 		assert(std::fclose(battle_contract_export) == 0);

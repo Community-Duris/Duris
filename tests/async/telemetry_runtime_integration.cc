@@ -14,6 +14,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include <vector>
 #include "telemetry_test_runtime.h"
 #include <unistd.h>
 
@@ -153,6 +154,7 @@ struct fake_repository
 	blocked_callback apply_callback;
 	std::atomic<telemetry_monotonic_usec> transport_now{ 0U };
 	telemetry_dimensions dimensions{};
+	std::vector<telemetry_record> battles;
 };
 
 struct reload_property_values
@@ -273,6 +275,11 @@ telemetry_apply_batch_result fake_apply(void *context, const telemetry_record *r
 	{
 		result.results[index].key = records[index].header.key;
 		result.results[index].outcome = telemetry_apply_outcome::applied;
+		if (records[index].header.kind == telemetry_record_kind::battle)
+		{
+			assert(telemetry_record_is_valid(records[index]));
+			fake->battles.push_back(records[index]);
+		}
 		if (records[index].header.kind == telemetry_record_kind::session_lifecycle)
 		{
 			fake->dimensions = records[index].payload.lifecycle.dimensions;
@@ -1040,6 +1047,88 @@ void check_effective_property_reload()
 	telemetry_transport_unbind_for_tests();
 }
 
+void check_battle_capture_across_property_reload()
+{
+	fake_repository fake{};
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	reload_property_values values{ 0.0F, 10.0F, 1.0F, 0.2F, 0.15F, 1.0F };
+	reload_property_catalog catalog{};
+	const auto options = make_property_reload_options(values, catalog);
+	telemetry_test_start_runtime(options);
+	const auto original = telemetry_config_snapshot_copy();
+	char_data source{}, target{};
+	pc_only_data source_pc{}, target_pc{};
+	source.only.pc = &source_pc;
+	target.only.pc = &target_pc;
+	source_pc.pid = 9901;
+	target_pc.pid = 9902;
+	source.in_room = target.in_room = -1;
+	source.player.level = target.player.level = 25;
+	assert(telemetry_runtime_game_combat_engage(&source, &target).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	values.payout_factor = 1.25F;
+	telemetry_config_property_capture probe_capture{};
+	probe_capture.reader = { reload_property_read, &values };
+	probe_capture.mode = telemetry_config_property_capture_mode::require_reader;
+	telemetry_config_property_snapshot probe{};
+	assert(telemetry_config_property_snapshot_capture(&probe_capture, &probe) ==
+	       telemetry_config_build_outcome::built);
+	telemetry_config_reload_notify();
+	assert(telemetry_config_snapshot_copy().config_id == 0U);
+	assert(telemetry_runtime_game_combat_engage(&source, &target).outcome ==
+	       telemetry_runtime_outcome::invalid);
+	std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	assert(telemetry_runtime_game_battle_leave(&target).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	reload_catalog_add(catalog, probe, 1002U);
+	telemetry_config_reload_notify();
+	const auto recovered = telemetry_config_snapshot_copy();
+	assert(telemetry_config_is_valid(recovered) && recovered.config_id != original.config_id);
+	telemetry_runtime_game_combat_damage(&source, &target, 1U, 0U);
+	telemetry_monotonic_usec now = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_pulse({ now, utc, 0U, 0U }).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	telemetry_transport_unbind_for_tests();
+	bool saw_gap = false, saw_recovered = false, saw_unknown_effort = false, saw_leave = false;
+	unsigned closes = 0U;
+	assert(!fake.battles.empty());
+	for (const auto &record : fake.battles)
+	{
+		const auto &row = record.payload.battle;
+		assert(row.battle.sequence == 1U);
+		saw_gap |=
+			row.mode == telemetry_encounter_mode::unknown &&
+			(row.quality_flags &
+			 (TELEMETRY_QUALITY_CONTEXT_UNKNOWN | TELEMETRY_QUALITY_QUEUE_DROP)) ==
+				(TELEMETRY_QUALITY_CONTEXT_UNKNOWN | TELEMETRY_QUALITY_QUEUE_DROP);
+		saw_recovered |= row.scope.config_id == recovered.config_id &&
+				 row.side_status == telemetry_battle_side_status::partial;
+		saw_unknown_effort |= row.effort.unknown_mode_usec > 0U;
+		saw_leave |= row.kind == telemetry_battle_fact_kind::actor_context &&
+			     row.actor.actor.actor_id == 9902U && row.active == 0U;
+		if (row.kind == telemetry_battle_fact_kind::close)
+		{
+			assert(row.close_reason == telemetry_battle_close_reason::shutdown &&
+			       row.end_censored == 1U);
+			++closes;
+		}
+	}
+	assert(saw_gap && saw_recovered && saw_unknown_effort && saw_leave && closes == 1U);
+	std::puts(
+		"PASS: native battle configuration withdrawal, unknown-mode gap, teardown and reviewed recovery");
+}
+
 void check_bounded_shutdown_request_and_final_reap()
 {
 	fake_repository fake{};
@@ -1135,6 +1224,7 @@ int main()
 	check_producer_reuse_rejected();
 	check_classifier_counter_ownership();
 	check_effective_property_reload();
+	check_battle_capture_across_property_reload();
 	check_bounded_shutdown_request_and_final_reap();
 	std::puts("telemetry runtime lifecycle and copyover integration passed");
 	return 0;

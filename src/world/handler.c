@@ -1205,6 +1205,7 @@ void char_from_room(P_char ch)
 	world_activity_character_leave(ch);
 
 	ch->specials.was_in_room = world[ch->in_room].number;
+	(void)telemetry_runtime_game_battle_leave(ch);
 	ch->in_room = NOWHERE;
 	ch->next_in_room = 0;
 }
@@ -1450,6 +1451,7 @@ bool char_to_room(P_char ch, int room, int dir)
 
 	AddCharToZone(ch);
 	world_activity_character_enter(ch);
+	(void)telemetry_runtime_game_battle_context(ch);
 
 	if ((t_ch = get_linked_char(ch, LNK_RIDING)) && t_ch->in_room != ch->in_room)
 	{
@@ -5806,6 +5808,7 @@ void extract_char(P_char ch)
 	training_dummy_begin_removal(ch);
 	char_from_room(ch);
 	training_dummy_end_removal(ch);
+	(void)telemetry_runtime_game_battle_leave(ch);
 
 	// Pull the char from the list
 	// If at the head..

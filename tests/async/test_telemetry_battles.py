@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Qualify the pure bounded battle association; persistent producer wiring remains pending."""
+"""Qualify bounded battle association, configuration cuts and censored lifetimes."""
 
 import argparse
 from pathlib import Path
