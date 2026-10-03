@@ -251,7 +251,9 @@ def login_player(journey, account: str, character: str):
     journey.PASSWORD = PASSWORD
     journey.CHARACTER = character
     journey.EMAIL = f"{account.lower()}@invalid.example"
-    return journey.reconnect_character(GAME_PORT, expected_room="The Regression Arena")
+    return journey.reconnect_character(
+        GAME_PORT, expected_room="The Regression Arena", account=account, character=character,
+    )
 
 
 def mirror_artifact_legacy_projection(wrapper: Path, artifact_vnum: int) -> None:
@@ -389,80 +391,52 @@ def release_recipient_lock(wrapper: Path, lock_name: str, marker: str) -> None:
     raise JourneyFailure(f"recipient SQL lock did not release: {last}")
 
 
-def attempt_fenced_login(journey, account: str, character: str) -> str:
-    """Attempt recipient login while the live PDR save/login fence is held."""
-    journey.ACCOUNT = account
-    journey.PASSWORD = PASSWORD
-    journey.CHARACTER = character
+def prepare_fenced_login(journey, account: str):
+    """Authenticate the account before blocking SQL; leave its character offline."""
     client = journey.MudClient(GAME_PORT)
     try:
-        entry, output = client.expect_any(("term type", "account name"), timeout=30)
+        entry, _ = client.expect_any(("term type", "account name"), timeout=30)
         if entry == "term type":
             client.send("9")
-            _, text = expect_response(client, ("account name",), timeout=15)
-            output += text
+            expect_response(client, ("account name",), timeout=15)
         client.send(account)
-        _, text = expect_response(client, ("enter your password",), timeout=15)
-        output += text
+        expect_response(client, ("enter your password",), timeout=15)
         client.send(PASSWORD)
-        _, text = expect_response(client, ("PRESS RETURN",), timeout=15)
-        output += text
+        expect_response(client, ("PRESS RETURN",), timeout=15)
         client.send("")
-        _, text = expect_response(client, ("Please select an option",), timeout=15)
-        output += text
-        # `Please select an option` can arrive before a delayed character-list
-        # frame.  Discard only that already-consumed menu tail so a stale
-        # character name cannot satisfy the next selection assertion.
+        expect_response(client, ("Please select an option",), timeout=15)
+        return client
+    except Exception:
+        client.close()
+        raise
+
+
+def attempt_fenced_login(client, character: str) -> str:
+    """Require an explicit native refusal at character admission while fenced."""
+    refusals = ("temporarily unavailable", "being saved", "try again", "unavailable")
+    output = ""
+    try:
+        # Discard the already-consumed account-menu tail before selecting a player.
         client.pending.clear()
         client.send("1")
-        matched, text = expect_response(
-            client,
-            ("temporarily unavailable", "being saved", "try again", "unavailable", character),
-            timeout=15,
-        )
+        matched, text = expect_response(client, (*refusals, character), timeout=15)
         output += text
-        if matched != character or any(
-            marker in output.lower()
-            for marker in ("temporarily unavailable", "being saved", "try again", "unavailable")
-        ):
-            # The native fence can reject the character at selection time,
-            # before the normal `Play as` confirmation is emitted.
+        if matched in refusals:
             return output
         client.send("1")
-        matched, text = expect_response(
-            client,
-            ("Play as", "temporarily unavailable", "being saved", "try again", "unavailable"),
-            timeout=15,
-        )
+        matched, text = expect_response(client, (*refusals, "Play as"), timeout=15)
         output += text
-        if matched != "Play as":
-            # A stale character-list match can consume the first selection
-            # response; accept the native fence refusal on this retry too.
+        if matched in refusals:
             return output
         client.send("y")
-        try:
-            matched, text = expect_response(
-                client,
-                (
-                    "The Regression Arena", "Please select an option", "currently",
-                    "being saved", "try again", "unavailable", "cannot", "failed",
-                ),
-                timeout=12,
+        matched, text = expect_response(
+            client, ("The Regression Arena", *refusals), timeout=12,
+        )
+        output += text
+        if matched == "The Regression Arena":
+            raise JourneyFailure(
+                "recipient reached the game room while the staff submission was pending"
             )
-            output += text
-            if matched == "The Regression Arena":
-                raise JourneyFailure(
-                    "recipient reached the game room while the staff submission was pending"
-                )
-        except AssertionError as exc:
-            # A fenced login may be closed without a final prompt.  The client
-            # transcript is retained and the room marker remains the decisive
-            # admission signal.
-            output += bytes(client.pending).decode("utf-8", errors="replace")
-            if "The Regression Arena" in output:
-                raise JourneyFailure(
-                    "recipient reached the game room while the staff submission was pending"
-                ) from exc
         return output
     finally:
         client.close()
@@ -899,6 +873,8 @@ def main() -> int:
     lock_marker = ""
     lock_held = False
     staff_client = None
+    fence_client = None
+    observer = None
     try:
         base.wait_for_database(wrapper)
         base.prepare_schema(wrapper, wrapper_bin)
@@ -997,14 +973,14 @@ def main() -> int:
         enable_sql_trace(wrapper)
 
         staff_client = login_player(journey, STAFF_ACCOUNT, STAFF_NAME)
-        lock_name, lock_marker = acquire_recipient_lock(recipient_pid)
-        wait_for_lock(wrapper, lock_name)
-        lock_held = True
-        expect_response(
-            staff_client,
-            ("Regression Arena",),
-            timeout=2,
-        ) if False else None
+        save_and_wait(staff_client, wrapper, STAFF_NAME, staff_pid)
+        if sql_one(wrapper, f"SELECT level FROM player_data WHERE pid={staff_pid}") != "61":
+            raise JourneyFailure("actual staff login/save did not preserve its configured level")
+        evidence.append("distinct staff login and SQL-acknowledged identity/level: verified")
+        # Account hydration and staged transport are prerequisites, outside the
+        # deliberately held row. The production worker has a bounded retry budget.
+        observer = login_player(journey, OBSERVER_ACCOUNT, OBSERVER_NAME)
+        fence_client = prepare_fenced_login(journey, RECIPIENT_ACCOUNT)
         staff_client.send("restitution begin")
         matched, _ = expect_response(staff_client, ("staging started",), timeout=30)
         if matched != "staging started":
@@ -1014,30 +990,39 @@ def main() -> int:
             matched, _ = expect_response(staff_client, ("chunk accepted",), timeout=30)
             if matched != "chunk accepted":
                 raise JourneyFailure(f"staff chunk {index} was not accepted")
+        lock_name, lock_marker = acquire_recipient_lock(recipient_pid)
+        wait_for_lock(wrapper, lock_name)
+        lock_held = True
         staff_client.send("restitution commit")
+        admission_states = (
+            "admitted but durability is not confirmed", "queued for journal durability",
+            "journal-uncertain",
+        )
         matched, commit_output = expect_response(
             staff_client,
-            ("Restitution submission accepted", "journal-uncertain",
-             "recipient must be offline", "pending save", "fence is unavailable",
-             "coordinator is unavailable", "not a canonical"),
+            (*admission_states, "refused:"),
             timeout=30,
         )
-        if matched not in ("Restitution submission accepted", "journal-uncertain"):
+        if matched not in admission_states:
             raise JourneyFailure(f"actual staff submission rejected: {commit_output[-1500:]}")
+        if any(part not in commit_output for part in (
+            plan["restitution_id_hex"], "delivery=not complete", "recipient fence=held",
+        )):
+            raise JourneyFailure(f"staff admission omitted identity/delivery/fence state: {commit_output[-1500:]}")
         evidence.append(f"actual in-game staff submission: verified ({matched})")
 
-        fence_transcript = attempt_fenced_login(journey, RECIPIENT_ACCOUNT, RECIPIENT_NAME)
-        evidence.append("offline recipient login was rejected while native fence was held: verified")
+        fence_transcript = attempt_fenced_login(fence_client, RECIPIENT_NAME)
+        fence_client = None
+        evidence.append("offline recipient character admission was explicitly refused while native fence was held: verified")
+        evidence.append("native character-admission refusal: " + fence_transcript.strip())
 
-        observer = login_player(journey, OBSERVER_ACCOUNT, OBSERVER_NAME)
-        try:
-            base.command(observer, "look", ("The Regression Arena",), timeout=30)
-            save_and_wait(observer, wrapper, OBSERVER_NAME, observer_pid)
-            close_account(observer)
-        except Exception:
-            observer.close()
-            raise
+        base.command(observer, "look", ("The Regression Arena",), timeout=30)
+        save_and_wait(observer, wrapper, OBSERVER_NAME, observer_pid)
         evidence.append("concurrent unrelated observer look/save while recipient was fenced: verified")
+        if sql_one(wrapper,
+            f"SELECT COUNT(*) FROM player_death_restitution_delivery WHERE recipient_pid={recipient_pid} AND death_revision={DEATH_REVISION}",
+        ) != "0":
+            raise JourneyFailure("restitution delivery bypassed the held recipient row lock")
 
         # Release the row only after the login rejection and unrelated work have
         # been observed.  The live critical worker then commits the canonical
@@ -1050,6 +1035,8 @@ def main() -> int:
             "5",
             timeout=180,
         )
+        close_account(observer)
+        observer = None
         # Verify original delivery before materialization/save can legitimately
         # change container weights or add prototype-derived metadata.
         base.cli(wrapper, ["verify", "--plan", str(plan_path)], timeout=180)
@@ -1142,6 +1129,12 @@ def main() -> int:
         report(evidence)
         raise
     finally:
+        for pending_client in (fence_client, observer):
+            if pending_client is not None:
+                try:
+                    pending_client.close()
+                except Exception:
+                    pass
         if staff_client is not None:
             try:
                 staff_client.close()

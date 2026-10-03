@@ -7,16 +7,19 @@ cd "$ROOT"
 NAME="duris-corpse-lifecycle-repository-$$-$RANDOM"
 PASSWORD="corpse-lifecycle-repository-$$-$RANDOM"
 IMAGE="${CORPSE_LIFECYCLE_REPOSITORY_DB_IMAGE:-mariadb:10.11}"
-cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
+SQL_FIXTURE_CONTAINER_ID=
+cleanup() { [[ "${SQL_FIXTURE_CONTAINER_ID:-}" =~ ^[0-9a-f]{64}$ ]] && docker rm -f "$SQL_FIXTURE_CONTAINER_ID" >/dev/null 2>&1 || true; }
 trap cleanup EXIT HUP INT TERM
 if [[ "$IMAGE" == mariadb:* ]]; then
 	PASSWORD_ENV=MARIADB_ROOT_PASSWORD
 else
 	PASSWORD_ENV=MYSQL_ROOT_PASSWORD
 fi
-docker run -d --name "$NAME" -p 127.0.0.1::3306 \
-	-e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" >/dev/null
-mapping="$(docker port "$NAME" 3306/tcp)"
+source "$ROOT/tests/async/_sql_fixture_network.sh"
+sql_fixture_network
+SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$NAME" "${SQL_FIXTURE_NETWORK[@]}" \
+	-e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}")
+mapping="$(sql_fixture_mapping "$NAME")"
 export ENVIRONMENT=test DB_HOST="${CORPSE_LIFECYCLE_REPOSITORY_DB_HOST:-127.0.0.1}" \
 	DB_PORT="${mapping##*:}"
 export DB_USER=root DB_PASSWD="$PASSWORD" MYSQL_PWD="$PASSWORD"
@@ -44,37 +47,24 @@ done
 "${MYSQL[@]}" -e \
 	"CREATE DATABASE $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/bootstrap_multithread_safe.sql"
-"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0013_pet_restore_state.sql"
-"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0028_pet_custody.sql"
+python3 scripts/migration_runner.py adopt --kind fresh_bootstrap
+python3 scripts/migration_runner.py run
+python3 scripts/migration_runner.py run
+bash migrations/verify_runtime_compatibility.sh
 
 mkdir -p "$ROOT/bin/tests"
+SQL_DISPATCH_SOURCES_TEXT="$(python3 tests/async/_sql_dispatch_sources.py)"
+read -r -a SQL_DISPATCH_SOURCES <<< "$SQL_DISPATCH_SOURCES_TEXT"
 read -r -a MYSQL_CFLAGS <<< "$(mysql_config --cflags)"
 read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
-g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread \
+g++ -std=c++20 -ffunction-sections -fdata-sections -Wl,--gc-sections -Wall -Wextra -Wpedantic -Werror -pthread \
+    "${SQL_DISPATCH_SOURCES[@]}" \
 	-DCORPSE_LIFECYCLE_REPOSITORY_TRACE_SQL -Isrc \
 	"${MYSQL_CFLAGS[@]}" tests/async/corpse_lifecycle_repository_mysql_harness.cpp \
 	src/persistence/critical_command.c src/world/epic_command.c \
-	src/economy/currency_command.c src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c \
-	src/item/item_transfer_repository.c src/economy/auction_command.c \
-	src/economy/auction_repository.c src/combat/combat_outcome_command.c \
-	src/combat/combat_outcome_repository.c src/guild/artifact_guild_command.c \
-	src/guild/artifact_guild_repository.c src/economy/boon_reward_command.c \
-	src/economy/boon_reward_repository.c src/world/zone_touch_command.c \
-	src/world/zone_touch_repository.c src/account/session_audit_command.c \
-	src/account/session_audit_repository.c src/economy/coin_transfer_command.c \
-	src/player/player_snapshot_codec.c src/economy/collector_command.c \
-	src/economy/collector_codec.c src/economy/collector_policy.c \
-	src/economy/collector_repository.c src/persistence/corpse_lifecycle_command.c \
-	src/persistence/corpse_lifecycle_repository.c \
-	src/persistence/player_death_restitution_command.c \
-	src/persistence/player_death_restitution_repository.c \
-	src/persistence/economic_accounting_repository.c \
-	src/persistence/economic_sql_bank_transaction.c \
-	src/economy/economic_currency_adapter.c \
-	src/economy/economic_accounting_types.c \
-	src/economy/economic_accounting_plan.c \
-	src/economy/economic_accounting_intent.c \
-    src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
+	src/economy/currency_command.c \
+	src/combat/combat_outcome_command.c \
+      "${MYSQL_LIBS[@]}" -lcrypto \
 	-o "$ROOT/bin/tests/corpse_lifecycle_repository_mysql_harness"
 "$ROOT/bin/tests/corpse_lifecycle_repository_mysql_harness"
 printf 'corpse lifecycle authority, materialization, collector, currency, artifact, replay, and rollback transactions (%s): ok\n' \

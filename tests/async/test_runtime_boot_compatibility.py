@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from _paths import SRC
+from _paths import SRC, extract_function
 import json
 import re
 import subprocess
@@ -168,17 +168,14 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
                          "critical_command_coordinator_init", "game_loop(port, sslport)"):
             self.assertIn(boundary, game)
 
-        game_loop = self.comm[self.comm.index("static bool run_connection_phase"):
-                              self.comm.index("bool runtime_listener_address")]
-        self.assertIn("redis_load_world_state", game_loop)
-        self.assertIn("transport_world_pump", game_loop)
-        # Listener acceptance moved before run_connection_phase. Both the
-        # legacy poll boundary and transport pump remain behind verified boot.
-        acceptance = self.comm[self.comm.index("static int drain_new_connections"):
-                               self.comm.index("static bool run_connection_phase")]
-        for listener in ("ctx.telnet_listener", "ctx.ssl_listener",
-                         "ctx.websocket_listener"):
-            self.assertIn("drain_new_connections(" + listener, acceptance)
+        game_loop = extract_function("net/comm.c", "void game_loop(")
+        network = extract_function("net/comm.c", "static bool service_network_turn(")
+        self.assertLess(game_loop.index("redis_load_world_state"),
+                        game_loop.index("run_connection_phase(context)"))
+        connections = extract_function("net/comm.c", "static bool run_connection_phase(")
+        self.assertIn("transport_world_pump", connections)
+        for listener in ("ctx.telnet_listener", "ctx.ssl_listener", "ctx.websocket_listener"):
+            self.assertIn("drain_new_connections(" + listener, network)
 
     def test_schema_fingerprint_and_redacted_reason_ids_are_enforced(self):
         self.assertIn("sql_verify_metadata_fingerprint", self.sql)

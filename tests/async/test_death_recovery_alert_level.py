@@ -10,8 +10,9 @@ finished with extract_refused=0, read on the channel as a database stall.
 The wait is expected bounded work -- the branch's own comment said so -- so the
 routine poll now goes to the log with outcome=info. The channel
 hears about it only when the wait passes DEATH_RECOVERY_STALL_SECONDS, and then
-once per stall window rather than once per poll, so a genuine stall is still
-visible without being a flood.
+through the shared bounded recovery reporter, so a genuine stall is still
+visible without being a flood. The elapsed-window decision remains independent
+of the reporter's suppression of repeated diagnostics.
 
 The wait is measured against a MONOTONIC CLOCK, not against the number of retry
 callbacks that happened to run. ne_events() executes an entry whose tick is due
@@ -108,7 +109,7 @@ busy_start = index(retry, "if (items_busy || currency_busy)")
 busy_end = retry.index("return;", busy_start)
 busy = retry[busy_start:busy_end]
 
-assert contains(busy, "persistence_report(persistence_severity::info,"), (
+assert contains(busy, "death_recovery_report(ch, persistence_severity::info,"), (
     "the routine custody wait must be logged, not broadcast to every immortal")
 assert "persistence_severity::info" in busy, (
     "the logged wait must be marked expected so it is not read as a failure")
@@ -147,12 +148,12 @@ assert contains(die, "death_custody_wait_reset(ch);"), (
 # ------------------------------------------------------------------ #
 # A wait long enough to be suspicious still reaches the channel        #
 # ------------------------------------------------------------------ #
-assert contains(busy, "persistence_alert(AVATAR"), (
+assert contains(busy, "death_recovery_report(ch, persistence_severity::alert,"), (
     "a stalled custody handoff must still alert")
 assert contains(busy, "ch->only.pc->death_custody_wait_alerts++"), (
     "each alert must be counted, or the stall re-alerts on every poll")
-alert = index(busy, "persistence_alert(AVATAR")
-debug = index(busy, "persistence_report(persistence_severity::info,")
+alert = index(busy, "death_recovery_report(ch, persistence_severity::alert,")
+debug = index(busy, "death_recovery_report(ch, persistence_severity::info,")
 assert index(busy, "death_custody_wait_should_alert") < alert < debug, (
     "the alert must be the gated branch and the log the fallback, not the reverse")
 
@@ -177,8 +178,8 @@ for action in ("death_recovery_abandoned",
                "death_recovery_retry",
                "terminal_save_failed"):
     where = fight.index(action)
-    opened = fight.rfind("persistence_alert(", 0, where)
-    assert opened >= 0 and "AVATAR" in fight[opened:where], (
+    opened = fight.rfind("death_recovery_report(", 0, where)
+    assert opened >= 0 and call_arguments(fight, opened)[1] == "persistence_severity::alert", (
         action + " must remain an AVATAR alert")
 
 print("[PASS] the wait is clocked and logged; stalls and failures still alert")
@@ -272,12 +273,14 @@ for match in re.finditer(r"persistence_(alert|report)\(", fight):
         continue
     detail = arguments[6]
     pieces = re.findall(r'"((?:[^"\\]|\\.)*)"', detail)
-    assert pieces, (
-        "a persistence_alert detail that is not a literal cannot be checked "
-        "here: " + " ".join(detail.split())[:100])
+    if not pieces:
+        # The shared recovery owner renders a closed metadata alphabet. Its
+        # end-to-end production reporter is exercised by the visibility owner.
+        assert detail == "death_recovery_literal_detail(summary)", detail
+        continue
     formats.append("".join(pieces))
 
-assert len(formats) >= 15, "expected every persistence_alert in fight.c, found %d" % len(formats)
+assert formats, "expected the remaining direct persistence formats in fight.c"
 
 CASES = "\n".join(
     '        assert(persistence_alert_format_is_numeric("%s") == 1);' % text

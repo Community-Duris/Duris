@@ -19,6 +19,7 @@
 #include <cstring>
 #include <filesystem>
 #include <iostream>
+#include <map>
 #include <new>
 #include <openssl/sha.h>
 #include <thread>
@@ -270,7 +271,7 @@ economic_account_key bank()
 	return { id(90001), economic_account_kind::bank, 2, 1 };
 }
 critical_command command(const std::string &root, uint64_t n, int64_t amount = 1,
-			 bool accounted = true)
+			 bool accounted = true, size_t denomination = 0)
 {
 	const auto before = state(root);
 	currency_command_payload payload = {};
@@ -279,8 +280,9 @@ critical_command command(const std::string &root, uint64_t n, int64_t amount = 1
 	payload.reason = amount > 0 ? currency_reason_type::atm_withdraw :
 				      currency_reason_type::atm_deposit;
 	strcpy(payload.account_name.data(), "ACCOUNT-ONE");
-	payload.wallet_delta.amount[0] = amount;
-	payload.bank_delta.amount[0] = -amount;
+	assert(denomination < 4);
+	payload.wallet_delta.amount[denomination] = amount;
+	payload.bank_delta.amount[denomination] = -amount;
 	critical_command result;
 	assert(currency_command_build(&result, id(n), payload, before.domains.wallet_revision,
 				      before.domains.bank_revision, critical_source_site::command,
@@ -486,6 +488,131 @@ void basic(const std::string &root)
 void clone(const fs::path &seed, const fs::path &target)
 {
 	fs::copy(seed, target, fs::copy_options::recursive);
+}
+
+// Requirement CURRENCY-REPLAY: generated histories use the production writer;
+// the oracle only adds/subtracts integer denomination balances and revisions.
+std::map<std::string, bytes> durable_files(const fs::path &root)
+{
+	std::map<std::string, bytes> result;
+	for (const auto &directory : { "domains", "economic-evidence" })
+		for (const auto &entry : fs::recursive_directory_iterator(root / directory))
+			if (entry.is_regular_file())
+				result.emplace(entry.path().lexically_relative(root).string(),
+					       read(entry.path()));
+	return result;
+}
+void generated_histories(const fs::path &seed, const fs::path &base)
+{
+	for (uint32_t seed_value : { 0xc011u, 0xbab1u, 0x5eedu })
+	{
+		const auto path = base / ("generated-" + std::to_string(seed_value));
+		clone(seed, path);
+		const auto root = path.string();
+		const auto initial = state(root);
+		auto model_wallet = initial.domains.wallet;
+		auto model_bank = initial.domains.bank;
+		auto wallet_revision = initial.domains.wallet_revision;
+		auto bank_revision = initial.domains.bank_revision;
+		uint32_t generator = seed_value;
+		std::vector<std::pair<critical_command, critical_apply_result>> history;
+		bool recovered_interruption = false;
+		for (unsigned step = 0; step < 24; ++step)
+		{
+			generator = generator * 1664525u + 1013904223u;
+			const size_t denomination = (generator >> 16) % 4;
+			const bool withdraw = generator & 1;
+			const auto available = withdraw ? model_bank[denomination] :
+							  model_wallet[denomination];
+			const bool reject = step % 7 == 6;
+			const int64_t magnitude = reject ? available + 1 :
+							   std::min<int64_t>(available, 2);
+			const int64_t amount = withdraw ? magnitude : -magnitude;
+			// Zero transfers are not a useful generated operation.
+			if (!amount)
+				continue;
+			std::cout << "CURRENCY-REPLAY seed=" << seed_value << " step=" << step
+				  << " denomination=" << denomination << " amount=" << amount
+				  << " reject=" << reject << std::endl;
+			const auto cmd = command(root, 100000 + step, amount, true, denomination);
+			critical_apply_result applied;
+			if (step == 11)
+			{
+				// Crash with only the durable authority journal published. A new
+				// process must recover the four after-images exactly once.
+				const auto child = fork();
+				assert(child >= 0);
+				if (!child)
+				{
+					setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_JOURNAL",
+					       "1", 1);
+					const auto interrupted =
+						flatfile_accounting_bank_transaction::apply(root,
+											    cmd);
+					_exit(interrupted.outcome == outcome::ambiguous_commit ?
+						      77 :
+						      78);
+				}
+				int status;
+				assert(waitpid(child, &status, 0) == child && WIFEXITED(status) &&
+				       WEXITSTATUS(status) == 77);
+				applied = flatfile_accounting_bank_transaction::apply(root, cmd);
+				assert(applied.outcome == outcome::already_applied);
+				recovered_interruption = true;
+			}
+			else
+				applied = flatfile_accounting_bank_transaction::apply(root, cmd);
+			if (reject)
+			{
+				assert(applied.outcome == outcome::terminal_failure &&
+				       applied.error_code == ENOSPC);
+				assert(retained(root, cmd).plan.empty());
+			}
+			else
+			{
+				assert(applied.outcome == outcome::applied || step == 11);
+				model_wallet[denomination] += amount;
+				model_bank[denomination] -= amount;
+				++wallet_revision;
+				++bank_revision;
+			}
+			history.emplace_back(cmd, applied);
+			const auto actual = state(root);
+			assert(actual.domains.wallet == model_wallet &&
+			       actual.domains.bank == model_bank &&
+			       actual.domains.wallet_revision == wallet_revision &&
+			       actual.domains.bank_revision == bank_revision);
+			for (size_t index = 0; index < 4; ++index)
+				assert(model_wallet[index] + model_bank[index] ==
+				       initial.domains.wallet[index] + initial.domains.bank[index]);
+			const auto before_replay = durable_files(path);
+			const auto &old = history[(generator >> 8) % history.size()];
+			const auto replay =
+				flatfile_accounting_bank_transaction::apply(root, old.first);
+			same(old.second, replay);
+			assert(replay.outcome == (old.second.error_code ?
+							  outcome::terminal_failure :
+							  outcome::already_applied));
+			if (step % 5 == 0)
+			{
+				const auto child = fork();
+				assert(child >= 0);
+				if (!child)
+				{
+					same(applied, flatfile_accounting_bank_transaction::apply(
+							      root, cmd));
+					_exit(0);
+				}
+				int status;
+				assert(waitpid(child, &status, 0) == child && WIFEXITED(status) &&
+				       WEXITSTATUS(status) == 0);
+			}
+			assert(durable_files(path) == before_replay);
+		}
+		assert(history.size() >= 16 && recovered_interruption);
+	}
+	std::cout
+		<< "PASS: CURRENCY-REPLAY generated transfers, refusals, old replay and process restart\n";
 }
 void initialize_starter_bucket(const std::string &root, const critical_command &cmd)
 {
@@ -1017,13 +1144,16 @@ void coordinated_bank(const fs::path &root, const fs::path &journal)
 
 int main(int argc, char **argv)
 {
-	assert(argc == 2);
+	assert(argc == 2 || (argc == 3 && std::string(argv[2]) == "--generated-only"));
 	alarm(600);
 	const fs::path base = argv[1];
 	fs::create_directories(base);
 	fs::permissions(base, fs::perms::owner_all);
 	const auto seed = base / "seed";
 	setup(seed);
+	generated_histories(seed, base);
+	if (argc == 3)
+		return 0;
 	starter_grant(seed, base);
 	crashes(seed, base);
 	legacy_capacity(seed, base / "legacy-full");

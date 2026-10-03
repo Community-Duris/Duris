@@ -1,0 +1,79 @@
+name: Disposable integration matrix
+
+on:
+  pull_request:
+    branches: [master, experimental-accounting]
+  push:
+    branches: [master, experimental-accounting]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [mysql, mariadb, once]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build the maintained fixture tools
+        run: docker build -f tests/integration/Dockerfile -t duris-regression-tools:local .
+      - name: Pull the reviewed database images
+        run: |
+          python3 - <<'PY'
+          import json, subprocess
+          for image in json.load(open('tests/integration_manifest.json'))['engines'].values():
+              subprocess.run(['docker', 'pull', image], check=True)
+          PY
+      - name: Run the same local matrix command on the exact checkout
+        env:
+          TEST_ENGINE: ${{ matrix.engine }}
+        run: |
+          set -euo pipefail
+          fixture="duris-matrix-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${TEST_ENGINE}"
+          mkdir -p bin/integration-results
+          docker create --name "$fixture" --label "duris.workflow.run=$GITHUB_RUN_ID" \
+            --restart=no --cpus=4 --memory=6g \
+            --cap-add=SYS_ADMIN --cap-add=NET_ADMIN \
+            --security-opt=apparmor=unconfined --security-opt=seccomp=unconfined \
+            -v /var/run/docker.sock:/var/run/docker.sock duris-regression-tools:local
+          cleanup() {
+            docker cp "$fixture:/suite/bin/integration-results/." bin/integration-results/ || true
+            docker rm --force "$fixture"
+          }
+          trap cleanup EXIT
+          docker start "$fixture"
+          git archive HEAD > /tmp/matrix-source.tar
+          docker cp /tmp/matrix-source.tar "$fixture:/tmp/source.tar"
+          docker exec "$fixture" tar -xf /tmp/source.tar -C /suite
+          docker cp .git "$fixture:/suite/.git"
+          docker exec -e "DURIS_TEST_CONTAINER=$fixture" -w /suite "$fixture" \
+            python3 tests/run_integration_matrix.py --engine "$TEST_ENGINE"
+      - name: Retain outcomes, original failures, fixture timelines and build identities
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-${{ matrix.engine }}
+          if-no-files-found: error
+          path: |
+            bin/integration-results/*/*.json
+            bin/integration-results/*/*.xml
+            bin/integration-results/*/build-*.log
+            bin/integration-results/*/*/*/original.log
+            bin/integration-results/*/*/*/result.json
+            bin/integration-results/*/*/service/timeline.json
+            bin/integration-results/*/*/service/server.log
+            bin/integration-results/*/*/*/faults/*.json
+            bin/integration-results/*/*/*/faults/*.log
+            bin/integration-results/*/*/*/faults/service/timeline.json
+            bin/integration-results/*/*/*/faults/service/server.log
