@@ -205,7 +205,7 @@ PATTERNS = {
     'coin_bulk_mutation': r'\b(?:add_coins|difficulty_scale_coins)\s*\(|\b(?:std::)?(?:fill|fill_n|memset|memcpy|memmove)\s*\([^;\n]*(?:cash|bank)|\b(?:std::)?fill_n\s*\(\s*obj->value',
     'item_lifecycle': r'\b(?:read_object|instantiate_object_template|create_money|extract_obj|MakeScrap)\s*\(',
     'item_publication': r'\b(?:obj_to_char(?:_at_end|_checked)?|obj_to_obj|obj_to_room|obj_from_char|obj_from_obj|obj_from_room|equip_char|unequip_char)\s*\(',
-    'sql_economy': r'\b(?:INSERT(?: IGNORE)? INTO|UPDATE|DELETE FROM)\s+(?:currency_ledger|item_current_owner|item_ownership_ledger|account_banks|auction_money_pickups|auction_item_custody|saved_items|ships)\b',
+    'sql_economy': r'\b(?:INSERT(?: IGNORE)? INTO|UPDATE|DELETE FROM)\s+(?:currency_ledger|item_current_owner|item_ownership_ledger|sql_room_item_payload|account_banks|auction_money_pickups|auction_item_custody|saved_items|ships)\b',
 }
 
 

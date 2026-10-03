@@ -1,19 +1,22 @@
 # Alchemy delivery on experimental-accounting
 
 This is the deliberate branch port of master PR573 and PR663. It preserves the
-accounting branch's existing authority contracts and implements the retained
-craft conservation and virtual NPC combat behavior while accounting is inactive.
+accounting branch's existing authority contracts. Native craft accounting and
+retained-pouch support delivered subsequently are reused by the #551 durable
+alchemy publication extension. Virtual NPC vial issuance remains a separate
+#661/#490 source qualification. Current scoped evidence is recorded in
+[persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md](persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md).
 
 ## Persisted identities
 
 | Contract | Accounting branch value |
 | --- | --- |
 | Craft reason | 34; existing wear29 through quest turn-in33 remain stable |
-| Item payload | Version9; existing source8 and collector7 layouts preserved |
+| Item payload | Version10; existing source8 and collector7 layouts preserved |
 | Runtime-state migration | 0051_player_item_runtime_state |
-| Canonical migration head | 51 |
-| Staging0045 history head | 51; earlier staging history remains unchanged |
-| Registered runtime tables | 224 |
+| Canonical migration head | 54 (0054_alchemy_publication) |
+| Staging0045 history head | 54; earlier staging history remains unchanged |
+| Registered runtime tables | 225; migration0054 changes only the receipt CHECK |
 
 Only the unpublished version7 same-player craft shape using draft reason27 or
 master reason29 normalizes to craft34. Version9 wear29 retains its existing
@@ -30,10 +33,10 @@ victim room check.
 
 | Route | Behavior while accounting is active | Requirement before enabling |
 | --- | --- | --- |
-| Assassin poison mixing | Refuse at gameplay entry before wait, recipe RNG or allocation | Native craft root with exact ingredient/output references |
-| Encrust | Refuse at gameplay entry before RNG or allocation | Native craft root, including zero-output failure |
-| Harvester shard exchange | Retain branch's existing early refusal | Native exchange root and selected shard/output references |
-| Craft submit API | Refuse before capturing/submitting output identities | Schema2 source/admission and exact retained result |
+| Assassin poison mixing | Native schema2 craft; 1–64 frozen outputs and frozen notch outcome | Exact native inputs, crafting source/root/references and saved publication receipt |
+| Encrust | Native schema2 craft; frozen replacement or deliberate zero-output failure | Physical jewel or retained pouch delta joins the same root; trapped inputs still refuse |
+| Harvester shard exchange | Native schema2 craft; exact three-shard retirement and orb admission | Source lifetime and selected output UID recorded with durable publication |
+| Craft submit API | Existing native transaction owner; alchemy continuation v2 | Active preparation must pass before coordinator admission; no fallback after refusal |
 | Automatic NPC vial | Refuse before RNG, decision marker or allocation | Durable zone reset-generation/spawn source owns choice and exact UID |
 | Virtual NPC mixture combat | Enabled through existing spell lifecycle | Existing lifecycle restrictions continue to apply |
 
@@ -97,9 +100,12 @@ staff setup grant's checkpoint. Its serialized result does not qualify that
 overlap; #664 owns a durable grant/save ordering repair. The existing custody and
 quarantine guards remain intact.
 
-The executable active-refusal fixture verifies the real poison/Encrust entry
-guards and the Harvester/craft allocation boundaries. The NPC fixture separately
+The historical active-refusal fixture was superseded for the retained player
+crafts by native admission, conservation and recovery qualification. Their
+current continuation reuses the existing durable Craft/Forge player receipt
+owner. The dated #551 evidence records the active gameplay journeys. The NPC
+fixture separately
 verifies active vial refusal before RNG, marking or allocation. Writer inventory
-validation covers 864 routes and maps every one of the 2758 unique lexical
+validation covers 864 routes and maps every one of the 2756 unique lexical
 mutation sites; that census retains the branch's incomplete-coverage release
 gate and does not certify the wider accounting program.
