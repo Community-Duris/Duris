@@ -555,3 +555,60 @@ Reply-loss qualification LF-normalized evidence SHA-256:
 - tmp/real-commit-reply-pa-build-current.local.log: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 - tmp/real-commit-reply-contracts-final.local.log: 45ef35aa4a90167bad88d868d7066f34a772d91922604168093addd23056f402
 - tmp/real-commit-reply-source-pin.local.log: a823ec37b37a89b6249b2db89641522c450a6709cffbf2785a28659b0c3131c3
+
+
+## SQL replacement consumes its borrowed lease on every outcome
+
+The native one-slot shutdown regression fails before this fix: replacement
+returns NULL while sql_pool_in_use remains one. The critical repository drops
+the old pointer and cannot release shutdown. Other NULL paths previously closed
+and freed that pointer, so retaining/releasing it in callers was also unsafe
+once an address could be reused by a later borrower. Normal shutdown's usual
+coordinator drain ordering does not waive the violated lease contract.
+
+For a valid owned lease, replacement now returns one fresh borrowed handle or
+NULL after retiring/releasing the original. It preserves the reservation while
+opening outside the mutex, catches factory exceptions, handles discard/closing,
+and closes any unpublished fresh session before shutdown can return. Invalid
+foreign/unborrowed handles do not modify a lease. Snapshot, death-conflict and
+locker callers assign the returned pointer, including NULL, before any release.
+They retain ambiguous outcomes; the fix never infers a failed/committed debit.
+
+Strict and ASan/UBSan pool tests pass actual mutex/deadline behavior, closing
+before and during factory open, failed/thrown factories, discarded input,
+healthy-peer availability, clean successful replacement and unborrowed refusal.
+Both native SQL engines pass sanitized real-session retirement/rollback,
+subsequent commits, clean capacity recovery and closing-replacement shutdown.
+Worker timeout/gating/init, locker repair and critical transaction contracts
+also pass. Production SQL/flatfile strict builds, up-to-date pfile dependency
+check, formatting and fresh inspector build (118.121 seconds) pass. All ten
+native recovery cases pass in 425.720 seconds, including both engine dump/import
+and private boot, pending replay, WAL/quarantine and locker/spell receipts.
+
+Qualified native source tree c60330b58de9063dc1ad8510ced36310324d5d4c matches
+all 1,229 archived files. The concurrent room-payload WIP is excluded from this
+source and is not qualified by these results. Executable SHA-256:
+
+- SQL: d4cd5061795a6450249df075292d6ac94a851e90d5d3bd897bee207a26c3685c
+- flatfile: a2c4b43165a715184a9ccad4d2fab93836a2bc3af916177f02627dc5def123f9
+
+The first recovery driver omitted /usr/local/bin from PATH and stopped before
+testing; that failed setup log is retained. The corrected driver reuses the
+same native binaries and freshly compiled inspector. Actual typed coordinator
+COMMIT-loss with this pool, production configured-factory contention and live
+publication remain separate gates. The exact published-70aaa broad suite is
+still running; full R1-R8/captured-clone/workload/coverage completion is open.
+No production accounting or inactive behavior was activated.
+
+Pool lease qualification LF-normalized evidence SHA-256:
+
+- tmp/pool-consumed-lease-red.local.log: 32ec51ff80e29cc956d14863d2e70727390e395103fd517f468c94bfd6c2d36d
+- tmp/pool-consumed-lease-green.local.log: c265a737b7742d164f397e08c8c368cadc383ed1e493427231df5a8c5a388f33
+- tmp/pool-consumed-lease-final.local.log: d561607e2047afa6b0f1bf52d8cefd81be5f45111cab563e604633b247b1975e
+- tmp/pool-consumed-lease-native.local.log: 2538d999b77c27d17ce109f4352370f29ebc4271b46e9f9e9b56641328c3aaec
+- tmp/pool-consumed-lease-contracts.local.log: a2264d8ac723b34b802627b63188ec8909ad50fc959863ca07c5b55d827fe34d
+- tmp/pool-consumed-lease-build.local.log: a651cbe981d14d23bc96490c69559efebca83614084ab2b30b13a9b850f517a9
+- tmp/pool-consumed-lease-format.local.log: 4c6455b35b80e3160133eea6574bea1703c3e598f93d3f345baa3a1925e88614
+- tmp/pool-consumed-lease-source-pin.local.log: 54fad6a012951ec347fb13b375a8c57587a52841e1961c3ea768b2292f450257
+- tmp/pool-consumed-lease-recovery.local.log: 78021c998c37ac09818e4bf25e8df8910e7492fcb87871d6fc0c858c9f8bcb3f
+- tmp/pool-consumed-lease-recovery-final.local.log: b08258f2a93b77b9c917ac331721f53957454e1e19cd9c170da72df5ed38c077
