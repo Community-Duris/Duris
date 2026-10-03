@@ -421,8 +421,7 @@ struct account_worker
 	}
 	void erase(account_load_job *job)
 	{
-		const auto found = std::find_if(jobs.begin(), jobs.end(),
-						[job](const auto &entry)
+		const auto found = std::find_if(jobs.begin(), jobs.end(), [job](const auto &entry)
 						{ return entry.get() == job; });
 		if (found != jobs.end())
 			jobs.erase(found);
