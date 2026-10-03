@@ -51204,7 +51204,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          512
+          513
         ],
         "file": "src/persistence/sql_room_item_payload.c",
         "function": "sql_room_item_payload_record",
