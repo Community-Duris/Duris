@@ -1913,9 +1913,9 @@
         "--family",
         "room",
         "--server",
-        "{sql_binary}",
+        "{room_sql_binary}",
         "--server-sha256",
-        "{binary_sha256}"
+        "{room_binary_sha256}"
       ],
       "environment": {},
       "timeout_seconds": 1200,
