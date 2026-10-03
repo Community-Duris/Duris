@@ -853,6 +853,10 @@ void boot_zones(int);
 void clear_char(P_char);
 uint64_t allocate_character_runtime_id();
 P_char find_character_by_runtime_id(uint64_t);
+// Publish only after initialization/list insertion; retire before teardown.
+void register_character_runtime_id(P_char);
+void unregister_character_runtime_id(P_char);
+bool character_runtime_index_is_consistent();
 void clear_object(P_obj);
 void ensure_pconly_pool(void);
 void free_char(P_char);
@@ -1031,7 +1035,7 @@ bool nevent_periodic_event_is_valid(P_nevent);
 
 /* new_events.c */
 
-bool check_nevents();
+bool check_nevents(bool check_character_index = true);
 
 // epic.c
 void refund_epic_skills(P_char ch);
