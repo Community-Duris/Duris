@@ -41,6 +41,7 @@ from player_death_restitution_reconciliation import (  # noqa: E402
     reconcile_artifact_authority,
 )
 from player_death_restitution_backup import create_backup  # noqa: E402
+import player_death_recovery_visibility as recovery_visibility  # noqa: E402
 from player_death_restitution_target import (  # noqa: E402
     BACKUP_RECEIPT_FORMAT,
     TARGET_INFO_FORMAT,
@@ -1703,6 +1704,8 @@ def build_inspection(
     body: dict[str, Any] = {
         "artifact_version": TOOL_VERSION,
         "kind": "death_restitution_inspection",
+        "recovery_correlation": recovery_visibility.correlation(
+            pid, decoded["death"]["corpse"][0]["values"][6]),
         "backend": "sql",
         "source": {
             "pid": pid,
@@ -2429,6 +2432,8 @@ def plan_from_inspection(
         "related_deaths": inspection.get("related_deaths", []),
         "item_loss_epochs": inspection.get("item_loss_epochs", {}),
     }
+    if inspection.get("recovery_correlation"):
+        body["recovery_correlation"] = inspection["recovery_correlation"]
     if locker_delivery is not None:
         body["locker_delivery"] = locker_delivery
     if target is not None:
@@ -5739,6 +5744,15 @@ def parser() -> argparse.ArgumentParser:
     target_info.add_argument("--artifact", type=Path)
     target_info.add_argument("--overwrite", action="store_true")
     add_policy_arguments(target_info, maintenance=True)
+    status = sub.add_parser("status", help="protected read-only terminal custody and unresolved recovery cases")
+    status.add_argument("--artifact", required=True, type=Path)
+    status.add_argument("--overwrite", action="store_true")
+    status.add_argument("--flatfile-root", type=Path)
+    status.add_argument("--limit", type=int, default=50)
+    status.add_argument("--after-pid", type=int, default=0)
+    status.add_argument("--after-revision", type=int, default=0)
+    status.add_argument("--include-resolved", action="store_true")
+    add_policy_arguments(status, target_info=True)
     inspect = sub.add_parser("inspect")
     inspect.add_argument("--pid", required=True, type=int)
     inspect.add_argument("--death-revision", required=True, type=int)
@@ -5846,6 +5860,13 @@ def main(argv: list[str]) -> int:
             )
         else:
             print(json.dumps(artifact, sort_keys=True))
+        return 0
+    if args.command == "status":
+        from player_death_recovery_visibility import status
+        artifact = status(sys.modules[__name__], args)
+        atomic_write_json(args.artifact, artifact, args.overwrite)
+        print("recovery status written: scanned=%d unresolved_cases=%d more=%s" % (
+            artifact["scanned"], artifact["unresolved_cases"], bool(artifact["next_cursor"])))
         return 0
     if args.command == "inspect":
         target_info = load_target_info(args.target_info) if args.target_info is not None else None

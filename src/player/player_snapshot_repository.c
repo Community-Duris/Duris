@@ -1217,6 +1217,29 @@ query_result apply_death(MYSQL *connection, const player_snapshot &snapshot)
 	}
 	if (!result.ok)
 		return result;
+	// Retain durable-only descendants in the existing custody evidence before
+	// quarantine. Their UID must survive later movement/retirement of the root.
+	result = execute(
+		connection,
+		"INSERT INTO player_death_custody (pid,save_revision,item_uid,root_item_uid,parent_item_uid,"
+		"item_revision,vnum,state,owner_type,owner_id,owner_context_id,owner_revision) "
+		"SELECT " +
+			pid + "," + revision +
+			",own.item_uid,own.root_item_uid,own.parent_item_uid,"
+			"own.item_revision,own.vnum,own.state,own.owner_type,own.owner_id,own.owner_context_id,rev.revision "
+			"FROM item_current_owner own JOIN item_owner_revision rev ON rev.owner_type=own.owner_type "
+			"AND rev.owner_id=own.owner_id AND rev.owner_context_id=own.owner_context_id "
+			"WHERE own.owner_type=1 AND own.owner_id=" +
+			pid +
+			" AND own.owner_context_id=0 AND own.state=1 "
+			"AND EXISTS (SELECT 1 FROM (SELECT root_item_uid FROM player_death_custody WHERE pid=" +
+			pid + " AND save_revision=" + revision +
+			") roots WHERE roots.root_item_uid=own.root_item_uid) "
+			"AND NOT EXISTS (SELECT 1 FROM (SELECT item_uid FROM player_death_custody WHERE pid=" +
+			pid + " AND save_revision=" + revision +
+			") captured WHERE captured.item_uid=own.item_uid)");
+	if (!result.ok)
+		return result;
 	// A rejected handoff leaves custody with the player. Preserve those rows
 	// for recovery, but prevent a subsequent load from restoring disputed items.
 	const std::string owner =

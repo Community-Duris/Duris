@@ -1,3 +1,6 @@
+#include "flatfile/flatfile_store.h"
+#include "persistence/death_recovery_visibility.h"
+#include <openssl/sha.h>
 #include "flatfile/flatfile_player_repository.h"
 #include "flatfile/flatfile_boon_repository.h"
 #include "flatfile/flatfile_identity_repository.h"
@@ -497,6 +500,130 @@ static void coin_player_matrix(const fs::path &path)
 /** Inspect synthetic authority on request, otherwise exercise player repository durability and recovery. */
 int main(int argc, char **argv)
 {
+	if (argc == 3 && std::string(argv[2]) == "seed-recovery")
+	{
+		const fs::path root = argv[1];
+		fs::create_directories(root / "players");
+		fs::create_directories(root / "domains");
+		fs::create_directories(root / "player-deaths");
+		fs::permissions(root / "player-deaths", fs::perms::owner_all,
+				fs::perm_options::replace);
+		fs::create_directories(root / "identities/names");
+		fs::permissions(root / "players", fs::perms::owner_all, fs::perm_options::replace);
+		fs::permissions(root / "domains", fs::perms::owner_all, fs::perm_options::replace);
+		fs::permissions(root / "identities", fs::perms::owner_all,
+				fs::perm_options::replace);
+		fs::permissions(root / "identities/names", fs::perms::owner_all,
+				fs::perm_options::replace);
+		fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
+		std::string error;
+		int32_t pid;
+		for (int i = 1; i <= 42; ++i)
+			require(flatfile_identity_allocate_pid(root.string(), &pid, &error) ==
+					flatfile_identity_result::ok,
+				"recovery fixture PID allocation");
+		require(flatfile_identity_claim(root.string(), 42, "Player", "Account-One",
+						&error) == flatfile_identity_result::ok,
+			"recovery fixture identity");
+		player_snapshot full = make_full(1);
+		require(flatfile_player_snapshot_apply(root.string(), full, &error).outcome ==
+				player_save_apply_outcome::applied,
+			"recovery fixture baseline");
+		// Synthetic historical corruption: custody still has child 101, but its
+		// physical payload is missing. Bypass the modern write guard ONLY here.
+		full.items.resize(1);
+		std::vector<uint8_t> payload;
+		require(player_snapshot_encode(full, &payload) == player_snapshot_codec_result::ok,
+			"fixture codec");
+		std::vector<uint8_t> file = { 'D', 'U', 'R', 'P', 'L', 'Y', 'R', 0 };
+		auto number = [&](uint64_t value, size_t bytes)
+		{
+			for (size_t i = 0; i < bytes; ++i)
+				file.push_back(value >> (8 * i));
+		};
+		number(1, 4);
+		number(payload.size(), 4);
+		number(42, 4);
+		number(1, 8);
+		number(full.components, 8);
+		unsigned char digest[SHA256_DIGEST_LENGTH];
+		SHA256(payload.data(), payload.size(), digest);
+		file.insert(file.end(), digest, digest + sizeof(digest));
+		file.insert(file.end(), payload.begin(), payload.end());
+		require(flatfile_atomic_write((root / "players").string(), "42.snapshot", file,
+					      &error),
+			"fixture gap write");
+		player_load_request request = {};
+		request.request_id = 1;
+		request.pid = 42;
+		request.account_name = "account-one";
+		request.deadline_usec =
+			persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+		const auto loaded = flatfile_player_load_repository_execute(root.string(), request);
+		require(loaded.outcome == player_load_outcome::applied &&
+				loaded.missing_payload_rows == 1 &&
+				loaded.snapshot.items.size() == 1,
+			"degraded load did not retain missing descendant");
+		auto death = make_death(2);
+		death.death->corpse.resize(2);
+		death.death->custody.resize(1);
+		death.death->wallet_before = {};
+		death.death->wallet_pile_uid = 0;
+		item_transfer_payload transfer = {};
+		transfer.from_owner = { item_owner_type::player, 42, 0 };
+		transfer.to_owner = { item_owner_type::corpse, (uint64_t{ 42 } << 32) | 9001, 0 };
+		transfer.reason = item_transfer_reason::corpse_create;
+		transfer.reason_id = 9001;
+		transfer.expected_from_revision = 1;
+		transfer.selected_item_uid = 100;
+		transfer.target_root_item_uid = 100;
+		transfer.corpse.present = true;
+		transfer.corpse.room_vnum = 1201;
+		transfer.corpse.values = death.death->corpse[0].values;
+		transfer.corpse.owner_name = "Player";
+		transfer.item_count = 1;
+		transfer.items[0] = {
+			100, 100, 0, 1, full.items[0].vnum, item_custody_state::active
+		};
+		std::vector<uint8_t> item_blob;
+		require(player_item_snapshot_list_encode(full.items, &item_blob) ==
+				player_snapshot_codec_result::ok,
+			"fixture item encode");
+		transfer.item_blob_size = item_blob.size();
+		std::copy(item_blob.begin(), item_blob.end(), transfer.item_blob.begin());
+		critical_operation_id id = {};
+		id.bytes[0] = 77;
+		critical_command command;
+		require(item_transfer_command_build(&command, id, transfer,
+						    critical_source_site::combat,
+						    critical_deadline_class::terminal),
+			"fixture disputed batch command");
+		command.accepted_at_usec = 1;
+		const auto refused = flatfile_item_repository_apply(root.string(), command);
+		require(refused.outcome == critical_apply_outcome::terminal_failure &&
+				refused.error_code == ITEM_TRANSFER_TOPOLOGY_CARDINALITY,
+			"unnamed topology refusal: " + std::to_string(refused.error_code));
+		setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+		require(flatfile_player_snapshot_apply(root.string(), death, &error).outcome ==
+				player_save_apply_outcome::retryable_failure,
+			"fixture interrupted death should remain unresolved");
+		require(fs::exists(root / "domains/.critical-authority-transaction"),
+			"interruption must leave recoverable afterimages");
+		unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+		const auto restarted = flatfile_player_snapshot_apply(root.string(), death, &error);
+		require(restarted.outcome == player_save_apply_outcome::already_applied,
+			"fixture death restart reconciliation: " +
+				std::to_string(static_cast<unsigned>(restarted.outcome)) +
+				" error=" + std::to_string(restarted.error_code) + " " + error);
+		player_snapshot saved;
+		require(flatfile_player_snapshot_read_file((root / "player-deaths").string(),
+							   "42-2.death", 42, &saved, &error) ==
+					flatfile_player_load_result::ok &&
+				saved.death->custody.size() == 2 &&
+				saved.death->custody.back().item.item_uid == 101,
+			"durable-only child evidence disappeared");
+		return 0;
+	}
 	if (argc == 3 && std::string(argv[2]) == "seed-creation-bank")
 	{
 		std::string error;

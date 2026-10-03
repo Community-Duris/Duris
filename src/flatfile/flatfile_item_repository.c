@@ -1,3 +1,4 @@
+#include "persistence/death_recovery_visibility.h"
 #include "flatfile/flatfile_item_repository.h"
 
 #include "flatfile/flatfile_auction_repository.h"
@@ -756,7 +757,7 @@ unsigned int apply_transfer(ownership_catalog *catalog, const item_transfer_payl
 					break;
 				}
 		if (selected.size() != payload.item_count)
-			return EMSGSIZE;
+			return ITEM_TRANSFER_TOPOLOGY_CARDINALITY;
 		std::sort(selected.begin(), selected.end(), [](const auto *left, const auto *right)
 			  { return left->item_uid < right->item_uid; });
 		for (size_t index = 0; index < payload.item_count; ++index)
@@ -1000,6 +1001,19 @@ flatfile_item_repository_result flatfile_item_repository_load_owner(
 			       flatfile_item_repository_result::invalid;
 	return flatfile_item_repository_load_owner_locked(root, authority, owner, owner_revision,
 							  items, error);
+}
+
+flatfile_item_repository_result flatfile_item_repository_recovery_catalog_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	std::vector<flatfile_item_ownership_record> *items, std::string *error)
+{
+	if (!lock.matches(root) || !items)
+		return flatfile_item_repository_result::invalid;
+	ownership_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded == flatfile_item_repository_result::ok)
+		*items = std::move(catalog.items);
+	return loaded;
 }
 
 flatfile_item_repository_result flatfile_item_repository_load_owner_locked(
