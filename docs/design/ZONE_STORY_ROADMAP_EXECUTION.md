@@ -21,6 +21,34 @@ Gameplay-qualified requires actual committed journeys and recovery evidence.
 These labels are independent. A single successful terminal exchange proves
 neither every branch nor every historical prerequisite.
 
+## Repair reporting and news handoff
+
+Native zone and quest repairs must be easy to identify independently of
+journal authoring, audit-tool corrections and proposed capability work.
+Use a separate, clearly named `fix` commit where practical. Every implemented
+repair belongs in the PR's **Zone and quest repairs (news)** section with:
+
+- Zone and affected quest or interaction, plus the fix commit.
+- Concrete player trigger and before/after behavior.
+- Validation performed and remaining material limitations.
+- A short player-facing news sentence stating only the shipped improvement.
+
+For example, a repaired missing exit should name the restored route and
+tested access; a proposed exit repair is still a pending finding. Preserve
+the source evidence and builder decisions in the dossier. Do not present
+new journal hints, static source review, unsupported objectives or planned
+fixes as repairs that players can already use. Accounting guards remain
+until their required qualification is complete. The Mini Zones checkpoint
+below ships no native zone/quest content repair.
+
+Existing completed feature fixes are listed explicitly for the PR/news handoff:
+
+| Fix reference | Shipped behavior | News treatment |
+| --- | --- | --- |
+| [b0e4ea60a](https://github.com/Community-Duris/Duris/commit/b0e4ea60a9937da5fd1789edd43402cb59672ef5): quest journal naming | Journals/dailies qualify duplicate area names with the source area, and lookup accepts those exact qualified alternatives. Previously the ambiguity prompt could request a full name that was still ambiguous. | Player-facing: “Quest journals now distinguish areas that share the same name.” Feature/journey lookup regression evidence is recorded in the qualification document. |
+| [b0e4ea60a](https://github.com/Community-Duris/Duris/commit/b0e4ea60a9937da5fd1789edd43402cb59672ef5): quest state integrity | Save/recovery validation rejects missing required metadata and mismatched observation IDs; later accounting integration preserves caller-owned deletion and retry obligations. | Player-facing: “Zone quest progress saving and recovery now reject inconsistent records.” SQL/flat-file and feature regression evidence is recorded in the qualification document. |
+| [492c6f1bd](https://github.com/Community-Duris/Duris/commit/492c6f1bd7635f22782888a3567763b7b90a39eb): shared prototype audit | Builder source lookup includes active administrative-area prototypes, resolving valid paper 5 without adding discoverable ownership. Production regression verifies both facts. | Builder-facing audit correction. The Tharnadia map exchange already existed; do not announce a repaired paper quest. |
+
 ## Progress
 
 | Priority | Zone | Source story map | Deployable journal | Remaining qualification |
@@ -58,9 +86,10 @@ neither every branch nor every historical prerequisite.
 | 31 | Ultarium | [Comprehensive source dossier](zone-stories/ULTARIUM.md): all 22 blocks/seventeen exchanges/five addressed, 268 rooms/82 mobs/71 objects/two shops, 338 resets/227 families, three literal assignments, computed teachers/shared effects and bounded foreign continuation | Revision one: seven outcomes/eight support rows, twenty-three contacts/twenty-two optional checks; competing distinct souls, same-name kinds, keys, supplied proof and foreign ownership | Active rare/holding/capped/nested/roaming sources/appearances; source/gift/episode/access/travel/effect/actor-state adapters; paid rename/pet/epic lesson settlement; balanced soul/clue/name/claim repair |
 | 32 | Surface Realm | [Comprehensive source dossier](zone-stories/SURFACE_REALM.md): all 141 blocks/31 exchanges/36 addressed, 160,004 rooms in 562 prose/56 metadata/311 exit groups, 234 mobs/78 objects, 1,736 resets/320 families, eight literal assignments/104 computed teachers and bounded foreign evidence | Revision one: seventeen outcomes/six support rows, 37 contacts/31 optional checks; exact competing campaign materials, repeated supplies, distinct bass, actual tomb continuation and supplied routes | Active source/recipient/episode qualification; accepted treant/fishing/helper/rift/actor/region and paid ship/class/fee events; targeted two-edge/clue repair and deliberate bracer/invasion/descent policy |
 | 33 | Tharnadia | [Comprehensive source dossier](zone-stories/THARNADIA.md): all 44 native blocks/nineteen exchanges/24 addressed families, 584 rooms/176 mobs/206 objects/nineteen shops, 1,480 resets/661 families, 31 literal assignments/computed teachers and bounded foreign/shared review | Revision two: eight outcomes/eight services/one typed-food exclusion, 26 contacts/23 optional checks; exact toys, supplied medicine finale, paper-map correction and independent commissions | Active source/container/search/appearance qualification; accepted first-source/dialogue/access/healing/lesson/pet events; typed/coin-only and paid town settlement; builder-selected missing-mobile/clue/source/claim repairs |
-| 34–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 34 | Mini Zones | [Comprehensive source dossier](zone-stories/MINI_ZONES.md): all 21 blocks/seven exchanges/eleven addressed families, 300 rooms/125 mobs/124 objects/five shops, 548 resets/358 families, six literal assignments and bounded shared/foreign review | Revision one: three outcomes/four services, eighteen contacts/sixteen optional checks; exact maze/cutpurse, distinct sword and five-crystal guidance | Active source/recipient/episode and learned access/travel/effect evidence; guarded fee/charm/pet settlement; builder-selected missing-edge/identity/claim/prose repairs with clear fix/news reporting |
+| 35–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Mini Zones, followed by the City of Torrhan.
+The next area is the City of Torrhan.
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -69,6 +98,9 @@ matches, or a candidate item graph was extracted.
 
 | Finding | Status / scope | Concrete next action |
 | --- | --- | --- |
+| ZSQ-MINI-ACCESS / EPISODES / SOURCES | Three independent outcomes; optional knight history and supplied sword pieces; hidden nested letter/hilt; exact maze route and cutpurse door. Nine outgoing targets are absent, while city/tavern/outpost have valid surface entries. | Preserve supplied native inputs. Qualify actual reset/shop/GET/P-parent and recipient generations, accepted phrase/unlock/open/arrival and explicit all-stage episode policy. Builder selects intended missing-edge repairs, reported separately when shipped. |
+| ZSQ-MINI-FEES / PETS / CONTENT | Four six-item plus 400,000-copper armor services are guarded. Ghostly shop takes coins rather than narrated marks; prose claims five types but four recipes exist. Pet claim restoration is commented out. | Coordinate exact material/wallet/output receipt and mount/owner/ticket settlement before enablement. Choose truthful armor/shop/sword prose or balanced new mechanics. Treat these as pending repairs, with player-facing PR/news entries only after implementation and validation. |
+| ZSQ-MINI-IDENTITY / DISPATCH | Dryad assignments/branch/current room identities disagree; navigator attaches to an insect swarm; miner really owns random world quests. Magik receives CMD_MELEE_HIT 1000 and its dispel branch is reachable. Legacy room M metadata is ignored. | Builder chooses intended bindings/destinations; bound dryad messages and freeze validated actor/follower state. Preserve real generated tasks. Add accepted targeted effect evidence if desired; do not repair an already reachable Magik dispatch or invent a metadata mechanic. |
 | ZSQ-PEARL-PLACEMENT / MISSING-SOURCES | All twenty campaign NPCs and four entrance-key spirits load only in exitless 142200. Invitation, sewer fragment, scepter and several chest/key prototypes lack ordinary placement; a matching key does not seed its chest or contents. | Builder chooses restored permanent expedition versus retired staff-event content. Select exact named-zone placements/reset owners/caps, add complete item/container sources and preserve native IDs, balance and supplied stock. Qualify directed first-copy/recipient journeys and disappearance/recovery before promising availability. |
 | ZSQ-PEARL-ENTRY / SHIP / ACCESS | Static exit goes outward to surface mountains without a reviewed reciprocal entrance. Mobile hunter ship/linking is disabled; early keys are held, later key-zero doors need approved routes, and 82 room descriptions are empty. | Choose static entry or coordinated mobile restoration; resolve loaded map/interior topology, key/source/lock policy and critical navigation text. Keep Ghalasax separate from the wreck's skeletal dragon; qualify confirmed arrival, traps/secret doors and recovery without inventing a personal kill. |
 | ZSQ-PEARL-OWNERSHIP / TRANSFORMS / REVEAL | Foreign contact encounters can persist under physical discovery, but hints link the current area's journal while the owned Black Pearl journal remains locked until wreck discovery. Three same-named fragment replacements and two letters to Lyle have distinct recipe roles; nine returns are meaningful guidance. | Add explicit owned campaign introductions/reveal and correct journal hints, retaining physical discovery and discovered-zone daily gating. Capture exact transform UID lineage; qualify supplied/spent pieces, nine-root allocation, all-stage attempts and pre/post-discovery receipt replay. |
@@ -1504,8 +1536,58 @@ server or migration content was changed in this checkpoint. Played source,
 search, combat, payment, travel and recipient availability remain unqualified;
 accounting activation and operational DB/server work were not performed.
 
-Current catalog: **55 journals, 1,750 achievement units, 1,516 potential daily
+Tharnadia checkpoint catalog: **55 journals, 1,750 achievement units, 1,516 potential daily
 units and 2,227 projected rows; 33 of 220 roadmap areas are source-comprehensive,
 with 187 remaining.** All 2,668 native definitions, revision two, fingerprint,
 registry and fifty-four other maps remain unchanged in this checkpoint. Continue
 with Mini Zones and the City of Torrhan. Active, ready accounting remains mandatory.
+
+
+## Mini Zones completed source map — October 3, 2026
+
+Priority 34 now has a [comprehensive dossier](zone-stories/MINI_ZONES.md),
+revision-one sidecar and reproducible source index. The review covers all
+21 native blocks/seven exchanges/eleven addressed families, 300 rooms in
+257 exact prose/36 header/71 metadata/180 exit groups, 125 mobiles/124
+objects/five shops, 548 resets/all 358 families and six literal assignments.
+Complete local procedures, computed inn/pet roles, actual sword dispatch,
+shared speech/shop/world-quest execution and bounded foreign entry/prototype
+sources are explained. All local reset targets resolve; all mobiles are placed.
+
+The journal has two stories, one request and four services, eighteen contacts
+and sixteen optional checks. Dishwasher jar delivery, Worach's release and
+Magik restoration are independent. Four exact sword pieces can be supplied
+without producer history. Four armor recipes retain five crystals, matching
+ghostly base and full fee; they remain guarded services. General discovery
+does not assert that every mini-area was visited or the city was restored.
+
+The full dossier separates working maze/door/weapon behavior from nine missing
+boundary targets, dryad/navigator identity drift, ignored metadata, unimplemented
+pet restoration and lore mismatches. Each has a bounded qualification or
+builder repair decision. **No native zone, quest, reward, procedure, schema or
+migration repair is shipped in this checkpoint.** Future native fixes follow
+the separate commit and PR/news reporting convention above.
+
+Validation passed: `python tests/async/test_zone_story_quest_production_catalog.py`
+under Windows Python, including all 34 reproducible source indices; the initial
+WSL run stopped on an environment memory-allocation error. The final native
+`test_zone_story_quest_story.py` run passes C++20 warnings-as-errors, all 56
+maps/native file loading, all 27 starter/town mappings, distinct/duplicate
+strips, worn/carried hilt, supplied pieces without producer history,
+read-only readiness, four/five crystals, service exclusion, three independent
+receipts and foreign-credit exclusion. The maintained SQL `make -C src`
+build, changed-line formatting and whitespace checks pass. Source/link review
+checks 3,937 local/source-line links across 74 documents, exact generated
+catalog agreement, unchanged native definitions/revision/fingerprint/registry
+and the other 55 maps, and the original order of all 220 priorities.
+Played source, search, travel, charm, targeted combat effects, paid services
+and recipient availability remain unqualified. Accounting activation and
+operational DB/server journeys are not performed by this source checkpoint.
+
+Current catalog: **56 journals, 1,746 achievement units, 1,516 potential daily
+units and 2,227 projected rows; 34 of 220 roadmap areas are source-comprehensive,
+with 186 remaining.** Four guarded armor recipes become services, reducing
+the achievement denominator without changing native definitions or rewards.
+All 2,668 native definitions, revision two, fingerprint, registry and the
+other fifty-five maps are preserved. Continue with the City of Torrhan.
+Active, ready accounting remains mandatory.

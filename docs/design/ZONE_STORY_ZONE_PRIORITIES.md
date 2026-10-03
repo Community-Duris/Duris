@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 33 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 34 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -42,6 +42,12 @@ the actual tomb-key route, distinct bass and repeated-material guidance.
 Custom source/helper/rift/actor and regional presentation need accepted events;
 missing boundary edges, mixed fees, bracer supply and disabled campaign endpoints
 have targeted qualification and balanced repair plans.
+Mini Zones' [completed dossier](zone-stories/MINI_ZONES.md) adds three
+independent outcomes and four armor services, eighteen contacts and sixteen
+optional checks. The tip jar clue, actual Maze of Souls route, optional
+knight release and four distinct Magik pieces have exact progression guidance.
+Missing boundary exits, procedure identity drift, fee/pet settlement and
+prose corrections remain planned repairs with an explicit PR/news handoff.
 Active reset-generation qualification is a shared prerequisite for the pilots.
 
 ## Reviewed first integrations
@@ -81,7 +87,7 @@ Active reset-generation qualification is a shared prerequisite for the pilots.
 | 31 | [The Sky City of Ultarium](zone-stories/ULTARIUM.md) (`cosmic`) | Foreman clue → nested second draft → engineer cape; harpy golem plans → old head; recovered study → distinct delivery copy → foreign Xavier; three keys → four distinct council souls → rare immaterial box; competing halo/donation offerings; security-key smuggler; raw → wearable wind; six trapper barters/hydra gorget as services. | Source-comprehensive, revision one: seven outcomes/eight support rows, twenty-three contacts and twenty-two optional checks. Exact competing proof and same-name kinds preserved. Rare/holding sources, source/gift/episode/access/effect tracking, paid services and balanced soul/clue/pet-claim repairs remain planned. |
 | 32 | [The Surface Realm of Duris](zone-stories/SURFACE_REALM.md) (`surface`) | Four distinct warden trophies → book; four separate labyrinthmaster hearts → four elemental lockets → five-material mystic finale → actual connector tomb key; opposing rival/prophet bounties; five claws/totem; grey paw → white potion → independent nomad; three crystals/two egg recipients; three markets and three equipment services. | Source-comprehensive, revision one: seventeen outcomes/six support rows, 37 contacts/31 optional checks. Complete grouped grid/source/custom/foreign review. Episode allocation, first-source/gift, actual travel/helper/actor and paid services unqualified; two missing exits, bracer supply, copied proof/clue text, dormant invasion and disabled descent have balanced plans. |
 | 33 | [Tharnadia - City of Humans](zone-stories/THARNADIA.md) (`tharnadia`) | Inn meal → three distinct toy instruments → storyteller's blank book and Phobos delivery; optional nightshade/mandrake → maroon vial → vial plus disputed pendant → retiring Chiln finale; three independent wizard commissions; maps, medicine, wand and four weapon families as support. | Source-comprehensive, revision two: eight outcomes/eight support rows/one typed-food exclusion, 26 contacts/23 optional checks. Paper 5 exists in active limbo; audit lookup corrected. Global container selection, source/search/custody, missing mobile 132677, conflicting toy/pup/desk clues, guarded fees and absent healing/lesson/pet endpoints have balanced qualification plans. |
-| 34 | [Mini Zones](../../areas/qst/minizones.qst) (`minizones`) | Local spirit history; ghostly armor + blood crystals → named armor transformations. | Candidate reviewed in Q/M source. Separate the independent mini-areas and service recipes before campaign grouping. |
+| 34 | [Mini Zones](zone-stories/MINI_ZONES.md) (`minizones`) | Tip jar → dishwasher/cutpurse clue; black-wall maze → revenant's parchment → knight's blue-green strip; three distinct strips plus hidden golden hilt → Magik, or supplied pieces; four matching ghostly bases + five crystals + fee as services. Independent tree/inn/outpost exploration. | Source-comprehensive, revision one: three outcomes/four services, eighteen contacts/all eleven addressed families, sixteen optional checks. Actual maze and sword dispatch verified in source; first-source/gift/access/effect/episode/payment remain unqualified. Nine missing exits, dryad/navigator identity, claim restoration and prose repairs remain planned and must be reported clearly when implemented. |
 
 ## New authored journal batch
 

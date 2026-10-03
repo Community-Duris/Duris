@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 55 &&
-				tracker.summary_for(7, 42).total == 1750,
+		require(catalog.story_mappings.size() == 56 &&
+				tracker.summary_for(7, 42).total == 1746,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -202,7 +202,9 @@ int main(int argc, char **argv)
 				zone_story_quest_catalog::eligible_definition_count(
 					file_catalog, 5000, 2) == 17 &&
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
-										    1325, 2) == 8,
+										    1325, 2) == 8 &&
+				zone_story_quest_catalog::eligible_definition_count(file_catalog,
+										    57, 2) == 3,
 			"complete Alatorin/Newhaven/Faerie/Verspin/Ship Yards/Ultarium/Surface sidecars failed the native file loader");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -2858,6 +2860,108 @@ int main(int argc, char **argv)
 				restored_tharnadia.progress_for_zone(7, 42, 989).completed == 0 &&
 				restored_tharnadia.progress_for_zone(7, 42, 292).completed == 0,
 			"city recovery merged requests or fabricated foreign recovery credit");
+		const auto &mini_sword = story_for("minizones", "restore-magik");
+		const auto &mini_knight = story_for("minizones", "release-worach");
+		const auto &mini_tips = story_for("minizones", "tips-for-the-dishwasher");
+		service supplied_mini(catalog);
+		require(supplied_mini.discover_zone(7, 42, 57, 5868, 100, "arrival") ==
+					result::applied &&
+				supplied_mini.meet_npc(7, 42, 5801, 5904, 101) == result::applied,
+			"Mini Zones arrival and wise-man encounter failed");
+		const auto mini_section = [&](const std::string &view, const auto &entry)
+		{
+			const auto start = view.find("] " + entry.title + "\r\n");
+			require(start != std::string::npos, "Mini Zones story section missing");
+			const auto end = view.find("\r\n  [", start);
+			return view.substr(start, end == std::string::npos ? end : end - start);
+		};
+		supplies.carried.clear();
+		supplies.equipped.clear();
+		supplies.carried[5793] = 3;
+		journal = supplied_mini.render_journal(7, 42, 57, 10, 1, 102, false, false,
+						       &supplies);
+		require(mini_section(journal, mini_sword)
+						.find("[Missing now] " +
+						      mini_sword.steps[3].text) !=
+					std::string::npos &&
+				mini_section(journal, mini_sword)
+						.find("[Missing now] " +
+						      mini_sword.steps[4].text) !=
+					std::string::npos,
+			"duplicate metal strips replaced distinct sword kinds");
+		supplies.carried[5793] = supplies.carried[5794] = supplies.carried[5795] = 1;
+		supplies.equipped[16] = 5806;
+		journal = supplied_mini.render_journal(7, 42, 57, 10, 1, 103, false, false,
+						       &supplies);
+		require(mini_section(journal, mini_sword)
+					.find("[Missing now] " + mini_sword.steps[5].text) !=
+				std::string::npos,
+			"equipped hilt counted as a carried offering");
+		supplies.equipped.clear();
+		supplies.carried[5806] = 1;
+		const auto mini_before_read = supplied_mini.serialize_state();
+		journal = supplied_mini.render_journal(7, 42, 57, 10, 1, 104, false, false,
+						       &supplies);
+		for (size_t i = 2; i < 6; ++i)
+			require(mini_section(journal, mini_sword)
+						.find("[Ready now] " + mini_sword.steps[i].text) !=
+					std::string::npos,
+				"supplied exact sword material was not ready");
+		require(supplied_mini.serialize_state() == mini_before_read &&
+				mini_section(journal, mini_sword)
+						.find("Next: " + mini_sword.steps.back().text) !=
+					std::string::npos &&
+				supplied_mini.progress_for_zone(7, 42, 57).completed == 0,
+			"supplied sword materials invented history or blocked the finale");
+		record(supplied_mini, mini_sword.contracts.front(), "mini-supplied-sword", 57,
+		       5904);
+		require(supplied_mini.meet_npc(7, 42, 5813, 5989, 105) == result::applied,
+			"Mini Zones battlemaster encounter failed");
+		const auto &mini_armor = story_for("minizones", "thrulmar-armplates");
+		supplies.carried.clear();
+		supplies.carried[5811] = 1;
+		supplies.carried[500025] = 4;
+		journal = supplied_mini.render_journal(7, 42, 57, 10, 1, 106, false, false,
+						       &supplies);
+		require(mini_section(journal, mini_armor)
+					.find("[Missing now] " + mini_armor.steps[1].text) !=
+				std::string::npos,
+			"four blood crystals satisfied a five-crystal service");
+		supplies.carried[500025] = 5;
+		const auto mini_before_service_read = supplied_mini.serialize_state();
+		journal = supplied_mini.render_journal(7, 42, 57, 10, 1, 107, false, false,
+						       &supplies);
+		require(mini_section(journal, mini_armor)
+						.find("[Ready now] " + mini_armor.steps[1].text) !=
+					std::string::npos &&
+				supplied_mini.serialize_state() == mini_before_service_read &&
+				supplied_mini.progress_for_zone(7, 42, 57).completed == 1,
+			"prepared armor materials mutated history or earned a quest outcome");
+		for (const char *id : { "thrulmar-armplates", "thrulmar-legplates",
+					"thrulmar-gloves", "thrulmar-boots" })
+		{
+			const auto &recipe = story_for("minizones", id);
+			require(recipe.category == "service" && recipe.steps[1].count == 5 &&
+					recipe.steps[1].item_vnums ==
+						std::vector<int32_t>{ 500025 },
+				"Mini Zones recipe lost its exact crystal quantity or service role");
+			record(supplied_mini, recipe.contracts.front(), id, 57, 5989);
+		}
+		require(supplied_mini.progress_for_zone(7, 42, 57).completed == 1 &&
+				supplied_mini.progress_for_zone(7, 42, 57).total == 3,
+			"armor services inflated Mini Zones outcomes");
+		service restored_mini(catalog);
+		require(restored_mini.deserialize_state(supplied_mini.serialize_state(), &error) &&
+				restored_mini.progress_for_zone(7, 42, 57).completed == 1,
+			"supplied Mini Zones finale lost its independent receipt on recovery");
+		record(restored_mini, mini_knight.contracts.front(), "mini-knight", 57, 5892);
+		record(restored_mini, mini_tips.contracts.front(), "mini-tips", 57, 5845);
+		service recovered_mini(catalog);
+		require(recovered_mini.deserialize_state(restored_mini.serialize_state(), &error) &&
+				recovered_mini.progress_for_zone(7, 42, 57).completed == 3 &&
+				recovered_mini.progress_for_zone(7, 42, 57).total == 3 &&
+				recovered_mini.progress_for_zone(7, 42, 5000).completed == 0,
+			"independent Mini Zones outcomes or foreign ownership failed recovery");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

@@ -1114,7 +1114,77 @@ assert [(r["arguments"][2],r["arguments"][3]) for r in tharnadia["reset_commands
 assert any(r["command"] == "M" and r["arguments"][1] == 132677 for r in tharnadia["reset_commands"])
 assert 132677 not in tharnadia["mobs"] and 132677 in tharnadia["items"]
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia"):
+# Mini Zones: a supplied sword set can skip the knight's independent release;
+# four mixed-fee armor recipes are services rather than daily achievements.
+mini = inventory_module.area_evidence(ROOT, "minizones")
+mini_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "minizones")
+mini_stories = {s["id"]: s for s in mini_mapping["stories"]}
+assert mini_mapping["schema_version"] == 3 and mini_mapping["revision"] == 1
+assert mini_mapping["coverage"] == "complete" and not mini_mapping["exclusions"]
+assert len(mini_stories) == 7 and len(mini_mapping["contacts"]) == 18
+assert collections.Counter(s["category"] for s in mini_stories.values()) == {"story":2,"request":1,"service":4}
+assert sum(t.get("optional", False) for s in mini_stories.values() for t in s["steps"]) == 16
+assert len(mini["requests"]) == 7 and len(mini["dialogue"]) == 11
+assert len(mini["mobs"]) == 125 and len(mini["items"]) == 124
+assert len(mini["reset_commands"]) == 548 and len(mini["special_assignments"]) == 6
+assert {tuple(sorted(b.items())) for s in mini_stories.values() for b in s["contracts"]} == {
+    tuple(sorted(r["block"]["binding"].items())) for r in mini["requests"]}
+knight = mini_stories["release-worach"]
+sword = mini_stories["restore-magik"]
+assert knight["contracts"] == [{"giver_vnum":5800,"completion_key":"give=I:5804;receive=I:5794;disappear=1"}]
+assert sword["contracts"] == [{"giver_vnum":5801,"completion_key":"give=I:5793,I:5794,I:5795,I:5806;receive=I:5805;disappear=1"}]
+assert sword["steps"][0]["contracts"] == knight["contracts"]
+assert all(t.get("optional") for t in sword["steps"][:-1])
+assert [t["item_vnums"] for t in sword["steps"] if t["kind"] == "carried_item"] == [[5804],[5793],[5794],[5795],[5806]]
+assert mini_stories["tips-for-the-dishwasher"]["contracts"] == [{"giver_vnum":5750,"completion_key":"give=I:5750;receive=;disappear=0"}]
+for id, base, output in (("armplates",5811,5815),("legplates",5812,5816),("gloves",5813,5817),("boots",5814,5818)):
+    recipe = mini_stories[f"thrulmar-{id}"]
+    assert recipe["category"] == "service"
+    assert [(t["item_vnums"],t["count"]) for t in recipe["steps"][:-1]] == [([base],1),([500025],5)]
+    assert recipe["contracts"] == [{"giver_vnum":5813,"completion_key":f"give=C:400000,I:{base},I:500025,I:500025,I:500025,I:500025,I:500025;receive=I:{output};disappear=0"}]
+    definition = next(r["definition"] for r in mini["requests"] if r["block"]["binding"] == recipe["contracts"][0])
+    assert not definition["daily_eligible"] and definition["daily_exclusion"] == "Unsupported durable offering"
+mini_units = [u for u in catalog_module.story_units(catalog) if u["zone_number"] == 57]
+assert len(mini_units) == 7 and sum(u["achievement"] for u in mini_units) == 3
+assert sum(u["daily_candidate"] for u in mini_units) == 3
+contacts = {c["mob_vnum"]: c for c in mini_mapping["contacts"]}
+for vnum, contact in contacts.items():
+    assert contact["keyword"] in mini["mobs"][vnum]["keywords"]
+assert contacts[5803]["keyword"] == "revanant" and contacts[5759]["keyword"] == "waittress"
+assert not contacts[5755]["topics"]
+for d in mini["dialogue"]:
+    assert set(d["body"][0].rstrip("~").split()) <= set(contacts[d["giver_vnum"]]["topics"])
+parent = room = None
+sources = collections.defaultdict(list)
+for reset in mini["reset_commands"]:
+    c,v = reset["command"],reset["arguments"]
+    assert len(v) == 8 and v[5:] == [0,0,0]
+    if c in ("M","F"): parent,room = v[1],v[3]
+    if c == "G" and v[1] in (5750,5793,5795,5796,5803,5807):
+        sources[v[1]].append((parent,room,v[2],v[4]))
+    if c == "P" and v[1] in (5804,5806):
+        assert (v[1],v[2],v[3],v[4]) in ((5804,1,5803,100),(5806,1,5807,100))
+assert sources == {5750:[(5759,5831,1,100)],5793:[(5798,5879,1,100)],
+                   5795:[(5802,5920,1,100)],5796:[(5799,5882,1,100)],
+                   5803:[(5803,5963,1,100)],5807:[(5804,5928,1,100)]}
+assert not any(r["command"] in ("G","E","O","P") and r["arguments"][1] == 5794 for r in mini["reset_commands"])
+assert {(a["kind"],a["vnum"],a["function"]) for a in mini["special_assignments"]} == {
+    ("mob",5701,"dryad"),("mob",5702,"dryad"),("mob",5739,"navagator"),
+    ("mob",5755,"world_quest"),("room",5783,"pet_shops"),("obj",5805,"sword_named_magik")}
+mini_world = (ROOT / "areas/wld/minizones.wld").read_text()
+rooms = {int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",mini_world,re.M|re.S)}
+assert set(rooms) == set(range(5700,6000))
+edges = {v:{int(d):(int(f),int(k),int(t)) for d,f,k,t in re.findall(r"\bD(\d+)\s+[^~]*~[^~]*~\s*(-?\d+)\s+(-?\d+)\s+(-?\d+)",b,re.S)} for v,b in rooms.items()}
+position = 5940
+for direction in (1,2,1,1,3,2,1,1):
+    flags,key,position = edges[position][direction]
+    assert flags == 0 and key == 0
+assert position == 5960
+for direction in (1,2,2): position = edges[position][direction][2]
+assert position == 5963
+assert edges[5833][1] == (3,-2,5834) and edges[5834][3] == (3,-2,5833)
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

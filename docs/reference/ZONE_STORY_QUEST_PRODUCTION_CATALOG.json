@@ -41256,6 +41256,542 @@
     {
       "contacts": [
         {
+          "description": "Broken Blade kitchen. Ask waittress about the disputed tips; delivering her jar gives gratitude and a cutpurse clue, without a material reward.",
+          "keyword": "dishwasher",
+          "mob_vnum": 5750,
+          "name": "Dishwasher",
+          "topics": [
+            "waittress"
+          ]
+        },
+        {
+          "description": "Tavern dining room. Carries the exact hidden tip jar; she has no addressed quest response. Recover actual custody through a valid route.",
+          "keyword": "waittress",
+          "mob_vnum": 5759,
+          "name": "Young waitress",
+          "topics": []
+        },
+        {
+          "description": "Ruined city intersection. Ask bastard or driedel for its account of the destruction; this is lore, without another terminal or resurrection.",
+          "keyword": "spirit",
+          "mob_vnum": 5797,
+          "name": "Groaning spirit",
+          "topics": [
+            "bastard",
+            "driedel"
+          ]
+        },
+        {
+          "description": "Dead end beyond the ruined bazaar alley. Ask driedel or worach for his history and maze route. The release parchment produces one blue-green strip and retires this appearance.",
+          "keyword": "worach",
+          "mob_vnum": 5800,
+          "name": "Worach, the undead knight",
+          "topics": [
+            "driedel",
+            "worach"
+          ]
+        },
+        {
+          "description": "Forest hut beyond the city wall. Ask driedel for city history. Bring three distinct strips plus the golden hilt together for Magik; the parchment delivery is optional preparation.",
+          "keyword": "wise",
+          "mob_vnum": 5801,
+          "name": "Old wise man",
+          "topics": [
+            "driedel"
+          ]
+        },
+        {
+          "description": "Destroyed city shop. Carries the silvery-blue metal strip. Its stealth and flight make the reset location a lead rather than a guarantee.",
+          "keyword": "skulk",
+          "mob_vnum": 5798,
+          "name": "Shadowy skulk",
+          "topics": []
+        },
+        {
+          "description": "Upper dark-stair lair inside the broken tower. Carries the silvery-green metal strip; the companion plaque is nearby lore.",
+          "keyword": "bodak",
+          "mob_vnum": 5802,
+          "name": "Bodak",
+          "topics": []
+        },
+        {
+          "description": "Secret magical cache beyond the Maze of Souls. Carries the small satchel containing the release parchment; open the accessible bag and take the actual letter.",
+          "keyword": "revanant",
+          "mob_vnum": 5803,
+          "name": "Pale revenant",
+          "topics": []
+        },
+        {
+          "description": "Quiet southeastern city corner. Its carried bulb contains the hidden golden hilt. Nearby yellow musk zombies are separate creatures.",
+          "keyword": "creeper",
+          "mob_vnum": 5804,
+          "name": "Yellow musk creeper",
+          "topics": []
+        },
+        {
+          "description": "Well-kept ruined shop. One servant declaration carries the tiny golden panel key; another carries only a broom. Inspect the actual appearance and item.",
+          "keyword": "servant",
+          "mob_vnum": 5799,
+          "name": "Unseen servant",
+          "topics": []
+        },
+        {
+          "description": "Ruined outpost shop off the sparring hall. Ordinary stock includes four different ghostly armor pieces. The marks-of-honor room description is not an implemented token price.",
+          "keyword": "quartermaster",
+          "mob_vnum": 5812,
+          "name": "Outpost quartermaster",
+          "topics": []
+        },
+        {
+          "description": "Battlemaster loft above the sparring hall. Ask hi, blood, gem or shards, then armplates, legplates, gloves or boots. Four paid recipes are guarded; his ambient thoughts grant no progress.",
+          "keyword": "thrulmar",
+          "mob_vnum": 5813,
+          "name": "Thrulmar",
+          "topics": [
+            "hi",
+            "hello",
+            "blood",
+            "gem",
+            "shards",
+            "legplates",
+            "armplates",
+            "gloves",
+            "boots"
+          ]
+        },
+        {
+          "description": "Inn reception. Stocks the obsidian upper-room key through an ordinary shop. The actual inn rental room is elsewhere upstairs; bribery and secret guest protection are lore.",
+          "keyword": "arlik",
+          "mob_vnum": 5782,
+          "name": "Arlik",
+          "topics": []
+        },
+        {
+          "description": "Wayhouse bar. Offers ordinary food and drink stock. The gambling, tailoring and hospitality descriptions have no local accepted story terminal.",
+          "keyword": "jenna",
+          "mob_vnum": 5715,
+          "name": "Jenna",
+          "topics": []
+        },
+        {
+          "description": "Wayhouse. Carries the oaken key for the Elvengrove tree doorway; this is independent exploration, not a prerequisite for the ruined-city sword.",
+          "keyword": "traveller",
+          "mob_vnum": 5718,
+          "name": "Road-weary traveller",
+          "topics": []
+        },
+        {
+          "description": "Elvengrove tree living chamber. Wears the metallic loop that fits the ancient desk. The current charm procedure needs reviewed identity and travel corrections before a rescue story.",
+          "keyword": "princess",
+          "mob_vnum": 5701,
+          "name": "Dryad princess",
+          "topics": []
+        },
+        {
+          "description": "Broken Blade bar. The world-quest procedure is actually assigned to this miner, despite its bartender wording. Ask quest for its separate random task system; it is outside the static zone stories.",
+          "keyword": "miner",
+          "mob_vnum": 5755,
+          "name": "Potash miner",
+          "topics": []
+        },
+        {
+          "description": "Outpost torture chamber. Carries a hidden durethium lockbox. The key is in the secret storage niche reached from the burnt cell; this optional cache is separate from armor services.",
+          "keyword": "torturer",
+          "mob_vnum": 5811,
+          "name": "Undead torturer",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore several independent forests, inns, ruins and outposts under one Mini Zones journal. Follow three accepted requests or stories and four supporting armor recipes. Current materials and earlier exchanges explain possible routes, without requiring personal recovery. Active, ready accounting is required.",
+      "orientation": [
+        "The ruined city, Broken Blade tavern and ruined outpost each have working Surface Realm approaches. Discovering one part opens this shared journal; it does not prove you have visited every mini-area. Several other boundary exits point to absent rooms and need a reviewed repair.",
+        "At the Broken Blade tavern, the dishwasher in the kitchen complains about waittress. Her actual tip jar is carried by the young waitress in the dining room. The accepted jar delivery reveals a cutpurse clue, without an item, money or experience reward.",
+        "Upstairs, the enchanted eastern door accepts the spoken word cutpurse. Speech unlocks it, after which opening the door and travelling through it are separate actions. The guild and fence beneath the tavern have no additional static quest terminal.",
+        "In the ruined city, ask the groaning spirit and forgotten knight about driedel. The knight also responds to worach. A parchment addressed to him releases his current appearance and supplies a blue-green strip; there is no implemented Gaffin escort or king-defeat finale.",
+        "The secret downward passage between the tower and intact building reaches a chamber with a black wall. Enter that wall for the Maze of Souls. From its entry, east, south, east, east, west, south, east, east reaches the secret passage. Continue east and south twice to the magical cache.",
+        "The pale revenant in that cache carries a small closed satchel with the release parchment. Open the accessible bag and take the actual letter. Return through the maze and white-wall exit; searching, reading or entering the maze alone does not deliver the letter.",
+        "Restore the silver sword with one silvery-blue strip from the skulk, one blue-green strip from the knight, one silvery-green strip from the Bodak, and the hidden golden hilt in the musk creeper's bulb. Three same-named strips are still different kinds.",
+        "The old wise man lives in a forest hut reached through the hole in the city wall. Offer all four pieces together. A supplied set skips any earlier producer history. The sword has a separate wielded combat power; receiving it does not prove the power triggered or affected an enemy.",
+        "The well-kept shop has a concealed locked panel. One unseen servant carries its tiny golden key; the panel holds two helpful potions. This preparation is optional, and is distinct from the sword pieces and the released knight's receipt.",
+        "At the ruined outpost, the quartermaster stocks ghostly sleeves, pants, gloves and boots. The battlemaster above the sparring hall describes four actual upgrades, each requiring its matching base, five huge blood crystals and 400 platinum. The payment recipes are currently unavailable.",
+        "Huge blood crystals have ground sources across the Surface Realm. Five separate crystals and the matching ghostly piece must be ready together for each recipe. Completing an armor service earns its own output, without a story or daily achievement.",
+        "The outpost's hidden storage niche holds a durethium key for the torturer's hidden lockbox. The burnt cell has a secret western crawlspace. Key access, lockbox loot and the armor recipes remain independent routes.",
+        "The Elvengrove tree doorway uses an oaken key from the wayhouse traveller. Its ancient desk uses a different metallic loop worn by the dryad princess. The current charm and teleport behavior needs further qualification before a personal rescue objective.",
+        "The wayhouse, pond, minotaur home, worm nest, inn and ruined city offer independent exploration. Names, drawings, companion plaques, a black monolith and gambling furnishings are lore leads; they do not create automatic learned-topic, game-win or cleared-area achievements.",
+        "The inn reception sells an obsidian room key; the actual rental room is upstairs. The wayhouse pet service draws from the adjacent barn rather than the separately labelled storage room. Pet purchases, rentals and claims are unavailable pending payment qualification.",
+        "The potash miner at the tavern bar hosts a separate random world-quest service. The nearby elderly bartender does not have that assignment. Those generated tasks retain their own quest system and are not extra static Mini Zones stories."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "minizones",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:5750;receive=;disappear=0",
+              "giver_vnum": 5750
+            }
+          ],
+          "id": "tips-for-the-dishwasher",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The young waitress in the tavern dining room carries this hidden jar. Recover the actual item through a valid route, or use a supplied jar. Seeing her, searching or asking about her does not deliver it.",
+              "id": "tip-jar",
+              "item_vnums": [
+                5750
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the waitress's tip jar"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:5750;receive=;disappear=0",
+                  "giver_vnum": 5750
+                }
+              ],
+              "hint": "Ask waittress, using the source spelling, to hear his complaint. The exchange consumes the jar and keeps him present. Speaking cutpurse at the upstairs enchanted door unlocks that separate passage; it is not another recorded quest.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Bring the jar to the dishwasher"
+            }
+          ],
+          "summary": "The over-worked dishwasher wants the waitress to share her tips. Bring her exact tip jar to him in the Broken Blade kitchen. His gratitude reveals a clue to the hidden cutpurse guild; the accepted delivery grants no item, money or experience.",
+          "title": "The dishwasher and the missing tips"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:5804;receive=I:5794;disappear=1",
+              "giver_vnum": 5800
+            }
+          ],
+          "id": "release-worach",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The revenant in the secret magical cache carries a closed small satchel containing the parchment. Open the accessible satchel and take its actual contents. From the black-wall maze entry, the knight's eight directions reach the secret passage. Supplied parchment also qualifies.",
+              "id": "release-parchment",
+              "item_vnums": [
+                5804
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the parchment addressed to Worach"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:5804;receive=I:5794;disappear=1",
+                  "giver_vnum": 5800
+                }
+              ],
+              "hint": "Ask driedel or worach. The parchment mentions Gaffin returning from the Fields of Evermeet, but no Gaffin encounter, replacement or escort is required. The accepted delivery gives one sword fragment and retires Worach.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Give the release parchment to the undead knight"
+            }
+          ],
+          "summary": "The undead knight in the ruined city remembers King Driedel and his former name, Worach. Find the parchment addressed to him below the city, then deliver it. Acceptance gives a blue-green metal strip and removes this knight appearance; it does not finish the whole city story.",
+          "title": "Release the city's forgotten knight"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:5793,I:5794,I:5795,I:5806;receive=I:5805;disappear=1",
+              "giver_vnum": 5801
+            }
+          ],
+          "id": "restore-magik",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:5804;receive=I:5794;disappear=1",
+                  "giver_vnum": 5800
+                }
+              ],
+              "hint": "This explains one blue-green strip source. It is an independent completed story, not a prerequisite for a supplied fragment and not a replacement for a spent fragment.",
+              "id": "knights-release-history",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional history: release the forgotten knight"
+            },
+            {
+              "count": 1,
+              "hint": "Use the revenant's satchel to obtain a strip from the knight, or bring a supplied strip. The wise man does not consume or require this parchment.",
+              "id": "preparation-parchment",
+              "item_vnums": [
+                5804
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional preparation: carry the release parchment"
+            },
+            {
+              "count": 1,
+              "hint": "The skulk in the destroyed shop carries this strip. All three strips share strip and metal aliases, but they are different kinds; three copies of this strip cannot replace the other two.",
+              "id": "silvery-blue-strip",
+              "item_vnums": [
+                5793
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the silvery-blue strip of metal"
+            },
+            {
+              "count": 1,
+              "hint": "The knight gives this exact strip when accepting his parchment. It may also be supplied. A recorded release alone does not supply the current item.",
+              "id": "blue-green-strip",
+              "item_vnums": [
+                5794
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the blue-green strip of metal"
+            },
+            {
+              "count": 1,
+              "hint": "The Bodak at the dark stairs' upper lair carries this strip. The plaque there explains the ruined king's companions; reading it is lore, without a learned-history achievement.",
+              "id": "silvery-green-strip",
+              "item_vnums": [
+                5795
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the silvery-green strip of metal"
+            },
+            {
+              "count": 1,
+              "hint": "The yellow musk creeper carries a bulb containing the hidden hilt. Inspect and search an accessible bulb, then take the hilt. Defeating its zombie followers alone does not prove possession.",
+              "id": "golden-hilt",
+              "item_vnums": [
+                5806
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the shiny golden hilt"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:5793,I:5794,I:5795,I:5806;receive=I:5805;disappear=1",
+                  "giver_vnum": 5801
+                }
+              ],
+              "hint": "Find his hut beyond the ruined city wall. Acceptance creates the silver sword Magik and removes this appearance of the wise man. Earlier producers remain optional; a personal kill or all-stage campaign is not required.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Give all four different pieces to the old wise man"
+            }
+          ],
+          "summary": "Bring the old wise man three different runic metal strips and a golden hilt together. One valid route includes freeing the undead knight for the blue-green strip. A supplied set works without that earlier receipt. The wise man joins the sword and leaves; wielding or triggering its power is a separate action.",
+          "title": "Restore the silver sword Magik"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:400000,I:5811,I:500025,I:500025,I:500025,I:500025,I:500025;receive=I:5815;disappear=0",
+              "giver_vnum": 5813
+            }
+          ],
+          "id": "thrulmar-armplates",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Look for this exact ghostly piece at the ruined outpost quartermaster, or bring one supplied by another player. A different armor piece cannot replace it.",
+              "id": "ghostly-base",
+              "item_vnums": [
+                5811
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a pair of ghostly sleeves"
+            },
+            {
+              "count": 5,
+              "hint": "These are Surface Realm crystals, not another red gem or the four armor outputs. Carry five separate items together. They are optional readiness checks while the fee service is unavailable.",
+              "id": "five-crystals",
+              "item_vnums": [
+                500025
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry five huge blood crystals"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:400000,I:5811,I:500025,I:500025,I:500025,I:500025,I:500025;receive=I:5815;disappear=0",
+                  "giver_vnum": 5813
+                }
+              ],
+              "hint": "Ask armplates at the battlemaster's loft for the recipe. Bring the matching ghostly piece, five huge blood crystals and the full 400 platinum fee. This service is currently unavailable. Thrulmar stays after an exchange; armor services earn no quest or daily achievement.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the armplates equipment service"
+            }
+          ],
+          "summary": "Thrulmar offers jagged blood crystal arm plates for a pair of ghostly sleeves, five huge blood crystals and 400 platinum (400,000 copper). This is a supporting equipment service. The payment exchange is currently unavailable; prepared materials alone do not pay the fee or earn a quest achievement.",
+          "title": "Ghostly sleeves into blood crystal arm plates"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:400000,I:5812,I:500025,I:500025,I:500025,I:500025,I:500025;receive=I:5816;disappear=0",
+              "giver_vnum": 5813
+            }
+          ],
+          "id": "thrulmar-legplates",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Look for this exact ghostly piece at the ruined outpost quartermaster, or bring one supplied by another player. A different armor piece cannot replace it.",
+              "id": "ghostly-base",
+              "item_vnums": [
+                5812
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a pair of ghostly pants"
+            },
+            {
+              "count": 5,
+              "hint": "These are Surface Realm crystals, not another red gem or the four armor outputs. Carry five separate items together. They are optional readiness checks while the fee service is unavailable.",
+              "id": "five-crystals",
+              "item_vnums": [
+                500025
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry five huge blood crystals"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:400000,I:5812,I:500025,I:500025,I:500025,I:500025,I:500025;receive=I:5816;disappear=0",
+                  "giver_vnum": 5813
+                }
+              ],
+              "hint": "Ask legplates at the battlemaster's loft for the recipe. Bring the matching ghostly piece, five huge blood crystals and the full 400 platinum fee. This service is currently unavailable. Thrulmar stays after an exchange; armor services earn no quest or daily achievement.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the legplates equipment service"
+            }
+          ],
+          "summary": "Thrulmar offers heavily-spiked blood crystal leg plates for a pair of ghostly pants, five huge blood crystals and 400 platinum (400,000 copper). This is a supporting equipment service. The payment exchange is currently unavailable; prepared materials alone do not pay the fee or earn a quest achievement.",
+          "title": "Ghostly pants into blood crystal leg plates"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:400000,I:5813,I:500025,I:500025,I:500025,I:500025,I:500025;receive=I:5817;disappear=0",
+              "giver_vnum": 5813
+            }
+          ],
+          "id": "thrulmar-gloves",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Look for this exact ghostly piece at the ruined outpost quartermaster, or bring one supplied by another player. A different armor piece cannot replace it.",
+              "id": "ghostly-base",
+              "item_vnums": [
+                5813
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a pair of ghostly gloves"
+            },
+            {
+              "count": 5,
+              "hint": "These are Surface Realm crystals, not another red gem or the four armor outputs. Carry five separate items together. They are optional readiness checks while the fee service is unavailable.",
+              "id": "five-crystals",
+              "item_vnums": [
+                500025
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry five huge blood crystals"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:400000,I:5813,I:500025,I:500025,I:500025,I:500025,I:500025;receive=I:5817;disappear=0",
+                  "giver_vnum": 5813
+                }
+              ],
+              "hint": "Ask gloves at the battlemaster's loft for the recipe. Bring the matching ghostly piece, five huge blood crystals and the full 400 platinum fee. This service is currently unavailable. Thrulmar stays after an exchange; armor services earn no quest or daily achievement.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the gloves equipment service"
+            }
+          ],
+          "summary": "Thrulmar offers razor-knuckled blood crystal gloves for a pair of ghostly gloves, five huge blood crystals and 400 platinum (400,000 copper). This is a supporting equipment service. The payment exchange is currently unavailable; prepared materials alone do not pay the fee or earn a quest achievement.",
+          "title": "Ghostly gloves into blood crystal gloves"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:400000,I:5814,I:500025,I:500025,I:500025,I:500025,I:500025;receive=I:5818;disappear=0",
+              "giver_vnum": 5813
+            }
+          ],
+          "id": "thrulmar-boots",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Look for this exact ghostly piece at the ruined outpost quartermaster, or bring one supplied by another player. A different armor piece cannot replace it.",
+              "id": "ghostly-base",
+              "item_vnums": [
+                5814
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a pair of ghostly boots"
+            },
+            {
+              "count": 5,
+              "hint": "These are Surface Realm crystals, not another red gem or the four armor outputs. Carry five separate items together. They are optional readiness checks while the fee service is unavailable.",
+              "id": "five-crystals",
+              "item_vnums": [
+                500025
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry five huge blood crystals"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:400000,I:5814,I:500025,I:500025,I:500025,I:500025,I:500025;receive=I:5818;disappear=0",
+                  "giver_vnum": 5813
+                }
+              ],
+              "hint": "Ask boots at the battlemaster's loft for the recipe. Bring the matching ghostly piece, five huge blood crystals and the full 400 platinum fee. This service is currently unavailable. Thrulmar stays after an exchange; armor services earn no quest or daily achievement.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the boots equipment service"
+            }
+          ],
+          "summary": "Thrulmar offers spurred blood crystal boots for a pair of ghostly boots, five huge blood crystals and 400 platinum (400,000 copper). This is a supporting equipment service. The payment exchange is currently unavailable; prepared materials alone do not pay the fee or earn a quest achievement.",
+          "title": "Ghostly boots into blood crystal boots"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Ask about knight, no or yes for the invitation and reply. Return the specific trophies for independent commissions.",
           "keyword": "mrotha",
           "mob_vnum": 7600,

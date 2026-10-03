@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 55 authored journals, accounting-gated player surfaces, starter/town
+**Status: 56 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -13,7 +13,8 @@ Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter
 Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl, Ravenloft
 Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl, the Jade Empire and
 the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm, Verspin,
-Ship Yards, Ultarium and the Surface Realm now have complete source story maps;
+Ship Yards, Ultarium, the Surface Realm, Tharnadia and Mini Zones now have
+complete source story maps;
 their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
 with seventeen contacts/all nineteen raw addressed families and twelve optional
@@ -317,6 +318,26 @@ precise source/parent qualification. Extend exact coin-only and typed-food
 settlement, dice custody and optional paid town services while retaining
 guards. Healing, lessons, pet recovery, performance and escape need explicit
 accepted endpoints before additional history or full-stage campaign credit.
+
+Mini Zones' [comprehensive dossier](zone-stories/MINI_ZONES.md) covers all
+21 native blocks/seven exchanges/eleven addressed families, 300 rooms/125
+mobiles/124 objects/five shops, 548 resets/358 families and six literal
+assignments with complete local and bounded shared/foreign review. Revision
+one supplies three independent outcomes/four guarded armor services,
+eighteen contacts and sixteen optional checks. The tip jar, knight's release
+and four-distinct-piece Magik restoration remain separate. Supplied pieces
+skip optional knight history; five exact crystals plus the matching ghostly
+base and full fee remain a support recipe, not an achievement.
+
+The actual maze directions and cutpurse door resolve; Magik receives the
+modern combat command and needs accepted effect evidence, not a dispatch
+repair. Nine absent boundary targets, dryad/navigator identity drift,
+unused room metadata, pet claim restoration and four-versus-five/type/price
+prose have balanced builder repair plans. No native zone repair is shipped
+in this checkpoint. Extend source/GET/parent, learned access/travel,
+recipient episodes and coordinated fee/charm/pet settlement before deeper
+personal or all-stage credit. [Repair reporting](ZONE_STORY_ROADMAP_EXECUTION.md#repair-reporting-and-news-handoff)
+keeps implemented native fixes distinct from journals and pending findings.
 
 ## Accounting requirement and delivery sequence
 
@@ -1029,7 +1050,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 187 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 186 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1050,6 +1071,16 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   Retain typed-food/coin-only and paid town guards; extend draw/custody and
   actor/NPC semantic settlement before healing/lesson/pet milestones. Resolve
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
+- [x] Complete Mini Zones' seven-exchange/eleven-addressed source dossier:
+  all 300 rooms/125 mobs/124 objects/five shops, 548 resets/358 families,
+  six literal assignments and full local/bounded shared/foreign review.
+  Ship three outcomes/four services, eighteen contacts/sixteen optional
+  checks and exact maze/sword/crystal guidance without native repairs.
+- [ ] Qualify Mini Zones' actual nested/source/recipient episodes, cutpurse
+  access and maze travel, distinct supplied sword pieces and optional history.
+  Keep four fees/pet services guarded; extend effect/charm/ownership settlement.
+  Builder selects missing-edge, dryad/navigator, claim and prose repairs;
+  publish each implemented native fix clearly for PR/news handoff.
 - [x] Complete Ultarium's seventeen-exchange/five-addressed source dossier:
   all 268 rooms/82 mobs/71 objects/two shops, 338 resets/227 families, three
   literal assignments, computed teachers/shared effects and bounded foreign
@@ -1171,6 +1202,7 @@ contract classification; it does not claim complete objective coverage.
 | Ultarium | 1 | Complete: seven independent outcomes/eight support rows across seventeen Q/QA | [Source-comprehensive dossier](zone-stories/ULTARIUM.md); twenty-three contacts/all five addressed families and twenty-two optional checks; exact souls, duplicate-name proof/output and three access keys | Seven achievement/potential daily units; rare appearances/sources, deeper events and paid rename/pet/epic lessons unqualified | Native exact proof and four-kind collection; preserve gifts/foreign ownership and guards; qualify source/episode/effect/access and deliberately resolve soul/campaign/claim policy |
 | Surface Realm | 1 | Complete: seventeen outcomes/six support rows across 31 exchanges | [Source-comprehensive dossier](zone-stories/SURFACE_REALM.md); 37 contacts/all 36 addressed blocks and 31 optional checks; exact competing campaign/region/source guidance | Seventeen achievement/potential daily units; two mixed fees guarded; live sources, episode/travel/effect policy unqualified | Preserve supplied proof/independent ownership; qualify exact allocation, first source and custom events; targeted boundary/clue repair and deliberate disabled-campaign/source decisions |
 | Tharnadia | 2 | Complete: eight outcomes/eight services/one typed-food exclusion across nineteen exchanges | [Source-comprehensive dossier](zone-stories/THARNADIA.md); 26 contacts/all 24 addressed families and 23 optional checks; exact toys, optional medicine producer, supplied finale and valid administrative paper | Eight achievement/potential daily units; active source/container/search/retirement unqualified, coin-only/typed-food and paid services guarded | Native exact-material/alternative/service/recovery fixtures; qualify first source/access/actor-state, dice/fee settlement and balanced mobile/clue/placement/claim repairs |
+| Mini Zones | 1 | Complete: three independent outcomes/four armor services across seven exchanges | [Source-comprehensive dossier](zone-stories/MINI_ZONES.md); eighteen contacts/all eleven addressed families, sixteen optional checks, actual maze/cutpurse route and distinct sword/crystal guidance | Three achievement/potential daily units; four mixed fees guarded; source, recipient, charm and pet qualification pending | Native exact-material/quantity/service/recovery fixtures; qualify source/access/effect/episode settlement and publish builder-selected boundary/identity/claim/prose repairs separately |
 
 ## Twin Towers evidence and decisions
 
