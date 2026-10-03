@@ -278,18 +278,18 @@ def run_local(server: Path, local_port: int, *, legacy_persistence: bool = False
                     first_result, _ = caster.expect_any((
                         "start chanting", "call forth", "comes to life again!",
                         "The resurrection cannot safely take hold",
+                        "The resurrection cannot finish safely",
                         "That person must consent",
                         "You can't find a soul to reunite",
                         "You can't resurrect your own corpse",
                         "You can only resurrect corpses", "You can't find",
                         "You don't know",
                     ), timeout=90)
-                    if first_result == "comes to life again!":
-                        result = first_result
-                    else:
+                    if first_result in ("start chanting", "call forth"):
                         result, _ = caster.expect_any((
                             "comes to life again!",
                             "The resurrection cannot safely take hold",
+                            "The resurrection cannot finish safely",
                             "That person must consent",
                             "You can't find a soul to reunite",
                             "You can't resurrect your own corpse",
@@ -297,6 +297,8 @@ def run_local(server: Path, local_port: int, *, legacy_persistence: bool = False
                             "You can't find",
                             "You don't know",
                         ), timeout=90)
+                    else:
+                        result = first_result
                     if result != "comes to life again!":
                         raise AssertionError("real resurrection spell did not complete: " + result)
 
@@ -436,8 +438,15 @@ def run_local(server: Path, local_port: int, *, legacy_persistence: bool = False
                 except Exception as error:
                     output.flush()
                     logs = journey.runtime_logs(runtime)
+                    try:
+                        receipts = sql(
+                            "SELECT HEX(operation_id),command_type,status,result_code,"
+                            "failure_stage,durable_revision,OCTET_LENGTH(result_payload) "
+                            "FROM critical_operation_inbox ORDER BY created_at DESC LIMIT 16")
+                    except Exception as receipt_error:
+                        receipts = "receipt diagnostics failed: " + str(receipt_error)
                     raise AssertionError(
-                        f"{error}\n--- server output ---\n"
+                        f"{error}\n--- recent operation receipts ---\n{receipts}\n--- server output ---\n"
                         f"{output_path.read_text(errors='replace')[-12000:]}\n"
                         f"--- runtime logs ---\n{logs}") from error
                 finally:

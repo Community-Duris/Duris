@@ -79,7 +79,9 @@ void assert_server_retired(MYSQL *observer, unsigned long id, bool server_killed
         sessions = scalar(observer, "SELECT COUNT(*) FROM information_schema.processlist WHERE ID=" + std::to_string(id));
         transactions = scalar(observer, "SELECT COUNT(*) FROM information_schema.innodb_trx WHERE trx_mysql_thread_id=" + std::to_string(id));
         if (sessions == "0" && transactions == "0") return;
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        // MySQL refreshes INNODB_TRX only after 100ms without a metadata read.
+        // Faster polling can keep a retired transaction in its cache forever.
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
     } while (std::chrono::steady_clock::now() < deadline);
     const auto state = scalar(observer, "SELECT COALESCE(GROUP_CONCAT(CONCAT_WS(':', COMMAND, STATE, TIME)), 'none') FROM information_schema.processlist WHERE ID=" + std::to_string(id));
     const auto transaction_state = scalar(observer, "SELECT COALESCE(GROUP_CONCAT(CONCAT_WS(':', trx_id, trx_state, trx_operation_state)), 'none') FROM information_schema.innodb_trx WHERE trx_mysql_thread_id=" + std::to_string(id));

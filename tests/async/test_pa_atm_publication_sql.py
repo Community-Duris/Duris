@@ -52,6 +52,7 @@ def run_component_harness() -> None:
             "src/economy/economic_command_admission.c",
             "src/persistence/critical_command_coordinator.c",
             "src/persistence/critical_command_journal.c",
+            "src/core/utility.c",
         ]
     )
     sources = list(dict.fromkeys(sources))

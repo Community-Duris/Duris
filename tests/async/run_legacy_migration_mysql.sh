@@ -128,6 +128,9 @@ ITEM_VERIFY=(env ENVIRONMENT=test DB_HOST=127.0.0.1 DB_PORT="$DB_PORT" DB_USER=r
     DB_PASSWD="$PASSWORD" DB_NAME="$MIGRATED_DB"
     bash "$ROOT/migrations/verify_item_ownership_schema.sh")
 "${ITEM_VERIFY[@]}"
+slot_predecessor=$(MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" -N -B "$MIGRATED_DB" -e \
+    "SELECT COLUMN_NAME FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='item_current_owner' AND ordinal_position=(SELECT ordinal_position-1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='item_current_owner' AND column_name='equipment_slot')")
+[[ "$slot_predecessor" =~ ^[a-z_]+$ ]]
 MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$MIGRATED_DB" -e \
     "ALTER TABLE item_current_owner DROP COLUMN equipment_slot"
 if "${ITEM_VERIFY[@]}" >/dev/null 2>&1; then
@@ -135,7 +138,7 @@ if "${ITEM_VERIFY[@]}" >/dev/null 2>&1; then
     exit 1
 fi
 MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$MIGRATED_DB" -e \
-    "ALTER TABLE item_current_owner ADD COLUMN equipment_slot SMALLINT UNSIGNED NOT NULL DEFAULT 0"
+    "ALTER TABLE item_current_owner ADD COLUMN equipment_slot SMALLINT UNSIGNED NOT NULL DEFAULT 0 AFTER $slot_predecessor"
 "${ITEM_VERIFY[@]}"
 ENVIRONMENT=test DB_HOST=127.0.0.1 DB_PORT="$DB_PORT" DB_USER=root \
     DB_PASSWD="$PASSWORD" DB_NAME="$MIGRATED_DB" \

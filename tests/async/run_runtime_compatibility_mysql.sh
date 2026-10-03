@@ -201,12 +201,11 @@ docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c "mysql -h127.0.0.1 -uroot '$D
 # Apply every registered step and its verifier, including an exact replay.
 for replay in 1 2; do
     for file in "${MIGRATION_FILES[@]}"; do
-        # 0022 intentionally adds nullable progression columns to
-        # telemetry_interval. The sealed 0014 verifier checks the original
-        # 154-column shape, so it is valid before 0022 but cannot describe the
-        # later shape on the second idempotence replay. Later verifiers cover
-        # the resulting shape; do not weaken the first-pass check.
-        if [[ "$replay" == 2 && "$(basename "$file")" == "0014_telemetry_storage.sh" ]]; then
+        # Each sealed verifier describes the shape immediately after its own
+        # step. Later migrations replace indexes and extend those shapes. Keep
+        # every first-pass verifier; replay the SQL and check the complete
+        # current fingerprint below rather than reapplying historical shapes.
+        if [[ "$replay" == 2 && "$file" == *.sh ]]; then
             continue
         fi
         if [[ "$file" == *.sql ]]; then
