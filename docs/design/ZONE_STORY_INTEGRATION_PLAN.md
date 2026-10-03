@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 56 authored journals, accounting-gated player surfaces, starter/town
+**Status: 57 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -13,8 +13,8 @@ Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter
 Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl, Ravenloft
 Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl, the Jade Empire and
 the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm, Verspin,
-Ship Yards, Ultarium, the Surface Realm, Tharnadia and Mini Zones now have
-complete source story maps;
+Ship Yards, Ultarium, the Surface Realm, Tharnadia, Mini Zones and the City
+of Torrhan now have complete source story maps;
 their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
 with seventeen contacts/all nineteen raw addressed families and twelve optional
@@ -338,6 +338,36 @@ in this checkpoint. Extend source/GET/parent, learned access/travel,
 recipient episodes and coordinated fee/charm/pet settlement before deeper
 personal or all-stage credit. [Repair reporting](ZONE_STORY_ROADMAP_EXECUTION.md#repair-reporting-and-news-handoff)
 keeps implemented native fixes distinct from journals and pending findings.
+
+City of Torrhan's [comprehensive dossier](zone-stories/CITY_OF_TORRHAN.md)
+reviews all 46 native blocks/26 exchanges/eighteen addressed families, 289
+rooms/152 mobiles/125 objects/six shops, 447 resets/324 source families,
+both literal room procedures, table/default guild teaching, the throne switch
+and bounded shared execution. Revision one adds eight independent outcomes,
+fourteen support exchanges, four refusals, 23 contacts and 28 optional checks.
+The sailor ring, green scales, two feather requests, full-yellow/owl and
+half-empty/king deliveries, initial cloak and restored Oblivion have exact
+source, competing-consumer and supplied-route guidance. Later cloak forms
+are eight exact support recipes; refusals and services give no achievement.
+
+Torrhan adds specific qualification requirements for same-named kinds with
+different properties and cyclic recipes. Preserve input/output UID lineage,
+current exact form and permitted property presentation; a service cycle
+must not imply an infinite campaign or award achievement credit. An optional
+producer receipt explains a supplied final item without replacing current
+custody. Full versus half-empty potions and worn versus reward crowns need
+distinct kinds in the shared presentation. Narrated rescue/cure must not
+be promoted to a persisted actor transformation without an atomic actor
+incarnation/state event, committed output and recovery evidence.
+
+Choice plaques and probabilistic key break are separate from durable branch
+commitment. Define a builder-owned choice/attempt and first successful access
+event before recording either. Capability discovery must inspect table-driven
+and automatic bindings as well as literal assignments: Thurdorf's epic
+teaching and the throne switch are concrete examples. The inert throne
+target, absent shop stock 6087 and reward/prose discrepancies have targeted
+repair plans. No native repair ships in this checkpoint; publish selected
+fixes in separate fix commits with before/after evidence and news wording.
 
 ## Accounting requirement and delivery sequence
 
@@ -1050,7 +1080,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 186 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 185 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1071,6 +1101,16 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   Retain typed-food/coin-only and paid town guards; extend draw/custody and
   actor/NPC semantic settlement before healing/lesson/pet milestones. Resolve
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
+- [x] Complete City of Torrhan's 26-exchange/eighteen-addressed source dossier:
+  all 289 rooms/152 mobiles/125 objects/six shops, 447 resets/324 families,
+  both literal procedures, table/default teaching and automatic throne switch.
+  Ship eight independent outcomes/fourteen services/four refusals, 23 contacts
+  and 28 optional checks without native repairs or invented royal transforms.
+- [ ] Qualify Torrhan's exact source/recipient episodes, competing feather and
+  shell consumers, two potion kinds, supplied Oblivion and eight cloak lineages.
+  Add permitted same-name form/property presentation and accepted branch/access
+  and actor-state evidence. Builder selects throne/stock/prose repairs; publish
+  each implemented native repair with a clear separate fix/news handoff.
 - [x] Complete Mini Zones' seven-exchange/eleven-addressed source dossier:
   all 300 rooms/125 mobs/124 objects/five shops, 548 resets/358 families,
   six literal assignments and full local/bounded shared/foreign review.
@@ -1203,6 +1243,7 @@ contract classification; it does not claim complete objective coverage.
 | Surface Realm | 1 | Complete: seventeen outcomes/six support rows across 31 exchanges | [Source-comprehensive dossier](zone-stories/SURFACE_REALM.md); 37 contacts/all 36 addressed blocks and 31 optional checks; exact competing campaign/region/source guidance | Seventeen achievement/potential daily units; two mixed fees guarded; live sources, episode/travel/effect policy unqualified | Preserve supplied proof/independent ownership; qualify exact allocation, first source and custom events; targeted boundary/clue repair and deliberate disabled-campaign/source decisions |
 | Tharnadia | 2 | Complete: eight outcomes/eight services/one typed-food exclusion across nineteen exchanges | [Source-comprehensive dossier](zone-stories/THARNADIA.md); 26 contacts/all 24 addressed families and 23 optional checks; exact toys, optional medicine producer, supplied finale and valid administrative paper | Eight achievement/potential daily units; active source/container/search/retirement unqualified, coin-only/typed-food and paid services guarded | Native exact-material/alternative/service/recovery fixtures; qualify first source/access/actor-state, dice/fee settlement and balanced mobile/clue/placement/claim repairs |
 | Mini Zones | 1 | Complete: three independent outcomes/four armor services across seven exchanges | [Source-comprehensive dossier](zone-stories/MINI_ZONES.md); eighteen contacts/all eleven addressed families, sixteen optional checks, actual maze/cutpurse route and distinct sword/crystal guidance | Three achievement/potential daily units; four mixed fees guarded; source, recipient, charm and pet qualification pending | Native exact-material/quantity/service/recovery fixtures; qualify source/access/effect/episode settlement and publish builder-selected boundary/identity/claim/prose repairs separately |
+| City of Torrhan | 1 | Complete: eight independent outcomes/fourteen support exchanges/four refusals across 26 native exchanges | [Source-comprehensive dossier](zone-stories/CITY_OF_TORRHAN.md); 23 contacts/eighteen addressed families, 28 optional checks and exact potion/sword/crown/cloak guidance | Eight achievement/potential daily units; live source/retirement, lineage, access/choice and actual royal transformation unqualified | Native supplied-route, exact-kind, service/refusal and recovery fixtures; qualify shared actor/lineage/property events and publish selected throne/stock/prose repairs distinctly |
 
 ## Twin Towers evidence and decisions
 

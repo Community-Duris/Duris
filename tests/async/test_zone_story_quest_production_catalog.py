@@ -1184,7 +1184,85 @@ for direction in (1,2,2): position = edges[position][direction][2]
 assert position == 5963
 assert edges[5833][1] == (3,-2,5834) and edges[5834][3] == (3,-2,5833)
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones"):
+# Torrhan: two different potion terminals, contested source materials, same-named
+# cloak forms and exact sword/crown identities must not become invented campaigns.
+torrhan = inventory_module.area_evidence(ROOT, "torrhan")
+torrhan_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "torrhan")
+torrhan_stories = {s["id"]: s for s in torrhan_mapping["stories"]}
+assert torrhan_mapping["schema_version"] == 3 and torrhan_mapping["revision"] == 1
+assert torrhan_mapping["coverage"] == "complete"
+assert len(torrhan_stories) == 22 and len(torrhan_mapping["contacts"]) == 23
+assert collections.Counter(s["category"] for s in torrhan_stories.values()) == {"story":6,"request":2,"service":14}
+assert len(torrhan_mapping["exclusions"]) == 4
+assert sum(t.get("optional",False) for s in torrhan_stories.values() for t in s["steps"]) == 28
+assert len(torrhan["requests"]) == 26 and len(torrhan["dialogue"]) == 18
+assert len(torrhan["mobs"]) == 152 and len(torrhan["items"]) == 125
+assert len(torrhan["reset_commands"]) == 447
+bindings = [b for s in torrhan_stories.values() for b in s["contracts"]]
+bindings += [b for e in torrhan_mapping["exclusions"] for b in e["contracts"]]
+assert len(bindings) == 26 and {tuple(sorted(b.items())) for b in bindings} == {
+    tuple(sorted(r["block"]["binding"].items())) for r in torrhan["requests"]}
+assert all(t.get("optional") for s in torrhan_stories.values() for t in s["steps"][:-1])
+owl = torrhan_stories["owl-ladys-yellow-potion"]
+king = torrhan_stories["king-torrhans-potion"]
+torrok = torrhan_stories["torroks-restored-oblivion"]
+assert owl["contracts"] == [{"giver_vnum":66701,"completion_key":"give=I:66666;receive=I:66667,I:66673;disappear=1"}]
+assert king["contracts"] == [{"giver_vnum":66692,"completion_key":"give=I:66673;receive=I:66705;disappear=0"}]
+assert king["steps"][0]["contracts"] == owl["contracts"]
+assert [t["item_vnums"] for t in king["steps"] if t["kind"] == "carried_item"] == [[66666],[66673]]
+assert torrok["steps"][0]["contracts"] == torrhan_stories["restore-oblivion"]["contracts"]
+assert torrok["contracts"] == [{"giver_vnum":66721,"completion_key":"give=I:66718;receive=I:66717;disappear=0"}]
+assert torrhan["items"][66652]["name"] == torrhan["items"][66705]["name"]
+assert set(torrhan["items"][66606]["keywords"]) == set(torrhan["items"][66715]["keywords"])
+for i,item in enumerate(range(66638,66646),1):
+    recipe=torrhan_stories[f"cloak-form-{i}"]
+    output=item+1 if i<8 else 66638
+    assert recipe["category"] == "service" and recipe["steps"][0]["item_vnums"] == [item]
+    assert recipe["contracts"] == [{"giver_vnum":66698,"completion_key":f"give=I:{item};receive=I:{output};disappear=0"}]
+assert len({torrhan["items"][item]["name"] for item in range(66638,66646)}) == 1
+units = [u for u in catalog_module.story_units(catalog) if u["zone_number"] == 666]
+assert len(units) == 22 and sum(u["achievement"] for u in units) == 8
+assert sum(u["daily_candidate"] for u in units) == 8
+contacts = {c["mob_vnum"]:c for c in torrhan_mapping["contacts"]}
+for v,c in contacts.items(): assert c["keyword"] in torrhan["mobs"][v]["keywords"]
+for d in torrhan["dialogue"]:
+    assert set(d["body"][0].rstrip("~").split()) <= set(contacts[d["giver_vnum"]]["topics"])
+assert not contacts[66740]["topics"] and not contacts[66671]["topics"]
+parent=room=None
+sources=collections.defaultdict(list)
+for reset in torrhan["reset_commands"]:
+    c,v=reset["command"],reset["arguments"]
+    assert len(v) == 8 and v[5:] == [0,0,0]
+    if c in ("M","F"): parent,room=v[1],v[3]
+    if c in ("G","E") and v[1] in (66611,66614,66619,66637,66668,66707,66715,66653):
+        sources[v[1]].append((parent,room,v[2],v[4]))
+    if c == "P": assert (v[1],v[2],v[3],v[4]) in ((66721,1,66719,100),(66666,1,66657,100))
+assert sources == {66611:[(66648,66724,1,100)],66614:[(66658,66690,1,100)],
+                   66619:[(66685,66782,1,100)],66637:[(66699,66900,1,100)],
+                   66668:[(66701,66721,1,100)],66707:[(66754,66765,1,100)],
+                   66715:[(66758,66901,1,100)],66653:[(66700,66807,1,100)]}
+assert {(a["kind"],a["vnum"],a["function"]) for a in torrhan["special_assignments"]} == {
+    ("room",66735,"crew_shop_proc"),("room",66689,"ship_shop_proc")}
+torrhan_world=(ROOT / "areas/wld/torrhan.wld").read_text()
+rooms={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",torrhan_world,re.M|re.S)}
+assert len(rooms) == 289 and min(rooms) == 66600 and max(rooms) == 66903
+edges={v:{int(d):(int(f),int(k),int(t)) for d,f,k,t in re.findall(r"\bD(\d+)\s+[^~]*~[^~]*~\s*(-?\d+)\s+(-?\d+)\s+(-?\d+)",b,re.S)} for v,b in rooms.items()}
+boundary={(v,d,t) for v,dirs in edges.items() for d,(f,k,t) in dirs.items() if t>0 and t not in rooms}
+assert boundary == {(66689,0,580480),(66689,3,580879),(66692,2,581280),(66712,1,580881)}
+assert edges[66801][0] == (4,0,66804) and (edges[66801][0][0] & 3) == 0
+assert edges[66804] == {0:(0,0,66805)}
+assert not any(r["command"] == "D" and r["arguments"][1] in (66801,66804) for r in torrhan["reset_commands"])
+objects={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT / "areas/obj/torrhan.obj").read_text(),re.M|re.S)}
+throne_fields=objects[66633].split("~")[4].split()
+assert throne_fields[0] == "29" and throne_fields[11:15] == ["270","66804","0","0"]
+assert "\n6087\n" in (ROOT / "areas/shp/torrhan.shp").read_text()
+assert any(r["command"] == "G" and r["arguments"][1] == 6087 for r in torrhan["reset_commands"])
+for line in (ROOT / "areas/AREA").read_text().splitlines():
+    if not line.strip() or line.startswith("*"): continue
+    source=ROOT / "areas/obj" / (line.split()[0]+".obj")
+    if source.exists(): assert not re.search(r"^#6087\s*$",source.read_text(errors="replace"),re.M)
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

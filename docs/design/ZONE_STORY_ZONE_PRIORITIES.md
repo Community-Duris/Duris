@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 34 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 35 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -48,6 +48,12 @@ optional checks. The tip jar clue, actual Maze of Souls route, optional
 knight release and four distinct Magik pieces have exact progression guidance.
 Missing boundary exits, procedure identity drift, fee/pet settlement and
 prose corrections remain planned repairs with an explicit PR/news handoff.
+City of Torrhan's [completed dossier](zone-stories/CITY_OF_TORRHAN.md) adds
+eight independent outcomes/fourteen support exchanges/four refusals, 23
+contacts and 28 optional checks. Exact ring, feather, potion, sword, crown
+and eight-form cloak guidance preserves supplied routes. The inert throne
+switch, absent shop stock and prose discrepancies remain proposed repairs;
+actor transformation, source/lineage, access and branch qualification stay open.
 Active reset-generation qualification is a shared prerequisite for the pilots.
 
 ## Reviewed first integrations
@@ -88,6 +94,7 @@ Active reset-generation qualification is a shared prerequisite for the pilots.
 | 32 | [The Surface Realm of Duris](zone-stories/SURFACE_REALM.md) (`surface`) | Four distinct warden trophies → book; four separate labyrinthmaster hearts → four elemental lockets → five-material mystic finale → actual connector tomb key; opposing rival/prophet bounties; five claws/totem; grey paw → white potion → independent nomad; three crystals/two egg recipients; three markets and three equipment services. | Source-comprehensive, revision one: seventeen outcomes/six support rows, 37 contacts/31 optional checks. Complete grouped grid/source/custom/foreign review. Episode allocation, first-source/gift, actual travel/helper/actor and paid services unqualified; two missing exits, bracer supply, copied proof/clue text, dormant invasion and disabled descent have balanced plans. |
 | 33 | [Tharnadia - City of Humans](zone-stories/THARNADIA.md) (`tharnadia`) | Inn meal → three distinct toy instruments → storyteller's blank book and Phobos delivery; optional nightshade/mandrake → maroon vial → vial plus disputed pendant → retiring Chiln finale; three independent wizard commissions; maps, medicine, wand and four weapon families as support. | Source-comprehensive, revision two: eight outcomes/eight support rows/one typed-food exclusion, 26 contacts/23 optional checks. Paper 5 exists in active limbo; audit lookup corrected. Global container selection, source/search/custody, missing mobile 132677, conflicting toy/pup/desk clues, guarded fees and absent healing/lesson/pet endpoints have balanced qualification plans. |
 | 34 | [Mini Zones](zone-stories/MINI_ZONES.md) (`minizones`) | Tip jar → dishwasher/cutpurse clue; black-wall maze → revenant's parchment → knight's blue-green strip; three distinct strips plus hidden golden hilt → Magik, or supplied pieces; four matching ghostly bases + five crystals + fee as services. Independent tree/inn/outpost exploration. | Source-comprehensive, revision one: three outcomes/four services, eighteen contacts/all eleven addressed families, sixteen optional checks. Actual maze and sword dispatch verified in source; first-source/gift/access/effect/episode/payment remain unqualified. Nine missing exits, dryad/navigator identity, claim restoration and prose repairs remain planned and must be reported clearly when implemented. |
+| 35 | [City of Torrhan](zone-stories/CITY_OF_TORRHAN.md) (`torrhan`) | Forest key/locked box → sailor's ring → Aineila; green scales → Marthona; contested owl feather → boy or halfling; full yellow potion → owl's seal/half-empty potion → king's crown, or supplied material; cloth → first cloak/eight-form support cycle; exact guard sword → Thurdorf → Oblivion to Torrok. | Source-comprehensive, revision one: eight outcomes/fourteen services/four refusals, 23 contacts/all eighteen addressed families, 28 optional checks. No native repairs shipped. Inert throne target, missing shop stock and prose corrections have separate fix/news plans; source/episode/lineage, royal actor state, access and choice remain unqualified. |
 
 ## New authored journal batch
 
@@ -163,7 +170,6 @@ branches before naming or activating deeper stages. This queue is not daily elig
 
 | Order | Zone / source | Rough starting story to review | Evidence to inspect |
 | ---: | --- | --- | --- |
-| 35 | City of Torrhan (`torrhan`) | [Meet the giver → 1 × a small diamond ring → a shimmering locket of the mermaids](../../areas/qst/torrhan.qst#L14) | 26 Q; 18 dialogue; 14 candidate link items |
 | 36 | Golden Hall of the Crown (`gold_hal`) | [Meet the giver → 1 × a brown strip of bear hide; 1 × a grey strip of olyx hide → a small earthen statue](../../areas/qst/gold_hal.qst#L46) | 16 Q; 17 dialogue; 9 candidate link items |
 | 37 | Ashrumite Village (`ashrumite`) | [Meet the giver → 1 × a necklace of silver set with gems; 1 × an amethyst; 1 × an exotic tigers-eye gem and the remaining ingredients → a small gold nugget](../../areas/qst/ashrumite.qst#L101) | 12 Q; 13 dialogue; 8 candidate link items |
 | 38 | The Hall of the Ancients (`hall`) | [Meet the giver → 2 × a necklace of tiny steel links; 2 × the bangle of the Dreamer; 2 × an adamantium rock and the remaining ingredients → Jadem's magical device of protection](../../areas/qst/hall.qst#L77) | 11 Q; 14 dialogue; 6 candidate link items |

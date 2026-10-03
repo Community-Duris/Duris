@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 56 &&
-				tracker.summary_for(7, 42).total == 1746,
+		require(catalog.story_mappings.size() == 57 &&
+				tracker.summary_for(7, 42).total == 1728,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -204,7 +204,9 @@ int main(int argc, char **argv)
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
 										    1325, 2) == 8 &&
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
-										    57, 2) == 3,
+										    57, 2) == 3 &&
+				zone_story_quest_catalog::eligible_definition_count(file_catalog,
+										    666, 2) == 8,
 			"complete Alatorin/Newhaven/Faerie/Verspin/Ship Yards/Ultarium/Surface sidecars failed the native file loader");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -2962,6 +2964,115 @@ int main(int argc, char **argv)
 				recovered_mini.progress_for_zone(7, 42, 57).total == 3 &&
 				recovered_mini.progress_for_zone(7, 42, 5000).completed == 0,
 			"independent Mini Zones outcomes or foreign ownership failed recovery");
+		const auto &torrhan_map = *std::find_if(
+			catalog.story_mappings.begin(), catalog.story_mappings.end(),
+			[](const auto &mapping) { return mapping.source_area == "torrhan"; });
+		const auto &torrhan_king = story_for("torrhan", "king-torrhans-potion");
+		const auto &torrhan_owl = story_for("torrhan", "owl-ladys-yellow-potion");
+		const auto &torrhan_torrok = story_for("torrhan", "torroks-restored-oblivion");
+		service supplied_torrhan(catalog);
+		require(supplied_torrhan.discover_zone(7, 42, 666, 66600, 100, "arrival") ==
+					result::applied &&
+				supplied_torrhan.render_journal(7, 42, 666, 10, 1, 101, false,
+								false)
+						.find(torrhan_king.title) == std::string::npos,
+			"Torrhan discovery revealed an unseen royal story");
+		for (const auto &contact : torrhan_map.contacts)
+			require(supplied_torrhan.meet_npc(7, 42, contact.mob_vnum, 66600, 101) ==
+					result::applied,
+				"Torrhan contact encounter failed");
+		const auto torrhan_section = [&](const auto &entry)
+		{
+			const auto start = journal.find("] " + entry.title + "\r\n");
+			require(start != std::string::npos, "Torrhan journal section missing");
+			return journal.substr(start, journal.find("\r\n  [", start) - start);
+		};
+		supplies = {};
+		supplies.carried[66666] = 1;
+		const auto torrhan_before_read = supplied_torrhan.serialize_state();
+		journal = supplied_torrhan.render_journal(7, 42, 666, 10, 1, 121, false, false,
+							  &supplies);
+		require(torrhan_section(torrhan_king)
+						.find("[Missing now] " +
+						      torrhan_king.steps[2].text) !=
+					std::string::npos &&
+				torrhan_section(torrhan_owl)
+						.find("[Ready now] " + torrhan_owl.steps[1].text) !=
+					std::string::npos &&
+				torrhan_section(torrhan_king)
+						.find("[Pending] " + torrhan_king.steps[0].text) !=
+					std::string::npos,
+			"full yellow potion replaced half-empty material or invented owl history");
+		supplies = {};
+		supplies.carried[66673] = supplies.carried[66606] = supplies.carried[66652] = 1;
+		journal = supplied_torrhan.render_journal(7, 42, 666, 10, 1, 122, false, false,
+							  &supplies);
+		require(torrhan_section(torrhan_king)
+						.find("[Ready now] " +
+						      torrhan_king.steps[2].text) !=
+					std::string::npos &&
+				torrhan_section(torrhan_owl)
+						.find("[Missing now] " +
+						      torrhan_owl.steps[1].text) !=
+					std::string::npos &&
+				torrhan_section(torrhan_torrok)
+						.find("[Missing now] " +
+						      torrhan_torrok.steps[1].text) !=
+					std::string::npos &&
+				torrhan_section(torrhan_torrok)
+						.find("[Missing now] " +
+						      torrhan_torrok.steps[2].text) !=
+					std::string::npos,
+			"Torrhan same-named or intermediate items substituted for exact offerings");
+		supplies = {};
+		supplies.carried[66639] = 1;
+		journal = supplied_torrhan.render_journal(7, 42, 666, 10, 1, 123, false, false,
+							  &supplies);
+		for (int form = 1; form <= 8; ++form)
+		{
+			const auto id = "cloak-form-" + std::to_string(form);
+			const auto &recipe = story_for("torrhan", id.c_str());
+			require(recipe.category == "service" &&
+					torrhan_section(recipe).find(
+						std::string(form == 2 ? "[Ready now] " :
+									"[Missing now] ") +
+						recipe.steps.front().text) != std::string::npos,
+				"same-named cloaks lost exact form readiness or service classification");
+		}
+		require(supplied_torrhan.serialize_state() == torrhan_before_read &&
+				supplied_torrhan.progress_for_zone(7, 42, 666).completed == 0,
+			"Torrhan inventory inspection manufactured quest history");
+		record(supplied_torrhan, torrhan_king.contracts.front(), "torrhan-supplied-king",
+		       666, 66801);
+		record(supplied_torrhan, torrhan_torrok.contracts.front(), "torrhan-supplied-sword",
+		       666, 66831);
+		for (const auto &entry : torrhan_map.stories)
+			if (entry.category == "service")
+				for (const auto &contract : entry.contracts)
+					record(supplied_torrhan, contract, contract.c_str(), 666,
+					       66816);
+		for (const auto &[contract, reason] : torrhan_map.exclusions)
+			record(supplied_torrhan, contract, contract.c_str(), 666, 66721);
+		require(supplied_torrhan.progress_for_zone(7, 42, 666).completed == 2 &&
+				supplied_torrhan.progress_for_zone(7, 42, 666).total == 8,
+			"supplied finales required producer history or services/refusals earned credit");
+		service restored_torrhan(catalog);
+		require(restored_torrhan.deserialize_state(supplied_torrhan.serialize_state(),
+							   &error),
+			"Torrhan supplied-finale recovery failed");
+		for (const auto &entry : torrhan_map.stories)
+			if (entry.category != "service" && entry.id != torrhan_king.id &&
+			    entry.id != torrhan_torrok.id)
+				record(restored_torrhan, entry.contracts.front(), entry.id.c_str(),
+				       666, 66600);
+		service recovered_torrhan(catalog);
+		require(recovered_torrhan.deserialize_state(restored_torrhan.serialize_state(),
+							    &error) &&
+				recovered_torrhan.progress_for_zone(7, 42, 666).completed == 8 &&
+				recovered_torrhan.progress_for_zone(7, 42, 666).total == 8 &&
+				recovered_torrhan.progress_for_zone(7, 42, 5000).completed == 0 &&
+				recovered_torrhan.progress_for_zone(7, 42, 57).completed == 0,
+			"Torrhan recovery merged independent outcomes or invented foreign credit");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

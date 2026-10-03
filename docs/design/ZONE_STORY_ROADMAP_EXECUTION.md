@@ -87,9 +87,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 32 | Surface Realm | [Comprehensive source dossier](zone-stories/SURFACE_REALM.md): all 141 blocks/31 exchanges/36 addressed, 160,004 rooms in 562 prose/56 metadata/311 exit groups, 234 mobs/78 objects, 1,736 resets/320 families, eight literal assignments/104 computed teachers and bounded foreign evidence | Revision one: seventeen outcomes/six support rows, 37 contacts/31 optional checks; exact competing campaign materials, repeated supplies, distinct bass, actual tomb continuation and supplied routes | Active source/recipient/episode qualification; accepted treant/fishing/helper/rift/actor/region and paid ship/class/fee events; targeted two-edge/clue repair and deliberate bracer/invasion/descent policy |
 | 33 | Tharnadia | [Comprehensive source dossier](zone-stories/THARNADIA.md): all 44 native blocks/nineteen exchanges/24 addressed families, 584 rooms/176 mobs/206 objects/nineteen shops, 1,480 resets/661 families, 31 literal assignments/computed teachers and bounded foreign/shared review | Revision two: eight outcomes/eight services/one typed-food exclusion, 26 contacts/23 optional checks; exact toys, supplied medicine finale, paper-map correction and independent commissions | Active source/container/search/appearance qualification; accepted first-source/dialogue/access/healing/lesson/pet events; typed/coin-only and paid town settlement; builder-selected missing-mobile/clue/source/claim repairs |
 | 34 | Mini Zones | [Comprehensive source dossier](zone-stories/MINI_ZONES.md): all 21 blocks/seven exchanges/eleven addressed families, 300 rooms/125 mobs/124 objects/five shops, 548 resets/358 families, six literal assignments and bounded shared/foreign review | Revision one: three outcomes/four services, eighteen contacts/sixteen optional checks; exact maze/cutpurse, distinct sword and five-crystal guidance | Active source/recipient/episode and learned access/travel/effect evidence; guarded fee/charm/pet settlement; builder-selected missing-edge/identity/claim/prose repairs with clear fix/news reporting |
-| 35–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 35 | City of Torrhan | [Comprehensive source dossier](zone-stories/CITY_OF_TORRHAN.md): all 46 blocks/26 exchanges/eighteen addressed families, 289 rooms/152 mobs/125 objects/six shops, 447 resets/324 families; both literal and table/automatic bindings | Revision one: eight outcomes/fourteen services/four refusals, 23 contacts/28 optional checks; exact potion, ring, sword, crown and cloak cycle guidance | Active source/recipient episodes, competing materials, lineage/property presentation, access/choice and actual actor-state events; selected throne/stock/prose repairs require explicit fix/news reporting |
+| 36–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is the City of Torrhan.
+The next area is Golden Hall of the Crown.
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -1591,3 +1592,58 @@ the achievement denominator without changing native definitions or rewards.
 All 2,668 native definitions, revision two, fingerprint, registry and the
 other fifty-five maps are preserved. Continue with the City of Torrhan.
 Active, ready accounting remains mandatory.
+
+## City of Torrhan completed source map — October 3, 2026
+
+Read all 46 native blocks (23 Q, three QA, twenty M), all 26 exchanges and
+eighteen addressed families; Nirrel's two ambient action blocks are not player
+lessons. Reviewed 289 rooms/202 exact prose groups/36 headers/39 metadata
+groups/224 exit families, 152 mobiles, 125 objects, six shops and 447 resets
+across 324 source families. Both room assignments, complete local searches,
+default/table teaching, automatic switch and bounded shared execution are
+recorded in the [dossier](zone-stories/CITY_OF_TORRHAN.md). All positive
+boundary targets resolve; the administrative dispersal entrance is distinct.
+
+Revision one adds eight independent outcomes, fourteen support exchanges,
+four refusals, 23 contacts/all addressed topics and 28 optional checks.
+Aineila's ring and Marthona's scales have exact sources; boy/halfling consume
+the same feather, and shell services compete for one material. Full yellow
+to owl and half-empty to king are separate terminals, without a required
+Zrilxa kill or invented royal cure/transformation. Initial cloak crafting
+is one outcome; eight same-named but different-property reworkings are support.
+Raw guard sword → Thurdorf → Oblivion to Torrok is optional producer guidance
+for supplied Oblivion. Worn/reward crowns remain distinct kinds.
+
+The mighty throne is a push-triggered switch whose current target is an
+unblocked hallway exit. The actual throne-room route loads open because
+the loader masks raw state four to zero, and the hallway has no south return.
+Builder must settle intended target/reset/return before a native repair;
+this finding does not prove the whole royal story inaccessible. Torrok's
+assistant/shop reference absent stock 6087, without invalidating other real
+stock or his sword delivery. Laboratory random-output wording, royal prose,
+probabilistic one-choice plaque and minor text artifacts have balanced repair
+options. **No native zone or quest repair ships in this checkpoint.** Every
+selected implemented repair requires a clear fix commit and PR/news before/after
+statement, with validation and remaining limits.
+
+Extend qualification with exact acquisition cause and item/output lineage,
+recipient incarnation/retirement, permitted same-name property presentation,
+accepted dialogue/access/travel, actual actor state and durable branch/attempt
+events. One-cap material declarations, follower chains and reset mode one are
+leads, not proof of personal recovery or daily availability. Optional producer
+history never replaces consumed materials or creates an all-stage campaign.
+
+Native regression verifies exact full/half potion and cloak readiness,
+supplied king/Torrok finales without predecessor history, no read mutation,
+all services/refusals excluded from achievement credit, independent eight-outcome
+receipt recovery and no invented Surface/Mini Zones credit. Production regression
+checks all bindings/topics, exact prototype/source parents, boundary and throne
+configuration and missing stock evidence. Active native journeys, source generation,
+actor state, access and payments remain unqualified.
+
+Current catalog: **57 journals, 1,728 achievement units, 1,502 potential daily
+units and 2,223 projected rows; 35 of 220 roadmap areas are source-comprehensive,
+with 185 remaining.** Four refusals are removed from the projected rows; fourteen
+services remove additional achievement/daily credit. All 2,668 native definitions,
+revision-two fingerprint/registry and other fifty-six maps are preserved.
+Continue with Golden Hall of the Crown. Active, ready accounting remains mandatory.

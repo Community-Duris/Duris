@@ -71591,6 +71591,1213 @@
       ]
     },
     {
+      "contacts": [
+        {
+          "description": "End of the city pier. Ask song or wounded. Accepts the engagement ring for a mermaid locket and leaves; no escort or actual sailor healing is implemented.",
+          "keyword": "aineila",
+          "mob_vnum": 66631,
+          "name": "Aineila",
+          "topics": [
+            "sad",
+            "song",
+            "yearning",
+            "singing",
+            "wounded",
+            "man",
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Hidden city meeting room. Ask story or yes, then continue. Green dragonscales earn fuzzy pink socks and a beach clue; translucent cloth is returned as wrong material.",
+          "keyword": "marthona",
+          "mob_vnum": 66646,
+          "name": "Marthona",
+          "topics": [
+            "story",
+            "yes",
+            "continue"
+          ]
+        },
+        {
+          "description": "A path through Rhanale Forest. Ask owl. A white feather earns a dirty seashell, shared between the fisherman and laboratory support recipes.",
+          "keyword": "boy",
+          "mob_vnum": 66668,
+          "name": "Dwarven boy",
+          "topics": [
+            "owl",
+            "lady",
+            "owllady"
+          ]
+        },
+        {
+          "description": "Antiques shop. Restores the exact bracelet, helmet and guard sword. Returns shark tooth earrings with a fisherman hint. Also a table-assigned epic constitution teacher; paid epic practice remains unavailable under active accounting.",
+          "keyword": "thurdorf",
+          "mob_vnum": 66671,
+          "name": "Thurdorf",
+          "topics": []
+        },
+        {
+          "description": "Rhanale Forest. Ask owl, owllady or lady. Accepts the same feather wanted by the boy, for an old pullover; the requests are independent.",
+          "keyword": "halfling",
+          "mob_vnum": 66678,
+          "name": "Curious halfling",
+          "topics": [
+            "owl",
+            "owllady",
+            "lady"
+          ]
+        },
+        {
+          "description": "Palace throne room. Accepts only the half-empty yellow potion for a reward crown. His worn crown is a different kind. Acceptance keeps him present without persistent cure state.",
+          "keyword": "king",
+          "mob_vnum": 66692,
+          "name": "King Torrhan",
+          "topics": []
+        },
+        {
+          "description": "Palace laboratory. Ask potion, mixing or formula. A dirty seashell gives a purple potion and shark skin gloves; the hidden shelf separately contains the full yellow potion.",
+          "keyword": "scowling",
+          "mob_vnum": 66693,
+          "name": "Scowling half-elf",
+          "topics": [
+            "potion",
+            "potions",
+            "mixing",
+            "tooth",
+            "shark",
+            "formula",
+            "formulas",
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Underground drow city. Ask work, tailor, cloth or translucent. Makes the initial cloak from cloth, then reworks eight distinct same-named forms in a cycle.",
+          "keyword": "tailor",
+          "mob_vnum": 66698,
+          "name": "King's tailor",
+          "topics": [
+            "avoid",
+            "avoiding",
+            "lowered",
+            "eyes",
+            "work",
+            "damper",
+            "tailor",
+            "cloth",
+            "translucent"
+          ]
+        },
+        {
+          "description": "Hidden hollow tree off Rhanale Forest. Ask princess, continue or potion. Full yellow gives a seal and half-empty potion, then removes this owl appearance. Blue and purple are returned. She also carries the contested white feather.",
+          "keyword": "owl",
+          "mob_vnum": 66701,
+          "name": "Owl lady",
+          "topics": [
+            "hide",
+            "hello",
+            "hi",
+            "say",
+            "speak",
+            "talk",
+            "something",
+            "i",
+            "am",
+            "who",
+            "are",
+            "you",
+            "continue",
+            "princess",
+            "potion"
+          ]
+        },
+        {
+          "description": "Small beach house. Ask tooth, polish or seashell. Exact dirty seashell and shark tooth services give different jewelry. Clean replacement items are not the original offerings.",
+          "keyword": "fisherman",
+          "mob_vnum": 66708,
+          "name": "Old fisherman",
+          "topics": [
+            "polish",
+            "polishing",
+            "seashell",
+            "seashells",
+            "dirty",
+            "shell",
+            "shells",
+            "shark",
+            "tooth"
+          ]
+        },
+        {
+          "description": "Office beside his city shop. Ask sword or oblivion. Accepts restored Oblivion for a mask of sight. Buying shop stock is a separate service.",
+          "keyword": "torrok",
+          "mob_vnum": 66721,
+          "name": "Torrok",
+          "topics": [
+            "sword",
+            "longsword",
+            "oblivion"
+          ]
+        },
+        {
+          "description": "Forest cabin loft. Ask name, box or aineila. His stationary locked box contains the engagement ring; the hidden ground key is elsewhere in the forest. He wears the dull silver helmet but has no terminal ring receipt himself.",
+          "keyword": "wounded",
+          "mob_vnum": 66754,
+          "name": "Wounded grey elf",
+          "topics": [
+            "name",
+            "box",
+            "aineila",
+            "mutter",
+            "mutters",
+            "breath",
+            "clasp",
+            "clasps"
+          ]
+        },
+        {
+          "description": "Small brick house. Ask princess, king or continue for the royal disappearance rumor. Her conversation offers lore without another hand-in, kidnap state or accepted rescue.",
+          "keyword": "aging",
+          "mob_vnum": 66759,
+          "name": "Aging woman",
+          "topics": [
+            "hi",
+            "hello",
+            "worry",
+            "worried",
+            "mind",
+            "happening",
+            "princess",
+            "king",
+            "appear",
+            "disappear",
+            "disappeared",
+            "kidnap",
+            "kidnapped",
+            "continue"
+          ]
+        },
+        {
+          "description": "Rhanale Forest. Declares the exact green dragonscales wanted by Marthona. Roaming and one-cap availability need live checks; personal kill history is not a delivery prerequisite.",
+          "keyword": "green",
+          "mob_vnum": 66648,
+          "name": "Green dragon",
+          "topics": []
+        },
+        {
+          "description": "Small dock warehouse. Wears the dull grey bracelet accepted by Thurdorf. The captain has no separate journal hand-in.",
+          "keyword": "captain",
+          "mob_vnum": 66658,
+          "name": "Ship captain",
+          "topics": []
+        },
+        {
+          "description": "Palace Tower of Choices side room. Wears the original shark tooth earring accepted by the fisherman and returned by Thurdorf.",
+          "keyword": "rogue",
+          "mob_vnum": 66685,
+          "name": "Devious rogue",
+          "topics": []
+        },
+        {
+          "description": "Chamber behind the palace throne. Carries the glowing tower key; a nearby portal leads to the Tower of Choices. Current throne switch targeting needs repair review. No demon-defeat prerequisite is checked by either potion recipe.",
+          "keyword": "zrilxa",
+          "mob_vnum": 66687,
+          "name": "Zrilxa",
+          "topics": []
+        },
+        {
+          "description": "Underground holding chamber connected to the drow streets and cavern. Carries the tailor's translucent cloth. The source lead needs active appearance, roaming and access qualification.",
+          "keyword": "translucent",
+          "mob_vnum": 66699,
+          "name": "Translucent dragon",
+          "topics": []
+        },
+        {
+          "description": "Underground holding room linked to the drow street and pit. Carries the exact raw sword restored into Oblivion. This is not the ordinary city guard sword.",
+          "keyword": "patrolling",
+          "mob_vnum": 66758,
+          "name": "Patrolling guard",
+          "topics": []
+        },
+        {
+          "description": "Several palace declarations. The dark-corridor appearance carries the golden key for the throne-level hallway door. Other guardians do not automatically carry that key.",
+          "keyword": "enchantress",
+          "mob_vnum": 66700,
+          "name": "Guardian enchantress",
+          "topics": []
+        },
+        {
+          "description": "Docks ship store. Shared ship service offers its own stock and ownership rules. Buying, summoning or repairing a ship is not a static quest achievement.",
+          "keyword": "boat",
+          "mob_vnum": 66702,
+          "name": "Boat merchant",
+          "topics": []
+        },
+        {
+          "description": "Guild of Sorcery. Native blizzard and Mimir thoughts are ambient, not addressed dialogue, a taught-skill receipt or a required journey to the Frost Giants.",
+          "keyword": "nirrel",
+          "mob_vnum": 66740,
+          "name": "Nirrel",
+          "topics": []
+        },
+        {
+          "description": "Inn of Oceans. Ordinary shop hospitality and room rental are separate services. Renting a room creates no static story completion.",
+          "keyword": "riralin",
+          "mob_vnum": 66742,
+          "name": "Riralin",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [
+        {
+          "contracts": [
+            {
+              "completion_key": "give=I:66637;receive=I:66637;disappear=0",
+              "giver_vnum": 66646
+            }
+          ],
+          "reason": "Marthona returns translucent cloth as the wrong dragon proof. This refusal gives no achievement; deliver green dragonscales instead, or use the cloth at the tailor."
+        },
+        {
+          "contracts": [
+            {
+              "completion_key": "give=I:66619;receive=I:66619;disappear=0",
+              "giver_vnum": 66671
+            }
+          ],
+          "reason": "Thurdorf returns the original shark tooth earring and points to the old fisherman. This is a refusal and clue, not polishing or another achievement."
+        },
+        {
+          "contracts": [
+            {
+              "completion_key": "give=I:66655;receive=I:66655;disappear=0",
+              "giver_vnum": 66701
+            }
+          ],
+          "reason": "The owl lady returns the dark blue potion as unsuitable. This is a refusal, not a transformation or achievement. The potion has no ordinary active reset source in the reviewed inventory."
+        },
+        {
+          "contracts": [
+            {
+              "completion_key": "give=I:66665;receive=I:66665;disappear=0",
+              "giver_vnum": 66701
+            }
+          ],
+          "reason": "The owl lady returns the dark purple potion as unsuitable. The laboratory seashell recipe produces this purple kind; the full yellow potion is a separate shelf source. No achievement is granted for the refusal."
+        }
+      ],
+      "introduction": "Explore Torrhan's lost sailor, royal potion deliveries, dragon cloth and restored sword stories. Eight independent outcomes sit beside fourteen support exchanges and four refusals. Earlier producers and current materials explain routes without requiring personal recovery. Active, ready accounting is required.",
+      "orientation": [
+        "The city has Surface Realm approaches at the stone highway, ship-store waters and eastern Rhanale Forest. Discovery opens this zone journal; named stories and contacts still depend on encounters. The administrative dispersal room is not an ordinary player entrance.",
+        "Aineila at the end of the pier and the wounded elf in the forest cabin describe the same engagement ring. A hidden forest key opens the stationary box in the loft. Take the exact ring from the box and give it to Aineila. Her departure narrates the reunion, without an implemented escort or cure.",
+        "Marthona in the hidden city room describes a green dragon and suspicious royal behavior. Green dragonscales produce fuzzy pink socks and a secret-beach clue. Translucent cloth is returned as wrong proof. The clue does not unlock an exit or prove travel.",
+        "The secret eastern route from the beach reaches ledges with configured falls. Ladder exits provide a return route. Finding or using these exits does not create journal history; their current state and hazards need actual travel qualification.",
+        "The owl lady lives in a hidden hollow tree off Rhanale Forest. The boy and curious halfling each consume her same white feather for independent rewards. Source caps and her potion-story retirement affect availability; neither request requires a personal kill.",
+        "The full yellow potion is hidden inside a laboratory shelf. The laboratory seashell exchange produces a purple potion and shark skin gloves, despite its random-potion wording. Blue and purple potions are refused by the owl; the half-empty yellow potion is also a different kind.",
+        "Full yellow potion to owl lady gives a princess seal and half-empty yellow potion, then removes her current appearance. Half-empty potion to King Torrhan gives a reward crown and keeps him present. Either delivery accepts supplied material without requiring the other receipt or a Zrilxa kill.",
+        "The potion dialogue describes a princess rescue and royal cure. Those accepted exchanges record their exact materials and rewards. No persistent princess replacement, king cure, escort, demon defeat or returned-home state is implemented by these recipes.",
+        "The palace entry guard carries the iron gate key. A particular guardian enchantress carries the golden key for the throne-level hallway door. A black key comes from one troll declaration in the Tower of Uncertainty; a blue key comes from one greater demon in the queen's chamber. Check the actual appearance and item.",
+        "Zrilxa carries the glowing key for the Tower of Choices, and a nearby portal enters that tower. The plaque claims one choice, but the configured key has a chance to break rather than guaranteed single use. Choosing, unlocking and moving are separate actions with no recorded branch decision.",
+        "The mighty throne is a push-triggered switch, but its current target is an already-open hallway exit. It does not implement the described throne opening. The throne-room northern route currently loads as an ordinary open connection; a reviewed native repair must settle the intended access and return behavior.",
+        "The tailor in the underground drow city wants cloth carried by the translucent dragon. Its source declaration is in a holding chamber with real connecting exits, not an exitless room. Current appearance, roaming and access still need qualification. Supplied cloth also crafts the first cloak.",
+        "The tailor's eight cloak forms share the same visible name and mostly the same keywords, but their native properties differ. Each reworking consumes the current form and produces the next; the eighth returns to the first. These support exchanges give no additional quest or daily achievements.",
+        "Torrok accepts only restored Oblivion. The patrolling underground guard's thick steel longsword is the correct raw kind for Thurdorf, while ordinary steel swords with the same lookup aliases are different. Supplied Oblivion works without a restoration receipt. The mask reward does not prove its later use.",
+        "Thurdorf also polishes a dull bracelet and helmet. The fisherman exchanges a dirty seashell and original shark tooth earring for different jewelry. These are support recipes; current custody is separate from producer history, and competing consumers do not duplicate spent materials.",
+        "Guilds, epic constitution teaching, inn rental, ordinary shops, fishing and ship/crew operations retain their own rules. Nirrel's ambient blizzard and Mimir thoughts, the aging woman's rumors, the graveyard and palace lore do not create automatic taught-skill, learned-keyword or cleared-area achievements."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "torrhan",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:66721;receive=I:66722;disappear=1",
+              "giver_vnum": 66631
+            }
+          ],
+          "id": "aineilas-engagement-ring",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "A hidden small key lies deep within Rhanale Forest. Search the accessible ground and recover it, then use it on the stationary box in the cabin loft. The key floats and has no configured break chance. It is not consumed by Aineila.",
+              "id": "box-key",
+              "item_vnums": [
+                66720
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional preparation: carry the small key"
+            },
+            {
+              "count": 1,
+              "hint": "The wounded elf is upstairs in the forest cabin. His locked box contains this exact ring. Ask him about aineila, box or name. Supplied rings also qualify; other diamond jewelry does not.",
+              "id": "diamond-ring",
+              "item_vnums": [
+                66721
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small diamond engagement ring"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66721;receive=I:66722;disappear=1",
+                  "giver_vnum": 66631
+                }
+              ],
+              "hint": "Find Aineila at the end of the city pier and ask wounded, man or song. Acceptance gives a shimmering locket of the mermaids and retires her appearance. Her departure narrates a reunion; no implemented escort, sailor healing or second hand-in is required.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Deliver the engagement ring to Aineila"
+            }
+          ],
+          "summary": "Aineila sings at the end of the pier, believing her lover lost at sea. The wounded grey elf in the forest cabin has their ring in a locked box. Deliver the exact diamond ring to Aineila for a mermaid locket; she leaves this appearance. A supplied ring works without personally finding or healing the sailor.",
+          "title": "Aineila's lost engagement ring"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:66611;receive=I:66634;disappear=0",
+              "giver_vnum": 66646
+            }
+          ],
+          "id": "marthonas-green-dragon-proof",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The green dragon loads in Rhanale Forest and carries this one-cap material. Its placement is a lead, not guaranteed availability. A supplied set also works; translucent cloth and other scales do not replace it.",
+              "id": "green-scales",
+              "item_vnums": [
+                66611
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the green dragonscales"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66611;receive=I:66634;disappear=0",
+                  "giver_vnum": 66646
+                }
+              ],
+              "hint": "Find her in the hidden meeting room off the city streets. Ask story or yes, then continue. She stays after acceptance, gives fuzzy pink socks and mentions a secret entrance near the beach. The clue creates no travel or learned-topic receipt.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Give the green dragonscales to Marthona"
+            }
+          ],
+          "summary": "Marthona suspects something is wrong with the king and describes a green dragon in Rhanale Forest. Bring its exact green dragonscales for fuzzy pink socks and a secret-beach lead. Translucent dragon cloth is returned as the wrong material. The delivered scales do not defeat Zrilxa or finish the royal story.",
+          "title": "Marthona's green dragon proof"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:66668;receive=I:66654;disappear=0",
+              "giver_vnum": 66668
+            }
+          ],
+          "id": "boys-owl-feather",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The owl lady in the hollow tree carries the feather. Only one is declared per source appearance, subject to its shared cap. Use a valid recovery route or a supplied feather. A completed halfling request does not supply another current feather.",
+              "id": "white-feather",
+              "item_vnums": [
+                66668
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the large white feather"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66668;receive=I:66654;disappear=0",
+                  "giver_vnum": 66668
+                }
+              ],
+              "hint": "Find the boy on a path through Rhanale Forest and ask owl. He gives a dirty seashell and stays. The seashell can then support the laboratory or fisherman service; these are different consumers of the same item.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Bring a white feather to the dwarven boy"
+            }
+          ],
+          "summary": "The dwarven boy wants the owl lady's large white feather. Deliver one for a dirty seashell. The curious halfling wants the same feather for a separate request; neither recipient requires that you personally kill the owl. Obtain desired feathers before the owl's potion delivery removes her appearance.",
+          "title": "An owl feather for the dwarven boy"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:66668;receive=I:66669;disappear=0",
+              "giver_vnum": 66678
+            }
+          ],
+          "id": "halflings-owl-feather",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The owl lady carries this exact feather in the hollow tree. The boy consumes the same material, and the potion story retires the source appearance. Existing custody and reset availability need checking; supplied feathers also work.",
+              "id": "white-feather",
+              "item_vnums": [
+                66668
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the large white feather"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66668;receive=I:66669;disappear=0",
+                  "giver_vnum": 66678
+                }
+              ],
+              "hint": "Ask owl, owllady or lady in the forest. Acceptance gives an old pullover and keeps him present. These requests are independent outcomes, without an implemented one-choice branch or automatic second feather.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Deliver a white feather to the curious halfling"
+            }
+          ],
+          "summary": "The curious halfling in Rhanale Forest offers an old pullover for a large white feather. This is independent of the boy's feather request and the owl lady's potion story. Supplying the exact feather is enough; personal combat or another request receipt is not required.",
+          "title": "An owl feather for the curious halfling"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:66666;receive=I:66667,I:66673;disappear=1",
+              "giver_vnum": 66701
+            }
+          ],
+          "id": "owl-ladys-yellow-potion",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The owl carries the feather wanted by the boy and halfling. Acquiring or spending a feather is not required for this potion delivery. Her retirement can change source availability; a supplied potion still works.",
+              "id": "feather-preparation",
+              "item_vnums": [
+                66668
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional preparation: consider the white feather requests"
+            },
+            {
+              "count": 1,
+              "hint": "A shelf in the palace laboratory contains the hidden full yellow potion. Inspect and search the accessible shelf, then take its actual contents. The laboratory's seashell service gives a purple potion, not this one. Supplied full potions also work.",
+              "id": "full-yellow-potion",
+              "item_vnums": [
+                66666
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the full yellow potion"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66666;receive=I:66667,I:66673;disappear=1",
+                  "giver_vnum": 66701
+                }
+              ],
+              "hint": "Find the hidden hollow tree off Rhanale Forest. Ask princess, continue or potion. She returns blue and purple potions as refusals; only the full yellow kind produces the seal and half-empty potion. Defeating Zrilxa is not checked by the exchange.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Give the full yellow potion to the owl lady"
+            }
+          ],
+          "summary": "The owl lady asks for a potion and describes herself as a princess. Bring the full yellow potion, not the half-empty one, for a princess seal and a half-empty yellow potion. Acceptance removes this owl appearance. Her narrated return to Rhithel is not a spawned princess, escort or confirmed transformation.",
+          "title": "A yellow potion for the owl lady"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:66673;receive=I:66705;disappear=0",
+              "giver_vnum": 66692
+            }
+          ],
+          "id": "king-torrhans-potion",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66666;receive=I:66667,I:66673;disappear=1",
+                  "giver_vnum": 66701
+                }
+              ],
+              "hint": "The owl delivery explains a source of the half-empty potion. It is an independent outcome, not a requirement for supplied material or proof of a transformation.",
+              "id": "owl-history",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional history: help the owl lady"
+            },
+            {
+              "count": 1,
+              "hint": "Use the full potion at the owl lady to obtain the half-empty one, or bring the half-empty potion supplied. King Torrhan does not consume this full potion.",
+              "id": "full-potion-preparation",
+              "item_vnums": [
+                66666
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional preparation: carry a full yellow potion for the owl"
+            },
+            {
+              "count": 1,
+              "hint": "The owl lady gives this exact kind with her princess seal. The seal is not an offering to the king. Earlier receipt history cannot replace the current half-empty potion.",
+              "id": "half-empty-potion",
+              "item_vnums": [
+                66673
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the half-empty yellow potion"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66673;receive=I:66705;disappear=0",
+                  "giver_vnum": 66692
+                }
+              ],
+              "hint": "Find him in the palace throne room. Acceptance consumes the potion and gives the reward crown of kingdoms. The crown he wears is a different item kind with the same visible name. He remains present; royal healing in the response is narrative.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Deliver the half-empty potion to King Torrhan"
+            }
+          ],
+          "summary": "King Torrhan accepts the half-empty yellow potion produced by the owl lady's separate story and gives a crown of kingdoms. The full yellow potion does not fit his recipe. A supplied half-empty potion works without the owl story receipt. The king stays, and the exchange records no persistent cure or demon defeat.",
+          "title": "The half-empty potion for King Torrhan"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:66637;receive=I:66638;disappear=0",
+              "giver_vnum": 66698
+            }
+          ],
+          "id": "tailors-translucent-cloth",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The translucent dragon has a declared material source in an underground holding chamber linked to the drow streets and cavern. Its room and roaming behavior need live qualification. Marthona returns this cloth as the wrong proof; that refusal does not complete the tailor request.",
+              "id": "translucent-cloth",
+              "item_vnums": [
+                66637
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the translucent dragon cloth"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66637;receive=I:66638;disappear=0",
+                  "giver_vnum": 66698
+                }
+              ],
+              "hint": "Find him in the underground drow city. Ask tailor, cloth or translucent after his conversation about work. Acceptance crafts the first cloak form and keeps him present. All eight forms share a visible name but have different properties; inspect the exact item before reworking it.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Give translucent cloth to the king's tailor"
+            }
+          ],
+          "summary": "The king's tailor wants translucent cloth from a translucent dragon beneath the city. Deliver it for the first form of a translucent cloak of the ancients. Supplied cloth qualifies. His later cloak exchanges cycle through eight forms and remain support services rather than eight more quest achievements.",
+          "title": "The tailor's cloak of the ancients"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:66718;receive=I:66717;disappear=0",
+              "giver_vnum": 66721
+            }
+          ],
+          "id": "torroks-restored-oblivion",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66715;receive=I:66718;disappear=0",
+                  "giver_vnum": 66671
+                }
+              ],
+              "hint": "This explains a producer route for Oblivion. The restoration is a support service, not a separate achievement or a requirement for supplied Oblivion.",
+              "id": "sword-restoration-history",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional history: have Thurdorf restore the sword"
+            },
+            {
+              "count": 1,
+              "hint": "A patrolling guard declares this exact sword in an underground holding room connected to the drow streets and pit. Recover the actual kind and offer it to Thurdorf. Ordinary matching aliases are not interchangeable.",
+              "id": "unrestored-sword",
+              "item_vnums": [
+                66715
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional preparation: carry the guard's thick steel longsword"
+            },
+            {
+              "count": 1,
+              "hint": "Thurdorf supplies this kind for the guard's thick steel longsword. You may also bring a supplied Oblivion. The raw sword and earlier restoration receipt do not replace current custody of the restored sword.",
+              "id": "oblivion",
+              "item_vnums": [
+                66718
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the restored sword Oblivion"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66718;receive=I:66717;disappear=0",
+                  "giver_vnum": 66721
+                }
+              ],
+              "hint": "Find Torrok in his office beside the surface city shop. Ask sword or oblivion. Acceptance gives a mask of sight and keeps him present. Wearing the mask, learning an ability or buying shop stock is separate from the delivery.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Return Oblivion to Torrok"
+            }
+          ],
+          "summary": "Torrok wants his sword Oblivion. One route recovers the patrolling guard's exact thick steel longsword and has Thurdorf restore it. Deliver Oblivion to Torrok for a mask of sight. A supplied restored sword works without the polishing receipt; the ordinary steel longswords with shared lookup aliases do not fit.",
+          "title": "Return Oblivion to Torrok"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:66614;receive=I:66621;disappear=0",
+              "giver_vnum": 66671
+            }
+          ],
+          "id": "polish-grey-bracelet",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The captain in the small dock warehouse wears this dull bracelet on his wrist. Recover and carry it through a valid route, or bring one supplied. Unequip it before offering.",
+              "id": "exact-input",
+              "item_vnums": [
+                66614
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a dull grey bracelet"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66614;receive=I:66621;disappear=0",
+                  "giver_vnum": 66671
+                }
+              ],
+              "hint": "The recipient stays and consumes the exact input to create a shiny metal bracelet. This creates a new item kind rather than repairing the same item identity. Current materials and historical receipts are separate.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the polish the dull grey bracelet exchange"
+            }
+          ],
+          "summary": "Bring a dull grey bracelet to Thurdorf's antiques shop for a shiny metal bracelet. This is a supporting item exchange. Supplied material works without earlier producer history. The service does not create a quest or daily achievement.",
+          "title": "Polish the dull grey bracelet"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:66707;receive=I:66708;disappear=0",
+              "giver_vnum": 66671
+            }
+          ],
+          "id": "polish-silver-helmet",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The wounded grey elf in the cabin loft wears this helmet. His ring delivery is a separate story. Recover and carry this exact helmet, or bring one supplied.",
+              "id": "exact-input",
+              "item_vnums": [
+                66707
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a dull silver helmet"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66707;receive=I:66708;disappear=0",
+                  "giver_vnum": 66671
+                }
+              ],
+              "hint": "The recipient stays and consumes the exact input to create a shiny silver helmet. This creates a new item kind rather than repairing the same item identity. Current materials and historical receipts are separate.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the polish the dull silver helmet exchange"
+            }
+          ],
+          "summary": "Bring a dull silver helmet to Thurdorf's antiques shop for a shiny silver helmet. This is a supporting item exchange. Supplied material works without earlier producer history. The service does not create a quest or daily achievement.",
+          "title": "Polish the dull silver helmet"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:66715;receive=I:66718;disappear=0",
+              "giver_vnum": 66671
+            }
+          ],
+          "id": "restore-oblivion",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The patrolling underground guard carries the exact thick steel longsword in a connected holding-room declaration. Other steel swords with the same lookup aliases do not fit. Torrok accepts the restored output, without requiring this producer history.",
+              "id": "exact-input",
+              "item_vnums": [
+                66715
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a thick, steel longsword"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66715;receive=I:66718;disappear=0",
+                  "giver_vnum": 66671
+                }
+              ],
+              "hint": "The recipient stays and consumes the exact input to create the longsword named Oblivion. This creates a new item kind rather than repairing the same item identity. Current materials and historical receipts are separate.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the have thurdorf restore oblivion exchange"
+            }
+          ],
+          "summary": "Bring a thick, steel longsword to Thurdorf's antiques shop for the longsword named Oblivion. This is a supporting item exchange. Supplied material works without earlier producer history. The service does not create a quest or daily achievement.",
+          "title": "Have Thurdorf restore Oblivion"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:66654;receive=I:66665,I:66688;disappear=0",
+              "giver_vnum": 66693
+            }
+          ],
+          "id": "laboratory-seashell",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The dwarven boy gives this dirty seashell for a large white feather. The fisherman also consumes this same shell. A supplied shell works without the boy receipt. The full yellow potion is a separate hidden shelf source.",
+              "id": "exact-input",
+              "item_vnums": [
+                66654
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a dirty seashell"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66654;receive=I:66665,I:66688;disappear=0",
+                  "giver_vnum": 66693
+                }
+              ],
+              "hint": "The recipient stays and consumes the exact input to create a dark purple potion and blackened shark skin gloves. This creates a new item kind rather than repairing the same item identity. Current materials and historical receipts are separate.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the the laboratory seashell service exchange"
+            }
+          ],
+          "summary": "Bring a dirty seashell to the palace laboratory for a dark purple potion and blackened shark skin gloves. This is a supporting item exchange. Supplied material works without earlier producer history. The service does not create a quest or daily achievement.",
+          "title": "The laboratory seashell service"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:66654;receive=I:66674;disappear=0",
+              "giver_vnum": 66708
+            }
+          ],
+          "id": "fishermans-seashell",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Use the boy's dirty seashell or a supplied shell. The laboratory consumes the same material for different outputs; its receipt does not return a spent shell.",
+              "id": "exact-input",
+              "item_vnums": [
+                66654
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a dirty seashell"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66654;receive=I:66674;disappear=0",
+                  "giver_vnum": 66708
+                }
+              ],
+              "hint": "The recipient stays and consumes the exact input to create a sparkling necklace. This creates a new item kind rather than repairing the same item identity. Current materials and historical receipts are separate.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the the fisherman's seashell service exchange"
+            }
+          ],
+          "summary": "Bring a dirty seashell to the small beach house for a sparkling necklace. This is a supporting item exchange. Supplied material works without earlier producer history. The service does not create a quest or daily achievement.",
+          "title": "The fisherman's seashell service"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:66619;receive=I:66675;disappear=0",
+              "giver_vnum": 66708
+            }
+          ],
+          "id": "fishermans-shark-tooth",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The devious rogue near the palace tower wears this shark tooth earring. Thurdorf returns it with a fisherman hint rather than polishing it. Recover and carry the actual earring, or bring one supplied.",
+              "id": "exact-input",
+              "item_vnums": [
+                66619
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a shark tooth earring"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66619;receive=I:66675;disappear=0",
+                  "giver_vnum": 66708
+                }
+              ],
+              "hint": "The recipient stays and consumes the exact input to create a shimmering shark tooth earring. This creates a new item kind rather than repairing the same item identity. Current materials and historical receipts are separate.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the the fisherman's shark tooth service exchange"
+            }
+          ],
+          "summary": "Bring a shark tooth earring to the small beach house for a shimmering shark tooth earring. This is a supporting item exchange. Supplied material works without earlier producer history. The service does not create a quest or daily achievement.",
+          "title": "The fisherman's shark tooth service"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:66638;receive=I:66639;disappear=0",
+              "giver_vnum": 66698
+            }
+          ],
+          "id": "cloak-form-1",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The first form comes from translucent cloth, and later forms come from the previous reworking service. A supplied matching form also works. Another same-named cloak form cannot substitute. Unequip the selected cloak before giving it.",
+              "id": "current-form",
+              "item_vnums": [
+                66638
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry cloak form 1"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66638;receive=I:66639;disappear=0",
+                  "giver_vnum": 66698
+                }
+              ],
+              "hint": "Find the king's tailor in the drow city. Acceptance consumes the current form and creates the next exact kind. The response describes a color change, but the forms also differ in properties. This is a repeatable support cycle, not a required all-stage campaign.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Have the tailor make cloak form 2"
+            }
+          ],
+          "summary": "The tailor exchanges cloak form 1 for form 2. All eight forms have the same visible name but different native properties. The sequence returns to the first form after the eighth. Inspect your exact cloak before another exchange; reworking earns no story or daily achievement.",
+          "title": "Cloak reworking: form 1 to form 2"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:66639;receive=I:66640;disappear=0",
+              "giver_vnum": 66698
+            }
+          ],
+          "id": "cloak-form-2",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The first form comes from translucent cloth, and later forms come from the previous reworking service. A supplied matching form also works. Another same-named cloak form cannot substitute. Unequip the selected cloak before giving it.",
+              "id": "current-form",
+              "item_vnums": [
+                66639
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry cloak form 2"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66639;receive=I:66640;disappear=0",
+                  "giver_vnum": 66698
+                }
+              ],
+              "hint": "Find the king's tailor in the drow city. Acceptance consumes the current form and creates the next exact kind. The response describes a color change, but the forms also differ in properties. This is a repeatable support cycle, not a required all-stage campaign.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Have the tailor make cloak form 3"
+            }
+          ],
+          "summary": "The tailor exchanges cloak form 2 for form 3. All eight forms have the same visible name but different native properties. The sequence returns to the first form after the eighth. Inspect your exact cloak before another exchange; reworking earns no story or daily achievement.",
+          "title": "Cloak reworking: form 2 to form 3"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:66640;receive=I:66641;disappear=0",
+              "giver_vnum": 66698
+            }
+          ],
+          "id": "cloak-form-3",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The first form comes from translucent cloth, and later forms come from the previous reworking service. A supplied matching form also works. Another same-named cloak form cannot substitute. Unequip the selected cloak before giving it.",
+              "id": "current-form",
+              "item_vnums": [
+                66640
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry cloak form 3"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66640;receive=I:66641;disappear=0",
+                  "giver_vnum": 66698
+                }
+              ],
+              "hint": "Find the king's tailor in the drow city. Acceptance consumes the current form and creates the next exact kind. The response describes a color change, but the forms also differ in properties. This is a repeatable support cycle, not a required all-stage campaign.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Have the tailor make cloak form 4"
+            }
+          ],
+          "summary": "The tailor exchanges cloak form 3 for form 4. All eight forms have the same visible name but different native properties. The sequence returns to the first form after the eighth. Inspect your exact cloak before another exchange; reworking earns no story or daily achievement.",
+          "title": "Cloak reworking: form 3 to form 4"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:66641;receive=I:66642;disappear=0",
+              "giver_vnum": 66698
+            }
+          ],
+          "id": "cloak-form-4",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The first form comes from translucent cloth, and later forms come from the previous reworking service. A supplied matching form also works. Another same-named cloak form cannot substitute. Unequip the selected cloak before giving it.",
+              "id": "current-form",
+              "item_vnums": [
+                66641
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry cloak form 4"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66641;receive=I:66642;disappear=0",
+                  "giver_vnum": 66698
+                }
+              ],
+              "hint": "Find the king's tailor in the drow city. Acceptance consumes the current form and creates the next exact kind. The response describes a color change, but the forms also differ in properties. This is a repeatable support cycle, not a required all-stage campaign.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Have the tailor make cloak form 5"
+            }
+          ],
+          "summary": "The tailor exchanges cloak form 4 for form 5. All eight forms have the same visible name but different native properties. The sequence returns to the first form after the eighth. Inspect your exact cloak before another exchange; reworking earns no story or daily achievement.",
+          "title": "Cloak reworking: form 4 to form 5"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:66642;receive=I:66643;disappear=0",
+              "giver_vnum": 66698
+            }
+          ],
+          "id": "cloak-form-5",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The first form comes from translucent cloth, and later forms come from the previous reworking service. A supplied matching form also works. Another same-named cloak form cannot substitute. Unequip the selected cloak before giving it.",
+              "id": "current-form",
+              "item_vnums": [
+                66642
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry cloak form 5"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66642;receive=I:66643;disappear=0",
+                  "giver_vnum": 66698
+                }
+              ],
+              "hint": "Find the king's tailor in the drow city. Acceptance consumes the current form and creates the next exact kind. The response describes a color change, but the forms also differ in properties. This is a repeatable support cycle, not a required all-stage campaign.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Have the tailor make cloak form 6"
+            }
+          ],
+          "summary": "The tailor exchanges cloak form 5 for form 6. All eight forms have the same visible name but different native properties. The sequence returns to the first form after the eighth. Inspect your exact cloak before another exchange; reworking earns no story or daily achievement.",
+          "title": "Cloak reworking: form 5 to form 6"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:66643;receive=I:66644;disappear=0",
+              "giver_vnum": 66698
+            }
+          ],
+          "id": "cloak-form-6",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The first form comes from translucent cloth, and later forms come from the previous reworking service. A supplied matching form also works. Another same-named cloak form cannot substitute. Unequip the selected cloak before giving it.",
+              "id": "current-form",
+              "item_vnums": [
+                66643
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry cloak form 6"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66643;receive=I:66644;disappear=0",
+                  "giver_vnum": 66698
+                }
+              ],
+              "hint": "Find the king's tailor in the drow city. Acceptance consumes the current form and creates the next exact kind. The response describes a color change, but the forms also differ in properties. This is a repeatable support cycle, not a required all-stage campaign.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Have the tailor make cloak form 7"
+            }
+          ],
+          "summary": "The tailor exchanges cloak form 6 for form 7. All eight forms have the same visible name but different native properties. The sequence returns to the first form after the eighth. Inspect your exact cloak before another exchange; reworking earns no story or daily achievement.",
+          "title": "Cloak reworking: form 6 to form 7"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:66644;receive=I:66645;disappear=0",
+              "giver_vnum": 66698
+            }
+          ],
+          "id": "cloak-form-7",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The first form comes from translucent cloth, and later forms come from the previous reworking service. A supplied matching form also works. Another same-named cloak form cannot substitute. Unequip the selected cloak before giving it.",
+              "id": "current-form",
+              "item_vnums": [
+                66644
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry cloak form 7"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66644;receive=I:66645;disappear=0",
+                  "giver_vnum": 66698
+                }
+              ],
+              "hint": "Find the king's tailor in the drow city. Acceptance consumes the current form and creates the next exact kind. The response describes a color change, but the forms also differ in properties. This is a repeatable support cycle, not a required all-stage campaign.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Have the tailor make cloak form 8"
+            }
+          ],
+          "summary": "The tailor exchanges cloak form 7 for form 8. All eight forms have the same visible name but different native properties. The sequence returns to the first form after the eighth. Inspect your exact cloak before another exchange; reworking earns no story or daily achievement.",
+          "title": "Cloak reworking: form 7 to form 8"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:66645;receive=I:66638;disappear=0",
+              "giver_vnum": 66698
+            }
+          ],
+          "id": "cloak-form-8",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The first form comes from translucent cloth, and later forms come from the previous reworking service. A supplied matching form also works. Another same-named cloak form cannot substitute. Unequip the selected cloak before giving it.",
+              "id": "current-form",
+              "item_vnums": [
+                66645
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry cloak form 8"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66645;receive=I:66638;disappear=0",
+                  "giver_vnum": 66698
+                }
+              ],
+              "hint": "Find the king's tailor in the drow city. Acceptance consumes the current form and creates the next exact kind. The response describes a color change, but the forms also differ in properties. This is a repeatable support cycle, not a required all-stage campaign.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Have the tailor make cloak form 1"
+            }
+          ],
+          "summary": "The tailor exchanges cloak form 8 for form 1. All eight forms have the same visible name but different native properties. The sequence returns to the first form after the eighth. Inspect your exact cloak before another exchange; reworking earns no story or daily achievement.",
+          "title": "Cloak reworking: form 8 to form 1"
+        }
+      ]
+    },
+    {
       "contacts": [],
       "coverage": "complete",
       "exclusions": [],
