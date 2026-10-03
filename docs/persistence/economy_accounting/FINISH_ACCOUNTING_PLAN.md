@@ -320,9 +320,12 @@ checks. Real uncertain/durable publication faults pass pending recovery,
 non-cancellable retry and pending-journal crash recovery through whole-account
 erasure. Both complete journeys remain failed because a zone-story alias
 survives whole-account deletion; this separate R8 defect and the second cold
-restart remain open. Existing bank/shop/UID owner checks pass. Remote character-index, portable
-copyover and readiness changes through 16ce1f2fb require fresh combined-source
-qualification before this acknowledgement milestone can be published. A new integrated broad run is pinned to published 0be1cdf30, rather
+restart remain open. Existing bank/shop/UID owner checks pass. Remote character-index, portable copyover and readiness changes through
+16ce1f2fb now pass fresh strict SQL/flatfile/pfile builds, incoming owner suites,
+both real SQL deletion journeys and all ten native recovery cases. Shifted
+writer locations and hardcoded assertions are refreshed after exact identity
+checks; all 54 contracts pass without route upgrades. Whole-account quest-alias
+erasure and checked serialization remain separate unfinished work. A new integrated broad run is pinned to published 0be1cdf30, rather
 than the uncommitted acknowledgement candidate. Current broad and full-feature
 qualification remain open. The unchanged frozen full-world retry passes inspector
 compilation but times out in its 600-second server-build stage before gameplay.

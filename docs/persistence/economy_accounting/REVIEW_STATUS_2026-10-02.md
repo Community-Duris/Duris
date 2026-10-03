@@ -1649,3 +1649,70 @@ Local ignored evidence SHA-256:
 - tmp/flat-fence-ack-compatible-formatter.local.log: f2efc2eb69dda6ceacbfd2534a79f615c4760f829f5ca75ab436cab8f61cb646
 - tmp/flat-fence-ack-compatible-writer-checks.local.log: f5d08e4d59548ed5729d316b7b054052762293c2e7441d9e9ef04062259807c4
 - tmp/flat-fence-ack-compatible-existing-owners.local.log: 4687d4d94fc90c3bc04913690aa527907a53eb96e5d306701aa0f3af5764ae67
+
+## Remote indexing/copyover/readiness integration and writer refresh
+
+The acknowledgement commit is integrated locally as
+05649b0fe7bb2049382e0cfd906fca2948de47e8 on remote prefix
+16ce1f2fb9c191587fd9d9c5466fe44efccedd0c (PRs 687-689). Native source:
+e5ab0c1515f97b900d38b34bf4c0a60b4f79bbfa. All 1,224 tracked native files
+match the fresh combined build. Strict SQL, flatfile and pfile pass. SQL SHA-256:
+b2a861227333283bcb5e33352dde74162b9051fe16bf66a11154b08f287ee20e.
+Flatfile SHA-256:
+fb0bb3a58cd30c3be86b59dcac7d10385e81c72d8d048c81cb8ad7620e6c2335.
+QA: /opt/duris-accounting-flat-fence-ack-16ce-review/source. Cached dependency
+targets were rebased; every changed header/source triggered its native dependents.
+
+The full formatter and eight incoming owner suites pass: portable codec golden
+bytes/legacy ABI/allocation/sync faults, custody, save guards, telemetry,
+readiness real-socket ASan/UBSan, scheduler, session queues and account loading.
+Both actual SQL deletion journeys pass. All ten native recovery cases pass in
+890.104 seconds under concurrent qualification load; this is recovery evidence,
+not a measured production workload budget. Uncertain and durable fence menu
+faults still pass through pending recovery, non-cancel, crash/restart and exact
+credential/player erasure, then FAIL the independent quest-alias assertion.
+The ordinary character-deletion/alias/restart journey passes. No complete
+whole-account journey is claimed for this source.
+
+Remote edits displaced 284 unique census locations. The first writer run failed
+12 tests; after registry reanchoring, four hardcoded assertion errors and one
+copyover-location mismatch remained. Each old/new path, family and exact source
+excerpt has the same multiplicity. The registry keeps all 864 route dispositions,
+policies and evidence; ten assertion locations are refreshed without weakening
+expectations. All 54 writer contracts, standalone site contracts, 14 fixtures
+and matrix --check now pass: 2,815 occurrences, 2,756 unique sites, zero unmapped.
+This repairs inventory drift, not the 751 missing runtime/projection proofs.
+
+Separate alias WIP at native 42581f80298dd56a95acbae57a90c73350a098be passes
+native ASan/UBSan erasure, corrupt refusal/repair and all 18 operation journal
+interruptions, including fresh recovery and byte-identical repeated retry.
+Both strict server profiles and pfile pass. Its first real journey erases aliases
+and passes a later quest-state write, then fails because the observer fixture
+recreated the original account through a bound Python default. Explicit observer
+arguments correct that fixture; fresh full journeys remain pending. A separate
+native allocation RED proves the production quest serializer can return partial
+state after a swallowed stream allocation failure. Checked serialization and
+empty-output refusal are being qualified before final alias publication.
+
+The 848-test integrated run remains pinned to published 0be1cdf30, outside these
+later changes. Full R1-R8, captured clone, full-world and measured workload gates
+remain open. coverage_complete=False; release BLOCKED. No inactive spell-path,
+production activation/data, timeout or release policy was changed.
+
+Local ignored evidence SHA-256:
+
+- tmp/flat-fence-ack-16ce-build.local.log: ce25e494d2e519b137920943ec65f1decfe97971b3163d925ab6dc20b0c92d28
+- tmp/flat-fence-ack-16ce-pin.local.log: 9fed84567f0a5457878c5e878a7b911125e95409b20a426e72c4ce19ba606e93
+- tmp/flat-fence-ack-16ce-formatter-contract.local.log: f2efc2eb69dda6ceacbfd2534a79f615c4760f829f5ca75ab436cab8f61cb646
+- tmp/flat-fence-ack-16ce-incoming-owners.local.log: bd3d53c604b55c4026e4d037fc4258a9f1ff49ffbbb850c82dabe7447131f066
+- tmp/flat-fence-ack-16ce-sql-journeys.local.log: 6c03c25129a06215380a803154f18af5cc07f88bf5923cbc2c3685dfe80bea9a
+- tmp/flat-fence-ack-16ce-recovery.local.log: f8afa7903db021754d6b307f4215b41e08b6dda5bd57f86e9b5bb22007c685b1
+- tmp/flat-fence-ack-16ce-menu-journeys.local.log: 65dec71ee76dc79bf8708c5d86efaba145c43ece3d18467f8dfc1f2bd08b296f
+- tmp/flat-fence-ack-16ce-writer-checks.local.log: b0d0d2be2c5a73cc221dc22348bb1f233dd80c363b95e878d8e8f73bf3a409d1
+- tmp/flat-fence-ack-16ce-writer-reanchored.local.log: 9840626b113cb39526ea5f8e5da64ca6a7b6b8e00ef4669ba015d6525f15ce74
+- tmp/flat-fence-ack-16ce-writer-final.local.log: c401ea49f8106ea89f5462369a5d8ceb56a1475cb8cf720d59e6325d65f884ac
+- tmp/flat-fence-ack-16ce-site-reanchor.local.log: 34b2e07f874773eb8678d30edb176070733fcdafc7989acbaecf1f60f55b6f5e
+- tmp/flat-fence-ack-16ce-assertion-reanchor.local.log: 94704a6ef4b85d624038476bfe99c64977a83148afd3f10b0e170ed7dd865a6b
+- tmp/flat-account-alias-red.local.log: 126b24b5eb1ec5654d7d30f25ccb61a381ee77c4edc1ba008195c0ba4e06a7b4
+- tmp/flat-account-alias-boundaries.local.log: 952015e5e72cc9ebbc40fcd99a1d2cdd016d757df8597372f491009958909d6c
+- tmp/flat-alias-serialization-red.local.log: f822f32bb9eaa0a101088a79671d80637bee3e7211338559c2589d3a739fb488
