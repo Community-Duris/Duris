@@ -114,7 +114,9 @@ int main() {
             descriptor_data descriptor{};
             char command[] = "look";
             txt_block queued{command, nullptr};
-            descriptor.input = {&queued, &queued};
+            descriptor.input = {.head = &queued, .tail = &queued,
+                                .bytes = sizeof(command), .entries = 1,
+                                .overflowed = false, .overflow_reported = false};
             ch.desc = &descriptor;
             spellcast_datatype payload{};
             payload.arg = strdup("target argument");
@@ -135,6 +137,8 @@ int main() {
             assert(CAN_ACT((&ch)));
             assert(descriptor.input.head == &queued && descriptor.input.tail == &queued);
             assert(std::strcmp(queued.text, "look") == 0);
+            assert(descriptor.input.bytes == sizeof(command) && descriptor.input.entries == 1);
+            assert(!descriptor.input.overflowed && !descriptor.input.overflow_reported);
             assert(!room_link && !world_link);
             assert(!payload.arg && frees == 1 && message_count == 1);
             // StopCasting already supplies feedback; adding another rejection
