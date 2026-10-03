@@ -855,3 +855,26 @@ still refuses missing executable evidence as required. Native recovery evidence
 does not qualify the real producer or full writer inventory.
 Evidence: `tmp/room-payload55-census-final-summary.local.json`, SHA-256
 de9d84286097c91951b62d2c34a2316331ac537abb47f9199228911b248adeb1.
+
+
+## Typed bank production-pool qualification
+
+The bank owner previously supplied fresh fixture connections in place of the
+production pool. An opt-in guarded real-pool mode now links sql_pool.c while
+keeping the complete existing bank matrix. Observers forward pool calls and
+hide a successful COMMIT reply at the native client boundary; reconciliation
+must borrow a different server session. Both disposable engines pass writes,
+exact retained replay, authority retirement, forged witness/code and native-state
+refusals, rollback faults, retained tamper checks, clean autocommit reborrow,
+zero borrowed leases and shutdown before mysql_library_end under ASan/UBSan.
+The guarded connection factory disables reconnect and forwards native flags.
+
+Primary verified 581 linked-source/compile-owner/native-header entries against
+the frozen build after explicit LF normalization. Native binary SHA-256:
+fa2745f384202e22eba17abcdd79aec07d5bc1fb9711e63714d4dc9cdf4bff3c.
+Evidence: `tmp/bank-real-pool-payload55-final-summary.local.json`, SHA-256
+5f6a826d033f5d658d781fb0fd5f9496c898dcfae4171994b80e8f76214d1513.
+Formatting and eight disposable-target refusal mutations also pass. This closes
+the bank actual-pool component gap; production factory configuration, mixed
+workload contention, actual player publication/replay and current-head broad
+qualification remain independent gates. Activation and release remain blocked.

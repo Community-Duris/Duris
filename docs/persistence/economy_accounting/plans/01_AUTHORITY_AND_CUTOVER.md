@@ -119,7 +119,9 @@ pointer, including failure. Real-session rollback/replenishment/shutdown passes
 on both engines; pure pool ordering/capacity checks pass under ASan/UBSan.
 Coin/item typed coordinator paths linked to this production pool now pass both
 engines under ASan/UBSan, including real COMMIT reply loss, exact replay and
-clean reborrow/shutdown. Typed bank remains an open actual-pool component gate. Boot configuration, mixed workload and actual publication/replay
+clean reborrow/shutdown. Typed bank now also passes the complete actual-pool component matrix on both
+engines, including distinct replacement reconciliation and clean reborrow/shutdown.
+Boot configuration, mixed workload and actual publication/replay
 acceptance remain independent of this repair.
 
 
