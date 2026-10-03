@@ -5068,8 +5068,10 @@ nothing and charge nothing. Quantity orders do not work at the epic shop.
 
 The order shows quantity, destination, unit price, and total. Each copy
 completes before the next begins. A stopped order reports how many were
-delivered and their actual charge; the undelivered remainder is uncharged.
-If a committed delivery is delayed, wait or reconnect; do not buy it again.
+delivered and the actual charge. Unpurchased copies are not charged.
+If delivery is rejected after payment, the result identifies the pending
+refund for that copy. If a committed delivery is delayed, wait or reconnect;
+do not buy it again.
 
 ==See also==
 * Shops 
