@@ -118,6 +118,16 @@ cases pass in 275.327 seconds at native source `30d8b4b4...`. Flatfile's existin
 inactive deletion journey passes, but its pre-fence admission remains open.
 Whole-account typed erasure/runtime cleanup and full R1-R8 gates remain open.
 
+The completed frozen `88d3b364c` broad run retains three failures: two native
+files violate the formatter contract, the full-world inspector compilation hit
+its 180-second deadline, and the isolated publication-ACK harness omitted the
+new observation bindings. The ACK harness now executes the current production
+function with those bindings and asserts command/outcome traces across blocked
+checkpoint, failure and retry; its focused test passes without changing native
+code or checkpoint semantics. Formatter/full-world/current-head broad gates
+remain open. The separate unchanged-source inspector build takes 98.804 seconds;
+that compile result does not replace the failed full-world journey.
+
 The later frozen `79540e65d` broad run also finished: 826 passed, 11 skipped
 and two stale source-contract assertions failed in 6,127.39 seconds. NPC cash
 assignments still match the classified registry; their expected locations in

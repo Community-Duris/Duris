@@ -1302,3 +1302,39 @@ coverage_complete=False; release BLOCKED; all full R1-R8 gates remain open.
 Flatfile pre-fence admission and whole-account typed erasure/cleanup are next
 lifecycle boundaries. The captured-generation path remains pending. No
 production activation/data or declined inactive spell-path changes occurred.
+
+## Frozen 88d3b364c result and publication-ACK harness repair
+
+The exact frozen broad run completed with 829 passes, 11 skips and three failures
+in 8,161.730 seconds, across 843 automatic cases; its manual cases remain outside
+that count. test_formatting_tooling reported player_save_journal.c and
+player_snapshot_repository.c formatting drift. test_flatfile_full_world_boot
+stopped at the 180-second inspector compilation deadline. The isolated
+publication-ACK test failed to compile after native diagnostics added observation
+calls; its fixture lacked the trace-stage/type/function bindings. The results
+belong only to original 88d3b364c/native tree 5d6cf93..., not later repairs.
+
+The ACK fixture now binds that observation boundary using its existing isolated
+command/journal types. It still executes the exact production ACK function,
+leaves coordinator reads and duplicate ACKs responsive while disk checkpointing
+blocks, retains the operation on checkpoint failure, and removes it only after
+successful retry. It now additionally checks actual traced command/outcome
+values for the successful checkpoint, failure and successful retry; a duplicate
+in-flight ACK emits no checkpoint result. The focused checkpoint test passes.
+No production source, checkpoint ordering or journal semantics changed.
+Native source remains 30d8b4b453e956455e77773c58201d98fce93954.
+
+Local ignored evidence SHA-256:
+
+- tmp/integrated-88d3b364c.local.log: 074c6cf341d83d26ce100c43831cff37cfe4a6da833d1a5eac01d267edc6753d
+- tmp/integrated-88d3b364c-results.local.json: 13e17fc7d47648e787deb8f6a08f7cbe5bad0ce30396f7cd64668e8de30bb03d
+- tmp/frozen-88-inspector-build-measurement.local.log: 42feea9f3e133fffba1f94fb9c5adae5e6eeaad6e83554ff15183a0a35d8bcfc
+- tmp/publication-ack-checkpoint-fixed.local.log: 30eebc056adbece1c4337566deb9139f43b45e0f4bfe39476d78f542062e0ce2
+
+The original broad run remains failed. Formatter repair, unchanged-source
+full-world retry and a fresh current-head broad result are separate outstanding
+checks. No compilation deadline has been raised. The flatfile account-fence
+journey independently reproduced corrupt accounting metadata being refused only
+after a permanent account fence; that implementation is still unfinished.
+All R1-R8 full-feature requirements, coverage_complete=False and release BLOCKED
+remain unchanged. The captured-generation path is still pending.
