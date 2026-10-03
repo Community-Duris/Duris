@@ -1338,3 +1338,179 @@ journey independently reproduced corrupt accounting metadata being refused only
 after a permanent account fence; that implementation is still unfinished.
 All R1-R8 full-feature requirements, coverage_complete=False and release BLOCKED
 remain unchanged. The captured-generation path is still pending.
+
+## Native formatter contract repair
+
+The frozen broad run's two formatter violations are repaired in
+player_save_journal.c and player_snapshot_repository.c. The diff changes only
+spacing and line breaks in the archive-frame predicate, timer-row builder and
+retained-death failure helper. No persistence, accounting or inactive gameplay
+behavior changes. The full formatting-tooling contract passes in the Linux QA
+copy; strict production SQL, flatfile and offline pfile builds pass.
+Normal 14-fixture validation, matrix --check, all 54 writer-contract tests and
+the standalone writer-site contract pass. Source anchors were refreshed without
+changing route disposition, excerpts or qualification; 864 routes/2,815
+occurrences/2,756 unique sites/zero unmapped remain inventory counts only.
+
+Native source tree: a132651b48e9449f5d091741250b2a3f5ab600cb.
+A comparison of all 1,214 tracked native files, normalized only for CRLF/LF,
+finds zero differences between the staged source and the strict-build QA.
+SQL binary SHA-256: 12e8d895cf7642b43acca42555273d14363645e327061aa8ba6f05ae7f581eb5.
+Flatfile binary SHA-256: cedf591aecb47a0931f2b928f71f881612b84e6d44c9bf2cb165f0702c7dd65d.
+QA: /opt/duris-accounting-formatter-c12-build-review/source.
+
+The first local formatting dispatch hit Windows CRLF shell-hook parsing. The
+archived QA also needed its shell hooks normalized and Git's CRLF cleaning
+configured before its changed-lines check. The obsolete formatter subprocess
+started under the earlier line-ending configuration was stopped; the complete
+correctly configured retry passes. These setup failures remain in ignored logs.
+No test, formatter policy, timeout or acceptance requirement was weakened.
+
+Local ignored evidence SHA-256:
+
+- tmp/formatter-c12-build-checks.local.log: b16851bdb4b62eb3998d586ac1c84871f2b763671b54c3b70f5c918c2a593e6e
+- tmp/formatter-c12-native-retry.local.log: eb051de526640654124dc8f00beb1d4b95a706fad612bca0ab5d393bf0c2dcca
+- tmp/formatter-c12-writer-checks.local.log: ecc2f2c56ff82a920d2f8a65b297df6fa0428b9d467d7a3da713a36d9d313dce
+- tmp/formatter-c12-source-pin-native.local.log: 7d7ff7be4ac8dd41f93be18851487c406f2a241b05fdb3b273a31ba34041a269
+
+The original frozen broad run remains failed. Unchanged-source full-world retry,
+a fresh integrated broad run and all full R1-R8 gates remain open. The flatfile
+pre-fence fix is undergoing separate qualification and is not included in this
+formatter-only source pin. coverage_complete=False; release BLOCKED. No declined
+inactive spell-path or production activation/data changes occurred.
+
+## Remote cd4cc413f integration and formatter publication qualification
+
+The normal formatter milestone push was rejected because experimental-accounting
+advanced to cd4cc413fdaf62bf93bf0eee7908883f1254f08d with PR #684 account loading
+and PR #685 world-loop supervision. The unpublished formatter commit was rebased
+onto that exact remote head, with the separate flatfile WIP preserved and
+restored without conflict. No published history was rewritten or force-pushed.
+The formatter evidence above remains pinned to its original earlier source.
+
+The combined formatter/upstream native tree is
+44528a2ff5d25f63df2869e3ae8ac1a9ed325855. All 1,220 native files match the strict
+QA, with only CRLF/LF normalized. Strict production SQL, flatfile and pfile builds
+pass. The complete formatting contract passes. Account-loader ASan/UBSan worker,
+stale-session, admission saturation, cancellation/shutdown and repository
+transaction regressions pass; the 24 native watchdog regressions, account
+projection source contracts and seven production-service contracts also pass.
+Normal 14-fixture accounting validation, matrix --check, all 54 writer-contract
+tests and the standalone writer-site contract pass. The first writer-contract
+run exposed stale SQL/copyover line references after the remote integration;
+four literal tuple anchors and two copyover assignment-line anchors now refer
+to the identical original source excerpts. No disposition or proof gate changed.
+The archived test setup initially requested the unpublished rebased SHA from
+GitHub; the exact published cd4cc413f base is now used for its QA Git index.
+
+SQL binary SHA-256: 9f260bae9e175230aafb8e8c4bd58c544a172045a89aaaf816b6f21ad9b69896.
+Flatfile binary SHA-256: 3c856e88cf2b941a2c458a4911ef113b73c482bfca45e94c6e45244de6b39b2d.
+QA: /opt/duris-accounting-remote-cd4-formatter-review/source.
+
+Local ignored evidence SHA-256:
+
+- tmp/remote-cd4-formatter-build-checks.local.log: 1a3304a96b9481e3b8e232ac84fde9b1d75832a93b6ecda63c23a4fcc4e434dd
+- tmp/remote-cd4-formatter-source-pin.local.log: 657627881729b5d0a6805186d0f3f4776e6295314ce6b9e5c9fe05d9bf6ec534
+- tmp/remote-cd4-formatter-native-retry.local.log: 02ddf786341209c9f1583faa02268ffa0a8bdc1e965b9d364d4cc168f870e93d
+- tmp/remote-cd4-contracts.local.log: d71406bfa7b7d6c00ce54b4ea3b5d8d6587914f48b3ff3fd56c7b505393dc262
+- tmp/remote-cd4-formatter-writer-checks-final.local.log: 18b64619cd99e3aac5dffdce4bab7de401007a277d695e4108863e6648c64f1b
+
+Current integrated gameplay, recovery and broad qualification remain separate
+open checks. The flatfile pre-fence repair is not included in this source pin.
+Full R1-R8 requirements remain open; coverage_complete=False; release BLOCKED.
+No production activation/data or declined inactive spell-path changes occurred.
+
+## Remote PR #686 and fresh native qualification requirement
+
+The second normal milestone push was rejected because experimental-accounting
+advanced to 47085b61acf1e688e85363547a8c58c4efdcf743 (PR #686 session queues).
+The unpublished formatter milestone was rebased again, preserving the separate
+flatfile WIP. The current formatter-only native tree is
+ceb8a4a8473d9928cfd373e968ccb3072e18a97a. Its full formatter contract, bounded
+session-queue native harness and all 54 writer contracts pass. The semantic
+writer excerpts/counts and release blockers are unchanged.
+
+Native build inspection found that copied .d files retain absolute object
+**targets** in earlier QA directories. In the cached integrated flatfile-fence
+SQL profile, 685 of 708 dependency targets still name the diagnostics QA, and
+only four name the current QA; the flatfile profile has the corresponding
+685 of 704 old targets. Therefore those dependency rules cannot establish that
+unchanged .c objects were rebuilt for new shared descriptor headers. Source-byte
+matching and successful cached linker exits do not resolve this. Cached
+integrated binaries above, including the cd4cc413f integration, must not be used
+as current native qualification after PRs #684-#686. Their logs/hashes remain
+historical results. This finding does not retag the pre-integration source-pinned
+component and real-journey evidence.
+
+Fresh strict production SQL, flatfile and pfile builds are now running under
+new qualified-clean object directories in the 47085b61a formatter QA; no cached
+object is copied into those directories. The separate flatfile fence candidate
+will be rebuilt from a verified current source with dependency targets rebased
+to its own QA. Current integrated gameplay, recovery and broad results remain
+open until those actual binaries are tested. No production or native game rule
+was changed to work around the build-verification issue.
+
+The unchanged-source frozen 88d3b364c full-world retry passed its inspector
+stage, but then hit the server artifact builder's existing 600-second deadline.
+It did not reach the full-world player journey. The original three-failure broad
+result and this separate retry remain failures; neither deadline was increased.
+
+Local ignored evidence SHA-256:
+
+- tmp/remote-470-cached-dependency-inspection.local.log: 941d795cbe613fab1ab7dfc89479d842746ae295800d745efbb1e14d96dadea8
+- tmp/frozen-88-full-world-retry.local.log: 7cdf487b586a4266311d16eb53cdd9ab56bd92136df6349e379295a693f424d5
+- tmp/remote-470-formatter-writer-checks.local.log: a985fdaf011dabfe20c397f1ee4779d749faf12dfc36a0a0aabf0c4c6a0c85ef
+
+The native flatfile pre-fence active/corrupt refusal, ordinary metadata save,
+paused retry and fresh-load sanitizer component passes under current headers.
+Its integrated fresh-binary qualification is still pending. A separate native
+probe of committed-fence acknowledgement is in progress and is not a solved
+issue. Full R1-R8 gates remain open; coverage_complete=False; release BLOCKED.
+The captured backup-generation path remains pending; production activation/data
+and the declined inactive spell-path change remain untouched.
+
+## Fresh qualification on remote 47085b61a
+
+The formatter-only native tree ceb8a4a8473d9928cfd373e968ccb3072e18a97a
+now passes strict production SQL, flatfile and pfile builds. All server objects
+were rebuilt in empty qualified-clean directories, avoiding the copied .d
+target defect. All 1,220 tracked native files match the QA after CRLF/LF
+normalization. SQL binary SHA-256:
+43f350055f084ccd0f562160fcbf873b4cd3d2aba12f591b143744f7c11aa182.
+Flatfile binary SHA-256:
+c79fea2a073db884216bdabbef257204ad95f5b24a567872617d90b8e0e4dead.
+QA: /opt/duris-accounting-remote-470-formatter-review/source.
+
+The fresh SQL binary passes the real inactive deletion journey on both MySQL
+and MariaDB, including pre-fence metadata/admission refusal, playable retry,
+soft-delete/late-cleanup rollback, deletion once and cold restart. The fresh
+flatfile binary passes the existing missing-authority character deletion
+refusal, preserved snapshot/quest alias, playable retry, deletion once, alias
+erasure and usable account after cold restart. The full formatter contract,
+bounded native session queues, currency/item input/output queue and auxiliary
+prompt contracts pass. Normal 14-fixture validation, generated matrix --check,
+54 writer contracts and standalone site checks pass. These are bounded
+qualification results, not a full R1-R8 acceptance or current broad-suite pass.
+
+The separate flatfile pre-fence admission repair remains outside this source
+pin and is undergoing fresh-binary recovery qualification. An independent
+native fault probe now establishes another open R1/R8 defect: interrupting
+after authority-journal commit makes account-save report refusal, while native
+journal recovery installs the permanent deletion fence. The corrected probe
+explicitly recovers the journal before fresh load; the earlier non-recovering
+probe did not establish this failure. This acknowledgement defect needs its own
+complete fix and qualification; the admission repair does not claim to solve it.
+
+Local ignored evidence SHA-256:
+
+- tmp/remote-470-formatter-fresh-build.local.log: aa3210f9bd182b17b197b8b46e811ac8460f949e9365d903a8252752b714b3ab
+- tmp/remote-470-formatter-source-pin.local.log: 657627881729b5d0a6805186d0f3f4776e6295314ce6b9e5c9fe05d9bf6ec534
+- tmp/remote-470-formatter-checks.local.log: 7f9d280c2767c622740b61bf24e851cd70fb34d122c9e943ff8284e0c6a69e7d
+- tmp/remote-470-formatter-writer-checks.local.log: a985fdaf011dabfe20c397f1ee4779d749faf12dfc36a0a0aabf0c4c6a0c85ef
+- tmp/remote-470-fresh-sql-journeys.local.log: 6c03c25129a06215380a803154f18af5cc07f88bf5923cbc2c3685dfe80bea9a
+- tmp/remote-470-fresh-flatfile-baseline-journey.local.log: 8c854b3ad1417d59b836a42fd81eb1ae4637112ca12792be7df502e591f325f4
+- tmp/flat-account-fence-ack-red-recovery.local.log: c67788068436b96f7e8860d64bc2569f1f13c4e8f8de0722b10fa62bb3cb52e5
+
+Full R1-R8 requirements and current integrated broad, full-world and captured
+generation qualification remain open. coverage_complete=False; release BLOCKED.
+No timeout, safety gate, inactive game rule or declined spell-path was changed.
