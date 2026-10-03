@@ -52,9 +52,10 @@ neither every branch nor every historical prerequisite.
 | 25 | Savannah of Broken Trusts | [Comprehensive source dossier](zone-stories/SAVANNAH_OF_BROKEN_TRUSTS.md): seventeen Q/nineteen M, 167 rooms, 59 mobs, 39 objects, 315 resets/all 105 families; shared native/access/falling/bard and bounded foreign Mitashi/Air/Hostel review | Revision 1: two stories/three requests/twelve equipment services, seventeen contacts/all nineteen raw topics and twelve optional checks | Active parts/sword stock, exact allocation, retiring appearances and well/tunnel access; source/learned-topic evidence; builder-selected absent sister/tribal endpoints and alias/prose/protection decisions |
 | 26 | Alatorin - the Forge City | [Comprehensive source dossier](zone-stories/ALATORIN.md): 495 contracts/961 blocks, full local world/prototypes/shop/reset and bounded foreign/shared review | Revision 1: 253 rows, 90 achievements/82 potential dailies, 163 services/four returns, 94 contacts/all 296 addressed families, 548 optional checks | Active source/preparation/payment and typed-money admission; target/custody/random/class-gift recovery; exact alternative predicates; builder source/access/prose/slot repairs; district presentation and full-stage campaigns |
 | 27 | The City of Newhaven | [Comprehensive source dossier](zone-stories/NEWHAVEN.md): nine Q/two addressed/53 ambient blocks, all local world/prototypes/four shops/252 resets and bounded foreign/shared review | Revision 1: three named outcomes/six services, seventeen contacts/twelve optional checks; exact source, fee, counterpart and unfinished-lore guidance | Active source/personal proof, five mixed payments, badge choices, tail trap/custody and actual travel/inn; builder-selected pipe/reel, collar-table, stale pool/prose and rift/prisoner endpoints |
-| 28–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 28 | Faerie Realm | [Comprehensive source dossier](zone-stories/FAERIE_REALM.md): all seven Q/ten M, 211 rooms/74 mobs/123 objects/one shop, 454 resets/213 families, four local procedures and bounded foreign/shared review | Revision 1: three stories/two services/one rejection, ten contacts/thirteen optional checks; independent retiring outcomes, equivalent forge recipes and exact access/source guidance | Active source/recipient episodes; both mixed fees; held/carried keys, speech/orb travel; unserved combat helpers; targeted Fix effects; builder-selected riddle/prose/missing-target repairs |
+| 29–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Faerie Realm, followed by Verspin and the Ship Yards.
+The next area is Verspin, followed by the Ship Yards and Ultarium.
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -141,6 +142,10 @@ matches, or a candidate item graph was extracted.
 | ZSQ-NEWHAVEN-CONTENT | Dibbly requests a reel but accepts a snorkel pipe; armorer tail success says collar and hammer-badge ground text names the other badge. Existing exact deliveries are preserved. | Builder chooses pipe prose/retained service or a deliberate revised reel contract with receipt compatibility. Correct tail/badge/cloak prose without changing equipment balance; qualify both badge allocations and competing reel consumers. |
 | ZSQ-NEWHAVEN-ACCESS / PROPERTIES | Collar-source table resets inside its own closed/blocked alcove and uses pull on the inside return. Displacer starts in a mainland dispersal room. ROOM_INN bootstrap binds both inns; literal pool targets are missing. Tail has an actual get/put trap. | Review table placement/target/opening and supplied collars; qualify forest wandering, accepted travel/return, both inns, stale-target validation and trap charge/damage/custody. Property-driven source review supplements literal assignment candidates. |
 | ZSQ-NEWHAVEN-LORE / ENDPOINT | Rift inquiry/confession, erinyes boasting and chained Dibbly's plea have no accepted closure, rescue or mercy-kill endpoint. Living and corrupted appearances are independent. | Retain lore or author deliberate actor/party/episode/branch endpoints before adding semantic events. Separate door unlock, current supplies, source recovery, actual kills and full-stage credit. Five paid recipes stay guarded until atomic material/fee/output settlement is qualified. |
+| ZSQ-REALM-CONTENT / LORE | Finn accepts armor where he asks for a scroll; shop wall advertises teleport but actual stock identifies. The golden-gate riddle is undetermined; lost Song and Oberon revival have no accepted terminal. | Builders choose corrected prose or deliberate compatible content. Retain real independent retirement receipts; author episode/branch endpoints before escort, revival or full-stage credit. |
+| ZSQ-REALM-COMBAT | The assigned tree spirit declines periodic registration, handles helpers only on old command 0 and rejects modern combat -102. Its helper state is shared static data. | Choose supported combat/tick dispatch, per-appearance counters, cadence and cap with builder difficulty review before restoration. Qualify concurrent/replaced spirits, death reset, draws and accepted creature publication; no invented helper requirement. |
+| ZSQ-REALM-SOURCE / ACCESS | Spirit and makers start in load/dispersal networks; orb targets the realm approach. Speech unlock leaves closed state; tomb policies differ. Golden-gate destination, two exits and reset object 141120 are missing. | Qualify actual parent/slot/generation, wandering, encounters, held/carried keys, opening/travel/return and retiring recipients. Select restoration or retirement without guessed IDs; distinguish valid optional access from personal source proof. |
+| ZSQ-REALM-FORGE / REPAIR | Alternative makers require the same five distinct parts plus 5,000,000 copper. Fix spell 595 restores one chosen item's condition; no quest repair receipt exists. | Keep paid refusal until atomic material/fee/output settlement. Extend exact device target/custody work for accepted scroll retirement and durable target mutation/recovery. Test missing/substituted parts, both recipients, abort/replay/restart and alternate Fix sources; preserve repair strength. |
 
 ## Verification record
 
@@ -1187,3 +1192,47 @@ reproducibility, switch/inn/teleport source checks, document links, changed-line
 formatting, whitespace and cached server build. These fixtures do not substitute
 for played source, paid, trap, travel or restart journeys; publication records
 the executed checks and remaining limitations.
+
+
+## Faerie Realm completed source map — October 3, 2026
+
+Completed priority 28 with the [source dossier](zone-stories/FAERIE_REALM.md),
+[revision-one journal](../../areas/story/realm.story.json) and reproducible
+[review index](../reference/zone-story-audits/realm.md). Reviewed every local
+Q/M, room, mobile, object, shop and reset family; full local procedures and
+their actual dispatcher; five planar supply carriers/rooms, alternate Fix
+sources, and all 23 loaded foreign boundary/dispersal destinations. Bounded
+foreign evidence does not claim comprehensive foreign-zone qualification.
+
+The journal separates Finn's signet, his retiring key exchange and Celriya's
+retiring blade from two services and one unrewarded walnut response. Ten
+contacts cover all ten addressed families; thirteen optional checks explain
+exact supplies and earlier receipts. Equivalent makers retain both identities
+and five separate component kinds. Supplied key/blade routes remain valid,
+without personal kill, full history, escort or revived-king assumptions.
+
+Recorded concrete plans for the unserved combat-helper callback, per-appearance
+state/difficulty, wandering sources, exact speech/key/orb behavior, ring/scroll
+and shop prose, unfinished riddle, missing exits/reset object, alternative
+source ownership, five-item fee settlement and targeted Fix consumption/effect.
+Builder review selects world repairs before changing native content or balance.
+
+Current catalog: **51 journals, 1,790 achievement units, 1,543 potential daily
+units and 2,238 projected rows; 28 of 220 roadmap areas are source-comprehensive,
+with 192 remaining.** All 2,668 native definitions, revision two, fingerprint,
+zone registry and prior fifty parsed maps remain unchanged. Services/exclusion
+and equivalent recipe presentation change denominators without changing rewards.
+Continue with Verspin, Ship Yards and Ultarium. Active-world qualification
+remains pending; no accounting activation, migration, DB/server operation or
+merge has been performed.
+
+Passed `test_zone_story_quest_production_catalog.py` and the C++20
+`test_zone_story_quest_story.py`: exact bindings/classification/topics/reset
+parents, all 28 reproducible indices, all 51 maps/native loading, a supplied-key
+journey without ring history, independent receipt recovery, service exclusion
+and five distinct material checks. The maintained SQL `make -C src` build
+completed with its existing objects current. Changed-line/touched-file
+formatting and `git diff --check` passed. Source/invariant review confirmed
+605 local/source-line links, the 23 loaded boundary targets and unchanged
+native definitions and fifty prior maps. These fixtures do not certify played
+combat, source, paid, travel or targeted-repair journeys.

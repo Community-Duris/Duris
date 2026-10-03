@@ -213,6 +213,27 @@ Current possession is preparation; it does not prove a kill, harvest, gift-free
 recovery, safe handling or supported payment. Author exact optional checks and
 keep future semantic events and deliberate content repair in the shared plan.
 
+## Equivalent recipients and confirmed effects
+
+The [Faerie Realm dossier](../design/zone-stories/FAERIE_REALM.md) groups two
+makers' identical five-material/coin recipes as one service with alternative
+native bindings. Keep each exact material check separate; five copies of heat
+cannot replace the other four kinds. The service supplies Fix; repairing a
+selected item is a later device effect requiring its own durable evidence.
+Other Fix sources do not prove five-plane recovery or a forge reconstruction.
+
+Finn's retiring key finale accepts a supplied key without prior ring help.
+Optional receipt history explains the story; it must not block native admission
+or silently complete his signet and Celriya's blade. Recipient retirement is
+an accepted outcome, without invented player escort or castle arrival.
+
+Read property-driven access and actual dispatch. Speaking peace unlocks the
+garden door but leaves it closed. The placeholder golden gate has no target;
+a negative key alone does not establish a playable riddle. A maker's prototype
+owner and initial dispersal room do not establish its current physical location.
+The tree helper's old callback is not reached by modern combat: qualify the
+dispatcher and builder-selected encounter policy before exposing helper goals.
+
 ## The gardener dependency
 
 Alvinar's Q contract does not describe the barrier. `gardener_block` in

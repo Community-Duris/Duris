@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 50 &&
-				tracker.summary_for(7, 42).total == 1794,
+		require(catalog.story_mappings.size() == 51 &&
+				tracker.summary_for(7, 42).total == 1790,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -190,8 +190,10 @@ int main(int argc, char **argv)
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
 										    831, 2) == 90 &&
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
-										    352, 2) == 3,
-			"complete Alatorin/Newhaven sidecars failed the native file loader");
+										    352, 2) == 3 &&
+				zone_story_quest_catalog::eligible_definition_count(file_catalog,
+										    140, 2) == 3,
+			"complete Alatorin/Newhaven/Faerie sidecars failed the native file loader");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
 			const auto mapping = std::find_if(catalog.story_mappings.begin(),
@@ -2088,6 +2090,91 @@ int main(int argc, char **argv)
 				restored_savannah.progress_for_zone(7, 42, 1385).completed == 5 &&
 				restored_savannah.progress_for_zone(7, 42, 1385).total == 5,
 			"Savannah receipt recovery merged named requests or counted gear services");
+		const auto &realm_signet = story_for("realm", "finns-lost-signet");
+		const auto &realm_key = story_for("realm", "finns-castle-key");
+		const auto &realm_blade = story_for("realm", "celriyas-family-blade");
+		const auto &realm_ring = story_for("realm", "finns-glowing-ring-trade");
+		const auto &realm_forge = story_for("realm", "the-five-plane-forge-service");
+		service supplied_realm(catalog);
+		require(supplied_realm.discover_zone(7, 42, 140, 14024, 100, "arrival") ==
+				result::applied,
+			"Faerie discovery failed");
+		for (int npc : { 14015, 14028, 14073, 14074 })
+			require(supplied_realm.meet_npc(7, 42, npc, 14024, 101) == result::applied,
+				"Faerie contact failed");
+		supplies = {};
+		supplies.carried[14037] = 1;
+		const auto realm_before_view = supplied_realm.serialize_state();
+		journal = supplied_realm.render_journal(7, 42, 140, 10, 1, 102, false, false,
+							&supplies);
+		const auto realm_section = [&](const auto &story)
+		{
+			const auto start = journal.find(story.title);
+			require(start != std::string::npos,
+				"Faerie story was hidden after meeting");
+			const auto end = journal.find("\r\n  [", start + 1);
+			return journal.substr(start, end == std::string::npos ? end : end - start);
+		};
+		require(realm_section(realm_key).find("Next: " + realm_key.steps.back().text) !=
+					std::string::npos &&
+				realm_section(realm_key).find("[Ready now] " +
+							      realm_key.steps[2].text) !=
+					std::string::npos &&
+				supplied_realm.serialize_state() == realm_before_view &&
+				supplied_realm.progress_for_zone(7, 42, 140).completed == 0,
+			"supplied castle key required earlier ring/access history or a view wrote credit");
+		record(supplied_realm, realm_key.contracts.front(), "realm-supplied-key", 140,
+		       14024);
+		require(supplied_realm.progress_for_zone(7, 42, 140).completed == 1 &&
+				supplied_realm.progress_for_zone(7, 42, 140).total == 3,
+			"Finn's retirement receipt completed other deliveries or counted services");
+		supplies = {};
+		for (int part : { 14121, 14122, 14123, 14124, 14125 })
+			supplies.carried[part] = 1;
+		for (const auto &step : realm_forge.steps)
+		{
+			if (step.kind != "carried_item")
+				continue;
+			const auto item = step.item_vnums.front();
+			journal = supplied_realm.render_journal(7, 42, 140, 10, 1, 103, false,
+								false, &supplies);
+			require(realm_section(realm_forge).find("[Ready now] " + step.text) !=
+					std::string::npos,
+				"exact forge part was missing from current preparation");
+			supplies.carried[item] = 0;
+			supplies.carried[item == 14121 ? 14122 : 14121] += 5;
+			supplies.equipped[16] = item;
+			journal = supplied_realm.render_journal(7, 42, 140, 10, 1, 104, false,
+								false, &supplies);
+			require(realm_section(realm_forge).find("[Missing now] " + step.text) !=
+					std::string::npos,
+				"extra foreign part or worn material replaced an exact carried ingredient");
+			supplies.equipped.clear();
+			supplies.carried[item == 14121 ? 14122 : 14121] -= 5;
+			supplies.carried[item] = 1;
+		}
+		record(supplied_realm, realm_ring.contracts.front(), "realm-ring-service", 140,
+		       14024);
+		for (size_t i = 0; i < realm_forge.contracts.size(); ++i)
+			record(supplied_realm, realm_forge.contracts[i],
+			       i == 0 ? "realm-jamfluul" : "realm-dopplepopper", 140, 14209);
+		service restored_realm(catalog);
+		require(restored_realm.deserialize_state(supplied_realm.serialize_state(),
+							 &error) &&
+				restored_realm.progress_for_zone(7, 42, 140).completed == 1 &&
+				restored_realm.progress_for_zone(7, 42, 140).total == 3,
+			"Faerie recovery counted equivalent maker/ring services as story outcomes");
+		record(restored_realm, realm_signet.contracts.front(), "realm-later-signet", 140,
+		       14024);
+		require(restored_realm.progress_for_zone(7, 42, 140).completed == 2,
+			"later independent signet was merged with the key finale");
+		record(restored_realm, realm_blade.contracts.front(), "realm-celriya", 140, 14147);
+		service recovered_realm(catalog);
+		require(recovered_realm.deserialize_state(restored_realm.serialize_state(),
+							  &error) &&
+				recovered_realm.progress_for_zone(7, 42, 140).completed == 3 &&
+				recovered_realm.progress_for_zone(7, 42, 140).total == 3,
+			"Faerie cold state recovery lost independent delivery receipts");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 50 authored journals, accounting-gated player surfaces, starter/town
+**Status: 51 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -12,7 +12,8 @@ Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus, Torg, Vast Hidden
 Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter
 Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl, Ravenloft
 Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl, the Jade Empire and
-the Savannah of Broken Trusts, Alatorin and Newhaven now have complete source story maps;
+the Savannah of Broken Trusts, Alatorin, Newhaven and Faerie Realm now have
+complete source story maps;
 their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
 with seventeen contacts/all nineteen raw addressed families and twelve optional
@@ -212,6 +213,25 @@ displacer has mainland dispersal/wandering rather than a reachable city
 waypoint. ROOM_INN bootstrap binds both inns even though the literal list
 names only the ruined one. These property-driven and bounded foreign cases
 extend source/access review without granting invented rescue or rift closure.
+
+Faerie Realm's [comprehensive dossier](zone-stories/FAERIE_REALM.md) classifies
+seven native exchanges as three named deliveries, two supporting services and
+one walnut rejection. Finn's signet, retiring key finale and Celriya's family
+blade remain independent. Earlier ring help, cellar/tomb access and current
+supplies are optional; a supplied final proof does not demand an invented
+escort, personal kill or full campaign. Ten contacts cover all ten addressed
+families; thirteen checks retain exact item kinds and source hints.
+
+The two makers share an identical five-part cash recipe but keep their native
+receipts. Their actual reset is a dispersal room, and the tree spirit starts
+in an equipment load network. The library orb returns to the realm approach;
+the temple's spoken peace unlock leaves the door closed. The unfinished golden
+gate, missing exits/reset object and scroll-versus-ring/shop prose need builder
+decisions. Modern combat never reaches the tree spirit's old helper callback;
+choose per-appearance state, cadence and difficulty before restoring it. Fix
+acquisition is separate from its target condition repair; existing device
+target/custody work needs a qualified durable effect before repair milestones.
+These findings extend the plan without changing world data or accounting gates.
 
 ## Accounting requirement and delivery sequence
 
@@ -444,6 +464,21 @@ their source routes or enable guarded material preparation.
   tavern M declarations for absent 93183 and a merchant G for absent 57744 need
   builder-selected stale-reference repairs. Keep loaded administrative paper
   distinct from those absent prototypes, and qualify custom token/key orphans.
+
+- Faerie Realm adds dispatch qualification for legacy combat helpers. A literal
+  assignment is insufficient: verify registration and the actual command IDs
+  delivered by combat, periodic, death and movement paths. Restore supported
+  callbacks only after a builder reviews cadence, helper cap and encounter
+  difficulty; use per-appearance state and qualified creature publication.
+- The realm's Fix scroll adds exact-effect qualification to device work. Track
+  accepted scroll consumption and the selected target UID/condition mutation
+  together before emitting repair evidence. Buying or receiving the same
+  prototype, a generic completed device action and static restoration prose
+  cannot prove that a particular item was repaired.
+- Shared speech gates require current state and reciprocal-edge review: peace
+  clears locked/secret flags but leaves closed state; the unfinished riddle gate
+  has no destination or locked reset. Keep valid access guidance separate from
+  placeholder answers, asymmetric tomb policy and missing dispersal targets.
 
 Client updates should follow committed events and live inventory/equipment
 changes; reconnect sends a fresh projection. Unsupported facts must be marked
@@ -883,7 +918,18 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 193 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 192 roadmap areas.
+- [x] Complete Faerie Realm's seven-Q/ten-M source dossier: all 211 rooms,
+  74 mobs, 123 objects, one shop, 454 resets/213 families, four actual local
+  procedures, five foreign component sources and all loaded boundary targets.
+  Ship three stories/two services/one rejection, ten contacts and thirteen
+  optional exact/history checks. Preserve all native identities and rewards.
+- [ ] Qualify Faerie Realm's active source/retirement episodes, held versus
+  carried/neck keys, garden/tomb directions, no-magic/falling/orb routes,
+  wandering makers, both exact paid recipes and Fix acquisition/targeted use.
+  Review the unserved helper callback before restoring combat difficulty.
+  Resolve scroll/ring/shop prose, unfinished riddle, missing exits/object and
+  return-word policy through builder-selected content revisions.
 - [x] Complete Newhaven's nine-Q/two-addressed/53-ambient source dossier,
   all 100 rooms/91 mobs/44 objects/four shops/252 resets, bounded foreign
   suppliers and shared property/command dispatch. Ship three named outcomes,
@@ -954,6 +1000,7 @@ contract classification; it does not claim complete objective coverage.
 | Savannah of Broken Trusts | 1 | Complete: two stories/three requests/twelve services across seventeen contracts | [Source-comprehensive dossier](zone-stories/SAVANNAH_OF_BROKEN_TRUSTS.md); seventeen contacts/all nineteen raw topics and twelve optional checks | Fresh stock/retiring episodes unqualified; native cash reward supported; no active sister collection terminal | Qualify three-part sources, six-kind allocation/matching upgrades, real well/tunnel/hazard access; builder selects sister/tribal endpoints and alias/prose/protection repairs |
 | Alatorin - the Forge City | 1 | Complete: eighteen stories, 72 requests, 163 services/four returns across 495 contracts | [Source-comprehensive dossier](zone-stories/ALATORIN.md); 94 contacts/all 296 raw topics, 548 optional checks, complete recipes and bounded foreign supply/dispatch | Fresh source generation, material preparation, fees and typed money outputs remain unqualified | Native projection/file-loader checks; qualify exact sources, target/custody, class-gift entitlement, random/decay lineage, district presentation and builder-selected repairs |
 | The City of Newhaven | 1 | Complete: one story, two requests and six services across nine Q | [Source-comprehensive dossier](zone-stories/NEWHAVEN.md); seventeen contacts/all two addressed families, twelve optional checks; rift/counterpart/key/source guidance | Fresh source issuance and five mixed fees remain unqualified; real pipe trade retained as service | Native projection/file-loader checks; qualify supplied/personal proof, tail trap/custody, actual travel/inn and builder-selected source/prose/endpoints |
+| Faerie Realm | 1 | Complete: three stories, two services and one rejection across seven Q | [Source-comprehensive dossier](zone-stories/FAERIE_REALM.md); ten contacts/all ten addressed families, thirteen optional checks; cellar/tomb/orb/source guidance | Three achievement/potential daily units; both five-item fees remain guarded; actual reset/retirement availability unqualified | Native supplied-key journey and receipt recovery; qualify dispatch, exact parts, targeted Fix use and builder-selected gate/source/prose repairs |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
 
 ## Twin Towers evidence and decisions

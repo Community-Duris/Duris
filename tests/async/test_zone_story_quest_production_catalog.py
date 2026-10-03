@@ -759,7 +759,64 @@ assert any(r["command"] == "M" and r["arguments"][1:5] == [35278, 1, 35270, 25] 
 assert re.search(r"\bT\s+2\s+7\s+1\s+5\b", (ROOT / "areas/obj/newhaven.obj").read_text())
 assert all(t.get("optional", False) and len(t["item_vnums"]) == 1 for s in haven_mapping["stories"] for t in s["steps"] if t["kind"] == "carried_item")
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven"):
+realm = inventory_module.area_evidence(ROOT, "realm")
+assert len(realm["requests"]) == 7 and len(realm["dialogue"]) == 10
+assert len(realm["mobs"]) == 74 and len(realm["items"]) == 123
+assert len(realm["reset_commands"]) == 454 and realm["zone"]["reset_mode"] == 2
+realm_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "realm")
+assert realm_mapping["coverage"] == "complete" and realm_mapping["schema_version"] == 3
+assert collections.Counter(s["category"] for s in realm_mapping["stories"]) == {"story": 3, "service": 2}
+assert len(realm_mapping["exclusions"]) == 1
+assert realm_mapping["exclusions"][0]["contracts"] == [{"giver_vnum": 14015, "completion_key": "give=I:14028;receive=I:14028;disappear=0"}]
+realm_contacts = {c["mob_vnum"]: c for c in realm_mapping["contacts"]}
+assert len(realm_contacts) == 10
+for response in realm["dialogue"]:
+    assert set(response["body"][0].rstrip("~").split()) & set(realm_contacts[response["giver_vnum"]]["topics"])
+for vnum, contact in realm_contacts.items():
+    assert contact["keyword"] in realm["mobs"][vnum]["keywords"]
+assert all(not c["topics"] for v, c in realm_contacts.items() if v not in (14015, 14028, 14073, 14074))
+realm_stories = {s["id"]: s for s in realm_mapping["stories"]}
+signet = realm_stories["finns-lost-signet"]
+key = realm_stories["finns-castle-key"]
+blade = realm_stories["celriyas-family-blade"]
+ring = realm_stories["finns-glowing-ring-trade"]
+forge = realm_stories["the-five-plane-forge-service"]
+assert signet["contracts"] == [{"giver_vnum": 14015, "completion_key": "give=I:14036;receive=I:14018,I:14041;disappear=0"}]
+assert key["contracts"] == [{"giver_vnum": 14015, "completion_key": "give=I:14037;receive=C:500000,I:14023;disappear=1"}]
+assert blade["contracts"] == [{"giver_vnum": 14028, "completion_key": "give=I:14001;receive=I:14011,I:14076;disappear=1"}]
+assert ring["category"] == "service" and ring["contracts"] == [{"giver_vnum": 14015, "completion_key": "give=I:14018;receive=C:500,I:14041;disappear=0"}]
+assert forge["category"] == "service" and forge["contracts"] == [{"giver_vnum": giver, "completion_key": "give=C:5000000,I:14121,I:14122,I:14123,I:14124,I:14125;receive=I:14126;disappear=0"} for giver in (14073, 14074)]
+parts = [t for t in forge["steps"] if t["kind"] == "carried_item"]
+assert [t["item_vnums"] for t in parts] == [[v] for v in range(14121, 14126)]
+assert all(t["optional"] and t["count"] == 1 for t in parts)
+earlier, = [t for t in key["steps"] if t["kind"] == "completion" and t.get("optional")]
+assert earlier["contracts"] == signet["contracts"] + ring["contracts"]
+assert any(t["kind"] == "carried_item" and t["item_vnums"] == [14034] for t in blade["steps"])
+assert sum(t.get("optional", False) for s in realm_mapping["stories"] for t in s["steps"]) == 13
+assert all(t.get("optional", False) and len(t["item_vnums"]) == 1 and t["count"] == 1 for s in realm_mapping["stories"] for t in s["steps"] if t["kind"] == "carried_item")
+realm_units = [u for u in catalog_module.story_units(catalog) if u["zone_number"] == 140]
+assert len(realm_units) == 5 and sum(u["achievement"] for u in realm_units) == 3
+assert sum(u["daily_candidate"] for u in realm_units) == 3
+assert sum(r["definition"]["daily_eligible"] for r in realm["requests"]) == 4
+paid = [r for r in realm["requests"] if any(k == "C" for k, _ in r["block"]["give"])]
+assert len(paid) == 2 and all(r["definition"]["daily_exclusion"] == "Unsupported durable offering" for r in paid)
+# Initial reset parents distinguish actual supply from chamber/tomb prose.
+parent = room = None
+realm_sources = {}
+makers = []
+for reset in realm["reset_commands"]:
+    c, v = reset["command"], reset["arguments"]
+    if c in ("M", "F"):
+        parent, room = v[1], v[3]
+        if parent in (14073, 14074):
+            makers.append((parent, room, v[2], v[4]))
+    if c in ("G", "E") and v[1] in (14036, 14038, 14037):
+        realm_sources[v[1]] = (c, parent, room, v[2], v[4])
+assert realm_sources == {14036: ("E", 14026, 14199, 1, 100), 14038: ("E", 14026, 14199, 1, 100), 14037: ("G", 14071, 14158, 1, 100)}
+assert makers == [(14073, 14209, 1, 100), (14074, 14209, 1, 100)]
+assert any(r["command"] == "O" and r["arguments"][1:5] == [14001, 1, 14112, 100] for r in realm["reset_commands"])
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

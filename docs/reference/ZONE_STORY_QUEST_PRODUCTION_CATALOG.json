@@ -43307,6 +43307,430 @@
       ]
     },
     {
+      "contacts": [
+        {
+          "description": "The Way near the hill. Ask about his ring, home and castle key. Separate signet help, a mismatched glowing-ring trade and the retiring key finale.",
+          "keyword": "finn",
+          "mob_vnum": 14015,
+          "name": "The Legendary Finn",
+          "topics": [
+            "anna",
+            "cottage",
+            "ring",
+            "home",
+            "leave",
+            "realm",
+            "key",
+            "castle"
+          ]
+        },
+        {
+          "description": "Keeper of Oberon's temple garden. Ask about her brother or the elves. Her blade delivery retires this appearance; the reflecting pools explain lore.",
+          "keyword": "celriya",
+          "mob_vnum": 14028,
+          "name": "Celriya",
+          "topics": [
+            "gaelis",
+            "elf",
+            "elves",
+            "ruins",
+            "temple",
+            "brother",
+            "tvelor"
+          ]
+        },
+        {
+          "description": "One of two alternative paid forge makers. He starts in a dispersal room and can wander to distant areas; his svirfneblin greeting is native dialogue.",
+          "keyword": "jamfluul",
+          "mob_vnum": 14073,
+          "name": "Jamfluul",
+          "topics": [
+            "hi",
+            "hello",
+            "forge",
+            "lost"
+          ]
+        },
+        {
+          "description": "The other forge maker, with the same five exact parts, fee and Fix reward. Initial dispersal is not a playable town shop location.",
+          "keyword": "dopplepopper",
+          "mob_vnum": 14074,
+          "name": "Dopplepopper",
+          "topics": [
+            "hi",
+            "hello",
+            "forge",
+            "assist"
+          ]
+        },
+        {
+          "description": "The cottage front room. Her description directs you upstairs to the library, and she holds the white-metal cellar key. No addressed Anna quest or implemented golden-gate riddle exists.",
+          "keyword": "anna",
+          "mob_vnum": 14016,
+          "name": "Anna",
+          "topics": []
+        },
+        {
+          "description": "The Tinker wagon shop. Current stock includes an identify scroll, not the teleport scroll described on the wall. Ordinary purchases are support services.",
+          "keyword": "fulbar",
+          "mob_vnum": 14004,
+          "name": "Fulbar",
+          "topics": []
+        },
+        {
+          "description": "The Tinker leader's wagon. His bronze key fits the desk containing Mab's note; the lost Song remains lore without an accepted collection ending.",
+          "keyword": "guhan",
+          "mob_vnum": 14005,
+          "name": "Guhan",
+          "topics": []
+        },
+        {
+          "description": "Starts in the cottage equipment load room and can wander toward the heart chamber. It wears Finn's signet and the amulet key. While present its procedure blocks down; helper-spawn dispatch needs repair review.",
+          "keyword": "spirit",
+          "mob_vnum": 14026,
+          "name": "Oak tree spirit",
+          "topics": []
+        },
+        {
+          "description": "The temple tomb behind its keyed slab. It carries Finn's mammoth key. Its death and the reflecting-pool history are separate from Finn's accepted delivery.",
+          "keyword": "oberon",
+          "mob_vnum": 14071,
+          "name": "The Spirit of Oberon",
+          "topics": []
+        },
+        {
+          "description": "The white gazebo by Anna's cottage. He carries a walnut, which Finn merely rejects and replaces. The walnut response grants no quest progress.",
+          "keyword": "knight",
+          "mob_vnum": 14069,
+          "name": "Grand knight of the Fianna",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [
+        {
+          "contracts": [
+            {
+              "completion_key": "give=I:14028;receive=I:14028;disappear=0",
+              "giver_vnum": 14015
+            }
+          ],
+          "reason": "Finn rejects the walnut and returns the same kind without a reward. This replacement response is not a story, personal recovery, or daily objective."
+        }
+      ],
+      "introduction": "Follow the Way of the Faerie to Finn and Anna's cottage, then connect the living tree's heart to the ruined elven temple. Finn's signet and key and Celriya's family blade have distinct accepted outcomes. The glowing-ring and five-plane forge trades are supporting services. Active, ready accounting is required.",
+      "orientation": [
+        "The side path from the mainland forest enters a looping enclosure. Find the southern hidden path from the large clearing, then follow it east through the foliage to the Way. The ordinary mainland return is west from that side path.",
+        "Meet Finn at the choice of directions below the hill. His native anna, ring/home and key/castle topics connect local routes without learned-keyword achievements. The dwarf and mischievous forest inhabitants are separate encounters.",
+        "Travel up and over the hill, then through the highland forest path to Anna's living oak cottage. Read the upstairs library entries for the lost city, Celriya and Finn. Anna has no addressed quest topics; her description points to this library.",
+        "The library advertises an orb return. Touch the actual orb to reach the realm's side path; travel west from there to the mainland forest. Orbs are also declared in the cottage heart. Touching is a travel action, not Finn's departure or an automatic quest milestone.",
+        "For a personal cottage route, Anna holds the white-metal key fitting the cellar trapdoor. The dangerous tunnels contain roots, no-magic sections and a floorless shaft. The tree spirit starts in an equipment load room and can wander into its chamber, where it blocks down while present.",
+        "Recover the tree spirit's worn signet for Finn. The accepted return gives a map and glowing ring. This preserves Finn's existing delivery and does not magically send him home. The spirit's amulet is a key for the temple tomb, not proof you killed it yourself.",
+        "The old southern roadway reaches the ruined city and temple garden. Say peace at its magical gate to unlock it, then open it. The two reflecting pools describe Oberon's final battle and Celriya's loss through static room text; they do not transport you into the past.",
+        "The ancient sword in the cottage heart is Tvelor's family artifact. A tablet in the goblin's junk heap explains the connection. Bring the sword to Celriya for faerie-sight goggles and her restoration wand; she retires after acceptance. The goggles are a reward, without a reviewed mandatory quest gate.",
+        "Carry or hold the tree spirit amulet to unlock the temple tomb slab. Oberon carries Finn's mammoth castle key. Returning that key gives Finn's sword and 500,000 copper and retires his current appearance; no earlier ring exchange is required.",
+        "Finn calls his other input a teleport scroll, but his binding actually consumes the glowing ring for a map and 500 copper. Fulbar's shop wall also describes a bulky travel scroll, while the actual stocked scroll identifies items. These content discrepancies await deliberate builder correction.",
+        "Two forge makers accept all five distinct planar parts and 5,000,000 copper for the same Fix scroll. They start in a dispersal network and can wander into distant areas. Item checks explain supplies; active accounting currently refuses the paid recipe until supported settlement.",
+        "Fix repairs the condition of one selected carried or equipped item in a separate scroll action. A maker receipt, a Moradin gift, an epic-store purchase or a supplied scroll does not prove you repaired something or recovered the five parts personally.",
+        "The library's golden-gate riddle is still an undetermined placeholder, and the gate has no destination. The lost Song, Mab's earlier restoration and waiting for Oberon to return also have no accepted local ending. Keep these as lore until builders choose implemented outcomes.",
+        "Current supplies remain optional preparation. Gifts are valid native inputs; previous receipts explain history without replacing spent materials. Only accepted native exchanges complete these named deliveries, and active sources, travel and recipient availability still need qualification."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "realm",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:14036;receive=I:14018,I:14041;disappear=0",
+              "giver_vnum": 14015
+            }
+          ],
+          "id": "finns-lost-signet",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The spirit of the oak tree cottage wears the signet. It starts in an equipment load room with exits toward its chamber and can wander. Anna holds the white-metal key for the cellar trapdoor. The current item check does not prove your own defeat of the guardian.",
+              "id": "signet",
+              "item_vnums": [
+                14036
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Finn's signet ring"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:14036;receive=I:14018,I:14041;disappear=0",
+                  "giver_vnum": 14015
+                }
+              ],
+              "hint": "Find Finn on the Way near the hill. The native return gives a map and glowing ring, not his final sword or a teleport effect. Its receipt alone completes this named delivery.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Return the signet to the Legendary Finn"
+            }
+          ],
+          "summary": "Ask Finn about ring or home, then recover his actual signet ring. The tree spirit wears it; an accepted return gives a realm map and a different glowing faerie ring. Finn stays in the realm and still needs his castle key. Supplied signets qualify without personal combat or travel history.",
+          "title": "Finn's lost signet"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:14037;receive=C:500000,I:14023;disappear=1",
+              "giver_vnum": 14015
+            }
+          ],
+          "id": "finns-castle-key",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:14036;receive=I:14018,I:14041;disappear=0",
+                  "giver_vnum": 14015
+                },
+                {
+                  "completion_key": "give=I:14018;receive=C:500,I:14041;disappear=0",
+                  "giver_vnum": 14015
+                }
+              ],
+              "hint": "Either earlier ring exchange explains the narrative sequence. Neither receipt is an enforced prerequisite for returning the key. A final key delivery does not prove the entire journey.",
+              "id": "earlier-help",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional history: help Finn with a ring"
+            },
+            {
+              "count": 1,
+              "hint": "The oak tree spirit wears this amulet and starts in an equipment load room before it can wander into the heart chamber. The amulet fits the temple tomb slab. Carry it or hold it for native unlocking; wearing it at the neck is not a key check. Supplied final items skip this route.",
+              "id": "tree-amulet",
+              "item_vnums": [
+                14038
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional access: carry the tree spirit amulet"
+            },
+            {
+              "count": 1,
+              "hint": "The Spirit of Oberon in his temple tomb carries it. The tree spirit amulet fits the southern tomb slab; the reverse slab uses a separate magic word. The key is a delivery proof: no reviewed local castle gate uses it. Gifts remain valid.",
+              "id": "castle-key",
+              "item_vnums": [
+                14037
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the mammoth iron key"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:14037;receive=C:500000,I:14023;disappear=1",
+                  "giver_vnum": 14015
+                }
+              ],
+              "hint": "The actual reward is a gigantic steel-blue sword plus 500,000 copper. Acceptance retires this Finn appearance; the farewell is not a player escort or durable travel event. Reset mode permits later appearances, whose availability needs qualification.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Return the key and receive Finn's farewell"
+            }
+          ],
+          "summary": "Ask Finn about key or castle. The Spirit of Oberon carries the mammoth iron key in the temple tomb. Return it for Finn's sword and 500,000 copper; this native exchange retires his current appearance. Earlier ring help is optional, and supplied keys remain valid. No player escort or physical trip to his castle is implemented.",
+          "title": "Finn's castle key and departure"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:14001;receive=I:14011,I:14076;disappear=1",
+              "giver_vnum": 14028
+            }
+          ],
+          "id": "celriyas-family-blade",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Anna holds the white-metal key in the cottage front room. It fits the cellar trapdoor leading into the roots toward the cottage heart. Carry or hold it for native unlocking. A supplied ancient sword skips this route; the tree spirit's separate amulet fits the temple tomb.",
+              "id": "cellar-key",
+              "item_vnums": [
+                14034
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional access: carry Anna's white-metal key"
+            },
+            {
+              "count": 1,
+              "hint": "The sword is ground stock in the heart of the oak tree cottage, not the weapon of Oberon or Finn. The tree spirit can block downward travel while present; the final sword may also be supplied. A stone tablet in the goblin's junk heap connects Tvelor to this blade.",
+              "id": "ancient-blade",
+              "item_vnums": [
+                14001
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the elvish sword of great antiquity"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:14001;receive=I:14011,I:14076;disappear=1",
+                  "giver_vnum": 14028
+                }
+              ],
+              "hint": "Speak peace at the temple garden gate, then open it and find Celriya. The receipt awards goggles and her restoration wand and retires her current appearance. Pool visions and the static tablet are explanatory lore, without recorded examination achievements.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Return the ancient sword to Celriya"
+            }
+          ],
+          "summary": "Ask Celriya about brother or Tvelor and read the temple reflecting pools for the lost elves' history. Bring the ancient elvish sword from the cottage heart. Celriya accepts it as reassurance about her people, gives faerie-sight goggles and a restoration wand, and leaves. This receipt does not resurrect Oberon or prove a personal journey through time.",
+          "title": "Celriya's family blade"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:14018;receive=C:500,I:14041;disappear=0",
+              "giver_vnum": 14015
+            }
+          ],
+          "id": "finns-glowing-ring-trade",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:14036;receive=I:14018,I:14041;disappear=0",
+                  "giver_vnum": 14015
+                }
+              ],
+              "hint": "Returning the signet gives this different ring and a map. That earlier receipt is one source; a supplied glowing ring also qualifies.",
+              "id": "ring-source",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional history: receive Finn's glowing ring"
+            },
+            {
+              "count": 1,
+              "hint": "This is the glowing ring, not Finn's golden signet and not Fulbar's identify scroll. It has no homeward teleport command. The actual map and copper trade does not let Finn leave.",
+              "id": "glowing-ring",
+              "item_vnums": [
+                14018
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the glowing faerie ring"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:14018;receive=C:500,I:14041;disappear=0",
+                  "giver_vnum": 14015
+                }
+              ],
+              "hint": "Keep the existing input/reward identity until builders choose corrected prose or a deliberate compatible replacement contract. Other rings and scrolls do not satisfy it.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the exact glowing-ring trade"
+            }
+          ],
+          "summary": "Finn's current second trade takes a glowing faerie ring for another realm map and 500 copper. His dialogue calls the input a teleport scroll, but this exact item is ordinary armor with no teleport handler. Preserve the actual terms as a support service pending a deliberate content decision; it grants no achievement or daily credit.",
+          "title": "Finn's glowing-ring trade"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:5000000,I:14121,I:14122,I:14123,I:14124,I:14125;receive=I:14126;disappear=0",
+              "giver_vnum": 14073
+            },
+            {
+              "completion_key": "give=C:5000000,I:14121,I:14122,I:14123,I:14124,I:14125;receive=I:14126;disappear=0",
+              "giver_vnum": 14074
+            }
+          ],
+          "id": "the-five-plane-forge-service",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Imix carries the heat in the Elemental Plane of Fire. This exact part differs from the other four ingredients; supplied parts are valid.",
+              "id": "forge-heat",
+              "item_vnums": [
+                14121
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the blazing heat"
+            },
+            {
+              "count": 1,
+              "hint": "Yan-C-Bin carries the wind in the Elemental Plane of Air. The current check is possession, without personal kill or travel history.",
+              "id": "forge-wind",
+              "item_vnums": [
+                14122
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the billowing wind"
+            },
+            {
+              "count": 1,
+              "hint": "Ogremoch carries the hammer in the Elemental Plane of Earth. Unwield it for a native carried offering; equipped material is not a carried ingredient.",
+              "id": "forge-hammer",
+              "item_vnums": [
+                14123
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the earthen hammer"
+            },
+            {
+              "count": 1,
+              "hint": "Demogorgon carries this distinct forge in the Astral Plane. It is not a city forge room or a reconstructed world object.",
+              "id": "astral-forge",
+              "item_vnums": [
+                14124
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the astral forge"
+            },
+            {
+              "count": 1,
+              "hint": "Olhydra carries the basin in the Elemental Plane of Water. Carry all five exact parts together; the checklist does not verify wallet payment or source provenance.",
+              "id": "forge-water",
+              "item_vnums": [
+                14125
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the copper basin of water"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:5000000,I:14121,I:14122,I:14123,I:14124,I:14125;receive=I:14126;disappear=0",
+                  "giver_vnum": 14073
+                },
+                {
+                  "completion_key": "give=C:5000000,I:14121,I:14122,I:14123,I:14124,I:14125;receive=I:14126;disappear=0",
+                  "giver_vnum": 14074
+                }
+              ],
+              "hint": "Both makers start in a dispersal room with outward routes to distant areas and can wander beyond this realm. Find their actual current appearance. The five-item fee settlement is currently guarded; a Fix scroll repairs one selected item in a separate action, whose durable effect still needs qualification.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete either maker's exact paid recipe"
+            }
+          ],
+          "summary": "Jamfluul and Dopplepopper are alternative recipients for one identical paid recipe: heat, wind, hammer, astral forge, water basin and 5,000,000 copper produce a Fix scroll. Their five stolen parts have separate planar carriers. This service does not record rebuilding a forge, personal boss defeats or repairing equipment. Paid settlement remains unavailable with active accounting.",
+          "title": "The five-plane forge service"
+        }
+      ]
+    },
+    {
       "contacts": [],
       "coverage": "complete",
       "exclusions": [],
