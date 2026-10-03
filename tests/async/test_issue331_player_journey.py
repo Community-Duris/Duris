@@ -52,7 +52,7 @@ ARTIFACT = Path(os.environ.get(
 ))
 
 PROXY_PORT = 13306
-RECOVERED_UIDS = (51000, 51001, 51002, 51003)
+RECOVERED_UIDS = (51000, 51001, 51002, 51003, 51005)
 ARTIFACT_VNUM = 67259
 OPERATION = "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf"
 
@@ -618,7 +618,9 @@ def gameplay(journey, wrapper: Path, character: str, pid: int, game_port: int) -
     client = journey.reconnect_character(game_port, expected_room="The Regression Arena")
     try:
         inventory = command(client, "inventory", ("recovered leather bag",), timeout=30)
-        if "recovered wooden mace" not in inventory or "unique pair of recovered gloves" not in inventory:
+        if any(item not in inventory for item in (
+            "recovered wooden mace", "unique pair of recovered gloves", "recovered spellbook",
+        )):
             raise HarnessError(f"inventory omitted a recovered top-level item: {inventory!r}")
         nested = command(client, "look in qabag", ("recovered banana",), timeout=30)
         if "recovered banana" not in nested:
@@ -665,7 +667,7 @@ WHERE child.pid={pid} AND child.obj_uid=51002 AND child.container_id=bag.id
 
         rows = sql(wrapper, f"""
 SELECT CONCAT(
- (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid IN (51000,51002,51003)), '|',
+ (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid IN (51000,51002,51003,51005)), '|',
  (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid=51001), '|',
  (SELECT COUNT(*) FROM player_items p JOIN player_items b ON b.pid=p.pid AND b.obj_uid=51000 WHERE p.pid={pid} AND p.obj_uid=51002 AND p.container_id=b.id), '|',
  (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid=51002 AND equip_slot>0), '|',
@@ -673,7 +675,7 @@ SELECT CONCAT(
  (SELECT COUNT(*) FROM player_death_restitution_delivery WHERE recipient_pid={pid} AND death_revision=77), '|',
  (SELECT COUNT(*) FROM artifact_domain_state WHERE vnum={ARTIFACT_VNUM} AND location={pid} AND loc_type=3)
 )""").strip()
-        if rows != "3|0|0|1|1|4|1":
+        if rows != "4|0|0|1|1|5|1":
             raise HarnessError(f"post-reconnect backend state mismatch: {rows}")
     finally:
         try:
@@ -690,7 +692,7 @@ def restart_and_replay(journey, wrapper: Path, character: str, pid: int,
     client = journey.reconnect_character(GAME_PORT, expected_room="The Regression Arena")
     try:
         inventory = command(client, "inventory", ("recovered leather bag",), timeout=30)
-        if "recovered leather bag" not in inventory:
+        if "recovered leather bag" not in inventory or "recovered spellbook" not in inventory:
             raise HarnessError("restart login lost recovered inventory")
         equipment = command(client, "equipment", ("recovered wooden mace",), timeout=30)
         if "recovered wooden mace" not in equipment or "gloves" not in equipment:
@@ -715,10 +717,11 @@ def restart_and_replay(journey, wrapper: Path, character: str, pid: int,
     unchanged = sql_one(wrapper, f"""
 SELECT CONCAT(
  (SELECT COUNT(*) FROM player_death_restitution_delivery WHERE recipient_pid={pid} AND death_revision=77), '|',
- (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid IN (51000,51002,51003)), '|',
- (SELECT COUNT(*) FROM artifacts_mortal WHERE vnum={ARTIFACT_VNUM} AND location={pid} AND locType=3)
+ (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid IN (51000,51002,51003,51005)), '|',
+ (SELECT COUNT(*) FROM artifacts_mortal WHERE vnum={ARTIFACT_VNUM} AND location={pid} AND locType=3), '|',
+ (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid IN (51001,51006))
 )""")
-    if unchanged != "4|3|1":
+    if unchanged != "5|4|1|0":
         raise HarnessError(f"idempotent replay changed durable counts: {unchanged}")
 
 
@@ -813,9 +816,11 @@ def main() -> int:
                                 "--actor", "issue331-player-journey", "--reason", "disposable-player-acceptance"], timeout=180, check=True)
         cli(wrapper, ["verify", "--plan", str(plan_path)], timeout=180, check=True)
         mark("guarded CLI offline apply/verify: executed")
-        delivery = sql_one(wrapper, f"SELECT COUNT(*) FROM player_death_restitution_delivery WHERE recipient_pid={pid} AND death_revision=77")
-        recovered = sql_one(wrapper, f"SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid IN (51000,51001,51002,51003)")
-        if delivery != "4" or recovered != "4":
+        expected_uids = ",".join(str(uid) for uid in RECOVERED_UIDS)
+        delivery = sql_one(wrapper, f"SELECT GROUP_CONCAT(item_uid ORDER BY item_uid) FROM player_death_restitution_delivery WHERE recipient_pid={pid} AND death_revision=77")
+        recovered = sql_one(wrapper, f"SELECT GROUP_CONCAT(obj_uid ORDER BY obj_uid) FROM player_items WHERE pid={pid} AND obj_uid IN ({expected_uids})")
+        unresolved_coins = sql_one(wrapper, f"SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid=51006")
+        if delivery != expected_uids or recovered != expected_uids or unresolved_coins != "0":
             raise HarnessError(f"backend recovery readback mismatch: delivery={delivery}, recovered={recovered}")
         mark("backend delivery/player_items/artifact authority readback: verified")
         start_server()

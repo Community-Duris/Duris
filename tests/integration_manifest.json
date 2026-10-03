@@ -778,7 +778,9 @@
       "covers": [
         "test_issue331_player_journey.py"
       ],
-      "required_markers": []
+      "required_markers": [
+        "ISSUE331_PLAYER_JOURNEY_OK"
+      ]
     },
     {
       "id": "issue331_staff_recovery_mysql",
@@ -801,7 +803,9 @@
       "covers": [
         "test_issue331_staff_recovery_journey.py"
       ],
-      "required_markers": []
+      "required_markers": [
+        "ISSUE331_STAFF_RECOVERY_JOURNEY_OK"
+      ]
     },
     {
       "id": "restitution-target-non-root",
