@@ -634,6 +634,15 @@ def gameplay(journey, wrapper: Path, character: str, pid: int, game_port: int) -
                 ("You eat", "You munch", "You enjoy", "You consume", "delicious"), timeout=30)
         client.send("save")
         client.expect(f"Save complete for {character}.", timeout=30)
+        retired = sql_one(wrapper, f"""
+SELECT CONCAT(
+ (SELECT COUNT(*) FROM item_current_owner WHERE item_uid=51001 AND owner_type=8
+    AND owner_id=0 AND owner_context_id=0 AND state=2), '|',
+ (SELECT COUNT(*) FROM item_ownership_ledger WHERE item_uid=51001 AND reason_type=3), '|',
+ (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid=51001)
+)""")
+        if retired != "1|1|0":
+            raise HarnessError(f"eating did not durably retire the recovered UID: {retired}")
         client.send("quit")
         client.expect("Please select an option", timeout=30)
         client.send("0")
@@ -725,9 +734,11 @@ SELECT CONCAT(
  (SELECT COUNT(*) FROM player_death_restitution_delivery WHERE recipient_pid={pid} AND death_revision=77), '|',
  (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid IN (51000,51002,51003,51005)), '|',
  (SELECT COUNT(*) FROM artifacts_mortal WHERE vnum={ARTIFACT_VNUM} AND location={pid} AND locType=3), '|',
- (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid IN (51001,51006))
+ (SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid IN (51001,51006)), '|',
+ (SELECT COUNT(*) FROM item_current_owner WHERE item_uid=51001 AND owner_type=8 AND state=2), '|',
+ (SELECT COUNT(*) FROM item_ownership_ledger WHERE item_uid=51001 AND reason_type=3)
 )""")
-    if unchanged != "5|4|1|0":
+    if unchanged != "5|4|1|0|1|1":
         raise HarnessError(f"idempotent replay changed durable counts: {unchanged}")
 
 
