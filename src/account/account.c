@@ -13,6 +13,7 @@
 #include "world/handler.h"
 #include "world/rested.h"
 #include "world/zone_touch_transaction.h"
+#include "world/zone_story_quest_runtime.h"
 #include "cmd/interp.h"
 #include "economy/auction_transaction.h"
 #include "economy/boon_reward_transaction.h"
@@ -3697,6 +3698,28 @@ void verify_delete_account(P_desc d, char *arg)
 		flush_pending_ship_saves();
 		if (drain_pending_ship_saves() && drain_guard.drain())
 		{
+#ifndef _PFILE_
+			// Keep the fenced identities available for retry until quest-state
+			// persistence acknowledges every erasure. The backend destroys them.
+			for (const auto &identity : identities)
+			{
+				std::string error;
+				if (!zone_story_quest_runtime::erase_character(
+					    static_cast<uint32_t>(identity.pid), &error))
+				{
+					logit(LOG_FILE,
+					      "account deletion quest cleanup failed pid=%d: %s",
+					      identity.pid, error.c_str());
+					SEND_TO_Q(
+						"\r\nAccount deletion is waiting for quest-state cleanup. "
+						"The account remains fenced; please retry or contact an "
+						"immortal.\r\n",
+						d);
+					display_account_deletion_confirmation(d, true);
+					return;
+				}
+			}
+#endif
 #ifndef __NO_MYSQL__
 			deleted = sql_delete_account(account_name.c_str());
 #else
