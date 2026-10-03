@@ -26,6 +26,7 @@ UPDATE = section('void update_depth_locked()', '/** Replay the journal')
 DISPATCH = section('void dispatcher_main()', '/** Check retained queues for an exact')
 SHUTDOWN = section('void player_save_pipeline_shutdown(void)', '/** Mark player components dirty')
 HARNESS = r'''
+#include "core/defines.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_save_journal.h"
 #include "player/player_snapshot_codec.h"

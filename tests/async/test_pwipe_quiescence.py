@@ -31,6 +31,7 @@ assert main_shutdown.index("game_loop(port, sslport);") < main_shutdown.index(
     "critical_command_coordinator_shutdown();"
 )
 assert "persistence_stop_scalar_event_worker();" not in main_shutdown
-assert "if (!_pwipe)" in comm[comm.index("game_loop(port, sslport);"):comm.index("/* Don't need this anymore")]
+# The final coordinator/pwipe condition now has an executable truth-table owner
+# in test_critical_shutdown_boundary.py; do not pin its former one-flag spelling.
 
 print("pwipe quiescence checks passed")

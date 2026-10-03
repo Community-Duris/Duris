@@ -130,7 +130,7 @@ class NecromancyCorpseSqlJourneys(unittest.TestCase):
                 "S03 raise and resurrection nested UID SQL journeys: ok", 1)
             runner.write_text(script)
             env = os.environ.copy()
-            env["CORPSE_LIFECYCLE_REPOSITORY_DB_HOST"] = "host.docker.internal"
+            env["CORPSE_LIFECYCLE_REPOSITORY_DB_HOST"] = "127.0.0.1"
             before = _docker_containers()
             result = subprocess.run(["bash", str(runner)], cwd=ROOT, env=env,
                                     text=True, capture_output=True, check=False)
