@@ -22,7 +22,7 @@ work. A future production deployment is a separate operational decision.
 | Copyover ownership context and ownership-loss review | Implemented and locally qualified | Outer copyover 18/telemetry-v2 retains last observed account context without importing an old monotonic clock or using the token as current authority. Legacy framing, overflow/unknown context and actual reloaded-token/scope/deletion changes passed native and ASan/UBSan fixtures. Migration 0059 adds independent incident schema-v2 inputs for families 1–9 and reuses existing snapshots; both 59-step chains, CLI, capacity, replay, private roles, atomic snapshot rollback and exact fresh/restored fingerprints passed. Definition-3 integration is qualified below. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md) and [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
 | Atomic identity effort and observed XP portfolio publication | Implemented and locally qualified | Migration 0060 adds exact bounded source retention tied to the cursor, a conserved publication header and two reports. Definition 3 consumes the reserved dated review and incident schema 2 in the same publication transaction. Both 60-step chains qualified the actual CLI, corrections, old generations, explicit unknown identity, source/publication rollback, real committed writes with lost acknowledgements, private roles, budget refusal, guarded reruns and exact fresh/restored fingerprints. Definitions 1/2 retain their earlier amounts. See [IDENTITY_PUBLICATION.md](IDENTITY_PUBLICATION.md). |
 | Character/account/confirmed controller association | In progress | Dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation, authenticated source capture, identity wire handoff, reviewed SQL registration and immutable generation reservations are qualified. Atomic identity effort/report publication now consumes the reserved review and qualified ownership incident snapshot. Real personal source journeys and linkage coverage in the complete balance suites remain required. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
-| Shared battles and changing rosters | Pending | Link opponents and support actors to a shared battle, retain mode/roster segments, ownership-aware pets, compact context, observed outcomes and censored boundaries. |
+| Shared battles and changing rosters | In progress | Native prerequisites retain producer-scoped formal group generations through appointment/departure and observe actual PCs on both accepted combat sides, including pet-owned PvP context and explicit NPC union guards. The pure bounded association module qualifies shared hostile/support/presence graphs, roster/mode/context cuts, pets, aliases, uncertainty and censored closure. Native battle callbacks, live NPC/group revisions, compact context/control/prevention/population sources, durable facts/contributions and atomic published projections remain required. See [BATTLES.md](BATTLES.md). |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
 | Progression and portfolios | In progress | Observed XP/level projections and published exact account/controller effort unions and observed XP portfolio amounts are qualified. Rested/assistance provenance, milestone exposure/censoring, switching, canonical comparable rewards and rates remain required. |
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
@@ -506,3 +506,42 @@ milestones/switching, four balance suites and study exports, #487 compatibility,
 and the final real personal-local gameplay/persistence/performance qualification
 remain required in the single issue #258 expectation. Production and staging
 access are unnecessary.
+
+## Qualified group lifetimes and pure shared association
+
+Formal group generations now survive actual appointment and leader departure.
+Both pool allocation sites clear earlier metadata; recreation allocates another
+generation within the current producer. Accepted combat entry observes actual
+PCs on both sides, including an attacked PC when the source is an NPC, while
+pet ownership supplies PvP context without manufacturing PC participants. Every
+encounter participant adapter checks the NPC flag before reading PC union data.
+The existing group hook's initial source scan is bounded even for an NPC-only
+cycle. Native mutation/adapter fixtures qualified these behaviors, callback
+ordering and owner/player denominators.
+
+The new pure `telemetry_battle` module is built into the maintained server and
+qualified independently of its pending runtime/storage adapters. Its fixed
+state is 1,719,392 bytes; a fact is 392 bytes and fits the 512-byte envelope with
+the current header. It qualifies hostile/support/proven-presence association,
+changing roster/context/mode, unique NPC generations and ownership changes,
+conservative sides, retained aliases, measured presence/contribution/owner
+outnumbering, and censored closure. Complete packet and duration conservation,
+allocation traps, exact/oversized merges, queue loss, clock discontinuity,
+inactivity bounds, inline-expiry accounting and row/actor/slot/sequence limits
+passed normal and AddressSanitizer/UndefinedBehaviorSanitizer execution.
+
+The actual group/combat mutation fixtures, gameplay adapter sanitizer executable,
+existing encounter/combat summary/gameplay hook contracts, standalone/golden
+record contracts, and transport normal/ASan/UBSan regressions passed. Changed
+C/C++ and all new source files passed repository formatting. The final maintained
+`make -C src -j1` server build passed with the new module registered. ThreadSanitizer
+remains unsupported on this host. No new schema or report definition is included
+in this increment; migration head 60 and existing persistent kinds 1–9 remain.
+
+Actual live actor/group revision capture, reviewed support/control/prevention and
+population producers, durable shared facts/contribution linkage, qualified
+publication and the final real personal-local gate remain required. Enabling
+telemetry currently emits the improved existing encounter observations; it does
+not emit the pure module's shared facts. [BATTLES.md](BATTLES.md) records the next
+integration gate and executable commands. This is progress on the complete
+accepted expansion, whose seven completion requirements remain open in #258.

@@ -187,8 +187,7 @@ void set_fighting(P_char ch, P_char vict)
 	world_activity_promote_character(ch);
 	world_activity_promote_character(victim);
 	telemetry_combat_context_changed(ch);
-	(void)telemetry_runtime_game_encounter_begin(
-		ch, IS_PC(victim) ? telemetry_encounter_mode::pvp : telemetry_encounter_mode::pve);
+	(void)telemetry_runtime_game_combat_engage(ch, victim);
 
 	if (ch->in_room >= 0)
 		gmcp_mark_room_dirty(ch->in_room);

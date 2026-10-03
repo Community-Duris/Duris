@@ -2,6 +2,7 @@
 #include "telemetry/telemetry_runtime.h"
 #include "telemetry/telemetry_transport_private.h"
 #include "core/structs.h"
+#include "core/utils.h"
 
 #include "telemetry/telemetry_session.h"
 #include "telemetry_test_runtime.h"
@@ -20,9 +21,11 @@ P_room world = nullptr;
 struct zone_data *zone_table = nullptr;
 int top_of_zone_table = -1;
 int top_of_world = -1;
-P_char get_linked_char(P_char, ush_int)
+P_char fixture_pet = nullptr;
+P_char fixture_pet_master = nullptr;
+P_char get_linked_char(P_char character, ush_int link)
 {
-	return nullptr;
+	return character == fixture_pet && link == LNK_PET ? fixture_pet_master : nullptr;
 }
 
 namespace
@@ -38,6 +41,8 @@ struct fake_repository
 	std::vector<telemetry_interval_payload> intervals; // worker writes; read after join
 	std::vector<telemetry_session_lifecycle_payload> lifecycles;
 	std::vector<telemetry_ownership_payload> ownership;
+	std::vector<telemetry_encounter_payload> encounters;
+	std::vector<telemetry_combat_summary_payload> combat;
 };
 
 telemetry_repository_outcome fake_init(void *context, telemetry_repository_config) noexcept
@@ -75,6 +80,16 @@ telemetry_apply_batch_result fake_apply(void *context, const telemetry_record *r
 		{
 			assert(telemetry_record_is_valid(records[index]));
 			fake->ownership.push_back(records[index].payload.ownership);
+		}
+		if (records[index].header.kind == telemetry_record_kind::encounter)
+		{
+			assert(telemetry_record_is_valid(records[index]));
+			fake->encounters.push_back(records[index].payload.encounter);
+		}
+		if (records[index].header.kind == telemetry_record_kind::combat_summary)
+		{
+			assert(telemetry_record_is_valid(records[index]));
+			fake->combat.push_back(records[index].payload.combat_summary);
 		}
 		if (records[index].header.kind == telemetry_record_kind::interval &&
 		    records[index].payload.interval.context == telemetry_activity_context::combat)
@@ -279,6 +294,204 @@ void check_enabled_game_path()
 	top_of_world = -1;
 	top_of_zone_table = -1;
 }
+
+void check_group_generation_and_combat_entry()
+{
+	fake_repository fake{};
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	telemetry_test_start_runtime(enabled_options());
+	room_data rooms[1]{};
+	zone_data zones[1]{};
+	rooms[0].zone = 0U;
+	zones[0].number = 1701;
+	world = rooms;
+	zone_table = zones;
+	top_of_world = top_of_zone_table = 0;
+	char_data player{}, member{}, target{}, pet{}, npc{}, other_npc{};
+	pc_only_data player_pc{}, member_pc{}, target_pc{};
+	npc_only_data pet_npc{}, npc_data{}, other_npc_data{};
+	player.only.pc = &player_pc;
+	member.only.pc = &member_pc;
+	target.only.pc = &target_pc;
+	player_pc.pid = 8401;
+	member_pc.pid = 8402;
+	target_pc.pid = 8403;
+	for (P_char pc : { &player, &member, &target })
+	{
+		pc->in_room = 0;
+		pc->player.level = 20U;
+	}
+	pet.only.npc = &pet_npc;
+	npc.only.npc = &npc_data;
+	other_npc.only.npc = &other_npc_data;
+	pet_npc.idnum = 9411;
+	npc_data.idnum = 9412;
+	other_npc_data.idnum = 9413;
+	for (P_char mob : { &pet, &npc, &other_npc })
+	{
+		mob->specials.act |= ACT_ISNPC;
+		mob->in_room = 0;
+		mob->player.level = 20U;
+	}
+	fixture_pet = &pet;
+	fixture_pet_master = &member;
+	group_list pet_node{ &pet, nullptr };
+	group_list member_node{ &member, &pet_node };
+	group_list group{ &player, &member_node };
+	player.group = member.group = pet.group = &group;
+	auto close = []()
+	{
+		assert(telemetry_runtime_encounter_close_all(
+			       telemetry_encounter_outcome::withdrawal)
+			       .outcome == telemetry_runtime_outcome::accepted);
+	};
+	auto finish = []()
+	{
+		telemetry_monotonic_usec now{};
+		telemetry_utc_usec utc{};
+		assert(telemetry_runtime_now(&now, &utc));
+		assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+		       telemetry_runtime_outcome::accepted);
+		assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+		telemetry_transport_unbind_for_tests();
+	};
+	assert(telemetry_runtime_game_combat_engage(&player, &target).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	const auto first_generation = group.telemetry_generation;
+	assert(telemetry_producer_id_is_valid(first_generation.producer));
+	assert(first_generation.sequence == (TELEMETRY_GROUP_GENERATION_TAG | 1U));
+	assert(telemetry_runtime_game_combat_engage(&player, &target).records_emitted == 0U);
+	// Appointment changes the character at the head, retaining that group's identity.
+	group.ch = &member;
+	member_node.ch = &player;
+	assert(telemetry_runtime_game_combat_engage(&player, &target).records_emitted == 0U);
+	assert(group.telemetry_generation.sequence == first_generation.sequence);
+	close();
+	// A fresh formal group with the same leader cannot reuse the previous lifetime.
+	group_list recreated_member{ &member, &pet_node };
+	group_list recreated{ &player, &recreated_member };
+	player.group = member.group = pet.group = &recreated;
+	assert(telemetry_runtime_game_combat_engage(&player, &npc).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	const auto recreated_generation = recreated.telemetry_generation;
+	assert(recreated_generation.sequence == (TELEMETRY_GROUP_GENERATION_TAG | 2U));
+	// The attacked PC is observed even when the accepted attack originates from an NPC.
+	assert(telemetry_runtime_game_combat_engage(&npc, &target).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	close();
+	assert(telemetry_runtime_game_combat_engage(&player, &pet).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	telemetry_runtime_game_combat_damage(&player, &pet, 41U, 0U);
+	telemetry_runtime_game_combat_damage(&pet, &player, 9U, 0U);
+	close();
+	assert(telemetry_runtime_game_combat_engage(&pet, &target).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	close();
+	// NPC storage never supplies a participant PID, including grouped player-owned pets.
+	for (P_char mob : { &pet, &npc, &other_npc })
+	{
+		assert(telemetry_runtime_game_encounter_begin(mob, telemetry_encounter_mode::pve)
+			       .outcome == telemetry_runtime_outcome::invalid);
+		assert(telemetry_runtime_game_encounter_group_sync(mob).outcome ==
+		       telemetry_runtime_outcome::invalid);
+		assert(telemetry_runtime_game_encounter_observe(mob).outcome ==
+		       telemetry_runtime_outcome::invalid);
+		assert(telemetry_runtime_game_encounter_leave(mob,
+							      telemetry_encounter_outcome::flee)
+			       .outcome == telemetry_runtime_outcome::invalid);
+		assert(telemetry_runtime_game_encounter_complete(
+			       mob, telemetry_encounter_outcome::success, 1U)
+			       .outcome == telemetry_runtime_outcome::invalid);
+	}
+	assert(telemetry_runtime_game_combat_engage(&pet, &npc).outcome ==
+	       telemetry_runtime_outcome::invalid);
+	assert(telemetry_runtime_game_combat_engage(&npc, &other_npc).outcome ==
+	       telemetry_runtime_outcome::invalid);
+	assert(telemetry_runtime_game_combat_engage(&player, &player).outcome ==
+	       telemetry_runtime_outcome::invalid);
+	assert(telemetry_runtime_game_combat_engage(nullptr, &player).outcome ==
+	       telemetry_runtime_outcome::invalid);
+	recreated.telemetry_generation = { { 11U, 22U }, first_generation.sequence };
+	assert(telemetry_runtime_game_encounter_begin(&player, telemetry_encounter_mode::pve)
+		       .outcome == telemetry_runtime_outcome::accepted);
+	assert(recreated.telemetry_generation.sequence == (TELEMETRY_GROUP_GENERATION_TAG | 3U));
+	close();
+	recreated.telemetry_generation.sequence = TELEMETRY_GROUP_GENERATION_TAG;
+	assert(telemetry_runtime_game_encounter_begin(&player, telemetry_encounter_mode::pve)
+		       .outcome == telemetry_runtime_outcome::accepted);
+	assert(recreated.telemetry_generation.sequence == (TELEMETRY_GROUP_GENERATION_TAG | 4U));
+	close();
+	const auto last_generation = recreated.telemetry_generation;
+	finish();
+	std::vector<telemetry_encounter_payload> starts;
+	for (const auto &row : fake.encounters)
+	{
+		if (row.participant.subject_id != 0U)
+			assert(row.participant.pid >= 8401 && row.participant.pid <= 8403);
+		if (row.kind == telemetry_encounter_event_kind::start)
+			starts.push_back(row);
+	}
+	assert(starts.size() == 8U); // Repeated engagement and appointment add no start.
+	assert(starts[0].source.group_key == first_generation.sequence &&
+	       starts[0].mode == telemetry_encounter_mode::pvp);
+	assert(starts[1].source.group_key == 8403U &&
+	       starts[1].mode == telemetry_encounter_mode::pvp);
+	assert(starts[2].source.group_key == recreated_generation.sequence &&
+	       starts[2].mode == telemetry_encounter_mode::pve);
+	assert(starts[3].source.group_key == 8403U &&
+	       starts[3].mode == telemetry_encounter_mode::pve);
+	assert(starts[4].mode == telemetry_encounter_mode::pvp &&
+	       starts[5].mode == telemetry_encounter_mode::pvp);
+	bool player_damage = false, pet_damage = false;
+	for (const auto &row : fake.combat)
+	{
+		if (row.actor_id == 8401U && row.damage_dealt == 41U)
+		{
+			assert(row.modifier_flags & TELEMETRY_COMBAT_MODIFIER_PVP);
+			assert(row.unique_player_count == 2U && row.participant_count == 3U);
+			player_damage = true;
+		}
+		if (row.actor_kind == telemetry_combat_actor_kind::pet && row.damage_dealt == 9U)
+		{
+			assert(row.actor_pid == TELEMETRY_UNKNOWN_PID &&
+			       row.owner_subject_id == 8402U);
+			assert(row.modifier_flags & TELEMETRY_COMBAT_MODIFIER_PVP);
+			assert(row.modifier_flags & TELEMETRY_COMBAT_MODIFIER_PET);
+			assert(row.unique_player_count == 2U && row.participant_count == 3U);
+			pet_damage = true;
+		}
+	}
+	assert(player_damage && pet_damage);
+	// A fresh observing producer replaces old in-memory metadata, including copyover reuse.
+	fake_repository next_fake{};
+	const telemetry_transport_repository_binding next_repository = {
+		fake_init, fake_apply, fake_request_stop, fake_shutdown, &next_fake
+	};
+	assert(telemetry_transport_bind_for_tests(&next_repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	telemetry_test_start_runtime(enabled_options());
+	assert(telemetry_runtime_game_encounter_begin(&player, telemetry_encounter_mode::pve)
+		       .outcome == telemetry_runtime_outcome::accepted);
+	assert(recreated.telemetry_generation.producer.boot_id !=
+		       last_generation.producer.boot_id ||
+	       recreated.telemetry_generation.producer.process_id !=
+		       last_generation.producer.process_id);
+	assert(recreated.telemetry_generation.sequence == first_generation.sequence);
+	close();
+	finish();
+	fixture_pet = fixture_pet_master = nullptr;
+	world = nullptr;
+	zone_table = nullptr;
+	top_of_world = top_of_zone_table = -1;
+	std::puts(
+		"PASS: formal group generations, both combat sides, NPC guards and pet PvP observations");
+}
+
 void check_staggered_checkpoint_cut()
 {
 	fake_repository fake{};
@@ -963,6 +1176,7 @@ void check_authenticated_ownership_path()
 
 int main()
 {
+	check_group_generation_and_combat_entry();
 	check_authenticated_ownership_path();
 	check_deferred_startup_presence();
 	check_resume_capacity_rollback();

@@ -2178,6 +2178,8 @@ struct group_list
 {
 	P_char ch;
 	struct group_list *next;
+	/* Head-owned, runtime-only telemetry identity; never an account or leader PID. */
+	telemetry_group_generation telemetry_generation{};
 };
 
 struct auction_data

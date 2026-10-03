@@ -49,15 +49,15 @@ Reward projection already reads supported committed currency, epic, and frag
 ledgers. The general report CLI currently exposes playtime, cohort, return,
 UTC-day activity, and faction summaries.
 
-Several source limits matter for this expansion:
+Several source limits were identified before this expansion:
 
 - `game_combat_power_band()` currently derives its value from character level.
   It is not an equipment or overall combat-strength measurement.
-- Encounter association currently uses scoped zone/group source identity. The
-  game adapter derives its group key from the leader's character ID, with the
+- Original encounter association used scoped zone/group source identity. The
+  game adapter derived its group key from the leader's character ID, with the
   individual subject as the solo fallback. This does not establish one shared
   battle containing opponents from several groups.
-- The combat-start adapter chooses PvP when the victim is a PC. Player-owned
+- The original combat-start adapter chose PvP when the victim was a PC. Player-owned
   opponents and assistance need explicit ownership-aware classification.
 - Encounter state can already merge observed modes into `mixed`; preserve that
   capability and add time attribution for the changing mode.
@@ -75,6 +75,9 @@ These findings come from [the runtime adapters](../../src/telemetry/telemetry_ru
 [account structures](../../src/account/account.h),
 [the schema](../../migrations/bootstrap_multithread_safe.sql), and
 [the current reporting interface](REPORTS.md).
+Qualified increments and remaining native/publication requirements are tracked
+in [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) and
+[BATTLES.md](BATTLES.md); these initial findings are not a current completion claim.
 
 **Identity must support several levels of analysis.**
 
@@ -428,9 +431,12 @@ reports; automatic application is a separate future decision.
 
 This plan is complete as a design proposal when each requested balance question
 has a defined population, outcome, exposure denominator, source authority,
-coverage limit, report, and executable acceptance scenario. Implementation is
-complete only when those reports pass the isolated integrated tests and the
-authorized observation pilot supplies representative evidence.
+coverage limit, report, and executable acceptance scenario. Technical
+implementation is complete when the full reports pass isolated integrated tests
+and the real personal-local gameplay/persistence/performance qualification.
+Production and staging access are not prerequisites. Representative independent
+observations remain necessary before making balance recommendations; an
+authorized mechanics experiment is a subsequent reviewed decision.
 
 Supporting contracts: [activity](ACTIVITY.md), [sessions](SESSION_LIFECYCLE.md),
 [progression](PROGRESSION.md), [encounters](ENCOUNTERS.md),

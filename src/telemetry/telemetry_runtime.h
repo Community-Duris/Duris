@@ -372,6 +372,10 @@ telemetry_capture_result telemetry_runtime_game_evidence(struct char_data *chara
  * telemetry and never gate combat, movement, grouping, rewards, or teardown. */
 telemetry_capture_result telemetry_runtime_game_encounter_begin(struct char_data *character,
 								telemetry_encounter_mode mode);
+/* Accepted hostile edge: observe actual PC participants on both sides.
+ * Pet ownership classifies PvP but never aliases NPC storage as a PC. */
+telemetry_capture_result telemetry_runtime_game_combat_engage(struct char_data *source,
+							      struct char_data *target);
 telemetry_capture_result telemetry_runtime_game_encounter_group_sync(struct char_data *character);
 telemetry_capture_result telemetry_runtime_game_encounter_observe(struct char_data *character);
 telemetry_capture_result

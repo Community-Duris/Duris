@@ -462,6 +462,15 @@ struct telemetry_encounter_id
 	telemetry_sequence sequence;
 };
 
+/* Live group identity is scoped to its observing producer. The high bit
+ * separates formal groups from positive signed character-PID solo keys. */
+inline constexpr telemetry_id TELEMETRY_GROUP_GENERATION_TAG = 1ULL << 63U;
+struct telemetry_group_generation
+{
+	telemetry_producer_id producer;
+	telemetry_sequence sequence;
+};
+
 struct telemetry_encounter_source
 {
 	telemetry_environment_id environment_id;

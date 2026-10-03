@@ -236,6 +236,7 @@ struct runtime_state
 	telemetry_connection_sequence next_connection_sequence = 1U;
 	telemetry_session_sequence next_session_sequence = 1U;
 	telemetry_sequence next_encounter_sequence = 1U;
+	telemetry_sequence next_group_sequence = 1U;
 	telemetry_session_state session{};
 	telemetry_activity_state activity{};
 	telemetry_progression_state progression{};
@@ -1487,6 +1488,7 @@ telemetry_runtime_outcome telemetry_runtime_init(telemetry_runtime_options optio
 	R.next_connection_sequence = 1U;
 	R.next_session_sequence = 1U;
 	R.next_encounter_sequence = 1U;
+	R.next_group_sequence = 1U;
 	telemetry_encounter_state_init(&R.encounter);
 	telemetry_combat_summary_state_init(&R.combat_summary);
 	R.worker_stop.store(false, std::memory_order_release);
@@ -2486,7 +2488,8 @@ telemetry_encounter_participant
 game_encounter_participant(const struct char_data *character) noexcept
 {
 	telemetry_encounter_participant participant{};
-	if (character != nullptr && character->only.pc != nullptr && character->only.pc->pid > 0)
+	if (character != nullptr && IS_PC(character) && character->only.pc != nullptr &&
+	    character->only.pc->pid > 0)
 	{
 		participant.pid = static_cast<telemetry_pid>(character->only.pc->pid);
 		participant.subject_id = static_cast<telemetry_subject_id>(character->only.pc->pid);
@@ -2496,10 +2499,23 @@ game_encounter_participant(const struct char_data *character) noexcept
 
 telemetry_id game_encounter_group_key(const struct char_data *character) noexcept
 {
-	if (character != nullptr && character->group != nullptr &&
-	    character->group->ch != nullptr && character->group->ch->only.pc != nullptr &&
-	    character->group->ch->only.pc->pid > 0)
-		return static_cast<telemetry_id>(character->group->ch->only.pc->pid);
+	if (character != nullptr && character->group != nullptr)
+	{
+		auto &generation = character->group->telemetry_generation;
+		if (generation.producer.boot_id == R.producer.boot_id &&
+		    generation.producer.process_id == R.producer.process_id &&
+		    (generation.sequence & TELEMETRY_GROUP_GENERATION_TAG) != 0U &&
+		    (generation.sequence & ~TELEMETRY_GROUP_GENERATION_TAG) != 0U)
+			return generation.sequence;
+		if (R.next_group_sequence == 0U || !telemetry_producer_id_is_valid(R.producer))
+			return TELEMETRY_UNKNOWN_ID;
+		generation = { R.producer, TELEMETRY_GROUP_GENERATION_TAG | R.next_group_sequence };
+		R.next_group_sequence = R.next_group_sequence ==
+							TELEMETRY_GROUP_GENERATION_TAG - 1U ?
+						0U :
+						R.next_group_sequence + 1U;
+		return generation.sequence;
+	}
 	const auto participant = game_encounter_participant(character);
 	return participant.subject_id;
 }
@@ -2507,7 +2523,8 @@ telemetry_id game_encounter_group_key(const struct char_data *character) noexcep
 bool game_encounter_source(const struct char_data *character,
 			   telemetry_encounter_source *source) noexcept
 {
-	if (character == nullptr || character->only.pc == nullptr || source == nullptr)
+	if (character == nullptr || !IS_PC(character) || character->only.pc == nullptr ||
+	    source == nullptr)
 		return false;
 	telemetry_dimensions dimensions{};
 	telemetry_quality_mask quality = TELEMETRY_QUALITY_NONE;
@@ -2517,6 +2534,8 @@ bool game_encounter_source(const struct char_data *character,
 		R.config.classifier_version,	    R.config.policy_version,   dimensions.zone_vnum,
 		game_encounter_group_key(character)
 	};
+	if (character->group != nullptr && source->group_key == TELEMETRY_UNKNOWN_ID)
+		return false;
 	return telemetry_encounter_source_is_valid(*source);
 }
 
@@ -2582,8 +2601,7 @@ std::uint32_t game_combat_modifier_flags(const telemetry_combat_actor_ref &sourc
 		flags |= TELEMETRY_COMBAT_MODIFIER_PET;
 	if (source.kind == telemetry_combat_actor_kind::npc)
 		flags |= TELEMETRY_COMBAT_MODIFIER_NPC;
-	if (source.kind == telemetry_combat_actor_kind::player &&
-	    target.kind == telemetry_combat_actor_kind::player)
+	if (source.owner_subject_id != 0U && target.owner_subject_id != 0U)
 		flags |= TELEMETRY_COMBAT_MODIFIER_PVP;
 	return flags & TELEMETRY_COMBAT_MODIFIER_KNOWN;
 }
@@ -3041,7 +3059,7 @@ telemetry_capture_result telemetry_runtime_game_encounter_begin(struct char_data
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
-	if (character == nullptr || character->only.pc == nullptr ||
+	if (character == nullptr || !IS_PC(character) || character->only.pc == nullptr ||
 	    !telemetry_encounter_mode_is_valid(mode) || !ensure_current_config())
 		return game_capture_invalid();
 	telemetry_encounter_source source{};
@@ -3079,11 +3097,47 @@ telemetry_capture_result telemetry_runtime_game_encounter_begin(struct char_data
 	return result;
 }
 
+telemetry_capture_result telemetry_runtime_game_combat_engage(struct char_data *source,
+							      struct char_data *target)
+{
+	if (!R.initialized || !R.enabled || R.shutdown_pending)
+		return game_capture_not_ready();
+	if (source == nullptr || target == nullptr || source == target || !ensure_current_config())
+		return game_capture_invalid();
+	const auto source_actor = game_combat_actor(source);
+	const auto target_actor = game_combat_actor(target);
+	if (!telemetry_combat_actor_ref_is_valid(source_actor) ||
+	    !telemetry_combat_actor_ref_is_valid(target_actor))
+		return game_capture_invalid();
+	const auto mode = source_actor.owner_subject_id != 0U &&
+					  target_actor.owner_subject_id != 0U ?
+				  telemetry_encounter_mode::pvp :
+				  telemetry_encounter_mode::pve;
+	telemetry_capture_result result{};
+	bool have_result = false;
+	if (source_actor.kind == telemetry_combat_actor_kind::player)
+	{
+		result = telemetry_runtime_game_encounter_begin(source, mode);
+		have_result = true;
+	}
+	if (target_actor.kind == telemetry_combat_actor_kind::player)
+	{
+		const auto observed = telemetry_runtime_game_encounter_begin(target, mode);
+		if (have_result)
+			merge_capture(result, observed);
+		else
+			result = observed;
+		have_result = true;
+	}
+	return have_result ? result : game_capture_invalid();
+}
+
 telemetry_capture_result telemetry_runtime_game_encounter_group_sync(struct char_data *character)
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
-	if (character == nullptr || character->only.pc == nullptr || !ensure_current_config())
+	if (character == nullptr || !IS_PC(character) || character->only.pc == nullptr ||
+	    !ensure_current_config())
 		return game_capture_invalid();
 	if (character->group == nullptr)
 		return encounter_capture_from_update(
@@ -3101,7 +3155,8 @@ telemetry_capture_result telemetry_runtime_game_encounter_group_sync(struct char
 	     member != nullptr && visited < GAME_GROUP_MAX_NODES; member = member->next, ++visited)
 	{
 		P_char participant_character = member->ch;
-		if (participant_character == nullptr || participant_character->only.pc == nullptr)
+		if (participant_character == nullptr || !IS_PC(participant_character) ||
+		    participant_character->only.pc == nullptr)
 			continue;
 		telemetry_encounter_source source{};
 		const auto participant = game_encounter_participant(participant_character);
@@ -3142,7 +3197,8 @@ telemetry_capture_result telemetry_runtime_game_encounter_observe(struct char_da
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
-	if (character == nullptr || character->only.pc == nullptr || !ensure_current_config())
+	if (character == nullptr || !IS_PC(character) || character->only.pc == nullptr ||
+	    !ensure_current_config())
 		return game_capture_invalid();
 	telemetry_encounter_source source{};
 	const auto participant = game_encounter_participant(character);
@@ -3172,7 +3228,7 @@ telemetry_capture_result telemetry_runtime_game_encounter_leave(struct char_data
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
-	if (character == nullptr || character->only.pc == nullptr ||
+	if (character == nullptr || !IS_PC(character) || character->only.pc == nullptr ||
 	    !telemetry_encounter_outcome_is_valid(outcome) ||
 	    outcome == telemetry_encounter_outcome::unknown || !ensure_current_config())
 		return game_capture_invalid();
@@ -3211,7 +3267,7 @@ telemetry_runtime_game_encounter_complete(struct char_data *character,
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
-	if (character == nullptr || character->only.pc == nullptr ||
+	if (character == nullptr || !IS_PC(character) || character->only.pc == nullptr ||
 	    !telemetry_encounter_outcome_is_valid(outcome) ||
 	    outcome == telemetry_encounter_outcome::unknown || !ensure_current_config())
 		return game_capture_invalid();
