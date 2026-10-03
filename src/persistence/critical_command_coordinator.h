@@ -164,6 +164,20 @@ bool critical_command_coordinator_drain(uint64_t timeout_msec);
 bool critical_command_coordinator_cutover_ready(void);
 void critical_command_coordinator_set_drain_observer(critical_drain_observer_fn observer);
 critical_coordinator_health critical_command_coordinator_health_copy(void);
+struct critical_recovery_case
+{
+	critical_operation_id operation_id = {};
+	char correlation[33] = {};
+	const char *owner = "critical_command";
+	const char *state = "unresolved";
+	unsigned int attempts = 0;
+	unsigned int error_code = 0;
+	uint64_t elapsed_msec = 0;
+};
+// Diagnostic copy of retained corpse commands, including exhausted retries.
+// Capacity bounds output; total retains the count when display is truncated.
+size_t critical_command_coordinator_recovery_copy(critical_recovery_case *cases, size_t capacity,
+						  size_t *total, size_t offset = 0);
 bool critical_command_coordinator_inject_completion_for_tests(const critical_completion &completion);
 void critical_command_coordinator_reset_for_tests(void);
 

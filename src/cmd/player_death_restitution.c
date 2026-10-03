@@ -1,3 +1,5 @@
+#include "persistence/death_recovery_visibility.h"
+#include "persistence/persistence_observability.h"
 #include "core/prototypes.h"
 #include "core/utils.h"
 #include "cmd/interp.h"
@@ -6,11 +8,13 @@
 #include <cstdio>
 #include <cstring>
 
+extern P_char character_list;
+
 namespace
 {
 constexpr const char *RESTITUTION_SYNTAX =
 	"Syntax: restitution help | guide | begin | chunk <hex> | commit | abort | "
-	"status <operation-id> | submit <hex>\r\n";
+	"recovery [offset] | status <operation-id> | submit <hex>\r\n";
 
 constexpr const char *RESTITUTION_GUIDE =
 	"Player-death restitution is a protected operator workflow; this game command "
@@ -252,6 +256,64 @@ const char *durability_name(critical_command_durability durability)
 	}
 }
 
+void send_recovery_cases(P_char ch, size_t offset)
+{
+	critical_recovery_case cases[32] = {};
+	size_t total = 0;
+	const size_t count = critical_command_coordinator_recovery_copy(cases, 32, &total, offset);
+	char message[MAX_STRING_LENGTH] = {};
+	for (size_t i = 0; i < count; ++i)
+	{
+		std::snprintf(
+			message, sizeof(message),
+			"correlation=%s custody=%s recovery_owner=%s attempts=%u elapsed_ms=%llu refusal=%s\r\n",
+			cases[i].correlation, cases[i].state, cases[i].owner, cases[i].attempts,
+			(unsigned long long)cases[i].elapsed_msec,
+			death_recovery_refusal_name(cases[i].error_code));
+		send_to_char(message, ch);
+	}
+	size_t held = 0, held_shown = 0;
+	const uint64_t now = persistence_observability_now_usec();
+	for (P_char player = character_list; player; player = player->next)
+	{
+		if (!IS_PC(player) || !player->only.pc->death_recovery_owner ||
+		    GET_STAT(player) != STAT_DEAD)
+			continue;
+		++held;
+		if (held <= offset || held_shown >= 32)
+			continue;
+		++held_shown;
+		char correlation[33] = {};
+		death_recovery_correlation(player->only.pc->death_recovery_owner, correlation);
+		std::snprintf(
+			message, sizeof(message),
+			"correlation=%s custody=unresolved recovery_owner=%s count=%llu elapsed_ms=%llu\r\n",
+			correlation,
+			player->only.pc->death_custody_disputed ? "death_disposition" :
+								  "death_finalizer",
+			(unsigned long long)player->only.pc->death_recovery_reports,
+			(unsigned long long)(now >= player->only.pc->death_recovery_since_usec ?
+						     (now -
+						      player->only.pc->death_recovery_since_usec) /
+							     1000 :
+						     0));
+		send_to_char(message, ch);
+	}
+	std::snprintf(
+		message, sizeof(message),
+		"Recovery offset=%zu retained_commands=%zu shown=%zu held_deaths=%zu shown=%zu. "
+		"Durable/historical custody: protected player_death_restitution.py status; "
+		"quarantine requires reviewed restitution, even after death disposition completes.\r\n",
+		offset, total, count, held, held_shown);
+	send_to_char(message, ch);
+	if (total > offset + 32 || held > offset + 32)
+	{
+		std::snprintf(message, sizeof(message),
+			      "Next live page: restitution recovery %zu\r\n", offset + 32);
+		send_to_char(message, ch);
+	}
+}
+
 void send_operation_status(P_char ch, const char *operation_text)
 {
 	critical_operation_id operation_id = {};
@@ -415,6 +477,24 @@ ACMD(do_restitution)
 				ch);
 		else
 			send_restitution_result(ch, result, {});
+		return;
+	}
+
+	if (!str_cmp(subcommand, "recovery"))
+	{
+		remaining = one_argument(remaining, canonical_hex);
+		size_t offset = 0;
+		bool valid = remaining && only_spaces(remaining);
+		for (const char *digit = canonical_hex; valid && *digit; ++digit)
+		{
+			valid = *digit >= '0' && *digit <= '9' && offset <= 100000;
+			if (valid)
+				offset = offset * 10 + static_cast<size_t>(*digit - '0');
+		}
+		if (!valid || offset > 1000000)
+			send_to_char(RESTITUTION_SYNTAX, ch);
+		else
+			send_recovery_cases(ch, offset);
 		return;
 	}
 
