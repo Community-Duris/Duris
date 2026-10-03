@@ -495,6 +495,15 @@ fields record_fields(const telemetry_record &record)
 	case telemetry_record_kind::combat_summary:
 		combat_summary_fields(values, record.payload.combat_summary);
 		break;
+	case telemetry_record_kind::battle:
+	{
+		const auto &p = record.payload.battle;
+#define TELEMETRY_BATTLE_FIELD(name, member, width, signed_value) \
+	number(values, telemetry_column_id::name, p.member);
+#include "telemetry/telemetry_battle_fields.inc"
+#undef TELEMETRY_BATTLE_FIELD
+		break;
+	}
 	case telemetry_record_kind::coverage_gap:
 	{
 		const auto &p = record.payload.gap;
@@ -624,6 +633,10 @@ std::string signature(const telemetry_record &record)
 		break;
 	case telemetry_record_kind::ownership:
 		for (auto byte : record.payload.ownership.reserved)
+			value += ':' + std::to_string(byte);
+		break;
+	case telemetry_record_kind::battle:
+		for (auto byte : record.payload.battle.actor.actor.reserved)
 			value += ':' + std::to_string(byte);
 		break;
 	case telemetry_record_kind::configuration:
@@ -914,6 +927,34 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 	if (auto row = mysql_fetch_row(stored.get()))
 		return equal_row(row, values) ? telemetry_apply_outcome::duplicate_identical :
 						telemetry_apply_outcome::duplicate_conflict;
+	if (record.header.kind == telemetry_record_kind::battle)
+	{
+		const auto &p = record.payload.battle;
+		fields logical_key;
+		number(logical_key, telemetry_column_id::battle_boot_id, p.battle.producer.boot_id);
+		number(logical_key, telemetry_column_id::battle_process_id,
+		       p.battle.producer.process_id);
+		number(logical_key, telemetry_column_id::battle_seq, p.battle.sequence);
+		number(logical_key, telemetry_column_id::battle_fact_sequence, p.fact_sequence);
+		auto existing =
+			query("SELECT 1 FROM telemetry_interval WHERE " + where(logical_key));
+		// Only the original admitted transport key can be acknowledged as a
+		// replay. A second key cannot invent an unretained durable receipt.
+		if (mysql_fetch_row(existing.get()))
+			return telemetry_apply_outcome::duplicate_conflict;
+		fields expected;
+		number(expected, telemetry_column_id::season_id, p.scope.season_id);
+		number(expected, telemetry_column_id::classifier_version,
+		       p.scope.classifier_version);
+		number(expected, telemetry_column_id::policy_version, p.scope.policy_version);
+		auto config = query("SELECT " + names(expected, true) +
+				    " FROM telemetry_config WHERE environment_id=" +
+				    std::to_string(p.scope.environment_id) +
+				    " AND config_id=" + std::to_string(p.scope.config_id));
+		auto row = mysql_fetch_row(config.get());
+		if (!row || !equal_row(row, expected))
+			return telemetry_apply_outcome::rejected_invalid;
+	}
 
 	if (record.header.kind == telemetry_record_kind::configuration)
 	{

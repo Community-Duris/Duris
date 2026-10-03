@@ -6,14 +6,19 @@ stores described below. Migration `0030_telemetry_quarantine` adds a durable,
 operator-controlled quarantine for record-specific SQL failures. Migration
 `0054_telemetry_incident_coverage` adds the four reviewed/published incident stores.
 Existing immutable migrations retain their original content and checksums; the
-current complete runtime inventory is 234 tables through migration 0055.
+current complete runtime inventory is 248 tables through migration 0061.
 Migration `0055_telemetry_observation_projections` adds five bounded definition 2
 stores for already collected progression, encounter and combat facts. See
 [OBSERVATION_PROJECTIONS.md](OBSERVATION_PROJECTIONS.md) for their grains and limits.
+Migrations 0056–0060 add scoped account lifetimes, ownership observations,
+reviewed identity history and atomic definition-3 identity/observed-XP publication.
+Migration `0061_telemetry_shared_battle_facts` adds kind-10 typed battle columns,
+independent logical uniqueness and the two v3 private review stores. See
+[BATTLES.md](BATTLES.md) and [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md).
 
 | Table | Grain and ownership |
 | --- | --- |
-| `telemetry_interval` | Immutable tagged facts of all eight current record kinds; writer inserts and reads replay evidence. `ingest_id` is the keyset cursor. Global unique `(boot_id,process_id,record_seq)` also covers process-wide gaps. |
+| `telemetry_interval` | Immutable tagged facts of all ten current record kinds; writer inserts and reads replay evidence. `ingest_id` is the keyset cursor. Global unique `(boot_id,process_id,record_seq)` also covers process-wide gaps. Shared battles have a separate logical `(battle_boot_id,battle_process_id,battle_seq,battle_fact_sequence)` unique key. |
 | `telemetry_session` | Latest absolute checkpoint totals plus observed enter/exit flags and quality. Scoped primary key includes environment/season and original session identity; a second global session identity unique key prevents a changed scope from creating a second projection. Writer owns insertion/update. |
 | `telemetry_config` | Immutable `(environment_id,config_id)` and the complete typed effective snapshot, including its SHA-256 fingerprint and publication metadata. Writer owns insertion; publication reuse must match semantic content, excluding process-local revision and effective time. |
 | `telemetry_player_day` | Rollup definition/generation/environment/season/UTC-day/subject/session contribution. The six duration counters, attributable coverage and watermark remain separate from raw session totals. |

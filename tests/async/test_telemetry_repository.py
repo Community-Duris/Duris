@@ -60,8 +60,14 @@ def repository_mapping_contract() -> None:
     repository = (ROOT / "src" / "telemetry" / "telemetry_repository.c").read_text()
     descriptor = (ROOT / "src/telemetry/telemetry_columns.inc").read_text()
     names = set(re.findall(r"TELEMETRY_COLUMN\(([a-z0-9_]+),", descriptor))
-    serializer = "\n".join(line for line in repository.splitlines()
-                           if not line.startswith("#define FIELD"))
+    serializer_lines, macro = [], False
+    for line in repository.splitlines():
+        if line.startswith(("#define FIELD", "#define TELEMETRY_BATTLE_FIELD")):
+            macro = True
+        if not macro:
+            serializer_lines.append(line)
+        macro = macro and line.endswith("\\")
+    serializer = "\n".join(serializer_lines)
     mapped = set(re.findall(r"telemetry_column_id::([a-z0-9_]+)", serializer))
     assert mapped <= names, f"serializer columns lack canonical descriptors: {mapped - names}"
     assert 'const char *name, T value' not in repository, "untyped serializer bypass"
@@ -109,6 +115,15 @@ def repository_mapping_contract() -> None:
     ownership_schema = migration_columns("0057_telemetry_ownership_observations.sql")
     self_owned_columns = [name for name in mapped_columns(ownership) if name.startswith("ownership_")]
     assert self_owned_columns == ownership_schema, "ownership fields must map to their typed nullable columns"
+    battle_fields = (ROOT / "src/telemetry/telemetry_battle_fields.inc").read_text()
+    canonical_battle = re.findall(r"TELEMETRY_BATTLE_FIELD\(([a-z0-9_]+),", battle_fields)
+    assert len(canonical_battle) == 70 and len(set(canonical_battle)) == 70
+    assert canonical_battle == migration_columns("0061_telemetry_shared_battle_facts.sql")
+    assert set(canonical_battle) <= names
+    battle = function_body(repository, "case telemetry_record_kind::battle:",
+                           "case telemetry_record_kind::coverage_gap:")
+    assert '#include "telemetry/telemetry_battle_fields.inc"' in battle
+    assert 'number(values, telemetry_column_id::name, p.member)' in battle
 
 
 def sql_environment() -> tuple[dict[str, str], list[str], str]:
@@ -329,6 +344,8 @@ def main():
                              "-I", str(ROOT / "src"), "-I", str(tmp)]
         source = str(ROOT / "src/telemetry/telemetry_repository.c")
         failure_source = str(ROOT / "src/telemetry/telemetry_failure.c")
+        battle_sources = [str(ROOT / "src/telemetry/telemetry_battle.c"),
+                          str(ROOT / "src/telemetry/telemetry_battle_contract.c")]
         harness = str(ROOT / "tests/async/telemetry_repository_harness.cc")
         no_sql = tmp / "no_mysql"
         subprocess.run(common + ["-D__NO_MYSQL__", failure_source, source, harness,
@@ -336,7 +353,7 @@ def main():
         subprocess.run([str(no_sql)], check=True, timeout=30)
         mysql = shlex.split(subprocess.check_output(["mysql_config", "--cflags", "--libs"], text=True)) + ["-lcrypto"]
         sql = tmp / "sql"
-        subprocess.run(common + [failure_source, source, harness, "-Wl,--wrap=mysql_real_query", "-Wl,--wrap=mysql_errno", "-Wl,--wrap=_Znwm",
+        subprocess.run(common + [failure_source, source, harness] + battle_sources + ["-Wl,--wrap=mysql_real_query", "-Wl,--wrap=mysql_errno", "-Wl,--wrap=_Znwm",
                                   "-o", str(sql)] + mysql, check=True)
         print("SQL repository harness compile: PASS", flush=True)
         if args.sql_fixture:

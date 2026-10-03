@@ -148,8 +148,8 @@ two published snapshot tables. It cannot read either private review history or
 raw ownership facts. Both new tables are protected in the retained lifecycle
 inventory, which now includes 246 database tables.
 
-Report definitions 1 and 2 use the v1 history. New balance definitions beginning
-with 3 use the v2 history and preserve the chosen reviewed inventory in the
+Report definitions 1 and 2 use the v1 history. Definition 3 uses the v2 history
+and preserves the chosen reviewed inventory in the
 existing `(definition, generation, environment, season)` snapshot. The common
 snapshot/read seam supports kind 9 and atomic parent/detail rollback. Definition
 3 now integrates this snapshot into [atomic identity effort and observed XP
@@ -176,3 +176,45 @@ unknown tails, preserved old snapshots, read-only reports, cache, and permission
 negatives. Synthetic evidence qualifies the implementation; it does not establish
 a real historical incident. A real inventory must retain unknown/unavailable
 history until a reviewer has evidence to narrow it.
+
+## Shared-battle loss review contract
+
+Migration `0061_telemetry_shared_battle_facts` adds independent
+`telemetry_incident_registry_v3` and `telemetry_incident_v3` histories for families
+1–10. A new definition beginning with 4 uses this explicit review schema.
+Definitions 1/2 and 3 retain their v1 and v2 review histories and published
+snapshots. A v3 packet, digest or correction cannot rewrite either earlier history.
+The current retained lifecycle inventory includes 248 database tables.
+
+The v3 bounds remain 64 incidents and 128 KiB. Kind-10 verified post-fix references
+must point to a committed raw record with the same explicit battle environment,
+season, record kind and occurrence. The registrar selects the battle scope from
+its typed columns, including unknown occurrence labels; it does not borrow NULL
+legacy encounter/session scope. Future family bits and partial, uncommitted or
+mismatched references are refused.
+
+```sh
+python3 scripts/telemetry/incident.py --template --registry-schema-version 3
+python3 scripts/telemetry/incident.py /private/path/reviewed-battle-incidents.json --register
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh --battle-storage
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --battle-storage
+```
+
+Provision the restricted registrar with SELECT/INSERT on the two v3 input tables
+and SELECT on raw telemetry for a verified-fact point read. A future balance
+publisher requires SELECT on this review history and its existing published
+snapshot authority. The report reader continues to read only published snapshots;
+it has no v3 review or raw access. The maintained CLI uses dedicated
+`TELEMETRY_INCIDENT_DB_*` credentials and performs no grant or migration work.
+
+Both complete local 61-step chains passed real CLI registration, committed
+post-fix binding/refusal, exact retries, retained corrections, lost commit replies,
+atomic parent/detail failure, old immutable snapshots, unknown/reconstructed
+tails, 64-row capacity, byte reservation and permission negatives. Guarded reruns
+preserve facts/reviews; altered defaults and widened family checks fail the exact
+verifier and remain unrepaired until explicitly restored. The restored full
+schema fingerprint equals the fresh migrated schema on each engine.
+
+The common snapshot seam is qualified for future definition 4; the balance
+catalog and atomic battle projections remain pending. A review does not publish
+a battle suite, recover missing gameplay facts or establish complete coverage.

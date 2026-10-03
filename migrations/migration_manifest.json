@@ -778,6 +778,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "2645843d3c3f5182278ae2a1746efa2f3428309f4f8d9b7cc79c3fecb2a186de",
       "verify_checksum": "95ae27a6871fbd34e353c970749cc8f9f29068268caca50a1513c9b0ae5fed71"
+    },
+    {
+      "id": "0061_telemetry_shared_battle_facts",
+      "sequence": 61,
+      "description": "Persist shared battle facts with logical replay and independent incident schema 3",
+      "apply": "immutable/0061_telemetry_shared_battle_facts.sql",
+      "verify": "immutable/0061_telemetry_shared_battle_facts.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "4dd602c9aa0ec861ce819bbb19c2555ae76c6ed55c9376df0300691bd15bbebc",
+      "verify_checksum": "8238821bb4e16305f99662768ae4a95353987b3bd72c2652f98d262adb75a047"
     }
   ]
 }

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from copy import deepcopy
+from dataclasses import asdict
 import hashlib
 import json
 from pathlib import Path
@@ -16,6 +17,11 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from scripts.telemetry import battle_contract as contract
+from scripts.telemetry.db_access import RAW_COLUMNS
+from scripts.telemetry.rollup_definitions import RollupTarget
+from scripts.telemetry.rollup_engine import BoundsExceeded, SemanticError, build_page_contributions
+sys.path.insert(0, str(ROOT / "tests/async"))
+from telemetry_rollup_fixtures import FIXTURE_DIR, golden_rows
 
 
 def raw_wire(row):
@@ -72,6 +78,56 @@ class BattleContractTests(unittest.TestCase):
         except contract.BattleContractError:
             return False
         return True
+
+    @staticmethod
+    def raw_fact(value, ingest_id=1):
+        row = dict.fromkeys(RAW_COLUMNS)
+        row.update(value)
+        row.update(ingest_id=ingest_id, boot_id=value["battle_boot_id"],
+                   process_id=value["battle_process_id"], record_seq=ingest_id,
+                   schema_version=1, record_kind=10,
+                   occurrence_utc_usec=value["battle_at_utc_usec"], ingested_utc_usec=0)
+        return row
+
+    def test_every_native_source_fact_survives_the_raw_sql_contract(self):
+        for index, (value, _) in enumerate(self.rows, 1):
+            self.assertEqual(contract.validate_raw_fact(self.raw_fact(value, index)), value)
+        raw = self.raw_fact(self.start[1])
+        for name, replacement in (("boot_id", raw["boot_id"] + 1),
+                                  ("process_id", raw["process_id"] + 1),
+                                  ("occurrence_utc_usec", raw["occurrence_utc_usec"] + 1),
+                                  ("record_kind", 9), ("schema_version", 2),
+                                  ("record_seq", True), ("battle_fact_count", None),
+                                  ("combat_damage_dealt", 1), ("duration_usec", 1)):
+            with self.subTest(name=name):
+                with self.assertRaises(contract.BattleContractError):
+                    contract.validate_raw_fact(dict(raw, **{name: replacement}))
+
+    def test_mixed_battles_preserve_all_three_existing_report_definitions(self):
+        _, legacy = golden_rows(FIXTURE_DIR / "normal_interval.json")
+        interval = next(row for row in legacy if row["record_kind"] == 1)
+        maximum = max(row["ingest_id"] for row in legacy)
+        raw = [self.raw_fact(value, maximum + index) for index, value in enumerate(self.start, 1)]
+        for version in (1, 2, 3):
+            target = RollupTarget(version, 1, interval["environment_id"], interval["season_id"])
+            before = build_page_contributions(legacy, target, max_page_bytes=1_000_000)
+            after = build_page_contributions(legacy + raw, target, max_page_bytes=1_000_000)
+            self.assertTrue(before.player_days)
+            first, second = asdict(before), asdict(after)
+            for metadata in ("page_last_ingest_id", "fetched_rows", "estimated_bytes"):
+                first.pop(metadata)
+                second.pop(metadata)
+            self.assertEqual(first, second)
+            self.assertEqual(after.cursor, raw[-1]["ingest_id"])
+            self.assertEqual(after.fetched_rows, before.fetched_rows + 5)
+            self.assertGreater(after.estimated_bytes, before.estimated_bytes)
+            malformed = dict(raw[-1], battle_fact_count=None)
+            with self.assertRaises(SemanticError):
+                build_page_contributions(legacy + raw[:-1] + [malformed], target,
+                                         max_page_bytes=1_000_000)
+            with self.assertRaises(BoundsExceeded):
+                build_page_contributions(legacy + raw, target,
+                                         max_page_bytes=before.estimated_bytes)
 
     def test_layout_is_exact_and_definition_is_immutable(self):
         descriptor = (ROOT / "src/telemetry/telemetry_battle_fields.inc").read_text(encoding="utf-8")

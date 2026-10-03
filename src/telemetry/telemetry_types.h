@@ -70,6 +70,7 @@ enum class telemetry_record_kind : std::uint8_t
 	encounter = 7,
 	combat_summary = 8,
 	ownership = 9,
+	battle = 10,
 };
 
 /* Observed authenticated descriptor ownership; preparation alone emits no fact. */
@@ -973,6 +974,7 @@ union telemetry_record_payload
 	telemetry_encounter_payload encounter;
 	telemetry_combat_summary_payload combat_summary;
 	telemetry_ownership_payload ownership;
+	telemetry_battle_fact battle;
 };
 
 /* Fixed-size tagged value.  The active payload is selected by header.kind. */
@@ -1043,7 +1045,7 @@ constexpr bool telemetry_record_kind_is_valid(telemetry_record_kind kind) noexce
 	       kind == telemetry_record_kind::progression ||
 	       kind == telemetry_record_kind::encounter ||
 	       kind == telemetry_record_kind::combat_summary ||
-	       kind == telemetry_record_kind::ownership;
+	       kind == telemetry_record_kind::ownership || kind == telemetry_record_kind::battle;
 }
 
 constexpr bool telemetry_record_kind_is_control(telemetry_record_kind kind) noexcept
@@ -1054,7 +1056,7 @@ constexpr bool telemetry_record_kind_is_control(telemetry_record_kind kind) noex
 	       kind == telemetry_record_kind::configuration ||
 	       kind == telemetry_record_kind::encounter ||
 	       kind == telemetry_record_kind::combat_summary ||
-	       kind == telemetry_record_kind::ownership;
+	       kind == telemetry_record_kind::ownership || kind == telemetry_record_kind::battle;
 }
 
 constexpr bool telemetry_lifecycle_kind_is_valid(telemetry_lifecycle_kind kind) noexcept
@@ -2005,6 +2007,13 @@ constexpr bool telemetry_record_is_valid(const telemetry_record &record) noexcep
 		       record.header.key.producer.process_id ==
 			       record.payload.ownership.connection.producer.process_id &&
 		       record.header.occurrence_utc_usec == record.payload.ownership.at_utc_usec;
+	case telemetry_record_kind::battle:
+		return telemetry_battle_fact_is_valid(record.payload.battle) &&
+		       record.header.key.producer.boot_id ==
+			       record.payload.battle.battle.producer.boot_id &&
+		       record.header.key.producer.process_id ==
+			       record.payload.battle.battle.producer.process_id &&
+		       record.header.occurrence_utc_usec == record.payload.battle.at_utc_usec;
 	case telemetry_record_kind::invalid:
 		break;
 	}

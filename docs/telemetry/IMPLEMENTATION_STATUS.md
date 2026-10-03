@@ -10,8 +10,8 @@ work. A future production deployment is a separate operational decision.
 
 | Requirement | State | Evidence or remaining work |
 | --- | --- | --- |
-| #561: full writer startup contract | Implemented and locally qualified | Validate every current writer column, type, signedness, width, nullable/default semantics, InnoDB engine and 12 required indexes. Exercise effective SELECT/INSERT/session UPDATE with zero-row statements and rollback. Reject admission until the worker qualifies; later transient outages retain buffering. |
-| #565: shared serialization/schema descriptor | Implemented and locally qualified | `telemetry_columns.inc` supplies the column identities used by serializers and startup validation. Preserve all record kinds 1–9, admitted replay keys and column prefixes. Reserved/padding/absent union fields and sink-generated fields have explicit exclusions. |
+| #561: full writer startup contract | Implemented and locally qualified | Validate every current writer column, type, signedness, width, nullable/default semantics, InnoDB engine and 13 required indexes. Exercise effective SELECT/INSERT/session UPDATE with zero-row statements and rollback. Reject admission until the worker qualifies; later transient outages retain buffering. |
+| #565: shared serialization/schema descriptor | Implemented and locally qualified | `telemetry_columns.inc` supplies the column identities used by serializers and startup validation. Preserve all record kinds 1–10, admitted replay keys and column prefixes. Reserved/padding/absent union fields and sink-generated fields have explicit exclusions. |
 | #566: durable outage/loss evidence | Implemented and locally qualified | Worker registration before SQL initialization/admission; protected exclusive checksummed storage; bounded coherent samples; clean drain versus known abandonment and unknown tails; real restart/exec/SIGKILL and storage-failure tests. Offline read-only export preserves unknown ends. See [OUTAGE_STORAGE.md](OUTAGE_STORAGE.md) and the qualified #567 report integration below. |
 | #567: reviewed incident coverage | Implemented and locally qualified | Consecutive retained inventory versions, nullable unknown ends, committed first verified post-fix references, explicit backlog/reconstruction dispositions and atomic published coverage snapshots. Reports preserve gaps, source uncertainty and bounded private-role separation. Full local MariaDB/MySQL chains, capacity, digest/permission negatives, lost commit replies and unchanged v1 totals qualified. Historical facts require evidence; synthetic fixtures do not establish a real incident history. See [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
 | Initial session qualification/capacity recovery | Implemented and locally qualified | Existing descriptor sweep and context/evidence adapters retry missing entry. Deferred copyover retains one handoff in descriptor memory; supplied keys/totals/revision survive. No earlier unobserved time or human activity is invented. True capacity refusal rolls back IDs; lifecycle queue loss retains admitted IDs. See [SESSION_LIFECYCLE.md](SESSION_LIFECYCLE.md). |
@@ -21,8 +21,9 @@ work. A future production deployment is a separate operational decision.
 | Restricted reviewed identity registration and generation reservation | Implemented and locally qualified | Migration 0058 authenticates a provisioned SQL reviewer through the maintained registrar, verifies scoped issued account tokens, retains dated correction histories and reserves an immutable reviewed version/digest or explicit unknown identity per new balance generation. Both final 58-step chains, CLI, read-transaction release, capacity, permissions, rollback/ambiguity and exact fresh/restored fingerprints passed. Reservations are metadata and do not publish effort or imply complete identity. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
 | Copyover ownership context and ownership-loss review | Implemented and locally qualified | Outer copyover 18/telemetry-v2 retains last observed account context without importing an old monotonic clock or using the token as current authority. Legacy framing, overflow/unknown context and actual reloaded-token/scope/deletion changes passed native and ASan/UBSan fixtures. Migration 0059 adds independent incident schema-v2 inputs for families 1–9 and reuses existing snapshots; both 59-step chains, CLI, capacity, replay, private roles, atomic snapshot rollback and exact fresh/restored fingerprints passed. Definition-3 integration is qualified below. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md) and [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
 | Atomic identity effort and observed XP portfolio publication | Implemented and locally qualified | Migration 0060 adds exact bounded source retention tied to the cursor, a conserved publication header and two reports. Definition 3 consumes the reserved dated review and incident schema 2 in the same publication transaction. Both 60-step chains qualified the actual CLI, corrections, old generations, explicit unknown identity, source/publication rollback, real committed writes with lost acknowledgements, private roles, budget refusal, guarded reruns and exact fresh/restored fingerprints. Definitions 1/2 retain their earlier amounts. See [IDENTITY_PUBLICATION.md](IDENTITY_PUBLICATION.md). |
+| Durable shared-battle facts and loss review | Implemented and locally qualified | Migration 0061 maps all 70 canonical kind-10 fields with independent logical/transport replay, immutable configuration qualification and NULL family separation. Both 61-step chains qualified actual native packets, lost acknowledgements, header/scope/constraint refusals, exact quarantine evidence, guarded reruns, drift/restoration, private v3 review CLI and unchanged definitions 1/2/3. Outage v2 retains readable original v1 histories. Live capture and atomic battle publication remain separate requirements. See [BATTLES.md](BATTLES.md). |
 | Character/account/confirmed controller association | In progress | Dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation, authenticated source capture, identity wire handoff, reviewed SQL registration and immutable generation reservations are qualified. Atomic identity effort/report publication now consumes the reserved review and qualified ownership incident snapshot. Real personal source journeys and linkage coverage in the complete balance suites remain required. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
-| Shared battles and changing rosters | In progress | Native prerequisites retain producer-scoped formal group generations through appointment/departure and observe actual PCs on both accepted combat sides, including pet-owned PvP context and explicit NPC union guards. The pure bounded association module qualifies shared hostile/support/presence graphs, roster/mode/context cuts, pets, aliases, uncertainty and censored closure. Native value adapters qualify existing live NPC lifetimes, actual formal-roster revisions/presence and admitted current session/encounter links. Portable definition-1 facts, canonical numeric fields, complete mutation packets and bounded replay receivers are now qualified across native/Python fixtures. Native battle callbacks, compact context/control/prevention/population sources, durable facts/contributions and atomic published projections remain required. See [BATTLES.md](BATTLES.md). |
+| Shared battles and changing rosters | In progress | Native prerequisites retain producer-scoped formal group generations through appointment/departure and observe actual PCs on both accepted combat sides, including pet-owned PvP context and explicit NPC union guards. The pure bounded association module qualifies shared hostile/support/presence graphs, roster/mode/context cuts, pets, aliases, uncertainty and censored closure. Native value adapters qualify existing live NPC lifetimes, actual formal-roster revisions/presence and admitted current session/encounter links. Portable packets and their kind-10 durable writer/replay/loss contracts are qualified across native/Python and both SQL engines. Native battle callbacks, compact context/control/prevention/population sources, exact shared contribution linkage and atomic published projections remain required. See [BATTLES.md](BATTLES.md). |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
 | Progression and portfolios | In progress | Observed XP/level projections and published exact account/controller effort unions and observed XP portfolio amounts are qualified. Rested/assistance provenance, milestone exposure/censoring, switching, canonical comparable rewards and rates remain required. |
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
@@ -629,12 +630,75 @@ python3 tests/async/test_telemetry_runtime_integration.py
 make -C src
 ```
 
-This increment prepares durable integration. It does not activate a new
-persistent record kind or native battle callbacks, change sealed migrations,
-or publish balance results. The next step uses this descriptor through the
-existing queue/writer, with independent logical/transport replay identities,
-additive schema and versioned outage/incident handling, followed by atomic
-projection. Packet completeness does not repair cross-packet source gaps or
-prove ownership, outcome or alias-history coverage. All seven remaining full
-completion requirements in #258 remain open, including the four balance suites
-and real personal-local gameplay/persistence/performance qualification.
+This portable-contract increment prepared the durable integration qualified
+below. Packet completeness does not repair cross-packet source gaps or prove
+ownership, outcome or alias-history coverage. All seven full completion
+requirements in #258 remain open, including the four balance suites and real
+personal-local gameplay/persistence/performance qualification.
+
+## Qualified durable shared-battle facts and independent loss review
+
+Migration `0061_telemetry_shared_battle_facts` preserves sealed migrations 1–60
+and the earlier report definitions. It adds all 70 canonical numeric kind-10
+columns and their separate logical unique key, exact family/header binding,
+immutable capture-configuration qualification and independent incident schema
+v3 histories. The retained lifecycle inventory has 248 SQL tables and 51
+non-database stores; destructive rules remain disabled.
+
+Both full 61-step local chains passed on MariaDB 10.11.14 and MySQL 8.0.46. The
+native repository generates actual pure-battle packets with hostile PCs, support,
+a pet, group/zone context change and copyover closure, verifies every typed
+field, then exercises a real committed write with an injected lost reply and
+exact replay. Different transport receipts for one logical fact conflict.
+Producer/time/configuration mismatches, reserved pending-value substitution and
+record-specific SQL quarantine/retry evidence are qualified. Startup schema and
+effective permission negatives cover all ten native record families.
+
+The v3 review journey qualifies the actual dedicated CLI, committed battle scope
+references, atomic parent/detail rollback, exact retries, corrections, lost
+acknowledgements, immutable old snapshots, unknown/reconstructed tails, 64-row
+capacity, byte reservation and writer/reviewer/publisher/report role separation.
+Original v1/v2 review histories retain their own limits. Guarded SQL reruns retain
+facts/reviews and never repair altered defaults or widened checks. After explicit
+restoration the full schema fingerprint equals the fresh chain on each engine:
+
+- MySQL 8.0.46: `0ef431d622156d6e81c71879e338ea25c727b738829047ea0f89101ed5975a91`.
+- MariaDB 10.11.14: `4450fab94c8e0ae9a9e90817849d6a4a6ffca59443f3f59bb985c18f95b51b6b`.
+
+Outage v2 (`DMSTLJ02`) includes family 10 within the unchanged 256-producer/
+81,984-byte bounds. Native/offline readers preserve original v1 bytes and family
+limits; atomic worker upgrade retains old observations. The full lifecycle,
+publication fault, SIGKILL/exec, quota and actual worker outage suites passed.
+Transport normal/AddressSanitizer/UndefinedBehaviorSanitizer qualification passed;
+ThreadSanitizer remains unrun because this host's runtime probe cannot initialize.
+
+Twelve native/Python battle contract tests passed, including complete packets,
+loss, all 65 terminal ordinals, exact raw family/header binding, unchanged
+definition-1/2/3 contributions and malformed/over-budget refusal before cursor
+acknowledgement. All three definitions also processed/published the real SQL
+mixed stream, with an explicit unknown identity reservation for definition 3.
+The frozen 40-record/9-configuration/3-transition bridge and ten golden fixtures
+retain their original expectations. Runtime/lifecycle/immutable manifest
+validation is synchronized with the measured fingerprints and head 61.
+All touched C/C++ passed the repository formatter, and the maintained server
+built successfully with `make -C src -j1` against the current schema contract.
+
+```sh
+python3 tests/async/test_telemetry_battle_contract.py
+python3 tests/async/test_telemetry_incidents.py
+python3 tests/async/test_telemetry_outage.py
+python3 tests/async/test_telemetry_runtime_outage.py
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh --battle-storage
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --battle-storage
+make -C src
+```
+
+Live battle callbacks, compact context/control/prevention/faction sources, exact
+shared contribution linkage and bounded atomic projections remain required.
+This layer alone publishes no new balance suite. The complete identity, PvE
+attempt/reward, progression/rested/milestone/switching, four-suite/statistical
+export, #487 compatibility and actual personal-local gameplay/persistence/
+performance requirements remain on #258's full checklist. There is no production
+or staging access dependency.

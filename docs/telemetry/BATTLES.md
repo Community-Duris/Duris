@@ -1,8 +1,8 @@
 # Shared battle association
 
-The pure association module is implemented and locally qualified. Its native
-runtime callbacks, persistent record kinds, durable writer and published balance
-projections remain under implementation. The existing runtime currently captures
+The pure association module and its kind-10 durable writer are implemented and
+locally qualified. Native runtime callbacks, shared contribution linkage and
+published balance projections remain under implementation. The existing runtime captures
 more accurate group encounters; enabling telemetry does not yet emit this module's
 shared battle facts. [Implementation status](IMPLEMENTATION_STATUS.md) retains
 the complete accepted expansion and personal-local qualification requirement.
@@ -12,8 +12,10 @@ and locally qualified. They supply values for the association module's pending
 capture wiring; they do not yet enqueue its facts.
 
 The portable definition-1 fact, mutation-packet and numeric wire contract is also
-implemented and locally qualified. This prepares durable writer/report
-integration; it does not activate a new record kind or persist shared battles.
+implemented and locally qualified. The additive storage integration below
+persists these facts independently of legacy encounters and retains older report
+definitions. Enabling telemetry still requires the pending native callback wiring
+before the game can emit shared-battle facts.
 
 ## Association and actor identity
 
@@ -147,8 +149,9 @@ The logical fact key is the full battle producer/sequence plus fact sequence.
 It has a distinct domain from both legacy encounter identity and the enclosing
 transport's admitted replay key. Identical named values compare identically
 despite C++ padding; a changed canonical value under the same key conflicts.
-Writer activation must still enforce both logical and transport identities in
-durable storage before these facts enter the native stream.
+The kind-10 writer enforces both identities in durable storage. The original
+transport key can replay identical named values. A different transport key for
+the same logical fact conflicts, so it cannot claim an unretained receipt.
 
 A complete normal packet ends in one final cut. Initial packets additionally
 prove one distinct hostile pair and consistent initial mode/owner counts.
@@ -171,9 +174,60 @@ Packet completeness is one prerequisite. Cross-packet gaps, retired aliases,
 source/contribution linkage, dated identity attribution, outcome evidence and
 incident coverage still need the durable capture/publication integration. A
 complete later terminal packet does not repair an earlier missing mutation or
-establish a winner. Existing persistent kinds 1–9, schema and report definitions
-1–3 retain their meanings; this portable increment changes none of their stored
-records or sealed migrations.
+establish a winner. Existing persistent kinds 1–9 and report definitions 1–3
+retain their meanings. The additive storage integration below preserves every
+earlier sealed migration.
+
+## Durable shared-battle storage
+
+Migration `0061_telemetry_shared_battle_facts` activates the independent kind-10
+record family and maps all 70 canonical numeric fields to nullable typed columns
+in `telemetry_interval`. A battle fact requires every field; another family
+requires those columns to be NULL. Numeric unknown UTC/PID sentinels remain
+numeric values within the present battle payload. The transport producer and
+occurrence must match the battle fact's producer and occurrence. The writer also
+qualifies the captured environment, season, configuration and classifier/policy
+versions against the immutable configuration projection.
+
+The new unique key is `(battle_boot_id,battle_process_id,battle_seq,battle_fact_sequence)`.
+The existing transport key stays independent. Individual facts are append-only;
+an accepted frame does not prove that its packet, alias history or battle is
+complete. Storage supplies no synthetic authenticated session or legacy encounter
+projection from an optional actor reference. The public tagged record remains
+bounded by 512 bytes, and schema startup validates the new columns and unique
+index through the canonical descriptor.
+
+The native SQL journey generates actual pure-module packets with hostile PCs,
+support, a pet, changed group/zone context and a censored copyover close. It
+verifies every typed field, signed unknown UTC, lost commit acknowledgements,
+exact/conflicting retries, scope/header refusals, protected pending values and
+exact quarantine evidence after an injected record-specific SQL failure. Both
+MariaDB 10.11.14 and MySQL 8.0.46 passed all ten native record families, the frozen
+golden fixtures and startup/effective-permission regressions.
+
+The separate storage qualification applies all 61 immutable steps, checks direct
+SQL constraints and logical uniqueness, and runs earlier definitions 1/2/3 over
+the mixed stream. These definitions validate battle facts and advance their
+cursor without adding battle time, XP or other amounts. Malformed facts and byte
+budget failures prevent acknowledgement. Guarded reruns preserve retained facts;
+column/default and incident-mask drift is refused and never silently repaired.
+Exact fresh/restored schema fingerprints, boot constants and the retained
+lifecycle inventory are synchronized for both engines.
+
+```sh
+python3 tests/async/test_telemetry_battle_contract.py
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh --battle-storage
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --battle-storage
+```
+
+Outage ledger v2 and independent incident review schema v3 include kind 10; older
+histories retain their family limits. See [OUTAGE_STORAGE.md](OUTAGE_STORAGE.md)
+and [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). Live battle capture, compact
+context/control/prevention/population sources, exact shared contribution linkage,
+bounded atomic projections and the complete personal-local gameplay/performance
+gate remain required. This layer alone publishes no battle balance result.
 
 ## Bounds and qualification
 
@@ -214,7 +268,7 @@ inactivity bounds, inline expiry accounting, callback loss, row/actor/slot caps,
 and sequence exhaustion. Complete packets and duration conservation passed;
 normal, AddressSanitizer and UndefinedBehaviorSanitizer executions passed.
 
-Ten additional contract regressions exercise the actual native fixtures through
+Twelve additional contract regressions exercise the actual native fixtures through
 the independent Python parser and back into native verification. They qualify
 exact numeric round trips, immutable layout, every retained real mutation packet,
 accepted-frame loss, reordered/identical/conflicting replay, all 65 terminal
@@ -224,10 +278,10 @@ Standalone public headers retain C++20 compilation and the earlier golden
 record fixtures. Allocation traps include the native codec and packet receiver.
 
 The next integration gate is registering the qualified native actor/roster/
-presence values at reviewed hostile/support/control/prevention boundaries;
-versioned persistent facts and contribution linkage through the existing queue,
-writer, replay and loss contracts; additive immutable schema/permissions/lifecycle
-registration; and bounded atomic balance publication. Qualify that gate on both
+presence values at reviewed hostile/support/control/prevention boundaries,
+linking actual shared contributions and publishing bounded atomic balance
+projections. The durable kind-10 writer/schema/replay/loss contracts are qualified
+above. Qualify the remaining capture/publication gate on both
 disposable SQL engines and real personal-local gameplay before claiming shared
 battle collection. Existing kinds 1–9, sealed migrations and report definitions
 retain their meanings. The four full balance suites and final personal-local

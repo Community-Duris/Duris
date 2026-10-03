@@ -220,6 +220,49 @@ void unsafe_storage()
 	std::puts("outage protected paths, ownership, symlinks and hard links passed");
 }
 
+void legacy_and_battle_versions()
+{
+	fixture f;
+	telemetry_outage_journal journal{};
+	assert(telemetry_outage_open(&journal, f.path.c_str(), registration()) == result::ready);
+	assert(telemetry_outage_checkpoint(&journal, sampled()) == result::ready);
+	telemetry_outage_close(&journal);
+	const auto current = bytes(f.path / "outages.ledger");
+	assert(std::memcmp(current.data(), "DMSTLJ02", 8U) == 0);
+	auto legacy = current;
+	legacy[7] = '1';
+	checksum(legacy);
+	replace(f.path / "outages.ledger", legacy);
+	assert(telemetry_outage_read(&journal, f.path.c_str()) == result::ready);
+	assert(journal.observations[0].record_kind_mask == sampled().record_kind_mask);
+	telemetry_outage_close(&journal);
+	assert(bytes(f.path / "outages.ledger") == legacy);
+	for (const auto field : { 9U, 36U })
+	{
+		auto incompatible = legacy;
+		word(incompatible, 32U + field * 8U, 1U << 10U);
+		checksum(incompatible);
+		replace(f.path / "outages.ledger", incompatible);
+		assert(telemetry_outage_read(&journal, f.path.c_str()) == result::corrupt);
+		assert(bytes(f.path / "outages.ledger") == incompatible);
+	}
+	replace(f.path / "outages.ledger", legacy);
+	assert(telemetry_outage_open(&journal, f.path.c_str(), registration(2)) == result::ready);
+	assert(journal.observations[0].record_kind_mask == sampled().record_kind_mask);
+	auto battle = sampled(2);
+	battle.record_kind_mask |= 1U << 10U;
+	assert(telemetry_outage_checkpoint(&journal, battle) == result::ready);
+	telemetry_outage_close(&journal);
+	assert(telemetry_outage_read(&journal, f.path.c_str()) == result::ready);
+	assert(journal.count == 2U &&
+	       journal.observations[1].record_kind_mask == battle.record_kind_mask);
+	assert(journal.observations[0].record_kind_mask == sampled().record_kind_mask);
+	telemetry_outage_close(&journal);
+	assert(std::memcmp(bytes(f.path / "outages.ledger").data(), "DMSTLJ02", 8U) == 0);
+	std::puts(
+		"outage v1 read-only compatibility, v2 battle evidence and atomic upgrade passed");
+}
+
 void corruption()
 {
 	fixture f;
@@ -457,10 +500,19 @@ int main(int argc, char **argv)
 	{
 		telemetry_outage_journal journal{};
 		assert(telemetry_outage_open(&journal, argv[2], registration()) == result::ready);
-		assert(telemetry_outage_checkpoint(&journal, sampled()) == result::ready);
+		auto battle = sampled();
+		battle.record_kind_mask |= 1U << 10U;
+		assert(telemetry_outage_checkpoint(&journal, battle) == result::ready);
 		telemetry_outage_close(&journal);
 		assert(telemetry_outage_open(&journal, argv[2], registration(2)) == result::ready);
 		terminate_cleanly(journal, 2);
+		return 0;
+	}
+	if (argc == 3 && std::strcmp(argv[1], "--upgrade-fixture") == 0)
+	{
+		telemetry_outage_journal journal{};
+		assert(telemetry_outage_open(&journal, argv[2], registration(3)) == result::ready);
+		terminate_cleanly(journal, 3);
 		return 0;
 	}
 	if (argc == 3 && std::strcmp(argv[1], "--hold-fixture") == 0)
@@ -481,6 +533,7 @@ int main(int argc, char **argv)
 	}
 	lifecycle();
 	unsafe_storage();
+	legacy_and_battle_versions();
 	corruption();
 	publication_faults();
 	changed_storage();

@@ -9,7 +9,7 @@
 
 /* Pure association state. Native producers must supply actual observation
  * boundaries and unique live NPC generations, rather than prototype IDs.
- * These facts are not yet a member of the persistent telemetry record union. */
+ * Persistence uses the separate battle record family, never an encounter cast. */
 inline constexpr std::size_t TELEMETRY_BATTLE_MAX_ACTIVE = 128U;
 inline constexpr std::size_t TELEMETRY_BATTLE_TERMINAL_CACHE = 64U;
 

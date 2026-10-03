@@ -9,7 +9,8 @@ case "${1:-}" in
     --identity) [[ $# == 1 ]] || exit 2; TEST_SCRIPT=test_telemetry_account_identity.py ;;
     --identity-review) [[ $# == 1 ]] || exit 2; TEST_SCRIPT=test_telemetry_identity_history.py ;;
     --identity-publication) [[ $# == 1 ]] || exit 2; TEST_SCRIPT=test_telemetry_identity_publication.py ;;
-    *) printf 'usage: run_telemetry_repository_sql.sh [--incidents|--observations|--identity|--identity-review|--identity-publication]\n' >&2; exit 2 ;;
+    --battle-storage) [[ $# == 1 ]] || exit 2; TEST_SCRIPT=test_telemetry_battle_storage.py ;;
+    *) printf 'usage: run_telemetry_repository_sql.sh [--incidents|--observations|--identity|--identity-review|--identity-publication|--battle-storage]\n' >&2; exit 2 ;;
 esac
 IMAGE="${TELEMETRY_REPOSITORY_DB_IMAGE:-mariadb:10.11.14}"
 case "$IMAGE" in

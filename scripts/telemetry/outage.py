@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bounded, offline, read-only export of worker outage evidence (wire version 1)."""
+"""Bounded, offline, read-only export of versioned worker outage evidence."""
 from __future__ import annotations
 
 import argparse
@@ -12,16 +12,18 @@ import stat
 import struct
 import sys
 
-MAGIC = b"DMSTLJ01"
+LEGACY_MAGIC = b"DMSTLJ01"
+MAGIC = b"DMSTLJ02"
 MAX_PRODUCERS = 256
 WORDS = 40
 MAX_BYTES = 64 + MAX_PRODUCERS * WORDS * 8
 UNKNOWN_UTC = -(1 << 63)
-KNOWN_KINDS = (1 << 10) - 2
+LEGACY_KINDS = (1 << 10) - 2
+KNOWN_KINDS = (1 << 11) - 2
 PHASES = {1: "running", 2: "clean_drained", 3: "abandoned", 4: "unknown_tail"}
 FAMILIES = {1: "interval", 2: "session_lifecycle", 3: "session_checkpoint",
             4: "coverage_gap", 5: "configuration", 6: "progression",
-            7: "encounter", 8: "combat_summary", 9: "ownership"}
+            7: "encounter", 8: "combat_summary", 9: "ownership", 10: "battle"}
 FIELDS = (
     "boot_id", "process_id", "environment_id", "season_id",
     "registered_monotonic_usec", "registered_utc_usec",
@@ -43,7 +45,7 @@ class EvidenceError(Exception):
 
 
 def decode(data: bytes) -> dict:
-    if not 384 <= len(data) <= MAX_BYTES or data[:8] != MAGIC:
+    if not 384 <= len(data) <= MAX_BYTES or data[:8] not in (LEGACY_MAGIC, MAGIC):
         raise EvidenceError("corrupt")
     if hashlib.sha256(data[:-32]).digest() != data[-32:]:
         raise EvidenceError("corrupt")
@@ -51,6 +53,8 @@ def decode(data: bytes) -> dict:
     if not generation or not 1 <= count <= MAX_PRODUCERS or reserved or len(data) != 64 + count * WORDS * 8:
         raise EvidenceError("corrupt")
     observations = []
+    version = 1 if data[:8] == LEGACY_MAGIC else 2
+    known_kinds = LEGACY_KINDS if version == 1 else KNOWN_KINDS
     producers = set()
     for index in range(count):
         w = struct.unpack_from(f">{WORDS}Q", data, 32 + index * WORDS * 8)
@@ -60,7 +64,7 @@ def decode(data: bytes) -> dict:
         clean = (accepted == acknowledged and accepted < (1 << 64) - 1 and
                  w[26] == 0 and w[24] == 0 and w[16] == w[17] == w[18] == 0)
         if (not all(w[:4]) or producer in producers or w[6] < w[4] or w[8] not in PHASES or
-            (index + 1 < count and w[8] == 1) or w[9] & ~KNOWN_KINDS or w[36] & ~KNOWN_KINDS or
+            (index + 1 < count and w[8] == 1) or w[9] & ~known_kinds or w[36] & ~known_kinds or
             w[21] > w[12] or w[24] > 128 or w[26] > 8192 or w[24] + w[25] != w[26] or
             w[27] not in (0, 1) or bool(w[27]) != bool(w[24]) or w[32] > 8 or w[33] >= (1 << 32) or
             (w[27] and not 0 < w[22] <= w[23] <= w[12]) or (w[8] == 2 and not clean) or
@@ -79,7 +83,7 @@ def decode(data: bytes) -> dict:
         row["known_abandoned_unattempted_records"] = w[25] if w[8] == 3 else 0
         row["unknown_after_last_sample"] = w[8] in (1, 4)
         observations.append(row)
-    return {"ledger_version": 1, "generation": generation, "producer_count": count,
+    return {"ledger_version": version, "generation": generation, "producer_count": count,
             "max_producers": MAX_PRODUCERS, "observations": observations}
 
 

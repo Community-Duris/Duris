@@ -19,12 +19,13 @@ import math
 from typing import Any, Callable, Mapping, Sequence
 
 try:
-    from . import incident, identity_history as identity, observation_semantics as observations, identity_publication as identity_publication
+    from . import incident, identity_history as identity, observation_semantics as observations, identity_publication as identity_publication, battle_contract as battles
 except ImportError:
     import incident
     import identity_history as identity
     import observation_semantics as observations
     import identity_publication
+    import battle_contract as battles
 
 try:  # Running as a package.
     from .rollup_definitions import (
@@ -417,7 +418,7 @@ RAW_COLUMNS = (
     "pulse_slot_count",
     "backend",
     "enabled",
-) + observations.PROGRESSION_RAW_COLUMNS + observations.ENCOUNTER_RAW_COLUMNS + observations.COMBAT_RAW_COLUMNS + observations.OWNERSHIP_RAW_COLUMNS
+) + observations.PROGRESSION_RAW_COLUMNS + observations.ENCOUNTER_RAW_COLUMNS + observations.COMBAT_RAW_COLUMNS + observations.OWNERSHIP_RAW_COLUMNS + battles.FIELDS
 
 SESSION_COLUMNS = (
     "definition_version",
@@ -1843,8 +1844,10 @@ class PyMySQLRollupDatabase:
                     continue
                 verified, _, _ = self._execute(
                     "SELECT record_kind,occurrence_utc_usec,"
-                    "COALESCE(environment_id,encounter_environment_id,combat_environment_id) AS environment_id,"
-                    "COALESCE(season_id,encounter_season_id,combat_season_id) AS season_id "
+                    "CASE WHEN record_kind=10 THEN battle_environment_id ELSE "
+                    "COALESCE(environment_id,encounter_environment_id,combat_environment_id) END AS environment_id,"
+                    "CASE WHEN record_kind=10 THEN battle_season_id ELSE "
+                    "COALESCE(season_id,encounter_season_id,combat_season_id) END AS season_id "
                     "FROM telemetry_interval WHERE boot_id=%s AND process_id=%s AND record_seq=%s LIMIT 1",
                     (row["verified_boot_id"], row["verified_process_id"], row["verified_record_seq"]),
                 )
@@ -1853,8 +1856,9 @@ class PyMySQLRollupDatabase:
                 fact = verified[0]
                 occurrence = fact["occurrence_utc_usec"]
                 occurrence = None if occurrence == incident.UTC_UNKNOWN else occurrence
-                if (int(fact["record_kind"]) != row["verified_record_kind"] or
-                    (int(fact["environment_id"]), int(fact["season_id"])) != scope or
+                if (type(fact["environment_id"]) is not int or type(fact["season_id"]) is not int or
+                    int(fact["record_kind"]) != row["verified_record_kind"] or
+                    (fact["environment_id"], fact["season_id"]) != scope or
                     occurrence != row["verified_occurrence_utc_usec"]):
                     raise incident.IncidentError("postfix_fact_mismatch")
             self._insert_review_rows(registry_table, incident.META_COLUMNS, (meta,))

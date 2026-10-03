@@ -1,8 +1,7 @@
 """Definition-1 shared-battle values and complete mutation packets.
 
-This portable contract does not activate the native collector or a SQL record
-kind. Complete packets are necessary but do not establish cross-packet source,
-alias, ownership or outcome coverage. The future writer uses the same numeric
+Complete packets are necessary but do not establish cross-packet source,
+alias, ownership or outcome coverage. The writer uses the same numeric
 field identities; a battle identity must never be cast to a legacy encounter.
 """
 from __future__ import annotations
@@ -244,6 +243,24 @@ def decode_fact(wire: bytes) -> dict[str, int]:
         value[name] = int.from_bytes(wire[offset:offset + width], "big", signed=signed)
         offset += width
     return validate_fact(value)
+
+
+def validate_raw_fact(row: Mapping[str, int]) -> dict[str, int]:
+    """Validate kind-10 SQL facts without borrowing legacy encounter semantics."""
+    _require(isinstance(row, Mapping), "raw battle mapping")
+    _require(type(row.get("record_kind")) is int and row["record_kind"] == 10, "raw battle tag")
+    _require(type(row.get("schema_version")) is int and row["schema_version"] == 1, "raw battle schema")
+    value = validate_fact({name: row.get(name) for name in FIELDS})
+    for name in ("boot_id", "process_id", "record_seq"):
+        _require(type(row.get(name)) is int and 0 < row[name] <= UINT64_MAX, "raw battle replay identity")
+    _require((row["boot_id"], row["process_id"]) == battle_id(value)[:2] and
+             type(row.get("occurrence_utc_usec")) is int and row["occurrence_utc_usec"] == value["battle_at_utc_usec"],
+             "raw battle producer/occurrence binding")
+    header = {"ingest_id", "boot_id", "process_id", "record_seq", "schema_version",
+              "record_kind", "occurrence_utc_usec", "ingested_utc_usec"}
+    _require(all(item is None for name, item in row.items() if name not in FIELDS and name not in header),
+             "raw battle inactive family payload")
+    return value
 
 
 def _same_actor_values(a: Mapping[str, int], b: Mapping[str, int]) -> bool:

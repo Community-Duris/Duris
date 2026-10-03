@@ -1,6 +1,6 @@
 /* Definition-1 canonical battle fields. Explicit width and signedness exclude
  * C++ padding and reserved bytes. Ordering is an immutable wire contract.
- * The field identifiers also name the future additive writer projection. */
+ * The field identifiers also name the typed writer projection. */
 TELEMETRY_BATTLE_FIELD(battle_boot_id, battle.producer.boot_id, 8, false)
 TELEMETRY_BATTLE_FIELD(battle_process_id, battle.producer.process_id, 8, false)
 TELEMETRY_BATTLE_FIELD(battle_seq, battle.sequence, 8, false)

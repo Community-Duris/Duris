@@ -14,10 +14,11 @@ import math
 from typing import Any, Callable, Mapping, MutableMapping, Protocol, Sequence, cast
 
 try:
-    from . import observation_semantics as observations, identity_publication as identity_publication
+    from . import observation_semantics as observations, identity_publication as identity_publication, battle_contract as battles
 except ImportError:
     import observation_semantics as observations
     import identity_publication
+    import battle_contract as battles
 
 try:  # Running as a package.
     from .rollup_definitions import (
@@ -596,7 +597,7 @@ def _validate_common_row(row: Mapping[str, Any], previous_ingest_id: int | None)
     if isinstance(schema_version, bool) or not isinstance(schema_version, int) or schema_version != 1:
         raise SemanticError(f"unsupported raw telemetry schema_version {schema_version!r}")
     kind = row.get("record_kind")
-    if isinstance(kind, bool) or not isinstance(kind, int) or kind not in range(1, 10):
+    if isinstance(kind, bool) or not isinstance(kind, int) or kind not in range(1, 11):
         raise SemanticError(f"unsupported raw telemetry record_kind {kind!r}")
     return ingest_id
 
@@ -941,6 +942,14 @@ def build_page_contributions(
         if replay_key in seen_replay_keys:
             raise SemanticError("raw page contains a duplicate replay key")
         seen_replay_keys.add(replay_key)
+        if kind == 10:
+            try:
+                battles.validate_raw_fact(row)
+            except battles.BattleContractError as error:
+                raise SemanticError(str(error)) from error
+            # Definitions 1/2/3 retain their earlier amounts. Shared battles
+            # require complete packets and independent versioned publication.
+            continue
         if kind in (6, 7, 8, 9):
             try:
                 observation = observations.validate_observation(row)
