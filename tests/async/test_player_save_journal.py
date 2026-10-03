@@ -189,6 +189,9 @@ int main(int argc, char **argv)
     death.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
     death.items.clear();
     death.pets.clear();
+    // Wire versions 1-8 predate the renewable-ward affect columns. Keep this
+    // death frame free of affects so the downgrade below models that format.
+    death.affects.clear();
     death.status_integers.push_back({player_status_field::deaths, 7, 0, false});
     death.death.emplace();
     auto &recovery = *death.death;
@@ -303,6 +306,8 @@ int main(int argc, char **argv)
     for (uint8_t version : {1, 2, 3, 4}) {
         auto legacy = version % 2 ? make_snapshot(90, 1) : death;
         legacy.pets.clear();
+        // All legacy wire versions predate the renewable-ward affect columns.
+        legacy.affects.clear();
         auto prefix = legacy;
         prefix.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
         prefix.death.reset();

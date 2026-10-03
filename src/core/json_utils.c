@@ -17,6 +17,7 @@
 #include "guild/assocs.h"
 #include "core/defines.h"
 #include "world/handler.h"
+#include "combat/spell_wards.h"
 #include "ships/ships.h"
 #include "classes/specializations.h"
 #include "magic/spells.h"
@@ -978,8 +979,10 @@ char *json_build_char_affects(struct char_data *ch)
 
 	if (ch)
 	{
+		spell_ward_sync_timers(ch);
 		for (aff = ch->affected; aff; aff = aff->next)
 		{
+			const bool managed_ward = spell_ward_is_managed(aff);
 			/* Match score command logic for showing active spells */
 			int is_herb = (aff->type >= HERB_OCULARIUS && aff->type <= HERB_GOOTWIET);
 			if (aff->type <= 0 || !skills[aff->type].name ||
@@ -988,22 +991,46 @@ char *json_build_char_affects(struct char_data *ch)
 				continue;
 			}
 			/* Skip affects marked as hidden */
-			if (IS_SET(aff->flags, AFFTYPE_NOSHOW))
+			if (IS_SET(aff->flags, AFFTYPE_NOSHOW) && !managed_ward)
 			{
 				continue;
 			}
 			/* Skip duplicate affect types (spells can have multiple affect structs) */
-			if (aff->type == last)
+			if (!managed_ward && aff->type == last)
 			{
 				continue;
 			}
-			last = aff->type;
+			if (!managed_ward)
+				last = aff->type;
 
 			affect_obj = cJSON_CreateObject();
 			cJSON_AddStringToObject(affect_obj, "name", skills[aff->type].name);
 			cJSON_AddNumberToObject(affect_obj, "id", aff->type);
 			/* Send duration in seconds for frontend countdown timer */
-			cJSON_AddNumberToObject(affect_obj, "duration", aff->duration * 60);
+			if (managed_ward)
+			{
+				const bool active = spell_ward_is_active(aff);
+				const char *state = active ? "active" :
+					(spell_ward_is_equipment(aff) && aff->ward_source_worn ? "broken" :
+					 "inactive");
+				cJSON_AddNumberToObject(affect_obj, "duration",
+							active ? aff->duration / WAIT_SEC : 0);
+				cJSON_AddStringToObject(affect_obj, "state", state);
+				cJSON_AddStringToObject(affect_obj, "source",
+							aff->ward_source_type == SPELL_WARD_SOURCE_EQUIPMENT ?
+								"equipment" : "cast");
+				cJSON_AddNumberToObject(affect_obj, "remaining_damage",
+							(double)MAX(0, aff->ward_capacity));
+				cJSON_AddNumberToObject(affect_obj, "capacity",
+							(double)MAX(0, aff->ward_capacity_max));
+				cJSON_AddNumberToObject(affect_obj, "refresh_seconds",
+							spell_ward_is_equipment(aff) ?
+								aff->ward_refresh_remaining / WAIT_SEC : 0);
+			}
+			else
+			{
+				cJSON_AddNumberToObject(affect_obj, "duration", aff->duration * 60);
+			}
 			cJSON_AddStringToObject(affect_obj, "icon", "shield"); /* Default icon */
 			cJSON_AddItemToArray(root, affect_obj);
 		}

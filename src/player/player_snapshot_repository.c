@@ -368,7 +368,9 @@ query_result apply_affects(MYSQL *connection, const player_snapshot &snapshot)
 	std::ostringstream sql;
 	sql << "INSERT INTO player_affects (pid,type,duration,flags,modifier,location,level,"
 	       "bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,custom_msg_char,"
-	       "custom_msg_room) VALUES ";
+	       "custom_msg_room,ward_source_uid,ward_full_duration,ward_capacity,"
+	       "ward_capacity_max,ward_refresh_remaining,ward_source_type,ward_source_worn,"
+	       "ward_active) VALUES ";
 	for (size_t index = 0; index < snapshot.affects.size(); ++index)
 	{
 		const auto &row = snapshot.affects[index];
@@ -379,9 +381,17 @@ query_result apply_affects(MYSQL *connection, const player_snapshot &snapshot)
 			sql << ',' << bitvector;
 		sql << ','
 		    << (row.wear_off_character.empty() ? "NULL" :
-							 quote(connection, row.wear_off_character))
-		    << ','
+													 quote(connection, row.wear_off_character))
+			<< ','
 		    << (row.wear_off_room.empty() ? "NULL" : quote(connection, row.wear_off_room))
+		    << ',' << row.ward_source_uid
+		    << ',' << row.ward_full_duration
+		    << ',' << row.ward_capacity
+		    << ',' << row.ward_capacity_max
+		    << ',' << row.ward_refresh_remaining
+		    << ',' << static_cast<unsigned int>(row.ward_source_type)
+		    << ',' << static_cast<unsigned int>(row.ward_source_worn)
+		    << ',' << static_cast<unsigned int>(row.ward_active)
 		    << ')';
 	}
 	return execute(connection, sql.str());

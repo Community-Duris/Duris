@@ -479,6 +479,17 @@ static int parse_player_affects(char **bufptr, struct mig_player *p)
 				af->level = mig_getShort(bufptr);
 			else
 				af->level = p->level;
+			if (aff_vers > 8)
+			{
+				af->ward_source_uid = mig_getULL(bufptr);
+				af->ward_full_duration = mig_getInt(bufptr);
+				af->ward_capacity = mig_getULL(bufptr);
+				af->ward_capacity_max = mig_getULL(bufptr);
+				af->ward_refresh_remaining = mig_getInt(bufptr);
+				af->ward_source_type = MIG_GET_BYTE(*bufptr);
+				af->ward_source_worn = MIG_GET_BYTE(*bufptr);
+				af->ward_active = MIG_GET_BYTE(*bufptr);
+			}
 		}
 		else
 		{
@@ -529,7 +540,15 @@ static void fmt_sql_str(char *out, size_t sz, const char *esc)
 static bool mig_affect_same_signature(const struct mig_affect *a, const struct mig_affect *b)
 {
 	return a && b && a->type == b->type && a->duration == b->duration && a->flags == b->flags &&
-	       a->modifier == b->modifier && a->location == b->location && a->level == b->level;
+	       a->modifier == b->modifier && a->location == b->location && a->level == b->level &&
+	       a->ward_source_uid == b->ward_source_uid &&
+	       a->ward_full_duration == b->ward_full_duration &&
+	       a->ward_capacity == b->ward_capacity &&
+	       a->ward_capacity_max == b->ward_capacity_max &&
+	       a->ward_refresh_remaining == b->ward_refresh_remaining &&
+	       a->ward_source_type == b->ward_source_type &&
+	       a->ward_source_worn == b->ward_source_worn &&
+	       a->ward_active == b->ward_active;
 }
 
 // thread-local flag for using thread-safe db functions
@@ -911,16 +930,21 @@ static int save_player_to_db(struct mig_player *p)
 			strcpy(wor_str, "NULL");
 
 		len += snprintf(values + len, sizeof(values) - len,
-				"(%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%lu,%s,%s),", pid, af->type,
+				"(%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%lu,%s,%s,%llu,%d,%llu,%llu,%d,%u,%u,%u),", pid, af->type,
 				af->duration, af->flags, af->modifier, af->location, af->level,
 				af->bitvector1, af->bitvector2, af->bitvector3, af->bitvector4,
-				af->bitvector5, woc_str, wor_str);
+				af->bitvector5, woc_str, wor_str, af->ward_source_uid,
+				af->ward_full_duration, af->ward_capacity, af->ward_capacity_max,
+				af->ward_refresh_remaining, af->ward_source_type, af->ward_source_worn,
+				af->ward_active);
 	}
 	if (len > 0)
 	{
 		values[len - 1] = '\0';
 		my_qry("INSERT INTO player_affects (pid,type,duration,flags,modifier,location,level,"
-		       "bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,custom_msg_char,custom_msg_room) VALUES %s",
+		       "bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,custom_msg_char,custom_msg_room,"
+		       "ward_source_uid,ward_full_duration,ward_capacity,ward_capacity_max,ward_refresh_remaining,"
+		       "ward_source_type,ward_source_worn,ward_active) VALUES %s",
 		       values);
 	}
 

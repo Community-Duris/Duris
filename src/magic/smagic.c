@@ -31,6 +31,7 @@
 #include "classes/disguise.h"
 #include "world/graph.h"
 #include "combat/justice.h"
+#include "combat/spell_wards.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "world/weather.h"
@@ -4060,35 +4061,33 @@ void spell_spirit_ward(int level, P_char ch, char * /*arg*/, [[maybe_unused]] in
 	else
 		duration = (int)(level / 2);
 
-	if (affected_by_spell(victim, SPELL_SPIRIT_WARD))
+	const bool already_active = affected_by_spell(victim, SPELL_SPIRIT_WARD);
+	bzero(&af, sizeof(af));
+	af.type = SPELL_SPIRIT_WARD;
+	af.bitvector3 = AFF3_SPIRIT_WARD;
+	if (already_active)
 	{
-		struct affected_type *af1;
-
-		for (af1 = victim->affected; af1; af1 = af1->next)
-			if (af1->type == SPELL_SPIRIT_WARD)
-			{
-				af1->duration = duration;
-			}
+		spell_ward_apply_cast(victim, &af, duration);
 		return;
 	}
 
-	if (IS_AFFECTED3(victim, AFF3_SPIRIT_WARD) || IS_AFFECTED3(victim, AFF3_GR_SPIRIT_WARD))
+	if ((IS_AFFECTED3(victim, AFF3_SPIRIT_WARD) &&
+	     !affected_by_spell(victim, SPELL_SPIRIT_WARD)) ||
+	    IS_AFFECTED3(victim, AFF3_GR_SPIRIT_WARD))
 	{
 		send_to_char("Nothing seems to happen.\n", ch);
 		return;
 	}
 
-	act("$n&+W glows dimly as a faint white halo surrounds $m.", TRUE, victim, 0, 0, TO_ROOM);
-	act("&+WYou begin to glow dimly as a faint white halo surrounds you.", FALSE, victim, 0, 0,
-	    TO_CHAR);
+	if (!already_active)
+	{
+		act("$n&+W glows dimly as a faint white halo surrounds $m.", TRUE, victim, 0, 0,
+		    TO_ROOM);
+		act("&+WYou begin to glow dimly as a faint white halo surrounds you.", FALSE, victim, 0,
+		    0, TO_CHAR);
+	}
 
-	bzero(&af, sizeof(af));
-
-	af.type = SPELL_SPIRIT_WARD;
-	af.duration = duration;
-	af.bitvector3 = AFF3_SPIRIT_WARD;
-
-	affect_to_char(victim, &af);
+	spell_ward_apply_cast(victim, &af, duration);
 }
 
 void spell_greater_spirit_ward(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
@@ -4106,34 +4105,31 @@ void spell_greater_spirit_ward(int level, P_char ch, char * /*arg*/, [[maybe_unu
 	else
 		duration = (int)(level / 2);
 
-	if (affected_by_spell(victim, SPELL_GREATER_SPIRIT_WARD))
+	const bool already_active = affected_by_spell(victim, SPELL_GREATER_SPIRIT_WARD);
+	bzero(&af, sizeof(af));
+	af.type = SPELL_GREATER_SPIRIT_WARD;
+	af.bitvector3 = AFF3_GR_SPIRIT_WARD;
+	if (already_active)
 	{
-		struct affected_type *af1;
-
-		for (af1 = victim->affected; af1; af1 = af1->next)
-			if (af1->type == SPELL_GREATER_SPIRIT_WARD)
-			{
-				af1->duration = duration;
-			}
+		spell_ward_apply_cast(victim, &af, duration);
 		return;
 	}
 
-	if (IS_AFFECTED3(victim, AFF3_GR_SPIRIT_WARD))
+	if (IS_AFFECTED3(victim, AFF3_GR_SPIRIT_WARD) &&
+	    !affected_by_spell(victim, SPELL_GREATER_SPIRIT_WARD))
 	{
 		send_to_char("Nothing seems to happen.\n", ch);
 		return;
 	}
-	act("$n&+W glows visibly as a faint white halo surrounds $m.", TRUE, victim, 0, 0, TO_ROOM);
-	act("&+WYou begin to glow as a faint white halo surrounds you.", FALSE, victim, 0, 0,
-	    TO_CHAR);
+	if (!already_active)
+	{
+		act("$n&+W glows visibly as a faint white halo surrounds $m.", TRUE, victim, 0, 0,
+		    TO_ROOM);
+		act("&+WYou begin to glow as a faint white halo surrounds you.", FALSE, victim, 0, 0,
+		    TO_CHAR);
+	}
 
-	bzero(&af, sizeof(af));
-
-	af.type = SPELL_GREATER_SPIRIT_WARD;
-	af.duration = duration;
-	af.bitvector3 = AFF3_GR_SPIRIT_WARD;
-
-	affect_to_char(victim, &af);
+	spell_ward_apply_cast(victim, &af, duration);
 }
 
 void spell_reveal_true_form(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,

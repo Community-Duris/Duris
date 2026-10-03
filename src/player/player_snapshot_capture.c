@@ -15,9 +15,17 @@
 #include <unordered_set>
 #include <unordered_map>
 
+#if defined(__GNUC__) || defined(__clang__)
+/* The small capture contract harness links this translation unit without the
+ * combat runtime. Keep the production timer sync call available while making
+ * that intentionally minimal link a valid test target. */
+extern void spell_ward_sync_timers(P_char) __attribute__((weak));
+#endif
+
 #include "guild/assocs.h"
 #include "core/files.h"
 #include "item/item_ownership_runtime.h"
+#include "combat/spell_wards.h"
 #include "magic/spells.h"
 #include "item/trophy.h"
 
@@ -275,8 +283,14 @@ bool capture_skills(P_char ch, player_snapshot &snapshot, capture_budget &budget
 }
 
 player_snapshot_capture_result capture_affects(P_char ch, player_snapshot &snapshot,
-					       capture_budget &budget)
+						       capture_budget &budget)
 {
+#if defined(__GNUC__) || defined(__clang__)
+	if (spell_ward_sync_timers)
+		spell_ward_sync_timers(ch);
+#else
+	spell_ward_sync_timers(ch);
+#endif
 	std::unordered_set<const affected_type *> seen;
 	for (const affected_type *affect = ch->affected; affect; affect = affect->next)
 	{
@@ -295,6 +309,14 @@ player_snapshot_capture_result capture_affects(P_char ch, player_snapshot &snaps
 		row.level = affect->level;
 		row.bitvectors = { affect->bitvector, affect->bitvector2, affect->bitvector3,
 				   affect->bitvector4, affect->bitvector5 };
+		row.ward_source_uid = affect->ward_source_uid;
+		row.ward_full_duration = affect->ward_full_duration;
+		row.ward_capacity = affect->ward_capacity;
+		row.ward_capacity_max = affect->ward_capacity_max;
+		row.ward_refresh_remaining = affect->ward_refresh_remaining;
+		row.ward_source_type = affect->ward_source_type;
+		row.ward_source_worn = affect->ward_source_worn;
+		row.ward_active = affect->ward_active;
 		if (affect->wear_off_message_index > 0 &&
 		    affect->wear_off_message_index < MAX_WEAR_OFF_MESSAGES && affect->type >= 0 &&
 		    affect->type < MAX_SKILLS)

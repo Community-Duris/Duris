@@ -44,6 +44,14 @@ long mig_getLong(char **buf)
 	return l;
 }
 
+unsigned long long mig_getULL(char **buf)
+{
+	unsigned long long value;
+	bcopy(*buf, &value, sizeof(value));
+	*buf += sizeof(value);
+	return value;
+}
+
 char *mig_getString(char **buf)
 {
 	int len = (int)mig_getShort(buf);

@@ -31,6 +31,9 @@
 #include "item/item_ownership_runtime.h"
 #include "item/encumbrance_policy.h"
 #include "combat/justice.h"
+#ifndef _PFILE_
+#include "combat/spell_wards.h"
+#endif
 #include "core/mm.h"
 #include "classes/necromancy.h"
 #include "economy/collector_service.h"
@@ -526,6 +529,9 @@ int writeStatus(char *buf, P_char ch, bool updateTime)
 //   with the time left on the event.
 void updateShortAffects(P_char ch)
 {
+#ifndef _PFILE_
+	spell_ward_sync_timers(ch);
+#endif
 	affected_type *paf = ch->affected;
 	P_nevent pnev;
 
@@ -632,6 +638,16 @@ int writeAffects(char *buf, struct affected_type *af)
 		ADD_LONG(buf, af->bitvector5);
 		ADD_LONG(buf, 0); // af->bitvector6);
 		ADD_SHORT(buf, af->level);
+		ADD_ULL(buf, af->ward_source_uid);
+		ADD_INT(buf, af->ward_full_duration);
+		ADD_ULL(buf, af->ward_capacity > 0 ?
+				static_cast<unsigned long long>(af->ward_capacity) : 0);
+		ADD_ULL(buf, af->ward_capacity_max > 0 ?
+				static_cast<unsigned long long>(af->ward_capacity_max) : 0);
+		ADD_INT(buf, af->ward_refresh_remaining);
+		ADD_BYTE(buf, af->ward_source_type);
+		ADD_BYTE(buf, af->ward_source_worn);
+		ADD_BYTE(buf, af->ward_active);
 	}
 
 	return (int)(buf - start);
@@ -2626,6 +2642,10 @@ int restoreAffects(char *buf, P_char ch)
 	}
 	for (count = GET_SHORT(buf); count > 0; count--)
 	{
+		memset(&af, 0, sizeof(af));
+		custom_messages = 0;
+		wear_off_char = NULL;
+		wear_off_room = NULL;
 		if (aff_vers > 4)
 		{
 			if (aff_vers > 5)
@@ -2662,6 +2682,18 @@ int restoreAffects(char *buf, P_char ch)
 			else
 			{
 				af.level = GET_LEVEL(ch);
+			}
+
+			if (aff_vers > 8)
+			{
+				af.ward_source_uid = GET_ULL(buf);
+				af.ward_full_duration = GET_INTE(buf);
+				af.ward_capacity = static_cast<int64_t>(GET_ULL(buf));
+				af.ward_capacity_max = static_cast<int64_t>(GET_ULL(buf));
+				af.ward_refresh_remaining = GET_INTE(buf);
+				af.ward_source_type = GET_BYTE(buf);
+				af.ward_source_worn = GET_BYTE(buf);
+				af.ward_active = GET_BYTE(buf);
 			}
 
 			// Duration saved as seconds for short affects, but we want to store duration as pulses in game.

@@ -630,6 +630,14 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		affect.bitvector3 = entry.bitvectors[2];
 		affect.bitvector4 = entry.bitvectors[3];
 		affect.bitvector5 = entry.bitvectors[4];
+		affect.ward_source_uid = entry.ward_source_uid;
+		affect.ward_full_duration = entry.ward_full_duration;
+		affect.ward_capacity = entry.ward_capacity;
+		affect.ward_capacity_max = entry.ward_capacity_max;
+		affect.ward_refresh_remaining = entry.ward_refresh_remaining;
+		affect.ward_source_type = entry.ward_source_type;
+		affect.ward_source_worn = entry.ward_source_worn;
+		affect.ward_active = entry.ward_active;
 		if (!entry.wear_off_character.empty() || !entry.wear_off_room.empty())
 			affect_to_char_with_messages(ch, &affect, entry.wear_off_character.c_str(),
 						     entry.wear_off_room.c_str());
