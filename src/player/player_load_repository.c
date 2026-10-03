@@ -542,32 +542,45 @@ bool load_components(MYSQL *connection, const player_load_request &request,
 					 static_cast<uint8_t>(unsigned_value(row[2])) });
 			       return true;
 		       }) ||
-	    !load_rows(connection,
-		       "SELECT type,duration,flags,modifier,location,level,bitvector1,bitvector2,"
-		       "bitvector3,bitvector4,bitvector5,custom_msg_char,custom_msg_room FROM "
-		       "player_affects WHERE pid=" +
-			       pid + " ORDER BY id",
-		       result,
-		       [&](MYSQL_ROW row)
-		       {
-			       player_affect_snapshot affect = {};
-			       affect.type = static_cast<int16_t>(signed_value(row[0]));
-			       affect.duration = static_cast<int32_t>(signed_value(row[1]));
-			       affect.flags = static_cast<uint32_t>(unsigned_value(row[2]));
-			       affect.modifier = static_cast<int32_t>(signed_value(row[3]));
-			       affect.location = static_cast<uint8_t>(unsigned_value(row[4]));
-			       affect.level = static_cast<uint16_t>(unsigned_value(row[5]));
-			       for (size_t index = 0; index < affect.bitvectors.size(); ++index)
-				       affect.bitvectors[index] = unsigned_value(row[6 + index]);
-			       affect.wear_off_character = row[11] ? row[11] : "";
-			       affect.wear_off_room = row[12] ? row[12] : "";
-			       if (affect.wear_off_character.size() >
-					   PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
-				   affect.wear_off_room.size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES)
-				       return false;
-			       result->snapshot.affects.push_back(std::move(affect));
-			       return true;
-		       }) ||
+	    !load_rows(
+		    connection,
+		    "SELECT type,duration,flags,modifier,location,level,bitvector1,bitvector2,"
+		    "bitvector3,bitvector4,bitvector5,custom_msg_char,custom_msg_room,"
+		    "ward_source_uid,ward_full_duration,ward_capacity,ward_capacity_max,"
+		    "ward_refresh_remaining,ward_source_type,ward_source_worn,ward_active FROM "
+		    "player_affects WHERE pid=" +
+			    pid + " ORDER BY id",
+		    result,
+		    [&](MYSQL_ROW row)
+		    {
+			    player_affect_snapshot affect = {};
+			    affect.type = static_cast<int16_t>(signed_value(row[0]));
+			    affect.duration = static_cast<int32_t>(signed_value(row[1]));
+			    affect.flags = static_cast<uint32_t>(unsigned_value(row[2]));
+			    affect.modifier = static_cast<int32_t>(signed_value(row[3]));
+			    affect.location = static_cast<uint8_t>(unsigned_value(row[4]));
+			    affect.level = static_cast<uint16_t>(unsigned_value(row[5]));
+			    for (size_t index = 0; index < affect.bitvectors.size(); ++index)
+				    affect.bitvectors[index] = unsigned_value(row[6 + index]);
+			    affect.wear_off_character = row[11] ? row[11] : "";
+			    affect.wear_off_room = row[12] ? row[12] : "";
+			    affect.ward_source_uid = unsigned_value(row[13]);
+			    affect.ward_full_duration = static_cast<int32_t>(signed_value(row[14]));
+			    affect.ward_capacity = static_cast<int64_t>(unsigned_value(row[15]));
+			    affect.ward_capacity_max =
+				    static_cast<int64_t>(unsigned_value(row[16]));
+			    affect.ward_refresh_remaining =
+				    static_cast<int32_t>(signed_value(row[17]));
+			    affect.ward_source_type = static_cast<uint8_t>(unsigned_value(row[18]));
+			    affect.ward_source_worn = static_cast<uint8_t>(unsigned_value(row[19]));
+			    affect.ward_active = static_cast<uint8_t>(unsigned_value(row[20]));
+			    if (affect.wear_off_character.size() >
+					PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
+				affect.wear_off_room.size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES)
+				    return false;
+			    result->snapshot.affects.push_back(std::move(affect));
+			    return true;
+		    }) ||
 	    !load_rows(connection,
 		       "SELECT mob_vnum,times_researched,UNIX_TIMESTAMP(last_researched),"
 		       "UNIX_TIMESTAMP(last_shapechanged) FROM player_shapechanges WHERE pid=" +

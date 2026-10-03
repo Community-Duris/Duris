@@ -311,6 +311,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/nevent_periodic.o \
 				 combat/training_dummy.o \
 				 combat/attack_continuation.o \
+				 combat/spell_wards.o \
 				 combat/hit_calculations.o \
 				 combat/defense_resolution.o \
 				 combat/attack_cadence.o \

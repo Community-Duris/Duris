@@ -75,9 +75,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'towns','world_quest_accomplished','zone_story_quest_state','zone_touch_outcome',"
 	"'zone_touch_outcome_participant','zone_touches','zone_trophy','zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"db83ea95a2f3e351c001117f0bb740c0222088e346636988563c760d6d284952";
+	"6842158b93b39c85edc9b46551965c27f49bb3a8cf628c5f2e649719ac982ab6";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"d66438ad5cbfe44eb3ad664951097ebc5433938cc7d4c1dd4ce0c3a713d26fae";
+	"47b25f2578284bda690a8292036e9c8bf8a01fec346fb0da5ed4a9419b096350";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced by
@@ -105,31 +105,31 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * a durable quest XP receipt mask and migration 0048 adds per-recipient XP
  * entitlements. Migration 0049 adds player spell-effect receipts, 0051 adds
  * player item runtime state, and 0052 indexes quest item witness reads. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0055_sql_room_item_payload";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 55;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0056_spell_ward_durability";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 56;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"47608d67ec12401d2de2f74174b7739cbce7d942153618f0dbc4b6287769b877";
+	"e53e06ca7a5b482b6efee950a4db69fdb7d796b7ff71ed495e67bd3194133bb1";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"bf2a03adde513bd954ac07e552ceb0329d4c98a056a7e30d05868b96fa07ac67";
+	"e3fbff0b062da55fc7231411beefe8be216341755df7fa088ba64b1f86653551";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"4b8e5879e4d59468d9f66f533c981fab89122e1154fd2f8bd1d5964079a8ec27";
-constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID = "0055_sql_room_item_payload";
-constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 55;
+	"fd82b219e1bdf95804fa6ee8dfe3d3c0fd29f59e910da83bf82c7e816f06cc60";
+constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID = "0056_spell_ward_durability";
+constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 56;
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_APPLY_CHECKSUM =
-	"47608d67ec12401d2de2f74174b7739cbce7d942153618f0dbc4b6287769b877";
+	"e53e06ca7a5b482b6efee950a4db69fdb7d796b7ff71ed495e67bd3194133bb1";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM =
-	"bf2a03adde513bd954ac07e552ceb0329d4c98a056a7e30d05868b96fa07ac67";
+	"e3fbff0b062da55fc7231411beefe8be216341755df7fa088ba64b1f86653551";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM =
-	"d764ffa0c5a4eb79938477b01e997c7a9d866d31d8b7a5d4f5ca119752162fe4";
+	"c778f9d5971418cc193c9663814f5af59872b363db9394da35ad2fa923372bd9";
 /* Master recorded runtime state at 0031; its accounting upgrade retains that prefix. */
-constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID = "0055_sql_room_item_payload";
-constexpr unsigned RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 55;
+constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID = "0056_spell_ward_durability";
+constexpr unsigned RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 56;
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_APPLY_CHECKSUM =
-	"47608d67ec12401d2de2f74174b7739cbce7d942153618f0dbc4b6287769b877";
+	"e53e06ca7a5b482b6efee950a4db69fdb7d796b7ff71ed495e67bd3194133bb1";
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_VERIFY_CHECKSUM =
-	"bf2a03adde513bd954ac07e552ceb0329d4c98a056a7e30d05868b96fa07ac67";
+	"e3fbff0b062da55fc7231411beefe8be216341755df7fa088ba64b1f86653551";
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HISTORY_CHECKSUM =
-	"b2c2b40ba9a0688f7c571e69def9d0ff55cd2c0cafde6d16cebb711c75d06b89";
+	"393a92f807f31f7b3810a6e415a05ad5d305d02fd590112415f4e5ed64224dc3";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_SQL =
 	"SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING utf8mb4))),16,"
 	"'0')),CONVERT(migration_id USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(sequ"
@@ -142,7 +142,7 @@ constexpr const char *RUNTIME_MIGRATION_HISTORY_SQL =
 	"RT(compatibility USING utf8mb4))),16,'0')),CONVERT(compatibility USING utf8mb4),UNHEX(L"
 	"PAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))),16,'0')),CON"
 	"VERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history ORDER BY seq"
-	"uence_number LIMIT 56";
+	"uence_number LIMIT 57";
 constexpr const char *RUNTIME_EXTRA_DESCRIPTION_GENERATION_SQL =
 	"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN "
 	"('player_item_extra_descr','player_pet_item_extra_descr') AND column_name='description_sha256' AND "

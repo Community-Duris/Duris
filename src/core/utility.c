@@ -4984,6 +4984,10 @@ P_char char_in_room(int room)
 bool spell_can_affect_char(P_char ch, int spl)
 {
 	int i = GetLowestSpellCircle_p(spl);
+	// Finite player wards can be worn down by these spells. Selection must
+	// remain read-only; the damage stage owns eligibility and capacity wear.
+	if (IS_PC(ch))
+		return true;
 
 	if (spl == SPELL_MOLTEN_SPRAY && IS_UNDEADRACE(ch))
 		return true;
