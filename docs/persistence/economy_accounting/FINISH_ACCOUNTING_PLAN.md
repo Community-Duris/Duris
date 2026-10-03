@@ -1,6 +1,6 @@
 # Finish accounting implementation plan
 
-Updated: 2026-10-02. **Status: accounting activation and release remain blocked.**
+Updated: 2026-10-03. **Status: accounting activation and release remain blocked.**
 SQL is the first delivery target; flatfile parity follows. This plan tracks the
 current work. [Implementation history](FINISH_ACCOUNTING_IMPLEMENTATION_HISTORY.md)
 preserves the dated checkpoints and their original evidence.
@@ -11,7 +11,8 @@ The damaged production database requires the separate
 before any production cutover.
 
 Current integration and native qualification are recorded in the
-[October 2 review status](REVIEW_STATUS_2026-10-02.md), with earlier results in the
+[October 3 review status](REVIEW_STATUS_2026-10-03.md), with earlier results in the
+[October 2 review status](REVIEW_STATUS_2026-10-02.md) and
 [October 1 review status](REVIEW_STATUS_2026-10-01.md). Canonical, staging, and
 master-prefix histories now retain 53 receipts. The staging fork preserves its
 first 45 and appends eight; the master fork preserves its first 31 and appends
@@ -324,9 +325,12 @@ restart remain open. Existing bank/shop/UID owner checks pass. Remote character-
 16ce1f2fb now pass fresh strict SQL/flatfile/pfile builds, incoming owner suites,
 both real SQL deletion journeys and all ten native recovery cases. Shifted
 writer locations and hardcoded assertions are refreshed after exact identity
-checks; all 54 contracts pass without route upgrades. Whole-account quest-alias
-erasure remains unfinished. Checked quest serialization now rejects allocation-truncated
-state on its separately qualified native prefix; final alias journeys remain open. A new integrated broad run is pinned to published 0be1cdf30, rather
+checks; all 54 contracts pass without route upgrades. Flatfile whole-account quest-alias
+erasure now passes the complete uncertain/durable publication and second-restart
+journeys on native 27c8bb63 after Telnet integration. Checked quest serialization
+rejects allocation-truncated state. Native SQL whole-account deletion still
+retains quest aliases; protected history, typed retention and other lifecycle
+gates remain open. See the October 3 checkpoint for the exact proof boundary. A new integrated broad run is pinned to published 0be1cdf30, rather
 than the uncommitted acknowledgement candidate. Current broad and full-feature
 qualification remain open. The unchanged frozen full-world retry passes inspector
 compilation but times out in its 600-second server-build stage before gameplay.

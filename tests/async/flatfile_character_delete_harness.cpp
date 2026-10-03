@@ -21,6 +21,7 @@
 #include "flatfile/flatfile_shop_trade_materialization.h"
 #include "flatfile/flatfile_world_item_repository.h"
 #include "flatfile/flatfile_world_quest_history.h"
+#include "flatfile/flatfile_zone_story_quest_state.h"
 #include "player/player_snapshot_codec.h"
 
 #include <algorithm>
@@ -119,6 +120,12 @@ static void establish(const fs::path &root, bool establish_boons, bool player_lo
 	require(flatfile_world_quest_record(root.string().c_str(), 1, 3001, 50, 1700000000,
 					    &error) == flatfile_world_quest_result::ok,
 		"world-quest history baseline failed: " + error);
+	require(flatfile_zone_story_quest_state_save(
+			root.string().c_str(), 1,
+			"ZSQF|1\nN|1|1|506c61796572|1\nN|7|1|4f6c64416c696173|1\n"
+			"N|1|2|5365636f6e64|1\nN|1|99|556e72656c61746564|1\n",
+			&error) == flatfile_zone_story_quest_result::ok,
+		"zone-story aliases baseline failed: " + error);
 	require(flatfile_artifact_establish(
 			root.string(),
 			{ { 3001, true, FLATFILE_ARTIFACT_ON_PLAYER, 1, 9999, 1, 100, 1, 8888, 1 },
@@ -583,6 +590,70 @@ static void accounting_deletion_refusals(const fs::path &base)
 		"paused empty-account deletion regressed");
 }
 
+/* Personal aliases share every interruption boundary of the deletion journal. */
+static void zone_story_erasure_faults(const fs::path &base)
+{
+	const auto corrupt_root = base / "zone-story-corrupt";
+	establish(corrupt_root, true);
+	save_account(corrupt_root, 2);
+	const auto original = deletion_contents(corrupt_root);
+	const auto path = corrupt_root / "domains/zone-story-quests.state";
+	{
+		std::ofstream output(path, std::ios::binary | std::ios::trunc);
+		output << "corrupt";
+	}
+	const auto corrupt = deletion_contents(corrupt_root);
+	std::string error;
+	require(flatfile_account_delete(corrupt_root.string(), "Account", &error) ==
+			flatfile_account_delete_result::invalid,
+		"corrupt zone-story alias authority admitted account erasure");
+	require(deletion_contents(corrupt_root) == corrupt,
+		"alias refusal changed account, character or shared authority");
+	{
+		const auto &bytes = original.at("domains/zone-story-quests.state");
+		std::ofstream output(path, std::ios::binary | std::ios::trunc);
+		output.write(bytes.data(), bytes.size());
+	}
+	require(flatfile_account_delete(corrupt_root.string(), "Account", &error) ==
+			flatfile_account_delete_result::ok,
+		"repaired alias authority did not complete fenced account deletion");
+
+	// The maximal fixture stages 18 operations, including zone-story aliases.
+	for (unsigned boundary = 1; boundary <= 18; ++boundary)
+	{
+		const auto root = base / ("zone-story-boundary-" + std::to_string(boundary));
+		establish(root, true);
+		const auto index = std::to_string(boundary);
+		setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION", index.c_str(), 1);
+		require(flatfile_character_delete(root.string(), 1, "Player", &error) ==
+				flatfile_character_delete_result::io_error,
+			"zone-story deletion did not interrupt at a native operation");
+		unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION");
+		require(fs::exists(root / "domains/.critical-authority-transaction"),
+			"interrupted alias erasure lost its journal");
+		require(flatfile_character_delete(root.string(), 1, "Player", &error) ==
+				flatfile_character_delete_result::already_deleted,
+			"alias erasure recovery did not finish exactly once");
+		std::string state;
+		require(flatfile_zone_story_quest_state_load(root.string().c_str(), 1, &state,
+							     &error) ==
+					flatfile_zone_story_quest_result::ok &&
+				state.find("N|1|1|") == std::string::npos &&
+				state.find("N|7|1|") == std::string::npos &&
+				state.find("N|1|99|") != std::string::npos &&
+				!fs::exists(root / "players/1.snapshot") &&
+				!fs::exists(root / "domains/.critical-authority-transaction"),
+			"recovered deletion retained aliases, snapshot or journal, or erased another PID");
+		const auto recovered = deletion_contents(root);
+		require(flatfile_character_delete(root.string(), 1, "Player", &error) ==
+					flatfile_character_delete_result::already_deleted &&
+				deletion_contents(root) == recovered,
+			"completed alias deletion retry changed native authority");
+	}
+	std::cout
+		<< "zone-story erasure: corrupt refusal/repair and all 18 journal boundaries passed\n";
+}
+
 /* Exercise interruption recovery and atomic character/account erasure. */
 int main(int argc, char **argv)
 {
@@ -624,6 +695,7 @@ int main(int argc, char **argv)
 	}
 	require(argc == 2, "state root argument required");
 	accounting_deletion_refusals(fs::path(argv[1]));
+	zone_story_erasure_faults(fs::path(argv[1]));
 	const fs::path root = fs::path(argv[1]) / "recover";
 	establish(root, true);
 	std::string error;
@@ -655,6 +727,15 @@ int main(int argc, char **argv)
 	require(flatfile_player_domain_load(root.string(), 1, "Account", 0, &domain, &error) ==
 			flatfile_player_domain_result::not_found,
 		"recovered deletion retained player domain");
+	std::string quest_state;
+	require(flatfile_zone_story_quest_state_load(root.string().c_str(), 1, &quest_state,
+						     &error) ==
+				flatfile_zone_story_quest_result::ok &&
+			quest_state.find("N|1|1|") == std::string::npos &&
+			quest_state.find("N|7|1|") == std::string::npos &&
+			quest_state.find("N|1|2|") != std::string::npos &&
+			quest_state.find("N|1|99|") != std::string::npos,
+		"recovered deletion retained personal quest aliases or erased another PID");
 	std::vector<int32_t> values;
 	require(flatfile_recipe_list(root.string(), 1, &values, &error) ==
 				flatfile_recipe_result::ok &&
@@ -818,6 +899,14 @@ int main(int argc, char **argv)
 				flatfile_account_result::ok &&
 			!account_exists,
 		"account deletion retained the credential record");
+	require(flatfile_zone_story_quest_state_load(account.string().c_str(), 1, &quest_state,
+						     &error) ==
+				flatfile_zone_story_quest_result::ok &&
+			quest_state.find("N|1|1|") == std::string::npos &&
+			quest_state.find("N|7|1|") == std::string::npos &&
+			quest_state.find("N|1|2|") == std::string::npos &&
+			quest_state.find("N|1|99|") != std::string::npos,
+		"account deletion retained personal quest aliases or erased another PID");
 	for (int32_t pid : { 1, 2 })
 	{
 		require(flatfile_identity_lookup_pid(account.string(), pid, &identity, &error) ==
