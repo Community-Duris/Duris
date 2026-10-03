@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Execute the SQL account confirmation owner at the admission/fence boundary.
+"""Execute the SQL account confirmation owner at its durable cleanup boundaries.
 
 The actual production function is compiled with injected authority failures.
 This complements real native SQL journeys; it does not qualify typed erasure.
@@ -24,6 +24,7 @@ else:
 
 prelude = r'''
 #include <cctype>
+#include <cstdint>
 #include <cerrno>
 #include <cstring>
 #include <cstdlib>
@@ -39,10 +40,13 @@ struct descriptor_data { P_acct account; int state; };
 using P_desc = descriptor_data *;
 struct account_deletion_identity { int pid = 1; std::string name = "Fixture"; };
 constexpr char ACCOUNT_BLOCK_DELETION = 2;
-constexpr int CON_DISPLAY_ACCT_MENU = 1, CON_FLUSH = 2, AVATAR = 3;
+constexpr int CON_DISPLAY_ACCT_MENU = 1, CON_FLUSH = 2, AVATAR = 3, LOG_FILE = 4;
 #define STATE(d) ((d)->state)
 bool denied = false, transaction_active = false, fence_ok = true, backend_ok = false;
 int leases = 0, admissions = 0, writes = 0, closes = 0, captures = 0, removals = 0, frees = 0;
+int backend_calls = 0, quest_calls = 0;
+uint32_t refused_quest_pid = 0;
+bool drained = false, backend_started = false, first_alias = true, second_alias = true;
 char durable_block = 1;
 std::string messages;
 void require(bool value, const char *message) {
@@ -62,6 +66,7 @@ void SEND_TO_Q(const char *text, P_desc) { messages += text; }
 void display_account_deletion_confirmation(P_desc, bool) {}
 void display_account_menu(P_desc, char *) {}
 template<class... T> void statuslog(int, const char *, T...) {}
+template<class... T> void logit(int, const char *, T...) {}
 template<class... T> void persistence_alert(T...) {}
 int write_account(P_acct account) {
     require(leases == 1, "account fence was written without held native admission");
@@ -69,18 +74,44 @@ int write_account(P_acct account) {
     if (!fence_ok) return -1;
     durable_block = account->acct_blocked; return 1;
 }
-bool capture_account_deletion_identities(P_desc, std::vector<account_deletion_identity> *) {
-    ++captures; return true;
+bool capture_account_deletion_identities(P_desc, std::vector<account_deletion_identity> *identities) {
+    ++captures;
+    backend_started = false;
+    *identities = {{11, "FirstFixture"}, {22, "SecondFixture"}};
+    return true;
 }
 bool account_deletion_locker_runtime_active(const std::string &,
                                           const std::vector<account_deletion_identity> &) { return false; }
 void close_other_account_sessions(P_desc) { ++closes; }
 struct account_deletion_drain_guard {
-    bool drain() { require(leases == 0, "initial admission was retained across worker drain"); return true; }
+    ~account_deletion_drain_guard() { drained = false; }
+    bool drain() {
+        require(leases == 0, "initial admission was retained across worker drain");
+        drained = true; return true;
+    }
 };
+namespace zone_story_quest_runtime {
+bool erase_character(uint32_t pid, std::string *error) {
+    require(drained && durable_block == ACCOUNT_BLOCK_DELETION,
+            "quest cleanup ran before the irreversible fence and worker drain");
+    require(!backend_started, "character identities were destroyed before quest cleanup");
+    ++quest_calls;
+    if (pid == refused_quest_pid) { *error = "injected quest persistence failure"; return false; }
+    if (pid == 11) first_alias = false;
+    else if (pid == 22) second_alias = false;
+    else require(false, "quest cleanup used an uncaptured identity");
+    return true;
+}
+}
 void flush_pending_ship_saves() {}
 bool drain_pending_ship_saves() { return true; }
-bool sql_delete_account(const char *) { return backend_ok; }
+bool sql_delete_account(const char *) {
+    ++backend_calls;
+    backend_started = true;
+    require(drained && !first_alias && !second_alias,
+            "destructive backend ran before every retained quest identity was durably erased");
+    return backend_ok;
+}
 void remove_deleted_account_runtime(P_desc, const std::vector<account_deletion_identity> &) { ++removals; }
 void account_recovery_forget(const char *) {}
 P_acct free_account(P_acct) { ++frees; return nullptr; }
@@ -97,13 +128,16 @@ int main() {
         descriptor.account = &account; descriptor.state = 0;
         denied = transaction_active = false; fence_ok = true; backend_ok = false;
         admissions = writes = closes = captures = removals = frees = 0; messages.clear();
+        backend_calls = quest_calls = 0; refused_quest_pid = 0;
+        drained = backend_started = false; first_alias = second_alias = true;
     };
     reset();
     denied = true;
     verify_delete_account(&descriptor, name);
     require(account.acct_blocked == 1 && durable_block == 1 && writes == 0,
             "native admission refusal established the permanent account fence");
-    require(admissions == 1 && closes == 0 && captures == 0 && removals == 0 && frees == 0,
+    require(admissions == 1 && closes == 0 && captures == 0 && removals == 0 && frees == 0 &&
+            quest_calls == 0 && backend_calls == 0,
             "admission refusal reached account cleanup or session publication");
     require(descriptor.state == CON_DISPLAY_ACCT_MENU && leases == 0 &&
             messages.find("no deletion fence was written") != std::string::npos,
@@ -136,8 +170,25 @@ int main() {
     verify_delete_account(&descriptor, name);
     require(admissions == 1 && writes == 1 && captures == 1 && closes == 1 &&
             removals == 1 && frees == 1 && !descriptor.account &&
-            descriptor.state == CON_FLUSH && leases == 0,
+            descriptor.state == CON_FLUSH && leases == 0 && backend_calls == 1 &&
+            quest_calls == 2 && !first_alias && !second_alias && !drained,
             "confirmed deletion did not publish cleanup exactly once");
+    reset(); backend_ok = true; refused_quest_pid = 22;
+    verify_delete_account(&descriptor, name);
+    require(backend_calls == 0 && removals == 0 && frees == 0 && descriptor.account == &account &&
+            captures == 1 && quest_calls == 2 && !first_alias && second_alias && !drained &&
+            account.acct_blocked == ACCOUNT_BLOCK_DELETION && durable_block == ACCOUNT_BLOCK_DELETION,
+            "quest persistence refusal destroyed retry identities or released the deletion fence");
+    verify_delete_account(&descriptor, cancel);
+    require(backend_calls == 0 && descriptor.account == &account && second_alias &&
+            messages.find("cannot be cancelled") != std::string::npos,
+            "partially completed quest cleanup made the irreversible request cancellable");
+    refused_quest_pid = 0;
+    verify_delete_account(&descriptor, name);
+    require(captures == 2 && admissions == 1 && writes == 1 && backend_calls == 1 &&
+            quest_calls == 4 && !first_alias && !second_alias && removals == 1 && frees == 1 &&
+            !descriptor.account && descriptor.state == CON_FLUSH && !drained && leases == 0,
+            "fenced retry failed to recapture and idempotently erase all quest identities");
     reset();
     verify_delete_account(&descriptor, cancel);
     require(admissions == 0 && writes == 0 && account.acct_blocked == 1,
@@ -146,7 +197,7 @@ int main() {
     verify_delete_account(&descriptor, mismatch);
     require(admissions == 0 && writes == 0 && account.acct_blocked == 1,
             "wrong-case confirmation acquired deletion authority");
-    std::cout << "PASS: SQL account confirmation admission/fence failure, retained retry and publication\n";
+    std::cout << "PASS: account admission/fence failures, durable quest cleanup before identity destruction, retained retry and publication\n";
 }
 '''
 

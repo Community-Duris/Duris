@@ -117,7 +117,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1943
+          1944
         ],
         "file": "src/account/account.c",
         "function": "cleanup_temp_char",

@@ -197,6 +197,40 @@ def run(server, inspector, fence_fault=None):
                     assert snapshot.read_bytes() == original_snapshot
                     assert retained.read_bytes() == original_quest_state
                     assert not (state / "domains/.critical-authority-transaction").exists()
+                    # Refuse only quest-state persistence, after native fence
+                    # recovery has succeeded. Account identities must survive
+                    # so this irreversible request remains completable.
+                    fenced_accounts = account_images()
+                    quest_lock = state / "domains/.zone-story-quests.lock"
+                    assert quest_lock.is_file()
+                    quest_lock.chmod(0o601)
+                    try:
+                        client.send(journey.ACCOUNT)
+                        client.expect("Account deletion is waiting for quest-state cleanup.", timeout=30)
+                        client.expect("to retry completion:")
+                        assert snapshot.read_bytes() == original_snapshot
+                        assert account_images() == fenced_accounts
+                        assert retained.read_bytes() == original_quest_state
+                        assert b"were permanently deleted." not in client.transcript
+                        client.send("cancel")
+                        client.expect("Deletion has already started and cannot be cancelled.", timeout=30)
+                        client.expect("to retry completion:")
+                    finally:
+                        quest_lock.chmod(0o600)
+                    client.close()
+                    client = None
+                    stop()
+                    process = boot()
+                    client = journey.MudClient(plain)
+                    client.expect("Please enter your account name:")
+                    client.send(journey.ACCOUNT)
+                    client.expect("Please enter your password:")
+                    client.send(journey.PASSWORD)
+                    client.expect("to retry completion:", timeout=30)
+                    assert snapshot.read_bytes() == original_snapshot
+                    assert account_images() == fenced_accounts
+                    assert retained.read_bytes() == original_quest_state
+                    print(f"Native {fence_fault} quest-state persistence refusal preserved retry identities and aliases across cold restart", flush=True)
                     client.send(journey.ACCOUNT)
                     client.expect("Your account and all of its characters were permanently deleted.", timeout=30)
                     assert client.transcript.count(b"were permanently deleted.") == 1
