@@ -75,6 +75,7 @@ struct produced_purchase_sequence
 	bool batch = false;
 	std::string item_description = {};
 	std::string destination_description = {};
+	bool refund_pending = false;
 };
 
 static std::unordered_map<uint32_t, produced_purchase_sequence> produced_purchase_sequences;
@@ -156,8 +157,13 @@ static const char *shop_purchase_parse(char *argument, shop_purchase_request &re
 	if (!argument || strlen(argument) >= MAX_INPUT_LENGTH)
 		return "Invalid purchase arguments; nothing was purchased or charged.\r\n";
 	argument = one_argument(argument, request.item);
+	while (argument && isspace(static_cast<unsigned char>(*argument)))
+		++argument;
+	const bool has_destination = argument && *argument;
 	char token[MAX_INPUT_LENGTH], count[MAX_INPUT_LENGTH];
 	argument = lohrr_chop(argument, token);
+	if (has_destination && !*token)
+		return "Name a destination container; nothing was purchased or charged.\r\n";
 	if (!strcmp(token, "quantity"))
 	{
 		request.batch = true;
@@ -231,7 +237,16 @@ static void shop_purchase_report(P_char ch, const produced_purchase_sequence &se
 	if (!ch || !sequence.batch)
 		return;
 	char message[MAX_STRING_LENGTH];
-	if (delayed)
+	if (sequence.refund_pending)
+		snprintf(
+			message, sizeof(message),
+			"Purchase stopped: %d of %d copies of %s delivered to %s; %s charged in total, including %s being refunded for 1 undelivered copy. The remaining %d were not charged because %s.\r\n",
+			sequence.completed, sequence.requested, sequence.item_description.c_str(),
+			sequence.destination_description.c_str(),
+			shop_purchase_price(sequence.price * (sequence.completed + 1)).c_str(),
+			shop_purchase_price(sequence.price).c_str(), sequence.remaining - 1,
+			reason);
+	else if (delayed)
 		snprintf(
 			message, sizeof(message),
 			"Purchase delivery pending: %d of %d copies of %s delivered to %s; %s charged in total. "
@@ -630,12 +645,13 @@ static void shop_creation_grant_completion(P_char ch, uint64_t item_uid, bool co
 	sequence.current_item_uid = 0;
 	if (!committed)
 	{
+		sequence.refund_pending = sequence.payment_committed && sequence.price > 0;
 		if (sequence.payment_committed)
 			shop_creation_refund(ch, sequence);
 		sequence.payment_committed = false;
 		const produced_purchase_sequence stopped = sequence;
 		produced_purchase_sequences.erase(found);
-		shop_purchase_report(ch, stopped, false, shop_purchase_stop_reason(ch, stopped));
+		shop_purchase_report(ch, stopped, false, "delivery was declined");
 		if (!stopped.batch)
 			send_to_char(
 				stopped.price > 0 ?
@@ -740,6 +756,7 @@ static void shop_creation_payment_completion(P_char ch, bool committed,
 		keeper = NULL;
 	if (!keeper || !selected || !shop_creation_submit_grant(ch, sequence))
 	{
+		sequence.refund_pending = sequence.price > 0;
 		shop_creation_refund(ch, sequence);
 		sequence.payment_committed = false;
 		if (selected && OBJ_NOWHERE(selected))

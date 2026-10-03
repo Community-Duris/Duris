@@ -131,7 +131,8 @@ Other wallet batch operations do not pass through item ownership:
   complete sequentially with the existing per-copy capacity checks and atomic
   payment/delivery rules; an entire order is not an all-or-nothing transaction.
   Full or stopped results give the delivered count and actual charge, with an
-  uncharged remainder and stop reason. A durable purchase awaiting live delivery
+  uncharged remainder and stop reason. A rejected SQL delivery after payment
+  identifies the charged copy and its pending refund. A durable purchase awaiting live delivery
   is charged and pending, not an uncharged failure: wait or reconnect and do not
   repeat the purchase. Batch output has one acceptance, one final summary, and
   at most one room event, with a separate delay notice if publication must wait.
