@@ -102,47 +102,33 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * a durable quest XP receipt mask and migration 0048 adds per-recipient XP
  * entitlements. Migration 0049 adds player spell-effect receipts, 0051 adds
  * player item runtime state, and 0052 indexes quest item witness reads. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0053_craft_progression";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 53;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0054_alchemy_publication";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 54;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"4b17920b26cad6762637a1f3e0d7cb13d997e2f163b550c56b24363efa45aff1";
+	"da69352e3ac62cdece4bcce661caa2fa98ad0c8ba3a487e1eed8211fb2629692";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"aacc5516aed02ca8b8b3115a2e8c22ef3f113b299723ea249034971ceb50417a";
+	"2bac3a0afe31dcc4468f525297a708b30ec05dfaa2e5e94832e1205e506a9b31";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"e63cdd39538481b97760af4893592341e1352674c8ee8e8d7f33a8d8ecbfae75";
-constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID = "0053_craft_progression";
-constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 53;
+	"ccd0c7b98d7f1c81b34d55864d79beaa3f114304a99952faf3ed51d8f4869c09";
+constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID = "0054_alchemy_publication";
+constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 54;
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_APPLY_CHECKSUM =
-	"4b17920b26cad6762637a1f3e0d7cb13d997e2f163b550c56b24363efa45aff1";
+	"da69352e3ac62cdece4bcce661caa2fa98ad0c8ba3a487e1eed8211fb2629692";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM =
-	"aacc5516aed02ca8b8b3115a2e8c22ef3f113b299723ea249034971ceb50417a";
+	"2bac3a0afe31dcc4468f525297a708b30ec05dfaa2e5e94832e1205e506a9b31";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM =
-	"e4e77237744a5074e7097ab93b9e50fee1ee1be74168afb3ad9356a7913acbfd";
+	"c13adbac18f4522e4a4b4e8fb7a59bc6ec487491f63761ca242d90ff576c9219";
 /* Master recorded runtime state at 0031; its accounting upgrade retains that prefix. */
-constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID = "0053_craft_progression";
-constexpr unsigned RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 53;
+constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID = "0054_alchemy_publication";
+constexpr unsigned RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 54;
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_APPLY_CHECKSUM =
-	"4b17920b26cad6762637a1f3e0d7cb13d997e2f163b550c56b24363efa45aff1";
+	"da69352e3ac62cdece4bcce661caa2fa98ad0c8ba3a487e1eed8211fb2629692";
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_VERIFY_CHECKSUM =
-	"aacc5516aed02ca8b8b3115a2e8c22ef3f113b299723ea249034971ceb50417a";
+	"2bac3a0afe31dcc4468f525297a708b30ec05dfaa2e5e94832e1205e506a9b31";
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HISTORY_CHECKSUM =
-	"20b2bb46c5d4f6cacf993186c9aded434ea7fb669df8252eff4e774443676399";
+	"644f14f346d869fa1e742f67834f18e9da7c45f8b6ee3972741fb3f33ee9ffe8";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_SQL =
-	"SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING "
-	"utf8mb4))),16,'0')),CONVERT(migration_id USING "
-	"utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(sequence_number AS CHAR) USING "
-	"utf8mb4))),16,'0')),CONVERT(CAST(sequence_number AS CHAR) USING "
-	"utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(description USING "
-	"utf8mb4))),16,'0')),CONVERT(description USING "
-	"utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(apply_checksum)) USING "
-	"utf8mb4))),16,'0')),CONVERT(LOWER(HEX(apply_checksum)) USING "
-	"utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(verify_checksum)) USING "
-	"utf8mb4))),16,'0')),CONVERT(LOWER(HEX(verify_checksum)) USING "
-	"utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(compatibility USING "
-	"utf8mb4))),16,'0')),CONVERT(compatibility USING "
-	"utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING "
-	"utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history "
-	"ORDER BY sequence_number LIMIT 54";
+	"SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING utf8mb4))),16,'0')),CONVERT(migration_id USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(sequence_number AS CHAR) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(description USING utf8mb4))),16,'0')),CONVERT(description USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(compatibility USING utf8mb4))),16,'0')),CONVERT(compatibility USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history ORDER BY sequence_number LIMIT 55";
 constexpr const char *RUNTIME_EXTRA_DESCRIPTION_GENERATION_SQL =
 	"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN "
 	"('player_item_extra_descr','player_pet_item_extra_descr') AND column_name='description_sha256' AND "

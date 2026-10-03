@@ -789,8 +789,19 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 			craft_recipe_continuation recipe;
 			if (!craft_recipe_continuation_decode(payload.continuation.data, &recipe) ||
 			    !craft_recipe_continuation_matches(recipe, payload) ||
-			    outputs.size() != 1 || outputs[0].object_uid != recipe.output_uid ||
-			    outputs[0].vnum != static_cast<int32_t>(recipe.recipe_vnum))
+			    (craft_recipe_is_alchemy(recipe.discipline) ?
+				     static_cast<uint32_t>(
+					     std::count_if(outputs.begin(), outputs.end(),
+							   [](const auto &output) {
+								   return output.parent_index ==
+									  PLAYER_SNAPSHOT_NO_PARENT;
+							   })) != recipe.output_count ||
+					     (!outputs.empty() &&
+					      outputs[0].object_uid != recipe.output_uid) :
+				     outputs.size() != 1 ||
+					     outputs[0].object_uid != recipe.output_uid ||
+					     outputs[0].vnum !=
+						     static_cast<int32_t>(recipe.recipe_vnum)))
 				return false;
 		}
 		for (const player_item_snapshot &output : outputs)

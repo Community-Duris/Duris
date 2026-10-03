@@ -530,6 +530,7 @@ def reconnect_character(
     *,
     account: str = ACCOUNT,
     character: str = CHARACTER,
+    allow_linkdead: bool = False,
 ) -> MudClient:
     client = MudClient(port)
     try:
@@ -546,7 +547,12 @@ def reconnect_character(
         client.send("1")
         client.expect(character)
         client.send("1")
-        client.expect("Play as")
+        if allow_linkdead:
+            entry, _ = client.expect_any(("Play as", "Reconnecting..."))
+            if entry == "Reconnecting...":
+                return client
+        else:
+            client.expect("Play as")
         client.send("y")
         if return_message:
             client.expect(return_message, timeout=30)

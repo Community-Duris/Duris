@@ -45,7 +45,8 @@ extern "C" int __wrap_mysql_real_query(MYSQL *connection, const char *query, uns
 	const int result = __real_mysql_real_query(connection, query, size);
 	if (commit && recovery_kill_commit == 2 && !result)
 		kill(getpid(), SIGKILL);
-	return economic_sql_commit_reply_loss_fixture::query_result(connection, query, size, result);
+	return economic_sql_commit_reply_loss_fixture::query_result(connection, query, size,
+								    result);
 }
 
 extern "C" unsigned int __wrap_mysql_errno(MYSQL *connection)
@@ -1126,9 +1127,9 @@ void check_sql_accounted_item_transfer(MYSQL *connection)
 		accounted_item_transfer(operation(133), give, lineage, epoch, 41);
 	admitted.publication_required = true;
 	economic_sql_commit_reply_loss_fixture::arm();
-	const critical_apply_result moved = exercise_sql_coordinator(
-		admitted, "item-native-commit-reply", false,
-		critical_apply_outcome::already_applied);
+	const critical_apply_result moved =
+		exercise_sql_coordinator(admitted, "item-native-commit-reply", false,
+					 critical_apply_outcome::already_applied);
 	economic_sql_commit_reply_loss_fixture::verify();
 	if (moved.outcome != critical_apply_outcome::already_applied || moved.error_code)
 		fprintf(stderr, "accounted item transfer failed: outcome=%u error=%u\n",
@@ -1955,6 +1956,14 @@ void check_accounted_craft_conservation(MYSQL *connection)
 	craft.items[1] = { 55202, 55201, 55201, 1, 103, item_custody_state::active };
 	craft.item_blob_size = encoded.size();
 	std::copy(encoded.begin(), encoded.end(), craft.item_blob.begin());
+	craft_recipe_continuation alchemy;
+	alchemy.player_pid = 552;
+	alchemy.discipline = craft_recipe_discipline::encrust;
+	alchemy.recipe_vnum = 552;
+	alchemy.output_uid = output.object_uid;
+	alchemy.output_count = 1;
+	craft.continuation.kind = item_transfer_continuation_kind::craft_recipe;
+	assert(craft_recipe_continuation_encode(alchemy, &craft.continuation.data));
 	const auto success = accounted_item_transfer(operation(69), craft, lineage, epoch, 552,
 						     economic_source_kind::crafting);
 	auto applied = critical_command_repository_apply(connection, success);
@@ -1964,6 +1973,9 @@ void check_accounted_craft_conservation(MYSQL *connection)
 			(unsigned)applied.failure_stage, mysql_error(connection));
 	assert(applied.outcome == critical_apply_outcome::applied && applied.error_code == 0);
 	assert(owner_revision(connection, owner) == 2);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM player_craft_progression WHERE pid=552 AND discipline=4 AND experience=0 AND applied_revision=0") ==
+	       1);
 	assert(scalar(connection,
 		      "SELECT COUNT(*) FROM item_current_owner WHERE item_uid IN(55201,55202) AND owner_type=8 AND state=2 AND item_revision=2 AND equipment_slot=0") ==
 	       2);
@@ -2034,11 +2046,17 @@ void check_accounted_craft_conservation(MYSQL *connection)
 	craft.items[0] = { 55203, 55203, 0, 1, output.vnum, item_custody_state::active };
 	craft.items[1] = { 55204, 55203, 55203, 1, child.vnum, item_custody_state::active };
 	craft.item_blob_size = 0;
+	alchemy.discipline = craft_recipe_discipline::encrust_failure;
+	alchemy.output_count = 0;
+	assert(craft_recipe_continuation_encode(alchemy, &craft.continuation.data));
 	const auto failure = accounted_item_transfer(operation(71), craft, lineage, epoch, 552,
 						     economic_source_kind::crafting);
 	assert(critical_command_repository_apply(reopened, failure).outcome ==
 	       critical_apply_outcome::applied);
 	assert(owner_revision(reopened, owner) == 3);
+	assert(scalar(reopened,
+		      "SELECT COUNT(*) FROM player_craft_progression WHERE pid=552 AND discipline=5 AND experience=0 AND applied_revision=0") ==
+	       1);
 	assert(scalar(reopened, "SELECT COUNT(*) FROM player_items WHERE pid=552") == 0);
 	assert(critical_command_repository_reconcile(reopened, failure).outcome ==
 	       critical_apply_outcome::already_applied);
@@ -2279,6 +2297,19 @@ void check_accounted_pouch_conservation(MYSQL *connection)
 			       player_snapshot_codec_result::ok);
 			payload.item_blob_size = bytes.size();
 			std::copy(bytes.begin(), bytes.end(), payload.item_blob.begin());
+		}
+		if (mode == chaos_pouch_usage_mode::generated)
+		{
+			craft_recipe_continuation terms;
+			terms.player_pid = 553;
+			terms.discipline = output ? craft_recipe_discipline::encrust :
+						    craft_recipe_discipline::encrust_failure;
+			terms.recipe_vnum = 400291;
+			terms.output_uid = payload.selected_item_uid;
+			terms.output_count = output ? 1 : 0;
+			terms.pouch_mutation = std::move(payload.continuation.data);
+			payload.continuation.kind = item_transfer_continuation_kind::craft_recipe;
+			assert(craft_recipe_continuation_encode(terms, &payload.continuation.data));
 		}
 		return accounted_item_transfer(operation(discriminator), payload, operation(67),
 					       operation(68), 553, economic_source_kind::crafting);

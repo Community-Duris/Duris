@@ -902,8 +902,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
                          "item.smelt_double", "item.npc_alchemist_vial_grant",
                          "item.thrusted_aura_decay", "item.enchant_failure_destroy"):
             self.assertEqual(self.routes[route_id]["disposition"], "runtime_mutation_route")
-            self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]
-                            ["must_block_on_activation"])
+            self.assertEqual(self.routes[route_id]["blocking_policy_after_activation"]
+                             ["must_block_on_activation"],
+                             route_id not in coverage.SCHEMA2_ALCHEMY_QUALIFIED_IDS)
         retired = {row["id"] for row in registry["retired_routes_551_661"]}
         self.assertTrue({"item.potion_mix", "item.potion_ingredients_sink",
                          "item.npc_alchemist_potion_grant", "item.poison_ingredients_sink",
@@ -912,10 +913,16 @@ class SplitEconomyActivationContract(unittest.TestCase):
         for route_id in coverage.SCHEMA2_CRAFT_IDS:
             self.assertTrue(self.routes[route_id]["current_critical_command_schema"]
                             ["schema_2_gameplay_producer_connected"])
-            self.assertTrue(self.routes[route_id]["blocking_policy_after_activation"]
-                            ["must_block_on_activation"])
+            qualified = route_id in coverage.SCHEMA2_ALCHEMY_QUALIFIED_IDS
+            self.assertEqual(self.routes[route_id]["blocking_policy_after_activation"]
+                             ["must_block_on_activation"], not qualified)
             self.assertEqual(self.routes[route_id]["blocking_policy_after_activation"]["decision"],
+                             "allow_qualified_native_alchemy" if qualified else
                              "block_until_active_craft_journeys")
+            if qualified:
+                self.assertTrue(all(backend["status"] == "qualified" for backend in
+                                    self.routes[route_id]["backend_qualification"].values()))
+                self.assertTrue(self.routes[route_id]["recovery_evidence"])
         self.assertEqual(self.routes["item.npc_alchemist_vial_grant"]
                          ["blocking_policy_after_activation"]["decision"],
                          "refuse_before_allocation_until_native_source_and_root_exist")

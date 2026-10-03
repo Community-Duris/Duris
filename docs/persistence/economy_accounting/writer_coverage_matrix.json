@@ -48,7 +48,7 @@
     "current_occurrences": 2815,
     "current_unique_path_line_family_sites": 2756,
     "draft_registry_census_complete": true,
-    "draft_source_commit": "4fffb07486c62cb8ea23fb4a39d3be46b9a3a521",
+    "draft_source_commit": "2ec15b79e8771164c35c6d39595531505a69e0fd",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
     "draft_unique_sites": 2756,
@@ -77,7 +77,7 @@
     "source_reachability": "Function definitions are located exactly; only specifically noted dormant symbols were confirmed definition-only. This matrix does not claim every callsite has been followed."
   },
   "playable_release_status": "BLOCKED",
-  "repository_head": "4fffb07486c62cb8ea23fb4a39d3be46b9a3a521",
+  "repository_head": "2ec15b79e8771164c35c6d39595531505a69e0fd",
   "routes": [
     {
       "blocking_policy_after_activation": {
@@ -588,7 +588,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1622
+          1597
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_enchant",
@@ -4216,7 +4216,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1688
+          1677
         ],
         "file": "src/classes/drannak.c",
         "function": "christmas_proc",
@@ -4273,7 +4273,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          811
+          800
         ],
         "file": "src/classes/drannak.c",
         "function": "create_recipe",
@@ -4283,10 +4283,42 @@
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
+      "backend_qualification": {
+        "flatfile": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        },
+        "mariadb": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        },
+        "mysql": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        }
+      },
       "blocking_policy_after_activation": {
-        "decision": "block_until_active_craft_journeys",
-        "must_block_on_activation": true,
-        "required_policy": "Physical crafts, pouch collection and virtual Encrust use the typed schema-2 owner, consumed-input crafting source, exact native retirement/admission and linked references on SQL and flatfile. Retained pouch counters share the native craft commit while preserving the original UID and custody. Native component, replay, rollback and held-publication proofs pass; qualify complete active-epoch server journeys before release."
+        "decision": "allow_qualified_native_alchemy",
+        "must_block_on_activation": false,
+        "required_policy": "Use the native schema-2 craft owner, exact input/output references, consumed-input source lifetime and durable alchemy publication receipt. Active flatfile, MySQL and MariaDB route journeys qualify retry, retained disconnect, copyover and cold recovery. This scoped proof does not authorize global activation or certify other crafts, NPC vial issuance or character initialization. Refuse unsupported metadata or stale custody before native mutation; never fall back to schema 1 under active authority."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
@@ -4344,7 +4376,7 @@
       "id": "class.drannak_pvp_store",
       "native_effects": {
         "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -4352,19 +4384,26 @@
         ]
       },
       "reason": "item_create",
+      "recovery_evidence": [
+        "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py",
+        "tests/async/test_issue_551_flatfile_craft.py",
+        "tests/async/item_transfer_mysql_harness.cpp"
+      ],
       "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          390
+          372
         ],
         "file": "src/classes/drannak.c",
         "function": "pvp_store",
         "original_draft_symbol": "pvp_store"
       },
-      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "source_classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -4415,7 +4454,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          886
+          875
         ],
         "file": "src/classes/drannak.c",
         "function": "random_recipe",
@@ -4472,7 +4511,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          927
+          916
         ],
         "file": "src/classes/drannak.c",
         "function": "random_zone_item",
@@ -14216,7 +14255,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1012
+          1027
         ],
         "file": "src/guild/guild.c",
         "function": "do_practice",
@@ -14275,7 +14314,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          495
+          510
         ],
         "file": "src/guild/guild.c",
         "function": "RobCash",
@@ -16481,7 +16520,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1473
+          1484
         ],
         "file": "src/item/item_transfer_command.c",
         "function": "item_transfer_command_build",
@@ -17061,8 +17100,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2870,
-          2882
+          2884,
+          2896
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17677,7 +17716,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1771
+          1746
         ],
         "file": "src/classes/salchemist.c",
         "function": "event_enchant",
@@ -17687,10 +17726,42 @@
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
+      "backend_qualification": {
+        "flatfile": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        },
+        "mariadb": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        },
+        "mysql": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        }
+      },
       "blocking_policy_after_activation": {
-        "decision": "block_until_active_craft_journeys",
-        "must_block_on_activation": true,
-        "required_policy": "Physical crafts, pouch collection and virtual Encrust use the typed schema-2 owner, consumed-input crafting source, exact native retirement/admission and linked references on SQL and flatfile. Retained pouch counters share the native craft commit while preserving the original UID and custody. Native component, replay, rollback and held-publication proofs pass; qualify complete active-epoch server journeys before release."
+        "decision": "allow_qualified_native_alchemy",
+        "must_block_on_activation": false,
+        "required_policy": "Use the native schema-2 craft owner, exact input/output references, consumed-input source lifetime and durable alchemy publication receipt. Active flatfile, MySQL and MariaDB route journeys qualify retry, retained disconnect, copyover and cold recovery. This scoped proof does not authorize global activation or certify other crafts, NPC vial issuance or character initialization. Refuse unsupported metadata or stale custody before native mutation; never fall back to schema 1 under active authority."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
@@ -17750,7 +17821,7 @@
       "id": "item.encrust_failure_destroy",
       "native_effects": {
         "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -17759,26 +17830,65 @@
       },
       "reachability_evidence": "do_encrust source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_destroy",
+      "recovery_evidence": [
+        "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py",
+        "tests/async/test_issue_551_flatfile_craft.py",
+        "tests/async/item_transfer_mysql_harness.cpp"
+      ],
       "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          880
+          846
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
         "original_draft_symbol": "do_encrust"
       },
-      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "source_classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
+      "backend_qualification": {
+        "flatfile": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        },
+        "mariadb": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        },
+        "mysql": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        }
+      },
       "blocking_policy_after_activation": {
-        "decision": "block_until_active_craft_journeys",
-        "must_block_on_activation": true,
-        "required_policy": "Physical crafts, pouch collection and virtual Encrust use the typed schema-2 owner, consumed-input crafting source, exact native retirement/admission and linked references on SQL and flatfile. Retained pouch counters share the native craft commit while preserving the original UID and custody. Native component, replay, rollback and held-publication proofs pass; qualify complete active-epoch server journeys before release."
+        "decision": "allow_qualified_native_alchemy",
+        "must_block_on_activation": false,
+        "required_policy": "Use the native schema-2 craft owner, exact input/output references, consumed-input source lifetime and durable alchemy publication receipt. Active flatfile, MySQL and MariaDB route journeys qualify retry, retained disconnect, copyover and cold recovery. This scoped proof does not authorize global activation or certify other crafts, NPC vial issuance or character initialization. Refuse unsupported metadata or stale custody before native mutation; never fall back to schema 1 under active authority."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
@@ -17838,7 +17948,7 @@
       "id": "item.encrust_transform",
       "native_effects": {
         "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -17847,19 +17957,26 @@
       },
       "reachability_evidence": "do_encrust source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_create",
+      "recovery_evidence": [
+        "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py",
+        "tests/async/test_issue_551_flatfile_craft.py",
+        "tests/async/item_transfer_mysql_harness.cpp"
+      ],
       "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          880
+          846
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
         "original_draft_symbol": "do_encrust"
       },
-      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "source_classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -17900,7 +18017,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          880
+          846
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_encrust",
@@ -18600,7 +18717,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1207
+          1182
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_fix",
@@ -18647,7 +18764,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1207
+          1182
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_fix",
@@ -19550,7 +19667,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3118
+          3132
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19612,7 +19729,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2930
+          2944
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20598,7 +20715,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2018
+          2027
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -20976,10 +21093,42 @@
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
+      "backend_qualification": {
+        "flatfile": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        },
+        "mariadb": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        },
+        "mysql": {
+          "evidence": [
+            "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+            "tests/async/run_issue_551_active_accounting.sh",
+            "tests/async/test_craft_progression.py",
+            "tests/async/test_issue_551_flatfile_craft.py",
+            "tests/async/item_transfer_mysql_harness.cpp"
+          ],
+          "status": "qualified"
+        }
+      },
       "blocking_policy_after_activation": {
-        "decision": "block_until_active_craft_journeys",
-        "must_block_on_activation": true,
-        "required_policy": "Physical crafts, pouch collection and virtual Encrust use the typed schema-2 owner, consumed-input crafting source, exact native retirement/admission and linked references on SQL and flatfile. Retained pouch counters share the native craft commit while preserving the original UID and custody. Native component, replay, rollback and held-publication proofs pass; qualify complete active-epoch server journeys before release."
+        "decision": "allow_qualified_native_alchemy",
+        "must_block_on_activation": false,
+        "required_policy": "Use the native schema-2 craft owner, exact input/output references, consumed-input source lifetime and durable alchemy publication receipt. Active flatfile, MySQL and MariaDB route journeys qualify retry, retained disconnect, copyover and cold recovery. This scoped proof does not authorize global activation or certify other crafts, NPC vial issuance or character initialization. Refuse unsupported metadata or stale custody before native mutation; never fall back to schema 1 under active authority."
       },
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
@@ -21039,7 +21188,7 @@
       "id": "item.poison_mix",
       "native_effects": {
         "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -21048,19 +21197,26 @@
       },
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_create",
+      "recovery_evidence": [
+        "docs/persistence/economy_accounting/ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md",
+        "tests/async/run_issue_551_active_accounting.sh",
+        "tests/async/test_craft_progression.py",
+        "tests/async/test_issue_551_flatfile_craft.py",
+        "tests/async/item_transfer_mysql_harness.cpp"
+      ],
       "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          558
+          518
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_mixpoison",
         "original_draft_symbol": "do_mixpoison"
       },
-      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "source_classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -21101,7 +21257,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          536
+          496
         ],
         "file": "src/classes/salchemist.c",
         "function": "print_poison_ingredients",
@@ -22235,7 +22391,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1336
+          1311
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_smelt",
@@ -22296,7 +22452,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1336
+          1311
         ],
         "file": "src/classes/salchemist.c",
         "function": "do_smelt",
@@ -22712,7 +22868,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1511
+          1486
         ],
         "file": "src/classes/salchemist.c",
         "function": "thrusted_eq_proc",
@@ -50673,7 +50829,7 @@
       "id": "item.craft_submit",
       "native_effects": {
         "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -50683,18 +50839,18 @@
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_create",
       "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2532
+          2541
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
         "original_draft_symbol": "item_movement_transaction_submit_craft"
       },
-      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "source_classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -50739,7 +50895,7 @@
       "id": "item.craft_publication",
       "native_effects": {
         "custody_effect": "Atomic exact carried input retirement and frozen output admission with one crafting accounting root and input/output references when active.",
-        "holding_effect": "No coin changes; virtual Chaos-pouch Encrust refuses without counter mutation.",
+        "holding_effect": "No currency or XP change. Virtual Encrust retains the pouch UID and records its counter delta in the same craft operation.",
         "native_state_targets": [
           "item_current_owner and item_ownership_ledger",
           "player_items and player_item_runtime_state",
@@ -50749,7 +50905,7 @@
       "reachability_evidence": "do_mixpoison source branch reviewed; player command, mob callback or periodic action is the reachable entry unless this row is a provisional probe.",
       "reason": "item_create",
       "refusal_source_evidence": [
-        "Unsupported crafting metadata refuses before retained coordinator admission; virtual pouch Encrust refuses before RNG and counter mutation."
+        "Missing native accounting evidence, invalid selected custody, stale revisions or unsupported trapped/restitution inputs refuse before native retirement. Rollback preserves exact inputs."
       ],
       "source": {
         "anchor_status": "function_definition_verified",
@@ -50760,7 +50916,7 @@
         "function": "publish_craft",
         "original_draft_symbol": "publish_craft"
       },
-      "source_classification": "Exact-UID craft receipt retires carried inputs once and records frozen output snapshots; deliberate failure records zero outputs. Active schema-2 admission precedes coordinator journaling and native mutation.",
+      "source_classification": "One native exact-UID craft operation freezes outputs and alchemy continuation; schema-2 admission commits input retirement, output admission, source claim, root and item references atomically before retained publication.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
