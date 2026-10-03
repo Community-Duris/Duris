@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Typed nevent payload, stable identity, and mob-hunt migration regressions."""
 
-from _paths import SRC
+from _paths import SRC, extract_function
 import os
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -96,16 +97,29 @@ int main()
 
 IDENTITY_HARNESS = r'''
 #include "account/character_identity.c"
+#include "core/utils.h"
 
 #include <cstdarg>
 #include <cstdlib>
+#include <cstring>
+#include <limits>
+#include <thread>
 
 P_char character_list = nullptr;
+static std::thread::id nevent_game_thread;
+static bool nevent_game_thread_bound = false;
+struct panic_signal {};
 
 void panic_corruption(const char *, const char *, ...)
 {
-	std::abort();
+	throw panic_signal{};
 }
+
+void logit(const char *, const char *, ...) {}
+
+// INSERT_PRODUCTION_THREAD_GUARDS
+// INSERT_PRODUCTION_CLEAR_CHAR
+// INSERT_PRODUCTION_POINTER_LOOKUP
 
 static void require(bool condition, int code)
 {
@@ -115,26 +129,142 @@ static void require(bool condition, int code)
 
 int main()
 {
+	nevent_bind_game_thread();
+	require(character_runtime_index_is_consistent(), 1);
 	char_data first = {};
 	char_data second = {};
-	first.runtime_id = allocate_character_runtime_id();
-	second.runtime_id = allocate_character_runtime_id();
+	clear_char(&first);
+	clear_char(&second);
+	require(first.runtime_id && second.runtime_id > first.runtime_id, 2);
+	require(find_character_by_runtime_id(first.runtime_id) == nullptr, 3);
 	first.next = &second;
 	character_list = &first;
+	require(!character_runtime_index_is_consistent(), 4);
+	register_character_runtime_id(&first);
+	register_character_runtime_id(&second);
+	register_character_runtime_id(&second); // Idempotent publication.
+	require(character_runtime_index_is_consistent(), 5);
 
-	require(first.runtime_id != 0 && second.runtime_id != 0, 1);
-	require(first.runtime_id != second.runtime_id, 2);
-	require(find_character_by_runtime_id(first.runtime_id) == &first, 3);
-	require(find_character_by_runtime_id(second.runtime_id) == &second, 4);
-	require(find_character_by_runtime_id(0) == nullptr, 5);
+	require(find_character_by_runtime_id(first.runtime_id) == &first, 6);
+	require(find_character_by_runtime_id(second.runtime_id) == &second, 7);
+	require(find_character_by_runtime_id(0) == nullptr, 8);
+	require(find_character_by_runtime_id(UINT64_MAX) == nullptr, 9);
+	require(find_live_character(&second, first.runtime_id) == nullptr, 10);
+	require(find_live_character(&first, first.runtime_id) == &first, 11);
+	require(first.next == &second && second.next == nullptr, 12);
 
 	const uint64_t stale_id = first.runtime_id;
-	first.runtime_id = allocate_character_runtime_id();
-	require(find_character_by_runtime_id(stale_id) == nullptr, 6);
-	require(find_character_by_runtime_id(first.runtime_id) == &first, 7);
+	unregister_character_runtime_id(&first);
+	unregister_character_runtime_id(&first); // extract_char then free_char.
+	require(find_character_by_runtime_id(stale_id) == nullptr, 13);
+	character_list = &second;
+	require(character_runtime_index_is_consistent(), 14);
+	clear_char(&first); // Deterministic pool reuse at the same address.
+	require(first.runtime_id > second.runtime_id, 15);
+	require(find_character_by_runtime_id(first.runtime_id) == nullptr, 16);
+	first.next = character_list;
+	character_list = &first;
+	register_character_runtime_id(&first);
+	require(find_live_character(&first, stale_id) == nullptr, 17);
+	require(find_character_by_runtime_id(first.runtime_id) == &first, 18);
+	require(character_runtime_index_is_consistent(), 19);
+
+	// Check missing entries, orphan entries, mutated identities and list cycles.
+	character_list = &second;
+	require(!character_runtime_index_is_consistent(), 20);
+	character_list = &first;
+	const uint64_t current_id = first.runtime_id;
+	first.runtime_id = 0;
+	require(!character_runtime_index_is_consistent(), 21);
+	first.runtime_id = current_id;
+	second.next = &first;
+	require(!character_runtime_index_is_consistent(), 22);
+	second.next = nullptr;
+	require(character_runtime_index_is_consistent(), 23);
+
+	// An unrelated pointer with a duplicate ID cannot erase the live entry.
+	char_data collision = {};
+	collision.runtime_id = first.runtime_id;
+	unregister_character_runtime_id(&collision);
+	bool duplicate_rejected = false;
+	try { register_character_runtime_id(&collision); }
+	catch (const panic_signal &) { duplicate_rejected = true; }
+	require(duplicate_rejected && find_character_by_runtime_id(current_id) == &first, 24);
+	bool zero_rejected = false;
+	char_data unpublished = {};
+	try { register_character_runtime_id(&unpublished); }
+	catch (const panic_signal &) { zero_rejected = true; }
+	require(zero_rejected, 25);
+	unregister_character_runtime_id(&unpublished); // Failed load cleanup.
+	unregister_character_runtime_id(nullptr);
+
+	// The registry never owns storage or dereferences stale callback pointers.
+	P_char freed = new char_data{};
+	clear_char(freed);
+	const uint64_t freed_id = freed->runtime_id;
+	freed->next = character_list;
+	character_list = freed;
+	register_character_runtime_id(freed);
+	unregister_character_runtime_id(freed);
+	character_list = freed->next;
+	delete freed;
+	require(find_character_by_runtime_id(freed_id) == nullptr, 26);
+	require(character_runtime_index_is_consistent(), 27);
+
+	bool wrong_thread_rejected = false;
+	std::thread worker([&] {
+		try {
+			require(find_character_by_runtime_id(current_id) == nullptr, 28);
+			register_character_runtime_id(&unpublished);
+			unregister_character_runtime_id(&first);
+			require(!character_runtime_index_is_consistent(), 29);
+			wrong_thread_rejected = true;
+		} catch (const panic_signal &) { wrong_thread_rejected = true; }
+	});
+	worker.join();
+	require(wrong_thread_rejected && find_character_by_runtime_id(current_id) == &first, 30);
+
+	unregister_character_runtime_id(&first);
+	unregister_character_runtime_id(&second);
+	character_list = nullptr;
+	// Repeat the shared reconstruction primitives; constructor hooks are checked below.
+	for (int reconstruction = 0; reconstruction < 12; ++reconstruction) {
+		clear_char(&first);
+		clear_char(&second);
+		require(first.runtime_id > current_id && second.runtime_id > first.runtime_id, 31);
+		require(find_character_by_runtime_id(first.runtime_id) == nullptr, 32);
+		second.next = &first;
+		character_list = &second;
+		register_character_runtime_id(&first);
+		register_character_runtime_id(&second);
+		require(character_runtime_index_is_consistent(), 33);
+		require(find_character_by_runtime_id(stale_id) == nullptr &&
+			find_character_by_runtime_id(current_id) == nullptr, 34);
+		unregister_character_runtime_id(&first);
+		unregister_character_runtime_id(&second);
+		character_list = nullptr;
+	}
+	require(character_runtime_index_is_consistent(), 35);
+	// Exhaustion remains a fail-stop, never wrapping into a reused ID.
+	next_runtime_id = UINT64_MAX;
+	bool exhaustion_rejected = false;
+	try { allocate_character_runtime_id(); }
+	catch (const panic_signal &) { exhaustion_rejected = true; }
+	require(exhaustion_rejected, 36);
 	return 0;
 }
 '''
+
+IDENTITY_HARNESS = IDENTITY_HARNESS.replace(
+    "// INSERT_PRODUCTION_THREAD_GUARDS",
+    "\n".join(extract_function("new_events.c", signature) for signature in (
+        "void nevent_bind_game_thread()", "bool nevent_is_game_thread()",
+        "bool nevent_require_game_thread(const char *operation)")),
+).replace("// INSERT_PRODUCTION_CLEAR_CHAR", extract_function("db.c", "void clear_char(P_char ch)"))
+IDENTITY_HARNESS = IDENTITY_HARNESS.replace(
+    "// INSERT_PRODUCTION_POINTER_LOOKUP",
+    extract_function("handler.c", "P_char find_live_character(P_char expected, uint64_t runtime_id)"),
+)
 
 RAW_TRIVIAL_SOURCE = r'''
 #include "core/prototypes.h"
@@ -165,7 +295,8 @@ void schedule_nontrivial()
 '''
 
 
-def compile_source(source: str, output: Path, *, link: bool) -> subprocess.CompletedProcess[str]:
+def compile_source(source: str, output: Path, *, link: bool,
+                   release: bool = False) -> subprocess.CompletedProcess[str]:
     source_file = output.with_suffix(".cpp")
     source_file.write_text(source, encoding="ascii")
     command = [
@@ -175,9 +306,12 @@ def compile_source(source: str, output: Path, *, link: bool) -> subprocess.Compl
         "-Wall",
         "-Wextra",
         "-Werror",
+        "-pthread",
         f"-I{SRC}",
         str(source_file),
     ]
+    if release:
+        command.append("-DNDEBUG")
     if link:
         command.extend(
             [
@@ -192,7 +326,9 @@ def compile_source(source: str, output: Path, *, link: bool) -> subprocess.Compl
     return subprocess.run(command, capture_output=True, text=True, check=False)
 
 
-with tempfile.TemporaryDirectory(prefix="duris-nevent-payload-") as directory:
+scratch = ROOT / "bin/tests"
+scratch.mkdir(parents=True, exist_ok=True)
+with tempfile.TemporaryDirectory(prefix="duris-nevent-payload-", dir=scratch) as directory:
     temp = Path(directory)
     environment = os.environ.copy()
     environment["ASAN_OPTIONS"] = "detect_leaks=1:halt_on_error=1"
@@ -207,6 +343,11 @@ with tempfile.TemporaryDirectory(prefix="duris-nevent-payload-") as directory:
     result = compile_source(IDENTITY_HARNESS, identity_binary, link=True)
     assert result.returncode == 0, result.stderr
     subprocess.run([str(identity_binary)], check=True, env=environment)
+
+    release_identity_binary = temp / "character_identity_release"
+    result = compile_source(IDENTITY_HARNESS, release_identity_binary, link=True, release=True)
+    assert result.returncode == 0, result.stderr
+    subprocess.run([str(release_identity_binary)], check=True, env=environment)
 
     trivial_object = temp / "trivial.o"
     result = compile_source(RAW_TRIVIAL_SOURCE, trivial_object, link=False)
@@ -232,6 +373,38 @@ assert ".targ.victim" not in sources
 assert ".targ.room" not in sources
 assert "target_runtime_id" in structs
 assert "allocate_character_runtime_id()" in database
+# Every publication path must register an initialized character. NPC construction
+# intentionally links the legacy list early, but cannot expose a partial body.
+publication_sites = (
+    ("nanny.c", "void enter_game(P_desc d)", "ch"),
+    ("copyover.c", "int copyover_recover(", "ch"),
+    ("actwiz.c", "void do_read_player(", "vict"),
+    ("artifact.c", "P_char load_dummy_char(", "owner"),
+    ("storage_lockers.c", "static P_char load_locker_char(", "vict"),
+)
+actual_publications = []
+for path in SRC.rglob("*.c"):
+    for match in re.finditer(r"\bcharacter_list\s*=\s*(\w+)\s*;", path.read_text()):
+        if match.group(1) not in {"0", "NULL", "nullptr"}:
+            actual_publications.append((path.name, match.group(1)))
+assert sorted(actual_publications) == sorted(
+    [(filename, variable) for filename, _, variable in publication_sites] + [("db.c", "mob")])
+for filename, signature, variable in publication_sites:
+    body = extract_function(filename, signature)
+    assert body.index(f"character_list = {variable};") < body.index(
+        f"register_character_runtime_id({variable});")
+mobile = extract_function("db.c", "P_char read_mobile(int nr, int type, bool apply_mob_gold)")
+assert mobile.index("convertMob(mob, apply_mob_gold);") < mobile.index(
+    "register_character_runtime_id(mob);") < mobile.index("return (mob);")
+assert mobile.index("CMD_SET_PERIODIC") < mobile.index("register_character_runtime_id(mob);")
+extract = extract_function("handler.c", "void extract_char(P_char ch)")
+assert extract.index("if (!IS_MORPH(ch))") < extract.index(
+    "unregister_character_runtime_id(ch);") < extract.index("#if defined(CTF_MUD)")
+assert extract.index("item_actions_character_leaving(ch);") < extract.index(
+    "unregister_character_runtime_id(ch);") < extract.index("die_follower(ch);")
+free = extract_function("db.c", "void free_char(P_char ch)")
+assert free.index("unregister_character_runtime_id(ch);") < free.index("affect_remove(ch, af);")
+assert free.index("disarm_char_nevents(ch, NULL);") < free.index("add_event(release_mob_mem,")
 assert mobact.count("get_scheduled_excluding_current(ch, event_mob_hunt)") == 4
 assert mob_hunt.count("if (!get_scheduled_excluding_current(ch, event_mob_hunt))") == 2
 assert mob_hunt.count("if (get_scheduled_excluding_current(ch, event_mob_hunt))") == 2
