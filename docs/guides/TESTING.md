@@ -117,7 +117,9 @@ invocation, and preserves failure/skip outcomes. Native drivers remain explicit
 entry-level cases; their internal assertions are not counted as observed Python
 cases. Successful entries must acknowledge completed observation, so a premature
 zero exit cannot bypass validation. Observed unittest skips do not depend on its
-console summary. Failure diagnostics print immediately and a 30-second heartbeat names
+console summary, including skips inside subtests. Ignored class/module cleanup
+errors also fail the entry and remain named outcomes. Failure diagnostics print
+immediately and a 30-second heartbeat names
 active tests. Existing 900/1800-second deadlines remain in metadata; `TEST_TIMEOUT`
 overrides them. Timeout/interrupt cleanup terminates process groups on POSIX and
 uses `taskkill /T /F` on Windows. Ctrl+C cancels queued work and returns 130.
@@ -126,7 +128,8 @@ Deliberately detached POSIX sessions remain outside the group.
 `TEST_REPORT` selects the atomic JSON timing/case report, updated after each
 completed entry with remaining work listed. `TEST_JUNIT` selects the case-level XML
 report (default `bin/test-results.xml`). JSON records statuses, exit codes,
-skipped-check counts and build/lookup/remainder phases without captured output or
+the inventory checksum, selected/excluded identities, skipped-check counts and
+build/lookup/remainder phases without captured output or
 environment values. Skip reasons are test-supplied. Explicit whole and partial skips
 remain visible; successful compilation followed by a SQL skip is not SQL evidence.
 Build/world generation precedes the Python timings.

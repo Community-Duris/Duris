@@ -56,7 +56,17 @@ specs = runner.inventory(runner.TEST_DIRECTORY, runner.MANIFEST)
 manual_names = {spec.path.name for spec in specs if spec.manual}
 
 # Preserve the target branch's bounded server-journey concurrency.
-server_journeys = ['test_account_recovery_journey.py', 'test_area_coin_pickup.py', 'test_creation_prompt_journey.py', 'test_flatfile_auction_coin_put_journey.py', 'test_flatfile_boot_preflight.py', 'test_flatfile_chaos_new_character_kit.py', 'test_flatfile_combat_journey.py', 'test_flatfile_first_session_currency.py', 'test_flatfile_full_world_boot.py', 'test_flatfile_newbie_regrant_journey.py', 'test_game_loop_session_journey.py', 'test_information_cache_journey.py', 'test_item_movement_prompt_runtime.py', 'test_mysql_combat_journey.py', 'test_network_readiness_journey.py', 'test_persistent_transport_journey.py', 'test_player_quarantine_restore.py', 'test_static_quest_reward_journey.py']
+server_journeys = (
+    "test_account_recovery_journey.py", "test_area_coin_pickup.py",
+    "test_creation_prompt_journey.py", "test_flatfile_auction_coin_put_journey.py",
+    "test_flatfile_boot_preflight.py", "test_flatfile_chaos_new_character_kit.py",
+    "test_flatfile_combat_journey.py", "test_flatfile_first_session_currency.py",
+    "test_flatfile_full_world_boot.py", "test_flatfile_newbie_regrant_journey.py",
+    "test_game_loop_session_journey.py", "test_information_cache_journey.py",
+    "test_item_movement_prompt_runtime.py", "test_mysql_combat_journey.py",
+    "test_network_readiness_journey.py", "test_persistent_transport_journey.py",
+    "test_player_quarantine_restore.py", "test_static_quest_reward_journey.py",
+)
 by_name = {spec.path.name: spec for spec in specs}
 assert all("server-journey" in by_name[name].locks for name in server_journeys)
 discovered = {path.name for path in runner.discover_tests(None)}
@@ -379,8 +389,9 @@ class RunnerBehavior(unittest.TestCase):
         self.assertFalse(marker.exists())
 
     def test_cli_reports_failure_before_a_slow_test_and_writes_timings(self):
-        self.script("test_bad.py", "print('immediate failure evidence', flush=True); raise AssertionError('broken')")
-        self.script("test_slow.py", "import time; time.sleep(0.6); print('slow completed')")
+        self.script("test_chosen_bad.py", "print('immediate failure evidence', flush=True); raise AssertionError('broken')")
+        self.script("test_chosen_slow.py", "import time; time.sleep(0.6); print('slow completed')")
+        self.script("test_excluded.py", "raise AssertionError('filtered entry must not run')")
         report = self.root / "result.json"
         # Use a private test directory, with the real runner and real child
         # interpreters. No mocks of execution or timing can satisfy this check.
@@ -392,18 +403,22 @@ class RunnerBehavior(unittest.TestCase):
             f"main.__globals__['ROOT']=pathlib.Path({str(self.root)!r}); "
             f"main.__globals__['TEST_DIRECTORY']=pathlib.Path({str(self.root)!r}); "
             f"main.__globals__['MANIFEST']=pathlib.Path({str(manifest)!r}); "
-            f"sys.argv=['runner', '--jobs', '2', '--timeout', '5', '--report', {str(report)!r}]; "
+            f"sys.argv=['runner', '--jobs', '2', '--timeout', '5', '--match', 'chosen_', '--report', {str(report)!r}]; "
             "sys.exit(main())"
         )
         completed = subprocess.run([sys.executable, "-c", command], text=True,
                                    capture_output=True, timeout=10, cwd=ROOT)
         self.assertEqual(completed.returncode, 1, completed.stdout + completed.stderr)
         self.assertLess(completed.stdout.index("immediate failure evidence"),
-                        completed.stdout.index("PASS test_slow.py"))
+                        completed.stdout.index("PASS test_chosen_slow.py"))
         payload = json.loads(report.read_text())
         self.assertFalse(payload["interrupted"])
         self.assertEqual({row["path"]: row["status"] for row in payload["results"]},
-                         {"test_bad.py": "failed", "test_slow.py": "passed"})
+                         {"test_chosen_bad.py": "failed", "test_chosen_slow.py": "passed"})
+        self.assertCountEqual(payload["selected"], ["test_chosen_bad.py", "test_chosen_slow.py"])
+        self.assertEqual(payload["excluded"], ["test_excluded.py"])
+        self.assertFalse(payload["pending"])
+        self.assertEqual(payload["inventory_sha256"], runner.hashlib.sha256(manifest.read_bytes()).hexdigest())
         self.assertTrue(all(row["elapsed"] > 0 for row in payload["results"]))
         self.assertFalse(any("output" in row for row in payload["results"]))
 

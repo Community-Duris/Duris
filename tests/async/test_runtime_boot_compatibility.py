@@ -172,7 +172,8 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         network = extract_function("net/comm.c", "static bool service_network_turn(")
         self.assertLess(game_loop.index("redis_load_world_state"),
                         game_loop.index("run_connection_phase(context)"))
-        self.assertIn("transport_world_pump", game_loop)
+        connections = extract_function("net/comm.c", "static bool run_connection_phase(")
+        self.assertIn("transport_world_pump", connections)
         for listener in ("ctx.telnet_listener", "ctx.ssl_listener", "ctx.websocket_listener"):
             self.assertIn("drain_new_connections(" + listener, network)
 
