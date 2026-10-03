@@ -46,27 +46,27 @@
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2817,
-    "current_unique_path_line_family_sites": 2758,
+    "current_occurrences": 2818,
+    "current_unique_path_line_family_sites": 2759,
     "draft_registry_census_complete": true,
     "draft_source_commit": "5f542e9cf769dfa7ef89e28ce4845d7495d4e1b3",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2758,
+    "draft_unique_sites": 2759,
     "family_occurrences": {
       "coin_assignment": 164,
       "coin_bulk_mutation": 16,
       "direct_cash_assignment": 12,
-      "economic_submit": 187,
+      "economic_submit": 188,
       "item_lifecycle": 1147,
       "item_publication": 1063,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
       "sql_economy": 56
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 868-row registry maps 2758 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
-    "mapped_sites_still_present": 2758,
-    "mapped_unique_sites_from_draft_rows": 2758,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 868-row registry maps 2759 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2759,
+    "mapped_unique_sites_from_draft_rows": 2759,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -5949,7 +5949,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4391
+          4405
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_coin_apply",
@@ -7224,7 +7224,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1846
+          1929
         ],
         "file": "src/combat/fight.c",
         "function": "die",
@@ -7460,7 +7460,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3436
+          3523
         ],
         "file": "src/combat/fight.c",
         "function": "check_shields",
@@ -7814,7 +7814,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4886
+          4973
         ],
         "file": "src/combat/fight.c",
         "function": "hit",
@@ -9236,7 +9236,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3229
+          3239
         ],
         "file": "src/core/utility.c",
         "function": "publish_account_bank_balances_revision",
@@ -9425,7 +9425,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3190
+          3200
         ],
         "file": "src/core/utility.c",
         "function": "publish_account_bank_balance",
@@ -10425,7 +10425,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3286
+          3300
         ],
         "file": "src/core/utility.c",
         "function": "SUB_MONEY",
@@ -10990,7 +10990,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          730
+          807
         ],
         "file": "src/combat/fight.c",
         "function": "make_corpse",
@@ -11113,7 +11113,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          730
+          807
         ],
         "file": "src/combat/fight.c",
         "function": "make_corpse",
@@ -11174,7 +11174,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          592
+          650
         ],
         "file": "src/combat/fight.c",
         "function": "clear_corpse_transfer_dispute",
@@ -11235,7 +11235,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          730
+          807
         ],
         "file": "src/combat/fight.c",
         "function": "make_corpse",
@@ -13541,7 +13541,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1502
+          1588
         ],
         "file": "src/combat/fight.c",
         "function": "save_disputed_death_disposition",
@@ -17101,8 +17101,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2884,
-          2896
+          2880,
+          2892
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17164,7 +17164,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1276
+          1272
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -17226,7 +17226,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1176
+          1172
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -17411,7 +17411,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1057
+          1053
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -17656,7 +17656,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10117
+          10183
         ],
         "file": "src/cmd/actobj.c",
         "function": "publish_empty_objects",
@@ -18347,7 +18347,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7800
+          7866
         ],
         "file": "src/cmd/actobj.c",
         "function": "remove_item",
@@ -18409,7 +18409,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7734
+          7800
         ],
         "file": "src/cmd/actobj.c",
         "function": "execute_wear",
@@ -18829,10 +18829,10 @@
           6695
         ],
         "file": "src/cmd/actobj.c",
-        "function": "do_eat",
-        "original_draft_symbol": "do_eat"
+        "function": "apply_eaten_item",
+        "original_draft_symbol": "apply_eaten_item"
       },
-      "source_classification": "Eat action extracts consumed food; true UID retirement needs a source event.",
+      "source_classification": "Food effects and live extraction follow guarded UID retirement for durable player items.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -19668,7 +19668,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3132
+          3128
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19730,7 +19730,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2944
+          2940
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20342,7 +20342,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9837
+          9903
         ],
         "file": "src/cmd/actobj.c",
         "function": "list_foods",
@@ -20716,7 +20716,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2027
+          2023
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -21084,7 +21084,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9741
+          9807
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_apply_poison",
@@ -21367,7 +21367,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1552
+          1548
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -21429,7 +21429,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1108
+          1104
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -21797,7 +21797,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          963
+          959
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -22518,7 +22518,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2366
+          2367
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_execute_at_offset",
@@ -22579,7 +22579,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3014
+          3015
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_destroy_owners",
@@ -34199,7 +34199,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          207
+          212
         ],
         "file": "scripts/persistence_restore.py",
         "function": "restore",
@@ -36917,7 +36917,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1018
+          1221
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_buy",
@@ -36980,7 +36980,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          259
+          420
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_submit_produced_continuation",
@@ -37105,7 +37105,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          898
+          1101
         ],
         "file": "src/economy/shop.c",
         "function": "get_purchase_obj",
@@ -37168,7 +37168,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          320
+          481
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_completion",
@@ -37229,7 +37229,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2671
+          2948
         ],
         "file": "src/economy/shop.c",
         "function": "transact",
@@ -37290,7 +37290,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1639
+          1899
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_peruse",
@@ -37353,7 +37353,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1877
+          2154
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_repair",
@@ -37416,7 +37416,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1358
+          1618
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_sell",
@@ -37479,7 +37479,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1358
+          1618
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_sell",
@@ -37541,7 +37541,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1991
+          2268
         ],
         "file": "src/economy/shop.c",
         "function": "shop_keeper",
@@ -37603,7 +37603,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1716
+          1976
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_list",
@@ -37794,7 +37794,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          306
+          467
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_route_invalid_cleanup",
@@ -44924,7 +44924,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1052
+          1048
         ],
         "file": "src/cmd/actwiz.c",
         "function": "submit_wizard_load_establish",
@@ -45043,7 +45043,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1176
+          1172
         ],
         "file": "src/cmd/actwiz.c",
         "function": "do_purge",
@@ -45160,7 +45160,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2884
+          2880
         ],
         "file": "src/cmd/actwiz.c",
         "function": "do_storage",
@@ -45220,7 +45220,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2741
+          2737
         ],
         "file": "src/cmd/actwiz.c",
         "function": "flat_storage_completion",
@@ -50847,7 +50847,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2541
+          2537
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
@@ -51029,7 +51029,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1644
+          1645
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "insert_craft_output_item",

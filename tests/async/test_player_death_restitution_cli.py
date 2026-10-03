@@ -224,7 +224,12 @@ class RestitutionCliTests(unittest.TestCase):
                     self.assertEqual(decoded["wire_version"], 15)
                     self.assertEqual(decoded["schema_version"], 15)
                     self.assertIsInstance(decoded["death"], dict)
-                for option, schema in ((None, 8), ("--spell-receipt", 13), ("--quest-receipt", 15)):
+                for line in subprocess.check_output([str(fixture), "--craft-receipt"]).decode("ascii").splitlines():
+                    decoded = cli.decode_payload(bytes.fromhex(line))
+                    self.assertEqual(decoded["wire_version"], 18)
+                    self.assertEqual(decoded["schema_version"], 18)
+                    self.assertIsInstance(decoded["death"], dict)
+                for option, schema in ((None, 8), ("--spell-receipt", 13), ("--quest-receipt", 15), ("--craft-receipt", 18)):
                     command = [str(fixture)] + ([option] if option else []) + ["--wards"]
                     for line in subprocess.check_output(command).decode("ascii").splitlines():
                         decoded = cli.decode_payload(bytes.fromhex(line))

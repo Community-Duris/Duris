@@ -37,6 +37,7 @@ class DeathRecoverySQL(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='death-recovery-sql-') as directory:
             binary = Path(directory) / 'probe'
             compile_sql(binary)
+            print("LOAD-NATIVE compiled", flush=True)
             if os.environ.get('TEST_DB_DISPOSABLE') != '1':
                 self.skipTest('SQL compiled; runtime NOT run without an explicit fresh disposable fixture')
             subprocess.run([str(binary), '--seed-and-check'], cwd=ROOT, check=True)

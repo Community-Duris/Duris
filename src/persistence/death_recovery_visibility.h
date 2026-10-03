@@ -7,6 +7,21 @@
 #include <cstdint>
 #include <openssl/sha.h>
 
+// The generic reporter rejects string conversions to protect private values.
+// These callers render only numeric, correlation and fixed category metadata.
+// Reject every format directive/control character before passing that bounded
+// metadata as a literal format; do not widen the generic reporter's policy.
+inline const char *death_recovery_literal_detail(const char *text)
+{
+	if (!text)
+		return nullptr;
+	for (const unsigned char *p = reinterpret_cast<const unsigned char *>(text); *p; ++p)
+		if (!((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') ||
+		      (*p >= '0' && *p <= '9') || *p == '_' || *p == '=' || *p == '-' || *p == ' '))
+			return nullptr;
+	return text;
+}
+
 // Diagnostics only. The existing (pid, corpse save ID) custody relationship is
 // the input; this digest never authorizes a mutation or replaces an operation ID.
 inline void death_recovery_correlation(uint64_t corpse_owner, char output[33])
