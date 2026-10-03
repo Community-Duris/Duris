@@ -1164,12 +1164,66 @@ bool load_restitution_runtime_state(MYSQL *connection, player_load_result *resul
 	return true;
 }
 
+bool preserve_runtime_metadata(const player_item_snapshot &state, player_item_snapshot *item)
+{
+	// Scalar metadata remains authoritative. When its canonical projection still
+	// agrees with the complete companion, retain codec details that SQL flattens:
+	// affect slots/order and the original spellbook/extra-description encoding.
+	auto affect_keys = [](const auto &affects)
+	{
+		std::unordered_set<uint64_t> keys;
+		for (const auto &affect : affects)
+			if (affect[0] || affect[1])
+				keys.insert((static_cast<uint64_t>(static_cast<uint16_t>(affect[0]))
+					     << 32) |
+					    static_cast<uint32_t>(affect[1]));
+		return keys;
+	};
+	if (affect_keys(state.affects) == affect_keys(item->affects))
+		item->affects = state.affects;
+	auto description_keys = [](const auto &descriptions, std::unordered_set<std::string> *keys)
+	{
+		for (const auto &description : descriptions)
+		{
+			if (description.keyword.empty())
+				continue;
+			std::string key = description.keyword + '\0';
+			if (description.spellbook)
+			{
+				std::vector<int32_t> spells = description.spell_ids;
+				if (!description.description.empty() &&
+				    (!spells.empty() || !decode_runtime_spellbook_json(
+								description.description, &spells)))
+					return false;
+				std::sort(spells.begin(), spells.end());
+				for (int32_t spell : spells)
+					key += std::to_string(spell) + ',';
+			}
+			else
+				key += description.description;
+			keys->insert(std::move(key));
+		}
+		return true;
+	};
+	std::unordered_set<std::string> expected, actual;
+	if (!description_keys(state.extra_descriptions, &expected) ||
+	    !description_keys(item->extra_descriptions, &actual))
+		return false;
+	if (expected == actual)
+	{
+		item->extra_descriptions = state.extra_descriptions;
+		item->string_mask = (item->string_mask & 15) | (state.string_mask & 16);
+	}
+	return true;
+}
+
 bool load_items(MYSQL *connection, player_load_result *result)
 {
 	const std::string pid = std::to_string(result->pid);
 	std::unordered_map<uint64_t, size_t> item_by_database_id;
 	std::unordered_map<uint64_t, size_t> item_by_uid;
 	std::unordered_set<uint64_t> stale_database_ids;
+	std::unordered_map<uint64_t, player_item_snapshot> runtime_metadata;
 	try
 	{
 		item_by_database_id.reserve(PLAYER_LOAD_ITEM_MAX);
@@ -1265,6 +1319,7 @@ bool load_items(MYSQL *connection, player_load_result *result)
 					    item.timers[timer] = state[0].timers[timer];
 				    item.dynamic_affects = std::move(state[0].dynamic_affects);
 				    identity.override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME;
+				    runtime_metadata.emplace(item.object_uid, std::move(state[0]));
 			    }
 			    if (stale_database_ids.find(identity.database_id) !=
 				stale_database_ids.end())
@@ -1481,6 +1536,13 @@ bool load_items(MYSQL *connection, player_load_result *result)
 								   row[6], result);
 		    }))
 		return false;
+	for (auto &item : result->snapshot.items)
+	{
+		const auto found = runtime_metadata.find(item.object_uid);
+		if (found != runtime_metadata.end() &&
+		    !preserve_runtime_metadata(found->second, &item))
+			return false;
+	}
 	if (!load_restitution_runtime_state(connection, result, item_by_uid))
 		return false;
 	return result->snapshot.items.size() == result->item_identities.size();
