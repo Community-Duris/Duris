@@ -1,12 +1,19 @@
 # Game-loop phase contract
 
-`game_loop()` is the single game-thread owner of simulation pulses and network
-turns. The loop's
+`game_loop()` is the single game-thread owner of simulation pulses and, in the
+default single-process mode, network turns. The loop's
 top level is intentionally an orchestration boundary: it prepares the pulse
 context, invokes the named phases below in order, and leaves shutdown and
 copyover handling after the pulse loop.  The helpers do not introduce a second
 event loop, an async execution framework, or a new owner for descriptors,
 queues, prompts, world state, or persistence receipts.
+
+The opt-in [persistent transport mode](PERSISTENT_TRANSPORT.md) moves physical
+network turns to a parent process. The world still owns every phase below:
+`run_connection_phase` consumes authenticated logical-session IPC, application
+handlers and link-loss effects, while `run_output_phase` publishes ordered output
+and completed input acknowledgements. The parent owns protocol negotiation,
+compression and liveness; it never advances simulation or executes game commands.
 
 ## Normal pulse order
 

@@ -9,7 +9,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 COMM = (SRC / "comm.c").read_text()
-assert "ttype_negotiate(newd);\n\t\tgreet(newd);" in COMM
+accept = COMM[COMM.index("int new_descriptor("):COMM.index("static void greet(", COMM.index("int new_descriptor("))]
+assert accept.index("ttype_negotiate(newd);") < accept.index("greet(newd);")
+assert "if (transport_frontend_active())" in accept
 assert "time(0) >= point->ttype_timeout" not in COMM
 
 HARNESS = r'''
