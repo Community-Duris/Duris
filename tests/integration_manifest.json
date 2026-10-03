@@ -1929,6 +1929,28 @@
       ],
       "schema_prefix": "economic_schema_test_",
       "migrated": true
+    },
+    {
+      "id": "death_recovery_visibility_sql",
+      "path": "tests/async/run_player_death_disposition_mysql.sh",
+      "provider": "self-sql",
+      "engines": [
+        "mysql",
+        "mariadb"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_death_recovery_visibility_sql.py"
+      ],
+      "required_markers": [
+        "[PASS] protected SQL status, durable-only child, restart, pagination, pending verification, delivery loss and successful reconciliation"
+      ]
     }
   ]
 }

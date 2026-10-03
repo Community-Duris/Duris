@@ -39,8 +39,8 @@ tombstone, one ownership-ledger entry and no reappearance after restart/replay.
 Active-accounting food acceptance and interrupted effect publication remain outside
 this qualification.
 
-The inventory now contains 891 Python entries: 866 automatic and 25 manual.
-The 25 manual entries have explicit providers in the integration matrix. Automatic entries
+The inventory now contains 893 Python entries: 867 automatic and 26 manual.
+The 26 manual entries have explicit providers in the integration matrix. Automatic entries
 with optional SQL checks remain in core, and their skips remain visible.
 
 | Profile | Scope | Evidence boundary |
@@ -207,7 +207,7 @@ unique, redacted diagnostic logs, including when the driver fails.
 Missing adoption rows also remain under the immutable owner if history rows or a
 nonzero history-state marker remain; neither corruption can restart legacy DDL.
 
-The current workload has 148 required identities: 66 on each pinned engine and
+The current workload has 150 required identities: 67 on each pinned engine and
 16 shared rows. It includes the real SQL pool's bank, coin and item coordination,
 literal checkpoint recovery and exact room payload recovery. The room row reuses
 its qualified seed executable for two complete SQL cold boots and requires the

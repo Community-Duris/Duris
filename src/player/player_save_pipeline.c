@@ -1,3 +1,4 @@
+#include "persistence/death_recovery_visibility.h"
 #include "player/player_save_pipeline.h"
 #include "net/network_wakeup.h"
 #include "sql/sql_thread_init.h"
@@ -7,6 +8,7 @@
 
 #include "core/prototypes.h"
 #include "core/files.h"
+#include "classes/necromancy.h"
 #include "flatfile/flatfile_player_repository.h"
 #include "player/player_save_journal.h"
 #include "player/player_save_worker.h"
@@ -1608,10 +1610,14 @@ player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
 					       wallet_pile_uid, operation_id))
 		return player_save_terminal_result::unavailable;
 	guard.queued = true;
+	char correlation[33] = {};
+	death_recovery_correlation((static_cast<uint64_t>(pid) << 32) |
+					   static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]),
+				   correlation);
 	if (trace_player_saves())
 		logit(LOG_STATUS,
-		      "PLAYER SAVE TRACE: stage=terminal_death_begin mono_us=%llu pid=%d revision=%llu room=%d timeout_ms=%llu journal_allowed=0",
-		      (unsigned long long)persistence_observability_now_usec(), pid,
+		      "PLAYER SAVE TRACE: correlation=%s stage=terminal_death_begin mono_us=%llu pid=%d revision=%llu room=%d timeout_ms=%llu journal_allowed=0",
+		      correlation, (unsigned long long)persistence_observability_now_usec(), pid,
 		      (unsigned long long)revision, room_vnum, (unsigned long long)timeout_msec);
 	(void)allow_journal_handoff;
 	return await_terminal_fence(pid, revision, timeout_msec, false);

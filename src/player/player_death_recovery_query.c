@@ -1,4 +1,5 @@
 #include "player/player_death_recovery_query.h"
+#include "persistence/death_recovery_visibility.h"
 #include "player/player_load_repository.h"
 #include "player/player_snapshot.h"
 #include "persistence/persistence_observability.h"
@@ -292,6 +293,14 @@ bool player_death_recovery_summary_build(const player_death_conflict_case &ident
 		return false;
 	std::string output;
 	output.reserve(PLAYER_DEATH_RECOVERY_SUMMARY_MAX);
+	char correlation[33] = {};
+	death_recovery_correlation(
+		(static_cast<uint64_t>(snapshot.pid) << 32) |
+			static_cast<uint32_t>(snapshot.death->corpse.front().values[6]),
+		correlation);
+	output += "correlation=";
+	output += correlation;
+	output += " recovery_owner=retained_death_conflict. ";
 	output += "Unresolved archive evidence only; this is not a completed terminal recovery. ";
 	output += "Saved revision ";
 	output += std::to_string(identity.save_revision);
