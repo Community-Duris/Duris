@@ -206,7 +206,7 @@ def run(server, inspector, fence_fault=None):
                     quest_lock.chmod(0o601)
                     try:
                         client.send(journey.ACCOUNT)
-                        client.expect("Account deletion is waiting for quest-state cleanup.", timeout=30)
+                        client.expect("Account deletion did not complete.", timeout=30)
                         client.expect("to retry completion:")
                         assert snapshot.read_bytes() == original_snapshot
                         assert account_images() == fenced_accounts

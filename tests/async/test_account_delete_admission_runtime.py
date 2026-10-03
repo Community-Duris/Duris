@@ -91,16 +91,10 @@ struct account_deletion_drain_guard {
     }
 };
 namespace zone_story_quest_runtime {
-bool erase_character(uint32_t pid, std::string *error) {
-    require(drained && durable_block == ACCOUNT_BLOCK_DELETION,
-            "quest cleanup ran before the irreversible fence and worker drain");
-    require(!backend_started, "character identities were destroyed before quest cleanup");
+bool erase_character(uint32_t, std::string *) {
     ++quest_calls;
-    if (pid == refused_quest_pid) { *error = "injected quest persistence failure"; return false; }
-    if (pid == 11) first_alias = false;
-    else if (pid == 22) second_alias = false;
-    else require(false, "quest cleanup used an uncaptured identity");
-    return true;
+    require(false, "account menu rewrote quest aliases outside the native erasure transaction");
+    return false;
 }
 }
 void flush_pending_ship_saves() {}
@@ -108,11 +102,17 @@ bool drain_pending_ship_saves() { return true; }
 bool sql_delete_account(const char *) {
     ++backend_calls;
     backend_started = true;
-    require(drained && !first_alias && !second_alias,
-            "destructive backend ran before every retained quest identity was durably erased");
-    return backend_ok;
+    require(drained && durable_block == ACCOUNT_BLOCK_DELETION && captures > 0,
+            "backend ran without a drained, fenced account and captured retry identities");
+    if (!backend_ok || refused_quest_pid) return false;
+    first_alias = second_alias = false;
+    return true;
 }
-void remove_deleted_account_runtime(P_desc, const std::vector<account_deletion_identity> &) { ++removals; }
+void remove_deleted_account_runtime(P_desc, const std::vector<account_deletion_identity> &identities) {
+    require(identities.size() == 2 && identities[0].pid == 11 && identities[1].pid == 22,
+            "runtime publication lost captured account identities");
+    ++removals;
+}
 void account_recovery_forget(const char *) {}
 P_acct free_account(P_acct) { ++frees; return nullptr; }
 '''
@@ -171,24 +171,24 @@ int main() {
     require(admissions == 1 && writes == 1 && captures == 1 && closes == 1 &&
             removals == 1 && frees == 1 && !descriptor.account &&
             descriptor.state == CON_FLUSH && leases == 0 && backend_calls == 1 &&
-            quest_calls == 2 && !first_alias && !second_alias && !drained,
+            quest_calls == 0 && !first_alias && !second_alias && !drained,
             "confirmed deletion did not publish cleanup exactly once");
     reset(); backend_ok = true; refused_quest_pid = 22;
     verify_delete_account(&descriptor, name);
-    require(backend_calls == 0 && removals == 0 && frees == 0 && descriptor.account == &account &&
-            captures == 1 && quest_calls == 2 && !first_alias && second_alias && !drained &&
+    require(backend_calls == 1 && removals == 0 && frees == 0 && descriptor.account == &account &&
+            captures == 1 && quest_calls == 0 && first_alias && second_alias && !drained &&
             account.acct_blocked == ACCOUNT_BLOCK_DELETION && durable_block == ACCOUNT_BLOCK_DELETION,
             "quest persistence refusal destroyed retry identities or released the deletion fence");
     verify_delete_account(&descriptor, cancel);
-    require(backend_calls == 0 && descriptor.account == &account && second_alias &&
+    require(backend_calls == 1 && descriptor.account == &account && first_alias && second_alias &&
             messages.find("cannot be cancelled") != std::string::npos,
-            "partially completed quest cleanup made the irreversible request cancellable");
+            "refused native quest cleanup made the irreversible request cancellable");
     refused_quest_pid = 0;
     verify_delete_account(&descriptor, name);
-    require(captures == 2 && admissions == 1 && writes == 1 && backend_calls == 1 &&
-            quest_calls == 4 && !first_alias && !second_alias && removals == 1 && frees == 1 &&
+    require(captures == 2 && admissions == 1 && writes == 1 && backend_calls == 2 &&
+            quest_calls == 0 && !first_alias && !second_alias && removals == 1 && frees == 1 &&
             !descriptor.account && descriptor.state == CON_FLUSH && !drained && leases == 0,
-            "fenced retry failed to recapture and idempotently erase all quest identities");
+            "fenced retry failed to recapture identities and publish one native erasure completion");
     reset();
     verify_delete_account(&descriptor, cancel);
     require(admissions == 0 && writes == 0 && account.acct_blocked == 1,
@@ -197,7 +197,7 @@ int main() {
     verify_delete_account(&descriptor, mismatch);
     require(admissions == 0 && writes == 0 && account.acct_blocked == 1,
             "wrong-case confirmation acquired deletion authority");
-    std::cout << "PASS: account admission/fence failures, durable quest cleanup before identity destruction, retained retry and publication\n";
+    std::cout << "PASS: account admission/fence failures, backend-owned atomic erasure, retained retry and publication\n";
 }
 '''
 
