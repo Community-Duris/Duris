@@ -421,13 +421,15 @@ class IsolatedServer:
             time.sleep(0.05)
         raise AssertionError(f"logs/log/status never carried {needle!r}:\n{self.status_log()[-4000:]}")
 
-    def runtime_logs(self) -> str:
+    def runtime_logs(self, redact=None) -> str:
         """Collect bounded synthetic-server logs for actionable journey failures."""
         sections = []
         for path in sorted((self.run_root / "logs").rglob("*")):
             if not path.is_file() or path.name == ".gitignore":
                 continue
             content = path.read_text(encoding="utf-8", errors="replace").strip()
+            if redact is not None:
+                content = redact(content)
             if content:
                 sections.append(f"--- {path.relative_to(self.run_root)} ---\n{content[-8000:]}")
         return "\n".join(sections)[-30000:]
