@@ -1,3 +1,4 @@
+#include "net/network_wakeup.h"
 #include "persistence/maintenance_scheduler.h"
 #include "sql/sql_thread_init.h"
 
@@ -381,6 +382,7 @@ void worker_main()
 			if (stop_requested)
 				result.outcome = maintenance_outcome::cancelled;
 			completions.push_back(result);
+			network_wakeup_notify();
 			refresh_health_locked();
 			work_available.notify_all();
 		}
