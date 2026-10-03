@@ -78,7 +78,7 @@ die = body(fight, "void die(P_char ch, P_char killer)")
 checks.append((
     "die() defers the death while corpse item transfers are in flight",
     contains(die, "item_movement_transaction_player_busy(ch)") and
-    contains(die, 'persistence_report(corpse_transfer_disputed(ch) ? persistence_severity::alert : persistence_severity::info, AVATAR, "player_save", "death", "none", "none",'
+    contains(die, 'death_recovery_report(ch, corpse_transfer_disputed(ch) ? persistence_severity::alert : persistence_severity::info,'
                   '"corpse_items_in_flight",') and
     contains(die, "schedule_death_extract_retry(ch, death_corpse_uid,")
 ))
@@ -361,7 +361,8 @@ uint64_t now_usec = 10;
 uint64_t persistence_observability_now_usec() { return now_usec; }
 bool accept_event = false;
 bool add_event(void (*)(P_char,P_char,P_obj,void*), int, P_char, P_char, P_obj, int, const void*, size_t) { return accept_event; }
-void persistence_alert(int, const char*, const char*, const char*, const char*, const char*, const char*, ...) {}
+enum class persistence_severity { alert };
+void death_recovery_report(P_char, persistence_severity, const char*, const char*, ...) {}
 void char_from_room(P_char ch) { ch->in_room = NOWHERE; }
 P_char character_list = nullptr;
 struct death_extract_retry_context { int delay; uint64_t corpse_uid; };
