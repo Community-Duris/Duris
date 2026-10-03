@@ -258,6 +258,7 @@ void wake_zone(int zone_number, bool force, int encounter_room = NOWHERE)
 	    static_cast<std::size_t>(zone_number) >= zones.size())
 		return;
 
+	nevent_reschedule_batch batch;
 	for (P_char mob : zones[zone_number].npcs)
 	{
 		if (!mob || !IS_ALIVE(mob) || !IS_NPC(mob) || mob->in_room == NOWHERE)
@@ -289,6 +290,7 @@ void wake_encounter_room(int room)
 	if (!ready || !config.enabled || !config.wake_enabled || !nevent_is_game_thread() ||
 	    !valid_room(room))
 		return;
+	nevent_reschedule_batch batch;
 	for (P_char mob = world[room].people; mob; mob = mob->next_in_room)
 	{
 		if (!IS_ALIVE(mob) || !IS_NPC(mob))

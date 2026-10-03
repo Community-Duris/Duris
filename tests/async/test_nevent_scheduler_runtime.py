@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
 #define clock_gettime nevent_test_clock_gettime
 #include "world/new_events.c"
+#include "combat/spell_wards.h"
 #undef clock_gettime
 #include "account/character_identity.c"
 
@@ -325,6 +326,7 @@ static void reset_scheduler()
 	nevent_deferred_due_counts.clear();
 	nevent_pending_cancellations.clear();
 	nevent_pending_reschedules.clear();
+	require(nevent_reschedule_batch_depth == 0, 49);
 	pulse = 0;
 	after_events_call = FALSE;
 	fake_clock_ns = 0;
@@ -521,6 +523,7 @@ static bool callback_reschedule_accepted = false;
 
 static void reschedule_other_callback(P_char, P_char, P_obj, void *)
 {
+	nevent_reschedule_batch batch;
 	callback_reschedule_accepted = nevent_reschedule_after(callback_reschedule_target, 10);
 }
 
@@ -545,6 +548,62 @@ static void test_callback_reschedule()
 	while (ne_event_counter > 0)
 		run_one_heartbeat();
 	require(fired.size() == 1 && fired[0].first == 4500 && fired[0].second == 10, 248);
+}
+
+static void test_reschedule_batches(bool player_priority)
+{
+	reset_scheduler();
+	char_data player = {};
+	player.specials.position = STAT_NORMAL | POS_STANDING;
+	std::vector<nevent_handle> handles;
+	for (int i = 0; i < 3; ++i)
+	{
+		record_payload record = { 9000 + i, 4 };
+		handles.push_back(add_event(record_callback, 600 + i * 300, nullptr,
+					   nullptr, nullptr, 0, &record, sizeof(record)).handle);
+	}
+	add_record(9003, 4, 4);
+	add_player_record(&player, event_wait, 9004, 600);
+	const auto player_handle = nevent_handle_from_event(player.nevents);
+	record_payload doomed_record = { 9005, ULLONG_MAX };
+	const auto doomed = add_event(record_callback, 900, nullptr, nullptr, nullptr,
+				      0, &doomed_record, sizeof(doomed_record)).handle;
+	{
+		nevent_reschedule_batch outer;
+		require(nevent_reschedule_at(handles[2], 4), 450);
+		require(nevent_reschedule_at(handles[0], 6), 451);
+		{
+			nevent_reschedule_batch inner;
+			require(nevent_reschedule_at(handles[1], 4), 452);
+			require(nevent_reschedule_at(player_handle, 4), 453);
+			require(nevent_reschedule_at(doomed, 4), 454);
+			require(nevent_cancel(doomed) == nevent_cancel_result::canceled, 455);
+			record_payload replacement_record = { 9006, 604 };
+			const auto replacement = add_event(record_callback, 604, nullptr, nullptr,
+							  nullptr, 0, &replacement_record,
+							  sizeof(replacement_record)).handle;
+			require(!nevent_reschedule_at({ replacement.event, doomed.sequence }, 4), 456);
+		}
+		require(handles[0].event->due_tick == 600, 457);
+		require(nevent_pending_reschedules.size() == 4, 458);
+		require(nevent_reschedule_at(handles[0], 4), 459);
+	}
+	require(nevent_pending_reschedules.empty() && nevent_reschedule_batch_depth == 0, 460);
+	for (auto handle : handles)
+		require(handle.event->due_tick == 4 && handle.event->sequence == handle.sequence, 461);
+	require(player_handle.event->due_tick == 4 && check_ch_nevents(&player), 462);
+	require_balanced(463);
+	for (int i = 0; i <= 4; ++i)
+		run_one_heartbeat();
+	const std::vector<int> expected = player_priority ?
+		std::vector<int>{ 9004, 9000, 9001, 9002, 9003 } :
+		std::vector<int>{ 9000, 9001, 9002, 9003, 9004 };
+	require(fired_this_tick == expected, 466);
+	require(player.nevents == nullptr && player.nevents_tail == nullptr, 467);
+	while (ne_event_counter)
+		run_one_heartbeat();
+	require(fired.back() == std::pair<int, unsigned long long>{ 9006, 604 }, 468);
+	require_balanced(469);
 }
 
 static void test_priority_order(bool enabled)
@@ -1100,6 +1159,19 @@ void affect_remove(P_char ch, affected_type *af)
 }
 
 // Production callback, with only a list-visit counter injected by Python.
+// This fixture constructs ordinary short affects. The maintained ward runtime
+// regression qualifies managed ward expiry; reject an accidental ward here.
+bool spell_ward_is_managed(const struct affected_type *af)
+{
+	require(!af || !IS_SET(af->flags, AFFTYPE_SPELL_WARD), 470);
+	return false;
+}
+
+void spell_ward_expire(P_char, struct affected_type *)
+{
+	require(false, 471);
+}
+
 /* SHORT_AFFECT_CALLBACK */
 
 static void short_affect_schedule(P_char ch, affected_type *af, int delay = 1)
@@ -1314,14 +1386,21 @@ int main(int argc, char **argv)
 		test_shared_bucket_revolutions();
 		test_reschedule_apis();
 		test_callback_reschedule();
+		test_reschedule_batches(false);
 		test_randomized_oracle();
 	}
 	else if (std::strcmp(argv[1], "short-affect") == 0)
 		test_short_affect();
 	else if (std::strcmp(argv[1], "priority-off") == 0)
+	{
 		test_priority_order(false);
+		test_reschedule_batches(false);
+	}
 	else if (std::strcmp(argv[1], "priority-on") == 0)
+	{
 		test_priority_order(true);
+		test_reschedule_batches(true);
+	}
 	else if (std::strcmp(argv[1], "aging") == 0)
 		test_bounded_normal_aging();
 	else if (std::strcmp(argv[1], "catchup") == 0)
