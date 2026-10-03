@@ -44,6 +44,7 @@
 #include "classes/disguise.h"
 #include "classes/dreadlord.h"
 #include "world/epic.h"
+#include "world/epic_bank.h"
 #include "world/events.h"
 #include "world/world_activity.h"
 #include "net/gmcp.h"
@@ -900,6 +901,9 @@ static void combat_outcome_committed(bool committed, const combat_outcome_result
 			affect_to_char(ch, &af);
 			if (entry.epic_delta)
 				epic_publish_pvp_award(ch, static_cast<int>(entry.epic_delta));
+			else if (entry.epic_converted > 0)
+				epic_pay_converted_award(ch, EPIC_PVP, 0,
+							 static_cast<int>(entry.epic_converted));
 			if (entry.wallet_delta_copper)
 			{
 				snprintf(buffer, sizeof(buffer), "You get %s in blood money.\r\n",
@@ -1038,7 +1042,13 @@ static bool submit_pvp_outcome(P_char ch, P_char victim, bool award_frags)
 					epic_gain += 500;
 					entry->flags |= COMBAT_PARTICIPANT_SPILL_BLOOD;
 				}
-				entry->epic_delta = epic_calculate_pvp_award(current, epic_gain);
+				const int award = epic_calculate_pvp_award(current, epic_gain);
+				// Below epic.bank.minLevel the award credits no points: it still feeds
+				// artifacts and is paid as experience once the outcome commits.
+				if (epic_level_can_bank(current))
+					entry->epic_delta = award;
+				else
+					entry->epic_converted = award;
 			}
 			if (GET_RACE(current) == RACE_HALFLING ||
 			    GET_CLASS(current, CLASS_MERCENARY))
@@ -1074,13 +1084,14 @@ static bool submit_pvp_outcome(P_char ch, P_char victim, bool award_frags)
 	for (size_t index = 0; index < payload.participant_count; ++index)
 	{
 		const auto &entry = payload.participants[index];
-		if (entry.epic_delta <= 0)
+		// A converted award feeds artifacts exactly as a banked one would.
+		const int64_t fed = entry.epic_delta > 0 ? entry.epic_delta : entry.epic_converted;
+		if (fed <= 0)
 			continue;
 		P_char participant = find_player_by_pid(entry.pid);
 		if (!participant || IS_NPC(participant) ||
 		    !artifact_guild_transaction_submit(participant, operation_id,
-						       static_cast<int>(entry.epic_delta),
-						       EPIC_PVP))
+						       static_cast<int>(fed), EPIC_PVP))
 			logit(LOG_FILE,
 			      "artifact_guild: component=combat_capture outcome=deferred_effect_unavailable actor=redacted");
 	}

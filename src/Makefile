@@ -360,6 +360,8 @@ OBJS =  $(SHIP_OBJS) \
 				 guild/artifact_guild_command.o \
 				 guild/artifact_guild_repository.o \
 				 guild/artifact_guild_state.o \
+				 guild/artifact_feed_rates.o \
+				 guild/artifact_feed_command.o \
 				 guild/artifact_guild_transaction.o \
 				 economy/boon_reward_command.o \
 				 economy/boon_reward_repository.o \

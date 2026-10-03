@@ -96,6 +96,7 @@ enum class telemetry_progression_source : std::uint8_t
 	boon = 10,
 	administration = 11,
 	system = 12,
+	epic_conversion = 13,
 };
 
 enum class telemetry_progression_reason : std::uint8_t
@@ -953,7 +954,8 @@ constexpr bool telemetry_progression_source_is_valid(telemetry_progression_sourc
 	       source == telemetry_progression_source::tanking ||
 	       source == telemetry_progression_source::boon ||
 	       source == telemetry_progression_source::administration ||
-	       source == telemetry_progression_source::system;
+	       source == telemetry_progression_source::system ||
+	       source == telemetry_progression_source::epic_conversion;
 }
 
 constexpr bool telemetry_progression_reason_is_valid(telemetry_progression_reason reason) noexcept

@@ -1,3 +1,4 @@
+#include <climits>
 #include <list>
 #include <math.h>
 #include <stdio.h>
@@ -24,6 +25,7 @@ using namespace std;
 #include "combat/damage.h"
 #include "economy/currency_transaction.h"
 #include "world/epic.h"
+#include "world/epic_bank.h"
 #include "world/epic_bonus.h"
 #include "world/epic_task_catalog.h"
 #include "world/epic_transaction.h"
@@ -589,6 +591,140 @@ int epic_skills_min_level()
 	return BOUNDED(1, static_cast<int>(get_property("epic.skills.minLevel", 56.000)), MAXLVL);
 }
 
+/*
+ * Epic points are banked only from epic.bank.minLevel (default 56). From
+ * epic.gain.minLevel up to that level, awards are still earned -- stones, PvP,
+ * quests, boons -- and still feed artifacts and guild prestige, but the player
+ * receives experience instead of points.
+ */
+int epic_bank_min_level()
+{
+	return BOUNDED(1, static_cast<int>(get_property("epic.bank.minLevel", 56.000)), MAXLVL);
+}
+
+bool epic_level_can_bank(P_char ch)
+{
+	return ch && GET_LEVEL(ch) >= epic_bank_min_level();
+}
+
+/*
+ * Experience paid for one epic point below the bank level:
+ *
+ *   exp = epics x epic.convert.exp.<level>
+ *
+ * The defaults are a quarter of the exp a level-50 group earns from kills in
+ * the time its stones pay one epic: 8,500 at level 50, 5,500 at 51-52 and
+ * 5,000 at 53-55. A level with no property uses the nearest default.
+ */
+int epic_conversion_exp_per_epic(int level)
+{
+	static const int DEFAULTS[] = { 8500, 5500, 5500, 5000, 5000, 5000 };
+	const int fallback = DEFAULTS[BOUNDED(0, level - 50, 5)];
+	char key[64];
+	snprintf(key, sizeof(key), "epic.convert.exp.%d", level);
+	return MAX(0, static_cast<int>(get_property(key, static_cast<double>(fallback), false)));
+}
+
+/*
+ * Epic skill prices. One purchase adds epic.skillGain to a skill and costs
+ *
+ *   epics = multiplier x base cost x (1 + skill / epic.progressFactor)
+ *
+ * epic.skill.costMultiplier is 5 (it was a hard-coded 3). Refunds use their own
+ * multiplier, kept at 3 -- the lowest price anyone has paid -- so a skill bought
+ * before a price rise can never refund more than it cost.
+ */
+int epic_skill_cost_multiplier()
+{
+	return BOUNDED(1, get_property("epic.skill.costMultiplier", 5), 100);
+}
+
+int epic_skill_refund_multiplier()
+{
+	return BOUNDED(0, get_property("epic.skill.refundMultiplier", 3), 100);
+}
+
+// Pays an award earned below epic.bank.minLevel as experience. The caller has
+// already fed artifacts and guild prestige from the full epic amount.
+static void epic_award_converted(P_char ch, const epic_award_context &context)
+{
+	if (!ch || IS_NPC(ch) || context.amount <= 0)
+		return;
+	if (context.blessing)
+		send_to_char("You feel the &+cblessing&n of the &+WGods&n wash over you.\n", ch);
+	if (context.task_penalty)
+		send_to_char("You have not completed the task given to you by the Gods, \n"
+			     "so you are not able to progress at usual pace.\n",
+			     ch);
+	if (context.type == EPIC_ZONE && context.data > 0 &&
+	    !gameplay_read_state_add_completed_zone(&ch->only.pc->gameplay_reads, context.data))
+		logit(LOG_DEBUG,
+		      "epic_award_converted: component=completed_zone outcome=unavailable actor=redacted");
+	const int64_t experience =
+		static_cast<int64_t>(context.amount) * epic_conversion_exp_per_epic(GET_LEVEL(ch));
+	send_to_char_f(ch,
+		       "The power of %d epic point%s flows into you as experience; epic points "
+		       "are kept from level %d.\r\n",
+		       context.amount, context.amount == 1 ? "" : "s", epic_bank_min_level());
+	epiclog(56, "%s converted %d epic points into %lld experience (%s)", ch->player.name,
+		context.amount, static_cast<long long>(experience), epic_award_name(context.type));
+	if (experience > 0)
+		gain_exp(ch, NULL, static_cast<int>(MIN(experience, static_cast<int64_t>(INT_MAX))),
+			 EXP_EPIC);
+}
+
+void epic_pay_converted_award(P_char ch, int type, int data, int amount)
+{
+	const epic_award_context context = { type, data, amount, false, false };
+	epic_award_converted(ch, context);
+}
+
+namespace
+{
+struct epic_forfeit_context
+{
+	int64_t amount;
+	int level;
+};
+
+void epic_forfeit_committed(P_char ch, bool committed, const epic_command_result &, unsigned int,
+			    const uint8_t *raw_context, size_t context_size)
+{
+	if (!ch || context_size != sizeof(epic_forfeit_context))
+		return;
+	epic_forfeit_context context = {};
+	memcpy(&context, raw_context, sizeof(context));
+	if (!committed)
+	{
+		// The balance stays until the next login tries again.
+		logit(LOG_DEBUG,
+		      "epic_forfeit: component=bank_level outcome=deferred actor=redacted");
+		return;
+	}
+	send_to_char_f(ch,
+		       "&+rYour %lld epic point%s fade away: epic points are kept only from level "
+		       "%d.&n\r\n",
+		       static_cast<long long>(context.amount), context.amount == 1 ? "" : "s",
+		       epic_bank_min_level());
+	epiclog(56, "%s forfeited %lld epic points at level %d, below the bank level",
+		ch->player.name, static_cast<long long>(context.amount), context.level);
+}
+} // namespace
+
+void epic_forfeit_below_bank(P_char ch, critical_source_site site)
+{
+	if (!ch || !IS_PC(ch) || IS_TRUSTED(ch) || epic_level_can_bank(ch) ||
+	    ch->only.pc->epics <= 0)
+		return;
+	const epic_forfeit_context context = { ch->only.pc->epics, GET_LEVEL(ch) };
+	if (!epic_transaction_submit(ch, -context.amount, epic_reason_type::bank_level_forfeit,
+				     GET_LEVEL(ch), EPIC_COMMAND_REQUIRE_FUNDS, site,
+				     critical_deadline_class::interactive, epic_forfeit_committed,
+				     &context, sizeof(context)))
+		logit(LOG_FILE,
+		      "epic_forfeit: component=bank_level outcome=unavailable actor=redacted");
+}
+
 static bool prepare_epic_award(P_char ch, int type, int data, int amount, bool completing_task,
 			       epic_award_context *prepared)
 {
@@ -670,6 +806,16 @@ void gain_epic(P_char ch, int type, int data, int amount)
 	if (!critical_operation_id_generate(&operation_id))
 	{
 		send_to_char("The epic award service is busy. Please try again.\n", ch);
+		return;
+	}
+	if (!epic_level_can_bank(ch))
+	{
+		// Below epic.bank.minLevel the award still feeds artifacts and guild prestige
+		// from its full epic amount, and is paid as experience instead of points.
+		if (!artifact_guild_transaction_submit(ch, operation_id, amount, type))
+			logit(LOG_FILE,
+			      "artifact_guild: component=epic_capture outcome=deferred_effect_unavailable actor=redacted");
+		epic_award_converted(ch, context);
 		return;
 	}
 	if (!epic_transaction_submit_identified(ch, operation_id, amount, reason, data, 0,
@@ -1079,6 +1225,12 @@ void epic_publish_stone_award(P_char ch, const zone_touch_result &result, size_t
 	const epic_award_context context = { EPIC_ZONE, static_cast<int>(result.zone_number),
 					     award.amount, (award.flags & 1) != 0,
 					     (award.flags & 2) != 0 };
+	if (award.flags & ZONE_TOUCH_AWARD_CONVERTED)
+	{
+		epic_award_converted(ch, context);
+		check_boon_completion(ch, nullptr, result.zone_number, BOPT_ZONE);
+		return;
+	}
 	const bool uses_free_level = GET_LEVEL(ch) >= get_property("exp.maxExpLevel", 46) &&
 				     GET_LEVEL(ch) < get_property("epic.maxFreeLevel", 50);
 	epic_award_committed(ch, true, {}, 0, reinterpret_cast<const uint8_t *>(&context),
@@ -1285,9 +1437,15 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 			epic_award_context award = {};
 			ready = prepare_epic_award(participant, EPIC_ZONE, zone_number, value,
 						   errand != 0, &award);
+			// Members below epic.bank.minLevel are paid in experience: the touch records
+			// their award (it still feeds artifacts) but credits them no epic points.
 			touch.awards[i] = { award.amount, errand,
-					    static_cast<uint8_t>((award.blessing ? 1 : 0) |
-								 (award.task_penalty ? 2 : 0)) };
+					    static_cast<uint8_t>(
+						    (award.blessing ? 1 : 0) |
+						    (award.task_penalty ? 2 : 0) |
+						    (epic_level_can_bank(participant) ?
+							     0 :
+							     ZONE_TOUCH_AWARD_CONVERTED)) };
 		}
 		if (!ready || !zone_touch_transaction_submit(touch))
 		{
@@ -2667,7 +2825,8 @@ void refund_epic_skills(P_char ch)
 		while (learned-- > 0)
 		{
 			cost_multiplier = 1 + learned / multiplier_step;
-			point_refund += cost_multiplier * epic_rewards[er_skl].points_cost * 3;
+			point_refund += cost_multiplier * epic_rewards[er_skl].points_cost *
+					epic_skill_refund_multiplier();
 			coins_refund += cost_multiplier * epic_rewards[er_skl].coins * 2;
 		}
 	}

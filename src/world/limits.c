@@ -29,6 +29,7 @@
 #include "combat/ctf.h"
 #include "core/defines.h"
 #include "world/epic_bonus.h"
+#include "world/epic_bank.h"
 #include "combat/frag_cap_config.h"
 #include "world/hardcore_config.h"
 #include "core/files.h"
@@ -626,6 +627,8 @@ static telemetry_progression_source progression_source_for_type(int type)
 		return telemetry_progression_source::tanking;
 	case EXP_BOON:
 		return telemetry_progression_source::boon;
+	case EXP_EPIC:
+		return telemetry_progression_source::epic_conversion;
 	default:
 		return telemetry_progression_source::unknown;
 	}
@@ -638,7 +641,8 @@ static telemetry_progression_reason progression_reason_for_type(int type)
 	if (type == EXP_RESURRECT)
 		return telemetry_progression_reason::resurrection;
 	if (type == EXP_DAMAGE || type == EXP_HEALING || type == EXP_KILL || type == EXP_QUEST ||
-	    type == EXP_MELEE || type == EXP_WORLD_QUEST || type == EXP_TANKING || type == EXP_BOON)
+	    type == EXP_MELEE || type == EXP_WORLD_QUEST || type == EXP_TANKING ||
+	    type == EXP_BOON || type == EXP_EPIC)
 		return telemetry_progression_reason::earned;
 	return telemetry_progression_reason::unknown;
 }
@@ -874,6 +878,13 @@ static void lose_level_impl(P_char ch, std::uint64_t threshold_xp,
 			ch->specials.conditions[i] = 0;
 
 	balance_affects(ch);
+
+	// Epic points are kept only from epic.bank.minLevel: the loss that takes a character
+	// below it forfeits them (once; the login check catches anything left over).
+	if (previous_level >= epic_bank_min_level() && GET_LEVEL(ch) < epic_bank_min_level())
+		epic_forfeit_below_bank(ch, source == telemetry_progression_source::death ?
+						    critical_source_site::combat :
+						    critical_source_site::command);
 
 	// Send GMCP update for level change
 	gmcp_char_status(ch);
@@ -1215,7 +1226,8 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 	if (victim != nullptr)
 		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_VICTIM;
 
-	if (type == EXP_RESURRECT)
+	// Rest does not double a resurrection or an epic award paid as experience.
+	if (type == EXP_RESURRECT || type == EXP_EPIC)
 	{
 		;
 	}
@@ -1513,6 +1525,18 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 			      (int)XP);
 		}
 		// debug("world quest 1 (%d)", (int)XP);
+	}
+	else if (type == EXP_EPIC)
+	{
+		// An epic award below epic.bank.minLevel: racial exp factor only, like quest exp.
+		XP = gain_exp_modifiers_race_only(ch, NULL, XP);
+		if (GET_LEVEL(ch) < MINLVLIMMORTAL)
+		{
+			logit(LOG_EXP,
+			      "EPIC EXP: %s - level %d: old exp: %d, new exp: %d, +exp: %d",
+			      GET_NAME(ch), GET_LEVEL(ch), GET_EXP(ch), GET_EXP(ch) + (int)XP,
+			      (int)XP);
+		}
 	}
 	else if (type == EXP_QUEST)
 	{

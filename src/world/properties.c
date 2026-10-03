@@ -261,6 +261,43 @@ static bool persist_durisweb_hook_property(const char *key, float value)
 	return TRUE;
 }
 
+/*
+ * Sets one property in memory and writes it to lib/duris.properties at once,
+ * adding the key when the file lacks it. persist_durisweb_hook_property() is a
+ * generic single-key writer; the hook setter below was its first user. When the
+ * file cannot be written the value in memory is left as it was. Callers that
+ * change a key feeding a derived table re-apply the properties themselves.
+ */
+bool set_and_save_property(const char *key, float value)
+{
+	if (!key || !*key)
+		return FALSE;
+	struct property *result =
+		(struct property *)bsearch(key, duris_properties, properties_count,
+					   sizeof(struct property), key_property_comp);
+	if (!result)
+	{
+		if (properties_count >= MAX_PROPERTIES ||
+		    !persist_durisweb_hook_property(key, value))
+			return FALSE;
+		result = &duris_properties[properties_count++];
+		result->key = (char *)str_dup(key);
+		result->value = value;
+		result->old_value = value;
+		qsort(duris_properties, properties_count, sizeof(struct property), property_comp);
+		return TRUE;
+	}
+	const float old_value = result->value;
+	result->value = value;
+	if (!persist_durisweb_hook_property(key, value))
+	{
+		result->value = old_value;
+		return FALSE;
+	}
+	result->old_value = value;
+	return TRUE;
+}
+
 bool set_durisweb_hook_enabled(const char *hook_id, bool enabled)
 {
 	char key[128];
