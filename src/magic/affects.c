@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/world_activity.h"
 #include "world/rested.h"
 #include "core/profile.h"
 #include "core/structs.h"
@@ -2815,6 +2816,11 @@ struct char_link_data *link_char_with_affect(P_char ch, P_char target, ush_int t
 	cld->next_linking = ch->linking;
 	cld->next_linked = target->linked;
 	ch->linking = target->linked = cld;
+	if (type == LNK_PET || type == LNK_RIDING)
+	{
+		world_activity_promote_character(ch);
+		world_activity_promote_character(target);
+	}
 
 	return cld;
 }
@@ -3099,6 +3105,11 @@ void internal_unlink_char(P_char ch, struct char_link_data *cld, struct char_lin
 		prev->next_linked = cld->next_linked;
 	else
 		cld->linked->linked = cld->next_linked;
+	if (cld->type == LNK_PET || cld->type == LNK_RIDING)
+	{
+		world_activity_promote_character(ch);
+		world_activity_promote_character(cld->linked);
+	}
 	if (cld->affect)
 		wear_off_message(cld->linking, cld->affect);
 	if (!IS_SET(link_types[cld->type].flags, LNKFLG_OBJECT) &&
@@ -3759,6 +3770,7 @@ bool falling_obj(P_obj obj, int speed, bool caller_is_event)
 			      world[obj->loc.room].number, obj_index[obj->R_num].virtual_number);
 			FREE(exit);
 			world[obj->loc.room].dir_option[DIR_DOWN] = exit = NULL;
+			world_activity_room_exits_changed(obj->loc.room);
 		}
 		// At this point, we know that, if exit exists, it doesn't lead to NOWHERE.
 		if (((world[obj->loc.room].sector_type == SECT_NO_GROUND) ||

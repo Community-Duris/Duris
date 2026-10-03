@@ -55,7 +55,7 @@ def test_promotion_is_indexed_and_rebuilt_after_recovery():
 def test_mundane_handle_is_sequence_validated_and_corpse_walk_has_no_heap_visitor():
     assert "world_activity_mundane_event_sequence" in STRUCTS
     assert "nevent_handle_is_active(event)" in ACTIVITY
-    assert "event.event->func != event_mob_mundane" in ACTIVITY
+    assert "event.event->func == event_mob_mundane" in ACTIVITY
     assert "std::array<frame, 1024>" in ACTIVITY
     assert "sibling_cycle(child)" in ACTIVITY
     assert "visited++ < 65536" in ACTIVITY

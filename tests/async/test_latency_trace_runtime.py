@@ -92,6 +92,30 @@ int main(int argc, char **argv)
 	assert(first.dropped_contended_samples == 0);
 	assert(max_for(&first, "spike") == 900);
 
+	// Exact nearest-rank loop quantiles include zero and exclude other scopes.
+	for (uint64_t i = 100; i; --i)
+		latency_trace_record("total_tick", i - 1, i);
+	latency_trace_record("worker", 999999, 0);
+	latency_trace_record("total_tick", LATENCY_TRACE_DURATION_INVALID, 0);
+	latency_trace_snapshot loops = {};
+	latency_trace_snapshot_take_and_reset(&loops);
+	assert(loops.loop_sample_count == 100 && loops.dropped_loop_samples == 0);
+	char *loop_dump = dump_to_string(&loops);
+	assert(strstr(loop_dump, "LOOP QUANTILES: samples=100 p95_us=94 p99_us=98 dropped=0"));
+	free(loop_dump);
+	latency_trace_snapshot loop_reset = {};
+	latency_trace_snapshot_take_and_reset(&loop_reset);
+	assert(loop_reset.loop_sample_count == 0);
+	for (uint64_t i = 0; i <= LATENCY_LOOP_SAMPLE_CAPACITY; ++i)
+		latency_trace_record("total_tick", i, i);
+	latency_trace_snapshot loop_overflow = {};
+	latency_trace_snapshot_take_and_reset(&loop_overflow);
+	assert(loop_overflow.loop_sample_count == LATENCY_LOOP_SAMPLE_CAPACITY);
+	assert(loop_overflow.dropped_loop_samples == 1);
+	loop_dump = dump_to_string(&loop_overflow);
+	assert(strstr(loop_dump, "p95_us=- p99_us=- dropped=1"));
+	free(loop_dump);
+
 	latency_trace_reset();
 	assert(latency_trace_record_nonblocking("nonblocking", 25, 8));
 	latency_trace_snapshot nonblocking = {};

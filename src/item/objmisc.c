@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/world_activity.h"
 #include "core/structs.h"
 #include "world/db.h"
 #include "core/utils.h"
@@ -199,6 +200,8 @@ void event_random_exit(P_char /*ch*/, P_char /*victim*/, P_obj obj, void * /*dat
 		}
 		world[s_room].dir_option[exit_dir]->to_room = real_room(obj->value[1]);
 		world[d_room].dir_option[rev_dir[exit_dir]]->to_room = s_room;
+		world_activity_room_exits_changed(s_room);
+		world_activity_room_exits_changed(d_room);
 		if (zone_table[world[d_room].zone].flags & ZONE_CLOSED)
 			REMOVE_BIT(zone_table[world[d_room].zone].flags, ZONE_CLOSED);
 	}
