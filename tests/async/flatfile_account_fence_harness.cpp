@@ -5,15 +5,36 @@
 #include "persistence/persistence_mode.h"
 
 #include <cstdlib>
+#include <cerrno>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <map>
 #include <memory>
+#include <unistd.h>
 
 namespace fs = std::filesystem;
 using images = std::map<std::string, std::string>;
+
+static std::string fail_journal_sync_directory;
+static bool journal_sync_failed = false;
+extern "C" int __real_fsync(int fd);
+extern "C" int __wrap_fsync(int fd)
+{
+	char path[4096];
+	const auto link = "/proc/self/fd/" + std::to_string(fd);
+	const auto count = readlink(link.c_str(), path, sizeof(path));
+	if (!fail_journal_sync_directory.empty() && count > 0 &&
+	    std::string(path, static_cast<size_t>(count)) == fail_journal_sync_directory)
+	{
+		fail_journal_sync_directory.clear();
+		journal_sync_failed = true;
+		errno = EIO;
+		return -1;
+	}
+	return __real_fsync(fd);
+}
 
 class flatfile_accounting_test_access
 {
@@ -190,4 +211,79 @@ int main(int argc, char **argv)
 		"native fence/membership did not survive fresh load");
 	std::cout
 		<< "PASS: native flatfile active/corrupt fence refusal, unchanged authority, paused retry and fresh load\n";
+
+	for (int fault = 0; fault < 5; ++fault)
+	{
+		std::string fault_name = "AckFence" + std::to_string(fault);
+		acct_entry candidate = {};
+		candidate.acct_name = fault_name.data();
+		candidate.acct_email = email;
+		candidate.acct_password = password;
+		candidate.acct_confirmation = confirmation;
+		require(flatfile_account_state_save(&candidate, &error), "ACK fixture account");
+		const auto revision = candidate.persistence_revision;
+		candidate.acct_blocked = ACCOUNT_BLOCK_DELETION;
+		const auto before_fault = snapshot(root);
+		if (fault == 0)
+			setenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT", "1", 1);
+		else if (fault == 1)
+			setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_JOURNAL", "1", 1);
+		else if (fault == 2 || fault == 3)
+			setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION",
+			       fault == 2 ? "1" : "2", 1);
+		else
+			fail_journal_sync_directory = (root / "domains").string();
+		const auto result = flatfile_account_state_fence(&candidate, false, &error);
+		unsetenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT");
+		unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_JOURNAL");
+		unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION");
+		require(candidate.persistence_revision == revision,
+			"incomplete fence acknowledged a revision");
+		if (fault == 0)
+		{
+			require(result == flatfile_account_fence_result::refused &&
+					snapshot(root) == before_fault,
+				"pre-commit refusal changed native fence or membership");
+		}
+		else
+		{
+			require(result == flatfile_account_fence_result::pending_recovery,
+				"published fence was misclassified as refusal");
+			if (fault == 4)
+				require(journal_sync_failed,
+					"journal directory sync fault was not hit");
+			// Native recovery must keep the request fenced while its apply fails.
+			if (fault == 1)
+			{
+				fs::permissions(root / "identities/accounts",
+						fs::perms::owner_all | fs::perms::others_exec,
+						fs::perm_options::replace);
+				require(flatfile_account_state_fence(&candidate, true, &error) ==
+							flatfile_account_fence_result::
+								pending_recovery &&
+						candidate.acct_blocked == ACCOUNT_BLOCK_DELETION &&
+						candidate.persistence_revision == revision,
+					"persistent recovery failure lost its fence or acknowledged it");
+				fs::permissions(root / "identities/accounts", fs::perms::owner_all,
+						fs::perm_options::replace);
+			}
+		}
+		require(flatfile_account_state_fence(&candidate, fault != 0, &error) ==
+					flatfile_account_fence_result::ready &&
+				candidate.persistence_revision == revision + 1,
+			"fence retry did not recover exactly one native revision: " + error);
+		const auto committed = snapshot(root);
+		require(flatfile_account_state_fence(&candidate, true, &error) ==
+					flatfile_account_fence_result::ready &&
+				snapshot(root) == committed &&
+				candidate.persistence_revision == revision + 1,
+			"exact fence retry republished an acknowledged operation");
+		owner fresh(flatfile_account_state_load(fault_name.c_str(), &error),
+			    flatfile_account_state_release);
+		require(fresh && fresh->acct_blocked == ACCOUNT_BLOCK_DELETION &&
+				fresh->persistence_revision == revision + 1,
+			"recovered fence was not retained on fresh load");
+	}
+	std::cout
+		<< "PASS: native fence pre-commit refusal, durable/uncertain publication, persistent recovery refusal and exact retry\n";
 }

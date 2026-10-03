@@ -57,6 +57,15 @@ enum class flatfile_authority_transaction_result
 	io_error
 };
 
+// A failed apply does not undo publication of the authority journal. A rename
+// with failed directory sync is uncertain until native recovery finishes.
+enum class flatfile_authority_commit_outcome
+{
+	not_published,
+	publication_uncertain,
+	committed
+};
+
 class flatfile_authority_lock
 {
     public:
@@ -96,5 +105,9 @@ flatfile_authority_transaction_commit(const std::string &root, const flatfile_au
 flatfile_authority_transaction_result flatfile_authority_transaction_commit_operations(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const std::vector<flatfile_authority_operation> &operations, std::string *error);
+flatfile_authority_transaction_result flatfile_authority_transaction_commit_operations_with_outcome(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const std::vector<flatfile_authority_operation> &operations, std::string *error,
+	flatfile_authority_commit_outcome *outcome);
 
 #endif

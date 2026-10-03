@@ -314,9 +314,21 @@ new descriptor headers. Fresh strict production SQL/flatfile/pfile builds pass
 from empty object directories. Real inactive SQL deletion journeys pass on both
 engines; the existing flatfile character deletion journey also passes. The
 flatfile pre-fence admission repair now passes the real menu journey, sanitizer
-owner tests, both strict backend builds and all ten native recovery checks. A native fault
-probe establishes an additional committed-fence acknowledgement defect; it
-remains open. Current broad and full-feature qualification remain open. The unchanged frozen full-world retry passes inspector
+owner tests, both strict backend builds and all ten native recovery checks. The committed-fence acknowledgement repair passes native sanitizer, baseline,
+strict backend/pfile builds, both SQL deletion journeys and all ten recovery
+checks. Real uncertain/durable publication faults pass pending recovery,
+non-cancellable retry and pending-journal crash recovery through whole-account
+erasure. Both complete journeys remain failed because a zone-story alias
+survives whole-account deletion; this separate R8 defect and the second cold
+restart remain open. Existing bank/shop/UID owner checks pass. Remote character-index, portable copyover and readiness changes through
+16ce1f2fb now pass fresh strict SQL/flatfile/pfile builds, incoming owner suites,
+both real SQL deletion journeys and all ten native recovery cases. Shifted
+writer locations and hardcoded assertions are refreshed after exact identity
+checks; all 54 contracts pass without route upgrades. Whole-account quest-alias
+erasure remains unfinished. Checked quest serialization now rejects allocation-truncated
+state on its separately qualified native prefix; final alias journeys remain open. A new integrated broad run is pinned to published 0be1cdf30, rather
+than the uncommitted acknowledgement candidate. Current broad and full-feature
+qualification remain open. The unchanged frozen full-world retry passes inspector
 compilation but times out in its 600-second server-build stage before gameplay.
 No deadline was increased or gate waived; see the October 2 review status.
 

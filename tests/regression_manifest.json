@@ -862,6 +862,7 @@
   "test_zone_story_quest_production.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":1.779,"purpose":"zone story quest production"},
   "test_zone_story_quest_production_catalog.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.299,"purpose":"zone story quest production catalog"},
   "test_zone_story_quest_repository.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":1.165,"purpose":"zone story quest repository"},
+  "test_zone_story_quest_serialization.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":8,"purpose":"Production quest serialization refuses swallowed stream allocation failures."},
   "test_zone_story_quest_state_schema.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.023,"purpose":"Offline contract for the durable zone-story quest state schema."},
   "test_zone_story_quest_tracking_contract.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":1.103,"purpose":"zone story quest tracking contract"},
   "test_zone_touch_repository.py": {"profile":"native","mode":"unittest","minimum_cases":4,"cpu":1,"memory_mb":512,"seconds":3.979,"purpose":"Contract and validation tests for zone_touch_repository."},
