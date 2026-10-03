@@ -406,3 +406,63 @@ Queue milestone LF-normalized source/evidence SHA-256:
 - tmp/transport-4180-focused-summary.local.json: 2b93ef67fa94bdcad76cf5246518e3fc0a126650136038b665b62df6037c6bb7
 - tmp/transport-4180-session_queues_runtime.local.log: 1572f5981e864a1d6a3af199eb3fed4c8bca422ec2b5518506d5e95aad61e33b
 - tmp/transport-4180-session-queues-green.local.log: 9e97152ff5b6423370edf9302e4d6a6e96d243ca154cdff4a11c6b5b100f2125
+
+
+## Transport-integrated native qualification
+
+Integrated native source 4180f74573c8a4cfe669c057c36f9c36dfc6d7fa passes
+strict production SQL, flatfile and offline pfile builds plus full formatting.
+All 1,229 archived native source files match the qualified workspace. Executable
+SHA-256: SQL 54834b1568cf2fd2def39f80dff8370f664c37a7e684e5d7ee1ba0d2bbe7c0b1;
+flatfile 60e9bc740ccbf4de0e44a1f636da5537483a0e57c98bebbe711346f3d66ddd40.
+The inspector is freshly compiled against this source in 83.260 seconds;
+earlier inspectors are not relabeled.
+
+The real persistent-transport matrix passes authenticated Telnet/TLS/WebSocket
+exec, compression/framing/order/deduplication, startup/exit/retry failures,
+mixed authenticated sessions, orderly close, invalid input isolation, stale
+barrier/retry, disconnect/reconnect, frontend failure, modified handoff refusal,
+account-mutation barrier, bounded flood/backpressure and launcher watchdog.
+Watchdog verifies delegated world pulses, single lifecycle delivery, exec,
+cold restart and stalled-world detection. Listener measurements pass all
+existing limits: p95 first-byte 3.164 ms, TLS handshake 7.127 ms, WebSocket upgrade
+1.708 ms, 96-client burst 98.652 ms; measured idle CPU 0%, capacity 256 with extra
+connection refused, and median plain/TLS command spacing 250.840/250.822 ms.
+These are isolated test-server measurements, not mixed accounting workload.
+
+All ten native recovery cases pass in 545.753 seconds, including both MySQL and
+MariaDB full dump/import/private service boot, pending flatfile/legacy replay,
+WAL/quarantine refusal and locker/spell receipt qualification. These are
+fresh source-4180 proofs, distinct from earlier ce755 results. The frozen broad
+suite at published 70aaa41384cb40ae786d06241ec5313ccafef822 is running;
+no broad PASS, captured-staging-generation, full writer or R1-R8 completion is
+claimed.
+
+The incoming source preserves every lexical census identity and multiplicity:
+2,815 occurrences/2,756 sites/864 routes. Only source line anchors and matching
+contract assertions were refreshed after checking added/removed sets are empty.
+52 writer tests and 14 golden fixture contracts pass; 751 runtime/projection
+routes remain unqualified. coverage_complete=false; release BLOCKED.
+
+Source review also confirms typed coordinator coin/item dispatch already
+exists; Plan 1's bank-only starting-point text is corrected. Bank has actual
+wrapped post-COMMIT reply-loss proof. Coin/item fixtures synthesize ambiguity
+after repository success and use replacement SQL pool interfaces. Production
+pool contention/lifecycle and ordinary drop/give/pile publication recovery are
+still open, including room payload durability after ACK. No production or
+inactive-accounting behavior was changed by this qualification milestone.
+
+Transport integration LF-normalized evidence SHA-256:
+
+- tmp/transport-accounting-integration-build.local.log: 13d8fe903ef08b8ada7480b04b908caa66c3eb969db64029d1b22fcb47867670
+- tmp/transport-accounting-integration-build-continued.local.log: 9fa7e6a6966950ffe9fe8a0c499c4dd52c577e7cb0f9994ac9fcd3674af74891
+- tmp/transport-accounting-integration-formatter.local.log: f2efc2eb69dda6ceacbfd2534a79f615c4760f829f5ca75ab436cab8f61cb646
+- tmp/transport-4180-census-diff.local.json: 04470f08c38c9cfb4c04d74b2e5e0411b6c1859bde4dba7e7edc437ef0c7d549
+- tmp/transport-4180-site-reanchor.local.log: 230578a1e1b78bbb9c12ef9f015f57cb2e559cd75c16b1364632343d9e992ff2
+- tmp/transport-4180-contracts.local.log: fb3128ea6cea2359cce4eda435cdfdbf8961f55a3ef5722f96889e55da48e5d0
+- tmp/transport-4180-writer-tests.local.log: 209ba17e6accd8d3845078a0d57f82041fef10cb7c7285a1788c72ba7ac10841
+- tmp/transport-4180-journeys-driver.local.log: 76daa0a170a36547a196767068477e2f621ef2edad62d31eb9265d6f92b97fdf
+- tmp/transport-4180-journey.local.log: 685f2e3e799d4c72c70fd3d8aff411e4805cb9b5549656e9cbcc7c9eba5c8607
+- tmp/transport-4180-network-journey.local.log: 36115407587f0087540f001bdff7edee83ed8d0d83463c7448c25d48caca8732
+- tmp/transport-4180-network-measurements.local.json: 8bb1f335a04058c0df5949f2c64c66657689d4241ff470ae0e9d49b3e2f44378
+- tmp/transport-4180-recovery.local.log: efb878a1e87419c902e0c9cbc59cbef497ca3e33ff1be8f786595fc272d576e0

@@ -9518,7 +9518,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3598
+          3599
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_steal",
@@ -9754,7 +9754,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2533
+          2534
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_deposit",
@@ -10129,7 +10129,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6301
+          6302
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_split",
@@ -10636,7 +10636,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2631
+          2632
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_withdraw",
@@ -16110,7 +16110,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7686
+          7687
         ],
         "file": "src/cmd/actoth.c",
         "function": "ascend_committed",
@@ -17432,7 +17432,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6916
+          6917
         ],
         "file": "src/cmd/actoth.c",
         "function": "try_to_donate",
@@ -17493,7 +17493,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6916
+          6917
         ],
         "file": "src/cmd/actoth.c",
         "function": "try_to_donate",
@@ -18755,7 +18755,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1355
+          1356
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_forage",
@@ -18816,7 +18816,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1002
+          1003
         ],
         "file": "src/cmd/actoth.c",
         "function": "forage_sect",
@@ -18877,7 +18877,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1355
+          1356
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_forage",
@@ -19488,7 +19488,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2810
+          2811
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_hide",
@@ -20103,7 +20103,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3598
+          3599
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_steal",
@@ -20164,7 +20164,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7592
+          7593
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_lick",
@@ -20781,7 +20781,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7977
+          7978
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_old_descend",
@@ -21333,7 +21333,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4637
+          4638
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_quaff",
@@ -21393,7 +21393,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1623
+          1624
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_quit",
@@ -21578,7 +21578,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4810
+          4811
         ],
         "file": "src/cmd/actoth.c",
         "function": "do_recite",
@@ -22914,7 +22914,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3530
+          3531
         ],
         "file": "src/cmd/actoth.c",
         "function": "submit_trusted_steal",
@@ -31958,7 +31958,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1904
+          1966
         ],
         "file": "src/persistence/copyover.c",
         "function": "copyover_restore_mob_from_buffer",
@@ -32020,7 +32020,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1233
+          1260
         ],
         "file": "src/persistence/copyover.c",
         "function": "copyover_recover",

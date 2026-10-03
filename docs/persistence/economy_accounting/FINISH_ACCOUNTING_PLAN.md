@@ -431,3 +431,16 @@ transport interface and passes strict warnings/ASan/UBSan. Eleven other bounded
 transport owners and 24 watchdog fixtures pass at native 4180f745. Actual
 transport/listener/accounting journeys, recovery and current-source broad
 qualification remain independent open gates; no inactive behavior changed.
+
+
+### October 3 transport-integrated native qualification
+
+Native source 4180f745 passes strict backend/pfile/formatting, fresh inspector,
+all transport lifecycle/fault journeys, listener budgets and ten native recovery
+cases (545.753 seconds). Verified census identities are unchanged; refreshed
+line anchors, 52 writer tests and contract validation pass while coverage stays
+incomplete. The exact published-70aaa broad suite is running. Full-world/mixed
+accounting workloads, captured staging generation, complete writers/native audit
+and R1-R8 remain open. Plan 1 now distinguishes existing typed coordinator
+components from missing actual coin/item lost-COMMIT reply and ordinary live
+publication recovery proof. See latest review status for source/log hashes.
