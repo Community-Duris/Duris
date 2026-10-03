@@ -78,7 +78,7 @@ def workload(document, specs):
     return rows
 
 
-def freeze_build(directory, environment):
+def freeze_build(directory, environment, *, room_observer=False):
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     if subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip():
         raise RuntimeError("commit the complete source before freezing the integration batch")
@@ -101,6 +101,14 @@ def freeze_build(directory, environment):
         ["python3", "tests/async/test_pa_accounting_batch_artifact.py"],
         ["python3", "tests/async/test_pa_copyover_artifact_contract.py"],
     ]
+    if room_observer:
+        binaries["room_sql_binary"] = directory / "dms-sql-room-observer"
+        commands.append([
+            "make", "-C", "src", "-j2", "PERSISTENCE_BACKEND=mariadb",
+            "OBJDIR=" + str(directory / "room-observer-objects"),
+            "EXTRA_CFLAGS=-DDURIS_SQL_ROOM_ITEM_RECOVERY_TEST",
+            "DMS_BINARY=" + str(binaries["room_sql_binary"]),
+        ])
     for index, command in enumerate(commands):
         print("matrix build/check: " + " ".join(command), flush=True)
         with (directory / f"build-{index}.log").open("w") as log:
@@ -154,8 +162,15 @@ def freeze_build(directory, environment):
             "version": subprocess.check_output(
                 [str(resolved), "--no-defaults", "--version"], text=True).strip()}
     atomic_json(directory / "recovery-tools.json", recovery_tools)
-    return {**{key: str(value) for key, value in binaries.items()}, "head": head,
-            "binary_sha256": digest(binaries["sql_binary"]), "descriptor": str(descriptor)}
+    tokens = {**{key: str(value) for key, value in binaries.items()}, "head": head,
+              "binary_sha256": digest(binaries["sql_binary"]), "descriptor": str(descriptor)}
+    if room_observer:
+        tokens["room_binary_sha256"] = digest(binaries["room_sql_binary"])
+        atomic_json(directory / "room-observer-build.json", dict(
+            head=head, binary=tokens["room_sql_binary"], binary_sha256=tokens["room_binary_sha256"],
+            source_manifest=str(source_manifest), command=commands[-1],
+            scope="complete native SQL server with post-publication graph/custody observation"))
+    return tokens
 
 
 def outcome_contract(row, result):
@@ -259,7 +274,8 @@ def main(argv=None):
         environment["DURIS_TEST_TOOLS_IMAGE"] = report["tools_image"]["id"]
         report["source_head"] = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
         write_report(report_path, report)
-        tokens = freeze_build(directory, environment)
+        tokens = freeze_build(directory, environment, room_observer=any(
+            row["id"] == "economic_sql_real_pool_room" for _, row in selected))
         report.update(tokens)
         write_report(report_path, report)
         resources = directory / "resources"

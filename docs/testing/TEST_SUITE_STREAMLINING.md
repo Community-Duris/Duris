@@ -211,7 +211,9 @@ The current workload has 148 required identities: 66 on each pinned engine and
 16 shared rows. It includes the real SQL pool's bank, coin and item coordination,
 literal checkpoint recovery and exact room payload recovery. The room row reuses
 its qualified seed executable for two complete SQL cold boots and requires the
-native publication witness. Literal checkpoint qualification compiles and pins
+native publication witness. This row builds a separate complete SQL observer
+binary with the existing post-publication observation hook, using its own object
+directory, recorded build flags and executable checksum. Literal checkpoint qualification compiles and pins
 its executable before exercising the supplied disposable schema.
 
 The currency wrapper no longer rebuilds and reruns the complete item-transfer
