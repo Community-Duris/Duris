@@ -427,7 +427,7 @@ def main():
                             'item_movement_transaction.c', 'item_ownership_runtime.c',
                             'item_transfer_command.c', "craft_pouch_mutation.c", "chaos_pouch_ledger.c", 'critical_command.c',
                             'player_snapshot_capture.c', 'player_snapshot_codec.c']],
-                        '-Wl,--gc-sections', '-Wl,--wrap=write', '-lz', '-lcrypto', '-lcjson', '-o', str(binary)],
+                        '-Wl,--gc-sections', '-Wl,--wrap=write', '-lz', '-lcrypto', '-lcjson', '-lbsd', '-o', str(binary)],
                        cwd=ROOT, check=True, timeout=300)
         subprocess.run([str(binary)], check=True, timeout=30)
 
