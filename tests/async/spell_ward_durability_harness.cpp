@@ -8,6 +8,7 @@
 #include "player/player_snapshot_codec.h"
 #include "world/events.h"
 #include "world/falling.h"
+#include "world/specs.prototypes.h"
 
 #include <algorithm>
 #include <cassert>
@@ -15,6 +16,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <map>
+#include <set>
+#include <string>
 
 // Production ward/spell/codec units run against deterministic event and world
 // services. These fixtures do not claim to exercise SQL or the network loop.
@@ -25,8 +29,16 @@ P_index obj_index = indexes;
 int top_of_objt = 1;
 P_char character_list = nullptr;
 P_room world = nullptr;
-extern const int rev_dir[] = { 0, 0, 0, 0, 0, 0 };
+extern const int rev_dir[] = { 2, 3, 0, 1, 5, 4, 8, 9, 6, 7 };
 extern const racial_data_type racial_data[LAST_RACE + 1] = {};
+Skill skills[MAX_SKILLS] = {};
+static bool dispel_consent = true;
+static bool dispel_save = false;
+static bool dispel_resist = false;
+static int dispel_save_checks = 0;
+static int dispel_damage_rolls = 0;
+static std::map<P_char, std::string> transcript;
+static std::set<P_obj> decayed_objects;
 time_info_data age(P_char)
 {
 	return {};
@@ -51,15 +63,16 @@ falling_start_result falling_start(P_char)
 }
 bool is_linked_to(P_char, P_char, ush_int)
 {
-	return true;
+	return dispel_consent;
 }
 bool NewSaves(P_char, int, int)
 {
-	return false;
+	++dispel_save_checks;
+	return dispel_save;
 }
 bool resists_spell(P_char, P_char)
 {
-	return false;
+	return dispel_resist;
 }
 void logit(const char *, const char *, ...) {}
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...)
@@ -90,7 +103,37 @@ int number(int low, int)
 {
 	return low;
 }
-void Decay(P_obj) {}
+int dice(int count, int sides)
+{
+	assert(count > 0 && sides == 6);
+	++dispel_damage_rolls;
+	return count * 3;
+}
+void Decay(P_obj obj)
+{
+	assert(decayed_objects.insert(obj).second);
+	for (auto timer = obj->nevents; timer;)
+	{
+		auto next = timer->next_obj_nev;
+		if (timer != current_nevent)
+			nevent_cancel(nevent_handle_from_event(timer));
+		timer = next;
+	}
+	if (OBJ_ROOM(obj))
+	{
+		auto &room = world[obj->loc.room];
+		P_obj *link = &room.contents;
+		while (*link && *link != obj)
+			link = &(*link)->next_content;
+		assert(*link == obj);
+		*link = obj->next_content;
+		room.dir_option[obj->value[1]]->exit_info &= ~(EX_WALLED | EX_BREAKABLE);
+	}
+}
+void event_obj_affect(P_char, P_char, P_obj obj, void *)
+{
+	Decay(obj);
+}
 static int spirit_item_ticks = 0;
 int get_property(const char *key, int fallback)
 {
@@ -104,9 +147,18 @@ void persistence_assign_item_uid(P_obj obj, const char *)
 }
 void gmcp_char_affects(P_char) {}
 void wear_off_message(P_char, affected_type *) {}
-void act(const char *, int, P_char, P_obj, void *, int) {}
+void act(const char *message, int, P_char actor, P_obj, void *target, int audience)
+{
+	if (audience == TO_CHAR)
+		transcript[actor] += message;
+	else if (audience == TO_VICT)
+		transcript[static_cast<P_char>(target)] += message;
+}
 void do_point(P_char, P_char) {}
-void send_to_char(const char *, P_char) {}
+void send_to_char(const char *message, P_char ch)
+{
+	transcript[ch] += message;
+}
 int vapor(P_obj, P_char, int, char *)
 {
 	return 0;
@@ -127,8 +179,17 @@ nevent_schedule_result add_event(event_func func, int delay, P_char ch, P_char v
 	event->due_tick = ne_event_tick + delay;
 	event->data = std::malloc(size);
 	std::memcpy(event->data, data, size);
-	event->next_char_nev = ch->nevents;
-	ch->nevents = event;
+	if (ch)
+	{
+		event->next_char_nev = ch->nevents;
+		ch->nevents = event;
+	}
+	else
+	{
+		assert(obj);
+		event->next_obj_nev = obj->nevents;
+		obj->nevents = event;
+	}
 	return { nevent_schedule_status::scheduled, { event, 1 } };
 }
 nevent_handle nevent_handle_from_event(P_nevent event)
@@ -138,18 +199,32 @@ nevent_handle nevent_handle_from_event(P_nevent event)
 nevent_cancel_result nevent_cancel(nevent_handle handle)
 {
 	auto event = handle.event;
-	P_nevent *link = &event->ch->nevents;
+	P_nevent *link = event->ch ? &event->ch->nevents : &event->obj->nevents;
 	while (*link && *link != event)
-		link = &(*link)->next_char_nev;
+		link = event->ch ? &(*link)->next_char_nev : &(*link)->next_obj_nev;
 	assert(*link == event);
-	*link = event->next_char_nev;
+	*link = event->ch ? event->next_char_nev : event->next_obj_nev;
 	std::free(event->data);
 	delete event;
 	return nevent_cancel_result::canceled;
 }
+int ne_event_time(P_nevent event)
+{
+	return event->due_tick > ne_event_tick ? static_cast<int>(event->due_tick - ne_event_tick) :
+						 0;
+}
+bool nevent_reschedule_after(nevent_handle handle, unsigned long long delay)
+{
+	handle.event->due_tick = ne_event_tick + delay;
+	return true;
+}
 void event_short_affect(P_char ch, P_char, P_obj, void *data)
 {
-	spell_ward_expire(ch, static_cast<event_short_affect_data *>(data)->af);
+	auto af = static_cast<event_short_affect_data *>(data)->af;
+	if (spell_ward_is_managed(af))
+		spell_ward_expire(ch, af);
+	else
+		affect_remove(ch, af);
 }
 affected_type *affect_to_char(P_char ch, affected_type *prototype)
 {
@@ -248,6 +323,159 @@ static affected_type *cast(P_char ch, int spell, int ticks)
 	if (spell == SPELL_GREATER_SPIRIT_WARD)
 		prototype.bitvector3 = AFF3_GR_SPIRIT_WARD;
 	return spell_ward_apply_cast(ch, &prototype, ticks);
+}
+
+static void test_dispel_durations(P_char caster, P_char victim)
+{
+	skills[SPELL_ARMOR].name = "armor";
+	skills[SPELL_HASTE].name = "haste";
+	dispel_consent = false;
+	for (bool saved : { true, false })
+	{
+		dispel_save = saved;
+		dispel_resist = !saved;
+		affected_type prototype{};
+		prototype.type = SPELL_ARMOR;
+		prototype.duration = 30;
+		auto first = affect_to_char(victim, &prototype);
+		prototype.type = SPELL_HASTE;
+		prototype.duration = 9;
+		auto haste = affect_to_char(victim, &prototype);
+		prototype.type = SPELL_ARMOR;
+		auto second = affect_to_char(victim, &prototype);
+		dispel_save_checks = 0;
+		transcript.clear();
+		spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, victim, nullptr);
+		assert(dispel_save_checks == 2); // One check covers even non-adjacent rows.
+		assert(first->duration == 27 && second->duration == 8 && haste->duration == 8);
+		assert(transcript[caster].find("armor") != std::string::npos);
+		assert(transcript[victim].find("haste") != std::string::npos);
+		assert(transcript[caster].find("fail miserably") == std::string::npos);
+		dispel_save = dispel_resist = false;
+		spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, victim, nullptr);
+		assert(!victim->affected); // Removal must not leave a dangling iteration pointer.
+	}
+
+	dispel_save = true;
+	affected_type prototype{};
+	prototype.type = SPELL_ARMOR;
+	prototype.duration = 100 * PULSES_IN_TICK;
+	prototype.flags = AFFTYPE_SHORT;
+	auto timed = affect_to_char(victim, &prototype);
+	// The stored duration is stale; wear must use the actual remaining event time.
+	advance(victim, ne_event_tick + 80 * PULSES_IN_TICK);
+	spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, victim, nullptr);
+	assert(timed->duration == 18 * PULSES_IN_TICK);
+	assert(ne_event_time(victim->nevents) == 18 * PULSES_IN_TICK);
+	advance(victim, ne_event_tick + 18 * PULSES_IN_TICK - 1);
+	assert(victim->affected == timed);
+	advance(victim, ne_event_tick + 1);
+	assert(!victim->affected && !victim->nevents);
+
+	for (int flags : { 0, static_cast<int>(AFFTYPE_SHORT) })
+	{
+		prototype.flags = flags;
+		prototype.duration = flags ? PULSES_IN_TICK / 2 : 1;
+		affect_to_char(victim, &prototype);
+		transcript.clear();
+		spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, victim, nullptr);
+		assert(!victim->affected && !victim->nevents);
+		assert(transcript[caster].find("exhausts") != std::string::npos);
+		assert(transcript[victim].find("exhausts") != std::string::npos);
+	}
+	prototype.flags = AFFTYPE_NODISPEL;
+	prototype.duration = 10;
+	auto protected_spell = affect_to_char(victim, &prototype);
+	prototype.type = SPELL_HASTE;
+	prototype.flags = 0;
+	prototype.duration = -1;
+	auto permanent = affect_to_char(victim, &prototype);
+	dispel_save_checks = 0;
+	spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, victim, nullptr);
+	assert(dispel_save_checks == 1);
+	assert(permanent->duration == -1 && protected_spell->duration == 10);
+	clear(victim);
+	dispel_consent = true;
+	dispel_save = false;
+}
+
+static void test_dispel_walls(P_char caster)
+{
+	room_data rooms[2]{};
+	room_direction_data exits[2]{};
+	pc_only_data pc{};
+	pc.pid = 777;
+	caster->only.pc = &pc;
+	world = rooms;
+	rooms[0].number = 101;
+	rooms[1].number = 102;
+	rooms[0].dir_option[0] = &exits[0];
+	rooms[1].dir_option[2] = &exits[1];
+	exits[0].to_room = 1;
+	exits[1].to_room = 0;
+	for (int trial : { 0, 1, 2 })
+	{
+		obj_data walls[2]{}, unrelated{};
+		obj_affect expiry[2]{};
+		decayed_objects.clear();
+		for (int i = 0; i < 2; ++i)
+		{
+			walls[i].loc_p = LOC_ROOM;
+			walls[i].loc.room = i;
+			walls[i].value[0] = rooms[1 - i].number;
+			walls[i].value[1] = i ? 2 : 0;
+			walls[i].value[2] = trial == 2 ? 10 : 400;
+			walls[i].value[3] = WALL_OF_STONE;
+			walls[i].value[4] = 100;
+			walls[i].value[5] = trial == 1 ? pc.pid : 123;
+			rooms[i].contents = &walls[i];
+			exits[i].exit_info = EX_WALLED | EX_BREAKABLE;
+			expiry[i].type = TAG_OBJ_DECAY;
+			walls[i].affects = &expiry[i];
+			auto payload = &expiry[i];
+			add_event(event_obj_affect, 1800, nullptr, nullptr, &walls[i], 0, &payload,
+				  sizeof(payload));
+		}
+		unrelated = walls[1];
+		unrelated.nevents = nullptr;
+		unrelated.affects = nullptr;
+		unrelated.value[5] = 999;
+		unrelated.next_content = &walls[1];
+		rooms[1].contents = &unrelated;
+		caster->in_room = 0;
+		transcript.clear();
+		spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, nullptr, &walls[0]);
+		if (trial == 0)
+		{
+			assert(decayed_objects.empty());
+			assert(walls[0].value[2] == 386 && walls[1].value[2] == 386);
+			assert(ne_event_time(walls[0].nevents) == 1500);
+			assert(ne_event_time(walls[1].nevents) == 1500);
+			assert(transcript[caster].find("weakens") != std::string::npos);
+			ne_event_tick += 100;
+			caster->in_room = 1;
+			spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, nullptr,
+					   &walls[1]);
+			assert(walls[0].value[2] == 372 && walls[1].value[2] == 372);
+			assert(ne_event_time(walls[0].nevents) == 1100 &&
+			       ne_event_time(walls[1].nevents) == 1100);
+			nevent_reschedule_after(nevent_handle_from_event(walls[0].nevents), 100);
+			nevent_reschedule_after(nevent_handle_from_event(walls[1].nevents), 100);
+			spell_dispel_magic(56, caster, nullptr, SPELL_TYPE_SPELL, nullptr,
+					   &walls[1]);
+		}
+		assert(decayed_objects.size() == 2);
+		assert(decayed_objects.count(&walls[0]) && decayed_objects.count(&walls[1]));
+		assert(!walls[0].nevents && !walls[1].nevents);
+		assert(!(exits[0].exit_info & (EX_WALLED | EX_BREAKABLE)));
+		assert(!(exits[1].exit_info & (EX_WALLED | EX_BREAKABLE)));
+		assert(rooms[1].contents == &unrelated);
+		assert(transcript[caster].find(trial == 1 ? "dispels" : "breaks") !=
+		       std::string::npos);
+	}
+	caster->only.pc = nullptr;
+	caster->in_room = 0;
+	world = nullptr;
 }
 
 int main()
@@ -363,27 +591,139 @@ int main()
 	clear(&victim);
 
 	// Equipment can precede or follow a cast in the affect list. In either
-	// order, a successful dispel removes only the cast and preserves the cycle.
+	// order, a successful dispel removes both protections and preserves the cycle.
 	attacker.specials.position = victim.specials.position = POS_STANDING | STAT_NORMAL;
-	for (bool equipment_first : { false, true })
+	for (int spell :
+	     { SPELL_MINOR_GLOBE, SPELL_SPIRIT_WARD, SPELL_GREATER_SPIRIT_WARD, SPELL_GLOBE })
 	{
-		if (!equipment_first)
-			cast(&victim, SPELL_GLOBE, 8);
+		gear.bitvector = spell == SPELL_MINOR_GLOBE ? AFF_MINOR_GLOBE : 0;
+		gear.bitvector2 = spell == SPELL_GLOBE ? AFF2_GLOBE : 0;
+		gear.bitvector3 = spell == SPELL_SPIRIT_WARD	     ? AFF3_SPIRIT_WARD :
+				  spell == SPELL_GREATER_SPIRIT_WARD ? AFF3_GR_SPIRIT_WARD :
+								       0;
+		for (bool equipment_first : { false, true })
+		{
+			dispel_consent = equipment_first; // Cover hostile successes and consent.
+			dispel_save_checks = 0;
+			if (!equipment_first)
+				cast(&victim, spell, 8);
+			victim.equipment[WEAR_BODY] = &gear;
+			spell_ward_equipment_sync(&victim);
+			equipment = find(&victim, spell, SPELL_WARD_SOURCE_EQUIPMENT);
+			if (equipment_first)
+				cast(&victim, spell, 8);
+			const int refresh = equipment->ward_refresh_remaining;
+			const auto source_uid = equipment->ward_source_uid;
+			transcript.clear();
+			spell_dispel_magic(60, &attacker, nullptr, SPELL_TYPE_SPELL, &victim,
+					   nullptr);
+			assert(dispel_save_checks == (dispel_consent ? 0 : 2));
+			assert(!find(&victim, spell, SPELL_WARD_SOURCE_CAST));
+			assert(find(&victim, spell, SPELL_WARD_SOURCE_EQUIPMENT) == equipment);
+			assert(!spell_ward_is_active(equipment) && equipment->ward_capacity == 0);
+			assert(equipment->ward_refresh_remaining == refresh &&
+			       equipment->ward_source_uid == source_uid);
+			assert(transcript[&attacker].find("dispels") != std::string::npos);
+			assert(transcript[&victim].find("dispels") != std::string::npos);
+			assert(transcript[&attacker].find("(cast)") != std::string::npos);
+			assert(transcript[&attacker].find("(equipment)") != std::string::npos);
+			all_affects(&victim, TRUE);
+			assert(!spell_ward_is_active(equipment));
+			assert(!spell_ward_item_callback_allowed(&victim, spell));
+			advance(&victim, ne_event_tick + refresh - 1);
+			assert(!spell_ward_is_active(equipment));
+			advance(&victim, ne_event_tick + 1);
+			assert(spell_ward_is_active(equipment));
+			clear(&victim);
+			victim.equipment[WEAR_BODY] = nullptr;
+		}
+	}
+	assert(dispel_damage_rolls == 0); // A successful dispel does not roll damage wear.
+
+	// Saving throws and spell resistance each leave partial wear on every
+	// active cast/item ward. The wear matches the existing damage calculation.
+	dispel_consent = false;
+	for (bool saved : { true, false })
+	{
+		dispel_save = saved;
+		dispel_resist = !saved;
+		gear.bitvector = AFF_MINOR_GLOBE;
+		gear.bitvector2 = AFF2_GLOBE;
+		gear.bitvector3 = AFF3_SPIRIT_WARD | AFF3_GR_SPIRIT_WARD;
 		victim.equipment[WEAR_BODY] = &gear;
 		spell_ward_equipment_sync(&victim);
-		equipment = find(&victim, SPELL_GLOBE, SPELL_WARD_SOURCE_EQUIPMENT);
-		if (equipment_first)
-			cast(&victim, SPELL_GLOBE, 8);
-		const auto capacity = equipment->ward_capacity;
-		const int refresh = equipment->ward_refresh_remaining;
-		spell_dispel_magic(60, &attacker, nullptr, SPELL_TYPE_SPELL, &victim, nullptr);
-		assert(!find(&victim, SPELL_GLOBE, SPELL_WARD_SOURCE_CAST));
-		assert(find(&victim, SPELL_GLOBE, SPELL_WARD_SOURCE_EQUIPMENT) == equipment);
-		assert(equipment->ward_capacity == capacity &&
-		       equipment->ward_refresh_remaining == refresh);
+		for (int spell : { SPELL_MINOR_GLOBE, SPELL_SPIRIT_WARD, SPELL_GREATER_SPIRIT_WARD,
+				   SPELL_GLOBE })
+			cast(&victim, spell, 8);
+		std::map<affected_type *, affected_type> before;
+		for (auto af = victim.affected; af; af = af->next)
+			before.emplace(af, *af);
+		dispel_save_checks = dispel_damage_rolls = 0;
+		transcript.clear();
+		victim.points.hit = 100;
+		spell_dispel_magic(56, &attacker, nullptr, SPELL_TYPE_SPELL, &victim, nullptr);
+		assert(dispel_save_checks == 8 && dispel_damage_rolls == 8);
+		assert(victim.points.hit == 100);
+		for (const auto &[af, original] : before)
+		{
+			assert(spell_ward_is_active(af));
+			assert(af->ward_capacity ==
+			       original.ward_capacity - 120 * SPELL_WARD_CAPACITY_SCALE);
+			assert(af->duration ==
+			       static_cast<int>(
+				       std::ceil(static_cast<long double>(af->ward_capacity) *
+						 af->ward_full_duration / af->ward_capacity_max)));
+			assert(af->ward_refresh_remaining == original.ward_refresh_remaining);
+			assert(af->ward_source_uid == original.ward_source_uid);
+		}
+		assert(transcript[&attacker].find("weakens") != std::string::npos);
+		assert(transcript[&victim].find("weakens") != std::string::npos);
+		assert(transcript[&attacker].find("fail miserably") == std::string::npos);
 		clear(&victim);
 		victim.equipment[WEAR_BODY] = nullptr;
 	}
+	gear.bitvector = gear.bitvector3 = 0;
+	dispel_save = true;
+	dispel_resist = false;
+	cast(&victim, SPELL_GLOBE, 8);
+	spell_ward_absorb(&attacker, &victim, 3140, SPLDAM_GLOBE);
+	victim.equipment[WEAR_BODY] = &gear;
+	spell_ward_equipment_sync(&victim);
+	equipment = find(&victim, SPELL_GLOBE, SPELL_WARD_SOURCE_EQUIPMENT);
+	const int broken_refresh = equipment->ward_refresh_remaining;
+	transcript.clear();
+	spell_dispel_magic(56, &attacker, nullptr, SPELL_TYPE_SPELL, &victim, nullptr);
+	assert(!find(&victim, SPELL_GLOBE, SPELL_WARD_SOURCE_CAST));
+	assert(equipment->ward_capacity == (3200 - 120) * SPELL_WARD_CAPACITY_SCALE);
+	assert(equipment->ward_refresh_remaining == broken_refresh);
+	assert(victim.points.hit == 100); // Dispel wear never overflows into HP damage.
+	assert(transcript[&attacker].find("breaks") != std::string::npos);
+	assert(transcript[&victim].find("breaks") != std::string::npos);
+	spell_ward_absorb(&attacker, &victim, 3020, SPLDAM_GLOBE);
+	assert(equipment->ward_capacity == 60 * SPELL_WARD_CAPACITY_SCALE);
+	transcript.clear();
+	spell_dispel_magic(56, &attacker, nullptr, SPELL_TYPE_SPELL, &victim, nullptr);
+	assert(equipment->ward_capacity == 0 && !spell_ward_is_active(equipment));
+	assert(equipment->ward_refresh_remaining == broken_refresh);
+	assert(transcript[&attacker].find("breaks") != std::string::npos);
+	assert(transcript[&victim].find("breaks") != std::string::npos);
+	assert(victim.points.hit == 100);
+	dispel_save_checks = dispel_damage_rolls = 0;
+	spell_dispel_magic(56, &attacker, nullptr, SPELL_TYPE_SPELL, &victim, nullptr);
+	assert(dispel_save_checks == 0 && dispel_damage_rolls == 0);
+	assert(equipment->ward_refresh_remaining == broken_refresh);
+	advance(&victim, ne_event_tick + broken_refresh);
+	assert(spell_ward_is_active(equipment));
+	victim.equipment[WEAR_BODY] = nullptr;
+	spell_ward_equipment_sync(&victim);
+	spell_dispel_magic(56, &attacker, nullptr, SPELL_TYPE_SPELL, &victim, nullptr);
+	assert(dispel_save_checks == 0 && dispel_damage_rolls == 0);
+	assert(equipment->ward_capacity == equipment->ward_capacity_max);
+	clear(&victim);
+	dispel_consent = true;
+	dispel_save = false;
+	test_dispel_durations(&attacker, &victim);
+	test_dispel_walls(&attacker);
 
 	// Score identifies both sources even if the broken equipment pool is first.
 	cast(&victim, SPELL_GLOBE, 8);
@@ -497,5 +837,5 @@ int main()
 		assert(restored.craft_receipts.size() == snapshot.craft_receipts.size());
 	}
 	std::cout
-		<< "ward damage, fractional wear, expiry, overlap, recast, group, equipment cycles and snapshot recovery passed\n";
+		<< "ward durability, dispel duration/barrier wear, equipment cycles and snapshot recovery passed\n";
 }

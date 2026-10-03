@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Execute production renewable spell wards and snapshot codecs (issue #453)."""
+"""Execute production wards, Dispel Magic duration/barrier wear, and snapshot codecs."""
 from pathlib import Path
 import subprocess
 import tempfile
