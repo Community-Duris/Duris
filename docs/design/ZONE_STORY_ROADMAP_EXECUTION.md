@@ -1074,3 +1074,45 @@ Focused source/native checks, cached SQL build, formatting, term/map preservatio
 and local document link verification accompany this checkpoint. Fixtures are
 synthetic states, not played sources, travel, songs or recipient episodes.
 No accounting activation, DB migration/server operation or merge is included.
+
+## Alatorin interim audit checkpoint
+
+Priority 26 is in progress in the
+[district progression draft](zone-stories/ALATORIN.md). All 961 native blocks
+have been reviewed: 495 distinct contracts across 82 recipients and 466 M/MA
+blocks, including 296 nonambient addressed families. The conservative topic
+inventory retains 291; five apostrophe-bearing families still have usable
+aliases. All fifteen shops were reviewed, together with 189 of 952 rooms,
+111 of 425 mobiles, 42 of 602 objects, local assigned/computed services and
+bounded shared/foreign evidence. The 3,596 reset commands have not yet received
+the complete family review. The draft lists exact reviewed ranges and gaps.
+
+The proposed progression separates kitchens/royal dishes, collecting and
+professional commendations, army/brewery proofs, arcanums/random attribute
+scrolls/nine rings, mining/master crafting, libraries/gardens, independently
+owned rogue/outpost requests, port supply and seven divine gifts. Ninety-three
+native offerings include coins. Smelting, mining and paid cleric service
+deliberately refuse active accounting; these remain explicit adapter work.
+
+New plan detail covers exact any-of recipe readiness instead of summed mixed
+materials, bounded district/family presentation, NPC-held staged smelting and
+fee publication, random scroll and timed osquip lineage, interior/outer-city
+ownership and loaded administrative material resolution. Native outcomes,
+competing roots and retiring recipients stay authoritative. Selected stale
+prose, overlapping recipes and source questions have builder/qualification
+proposals rather than unreviewed reward or balance changes.
+
+This is a documentation checkpoint. The catalog remains 48 journals with
+2,668 native definitions, 2,205 achievement units and 1,854 potential daily
+units; 25 of 220 roadmap areas remain source-comprehensive, with 195 pending.
+Alatorin is not yet a deployed sidecar or the twenty-sixth completed dossier.
+Finish its remaining source audit and focused mapping tests before publication;
+Newhaven follows. The full roadmap goal remains active and accounting is
+mandatory. No active-world gameplay, accounting activation, migration,
+DB/server operation or merge is part of this checkpoint.
+
+Validation passed: the production-catalog coverage regression; exact native
+block/recipient/paid-offering and reviewed-range metrics; source digest and
+selected recipe shapes; whitespace; and 316 local links across the five changed
+documents. All 2,668 native definitions and all 48 maps remain unchanged.
+This addition changes documentation only; no C++ build was required.

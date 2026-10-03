@@ -287,6 +287,50 @@ Implement and qualify the remaining additions in this order:
    qualify an actual player journey, and update semantic coverage independently
    from static contract classification.
 
+Alatorin's [interim district review](zone-stories/ALATORIN.md) adds concrete
+requirements to these steps. Its 495 contracts include 93 paid offerings;
+publication awaits the remaining world/prototype/reset/source review.
+
+- **Exact recipe alternatives.** Current `carried_item` checks sum all listed
+  kinds. That is suitable when mixed kinds really qualify, but not for two
+  matching attribute scrolls or six/eight copies of one material. Add any-of
+  complete recipes, each with all-of exact counts and nonoverlapping root-UID
+  allocation. Preserve single-kind checks or text-only guidance until that
+  predicate exists. Test mixed invalid pairs, competing slots, donated supplies
+  and exact accepted outcomes; a ready checklist must never broaden admission.
+- **Large district presentation.** Keep the existing bounded source and row
+  limits while measuring a faithful final map. Dweefniggle's 209 equal one-item
+  fragment trades permit reviewed service alternatives; different rewards,
+  recipients, stages or retirement do not establish equivalence. Add bounded
+  family expansion/pagination, encountered-contact visibility and shared
+  terminal/client projection before presenting one city-wide campaign.
+- **Staged custom services.** Preserve active-accounting refusal for smelting,
+  mining and paid clerics. A new smelter adapter needs exact NPC/player ore
+  custody, frozen fees, payment ownership, one output and recoverable publication
+  for both ore-first and pay-first sequences. Review detached input cleanup and
+  unchecked output allocation as part of that port. Paid cleric settlement and
+  successful spell/resurrection effects need distinct evidence. Journal metadata
+  cannot make either service operational.
+- **Random and decaying preparations.** Freeze attribute-scroll results and
+  exact replacement lineage; never consume the source before a recoverable
+  output grant. Nine attribute rings need two matching scrolls each; eighteen
+  random draws do not guarantee all nine pairs. Osquip death/expiry requires
+  accepted birth, clock and replacement evidence before personal/fresh cooking
+  objectives. Test donation, nested storage, failed grants and reconnect.
+- **City membership and actual loaded sources.** Alatorin's interiors connect
+  through loaded `surfacekeeps` roads. Keep discovered area, authored district,
+  recipient location and contract owner separate; qualify wilderness map
+  visibility without duplicate discoveries/receipts. Resolve low-numbered
+  materials from all loaded files: blank paper 5 exists in administrative
+  `limbo`, although the playable-area inventory omits it. Administrative source
+  availability does not grant achievement eligibility.
+- **Content decisions and source gaps.** Preserve exact native rewards while
+  builders choose repairs for librarian medal prose versus the actual mist,
+  five-versus-six badges, Xamora's labels and overlapping Mundorno recipes.
+  Complete the producer review of tinker's token 83458 before declaring it
+  unavailable. Full banquet, profession and pilgrimage achievements need
+  all-stage/attempt policy beyond independent receipts and supplied finales.
+
 Client updates should follow committed events and live inventory/equipment
 changes; reconnect sends a fresh projection. Unsupported facts must be marked
 untracked or omitted, rather than rendered as an earned/missing achievement.
@@ -710,6 +754,10 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
 - [ ] Complete comprehensive source dossiers for the other 195 roadmap areas.
+- [ ] Finish Alatorin's remaining room/prototype/reset/source audit, then publish
+  its district journal and evidence index. The interim draft covers all native
+  contracts/topics and fifteen shops, with 93 paid-offering and custom-service
+  dependencies; it is not a completed twenty-sixth dossier.
 - [ ] Add district/family authoring and shared presentation for large zones.
   Winterhaven's 219 rows fit existing story/objective limits but need a bounded
   512 KiB source-sidecar allowance for detailed guidance. Preserve receipt IDs;

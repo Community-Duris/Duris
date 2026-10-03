@@ -183,6 +183,17 @@ impose an earlier exchange. Conditional subrecipes and all-stage family
 completion remain planned capabilities; retain separate native exchanges until
 their accounting-backed evidence and shared presentation are qualified.
 
+`item_vnums` on a carried-item step means a **combined count across the listed
+kinds**. It does not mean the required count of any one matching kind. For
+example, a count of two with strength and wisdom scrolls reports two when the
+player carries one of each, even if the recipe requires two strength scrolls
+or two wisdom scrolls. Author exact single-kind checks, or retain recipe choices
+in text without a misleading live check. Likewise, separate item steps cannot
+express either one whole recipe or another; all-of/any-of recipe predicates and
+exact root allocation require a future schema. Optional status does not change
+the counting semantics. See the [Alatorin draft](../design/zone-stories/ALATORIN.md)
+for the two/six/eight-matching-material examples and planned qualification.
+
 ## The gardener dependency
 
 Alvinar's Q contract does not describe the barrier. `gardener_block` in
