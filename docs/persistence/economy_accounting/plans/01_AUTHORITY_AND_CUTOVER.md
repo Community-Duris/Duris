@@ -121,3 +121,18 @@ Coin/item typed coordinator paths linked to this production pool now pass both
 engines under ASan/UBSan, including real COMMIT reply loss, exact replay and
 clean reborrow/shutdown. Typed bank remains an open actual-pool component gate. Boot configuration, mixed workload and actual publication/replay
 acceptance remain independent of this repair.
+
+
+## October 3 bounded historical room recovery qualification
+
+Migration 0055 now retains exact full-literal schema-2 ordinary-drop payloads
+beside native custody, and retires the selected player projection atomically.
+Actual production-pool fault/reconciliation checks and two complete-world cold
+boots on each SQL engine pass exact native UID, topology, payload and custody
+readback without Redis. Unsupported, stale and missing evidence still refuses.
+This closes the bounded historical room-payload storage/reconstruction gap.
+It does not qualify the ordinary gameplay producer: unstrung objects still lack
+a scoped full-literal checkpoint, the live callback still needs retained
+publication proof, and replay must verify an already restored graph or retain
+its obligation. These remain the next R1/R4/R8 work. See the October 3 review
+status for pinned evidence and the independent current-head broad-run gate.

@@ -439,6 +439,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/economic_sql_source_normalize.o \
 				 persistence/economic_sql_bank_transaction.o \
 				 persistence/economic_sql_item_transfer_transaction.o \
+				 persistence/sql_room_item_payload.o \
 				 persistence/critical_command_repository.o \
 				 persistence/quest_reward_obligation_repository.o \
 				 persistence/quest_reward_obligation_pipeline.o \

@@ -14,10 +14,11 @@ Current integration and native qualification are recorded in the
 [October 3 review status](REVIEW_STATUS_2026-10-03.md), with earlier results in the
 [October 2 review status](REVIEW_STATUS_2026-10-02.md) and
 [October 1 review status](REVIEW_STATUS_2026-10-01.md). Canonical, staging, and
-master-prefix histories now retain 53 receipts. The staging fork preserves its
-first 45 and appends eight; the master fork preserves its first 31 and appends
-22, retaining the existing runtime-state payloads. All three converge on the
-pinned 225-table schema on disposable MySQL 8.0.46 and MariaDB 10.11.14 targets.
+master-prefix histories now retain 55 receipts, preserving published alchemy
+migration 0054 and adding exact room-item payload migration 0055. The staging
+fork preserves its first 45 and appends ten; the master fork preserves its first
+31 and appends 24, retaining existing runtime-state payloads. All three converge
+on the pinned 226-table schema on disposable MySQL 8.0.46 and MariaDB 10.11.14 targets.
 The writer inventory covers 864 routes, 2,815 occurrences and 2,756 unique sites
 with zero unmapped sites. These counts do not replace route qualification.
 

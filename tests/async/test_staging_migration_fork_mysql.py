@@ -140,7 +140,7 @@ def migrate(engine: schema.Engine, manifest_name: str, success: bool = True) -> 
     return result.stdout + result.stderr
 
 
-def history(engine: schema.Engine, limit: int = 53) -> str:
+def history(engine: schema.Engine, limit: int = 55) -> str:
     return engine.sql("SELECT HEX(CONCAT(migration_id,CHAR(0),sequence_number,CHAR(0),"
                       "description,CHAR(0),HEX(apply_checksum),CHAR(0),HEX(verify_checksum),"
                       "CHAR(0),compatibility,CHAR(0),runner_version,CHAR(0),applied_at)) "
@@ -435,7 +435,7 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             migrate(fork, "migration_manifest.staging_0045.json")
             check(after == history(fork), "staging rerun rewrote migration receipts")
             check(fork.sql("SELECT COUNT(*) FROM mud_schema_history;", database=fork.database)
-                  == "53", "staging transition did not append exactly eight receipts")
+                  == "55", "staging transition did not append exactly ten receipts")
 
             print(f"{label}: upgrading immutable master prefix through 0031", flush=True)
             setup(from_master, master, master_bootstrap)
@@ -465,8 +465,8 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             migrate(from_master, "migration_manifest.master_0031.json")
             check(master_after == history(from_master), "master rerun rewrote migration receipts")
             check(from_master.sql("SELECT COUNT(*) FROM mud_schema_history;",
-                                  database=from_master.database) == "53",
-                  "master transition did not append exactly twenty-two receipts")
+                                  database=from_master.database) == "55",
+                  "master transition did not append exactly twenty-four receipts")
             check(payload_before == from_master.sql(payload_query, database=from_master.database),
                   "master rerun changed retained item runtime payloads")
             runtime = json.loads(schema.RUNTIME_MANIFEST.read_text())
@@ -491,9 +491,9 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             report[label] = {"server_version": normal.server_version,
                              "fingerprint": measured, "staging_prefix_preserved": True,
                              "first_45_receipt_sha256": hashlib.sha256(before.encode()).hexdigest(),
-                             "staging_append_count": 8, "reruns_preserved_receipts": True,
+                             "staging_append_count": len(canonical.migrations) - 45, "reruns_preserved_receipts": True,
                              "description_rows_preserved": True,
-                             "master_prefix_preserved": True, "master_append_count": 22,
+                             "master_prefix_preserved": True, "master_append_count": len(canonical.migrations) - 31,
                              "first_31_receipt_sha256": hashlib.sha256(master_before.encode()).hexdigest(),
                              "master_runtime_payload_preserved": True,
                              "master_bootstrap": "supplied" if master_bootstrap else "current"}

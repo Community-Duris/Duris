@@ -26,6 +26,11 @@ def compile_family(family, binary):
     else:
         chunk = (ROOT / "tests/async/run_item_transfer_schema_mysql.sh").read_text()
     sources = list(dict.fromkeys(re.findall(r"(?:tests|src)/[A-Za-z0-9_/.-]+\.(?:cpp|c)", chunk)))
+    if family == "room":
+        sources = [name.replace("tests/async/item_transfer_mysql_harness.cpp",
+                    "tests/async/sql_room_item_payload_mysql_harness.cpp") for name in sources]
+    if family == "room":
+        sources.append("src/account/account_load.c")
     sources.append("src/sql/sql_pool.c")
     flags = shlex.split(subprocess.check_output(["mysql_config", "--cflags"], text=True))
     libs = shlex.split(subprocess.check_output(["mysql_config", "--libs"], text=True))
@@ -42,7 +47,7 @@ def compile_family(family, binary):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--family", choices=("coin", "item"), required=True)
+    parser.add_argument("--family", choices=("coin", "item", "room"), required=True)
     args = parser.parse_args()
     if not target_is_disposable(os.environ):
         raise SystemExit("explicit disposable loopback schema and port required")

@@ -796,3 +796,46 @@ this run. Evidence: `tmp/first-session-inspector-budget-summary.local.json`
 SHA-256 70f2c2a3f08dddd3858557bf6a61ec377acbf64bd6e991b959a0f8043336e26f. The frozen 70aaa failures remain
 recorded; this is current component/gameplay evidence, not active-accounting
 qualification or a passing current-head broad suite.
+
+
+## Exact historical SQL room payload and cold recovery
+
+The previous durable custody graph lacked a complete native room payload after
+player projection retirement. Migration 0055 adds an immutable, bounded payload
+sidecar keyed by original UID and item revision, with operation and season
+provenance. It does not introduce another custody authority. An already admitted
+schema-2 ordinary player drop with one complete full-literal root graph records
+this payload and retires its player projection in the same transaction. Missing,
+stale, corrupt or unsupported evidence refuses; inactive behavior is unchanged.
+Native cold restoration preserves UID, topology and every canonical payload byte
+without replaying live room physics or minting a replacement graph.
+
+Both disposable MySQL 8.0.46 and MariaDB 10.11.14 pass the actual production-pool
+ASan/UBSan rollback, projection-delete fault, real lost-COMMIT-reply replacement,
+exact reconciliation and retained ACK matrix. Both also pass two independent
+complete-world cold boots without Redis, with native payload and custody readback
+and unchanged SQL history. The seeded fixture uses native writers and a coherent
+three-node literal graph; it is not an actual player-issued drop or active cutover.
+Generic unstrung producers, held gameplay publication and retained-drop replay
+remain open and retain their refusal gates.
+
+Canonical and upgrade-prefix migration histories converge at 55 receipts and
+226 tables on both engines. Original staging/master prefixes remain unchanged;
+appends are ten and 24 respectively. These are disposable bootstrap-derived
+forks, not captured staging-clone qualification. Both maintained strict native
+production builds, all ten native restore cases, migration/lifecycle/boot
+contracts, payload/publication ASan/UBSan owners and new-source formatting pass.
+The pfile target remains up to date. The qualified native QA matches all 1,229
+public native C/C++/Makefile source entries after explicit LF normalization.
+
+Evidence: `tmp/room-payload55-final-qualification-summary.local.json`, SHA-256
+4c2d9461a77dc542afcc55d89818d6bba34f4683cbbc46ddb1007817e52204ad,
+pins source manifest, native binaries, seed, driver, logs and both cold-boot
+readbacks. SQL production binary SHA-256
+87bb4bd1aeff3662011acb3e65869fc0b526a303916c2d8d76b372764ac9118d;
+flatfile production binary SHA-256
+f0c37cd6d62caef1a5481ba90b28c74592cd5a4206f10f473481fc4ff2414964.
+The separate observer binary supplies exact native readback only under a test
+macro; production does not enable it. The original frozen broad result remains
+831 passed, 11 skipped and 17 failed; a current-head broad run and full R1–R8
+qualification remain required. Release and activation remain blocked.
