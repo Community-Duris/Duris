@@ -128,7 +128,8 @@ bool has_name_token(const std::string &value, const std::string &token)
 	return false;
 }
 
-void write_item(std::ostream &out, const player_item_snapshot &item, bool include_payload)
+void write_item(std::ostream &out, const player_item_snapshot &item, bool include_payload,
+		bool include_properties = false)
 {
 	out << '{';
 	out << "\"parent_index\":" << item.parent_index;
@@ -203,6 +204,15 @@ void write_item(std::ostream &out, const player_item_snapshot &item, bool includ
 		out << '}';
 	}
 	out << ']';
+	if (include_properties)
+	{
+		std::string properties;
+		if (player_item_properties_encode(item.extra2_flags, item.dynamic_affects,
+						  &properties) != player_snapshot_codec_result::ok)
+			std::exit(2);
+		out << ",\"item_properties_hex\":";
+		json_string(out, properties);
+	}
 	if (include_payload)
 	{
 		player_item_snapshot standalone = item;
@@ -250,7 +260,7 @@ int main(int argc, char **argv)
 				return 4;
 		json_array(std::cout, items,
 			   [](std::ostream &out, const auto &item)
-			   { write_item(out, item, true); });
+			   { write_item(out, item, true, true); });
 		std::cout << '\n';
 		return 0;
 	}
@@ -286,7 +296,7 @@ int main(int argc, char **argv)
 				return 4;
 		json_array(std::cout, items,
 			   [](std::ostream &out, const auto &item)
-			   { write_item(out, item, true); });
+			   { write_item(out, item, true, true); });
 		std::cout << "}\n";
 		return 0;
 	}

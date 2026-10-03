@@ -613,10 +613,10 @@ bool materialize_item_graph(P_char character, std::vector<P_obj> *detached_roots
 		    (identity.override_mask & (PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS |
 					       PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME)))
 		{
-			const auto baseline =
-				std::find_if(item.dynamic_affects.begin(),
-					     item.dynamic_affects.end(), [](const auto &affect)
-					     { return affect.type == TAG_ALTERED_EXTRA2; });
+			const auto baseline = std::find_if(
+				item.dynamic_affects.begin(), item.dynamic_affects.end(),
+				[](const auto &affect)
+				{ return affect.type == TAG_ALTERED_EXTRA2; });
 			if (baseline != item.dynamic_affects.end())
 				object->extra2_flags = static_cast<ulong>(baseline->extra2);
 			for (auto affect = item.dynamic_affects.rbegin();
