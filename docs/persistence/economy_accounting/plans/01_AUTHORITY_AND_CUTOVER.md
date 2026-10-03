@@ -376,3 +376,65 @@ preserve opposite rows; allocation failures return through rollback. See October
 review/declaration71055b7b. This does not connect ordinary-drop native publication,
 first-boot/replay/hydration or restored-save deferral, qualify every SQL isolation
 or allocation boundary, or complete cutover/activation/R1-R8.
+
+### Restored-save admission and release contract
+
+Current source review identifies four bypasses that must be closed together
+before wiring an ordinary-drop recovery caller: startup launches save replay
+before critical restoration, durable-ready dispatch ignores restored holds,
+workers can already own a snapshot, and journal replay invokes the repository
+directly. A bounded per-PID apply permit must serialize restored registration
+with execution; registration refuses an active permit. SQL and callbacks run
+outside worker, journal and pipeline locks. Use opt-in startup suspension until
+the restoration census is complete, preserving default inactive behavior.
+
+Deferral is distinct from retryable failure: park the exact worker request
+without completion, ACK, retry increment or quarantine; keep its original
+identity through the wake-to-dispatch window while coalescing only pending work.
+Selective journal replay must retain every exact frame for the held PID and
+exclude it from checkpoint/proof maps while unrelated PIDs progress. Deferred
+death/operation-bearing frames require a per-PID load fence; a clean global
+replay pass does not establish affected-PID hydration eligibility. The dispatcher
+needs an explicit retained wake to revisit deferred frames without spinning.
+
+The worker-only parking primitive has bounded native qualification with actual
+worker/revision/codec/journal and a controlled apply callback: eight cases per
+SQL-header/flatfile mode pass, along with strict builds and unchanged inactive
+SQL/flatfile gameplay. It remains unused by normal pipeline selection and does
+not qualify restored-save integration. Its explicit resume returns false before
+the callback has parked; the owner must retain that wake for retry. The journal
+still treats the new outcome as terminal until selective replay is implemented.
+Its resume allocation guarantee does not repair existing allocation gaps in
+initial worker admission, retry scheduling or pending promotion; those remain
+separate qualification work.
+
+Read-only review identifies the distinct failure states for that next work:
+make_unique receives an already-moved snapshot temporary before its allocation;
+post-emplace ready-queue failure can leave a slot after bytes/revision rollback;
+and pulse consumes a result before retry/promotion queue allocations. Promotion
+can then lose an original receipt-bearing completion after its real journal ACK.
+Stage cancelable queue ownership and an empty job before moving input or changing
+revision/receipt state; fault-injected native tests must establish each failure
+and exact recovery. Separately, result-queue allocation in worker_main can throw
+after journal ACK. Ready-queue repairs cannot qualify completion-delivery safety.
+
+Publication ACK must retain the original operation until a complete affected-PID
+save census is clean, or every unresolved frame has a legitimate durable
+disposition/recovery handoff. Pausing a newer stale frame then blindly resuming
+it after publication can quarantine the player. An in-memory residual hold after
+critical ACK cannot survive restart because that critical command is checkpointed.
+Reserve readiness by original operation/generation while the hold remains,
+perform coordinator ACK outside state locks, and clear only the reservation
+after success. No frame rewriting, invented revision, drop-result save ACK or
+discard is permitted. Actor-independent room recovery must not depend on loading
+a player with unresolved save obligations. Both-engine ordering/ACK/restart and
+shutdown/copyover checks remain prerequisites to production integration.
+
+Replay ownership must extend through proof publication and journal checkpoint,
+or revalidate the restored-owner generation before checkpointing. A callback-only
+permit released after SQL cannot protect a hold registered after the PID's final
+callback; a later duplicate frame may not invoke a callback at all. Independent
+worker ACK and public revision checkpoints also need the same authority fence.
+A per-pass journal deferral marker cannot establish a resident hold or load
+permission. After reopening, the durable critical owner must reinstall its gate
+before any replay; preserving frame bytes alone does not reinstall that gate.

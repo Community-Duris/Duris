@@ -638,3 +638,18 @@ restart/copyover journey pass. Exact declaration71055b7b and source/test pins ar
 in October3 review. Captured-journal inputs, full-save/pool-allocation coverage,
 ordinary-drop native publication/replay/restored-save integration, broad current
 source and full R1-R8 acceptance remain open. Inventory evidence is not promoted.
+
+The next restored-save prerequisite follows Plan1's admission/release contract:
+opt-in restoration census before startup replay, per-PID apply ownership, explicit
+worker parking and selective exact-frame replay, affected-PID hydration fences,
+and publication ACK only after clean save ownership or durable recovery handoff.
+The worker-only parking/resume primitive is qualified: seven paired before-source
+semantic failures and one real ACK-repair control become eight passing cases per
+SQL-header and flatfile mode. Both strict builds and unchanged inactive SQL
+save/death/crash/copyover plus flatfile creation/save/reload journeys pass. Final
+declaration c1b7d3fc and October3 review retain exact pins and failed setup attempts.
+The new protocol uses a controlled repository callback; normal pipeline callbacks
+do not return deferral. Startup/registration, selective replay, checkpoint-owned
+permits, affected-PID hydration and original publication release remain pending.
+Existing admission/retry/promotion/result-queue allocation gaps are separate work.
+This does not authorize ordinary-drop wiring, active accounting or gate promotion.

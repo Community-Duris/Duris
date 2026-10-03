@@ -37,6 +37,8 @@ struct pid_slot
 	std::unique_ptr<queued_snapshot> active;
 	std::unique_ptr<queued_snapshot> pending;
 	bool dispatched = false;
+	bool deferred = false;
+	bool deferred_original = false;
 };
 
 std::mutex worker_mutex;
@@ -95,7 +97,15 @@ void queue_ready_locked(int pid)
 {
 	if (ready_set.insert(pid).second)
 	{
-		ready_pids.push_back(pid);
+		try
+		{
+			ready_pids.push_back(pid);
+		}
+		catch (...)
+		{
+			ready_set.erase(pid);
+			throw;
+		}
 		job_available.notify_one();
 	}
 }
@@ -104,6 +114,7 @@ void update_depth_health_locked()
 {
 	uint64_t queued = 0;
 	uint64_t inflight = 0;
+	uint64_t deferred = 0;
 	for (const auto &[pid, slot] : slots)
 	{
 		(void)pid;
@@ -116,9 +127,12 @@ void update_depth_health_locked()
 		}
 		if (slot.pending)
 			++queued;
+		if (slot.deferred)
+			++deferred;
 	}
 	health.queued_pids = queued;
 	health.inflight_pids = inflight;
+	health.deferred_pids = deferred;
 	health.queued_bytes = retained_bytes;
 	update_max(health.high_water_pids, queued + inflight);
 	update_max(health.high_water_bytes, retained_bytes);
@@ -149,7 +163,7 @@ void worker_main()
 			ready_set.erase(pid);
 			auto found = slots.find(pid);
 			if (found == slots.end() || !found->second.active ||
-			    found->second.dispatched)
+			    found->second.dispatched || found->second.deferred)
 				continue;
 			found->second.dispatched = true;
 			job = found->second.active.get();
@@ -198,6 +212,16 @@ void worker_main()
 			  applied.outcome == player_save_apply_outcome::ambiguous_commit) &&
 			 job->retry_count >= PLAYER_SAVE_WORKER_MAX_RETRIES);
 		persistence_trace_record(trace);
+		if (applied.outcome == player_save_apply_outcome::deferred)
+		{
+			std::lock_guard<std::mutex> lock(worker_mutex);
+			auto &slot = slots.at(pid);
+			slot.dispatched = false;
+			slot.deferred = true;
+			slot.deferred_original = true;
+			update_depth_health_locked();
+			continue;
+		}
 		if ((applied.outcome == player_save_apply_outcome::applied ||
 		     applied.outcome == player_save_apply_outcome::already_applied ||
 		     applied.outcome == player_save_apply_outcome::stale_revision) &&
@@ -319,6 +343,7 @@ bool promote_pending_locked(int pid, pid_slot &slot)
 		return false;
 	slot.active = std::move(slot.pending);
 	slot.dispatched = false;
+	slot.deferred_original = false;
 	queue_ready_locked(pid);
 	return true;
 }
@@ -493,7 +518,8 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 	if ((snapshot.components & newest->snapshot.components) != newest->snapshot.components)
 		return player_save_submit_result::revision_state_mismatch;
 
-	const bool replace_undispatched = !slot.dispatched && !slot.pending;
+	const bool replace_undispatched = !slot.dispatched && !slot.deferred_original &&
+					  !slot.pending;
 	const size_t replaced_bytes = slot.pending ? slot.pending->snapshot.encoded_size_bound :
 				      replace_undispatched ?
 						     slot.active->snapshot.encoded_size_bound :
@@ -624,6 +650,9 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 						      completion.components);
 			finished = true;
 			break;
+		case player_save_apply_outcome::deferred:
+			// worker_main parks this outcome before creating a completion.
+			break;
 		}
 
 		if (finished)
@@ -647,6 +676,7 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 			remove_active_bytes_locked(slot);
 			slot.active.reset();
 			slot.dispatched = false;
+			slot.deferred_original = false;
 			if (!promote_pending_locked(completion.pid, slot))
 			{
 				saturating_increment(health.terminal_failures);
@@ -672,6 +702,28 @@ bool player_save_worker_pid_pending(int pid)
 	const auto found = slots.find(pid);
 	return found != slots.end() &&
 	       (found->second.active != nullptr || found->second.pending != nullptr);
+}
+
+bool player_save_worker_resume_deferred(int pid) noexcept
+{
+	if (pid <= 0)
+		return false;
+	std::lock_guard<std::mutex> lock(worker_mutex);
+	const auto found = slots.find(pid);
+	if (!health.running || stop_requested || !apply_callback || found == slots.end() ||
+	    !found->second.active || found->second.dispatched || !found->second.deferred)
+		return false;
+	try
+	{
+		queue_ready_locked(pid);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	found->second.deferred = false;
+	update_depth_health_locked();
+	return true;
 }
 
 player_save_worker_health player_save_worker_health_copy(void)

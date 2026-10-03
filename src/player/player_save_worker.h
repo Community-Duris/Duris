@@ -85,6 +85,9 @@ enum class player_save_apply_outcome : uint8_t
 	retryable_failure,
 	terminal_failure,
 	ambiguous_commit,
+	// An authority gate has not admitted repository execution. Retain the exact
+	// request without a result, ACK, failure retry or quarantine.
+	deferred,
 };
 
 struct player_save_apply_result
@@ -153,6 +156,7 @@ struct player_save_worker_health
 {
 	uint64_t queued_pids;
 	uint64_t inflight_pids;
+	uint64_t deferred_pids;
 	uint64_t queued_bytes;
 	uint64_t high_water_pids;
 	uint64_t high_water_bytes;
@@ -200,6 +204,13 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 // player save/login fence uses this exact-PID query; aggregate health is not a
 // sufficient admission check for a recipient-only operation.
 bool player_save_worker_pid_pending(int pid);
+// Schedule one parked original request. This is a wakeup, not authority to apply:
+// the callback must recheck its gate. False leaves the request parked, including
+// on allocation failure. Call outside pipeline/journal locks; repeated wakeups
+// cannot queue duplicate execution. A wake before parking returns false: its
+// owner must retain the wake and retry, rather than consume a one-shot event.
+// The normal pipeline does not use this yet; journal replay does not defer.
+bool player_save_worker_resume_deferred(int pid) noexcept;
 player_save_worker_health player_save_worker_health_copy(void);
 void player_save_worker_reset_for_tests(void);
 

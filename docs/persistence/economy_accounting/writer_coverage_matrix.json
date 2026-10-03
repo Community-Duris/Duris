@@ -45394,7 +45394,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4973
+          4975
         ],
         "file": "src/cmd/actinf.c",
         "function": "do_world",

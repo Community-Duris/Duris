@@ -1913,3 +1913,63 @@ leaves remain controlled and no production function changes. Declaration
 b114cecbb3baf0568fcb8de9ec0e1841f2a84113973d03d617aa5ec5418e5b65
 pins source and failed/passing evidence. This repairs an applicable regression
 owner only; it does not qualify actual SQL, gameplay or the current broad gate.
+
+### Worker parking without save failure or identity replacement
+
+Restored authority cannot use ordinary retryable failure to hold a save: retries
+eventually quarantine its PID, while undispatched replacement can discard the
+original request during a wake-to-dispatch window. The worker now recognizes the
+appended deferred outcome6, retains active/pending bytes and revisions without
+completion, ACK, retry increment or quarantine, and permits one explicit resume.
+A sticky original flag prevents replacement even after wake or an ordinary retry;
+only pending work coalesces. Resume allocation refusal retains the parked owner,
+and a bounded resident deferred-PID count appears in staff diagnostics. Normal
+pipeline/repository callbacks do not use the new outcome, preserving inactive
+behavior. A wake before parking returns false; its caller must retain/retry it.
+
+The identical new sanitizer owner links the real worker, revision, codec, journal
+and observability units. The before source has seven semantic RED cases and one
+real journal-ACK refusal/repair control PASS. Afterward all eight cases pass in
+SQL-header and flatfile modes, including concurrent wakes, protected original
+identity, pending coalescing, set/deque allocation faults, more-than-retry-limit
+healthy-PID progress, exact journal reopen and explicit warm-reinit resume. SQL
+mode initializes the real client thread but does not execute a SQL repository;
+the application callback is controlled. Supplied-artifact wrong-SHA/backend/source
+guards pass. New owner budgets are300-second compile/120-second aggregate runtime.
+Its frozen component declaration is `tmp/worker-deferral-qualified-artifact.local.json`,
+SHA-256901d8f8935964e04bd86eb2cc3bc7e7d8d4da417d212f28e15ce597c99f61ddb.
+
+Both strict production builds pass with unchanged600-second budgets and-j2. All
+49 server consumers of the changed worker header recompile per backend; the SQL
+copy's additional pfile-only consumer is explicitly compiled through its original
+Makefile target. The initial assertion wrongly included that separate tool in
+the server target and remains preserved. SQL binary SHA-256
+b296c920a3a6842b97a327f793f8794d67572a5d19d30bd12975930301e4259b;
+flatfile80eccf1f66cc90722bbf12b13502a3717bec7187c63e1b4019e50b5075982eee.
+Actual inactive gameplay passes elapsed/quiet/repeated saves, link loss, quit/
+restart, death/reload, crash recovery and live copyover on disposable MySQL and
+MariaDB. Both owned database instances/schema teardowns and port-rebind checks
+pass. Flatfile creation/save/cold-restart/relog passes in130.518 seconds. Its
+initial staff-fixture link failure remains preserved; the corrected wrapper uses
+the existing private compiler/linker libraries without changing maintained
+assertions or budgets. These journeys exercise normal callbacks, not restored
+save parking with an actual SQL apply.
+
+Existing worker, pipeline, journal, repaired quarantine and diagnostic owners,
+phase01 recovery/load,14 accounting validations,30 accounting tests,54 writer
+contracts,2 route-evidence and7 root scheduling tests pass. Clang-format18
+fixpoints, generated matrix and whitespace checks pass. Final declaration
+`tmp/worker-deferral-final-milestone.local.json`, SHA-256
+c1b7d3fc7c63a361da2ed1b2c47763f69fee0ba4749247c9313631fe3205acd4,
+verifies1232 current native inputs and frozen source/test/binary/log identities.
+
+This closes the worker-only prerequisite. Startup suspension, registration/apply
+ownership through checkpoint, selective exact-frame journal replay, affected-PID
+hydration, stale-frame disposition and original publication ACK remain open.
+Separate source-established admission/retry/promotion and completion-queue
+allocation gaps are not repaired by resume's guarantee. Ordinary-drop native
+producer/replay/copyover, combined remote source, current broad qualification and
+full R1-R8 remain open. Inventory remains868 routes/2817 occurrences/2758 unique
+sites/zero unmapped, coverage_complete=false and release=BLOCKED. The refreshed
+remote is6841487786f1f17be3685c53a42ea4860c0909ae; publication still awaits local
+integration authorization under the retained no-merge restriction.

@@ -40234,12 +40234,12 @@
       "sites": [
         [
           "src/cmd/actinf.c",
-          5223,
+          5225,
           "item_lifecycle"
         ],
         [
           "src/cmd/actinf.c",
-          5231,
+          5233,
           "item_lifecycle"
         ]
       ],
@@ -47471,13 +47471,13 @@
     },
     {
       "path": "src/cmd/actinf.c",
-      "line": 5223,
+      "line": 5225,
       "family": "item_lifecycle",
       "excerpt": "if ((t_obj = read_object(obj_index[i].virtual_number, VIRTUAL)))"
     },
     {
       "path": "src/cmd/actinf.c",
-      "line": 5231,
+      "line": 5233,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(t_obj, FALSE);"
     },
