@@ -1,10 +1,15 @@
-# Alatorin: district progression draft and audit in progress
+# Alatorin: comprehensive source story map
 
-Priority 26, source area `alatorin`, canonical zone 831. **This is an interim
-source review, not a comprehensive dossier or a deployed journal.** All native
-Q/M blocks, all room/mobile/object prototypes, the shop file and every reset
-family have been reviewed. Shared-handler qualification and selected foreign
-supply paths remain before publishing the sidecar and marking this zone complete.
+Priority 26, source area `alatorin`, canonical zone 831. Source review is
+complete; active-world qualification remains pending. The
+[revision 1 journal](../../../areas/story/alatorin.story.json) classifies all
+495 native contracts into eighteen stories, 72 requests, 163 supporting
+services and four rewardless-return exclusions: 90 achievement outcomes,
+82 potential daily outcomes and 253 displayed rows. Its 94 contacts cover
+all 296 raw addressed dialogue families using usable aliases. The 548 optional
+checks explain current exact supplies and selected earlier exchanges while
+preserving supplied inputs. No world rewards, prices, probabilities or access
+rules were changed.
 
 Player discovery, encounters, journals, achievements and new daily eligibility
 require active, ready economic accounting. Several prerequisites deliberately
@@ -12,7 +17,7 @@ refuse that mode today. Describing a route does not make its sources or payment
 supported. Native item delivery proves an accepted exchange; it does not prove
 personal hunting, allegiance, travel or every earlier preparation step.
 
-## Reviewed evidence and remaining boundary
+## Reviewed evidence and source boundary
 
 The [native source](../../../areas/qst/alatorin.qst) contains 961 blocks:
 482 QA, thirteen Q, 285 MA and 181 M. These yield 495 distinct native
@@ -32,7 +37,7 @@ are reviewed, retaining exact parents, destinations/slots, caps, conditional
 flags, chance fields, duplicate counts and reserved fields. This is source
 coverage, not proof of live availability or accounting admission.
 
-Completed additional reads at this checkpoint:
+Completed source review:
 
 - [All 952 rooms](../../../areas/wld/alatorin.wld): 83100–84055, including
   every description, field and exit of the existing rooms. Room 83343
@@ -49,9 +54,9 @@ Completed additional reads at this checkpoint:
   [the Alatorin source](../../../src/specs/specs.alatorin.c); the shared
   attribute-scroll, wondrous-ring, osquip birth/decay and paid-cleric functions;
   the parry handler; the ship-shop dispatcher and relevant mining refusal.
-  Their wider dispatch, economic publication and recovery paths still need
-  qualification. Existing Winterhaven, Quietus and Jade dossiers provide
-  previously reviewed shared-service context.
+  Wider command dispatch was reviewed; active economic publication and recovery
+  still need gameplay qualification. Existing Winterhaven, Quietus and Jade
+  dossiers provide previously reviewed shared-service context.
 - Bounded `surfacekeeps` road connections, four selected `surface` entrances,
   the `connectorzones` roc-cave connection, low-numbered blank paper in the
   loaded `limbo` file, and selected global stock declarations. Every boundary
@@ -81,7 +86,8 @@ The five literal local assignments are miner's helmet 83457, quarterstaff
 
 ## District stories in proposed player order
 
-This is a presentation order, not an enforced campaign. Keep independent
+This is a presentation order, not an enforced campaign. The sidecar implements
+the independent exchanges and guidance in these families. Keep independent
 accepted requests visible after encountering their recipient, with services
 and optional source routes explained alongside them. Full-family completion
 and district pagination remain planned capabilities.
@@ -90,7 +96,7 @@ and district pagination remain planned capabilities.
 | --- | --- | --- |
 | 1. Inn kitchens and everyday provisions | Four cooks convert particular haunches into three portions plus XP. Stonebrew's clam, apple, garlic and green herb produce its royal dish; BrightAxe uses pike, mandrake root, garlic and orange; the guild soup uses root, garlic, faerie dust and boar meat; Hammerhelm uses garlic, dragon blood, banana and boar meat. | Separate preparations with exact ingredients and outputs. Fish, forage and supplied ingredients are different source routes. Fresh-sounding prose is insufficient for a personal/freshness objective. |
 | 2. The royal banquet | Each of four distinct prepared dishes pays the King's attendant for one culinary commendation token. Ten culinary tokens pay Modan for a medal of honor. The attendant also buys the ancient wedding band for 333,000 copper. | Explain a complete banquet route, while each actual dish receipt remains independent. A first dish is not proof that all four courses were served. The band also pays Taark and cannot fund both exchanges with one root. |
-| 3. Collecting and the workshop | Dweefniggle has 223 exchanges. Each of 209 salvaged kinds 400000–400208 pays one collecting fragment; nebula material 400209 adds 200,000 copper. Vellum recipe 400210 pays three fragments; ten fragments make one collecting token. Strange object 1250 instead pays a full token and treasure. | A supporting collecting service may share proven equivalent one-item alternatives. Keep different rewards and ten-fragment assembly separate. A second native recipe consumes ten **tinkerer's tokens 83458** for one fragment; its source is still under investigation. |
+| 3. Collecting and the workshop | Dweefniggle has 223 exchanges. Each of 209 salvaged kinds 400000–400208 pays one collecting fragment; nebula material 400209 adds 200,000 copper. Vellum recipe 400210 pays three fragments; ten fragments make one collecting token. Strange object 1250 instead pays a full token and treasure. | A supporting collecting service may share proven equivalent one-item alternatives. Keep different rewards and ten-fragment assembly separate. A second native recipe consumes ten **tinkerer's tokens 83458** for one fragment; no ordinary loaded reset, native reward or explicit compiled producer was found. |
 | 4. Professional commendations and honor | Modan has seven exchanges: ten collecting, dragonslaying, mining, culinary, stealth or siege tokens each pay a medal, with family-specific extra gifts; ten medals pay 500,000 XP and key of honor 83338. Dweefniggle separately buys four medals for gnome currency 55033. | Name every physical token kind precisely. Explain competing uses and optional preparation history. Do not treat a collecting token, a tinker's token, a medal and gnome currency as interchangeable. Explain the honour-key entrance and separate key of kings; further stock/access qualification remains pending. |
 | 5. Brewery, militia and guild rivalries | Dweefniggle accepts six brewer badges; Barlow accepts six tinker badges; Grendar accepts six barbed swords; Grem accepts six apprentice robes; Maggeynel accepts six hoods. Sturb accepts six silver axes and has twelve additional proof exchanges. Brudo requests Clund's head; Clund requests Brudo's sword. | Distinct requests and actual six-root counts. Several briefings say five. Native proof possession does not prove kills, enlistment or an exclusive side; journal metadata must not invent those conditions. |
 | 6. Miboli's ten arcanums | Blank paper plus two of the **same** named component make each arcanum type. Several sylvan, lithic and sanguine materials are alternatives for the same output. One of each of the ten arcanums pays an enchantment scroll and gnome currency. | Preserve each arcanum identity and the ten-kind assembly. A combined live count across alternative materials must not report a mixed pair as a valid recipe. |
@@ -148,7 +154,8 @@ guard; collecting token 83246 is in a chance-limited container; wedding band
 carrier has a medal. Alatorin's fragment 83245, honor key 83338, depository key
 83630 and enchanted helmet have no selected reset declarations, but native
 recipes produce them. **No reset declaration is not the same as no source.**
-Tinker's token 83458 needs the remaining producer/custom-source review.
+Tinker's token 83458 has no confirmed ordinary producer; its exact ten-token
+recipe remains visible as a supplied-input lead with an explicit source blocker.
 
 Blank paper 5 exists in active `limbo.obj`, although the playable-area prototype
 inventory omits it. Do not describe that as a missing prototype or replace it
@@ -169,7 +176,7 @@ do not promise an independent roll of every declaration at each normal reset.
 | Supply or recipient | Reviewed declaration | Journal consequence |
 | --- | --- | --- |
 | Rare court and port appearances | Brek 83341 has M chance 50; the grey elf prisoner 83355 has 85; Locke 83425 and Debmawr 83524 have 30; Baron Helgrim 83494 has 20. Each has only that non-100 local M row. The two High Old Ones priests instead have F declarations at chance 100. | Distinguish forced/initial population, live appearance, retiring native exchange and later repopulation. Neither elapsed time nor discovering the room proves the recipient will return. |
-| Gardener's four flowers | Mishanen 83185 is an M chance-30 court visitor. She has four separate G chance-2 declarations: 83282, 83283, 83284 and foreign rose 32627. The gardener consumes all four together. The rose also has O stock in the loaded ethereal source. | These are optional sources with separate draws and shared caps, not a guaranteed four-flower bundle or a local belt prerequisite. Qualify the selected ethereal source before publishing that foreign route. Supplied flowers still meet the exact native request. |
+| Gardener's four flowers | Mishanen 83185 is an M chance-30 court visitor. She has four separate G chance-2 declarations: 83282, 83283, 83284 and foreign rose 32627. The gardener consumes all four together. The rose also has O stock in the loaded ethereal source. | These are optional sources with separate draws and shared caps, not a guaranteed four-flower bundle or a local belt prerequisite. Qualify active issuance before promising that foreign route is available. Supplied flowers still meet the exact native request. |
 | Three library books | Miboli 83140 and the summoner 83146 have E chance-10 book declarations 83268/83269 in slot 18; Jedd 83144 carries book 83270 at G chance 100. Jedd's book also has a competing Baron consumer. | Explain the exact books and carrier/slot state. A book's low load chance is not quest failure, and a library receipt does not establish personally collecting every book. |
 | Nested proofs | Lion cub 83129 is P stock in nest 83128; royal signet 83242 is in box 83241 inside coffer 83139. Wedding band 83249 is in skeleton 83248. Military letter 83272 and clue notebook 83385 are separate P entries in coffer 83139. | Show container preparation and require the offered proof to be directly carried. Do not count the container itself, a same-named outer object or a reused historical receipt as the proof. |
 | Prepared tokens and ore | A collecting token 83246 can be P stock at chance 55 in sacred chest 83254, competing with crafting the token from fragments. Chests and sacks also have separate ore/treasure declarations and shared kind caps. | These are alternate supplies, not personal collecting/mining history. A P command searches a live container by kind through `get_obj_num`; freeze the actual parent UID and placement in a future durable reset adapter. An adjacent O/G row alone does not prove which container received the item. |
@@ -188,8 +195,12 @@ do not weaken the mandatory accounting gate.
 There is no declared local reset or native-output producer for Shanat prison
 key 83294 or tinker's token 83458. The global literal search for the token finds
 its prototype and Dweefniggle's ten-token input, while same-numbered slime-slug
-mobiles are unrelated. Custom-source execution still needs qualification before
-classifying the token request as unfinished or choosing a source repair.
+mobiles are unrelated. The loaded native/reset producer inventory and literal/symbolic compiled-source
+search found no explicit producer for either item. This is a bounded source gap,
+not proof that staff-created or externally supplied stock can never exist. Keep
+the token input distinct from the same-numbered slime-slug mobile. A builder
+should choose a token source, retained supplied-stock service or retirement;
+choose the prison key's placement and intended targets separately.
 
 ### Mechanisms, key routes and the First Mountain
 
@@ -351,10 +362,10 @@ Selected supply routes have additional source-backed distinctions:
 | Pike and clam | `get_pole`, `do_fish` and the full fishing callback in [tradeskills](../../../src/economy/tradeskill.c) include 318/334 among twelve random kinds. Fishing needs a recognized directly carried pole, water, skill and a successful delayed check; interruption and exhaustion stop it. Its former fish timer is commented out. | Supplied fish satisfy the exact kitchen request without fishing history or a freshness deadline. Catch prose and XP precede the grant, whose boolean result is ignored. Qualify successful publication and accepted catch evidence before personal-fishing milestones; a cast or failed grant is insufficient. |
 | Brew and kitchen forage | [Foraging](../../../src/cmd/actoth.c) uses terrain-specific random tables for 822–827, with race/class/luck and poison rules. `do_forage` explicitly refuses active accounting. Its helper places the selected output directly and requires template preflight during a port. | Treat forage as a guarded optional source, alongside supported supplied/shop/reset alternatives. Freeze actual terrain, random kind, poison and output identity, then publish the accepted result. A `_frg_` keyword or an ethereal garden description does not authorize foraging every ingredient there. |
 
-These are bounded supply reads, not full foreign-zone audits. Complete the
-remaining remote trophies, source dispatch and guarded preparations before
-publishing a comprehensive Alatorin map. The supplied/native terminal policy
-remains independent of optional personal routes.
+These are bounded supply reads, not full foreign-zone audits. The selected
+carrier/parent review and shared dispatch are complete within the boundary
+below; active issuance, preparation and recovery remain unqualified. The
+supplied/native terminal policy remains independent of optional personal routes.
 
 **Confirmed active prerequisites:** both `do_salvage` and `do_refine` explicitly
 refuse active accounting. The salvage guard also precedes material downgrading,
@@ -411,9 +422,81 @@ it. A rejected grant must not silently lose paid inputs or an earned output.
 Qualification must cover zero/one/multiple catalysts, both inventory orders,
 highest-grade rejection, missing templates, failed skill rolls, rejected/partial
 grants, tool use, donated inputs, replay and restart. A committed preparation
-receipt is different from merely holding a supplied material. Selected foreign
-source/dispatch review still remains; all 336 prototype reads alone do not
-establish their active availability or personal acquisition history.
+receipt is different from merely holding a supplied material. All 336 prototype
+reads and the selected foreign source/dispatch review do not establish active
+availability or personal acquisition history.
+
+### Selected foreign supply and shared dispatch closure
+
+Reviewed one representative declared source for each of 49 foreign-only stocked
+inputs, the 41 selected carriers, all their M/F rows in the selected area and
+all 76 distinct source/meeting rooms in full. This preserves exact slot, cap,
+chance, room and parent relationships; it does not claim every world alternative.
+Only loaded `areas/AREA` world files determine room identity. The active Gr'Tak
+room is surface 609467, a Tanglewood forest, rather than its retired temporary-map
+copy. The githzerai coin proof is a P placement after locker O 44403 in room
+44431; generic same-kind parent selection still needs live qualification.
+
+The four [outer-city shops](../../../areas/shp/surfacekeeps.shp) bind spice
+merchant 120004/121014, fruit vendor 120008/123011, elven peddler
+120009/121412 and potion vendor 120010/121115 to their advertised stock.
+Mandrake/garlic/herb, apples/oranges/banana, dust/blood/stone and bottle are
+specific optional shopping routes. Shop declarations do not bypass durable
+stock, schedule, race/price policy or accepted purchase requirements.
+
+Foreign trophy sources include the exact Twin Towers hearts, equipped weapons
+in the githzerai/Ship Yards/Ceothia/Barovia/underworld/dwarven regions, the
+Serpent Eye's treasury ground stock, Jade's carried wyrm heart and the surface
+heads. The four northern hearts are declared on their carriers in the Alteran
+Valley dispersal room, despite local Frost Sharn prose. Named location and
+roaming start are guidance; neither a stock declaration nor delivery establishes
+a personal kill or current carrier position.
+
+[Lancer's native exchange](../../../areas/qst/wh.qst#L2619) accepts one
+gem-studded dragon hide 93011 and grants **all five** materials 55550–55554
+together, with an empty success body. It is one optional foreign producer,
+not five independent ingredient requests. The reviewed
+[Winterhaven dossier](WINTERHAVEN.md) also records the Incarnate death sources.
+[Crodog's five-claw exchange](../../../areas/qst/surface.qst#L296) produces
+mountaineer insignia 500021 and 105,000 XP. His complete prototype and room
+544056, claw prototype, nightcrawler prototype and dispersal room 586602 were
+reviewed; nine claw E rows use slot 16/cap nine/chance 100. This foreign request
+owns its receipt. Locke accepts a supplied current insignia without that history.
+
+[First-level-50 githyanki gifts](../../../src/world/limits.c#L539) explain
+silverish staff 19 and sword 18. Class selects the gift; they are distinct
+weapons, not ordinary carrier loot. Publication ignores `obj_to_char`'s result,
+and the caller subsequently advances highest-level eligibility. Preserve that
+entitlement through rejected/replayed grants before personal-acquisition credit;
+do not require the recipient to be a githyanki when turning in supplied weapons.
+[Generic dragon scales](../../../src/combat/fight.c#L2097) and ordinary random
+equipment drops are explicitly suppressed with active accounting. The old
+parchment 251 comes from the guarded mining callback's rare creation helper;
+its recitation handler returns false before learning. Retain it as a distinct
+supplied Smidrin input and decide whether to retire or restore the old lesson.
+
+[Command dispatch](../../../src/cmd/interp.c#L2782) runs room, equipped and
+directly carried object procedures before mobile specials/native Q and then
+ground object procedures. The [object invocation wrapper](../../../src/item/objmisc.c#L234)
+checks the bound procedure and pet restrictions, without selecting the player's
+named target or proving custody. The [loader](../../../src/world/db.c#L3141)
+auto-binds `ITEM_SWITCH`; mobile `_block_south_` text alone does not install
+`block_dir`. Alatorin thug 83395 has that alias but no reviewed assignment or
+teacher/name-based binding that installs it. Its ordinary room/door access is
+separate. Ask a builder whether this is stale labeling or an intended restored
+barrier; do not invent a kill gate.
+
+The scroll's broad `recite scroll` match can run before normal target handling;
+a ground object is also in dispatch scope. The wondrous ring refuses encrusting
+before its worn-only periodic branch, so carried/ground copies can intercept it.
+Resolve the actor's exact target and owned input before transforming, retiring
+or recording anything. Define the intended encrust scope separately, preserving
+the current rule until approved and qualified. Paid cleric selection likewise
+needs the actual confirmed spell/resurrection recipient and effect. The ship
+yard uses the [shared dispatcher](../../../src/ships/ship_shop.c#L2960);
+the hull purchase already has an epic committed path. Reuse the
+[Quietus service qualification](QUIETUS_QUAY.md) for other ship operations;
+ordinary cargo services are not the clerk's physical crate quests.
 
 ## Required universal capabilities and repair proposals
 
@@ -424,6 +507,7 @@ establish their active availability or personal acquisition history.
 | ZSQ-ALA-SERVICES: settlement and staged stock | Keep smelting, mining and paid-cleric refusal. A smelter adapter must admit two exact NPC/player-held ores, frozen price, actor, payment ownership and output together, with recoverable refund/publication and no mixing between helpers. Qualify both pay-first and ore-first sequences. Review detached consumed ore cleanup and unchecked output allocation before any re-enable. Cleric purchase and actual spell/resurrection outcome need separate settlement/effect proof. |
 | ZSQ-ALA-MATERIALS: salvage and refining | Keep both active-mode guards, including the guarded downgrade path. Port exact inputs/tools, random grade/count/essence/recipe, dynamic prices and intentional failed outcomes as one recoverable preparation. Fix legacy refining's post-extraction reads and failure display using stable pre-retirement data; test invalidated pooled objects. Qualify the old-ore catalyst/fee policy and rejected grants, and correct the two-material probability comment without an unreviewed balance change. Supplied materials do not prove personal preparation. |
 | ZSQ-ALA-SUPPLY: ground, death, fishing and forage | Keep exact source kinds and foreign ownership. Admit ground/reset issuance and death-born plants with source episode/output UID, without inferred timers or personal kills from delivery. Qualify fishing publication before catch prose/XP/history; retain forage refusal until preflight and frozen terrain/kind/poison issuance exist. Test authority rejection, movement/interruption, competing caps, gifts and restart. Dispersal-room quantities are content decisions, not creation receipts. |
+| ZSQ-ALA-DISPATCH / ENTITLEMENT | Resolve selected actor/target/custody before scroll transforms and ring interception; qualify carried, worn, ground, other-player, multiple-copy and wrong-target cases. Preserve first-level-50 class-gift entitlement through accepted/rejected grants and restart; publish highest-level eligibility consistently with the frozen award. Builders choose any thug barrier and disabled parchment lesson restoration separately. |
 | ZSQ-ALA-RANDOM: scroll and power publication | Freeze one random attribute result and consume its exact source scroll only with a recoverable output grant. Gifted outputs need custody, not invented recitation history. Wondrous-ring power changes and helmet `paydirt` use are separate effects; a timer or utterance alone proves no successful power. Test failures, replay, restart, donation and changed equipment. |
 | ZSQ-ALA-DECAY: osquip preparation | The osquip death special creates item 120051 in its room, then initializes decay; the periodic consumer replaces expired remains with a generic corpse. Add accepted birth/expiry/replacement lineage and a precise episode clock before optional personal/fresh cooking objectives. Test donation, nested storage, expiry during delivery and reconnect. Retain native exact item acceptance. |
 | ZSQ-ALA-CITY: ownership and map visibility | Resolve interior/outer-city membership deliberately. Keep contract owner, current recipient room, visited area and authored district separate. Test movement across both directions, discovered/undiscovered neighboring areas, hidden room-number client behavior and duplicate receipt projection. |
@@ -439,17 +523,39 @@ blocks encrusting broadly. Its intended encrust scope needs a targeted dispatch
 test before changing behavior. Likewise, actual `earthen`/`flaming` emissary
 deliveries do not implement the world transformations described in dialogue.
 
-## Next audit checkpoint
+## Published mapping and remaining qualification
 
-Complete selected foreign supply and shared-handler qualification;
-resolve every gate, timed/random effect and quest-like orphan. Then classify
-all 495 contracts into faithful story/request/service/exclusion rows, author
-all usable contacts, publish the sidecar and reproducible index, and add
-focused native/source regression cases. Keep the existing catalog and completed
-25-zone count unchanged until that work is complete.
+The [reproducible source index](../../reference/zone-story-audits/alatorin.md)
+classifies every contract and preserves exact terms/source lines. Its conservative
+dialogue filter reports 291 addressed blocks; direct raw review supplies the five
+mixed-apostrophe families, and the sidecar includes usable aliases for all 296.
+The journal stays within 256 stories, 32 steps per entry, 32 topics per contact,
+64 kinds per live check and 512 KiB. Large receipt sets use native alternatives;
+they do not expand item-count checks or create all-stage campaign completion.
+
+Grouping is deliberate: the 209 ordinary one-item collecting-fragment trades
+share a support service, while nebula, vellum, strange/random objects and the
+ten-token recipe remain separate. Miboli's equal arcanum alternatives, Gimbrin's
+steel/cold-iron outcomes, Xamora's wood/leather outcomes, Smidrin's token and
+the sacred/officer key payment alternatives preserve complete recipes. Miboli's
+four crystal buybacks share one service with all four exact price/XP terminals.
+Brino's eleven prices remain eleven services, including both same-named daggers.
+Food alternatives group only equal XP outcomes into seven services. The four
+rewardless returns remain explained feedback; all seven additional divine gifts
+retain their own outcomes. No different-recipient contract is merged solely
+because its reward is equal.
+
+Every repeated-material check names one exact kind. Alternative supply checks
+are optional and explicitly named; they do not assert that a mixture satisfies
+one native recipe. Optional earlier receipts explain selected preparation,
+without requiring personal production or substituting for current spent stock.
+The 214-contract fragment-producer history is explained in prose rather than
+duplicating that whole set as a redundant optional step. All 495 native definition
+IDs and the revision-two native fingerprint remain unchanged.
 
 Native-file review baseline SHA-256:
 `5b2ab0b2587ebaf17cc2b010e1d6e00e18e8984ae15e029df0a33fa8fea08913`.
 The full [roadmap](../ZONE_STORY_ZONE_PRIORITIES.md) remains active; Newhaven
-follows Alatorin. Played active-world journeys are a separate qualification
-stage and have not been run at this checkpoint.
+follows Alatorin. Source-comprehensive describes this bounded semantic review,
+not successful active-world play. Accounting activation, migrations, DB/server
+operations and merge are separate from this mapping checkpoint.

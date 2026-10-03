@@ -639,7 +639,73 @@ assert not any(r["command"] in {"M", "F"} and r["arguments"][1] == 138558 for r 
 assert "hostel" not in {z["source_area"] for z in catalog["zones"]}
 assert not any(138539 <= n <= 138544 for b in all_native_blocks for k, n in b["give"] if k == "I")
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah"):
+forge = inventory_module.area_evidence(ROOT, "alatorin")
+assert len(forge["requests"]) == 495 and len(forge["dialogue"]) == 291
+assert len(forge["reset_commands"]) == 3596
+assert len(forge["mobs"]) == 425 and len(forge["items"]) == 602
+forge_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "alatorin")
+assert forge_mapping["coverage"] == "complete" and forge_mapping["schema_version"] == 3
+assert len(forge_mapping["stories"]) == 253
+assert collections.Counter(s["category"] for s in forge_mapping["stories"]) == {"story": 18, "request": 72, "service": 163}
+assert sum(t.get("optional", False) for s in forge_mapping["stories"] for t in s["steps"]) == 548
+forge_contacts = {c["mob_vnum"]: c for c in forge_mapping["contacts"]}
+assert len(forge_contacts) == 94
+raw_forge_topics = [b for b in all_native_blocks if b["source"] == "areas/qst/alatorin.qst" and
+                    "binding" not in b and b["body"] and "qc_action" not in b["body"][0].split("~")[0].split()]
+assert len(raw_forge_topics) == 296
+for response in raw_forge_topics:
+    assert set(response["body"][0].split("~")[0].split()) & set(forge_contacts[response["giver_vnum"]]["topics"])
+for vnum, contact in forge_contacts.items():
+    assert contact["keyword"] in forge["mobs"][vnum]["keywords"]
+assert "ardgral" in forge_contacts[83141]["topics"]
+assert "grtak" in forge_contacts[83436]["topics"] or "leaders" in forge_contacts[83436]["topics"]
+
+def forge_rows(giver, reward=None):
+    return [s for s in forge_mapping["stories"] if any(c["giver_vnum"] == giver and
+            (reward is None or f"I:{reward}" in c["completion_key"].split(";")[1]) for c in s["contracts"])]
+
+# The large support family keeps all ordinary exact alternatives and no false
+# aggregate live-material check. Nebula/vellum/random/token rewards stay distinct.
+ordinary = next(s for s in forge_mapping["stories"] if s["id"] == "collecting-salvaged-material-fragments")
+assert ordinary["category"] == "service" and len(ordinary["contracts"]) == 209
+assert {c["completion_key"] for c in ordinary["contracts"]} == {
+    f"give=I:{v};receive=I:83245;disappear=0" for v in range(400000, 400209)}
+assert all(t["kind"] == "completion" for t in ordinary["steps"])
+assert any(c["completion_key"] == "give=I:400209;receive=C:200000,I:83245;disappear=0"
+           for s in forge_mapping["stories"] for c in s["contracts"])
+assert any(c["completion_key"].startswith("give=" + ",".join(["I:83458"] * 10) + ";receive=I:83245;")
+           for s in forge_mapping["stories"] for c in s["contracts"])
+# Repeated quantities must be checked per exact kind: two mixed arcanum/scroll
+# ingredients, six mixed metals or eight mixed woods cannot look recipe-ready.
+for story in forge_mapping["stories"]:
+    for step in story["steps"]:
+        if step["kind"] == "carried_item":
+            assert len(step["item_vnums"]) == 1 and step["optional"]
+for reward, alternatives in ((83685, 5), (83686, 5), (83687, 4)):
+    row, = forge_rows(83140, reward)
+    assert len(row["contracts"]) == alternatives
+    components = [t for t in row["steps"] if t["kind"] == "carried_item" and t["count"] == 2]
+    assert len(components) == alternatives
+assert len(forge_rows(83291)) == 50 and sum(len(s["contracts"]) for s in forge_rows(83291)) == 55
+assert len(forge_rows(83391)) == 4 and sum(len(s["contracts"]) for s in forge_rows(83391)) == 6
+assert len(forge_rows(83342, 31544)) == 2  # Overlapping fee/token recipes remain separate.
+buybacks = forge_rows(83302)
+assert len(buybacks) == 11 and all(s["category"] == "service" for s in buybacks)
+prices = {s["contracts"][0]["completion_key"] for s in buybacks}
+assert "give=I:80804;receive=C:60000;disappear=0" in prices
+assert "give=I:81403;receive=C:75000;disappear=0" in prices
+assert len(forge_rows(83383)) == 7  # Food groups preserve each distinct XP tier.
+returned = forge_mapping["exclusions"][0]["contracts"]
+assert len(returned) == 4 and {c["giver_vnum"] for c in returned} == {83281, 83288, 83483}
+for giver in (83289, 83415, 83508, 83517, 83518, 83519, 83521):
+    row, = forge_rows(giver)
+    assert row["category"] == "request" and "receive=" in row["contracts"][0]["completion_key"]
+forge_units = [u for u in catalog_module.story_units(catalog) if u["zone_number"] == 831]
+assert len(forge_units) == 253 and sum(u["achievement"] for u in forge_units) == 90
+assert sum(u["daily_candidate"] for u in forge_units) == 82
+assert (ROOT / "areas/story/alatorin.story.json").stat().st_size <= catalog_module.MAX_STORY_MAPPING_BYTES
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

@@ -191,7 +191,7 @@ or two wisdom scrolls. Author exact single-kind checks, or retain recipe choices
 in text without a misleading live check. Likewise, separate item steps cannot
 express either one whole recipe or another; all-of/any-of recipe predicates and
 exact root allocation require a future schema. Optional status does not change
-the counting semantics. See the [Alatorin draft](../design/zone-stories/ALATORIN.md)
+the counting semantics. See the [Alatorin dossier](../design/zone-stories/ALATORIN.md)
 for the two/six/eight-matching-material examples and planned qualification.
 
 ## The gardener dependency
@@ -214,7 +214,7 @@ the source. Raw room flags are adjusted at load and reset; a key field alone
 does not prove that a door is locked. Source-derived candidates still need an
 authored relationship to a particular story and its reveal policy.
 
-The [Alatorin draft](../design/zone-stories/ALATORIN.md) gives concrete examples:
+The [Alatorin dossier](../design/zone-stories/ALATORIN.md) gives concrete examples:
 eight shrine switches listen to `hit` (70), rather than `kneel` (383); a remote
 button opens the royal treasury; a rune-wall switch targets a nonexistent exit
 in room 0. Explain or repair the actual mechanism before adding guidance. Keep

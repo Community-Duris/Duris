@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 48 authored journals.
+2668 distinct Q contracts; 49 authored journals.
 
 Regenerate with:
 
@@ -31,7 +31,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Royal Mausoleum of Castle IceCrag (`Voluntown`) | 2 | 6 | 0 | Fallback | [1 × a key fragment; 1 × a key fragment; 1 × a key fragment; other required items → The Drakenstone key](../../areas/qst/Voluntown.qst#L64) | — |
 | The Tempest Court (`airp`) | 8 | 16 | 2 | Fallback | [1 × a wisp of wind; 1 × a living breeze; 1 × the boots of the four winds; other required items → Cloudseeker, the Unseen Breeze of the Four Winds](../../areas/qst/airp.qst#L98) | dagger_of_wind |
 | The Mountain Valley of Dawndale (`airshipgrave`) | 13 | 4 | 4 | Fallback | [2 × a vial of liquid sunlight; 1 × a handful of combustable rock dust; 1 × a bucket of rank pool water; other required items → the lost blade of the Astral Dancer, 'Ender'](../../areas/qst/airshipgrave.qst#L101) | — |
-| Alatorin - the Forge City (`alatorin`) | 495 | 291 | 47 | Fallback | [8 × some rune-covered silk; 2 × a gnomish shopkeepers token → the bindings of the arcane](../../areas/qst/alatorin.qst#L6433) | earring_powers, generic_parry_proc, miners_helmet, rentacleric, ship_shop_proc |
+| Alatorin - the Forge City (`alatorin`) | 495 | 291 | 47 | Yes | [8 × some rune-covered silk; 2 × a gnomish shopkeepers token → the bindings of the arcane](../../areas/qst/alatorin.qst#L6433) | earring_powers, generic_parry_proc, miners_helmet, rentacleric, ship_shop_proc |
 | Arachdrathos - Drow City (`arac-web`) | 1 | 1 | 0 | Yes | [native payment/conditions → a dildo-shaped key](../../areas/qst/arac-web.qst#L6) | inn, money_changer, pet_shops, world_quest |
 | Arcium, the Plagued Kingdom (`arcium`) | 1 | 1 | 0 | Fallback | [1 × a bleeding heart of Kovii; 1 × a bleeding heart of Granra; 1 × a bleeding heart of Kurlon; other required items → the shield proclaimed 'Hope'](../../areas/qst/arcium.qst#L11) | world_quest |
 | Ashrumite Village (`ashrumite`) | 12 | 13 | 8 | Yes | [1 × a necklace of silver set with gems; 1 × an amethyst; 1 × an exotic tigers-eye gem; other required items → a small gold nugget](../../areas/qst/ashrumite.qst#L101) | cityguard, drunk_one, dump, guild_guard, inn, janitor |

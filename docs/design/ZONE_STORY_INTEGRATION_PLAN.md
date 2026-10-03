@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 48 authored journals, accounting-gated player surfaces, starter/town
+**Status: 49 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -12,7 +12,7 @@ Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus, Torg, Vast Hidden
 Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter
 Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl, Ravenloft
 Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl, the Jade Empire and
-the Savannah of Broken Trusts now have complete source story maps;
+the Savannah of Broken Trusts and Alatorin now have complete source story maps;
 their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
 with seventeen contacts/all nineteen raw addressed families and twelve optional
@@ -175,6 +175,28 @@ first 34 entries have reviewed rough progression stories; the remaining queue
 is explicitly provisional static triage. The [active inventory](../reference/ZONE_STORY_ZONE_INVENTORY.md)
 covers all 350 catalog zones, 221 native-Q areas, and Q-free script/dialogue leads.
 
+Alatorin's [comprehensive dossier](zone-stories/ALATORIN.md) and revision-one
+journal classify all 495 native exchanges into 253 rows: 90 achievements,
+82 potential daily outcomes, 163 support services and four excluded returns.
+Ninety-four contacts cover all 296 raw addressed families; 548 optional checks
+retain exact current quantities and selected preparation. Equal complete recipes
+share terminals; different prices, recipients and Mundorno's overlapping tunic
+recipes remain distinct. All repeated-material checks name one kind, preventing
+false readiness from mixed pairs/batches. A supplied final ingredient can skip
+personal preparation, without completing a full banquet, profession or pilgrimage.
+
+Selected foreign supply includes all five elemental materials from Lancer's
+single hide exchange, Crodog's five-claw insignia, four outer-city merchants and
+49 representative stocked inputs with their actual carriers/rooms. First-level-50
+githyanki grants need recoverable entitlement; source publication ignores the
+grant result before highest-level eligibility advances. Resolve scroll actor,
+target and custody before broad recite dispatch; qualify the wondrous ring's
+carried/ground encrust scope separately. No ordinary producer was found for
+tinkerer token 83458 or prison key 83294. The disabled old parchment lesson,
+unbound thug barrier alias and stale references need builder-selected restoration
+or retirement, rather than assumed gates. These findings add precise qualification
+and repair work while retaining the mandatory accounting prerequisite.
+
 ## Accounting requirement and delivery sequence
 
 Active economic accounting is a prerequisite for player zone journals,
@@ -287,10 +309,10 @@ Implement and qualify the remaining additions in this order:
    qualify an actual player journey, and update semantic coverage independently
    from static contract classification.
 
-Alatorin's [interim district review](zone-stories/ALATORIN.md) adds concrete
+Alatorin's [completed source review](zone-stories/ALATORIN.md) adds concrete
 requirements to these steps. Its 495 contracts include 93 paid offerings;
 all 952 rooms, 602 objects and 1,821 reset families have now been reviewed.
-Publication awaits selected foreign supply and shared-handler qualification.
+The sidecar and index are published; active-world qualification remains pending.
 All 336 foreign item prototypes named by local native offerings/rewards have
 also been reviewed. That resolves their identity and types; it does not complete
 their source routes or enable guarded material preparation.
@@ -845,17 +867,14 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 195 roadmap areas.
-- [ ] Finish Alatorin's selected foreign supply/shared-handler qualification, then publish
-  its district journal and evidence index. The interim draft covers all native
-  contracts/topics and fifteen shops, with 93 paid-offering and custom-service
-  dependencies; it is not a completed twenty-sixth dossier.
-  All 952 rooms, 425 mobiles, 602 objects, fifteen shops and 1,821 reset
-  families and all 336 foreign item prototypes are now reviewed. Complete
-  selected foreign supply and shared-handler paths before comprehensive
-  publication. Qualify two typed money-pile I
-  rewards, actual reset/parent policy, stale stock references and targeted
-  slot/prose repairs alongside the access findings.
+- [ ] Complete comprehensive source dossiers for the other 194 roadmap areas.
+- [x] Complete Alatorin's source dossier, selected foreign supply/shared dispatch,
+  journal and evidence index: 495 contracts, all 296 raw addressed families,
+  253 rows, 94 contacts and 548 optional checks, preserving native identities.
+- [ ] Qualify Alatorin's active journeys: source/reset-parent admission, payments,
+  two typed money-pile I rewards, random/decay lineage, exact recipes and class-gift
+  entitlement. Resolve source/access/slot/prose decisions with builders before
+  restoring missing or disabled content. Keep preparation guards until supported.
 - [ ] Qualify salvage/refining before publishing them as active preparation:
   retain both guards; capture refining data before extraction; test invalidated
   released objects, catalyst count/order, fee admission, missing output and
@@ -906,6 +925,7 @@ contract classification; it does not claim complete objective coverage.
 | Lost Temple of Tikitzopl | 1 | Complete: two stories, two requests and 25 services across 29 exchanges | [Source-comprehensive dossier](zone-stories/LOST_TEMPLE_OF_TIKITZOPL.md); nineteen contacts/all nine addressed blocks, 44 optional checks, exact key/recipe and competing Orb guidance | Active generation and mode-zero availability pending; existing committed 100-EP class debit retained | Native projection/receipt checks; qualify actual source/access/return, exact allocation and successful reflection/class outcomes; builder selects crypt/prose/temple closure |
 | The Jade Empire | 1 | Complete: eight stories/nine requests/seventeen services/two exclusions across 37 contracts | [Source-comprehensive dossier](zone-stories/THE_JADE_EMPIRE.md); 38 contacts/all three addressed blocks, 35 optional checks and equivalent fish grouping | Paid net/map/mixed fees, legacy mithril supply and computed forge/mining pending; native cash rewards preserved | Qualify fresh sources/captures, exact allocation, same-kind replacement, load-room encounters, actual keys/water/foreign routes and fishing publication; builder selects belt/lore/prose repairs |
 | Savannah of Broken Trusts | 1 | Complete: two stories/three requests/twelve services across seventeen contracts | [Source-comprehensive dossier](zone-stories/SAVANNAH_OF_BROKEN_TRUSTS.md); seventeen contacts/all nineteen raw topics and twelve optional checks | Fresh stock/retiring episodes unqualified; native cash reward supported; no active sister collection terminal | Qualify three-part sources, six-kind allocation/matching upgrades, real well/tunnel/hazard access; builder selects sister/tribal endpoints and alias/prose/protection repairs |
+| Alatorin - the Forge City | 1 | Complete: eighteen stories, 72 requests, 163 services/four returns across 495 contracts | [Source-comprehensive dossier](zone-stories/ALATORIN.md); 94 contacts/all 296 raw topics, 548 optional checks, complete recipes and bounded foreign supply/dispatch | Fresh source generation, material preparation, fees and typed money outputs remain unqualified | Native projection/file-loader checks; qualify exact sources, target/custody, class-gift entitlement, random/decay lineage, district presentation and builder-selected repairs |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
 
 ## Twin Towers evidence and decisions

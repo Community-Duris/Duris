@@ -50,6 +50,7 @@ neither every branch nor every historical prerequisite.
 | 23 | Lost Temple of Tikitzopl | [Comprehensive source dossier](zone-stories/LOST_TEMPLE_OF_TIKITZOPL.md): 29 Q/nine M, 234 rooms, 76 mobs, 97 objects, 340 resets/all 202 families, five assigned procedures and bounded foreign components/routes reviewed | Revision 1: two stories/two requests/25 services, nineteen contacts/all topics and 44 optional checks; exact key, distinct/duplicate ingredients and competing Orb guidance | Active sources/mode-zero availability; exact allocation/lineage; accepted lore and confirmed access/return; successful reflection/class outcomes and builder-selected crypt/prose/closure |
 | 24 | The Jade Empire | [Comprehensive source dossier](zone-stories/THE_JADE_EMPIRE.md): 37 Q/four M, 340 rooms, 134 mobs, 130 objects, 583 resets/all 331 families, three shops, two literal room services/computed smith and bounded foreign proofs/routes | Revision 1: eight stories/nine requests/seventeen services/two exclusions, 38 contacts/all three addressed topics and 35 optional checks; equivalent fish and exact allocation/access guidance | Paid net/map/mixed fees, legacy mithril and deliberate forge/mining refusal; accepted fishing/source/capture/recipient, same-kind replacement, load-room encounters and real key/water/foreign travel; builder-selected belt/lore/prose repairs |
 | 25 | Savannah of Broken Trusts | [Comprehensive source dossier](zone-stories/SAVANNAH_OF_BROKEN_TRUSTS.md): seventeen Q/nineteen M, 167 rooms, 59 mobs, 39 objects, 315 resets/all 105 families; shared native/access/falling/bard and bounded foreign Mitashi/Air/Hostel review | Revision 1: two stories/three requests/twelve equipment services, seventeen contacts/all nineteen raw topics and twelve optional checks | Active parts/sword stock, exact allocation, retiring appearances and well/tunnel access; source/learned-topic evidence; builder-selected absent sister/tribal endpoints and alias/prose/protection decisions |
+| 26 | Alatorin - the Forge City | [Comprehensive source dossier](zone-stories/ALATORIN.md): 495 contracts/961 blocks, full local world/prototypes/shop/reset and bounded foreign/shared review | Revision 1: 253 rows, 90 achievements/82 potential dailies, 163 services/four returns, 94 contacts/all 296 addressed families, 548 optional checks | Active source/preparation/payment and typed-money admission; target/custody/random/class-gift recovery; exact alternative predicates; builder source/access/prose/slot repairs; district presentation and full-stage campaigns |
 | 26–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
 The next area is Alatorin - the Forge City, followed by the City of Newhaven.
@@ -1075,121 +1076,69 @@ and local document link verification accompany this checkpoint. Fixtures are
 synthetic states, not played sources, travel, songs or recipient episodes.
 No accounting activation, DB migration/server operation or merge is included.
 
-## Alatorin interim audit checkpoint
+## Alatorin completed source map
 
-Priority 26 is in progress in the
-[district progression draft](zone-stories/ALATORIN.md). All 961 native blocks
-have been reviewed: 495 distinct contracts across 82 recipients and 466 M/MA
-blocks, including 296 nonambient addressed families. The conservative topic
-inventory retains 291; five apostrophe-bearing families still have usable
-aliases. All fifteen shops, 425 mobiles, 952 rooms and 602 objects were
-reviewed, including every local switch/teleport prototype. All 3,596 reset
-commands/1,821 families are now reviewed, completing the other 1,469 non-D
-families. Selected foreign supply and shared-handler qualification remain.
-The draft lists exact ranges and remaining boundaries.
-The foreign-item review covers all 336 foreign native-item prototype
-reads: 220 tradeskill kinds and 116 others, including loaded paper 5. Exact
-types, fields and descriptions are reviewed; selected foreign supply routes
-and custom dispatch remain separate qualification work.
+Completed priority 26 with the [source dossier](zone-stories/ALATORIN.md),
+[revision 1 journal](../../areas/story/alatorin.story.json) and
+[reproducible index](../reference/zone-story-audits/alatorin.md). All 495 native
+contracts are classified into eighteen stories, 72 requests, 163 services and
+four rewardless-return exclusions: 90 achievements, 82 potential dailies and
+253 rows. Ninety-four contacts cover every one of 296 raw addressed families,
+including five with usable aliases alongside apostrophes; 548 optional checks
+explain exact stock and selected earlier exchanges without inventing personal
+history. The conservative source index reports 291 topic blocks.
 
-The proposed progression separates kitchens/royal dishes, collecting and
-professional commendations, army/brewery proofs, arcanums/random attribute
-scrolls/nine rings, mining/master crafting, libraries/gardens, independently
-owned rogue/outpost requests, port supply and seven divine gifts. Ninety-three
-native offerings include coins. Salvage, refining, smelting, mining and paid
-cleric service deliberately refuse active accounting; these remain explicit
-adapter work.
+Reviewed all 961 native blocks, 952 rooms, 425 mobiles, 602 objects, fifteen
+shops, 3,596 reset rows/1,821 families and 336 foreign item prototypes. Bounded
+foreign supply review covers 49 representative inputs, 41 carriers, all selected
+area M/F declarations and 76 rooms, plus the githzerai locker and Crodog route.
+Only loaded AREA world files establish current source identity. The local
+procedures, relevant shared source/publication boundaries and command dispatch
+were reviewed; this does not claim comprehensive foreign-area maps or played
+active-world availability.
 
-The access continuation identifies eight shrine controls using actual command
-70 (`hit`), remote treasury mechanisms, consumable honour/kings keys and the
-physical officer's key awarded by Meshadan. The shrine effects open either
-avatar load-room edges or particular descent segments; opening is separate
-from arrival, NPC availability and receipt completion. Wall 83368 has a
-confirmed invalid room-0/north target, while the intended kings gate is locked
-and blocked. A targeted repair needs builder-selected destination/placement
-and validation before mutation, preserving alternate shrine/outer-road routes.
-Dumathoin is the eighth avatar with no local Q/M; seven gift requests remain.
+The journal preserves the 209 ordinary fragment trades as one equal-outcome
+service; separate nebula/vellum/random/tinkerer outcomes remain explicit. Exact
+arcanum, steel/cold-iron and wood/leather alternatives use complete native
+recipes and single-kind live checks. Four crystal buybacks share a service with
+four precise terminals; Brino's eleven prices remain separate. Different
+recipients, competing proofs, seven divine gifts, meaningful shard replacements
+and both overlapping blue-tunic contracts keep distinct identities. The mapping
+fits existing row/step/topic/item/byte limits without a new schema or API.
 
-The completed world/prototype continuation adds prison versus commander keys,
-remote casket/crate/handprint encounter-room exits, troglodyte alternate access,
-vine `grab` travel and selected reciprocal surface/roc-cave entrances. The
-83831 → 122947 descent has no direct reverse up edge. Static “dwarves only”
-signs, bounty notebook pages and an X-marked checklist remain guidance, without
-invented admission predicates, travel history or rescues.
+Findings incorporated into the shared plan:
 
-Two divine native I rewards are money-pile prototypes: Vergadain coins 83308
-and Abbathor satchel 83617, each with 2,000 in its platinum denomination. The
-reviewed SQL item creation path records custody/coin payload without the matching
-currency posting in its item accounting plan. This is a source accounting gap
-requiring typed preflight and balanced pile issuance/conversion qualification;
-it is not a played reconciliation result. Preserve native bindings, exact
-entitlements and verified paid masks. Copper legplates 83646 use arms flags and
-silver sleeves 83650 use head flags; these are confirmed targeted slot repair
-candidates. Copied Mundorno sabaton prose and identified names are separate
-display/content decisions. No world data or accounting implementation was
-changed by this audit checkpoint.
+- Active reset-generation admission remains the first prerequisite. Mining,
+  smelting, salvage, refining, forage and paid native offerings remain guarded;
+  supplied/admitted stock is a separate valid route. Repair refining's confirmed
+  released-input reads using stable pre-retirement data, then qualify complete
+  material/tool/fee/catalyst/random settlement before enabling preparation.
+- Typed money-pile gifts, actual slot flags, static clues, rare/nested supplies,
+  shrine `hit`, treasury `push`, vine `grab`, brittle keys, the malformed wall
+  and blocked royal gate require precise qualification or builder decisions.
+- Lancer supplies all five elemental materials for one gem-studded hide.
+  Crodog's five nightcrawler claws produce the mountaineer insignia. Foreign
+  ownership, dispersal starts and supplied proofs do not establish local personal
+  hunting, travel, allegiance or full-stage history.
+- No ordinary native/reset/explicit compiled producer was found for tinkerer
+  token 83458 or prison key 83294. The thug's barrier alias has no corresponding
+  binding; the old parchment lesson is disabled. Restore or retire those pieces
+  through builder-selected sources/targets/terms, retaining valid supplied inputs.
+- Resolve exact command target, actor and custody before the broadly matched
+  scroll transform or ring interception. Freeze random results and preserve
+  first-level-50 githyanki gift entitlement through rejected grants and restart.
+  Ignored publication results and stale prose do not prove a played crash.
 
-The reset continuation confirms declarations for all 82 native recipients,
-while separating rare forced/initial-only M rows from normal chance-100
-admission. Mishanen's four chance-2 flower entries, two chance-10 books and
-nested lion/signets/letters are optional sources. Prepared collecting tokens
-compete with assembly from fragments. P placement selects a live container
-by kind, so a durable adapter must freeze its actual parent UID and generation.
-Mobile 93183 at tavern 83761 and object 57744 on shopkeeper 83359 have no
-prototype in the loaded data or other prototype files; the loader disables
-their three stale declarations. Record targeted builder-selected repairs,
-without fabricating an encounter or breaking the rest of the location's story.
-Blank paper 5 remains a real administrative prototype. Custom-source review
-still precedes a final classification of tinker's-token/prison-key orphans.
+Current catalog: 49 journals, 1,800 achievement units, 1,545 potential daily
+units and 2,240 projected rows, preserving all 2,668 native definitions,
+revision two and the native fingerprint. **26 of 220 roadmap areas are
+source-comprehensive; 194 remain.** Continue with Newhaven, Faerie Realm,
+Verspin and Ship Yards. Source completion is separate from active gameplay
+qualification; accounting activation, migrations, DB/server operations and
+merge have not been performed.
 
-The material-preparation continuation confirms the outer active salvage guard
-also blocks its existing transactional downgrade helper. Legacy salvage grants
-its varied outputs independently before retiring the source; its adapter needs
-the whole frozen outcome, including tools, recipe/essence and dynamic prices.
-Refining reads object fields and failure-message data after extraction releases
-its inputs to the pool. This confirmed source lifecycle defect has a focused
-repair/invalidated-storage test proposal; no player crash was reproduced.
-Its old-ore catalyst and zero/one/multiple-ore fee/consumption policy require
-qualification, as do output preflight and recoverable failed grants. The stale
-two-material “67%” comment should match the one-of-three branch without changing
-balance. Both commands remain unavailable with active accounting.
-
-Selected supply reads now distinguish the rose's ethereal ground stock from
-Mishanen's rare flower declaration; psychomia's one-object treant-death birth
-from stock and stale two-ingredient prose; and fishing from supplied pike/clam.
-Neither the plant's duration field nor the disabled fish timer establishes a
-freshness deadline. Fishing catch prose/XP precede the unchecked grant result;
-accepted publication needs qualification before personal catch history.
-Foraging also refuses active accounting and needs preflight plus frozen
-terrain/kind/poison issuance. These bounded foreign reads do not complete the
-remaining remote source/dispatch audit or foreign-area dossiers.
-
-New plan detail covers exact any-of recipe readiness instead of summed mixed
-materials, bounded district/family presentation, NPC-held staged smelting and
-fee publication, random scroll and timed osquip lineage, interior/outer-city
-ownership and loaded administrative material resolution. Native outcomes,
-competing roots and retiring recipients stay authoritative. Selected stale
-prose, overlapping recipes and source questions have builder/qualification
-proposals rather than unreviewed reward or balance changes.
-
-This is a documentation checkpoint. The catalog remains 48 journals with
-2,668 native definitions, 2,205 achievement units and 1,854 potential daily
-units; 25 of 220 roadmap areas remain source-comprehensive, with 195 pending.
-Alatorin is not yet a deployed sidecar or the twenty-sixth completed dossier.
-Finish its remaining source audit and focused mapping tests before publication;
-Newhaven follows. The full roadmap goal remains active and accounting is
-mandatory. No active-world gameplay, accounting activation, migration,
-DB/server operation or merge is part of this checkpoint.
-
-Validation passed: the production-catalog coverage regression; exact native
-block/recipient/paid-offering and reviewed-range metrics; source digest,
-selected recipe shapes, current mechanism commands, shrine reciprocal/D edges,
-invalid wall target, key break values, typed money rewards and slot flags,
-selected return edges, complete reset-family coverage and selected sources;
-all 336 loaded foreign item prototypes, material types, active preparation
-guards, inclusive random branch, refining catalyst/fee and released-input paths;
-selected rose stock, four treant declarations/one-object birth, the plant's
-missing animal-decay assignment, forage guard and fishing publication order;
-whitespace; and local links across the five changed documents. All 2,668 native
-definitions and all 48 maps remain unchanged; 345 local links resolve.
-This addition changes documentation only; no C++ build was required.
+Validation: focused production-catalog and native story projection regressions;
+exact contract/recipe/price/topic classification and optional-supply checks;
+generated catalog/index/inventory reproducibility; source/access/reset/material
+metrics and local links; changed-line formatting, whitespace and cached server
+build. See the PR/checkpoint result for executed outcomes and limitations.

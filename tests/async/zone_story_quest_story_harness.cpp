@@ -178,9 +178,18 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 48 &&
-				tracker.summary_for(7, 42).total == 2205,
+		require(catalog.story_mappings.size() == 49 &&
+				tracker.summary_for(7, 42).total == 1800,
 			"native story projection disagreed with the complete source audit");
+		auto file_catalog = raw_catalog;
+		require(zone_story_quest_story::load(
+				&file_catalog, &error,
+				std::filesystem::path(argv[2]).parent_path().string()) &&
+				file_catalog.story_mappings.size() ==
+					catalog.story_mappings.size() &&
+				zone_story_quest_catalog::eligible_definition_count(file_catalog,
+										    831, 2) == 90,
+			"bounded Alatorin sidecar failed the native file loader");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
 			const auto mapping = std::find_if(catalog.story_mappings.begin(),
