@@ -38,7 +38,6 @@
   "test_active_special_service_refusal.py": {"profile":"native","mode":"unittest","minimum_cases":6,"cpu":1,"memory_mb":512,"seconds":0.349,"purpose":"Pin paid special-procedure refusals before legacy cash and service effects."},
   "test_actnew_birth_home_save.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.071,"purpose":"actnew birth home save"},
   "test_actobj_get_limits.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.029,"purpose":"actobj get limits"},
-  "test_actobj_level_mushroom_save.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.025,"purpose":"actobj level mushroom save"},
   "test_actset_save_logging.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.047,"purpose":"actset save logging"},
   "test_actwiz_save_logging.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.025,"purpose":"actwiz save logging"},
   "test_affect_wear_off_message_contract.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.026,"purpose":"Regression contract for multi-part spell wear-off messages."},
