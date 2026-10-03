@@ -5,7 +5,7 @@ The R1-R8 requirement contract below remains the feature checklist;
 conservation rules. The evidence table and counts below are the historical
 2026-09-27 assessment at add-double-entry HEAD `49af585c4`. Use the
 [active completion plan](FINISH_ACCOUNTING_PLAN.md) and
-[latest review status](REVIEW_STATUS_2026-10-02.md) for current implementation
+[latest review status](REVIEW_STATUS_2026-10-03.md) for current implementation
 and qualification status. The older continuation retains historical evidence. The [delivery plan](DELIVERY_PLAN.md) links five
 executable work plans. A component test or source reference is not a qualified
 player journey.

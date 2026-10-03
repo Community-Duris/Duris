@@ -138,6 +138,13 @@
       "evidence": { "path": "src/flatfile/flatfile_character_delete.c", "token": "flatfile_shop_trade_materialization_prepare_player_remove" }
     },
     {
+      "id": "zone_story_quests",
+      "source": "core",
+      "key": "pid+all-seasons",
+      "disposition": "prepared_rewrite",
+      "evidence": { "path": "src/flatfile/flatfile_character_delete.c", "token": "flatfile_zone_story_quest_state_prepare_player_remove" }
+    },
+    {
       "id": "historical_operation_ledgers",
       "source": "schema-derived",
       "key": "pid+operation-id",

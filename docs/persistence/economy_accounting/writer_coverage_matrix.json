@@ -117,7 +117,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1943
+          1953
         ],
         "file": "src/account/account.c",
         "function": "cleanup_temp_char",
@@ -24533,7 +24533,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          91
+          93
         ],
         "file": "src/flatfile/flatfile_character_delete.c",
         "function": "flatfile_character_delete",
