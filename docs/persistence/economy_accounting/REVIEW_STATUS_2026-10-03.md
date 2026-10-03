@@ -380,3 +380,29 @@ Guild milestone LF-normalized source/evidence SHA-256:
 - tmp/guild-treasury-focused.local.log: 92634f8a58687761906ab1a8d2a84f4ad4c777b2074778665d7e766ca64f9ccd
 - tmp/guild-treasury-focused-final.local.log: 8d7cdad19b122fd409a8572a5317020815a9107b1274b98d51984fff247ecbc5
 - tmp/audit-guild-money-final.local.log: 189e97c579fcaa5b290b3dd5c65d6ec42ccad60564e4888d1127210fdc3246b1
+
+
+## Queue extraction harness transport boundary repair
+
+The frozen 4180 queue owner failed strict compilation before sanitizer runtime:
+production-extracted functions referenced transport_frontend_input and
+transport_world_finish_pulse without their declarations. The harness now
+includes production net/transport.h. Its existing disabled-feature inline
+implementations match this fixture configuration; no fake transport doubles,
+queue assertions, deadlines or production behavior changed. Strict warnings,
+ASan and UBSan now pass all bounded session queue runtime regressions.
+
+The frozen incoming integration focused manifest records eleven other owner
+passes and the original queue failure. Persistent protocol/readiness/Telnet/
+WebSocket components, listener contracts, phases and 24 watchdog process cases
+pass. The repaired queue result is separate evidence; actual transport,
+readiness, accounting gameplay and R8 recovery are still under qualification.
+Native source remains 4180f74573c8a4cfe669c057c36f9c36dfc6d7fa.
+
+Queue milestone LF-normalized source/evidence SHA-256:
+
+- tests/async/session_queues_runtime_harness.cpp: b32a0e8cb94965833d02ea268e6b253a22ec1c7f5ec748f46ae6853489e934ab
+- tests/async/test_session_queues_runtime.py: 5f0799a51af578654a62b910ad7735693082ba22081fe019126d1ad02610c751
+- tmp/transport-4180-focused-summary.local.json: 2b93ef67fa94bdcad76cf5246518e3fc0a126650136038b665b62df6037c6bb7
+- tmp/transport-4180-session_queues_runtime.local.log: 1572f5981e864a1d6a3af199eb3fed4c8bca422ec2b5518506d5e95aad61e33b
+- tmp/transport-4180-session-queues-green.local.log: 9e97152ff5b6423370edf9302e4d6a6e96d243ca154cdff4a11c6b5b100f2125

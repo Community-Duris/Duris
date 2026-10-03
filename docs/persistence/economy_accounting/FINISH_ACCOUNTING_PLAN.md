@@ -424,3 +424,10 @@ probes; 81 focused tests pass. Guild money revision/lifetime and actual
 same-root deposit/withdraw gameplay/recovery remain unqualified. Full R7 and
 R1-R8 gates remain open. See the latest review status for source and failed/
 passing evidence; raw capture does not qualify enrollment or activation.
+
+
+The transport-integrated queue extraction fixture now includes the real
+transport interface and passes strict warnings/ASan/UBSan. Eleven other bounded
+transport owners and 24 watchdog fixtures pass at native 4180f745. Actual
+transport/listener/accounting journeys, recovery and current-source broad
+qualification remain independent open gates; no inactive behavior changed.
