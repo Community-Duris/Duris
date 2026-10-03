@@ -699,3 +699,14 @@ runner checks, not native gameplay or a passing broad rerun. Primary verified
 owner, dependency and RED/GREEN log hashes against
 `tmp/contract-drift-two-summary.local.json` SHA-256
 286346cc1531dcf2cd9ce04cb9b217c5458e9cc36c4708f5b5dd866fa30855de.
+
+## Integer deadline timing contract repair
+
+The timing contract still expected the removed timeval sleep budget. It now
+checks the actual monotonic integer wait/deadline/timeout helpers, clock-failure
+shutdown, expiry-before-poll, bounded integer timeout and loop call. Twelve
+source checks and five negative mutations pass; deliberate missing/reordered
+guards remain RED. Owner/dependency and RED/GREEN hashes were verified against
+the same contract-drift-two evidence above. This is static contract evidence,
+separate from previously measured native listener/cadence budgets and the
+unfinished accounting workload and broad-suite gates. No production code changed.
