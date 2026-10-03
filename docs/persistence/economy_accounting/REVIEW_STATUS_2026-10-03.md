@@ -688,3 +688,14 @@ component evidence is separate from the earlier 8cc56007 qualification and the
 still-running frozen broad suite. Integrated evidence:
 tmp/fixture-alchemy-six-summary.local.json SHA-256
 5c38979f6d840a29ea06c640d0ee469a08d0366d0fae83423ef428176c6775ac.
+
+## Regression resource-owner inventory repair
+
+The exact regression-runner contract omitted two integrated transport journeys,
+reproducing a RED inventory assertion. It now contains all 18 expensive owners
+and proves they partition serially in order. All seven existing runner behavior
+checks and Makefile/discovery/manual-owner checks pass. These are synthetic
+runner checks, not native gameplay or a passing broad rerun. Primary verified
+owner, dependency and RED/GREEN log hashes against
+`tmp/contract-drift-two-summary.local.json` SHA-256
+286346cc1531dcf2cd9ce04cb9b217c5458e9cc36c4708f5b5dd866fa30855de.
