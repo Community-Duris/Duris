@@ -15,7 +15,7 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1519
+assert report["daily_unit_count"] == 1516
 assert mapping["schema_version"] == 3 and mapping["stories"][0]["steps"][0]["optional"]
 assert sum(s["category"] == "service" for s in mapping["stories"]) == 12
 assert len(mapping["exclusions"]) == 1 and len(mapping["exclusions"][0]["contracts"]) == 40

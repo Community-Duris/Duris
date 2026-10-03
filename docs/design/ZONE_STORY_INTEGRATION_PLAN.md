@@ -299,6 +299,25 @@ Plan targeted missing-Mril-edge repair, exact proof/alias/clue corrections,
 bracer source qualification and deliberate dormant-invasion/disabled-descent
 decisions before promising unimplemented world or actor outcomes.
 
+Tharnadia's [comprehensive dossier](zone-stories/THARNADIA.md) covers all
+nineteen exchanges/44 native blocks, 584 rooms/176 mobs/206 objects/nineteen
+shops and 1,480 resets/661 families, with 31 literal assignments, computed
+teachers and bounded foreign/shared review. Revision two supplies eight
+independent outcomes/eight support rows/one typed-food exclusion, 26 contacts
+and 23 optional checks. Three different toys remain distinct from borrowed
+instruments; the herb-to-vial service explains one optional route to the
+vial-plus-pendant finale. Supplied finals never imply personal preparation.
+
+Correct audit prototype lookup to include negative administrative areas:
+paper 5 exists in active limbo and legitimately buys the city map, without
+giving limbo discoverable ownership. The missing mobile 132677 is a separate
+real reset finding. Global P container selection, hidden-item search versus
+GET, toy/pup/desk clue mismatches and same-name weapon alternatives need
+precise source/parent qualification. Extend exact coin-only and typed-food
+settlement, dice custody and optional paid town services while retaining
+guards. Healing, lessons, pet recovery, performance and escape need explicit
+accepted endpoints before additional history or full-stage campaign credit.
+
 ## Accounting requirement and delivery sequence
 
 Active economic accounting is a prerequisite for player zone journals,
@@ -343,6 +362,11 @@ Implement and qualify the remaining additions in this order:
    Qualify committed O/P/G/E and other item-producing resets, including scenery,
    portals, container dependencies, and NPC equipment before a fresh-world pilot.
    Custom grants and transformations need equally explicit publication results.
+   Tharnadia also exposes global P parent selection: choose/freeze the actual
+   live container UID and location, with builder-reviewed legacy or corrected
+   placement policy. An immediately preceding O declaration is not proof of
+   parent identity. Qualify cap-hit/moved/carried containers and hidden-content
+   reveal separately from committed pickup and first source acquisition.
    Plains of Life currently clears its lesson tag before confirming its sword:
    fix recoverable tag/grant ordering before claiming a completed tutorial.
    Ailvio additionally needs committed map grants and hidden-ingredient
@@ -1005,7 +1029,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 188 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 187 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1016,6 +1040,16 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   claws/crystals/eggs. Extend first-source/gift, episode, helper/travel/actor and
   ship/class/fee settlement; repair selected missing edges/proof/clue text and
   deliberately resolve bracer supply, dormant invasion and disabled descent.
+- [x] Complete Tharnadia's nineteen-exchange/24-addressed source dossier:
+  all 584 rooms/176 mobs/206 objects/nineteen shops, 1,480 resets/661 families,
+  31 literal assignments and bounded foreign/shared review. Ship eight
+  outcomes/eight services/one typed-food exclusion, 26 contacts/23 optional
+  checks; correct administrative paper lookup without changing discovery.
+- [ ] Qualify Tharnadia's global container parent, hidden contents/search/GET,
+  actual source/recipient episodes, exact toys and supplied vial finale.
+  Retain typed-food/coin-only and paid town guards; extend draw/custody and
+  actor/NPC semantic settlement before healing/lesson/pet milestones. Resolve
+  missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
 - [x] Complete Ultarium's seventeen-exchange/five-addressed source dossier:
   all 268 rooms/82 mobs/71 objects/two shops, 338 resets/227 families, three
   literal assignments, computed teachers/shared effects and bounded foreign
@@ -1136,6 +1170,7 @@ contract classification; it does not claim complete objective coverage.
 | Ship Yards | 1 | Complete: nineteen independent outcomes/six services across 26 Q/QA | [Source-comprehensive dossier](zone-stories/SHIP_YARDS.md); thirty-two contacts/all twenty addressed families and thirty-four optional checks, exact quantities/kinds and optional producer history | Nineteen achievement/potential daily units; six paid services guarded; unresolved exits/dispersal, accepted fishing and paid ship/crew settlement unqualified | Native supplied-item, exact collection and alternative-receipt recovery; qualify actual source/access/retirement and builder-selected clue/reward/topology decisions |
 | Ultarium | 1 | Complete: seven independent outcomes/eight support rows across seventeen Q/QA | [Source-comprehensive dossier](zone-stories/ULTARIUM.md); twenty-three contacts/all five addressed families and twenty-two optional checks; exact souls, duplicate-name proof/output and three access keys | Seven achievement/potential daily units; rare appearances/sources, deeper events and paid rename/pet/epic lessons unqualified | Native exact proof and four-kind collection; preserve gifts/foreign ownership and guards; qualify source/episode/effect/access and deliberately resolve soul/campaign/claim policy |
 | Surface Realm | 1 | Complete: seventeen outcomes/six support rows across 31 exchanges | [Source-comprehensive dossier](zone-stories/SURFACE_REALM.md); 37 contacts/all 36 addressed blocks and 31 optional checks; exact competing campaign/region/source guidance | Seventeen achievement/potential daily units; two mixed fees guarded; live sources, episode/travel/effect policy unqualified | Preserve supplied proof/independent ownership; qualify exact allocation, first source and custom events; targeted boundary/clue repair and deliberate disabled-campaign/source decisions |
+| Tharnadia | 2 | Complete: eight outcomes/eight services/one typed-food exclusion across nineteen exchanges | [Source-comprehensive dossier](zone-stories/THARNADIA.md); 26 contacts/all 24 addressed families and 23 optional checks; exact toys, optional medicine producer, supplied finale and valid administrative paper | Eight achievement/potential daily units; active source/container/search/retirement unqualified, coin-only/typed-food and paid services guarded | Native exact-material/alternative/service/recovery fixtures; qualify first source/access/actor-state, dice/fee settlement and balanced mobile/clue/placement/claim repairs |
 
 ## Twin Towers evidence and decisions
 

@@ -403,6 +403,21 @@ Do not describe an allocation/authority refusal as an intended failed skill roll
 The [material repair plan](../design/zone-stories/ALATORIN.md) covers refining's
 released-input reads, catalyst/fee ambiguity and partial-grant qualification.
 
+Administrative areas can supply valid shared prototypes without owning a
+discoverable zone. Validate against every active `areas/AREA` prototype
+source before calling an item missing. For example, paper 5 comes from
+`limbo.obj` and participates in Tharnadia's map service. Mobile, object and
+room numbers have separate namespaces: its missing mobile 132677 is not
+repaired by the same-numbered map object. Preserve canonical journal ownership.
+
+A P reset names a container prototype, whose shared loader currently selects
+a global matching live instance. The preceding O declaration is a source
+lead, not guaranteed parent identity. Qualify actual parent UID/location,
+caps and moved/carried containers. Search can reveal hidden contents without
+collecting them; only accepted pickup establishes custody. Keep source/GET
+history separate from optional current material and final delivery. See the
+[Tharnadia dossier](../design/zone-stories/THARNADIA.md) for the complete example.
+
 ## Later schema capabilities
 
 All three versions reject dialogue milestones, personal recovery, kills, arbitrary scripted events,

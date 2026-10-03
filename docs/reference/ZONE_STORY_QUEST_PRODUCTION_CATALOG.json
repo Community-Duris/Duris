@@ -98933,109 +98933,294 @@
     {
       "contacts": [
         {
-          "description": "This person offers local conversation. Try these topics to learn more.",
+          "description": "Temple of the Knight. Faith and ascending advice is ambient dialogue, without a learned-topic achievement.",
           "keyword": "knight",
           "mob_vnum": 132568,
-          "name": "the knight",
+          "name": "Temple knight",
           "topics": [
-            "ascend"
+            "ascend",
+            "ascending",
+            "holy",
+            "avenger"
           ]
         },
         {
-          "description": "Check this person's requests below and examine them for clues.",
+          "description": "Traditionally accepts any food for 33 experience, then leaves. This food-assistance exchange is currently unavailable. The hungry mercenary needs a different, exact loaf.",
           "keyword": "child",
           "mob_vnum": 132581,
-          "name": "a homeless child",
+          "name": "Homeless child",
           "topics": []
         },
         {
-          "description": "Check this person's requests below and examine them for clues.",
-          "keyword": "slack",
+          "description": "Two optional ticket branches with distinct exact results; no quest achievement or inferred disease state.",
+          "keyword": "prostitute",
           "mob_vnum": 132587,
-          "name": "a slack-jawed prostitute",
+          "name": "Brothel recipient",
           "topics": []
         },
         {
-          "description": "Start with these conversation topics, then follow the requests below.",
-          "keyword": "za",
+          "description": "Deep in the twisted tower. Ask about note, text and wares; three independent commissions and ordinary shop stock remain separate.",
+          "keyword": "zaberetornaz",
           "mob_vnum": 132613,
           "name": "Zaberetornaz",
           "topics": [
-            "note"
+            "note",
+            "text",
+            "wares",
+            "goods"
           ]
         },
         {
-          "description": "This person offers local conversation. Try these topics to learn more.",
+          "description": "Conjurer tower. Her book topic points toward Zaberetornaz and a magical-text source. General teaching is a separate service.",
           "keyword": "khira",
           "mob_vnum": 132649,
           "name": "Khira",
           "topics": [
-            "book"
+            "book",
+            "spellbook"
           ]
         },
         {
-          "description": "This person offers local conversation. Try these topics to learn more.",
-          "keyword": "bard",
+          "description": "Inn corner room. Map and city directions, borrowed instruments, bard advice and level guidance; blank paper buys a map, without a performance milestone.",
+          "keyword": "ithilin",
           "mob_vnum": 132659,
-          "name": "Ithilin, the travelling bard.",
+          "name": "Ithilin",
           "topics": [
-            "bard"
+            "map",
+            "gc",
+            "level",
+            "experience",
+            "tharnadia",
+            "directions",
+            "search",
+            "bag",
+            "instruments",
+            "play",
+            "music",
+            "bard",
+            "profession"
           ]
         },
         {
-          "description": "Check this person's requests below and examine them for clues.",
+          "description": "Inn corner room. Four weapon-improvement families, with two alternative same-named two-handed inputs. General dwarf training advice is not accepted skill credit.",
           "keyword": "zech",
           "mob_vnum": 132660,
-          "name": "Zech, the dwarven warrior",
-          "topics": []
+          "name": "Zech",
+          "topics": [
+            "advice"
+          ]
         },
         {
-          "description": "Check this person's requests below and examine them for clues.",
-          "keyword": "monk",
+          "description": "Inn shop. Use arkeln as his command name. Bring all three different toy instruments together for copper and experience; the exchange does not grant a new skill.",
+          "keyword": "arkeln",
           "mob_vnum": 132661,
-          "name": "a muscular human",
+          "name": "Arkelyn",
           "topics": []
         },
         {
-          "description": "Check this person's requests below and examine them for clues.",
-          "keyword": "old",
+          "description": "By the inn. A source for the bamboo lyre, although his description names a flute. Check the actual item before collecting it.",
+          "keyword": "rambunctious",
+          "mob_vnum": 132662,
+          "name": "Halfling child",
+          "topics": [
+            "quiet",
+            "instrument",
+            "play",
+            "loud",
+            "monk"
+          ]
+        },
+        {
+          "description": "By the inn. Carries the small clumsy mandolin, different from Ithilin's borrowed instrument.",
+          "keyword": "energetic",
+          "mob_vnum": 132663,
+          "name": "Human child",
+          "topics": [
+            "loud",
+            "monk",
+            "play",
+            "instrument",
+            "instruments",
+            "please",
+            "quiet"
+          ]
+        },
+        {
+          "description": "By the inn. A source for the reed flute, although her description names a lyre. These toys differ from the bard's borrowed instruments.",
+          "keyword": "wild",
+          "mob_vnum": 132664,
+          "name": "Elven child",
+          "topics": [
+            "lout",
+            "quiet",
+            "instrument",
+            "instruments",
+            "play",
+            "monk",
+            "please"
+          ]
+        },
+        {
+          "description": "Inn common room. Food and mercenary conversation leads to the exact city bread delivery. Jungle hunting tales do not create a trap or a separate accepted hunt.",
+          "keyword": "xero",
           "mob_vnum": 132665,
-          "name": "Xero, the barbarian mercenary",
-          "topics": []
+          "name": "Xero",
+          "topics": [
+            "mercenary",
+            "mercenaries",
+            "food",
+            "hungry",
+            "eat"
+          ]
         },
         {
-          "description": "Check this person's requests below and examine them for clues.",
-          "keyword": "pudgy",
+          "description": "Inn dining room. Her adventure and search advice points to a blank book; the current autograph exchange consumes only that book, without a quill.",
+          "keyword": "leodra",
           "mob_vnum": 132666,
-          "name": "Leodra, the pudgy gnome conjurer",
-          "topics": []
+          "name": "Leodra",
+          "topics": [
+            "search",
+            "desk",
+            "book",
+            "adventure",
+            "adventures",
+            "memoirs",
+            "travels",
+            "story",
+            "stories"
+          ]
         },
         {
-          "description": "Check this person's requests below and examine them for clues.",
+          "description": "Outside the inn dining room. Wound and medicine story asks for a maroon vial and disputed gold pendant together; the empty pouch is a narrative twist, and acceptance retires him.",
           "keyword": "chiln",
           "mob_vnum": 132667,
-          "name": "a bleeding halfling",
-          "topics": []
+          "name": "Chiln",
+          "topics": [
+            "stab",
+            "stabbed",
+            "hurt",
+            "wound",
+            "who",
+            "help",
+            "bleeding",
+            "friend",
+            "potion",
+            "medicine"
+          ]
         },
         {
-          "description": "Check this person's requests below and examine them for clues.",
+          "description": "Inn guest bedroom. Her plant, nightshade, mandrake and Nebble topics explain medicine supplies. Search her accessible sack for actual hidden contents.",
+          "keyword": "thera",
+          "mob_vnum": 132668,
+          "name": "Thera",
+          "topics": [
+            "mandrake",
+            "nightshade",
+            "nebble",
+            "druid",
+            "druids",
+            "profession",
+            "race",
+            "races",
+            "centaur"
+          ]
+        },
+        {
+          "description": "Inn kitchen. Two exact herbs become a maroon vial. Laboratory and drider-antidote advice remains background without another local ending.",
           "keyword": "nebble",
           "mob_vnum": 132669,
-          "name": "an energetic gnome",
-          "topics": []
+          "name": "Nebble",
+          "topics": [
+            "alchemy",
+            "alchemist",
+            "profession",
+            "medicine",
+            "potion",
+            "help",
+            "hurt",
+            "injured",
+            "halfling"
+          ]
         },
         {
-          "description": "Check this person's requests below and examine them for clues.",
+          "description": "Outside the inn dining room. Wears the solid-gold pendant and is followed by two bodyguards. His guard and theft replies do not offer a peaceful pendant exchange.",
+          "keyword": "rich",
+          "mob_vnum": 132670,
+          "name": "Suspicious merchant",
+          "topics": [
+            "suspicious",
+            "guards",
+            "guard",
+            "bodyguard",
+            "bodyguards",
+            "pendant",
+            "thief",
+            "stole",
+            "father",
+            "return"
+          ]
+        },
+        {
+          "description": "Inn guest bedroom. Offers a practice wand for one platinum. The purchase is currently unavailable; carrying unrelated items does not complete payment.",
           "keyword": "menae",
           "mob_vnum": 132672,
-          "name": "Menae, the apprentice sorcerer",
+          "name": "Menae",
           "topics": []
         },
         {
-          "description": "Check this person's requests below and examine them for clues.",
-          "keyword": "elf",
+          "description": "Inn room three. Wolf, dog and search topics describe Phobos. Return the exact pup item for belt and cloak; no live-pet follower or rescue event is implemented.",
+          "keyword": "rhed",
           "mob_vnum": 132673,
-          "name": "Rhed, the elven ranger",
+          "name": "Rhed",
+          "topics": []
+        },
+        {
+          "description": "Market bakery. Stocks the exact city loaf accepted by Xero. Ordinary shop hours, price and availability remain service rules.",
+          "keyword": "baker",
+          "mob_vnum": 132530,
+          "name": "City baker",
+          "topics": []
+        },
+        {
+          "description": "City wine shop. Declared inventory includes shared paper; inspect actual sale stock rather than assuming every carried object is produced by the shop.",
+          "keyword": "jelian",
+          "mob_vnum": 132570,
+          "name": "Jelian",
+          "topics": []
+        },
+        {
+          "description": "Declared source of tickets and the sheath. Its random bartender quests remain a separate system.",
+          "keyword": "bartender",
+          "mob_vnum": 132551,
+          "name": "Brothel manager",
+          "topics": []
+        },
+        {
+          "description": "City announcements describe local places and foreign rumors. Some advertised services differ from actual implementations; announcements are leads, without quest milestones.",
+          "keyword": "crier",
+          "mob_vnum": 132531,
+          "name": "Town crier",
+          "topics": []
+        },
+        {
+          "description": "On the mesa. City rumors call him a map seller, but no working ordinary map purchase was found. His map stock and level advice are separate from the bard's paper exchange.",
+          "keyword": "kabanon",
+          "mob_vnum": 132631,
+          "name": "Kabanon",
+          "topics": []
+        },
+        {
+          "description": "Town tradeskill trainer. Choose forge, mine or craft, or ask about an epic-paid tradeskill reset. Lessons are separate from the city's quest deliveries.",
+          "keyword": "jodnan",
+          "mob_vnum": 132674,
+          "name": "Jodnan",
+          "topics": []
+        },
+        {
+          "description": "Founding services use a separate confirmation and fee path. Guild creation does not complete an inn delivery or zone story.",
+          "keyword": "kotil",
+          "mob_vnum": 132675,
+          "name": "Guild founder",
           "topics": []
         }
       ],
@@ -99046,134 +99231,307 @@
             {
               "completion_key": "give=T:19;receive=E:33;disappear=1",
               "giver_vnum": 132581
-            },
-            {
-              "completion_key": "give=C:1000;receive=I:132703;disappear=0",
-              "giver_vnum": 132672
             }
           ],
-          "reason": "Coin-only, informational, or skill exchanges; supporting services rather than item-delivery story achievements."
-        },
-        {
-          "contracts": [
-            {
-              "completion_key": "give=I:5;receive=I:132705;disappear=0",
-              "giver_vnum": 132659
-            }
-          ],
-          "reason": "Native exchange references missing item prototypes in the active world sources; integration requires world data repair."
+          "reason": "The homeless child accepts any food type rather than an exact durable item. Keep this support request excluded and its active-accounting refusal until typed offering admission and recipient retirement are qualified."
         }
       ],
-      "introduction": "Explore Tharnadia - City of Humans and meet its people to uncover local requests.",
+      "introduction": "Find the city inn's local requests, the wizard's independent commissions and the medicine-and-pendant chain. Current supplies, optional preparation and accepted delivery history stay distinct. Supporting maps, medicine, equipment and paid practice grant no extra quest achievements. Active, ready accounting is required.",
       "orientation": [
-        "Start with look and exits to learn your surroundings.",
-        "Use help home to learn about hometowns and help quest for quest commands."
+        "The city has ordinary sea-wall, mesa, bay and north/south road approaches. Start with look and exits, then find the inn and market. Arrival discovers a place; it does not complete any named delivery.",
+        "The hungry mercenary needs the exact city loaf. The baker stocks it and the inn kitchen has a ground supply. Other food belongs to the homeless child's different, currently unsupported typed-food request.",
+        "The inn monk needs three different toy instruments together. The elven child carries the flute, the human the mandolin and the halfling the lyre; two descriptions name the wrong toys. The travelling bard's ordinary loan instruments are not valid substitutes.",
+        "The dining-room storyteller signs the large blank book, without requiring the quill mentioned in her dialogue. Inspect an accessible desk in the library; search hidden contents, then take the actual book. Examining, searching and carrying are separate actions.",
+        "The inn ranger calls his lost wolf pup Phobos and points under a bed, but the current source is a plant sack. Return the exact pup for belt and cloak. A living pet, follower, generic wolf or pet-shop claim ticket does not substitute.",
+        "The inn herbalist explains nightshade and mandrake. Open an accessible plant sack before searching; a successful ordinary search reveals one hidden object at a time, and you still need to take it. Similar sacks can hold different contents, so check the live source.",
+        "Bring the two different herbs together to the kitchen alchemist for a maroon vial. That preparation service supports the wounded halfling without adding an achievement. A supplied vial skips the herbs and does not fabricate their gathering or production history.",
+        "The wounded halfling wants the vial and the merchant's solid-gold pendant together. The merchant wears the pendant and has two bodyguards; his dialogue refuses help. The wounded halfling's heirloom claim is disputed. Acceptance lets him leave and awards experience and an empty pouch, without an escort or separate healing outcome.",
+        "The travelling bard exchanges shared blank paper for a city map. Paper exists in the active world and is declared in desks and the wine merchant's inventory. City directions, level advice and instrument loans remain supporting information, without learned-topic or performance credit.",
+        "The sorcerer's stair-bottom portal leads into the twisted tower's first chamber, where a glowing bookshelf holds the twisted-tower wizard's crumpled note. The return portal leads to the park. The note commission, magical-text commission and foreign-dagger commission are independent.",
+        "The conjurer-tower bookshelf supplies the magical text book. Royal-bedroom chest stock is another declaration, but its loaded lock has no ordinary key. The text reward is a tome and raven feather quill; other blank, signed or spell books are different items.",
+        "The twisted-tower wizard accepts Tezcat's bloody sacrificial dagger for a disguise kit, illusion robe and potion. A foreign Tezcazul carries the proof. This local delivery does not prove your own defeat of that carrier or use of the reward powers.",
+        "The dwarven warrior improves four exact ordinary weapon families. Two same-named two-handed swords are alternative inputs for one support service. Unwield the selected weapon before offering; practice, generic weapon names and other finished weapons do not substitute.",
+        "The apprentice sorcerer's one-platinum wand purchase and several city paid services are unavailable until their payments can be completed safely. A visible fee or available cash is not a completed purchase.",
+        "Dungeon exploration has a brick switch, hidden passages and actual keyed doors. Push the brick at the jail stair landing to unblock its eastern secret route, then search for the passage. This access action is not an inn-quest achievement. Rooftops and drop-offs have real falling hazards.",
+        "Exact supplied proofs remain valid. Current item checks do not prove first acquisition, personal recovery, combat, search success, learned topics, healing, practice or travel. Only accepted native delivery receipts complete these eight independent outcomes; active sources and recipient appearances still need qualification."
       ],
-      "revision": 1,
-      "schema_version": 2,
+      "revision": 2,
+      "schema_version": 3,
       "source_area": "tharnadia",
       "stories": [
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
-              "completion_key": "give=I:132600,I:132601;receive=E:3;disappear=0",
-              "giver_vnum": 132587
+              "completion_key": "give=I:132552;receive=I:132687;disappear=0",
+              "giver_vnum": 132665
             }
           ],
-          "id": "request-132587-92acce7b33b0",
+          "id": "xeros-bread",
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
+              "hint": "The baker in the market stocks this loaf, and the inn kitchen has a ground supply. Other food fits the homeless child's separate request, not this exact exchange. Supplied bread also qualifies.",
+              "id": "bread",
               "item_vnums": [
-                132600
+                132552
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a hooking ticket"
-            },
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-2",
-              "item_vnums": [
-                132601
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a vorskin penis sheath"
+              "optional": true,
+              "text": "Carry the city loaf of bread"
             },
             {
               "contracts": [
                 {
-                  "completion_key": "give=I:132600,I:132601;receive=E:3;disappear=0",
-                  "giver_vnum": 132587
+                  "completion_key": "give=I:132552;receive=I:132687;disappear=0",
+                  "giver_vnum": 132665
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
+              "hint": "Find Xero in the inn common room. Acceptance gives durable olyx-hide boots; hunting conversation does not complete another quest.",
+              "id": "accepted-exchange",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Give the loaf to Xero"
             }
           ],
-          "summary": "Bring 1 x a hooking ticket, 1 x a vorskin penis sheath. Reward: 3 experience.",
-          "title": "Deliver 1 x a hooking ticket, 1 x a vorskin penis sheath"
+          "summary": "Ask Xero about food or his mercenary life. Bring the city's loaf of bread for olyx-hide boots. His jungle and hunting stories are leads, without a deer trap or personal hunt requirement.",
+          "title": "Xero's meal and hunting tales"
         },
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
-              "completion_key": "give=I:132600;receive=I:132602;disappear=0",
-              "giver_vnum": 132587
+              "completion_key": "give=I:132682,I:132683,I:132684;receive=C:10000,E:1500;disappear=0",
+              "giver_vnum": 132661
             }
           ],
-          "id": "request-132587-f8dde3990aa5",
+          "id": "arkelyns-three-toys",
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
+              "hint": "The elven child by the inn carries the actual flute, although the child description names a lyre. Check the actual item. The travelling bard's ordinary flute is different.",
+              "id": "reed-flute",
               "item_vnums": [
-                132600
+                132682
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a hooking ticket"
+              "optional": true,
+              "text": "Carry the small reed flute"
+            },
+            {
+              "count": 1,
+              "hint": "The human child by the inn carries this toy. The ordinary mandolin from the travelling bard's instrument bag does not satisfy Arkelyn.",
+              "id": "clumsy-mandolin",
+              "item_vnums": [
+                132683
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small clumsily made mandolin"
+            },
+            {
+              "count": 1,
+              "hint": "The halfling child by the inn carries the actual lyre, although the description names a flute. All three different toy items must be carried together; duplicates do not replace another kind.",
+              "id": "bamboo-lyre",
+              "item_vnums": [
+                132684
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small bamboo lyre"
             },
             {
               "contracts": [
                 {
-                  "completion_key": "give=I:132600;receive=I:132602;disappear=0",
-                  "giver_vnum": 132587
+                  "completion_key": "give=I:132682,I:132683,I:132684;receive=C:10000,E:1500;disappear=0",
+                  "giver_vnum": 132661
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
+              "hint": "Use the actual arkeln alias at the inn shop. Exact supplied toys qualify without a personal child encounter or performance. Acceptance alone completes this collection.",
+              "id": "accepted-exchange",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Return all three toys to Arkelyn"
             }
           ],
-          "summary": "Bring 1 x a hooking ticket. Reward: 1 x a bad case of herpes simplex.",
-          "title": "Deliver 1 x a hooking ticket"
+          "summary": "Recover the children's small reed flute, clumsy mandolin and bamboo lyre together for Arkelyn. His command name is arkeln. The actual reward is 10,000 copper and 1,500 experience; the promised lesson is not a recorded skill change. The travelling bard's borrowed instruments are different items.",
+          "title": "Arkelyn's three noisy instruments"
         },
         {
-          "category": "request",
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:132685;receive=I:132686;disappear=0",
+              "giver_vnum": 132666
+            }
+          ],
+          "id": "leodras-blank-book",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The library desk is a source lead. Search an accessible desk to reveal hidden contents, then take the actual book. Desks and their contents can move, so inspect current stock. Searching alone does not carry the book. Gifts are valid.",
+              "id": "blank-book",
+              "item_vnums": [
+                132685
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the large blank book"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:132685;receive=I:132686;disappear=0",
+                  "giver_vnum": 132666
+                }
+              ],
+              "hint": "Find Leodra in the inn dining room. Her autograph replaces the blank book with a different object; no quill, conjurer class or prior adventure is required.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Bring the blank book to Leodra"
+            }
+          ],
+          "summary": "Ask Leodra about her adventures or a book. Find the large blank book in a desk, then return it for her autographed copy. Her dialogue mentions a quill, but the exchange requires only the book.",
+          "title": "Leodra's signed adventure book"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:132700;receive=I:132701,I:132702;disappear=0",
+              "giver_vnum": 132673
+            }
+          ],
+          "id": "rheds-lost-pup",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The inn herbalist's plant sack is the source, despite Rhed's under-the-bed clue. Open an accessible sack, search for hidden contents and take the pup. The travelling bard has another similar sack; inspect its actual contents. A supplied pup remains valid.",
+              "id": "wolf-pup",
+              "item_vnums": [
+                132700
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small black wolf pup"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:132700;receive=I:132701,I:132702;disappear=0",
+                  "giver_vnum": 132673
+                }
+              ],
+              "hint": "Find Rhed in inn room three. Acceptance gives a cured leather hunting belt and heavy forest cloak. Rhed stays, and no pet purchase or rental is required.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Return Phobos to Rhed"
+            }
+          ],
+          "summary": "Ask Rhed about his wolf or dog, then return Phobos for a hunting belt and forest cloak. The pup is the exact small black wolf-pup item. This delivery does not create a living follower, revive an animal or complete a pet-shop claim.",
+          "title": "Rhed's lost pup, Phobos"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:132697,I:132699;receive=E:3000,I:132698;disappear=1",
+              "giver_vnum": 132667
+            }
+          ],
+          "id": "chilns-medicine-and-pendant",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:132694,I:132695;receive=I:132697;disappear=0",
+                  "giver_vnum": 132669
+                }
+              ],
+              "hint": "The kitchen alchemist's herb exchange is a supporting service, not another quest achievement. Its receipt explains one vial source but does not replace a spent vial or prove personal gathering.",
+              "id": "medicine-history",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional history: have the kitchen alchemist prepare the medicine"
+            },
+            {
+              "count": 1,
+              "hint": "Open and search an accessible plant sack. The inn herbalist explains nightshade, mandrake and the kitchen alchemist; the sack supplies hidden plants. You may instead bring a supplied final vial.",
+              "id": "nightshade",
+              "item_vnums": [
+                132694
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional preparation: carry nightshade"
+            },
+            {
+              "count": 1,
+              "hint": "This separate root batch and nightshade go to the kitchen alchemist together. Previous preparation history does not supply missing roots. The final Chiln exchange does not require carrying these herbs.",
+              "id": "mandrake",
+              "item_vnums": [
+                132695
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional preparation: carry mandrake roots"
+            },
+            {
+              "count": 1,
+              "hint": "The kitchen alchemist makes this vial from the two plants. A supplied vial works without its producer receipt. Other potions and the apprentice sorcerer's wand do not satisfy Chiln.",
+              "id": "maroon-vial",
+              "item_vnums": [
+                132697
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the thick maroon medicine vial"
+            },
+            {
+              "count": 1,
+              "hint": "The suspicious merchant outside the inn dining room wears the pendant and has two bodyguards. His conversation refuses help; it does not hand over the pendant. Recover the actual carried item through a valid route, or use supplied proof.",
+              "id": "gold-pendant",
+              "item_vnums": [
+                132699
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the heavy solid gold pendant"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:132697,I:132699;receive=E:3000,I:132698;disappear=1",
+                  "giver_vnum": 132667
+                }
+              ],
+              "hint": "The merchant accuses Chiln of theft. The reward pouch has no declared contents; Chiln leaves after acceptance. The receipt records the delivery, without a separate healing or escort outcome.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Give the vial and pendant together to Chiln"
+            }
+          ],
+          "summary": "Ask Chiln about his wound and help. The inn herbalist's nightshade and mandrake can become the kitchen alchemist's maroon medicine; Chiln accepts that vial together with the merchant's solid-gold pendant. The accepted exchange gives 3,000 experience and an empty money pouch and lets Chiln leave. Medicine preparation is optional when the vial is supplied.",
+          "title": "Chiln's medicine and disputed heirloom"
+        },
+        {
+          "category": "story",
           "contracts": [
             {
               "completion_key": "give=I:132624;receive=I:132622,I:132623;disappear=0",
               "giver_vnum": 132613
             }
           ],
-          "id": "request-132613-985464cccbb4",
+          "id": "zaberetornazs-note",
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
+              "hint": "The glowing bookshelf in the twisted tower's first chamber holds the note. The sorcerer's stair-bottom portal leads into that chamber; another portal returns to the park. Take the note from its container, or bring a supplied copy.",
+              "id": "crumpled-note",
               "item_vnums": [
                 132624
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a crumpled up note"
+              "optional": true,
+              "text": "Carry the crumpled note"
             },
             {
               "contracts": [
@@ -99182,34 +99540,35 @@
                   "giver_vnum": 132613
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
+              "hint": "Find the wizard deeper in the twisted tower. His ordinary shop and the two other deliveries are separate. Entering the portal and asking note do not complete the commission.",
+              "id": "accepted-exchange",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Return the note to Zaberetornaz"
             }
           ],
-          "summary": "Bring 1 x a crumpled up note. Reward: 1 x a spellbook, 1 x a glowing quill.",
-          "title": "Deliver 1 x a crumpled up note"
+          "summary": "Ask Zaberetornaz about his note. The crumpled note in a glowing bookshelf buys a spellbook and glowing quill. This is an independent commission, without a required the conjurer briefing or earlier wizard quest.",
+          "title": "Zaberetornaz's misplaced note"
         },
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
               "completion_key": "give=I:132664;receive=I:99412,I:132620;disappear=0",
               "giver_vnum": 132613
             }
           ],
-          "id": "request-132613-51cdb2599e0e",
+          "id": "zaberetornazs-magical-text",
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
+              "hint": "The conjurer-tower bookshelf supplies the text. More copies may be in the royal-bedroom chest, whose loaded lock has no ordinary key. Look for an accessible bookshelf; supplied texts remain valid.",
+              "id": "magical-text",
               "item_vnums": [
                 132664
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a magical text book"
+              "optional": true,
+              "text": "Carry the magical text book"
             },
             {
               "contracts": [
@@ -99218,34 +99577,35 @@
                   "giver_vnum": 132613
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
+              "hint": "The receipt gives a mysterious tome and a raven feather quill. The conjurer conversation and other wizard commissions are guidance, without mandatory history or a learning achievement.",
+              "id": "accepted-exchange",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Deliver the magical text to Zaberetornaz"
             }
           ],
-          "summary": "Bring 1 x a magical text book. Reward: 1 x a raven feather quill, 1 x a mysterious tome.",
-          "title": "Deliver 1 x a magical text book"
+          "summary": "The conjurer's book topic points toward Zaberetornaz. Deliver the exact magical text book for a mysterious tome and raven-feather quill. The crumpled-note reward and the dining-room storyteller's blank or signed books do not substitute.",
+          "title": "Zaberetornaz's magical text"
         },
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
               "completion_key": "give=I:98928;receive=I:500,I:132629,I:132630;disappear=0",
               "giver_vnum": 132613
             }
           ],
-          "id": "request-132613-6ef453b052ca",
+          "id": "zaberetornazs-sacrificial-dagger",
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
+              "hint": "A Tezcazul follower in Tezcat's sacrificial altar room carries this exact dagger. The dwarven warrior's thin steel dagger is different. Unequip the proof for offering; gifts also qualify.",
+              "id": "bloody-dagger",
               "item_vnums": [
                 98928
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a bloody sacrificial dagger"
+              "optional": true,
+              "text": "Carry the bloody sacrificial dagger"
             },
             {
               "contracts": [
@@ -99254,14 +99614,181 @@
                   "giver_vnum": 132613
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
+              "hint": "Receive the equipment reward. It does not record using a disguise, casting an illusion, killing the carrier or finishing either of the wizard's book commissions.",
+              "id": "accepted-exchange",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Deliver the foreign dagger to Zaberetornaz"
             }
           ],
-          "summary": "Bring 1 x a bloody sacrificial dagger. Reward: 1 x a disguise kit, 1 x a flowing robe of illusions, 1 x a strange glowing potion.",
-          "title": "Deliver 1 x a bloody sacrificial dagger"
+          "summary": "Bring Zaberetornaz the bloody sacrificial dagger from Tezcat. It buys a disguise kit, flowing robe of illusions and strange glowing potion. The foreign recovery route does not relocate this city delivery's credit or require your own defeat of its carrier.",
+          "title": "Zaberetornaz's foreign dagger"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:132694,I:132695;receive=I:132697;disappear=0",
+              "giver_vnum": 132669
+            }
+          ],
+          "id": "nebbles-medicine-service",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The inn herbalist explains the plant; open and search an accessible sack, then take the actual herb. Search reveals contents but does not collect them.",
+              "id": "nightshade",
+              "item_vnums": [
+                132694
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the clump of nightshade"
+            },
+            {
+              "count": 1,
+              "hint": "The inn herbalist's sack also has this different hidden plant. One herb or two copies of the same kind do not satisfy the recipe; supplied ingredients are valid.",
+              "id": "mandrake",
+              "item_vnums": [
+                132695
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the batch of mandrake roots"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:132694,I:132695;receive=I:132697;disappear=0",
+                  "giver_vnum": 132669
+                }
+              ],
+              "hint": "Find Nebble in the inn kitchen. Acceptance produces the exact vial and leaves him present. No druid, sorcerer or alchemist class is required.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Have Nebble prepare the maroon vial"
+            }
+          ],
+          "summary": "Bring nightshade and mandrake roots together to Nebble for the thick maroon vial. This preparation service supports the wounded halfling's larger delivery, without a separate achievement or daily objective. His laboratory and drider-antidote advice has no additional accepted ending here.",
+          "title": "Nebble's two-herb medicine"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:5;receive=I:132705;disappear=0",
+              "giver_vnum": 132659
+            }
+          ],
+          "id": "ithilins-paper-map-service",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Library desks and the wine merchant's declared inventory supply ordinary paper. Check current accessible contents; searching and examining alone do not collect it. Use ordinary paper; a written note or claim ticket may have another purpose.",
+              "id": "blank-paper",
+              "item_vnums": [
+                5
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a blank piece of paper"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:5;receive=I:132705;disappear=0",
+                  "giver_vnum": 132659
+                }
+              ],
+              "hint": "Find the travelling bard in the inn corner room. His instrument loan and conversation about music are separate from this accepted map exchange.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Give the paper to Ithilin"
+            }
+          ],
+          "summary": "Ask Ithilin about Tharnadia or a map. Give one blank paper for a city map. The paper is an active shared item; it is not missing from the world. This orientation service grants no achievement or daily credit.",
+          "title": "Ithilin's paper-for-map service"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:1000;receive=I:132703;disappear=0",
+              "giver_vnum": 132672
+            }
+          ],
+          "id": "menaes-wand-service",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:1000;receive=I:132703;disappear=0",
+                  "giver_vnum": 132672
+                }
+              ],
+              "hint": "Find Menae in the inn guest bedroom. This purchase is currently unavailable; the displayed price does not complete payment. Item readiness checks cannot establish funds or completed payment.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the supported paid wand exchange"
+            }
+          ],
+          "summary": "Menae offers a practice wand for 1,000 copper, described as one platinum. This coin-only preparation service is currently unavailable until its payment and reward can be completed safely. It is not a quest achievement or a recorded magical lesson.",
+          "title": "Menae's practice-wand service"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:132600;receive=I:132602;disappear=0",
+              "giver_vnum": 132587
+            },
+            {
+              "completion_key": "give=I:132600,I:132601;receive=E:3;disappear=0",
+              "giver_vnum": 132587
+            }
+          ],
+          "id": "brothel-ticket-service",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The brothel manager carries the ticket. Check the manager's available stock; supplied tickets are also valid.",
+              "id": "ticket",
+              "item_vnums": [
+                132600
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the brothel ticket"
+            },
+            {
+              "count": 1,
+              "hint": "This item selects the separate two-item branch when offered with a ticket. It is not required for the ticket-only branch; neither branch is an achievement.",
+              "id": "sheath",
+              "item_vnums": [
+                132601
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional alternative: carry the sheath"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:132600;receive=I:132602;disappear=0",
+                  "giver_vnum": 132587
+                },
+                {
+                  "completion_key": "give=I:132600,I:132601;receive=E:3;disappear=0",
+                  "giver_vnum": 132587
+                }
+              ],
+              "hint": "Bring a ticket and, for the other option, the sheath too. The two exchanges have different results and do not add a quest achievement.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete either ticket branch"
+            }
+          ],
+          "summary": "The brothel offers two ticket exchanges: ticket plus sheath gives three experience; ticket alone gives a wearable penalty item. Both remain optional services without quest or daily credit. The penalty object is not evidence of a recorded disease state.",
+          "title": "The brothel ticket service"
         },
         {
           "category": "service",
@@ -99271,17 +99798,18 @@
               "giver_vnum": 132660
             }
           ],
-          "id": "request-132660-be8ca01dfb13",
+          "id": "zechs-long-sword-service",
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
+              "hint": "Starter-equipment awards supply this ordinary weapon. You may also bring one supplied by another player. Unwield the selected weapon before offering.",
+              "id": "ordinary-weapon",
               "item_vnums": [
                 1108
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a long steel sword"
+              "optional": true,
+              "text": "Carry the exact ordinary long steel sword"
             },
             {
               "contracts": [
@@ -99290,14 +99818,14 @@
                   "giver_vnum": 132660
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
+              "hint": "Find Zech in the inn corner room. He stays after the exchange. Neither practice history nor the other weapon services are prerequisites.",
+              "id": "accepted-exchange",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Have Zech improve the exact weapon"
             }
           ],
-          "summary": "Bring 1 x a long steel sword. Reward: 1 x a sharpened long steel sword.",
-          "title": "Crafting service: 1 x a long steel sword"
+          "summary": "Zech exchanges the exact ordinary long steel sword for a sharpened long steel sword. This equipment improvement is a support service, without achievement or daily credit. It does not teach a weapon skill or accept every similarly named weapon.",
+          "title": "Zech's long steel sword service"
         },
         {
           "category": "service",
@@ -99305,71 +99833,45 @@
             {
               "completion_key": "give=I:1110;receive=I:132678;disappear=0",
               "giver_vnum": 132660
+            },
+            {
+              "completion_key": "give=I:1111;receive=I:132678;disappear=0",
+              "giver_vnum": 132660
             }
           ],
-          "id": "request-132660-2d6628ea0af0",
+          "id": "zechs-two-handed-sword-service",
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
+              "hint": "Starter-equipment awards are one source. Either supported ordinary two-handed sword works, and a supplied sword also qualifies. Unwield it before offering.",
+              "id": "ordinary-weapon",
               "item_vnums": [
-                1110
+                1110,
+                1111
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a large two-handed sword"
+              "optional": true,
+              "text": "Carry the exact ordinary two-handed sword"
             },
             {
               "contracts": [
                 {
                   "completion_key": "give=I:1110;receive=I:132678;disappear=0",
                   "giver_vnum": 132660
-                }
-              ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the requested exchange"
-            }
-          ],
-          "summary": "Bring 1 x a large two-handed sword. Reward: 1 x a sharp two-handed sword.",
-          "title": "Crafting service: 1 x a large two-handed sword"
-        },
-        {
-          "category": "service",
-          "contracts": [
-            {
-              "completion_key": "give=I:1111;receive=I:132678;disappear=0",
-              "giver_vnum": 132660
-            }
-          ],
-          "id": "request-132660-c44d3cfd7986",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
-              "item_vnums": [
-                1111
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a large two-handed sword"
-            },
-            {
-              "contracts": [
+                },
                 {
                   "completion_key": "give=I:1111;receive=I:132678;disappear=0",
                   "giver_vnum": 132660
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
+              "hint": "Find Zech in the inn corner room. He stays after the exchange. Neither practice history nor the other weapon services are prerequisites.",
+              "id": "accepted-exchange",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Have Zech improve the exact weapon"
             }
           ],
-          "summary": "Bring 1 x a large two-handed sword. Reward: 1 x a sharp two-handed sword.",
-          "title": "Crafting service: 1 x a large two-handed sword"
+          "summary": "Zech exchanges the exact ordinary two-handed sword for a sharp two-handed sword. This equipment improvement is a support service, without achievement or daily credit. It does not teach a weapon skill or accept every similarly named weapon.",
+          "title": "Zech's two-handed sword service"
         },
         {
           "category": "service",
@@ -99379,17 +99881,18 @@
               "giver_vnum": 132660
             }
           ],
-          "id": "request-132660-e3a8a271d44c",
+          "id": "zechs-thin-dagger-service",
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
+              "hint": "Starter-equipment awards supply this ordinary weapon. You may also bring one supplied by another player. Unwield the selected weapon before offering.",
+              "id": "ordinary-weapon",
               "item_vnums": [
                 1112
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a thin steel dagger"
+              "optional": true,
+              "text": "Carry the exact ordinary thin steel dagger"
             },
             {
               "contracts": [
@@ -99398,14 +99901,14 @@
                   "giver_vnum": 132660
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
+              "hint": "Find Zech in the inn corner room. He stays after the exchange. Neither practice history nor the other weapon services are prerequisites.",
+              "id": "accepted-exchange",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Have Zech improve the exact weapon"
             }
           ],
-          "summary": "Bring 1 x a thin steel dagger. Reward: 1 x a thin sharp steel dagger.",
-          "title": "Crafting service: 1 x a thin steel dagger"
+          "summary": "Zech exchanges the exact ordinary thin steel dagger for a sharpened thin steel dagger. This equipment improvement is a support service, without achievement or daily credit. It does not teach a weapon skill or accept every similarly named weapon.",
+          "title": "Zech's thin steel dagger service"
         },
         {
           "category": "service",
@@ -99415,17 +99918,18 @@
               "giver_vnum": 132660
             }
           ],
-          "id": "request-132660-4150787189a9",
+          "id": "zechs-short-sword-service",
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
+              "hint": "Starter-equipment awards supply this ordinary weapon. You may also bring one supplied by another player. Unwield the selected weapon before offering.",
+              "id": "ordinary-weapon",
               "item_vnums": [
                 1113
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a thick short sword"
+              "optional": true,
+              "text": "Carry the exact ordinary thick short sword"
             },
             {
               "contracts": [
@@ -99434,270 +99938,14 @@
                   "giver_vnum": 132660
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
+              "hint": "Find Zech in the inn corner room. He stays after the exchange. Neither practice history nor the other weapon services are prerequisites.",
+              "id": "accepted-exchange",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Have Zech improve the exact weapon"
             }
           ],
-          "summary": "Bring 1 x a thick short sword. Reward: 1 x a thick and sharp sword.",
-          "title": "Crafting service: 1 x a thick short sword"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:132682,I:132683,I:132684;receive=C:10000,E:1500;disappear=0",
-              "giver_vnum": 132661
-            }
-          ],
-          "id": "request-132661-037e7198a995",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
-              "item_vnums": [
-                132682
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x A small reed flute"
-            },
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-2",
-              "item_vnums": [
-                132683
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x A small clumsily made mandolin"
-            },
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-3",
-              "item_vnums": [
-                132684
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a small bamboo lyre"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:132682,I:132683,I:132684;receive=C:10000,E:1500;disappear=0",
-                  "giver_vnum": 132661
-                }
-              ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the requested exchange"
-            }
-          ],
-          "summary": "Bring 1 x A small reed flute, 1 x A small clumsily made mandolin, 1 x a small bamboo lyre. Reward: 10,000 copper, 1,500 experience.",
-          "title": "Deliver 1 x A small reed flute, 1 x A small clumsily made mandolin, 1 x a small bamboo lyre"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:132552;receive=I:132687;disappear=0",
-              "giver_vnum": 132665
-            }
-          ],
-          "id": "request-132665-c3a70dc9934e",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
-              "item_vnums": [
-                132552
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a loaf of bread"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:132552;receive=I:132687;disappear=0",
-                  "giver_vnum": 132665
-                }
-              ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the requested exchange"
-            }
-          ],
-          "summary": "Bring 1 x a loaf of bread. Reward: 1 x a pair of durable olyx-hide boots.",
-          "title": "Deliver 1 x a loaf of bread"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:132685;receive=I:132686;disappear=0",
-              "giver_vnum": 132666
-            }
-          ],
-          "id": "request-132666-ca55dd807414",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
-              "item_vnums": [
-                132685
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a large blank book"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:132685;receive=I:132686;disappear=0",
-                  "giver_vnum": 132666
-                }
-              ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the requested exchange"
-            }
-          ],
-          "summary": "Bring 1 x a large blank book. Reward: 1 x an autographed spellbook.",
-          "title": "Deliver 1 x a large blank book"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:132697,I:132699;receive=E:3000,I:132698;disappear=1",
-              "giver_vnum": 132667
-            }
-          ],
-          "id": "request-132667-a668a7ad5a20",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
-              "item_vnums": [
-                132697
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a vial filled with a thick maroon liquid"
-            },
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-2",
-              "item_vnums": [
-                132699
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a heavy solid gold pendant"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:132697,I:132699;receive=E:3000,I:132698;disappear=1",
-                  "giver_vnum": 132667
-                }
-              ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the requested exchange"
-            }
-          ],
-          "summary": "Bring 1 x a vial filled with a thick maroon liquid, 1 x a heavy solid gold pendant. Reward: 3,000 experience, 1 x a small black pouch.",
-          "title": "Deliver 1 x a vial filled with a thick maroon liquid, 1 x a heavy solid gold pendant"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:132694,I:132695;receive=I:132697;disappear=0",
-              "giver_vnum": 132669
-            }
-          ],
-          "id": "request-132669-ccb9e605c69f",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
-              "item_vnums": [
-                132694
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a clump of nightshade"
-            },
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-2",
-              "item_vnums": [
-                132695
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x a small batch of mandrake roots"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:132694,I:132695;receive=I:132697;disappear=0",
-                  "giver_vnum": 132669
-                }
-              ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the requested exchange"
-            }
-          ],
-          "summary": "Bring 1 x a clump of nightshade, 1 x a small batch of mandrake roots. Reward: 1 x a vial filled with a thick maroon liquid.",
-          "title": "Deliver 1 x a clump of nightshade, 1 x a small batch of mandrake roots"
-        },
-        {
-          "category": "request",
-          "contracts": [
-            {
-              "completion_key": "give=I:132700;receive=I:132701,I:132702;disappear=0",
-              "giver_vnum": 132673
-            }
-          ],
-          "id": "request-132673-7b1eea575547",
-          "steps": [
-            {
-              "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
-              "id": "item-1",
-              "item_vnums": [
-                132700
-              ],
-              "kind": "carried_item",
-              "text": "Carry 1 x small and furry black wolf pup"
-            },
-            {
-              "contracts": [
-                {
-                  "completion_key": "give=I:132700;receive=I:132701,I:132702;disappear=0",
-                  "giver_vnum": 132673
-                }
-              ],
-              "hint": "Give the requested items to this request giver.",
-              "id": "turn-in",
-              "kind": "completion",
-              "text": "Complete the requested exchange"
-            }
-          ],
-          "summary": "Bring 1 x small and furry black wolf pup. Reward: 1 x a cured leather hunting belt, 1 x a heavy forest cloak.",
-          "title": "Deliver 1 x small and furry black wolf pup"
+          "summary": "Zech exchanges the exact ordinary thick short sword for a sharp short steel sword. This equipment improvement is a support service, without achievement or daily credit. It does not teach a weapon skill or accept every similarly named weapon.",
+          "title": "Zech's thick short sword service"
         }
       ]
     },

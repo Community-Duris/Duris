@@ -46,8 +46,12 @@ inventory_spec = importlib.util.spec_from_file_location("zone_inventory", ROOT /
 inventory_module = importlib.util.module_from_spec(inventory_spec)
 sys.path.insert(0, str(ROOT / "scripts"))
 inventory_spec.loader.exec_module(inventory_module)
-rows, _, _ = inventory_module.inventory(ROOT)
+rows, inventory_mobs, inventory_items = inventory_module.inventory(ROOT)
 assert len(rows) == 350 and sum(bool(r["requests"]) for r in rows) == 221
+assert inventory_items[5]["source"] == "areas/obj/limbo.obj"
+assert inventory_items[5]["keywords"] == ["paper", "note"]
+assert inventory_items[5]["name"] == "a blank piece of paper"
+assert not any(r["zone"]["source_area"] == "limbo" for r in rows)
 assert sum(len(r["requests"]) for r in rows) == 2668
 assert {q["definition"]["definition_id"] for r in rows for q in r["requests"]} == {d["definition_id"] for d in catalog["definitions"]}
 assert inventory_module.markdown(ROOT) == (ROOT / "docs/reference/ZONE_STORY_ZONE_INVENTORY.md").read_text(encoding="utf-8")
@@ -1053,7 +1057,64 @@ assert [(r["arguments"][1],r["arguments"][3],r["arguments"][4]) for r in surface
 assert [(r["arguments"][2],r["arguments"][3],r["arguments"][4]) for r in surface["reset_commands"] if r["command"] == "O" and r["arguments"][1] == 500026] == [(2,637471,100),(2,637874,100)]
 assert len(surface["special_assignments"]) == 8
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface"):
+# Tharnadia: preparation is optional, exact toy kinds differ from borrowed stock,
+# and administrative paper prototypes are valid without a discoverable owner.
+tharnadia = inventory_module.area_evidence(ROOT, "tharnadia")
+tharnadia_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "tharnadia")
+tharnadia_stories = {s["id"]: s for s in tharnadia_mapping["stories"]}
+assert tharnadia_mapping["schema_version"] == 3 and tharnadia_mapping["revision"] == 2
+assert len(tharnadia_stories) == 16 and len(tharnadia_mapping["contacts"]) == 26
+assert sum(s["category"] == "service" for s in tharnadia_stories.values()) == 8
+assert sum(t.get("optional", False) for s in tharnadia_stories.values() for t in s["steps"]) == 23
+assert len(tharnadia["requests"]) == 19 and len(tharnadia["dialogue"]) == 24
+assert len(tharnadia["reset_commands"]) == 1480 and len(tharnadia["special_assignments"]) == 31
+assert len(tharnadia["mobs"]) == 176 and len(tharnadia["items"]) == 206
+assert {tuple(sorted(b.items())) for s in tharnadia_stories.values() for b in s["contracts"]} | {
+    tuple(sorted(b.items())) for exclusion in tharnadia_mapping["exclusions"] for b in exclusion["contracts"]} == {
+    tuple(sorted(r["block"]["binding"].items())) for r in tharnadia["requests"]}
+assert tharnadia_mapping["exclusions"][0]["contracts"] == [{"giver_vnum":132581,"completion_key":"give=T:19;receive=E:33;disappear=1"}]
+assert tharnadia_stories["ithilins-paper-map-service"]["contracts"] == [{"giver_vnum":132659,"completion_key":"give=I:5;receive=I:132705;disappear=0"}]
+assert tharnadia_stories["menaes-wand-service"]["contracts"] == [{"giver_vnum":132672,"completion_key":"give=C:1000;receive=I:132703;disappear=0"}]
+assert len(tharnadia_stories["menaes-wand-service"]["steps"]) == 1
+assert [t["item_vnums"] for t in tharnadia_stories["arkelyns-three-toys"]["steps"][:-1]] == [[132682],[132683],[132684]]
+assert tharnadia_stories["zechs-two-handed-sword-service"]["steps"][0]["item_vnums"] == [1110,1111]
+assert len(tharnadia_stories["zechs-two-handed-sword-service"]["contracts"]) == 2
+assert len(tharnadia_stories["brothel-ticket-service"]["contracts"]) == 2
+chiln = tharnadia_stories["chilns-medicine-and-pendant"]
+assert chiln["steps"][0]["contracts"] == tharnadia_stories["nebbles-medicine-service"]["contracts"]
+assert all(t.get("optional") for t in chiln["steps"][:-1])
+assert [t["item_vnums"] for t in chiln["steps"] if t["kind"] == "carried_item"] == [[132694],[132695],[132697],[132699]]
+assert chiln["contracts"] == [{"giver_vnum":132667,"completion_key":"give=I:132697,I:132699;receive=E:3000,I:132698;disappear=1"}]
+assert [t["item_vnums"] for t in tharnadia_stories["leodras-blank-book"]["steps"][:-1]] == [[132685]]
+assert tharnadia_stories["rheds-lost-pup"]["steps"][0]["item_vnums"] == [132700]
+tharnadia_units = [u for u in catalog_module.story_units(catalog) if u["zone_number"] == 1325]
+assert len(tharnadia_units) == 16 and sum(u["achievement"] for u in tharnadia_units) == 8
+assert sum(u["daily_candidate"] for u in tharnadia_units) == 8
+contacts = {c["mob_vnum"]: c for c in tharnadia_mapping["contacts"]}
+assert contacts[132661]["keyword"] == "arkeln"
+for vnum, contact in contacts.items():
+    assert contact["keyword"] in tharnadia["mobs"][vnum]["keywords"]
+for d in tharnadia["dialogue"]:
+    assert set(d["body"][0].rstrip("~").split()) <= set(contacts[d["giver_vnum"]]["topics"])
+for name in ("Arkelyn", "Ithilin", "Thera", "Nebble", "Chiln", "Zaberetornaz", "Leodra", "Rhed", "Xero", "Menae", "Zech"):
+    assert all(name not in line for line in tharnadia_mapping["orientation"])
+parent = room = None
+sources = collections.defaultdict(list)
+for reset in tharnadia["reset_commands"]:
+    c,v = reset["command"],reset["arguments"]
+    assert len(v) == 8 and v[4:] == [100,0,0,0]
+    if c in ("M","F"): parent,room = v[1],v[3]
+    if c in ("G","E") and v[1] in (132682,132683,132684,132699):
+        sources[v[1]].append((c,parent,room,v[2],v[3] if c == "E" else None))
+assert sources[132682] == [("G",132664,132517,1,None)]
+assert sources[132683] == [("G",132663,132517,1,None)]
+assert sources[132684] == [("G",132662,132517,1,None)]
+assert sources[132699] == [("E",132670,132836,1,3)]
+assert [(r["arguments"][2],r["arguments"][3]) for r in tharnadia["reset_commands"] if r["command"] == "P" and r["arguments"][1] in (132694,132695,132700)] == [(1,132688)] * 3
+assert any(r["command"] == "M" and r["arguments"][1] == 132677 for r in tharnadia["reset_commands"])
+assert 132677 not in tharnadia["mobs"] and 132677 in tharnadia["items"]
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

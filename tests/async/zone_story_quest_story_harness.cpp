@@ -179,7 +179,7 @@ int main(int argc, char **argv)
 					"met NPC was missing");
 		}
 		require(catalog.story_mappings.size() == 55 &&
-				tracker.summary_for(7, 42).total == 1753,
+				tracker.summary_for(7, 42).total == 1750,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -199,8 +199,10 @@ int main(int argc, char **argv)
 										    431, 2) == 19 &&
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
 										    760, 2) == 7 &&
+				zone_story_quest_catalog::eligible_definition_count(
+					file_catalog, 5000, 2) == 17 &&
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
-										    5000, 2) == 17,
+										    1325, 2) == 8,
 			"complete Alatorin/Newhaven/Faerie/Verspin/Ship Yards/Ultarium/Surface sidecars failed the native file loader");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -2723,6 +2725,139 @@ int main(int argc, char **argv)
 				restored_surface.progress_for_zone(7, 42, 262).completed == 0 &&
 				restored_surface.progress_for_zone(7, 42, 831).completed == 0,
 			"Surface recovery merged independent opposing requests or fabricated foreign source credit");
+		// City preparation and supplied finales do not manufacture producer history.
+		const auto &tharnadia_chiln = story_for("tharnadia", "chilns-medicine-and-pendant");
+		const auto &tharnadia_toys = story_for("tharnadia", "arkelyns-three-toys");
+		const auto &tharnadia_medicine = story_for("tharnadia", "nebbles-medicine-service");
+		const auto &tharnadia_sword =
+			story_for("tharnadia", "zechs-two-handed-sword-service");
+		const auto &tharnadia_paper = story_for("tharnadia", "ithilins-paper-map-service");
+		const auto &tharnadia_map = *std::find_if(
+			catalog.story_mappings.begin(), catalog.story_mappings.end(),
+			[](const auto &mapping) { return mapping.source_area == "tharnadia"; });
+		service supplied_tharnadia(catalog);
+		require(supplied_tharnadia.discover_zone(7, 42, 1325, 132573, 100, "arrival") ==
+					result::applied &&
+				supplied_tharnadia
+						.render_journal(7, 42, 1325, 10, 1, 101, false,
+								false)
+						.find(tharnadia_chiln.title) == std::string::npos,
+			"Tharnadia discovery revealed an unseen named request");
+		for (const auto &contact : tharnadia_map.contacts)
+			require(supplied_tharnadia.meet_npc(7, 42, contact.mob_vnum, 132573, 101) ==
+					result::applied,
+				"Tharnadia contact encounter failed");
+		const auto tharnadia_section = [&](const auto &entry)
+		{
+			const auto start = journal.find("] " + entry.title + "\r\n");
+			require(start != std::string::npos, "Tharnadia story was missing");
+			return journal.substr(start, journal.find("\r\n  [", start) - start);
+		};
+		supplies = {};
+		for (int item : { 132689, 132690, 132691, 132692, 132693, 132704 })
+			supplies.carried[item] = 1;
+		const auto tharnadia_before_read = supplied_tharnadia.serialize_state();
+		journal = supplied_tharnadia.render_journal(7, 42, 1325, 10, 1, 121, false, false,
+							    &supplies);
+		for (const auto &step : tharnadia_toys.steps)
+			if (step.kind == "carried_item")
+				require(tharnadia_section(tharnadia_toys)
+							.find("[Missing now] " + step.text) !=
+						std::string::npos,
+					"borrowed instruments substituted for the children's toy proofs");
+		require(supplied_tharnadia.serialize_state() == tharnadia_before_read &&
+				supplied_tharnadia.progress_for_zone(7, 42, 1325).completed == 0,
+			"Tharnadia inventory inspection manufactured history");
+		supplies = {};
+		supplies.carried[132682] = 3;
+		journal = supplied_tharnadia.render_journal(7, 42, 1325, 10, 1, 122, false, false,
+							    &supplies);
+		for (const auto &step : tharnadia_toys.steps)
+			if (step.kind == "carried_item" && step.item_vnums.front() != 132682)
+				require(tharnadia_section(tharnadia_toys)
+							.find("[Missing now] " + step.text) !=
+						std::string::npos,
+					"three flutes replaced three different toy instruments");
+		for (const auto &entry : tharnadia_map.stories)
+			for (const auto &step : entry.steps)
+			{
+				if (step.kind != "carried_item")
+					continue;
+				for (int item : step.item_vnums)
+				{
+					supplies = {};
+					supplies.equipped[16] = item;
+					journal = supplied_tharnadia.render_journal(
+						7, 42, 1325, 10, 1, 123, false, false, &supplies);
+					require(tharnadia_section(entry).find("[Missing now] " +
+									      step.text) !=
+							std::string::npos,
+						"equipped city proof substituted for a carried offering");
+					supplies.equipped.clear();
+					supplies.carried[item] = 1;
+					journal = supplied_tharnadia.render_journal(
+						7, 42, 1325, 10, 1, 124, false, false, &supplies);
+					require(tharnadia_section(entry).find("[Ready now] " +
+									      step.text) !=
+							std::string::npos,
+						"exact supplied city proof or alternative failed readiness");
+				}
+			}
+		supplies = {};
+		supplies.carried[132697] = supplies.carried[132699] = 1;
+		journal = supplied_tharnadia.render_journal(7, 42, 1325, 10, 1, 125, false, false,
+							    &supplies);
+		require(tharnadia_section(tharnadia_chiln)
+					.find("[Pending] " + tharnadia_chiln.steps.front().text) !=
+				std::string::npos,
+			"supplied vial invented earlier medicine production");
+		record(supplied_tharnadia, tharnadia_chiln.contracts.front(),
+		       "tharnadia-supplied-finale", 1325, 132833);
+		require(supplied_tharnadia.progress_for_zone(7, 42, 1325).completed == 1,
+			"supplied city finale required personal herb recovery");
+		for (const auto &entry : tharnadia_map.stories)
+			if (entry.category == "service")
+				for (const auto &contract : entry.contracts)
+					record(supplied_tharnadia, contract, contract.c_str(), 1325,
+					       132573);
+		supplies = {};
+		journal = supplied_tharnadia.render_journal(7, 42, 1325, 10, 1, 126, false, false,
+							    &supplies);
+		require(supplied_tharnadia.progress_for_zone(7, 42, 1325).completed == 1 &&
+				supplied_tharnadia.progress_for_zone(7, 42, 1325).total == 8 &&
+				tharnadia_section(tharnadia_chiln)
+						.find("[Recorded] " +
+						      tharnadia_chiln.steps.front().text) !=
+					std::string::npos &&
+				tharnadia_section(tharnadia_medicine)
+						.find("[Missing now] " +
+						      tharnadia_medicine.steps.front().text) !=
+					std::string::npos &&
+				tharnadia_section(tharnadia_sword)
+						.find("[Missing now] " +
+						      tharnadia_sword.steps.front().text) !=
+					std::string::npos &&
+				tharnadia_section(tharnadia_paper)
+						.find("[Missing now] " +
+						      tharnadia_paper.steps.front().text) !=
+					std::string::npos,
+			"city services inflated achievements or replaced consumed supplies with history");
+		service recovered_tharnadia(catalog);
+		require(recovered_tharnadia.deserialize_state(supplied_tharnadia.serialize_state(),
+							      &error),
+			"Tharnadia receipt recovery failed");
+		for (const auto &entry : tharnadia_map.stories)
+			if (entry.category != "service" && entry.id != tharnadia_chiln.id)
+				record(recovered_tharnadia, entry.contracts.front(),
+				       entry.id.c_str(), 1325, 132573);
+		service restored_tharnadia(catalog);
+		require(restored_tharnadia.deserialize_state(recovered_tharnadia.serialize_state(),
+							     &error) &&
+				restored_tharnadia.progress_for_zone(7, 42, 1325).completed == 8 &&
+				restored_tharnadia.progress_for_zone(7, 42, 1325).total == 8 &&
+				restored_tharnadia.progress_for_zone(7, 42, 989).completed == 0 &&
+				restored_tharnadia.progress_for_zone(7, 42, 292).completed == 0,
+			"city recovery merged requests or fabricated foreign recovery credit");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

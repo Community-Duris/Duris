@@ -57,9 +57,10 @@ neither every branch nor every historical prerequisite.
 | 30 | Ship Yards | [Comprehensive source dossier](zone-stories/SHIP_YARDS.md): all 124 blocks/26 exchanges/twenty addressed/78 ambient, 229 rooms/102 mobs/46 objects/seven shops, 719 resets/265 families, eight literal services and bounded foreign/shared review | Revision one: nineteen outcomes/six services, thirty-two contacts/thirty-four optional checks; supplied proofs, optional briefing/note, exact quantities/kinds and two crate-price alternatives | Active source/slot/cap/dispersal/retirement and travel qualification; four missing exits/ocean viper ecology; builder-selected count/clue/reward repairs; fishing ownership publication and wallet/epic/ship/crew settlement |
 | 31 | Ultarium | [Comprehensive source dossier](zone-stories/ULTARIUM.md): all 22 blocks/seventeen exchanges/five addressed, 268 rooms/82 mobs/71 objects/two shops, 338 resets/227 families, three literal assignments, computed teachers/shared effects and bounded foreign continuation | Revision one: seven outcomes/eight support rows, twenty-three contacts/twenty-two optional checks; competing distinct souls, same-name kinds, keys, supplied proof and foreign ownership | Active rare/holding/capped/nested/roaming sources/appearances; source/gift/episode/access/travel/effect/actor-state adapters; paid rename/pet/epic lesson settlement; balanced soul/clue/name/claim repair |
 | 32 | Surface Realm | [Comprehensive source dossier](zone-stories/SURFACE_REALM.md): all 141 blocks/31 exchanges/36 addressed, 160,004 rooms in 562 prose/56 metadata/311 exit groups, 234 mobs/78 objects, 1,736 resets/320 families, eight literal assignments/104 computed teachers and bounded foreign evidence | Revision one: seventeen outcomes/six support rows, 37 contacts/31 optional checks; exact competing campaign materials, repeated supplies, distinct bass, actual tomb continuation and supplied routes | Active source/recipient/episode qualification; accepted treant/fishing/helper/rift/actor/region and paid ship/class/fee events; targeted two-edge/clue repair and deliberate bracer/invasion/descent policy |
-| 33–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 33 | Tharnadia | [Comprehensive source dossier](zone-stories/THARNADIA.md): all 44 native blocks/nineteen exchanges/24 addressed families, 584 rooms/176 mobs/206 objects/nineteen shops, 1,480 resets/661 families, 31 literal assignments/computed teachers and bounded foreign/shared review | Revision two: eight outcomes/eight services/one typed-food exclusion, 26 contacts/23 optional checks; exact toys, supplied medicine finale, paper-map correction and independent commissions | Active source/container/search/appearance qualification; accepted first-source/dialogue/access/healing/lesson/pet events; typed/coin-only and paid town settlement; builder-selected missing-mobile/clue/source/claim repairs |
+| 34–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Tharnadia, followed by Mini Zones and the City of Torrhan.
+The next area is Mini Zones, followed by the City of Torrhan.
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -159,6 +160,10 @@ matches, or a candidate item graph was extracted.
 | ZSQ-COSMIC-CUSTOM / PAID | Rare box/windkin, cap-one proof, directional keys/secret boulders, teleports and effect/teacher state need accepted evidence. Rename/pet/epic purchases are guarded; legacy pet claim has no restoration call. | Extend shared reset/appearance/access/arrival/effect/actor-state and wallet/identity/pet/lesson continuations. Deliberately restore or retire pet claims; qualify denial/refund, partial identity/save failure and replay/restart before removing guards. |
 | ZSQ-SURFACE-ALLOCATION / SOURCE | Four different trophies buy a book; four wardens consume separate instances of one heart kind; mystic needs five current kinds. Claws/crystals/eggs and retiring hunter compete; bracer 729 has no ordinary loaded repeatable producer. | Preserve exact supplied routes and independent receipts; qualify recipient/source episodes and imported custody. Add allocation/first-source/gift evidence and builder-selected supply/branch policy before deeper campaign credit. |
 | ZSQ-SURFACE-CUSTOM / REPAIR | Two Mril exits target unloaded 33807; wood has a death-created source without confirmed decay binding; guardian/rift need accepted effects/arrival. Devil invasion is commented out; descent is disabled; fishing text/XP precedes grant. | Targeted loaded-edge/proof/clue repair; accepted source/helper/race-context arrival and post-grant publication. Deliberately restore or retire dormant endpoints with coordinated custody/identity/actor recovery; keep fee/epic guards and qualify shared ship settlement. |
+| ZSQ-THARNADIA-AUDIT / CONTENT | Administrative paper 5 was omitted only from the audit lookup; missing mobile 132677 remains real. Two toy descriptions and the pup/desk clues disagree with actual sources. | Include all active prototype sources without a limbo discovery owner; restore the paper-map service. Builder selects mobile/clue/placement/lock repairs, retaining exact native identities and balance. |
+| ZSQ-THARNADIA-CONTAINER / SOURCE | P resets choose a global matching live container rather than the immediately preceding local O instance. Search reveals hidden contents without carried custody; loans differ from toy proofs. | Freeze actual parent UID/generation/location and qualified policy in reset admission. Test moved/carried/capped containers, denied grants, open/search/GET and personal versus supplied lineage before source milestones. |
+| ZSQ-THARNADIA-PREPARATION / SEMANTICS | Herb-to-vial service supports the retiring vial-plus-pendant finale, while supplied vials skip producer history. Lesson/healing/escape/pet prose does not create accepted actor/NPC outcomes. | Preserve eight independent deliveries and optional preparation. Extend owned semantic/attempt/actor-state adapters only after explicit builder endpoints; qualify consumed ingredients, exact collections and supplied finales without fabricated history. |
+| ZSQ-THARNADIA-PAID / CUSTODY | Wand is coin-only; child accepts any food type. Active refusals, direct dice drop, legacy pet claim and shared crew payment need separate support. | Keep guards until exact wallet/typed-item/output/recipient and draw/custody/effect/save settlement is qualified. Restore or retire pet claims deliberately; reject denied ship debit before mutation. |
 
 ## Verification record
 
@@ -1474,8 +1479,33 @@ formatting is clean and whole-file checks pass for the feature diff; the general
 pre-commit comparison also sees inherited formatting drift in 23 incoming-only
 dependency files, which this integration does not rewrite.
 
-Current catalog: **55 journals, 1,753 achievement units, 1,519 potential daily
-units and 2,227 projected rows; 32 of 220 roadmap areas are source-comprehensive,
-with 188 remaining.** All 2,668 native definitions, revision two, fingerprint,
-registry and fifty-four earlier maps remain unchanged. Continue with Tharnadia,
-Mini Zones and the City of Torrhan. Active, ready accounting remains mandatory.
+The Tharnadia checkpoint completes the full nineteen-exchange/44-block source
+review, 584 rooms/176 mobiles/206 objects/nineteen shops, 1,480 resets/661
+families, all 31 literal assignments, computed roles and bounded foreign/shared
+execution. Revision two ships eight independent stories, eight services and one
+typed-food exclusion, with 26 contacts and 23 optional checks. Administrative
+paper lookup now includes active limbo without adding discoverable ownership.
+Initial orientation uses role descriptions; encountered contacts retain real
+names/aliases. The dossier's medicine diagram shows both prepared and supplied
+vial routes without inventing an all-stage prerequisite.
+
+Validation passed: `test_zone_story_quest_production_catalog.py` with all 33
+reproducible indices; `test_zone_story_quest_story.py` with C++20 warnings as
+errors, exact toy/loan identities, distinct versus duplicate materials,
+carried versus equipped alternatives, supplied medicine without producer
+history, support exclusion and eight-outcome receipt recovery. The maintained
+SQL server build, all 27 starter/town mappings, authoritative changed/staged
+content formatting and whitespace checks pass. Source/link review verifies
+3,893 local/source-line links across 72 documents, exact current generated
+catalog agreement and unchanged native definitions/revision/fingerprint/registry
+and the other 54 maps. The WSL staged auto-formatter exposed file-mode churn;
+the tracked C++ mode remains 100644 and content checks pass. No native world,
+server or migration content was changed in this checkpoint. Played source,
+search, combat, payment, travel and recipient availability remain unqualified;
+accounting activation and operational DB/server work were not performed.
+
+Current catalog: **55 journals, 1,750 achievement units, 1,516 potential daily
+units and 2,227 projected rows; 33 of 220 roadmap areas are source-comprehensive,
+with 187 remaining.** All 2,668 native definitions, revision two, fingerprint,
+registry and fifty-four other maps remain unchanged in this checkpoint. Continue
+with Mini Zones and the City of Torrhan. Active, ready accounting remains mandatory.

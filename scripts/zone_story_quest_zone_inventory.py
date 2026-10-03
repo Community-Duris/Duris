@@ -85,7 +85,10 @@ def native_blocks(root):
 def inventory(root):
     catalog = catalog_tool.production_catalog(root)
     zones = catalog["zones"]
-    mobs, items = prototypes(root, zones, "mob"), prototypes(root, zones, "obj")
+    # Administrative areas supply valid prototypes without owning discoverable
+    # zones. Match the production catalog's full active prototype lookup.
+    active_areas = catalog_tool.zone_registry(root)
+    mobs, items = prototypes(root, active_areas, "mob"), prototypes(root, active_areas, "obj")
     blocks = native_blocks(root)
     by_contract = {(b["giver_vnum"], b["binding"]["completion_key"]): b for b in blocks if "binding" in b}
     definitions = collections.defaultdict(list)
