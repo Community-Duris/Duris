@@ -151,10 +151,10 @@ CREATE TABLE kingdom_garrison (
 INSERT INTO kingdom_garrison VALUES (3,0,1,12),(3,16,2,20);"
 for _ in 1 2; do
     docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
-        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/0009_kingdom_garrison.sql"
+        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/migrations/immutable/0009_kingdom_garrison.sql"
     docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
         -e DB_PASSWD="$PASSWORD" -e DB_NAME="$LEGACY_DB_NAME" \
-        "$NAME" /tmp/0009_kingdom_garrison.sh >/dev/null
+        "$NAME" bash /tmp/migrations/immutable/0009_kingdom_garrison.sh >/dev/null
 done
 legacy_garrison_rows=$("${LEGACY_MYSQL[@]}" -e "
 SELECT GROUP_CONCAT(CONCAT_WS(':',assoc_id,slot,guard_class,level)
