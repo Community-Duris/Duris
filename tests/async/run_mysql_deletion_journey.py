@@ -147,7 +147,7 @@ def run(server):
                     sql('RENAME TABLE zone_story_quest_state TO account_quest_fixture_unavailable')
                     try:
                         client.send(journey.ACCOUNT)
-                        client.expect('Account deletion is waiting for quest-state cleanup.', timeout=30)
+                        client.expect('Account deletion did not complete.', timeout=30)
                         client.expect('to retry completion:')
                         assert number("SELECT blocked FROM accounts WHERE account_name='"+journey.ACCOUNT+"'") == 2
                         assert number(f'SELECT COUNT(*) FROM player_data WHERE pid={pid}') == 1
@@ -267,4 +267,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--server', type=Path, required=True)
     args = parser.parse_args()
+    from run_mysql_account_deletion_journey import run as run_atomic_account_erasure
+    run_atomic_account_erasure(args.server.resolve())
     run(args.server.resolve())
