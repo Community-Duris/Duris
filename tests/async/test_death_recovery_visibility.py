@@ -129,6 +129,10 @@ case = recovery.summarize(decoded, owners)
 assert case["recovery_required"] and case["counts"]["restored"] == 1
 owners[1].update(state=2, owner_type=8)
 case = recovery.summarize(decoded, owners)
+assert case["recovery_required"] and case["verification_requires_review"]
+assert case["items"][0]["recovery_owner"] == "restitution_verification"
+owners[0]["delivery_verified"] = True
+case = recovery.summarize(decoded, owners)
 assert not case["recovery_required"] and case["terminal_custody"] == "restored"
 assert case["counts"]["safely_retired"] == 1
 owners[0]["materialized"] = False

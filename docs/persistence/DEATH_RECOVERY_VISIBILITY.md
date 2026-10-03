@@ -81,13 +81,17 @@ startup/recovery must finish the existing transaction first.
 | State | Evidence and recovery owner |
 | --- | --- |
 | `durable` | Active authority and a matching physical projection; owner `none`. |
-| `restored` | Durable player delivery with an applied/verified receipt tied to this death and recipient; owner `none`. Exact metadata verification still uses protected restitution `verify`. |
+| `restored` | Durable player delivery with a receipt tied to this death and recipient. An applied receipt remains open under `restitution_verification`; the existing protected `verify` must record verification before owner `none` and a resolved summary are possible. |
 | `quarantine` | Existing quarantined custody; owner `reviewed_restitution`. |
 | `unresolved` | Missing authority/projection, unresolved critical operation evidence, or an outstanding wallet obligation; owner `custody_reconciliation`. |
 | `safely_retired` | Explicit retired state with destruction authority; owner `none`. Absence alone never proves retirement. |
 
 Each item retains its own state and owner. The aggregate gives unresolved cases
 precedence over quarantine, then restored/durable custody, then retirement.
+An applied but unverified delivery sets `verification_requires_review=true`
+and keeps the aggregate unresolved under `restitution_verification`, even when
+its item has durable restored custody. Only the existing protected verification
+workflow can record the verified receipt; this read-only query cannot do so.
 `death_disposition=completed` is independent of `recovery_required`: recording a
 death cannot certify unresolved items as delivered. Wallet amounts and unresolved
 operation IDs remain protected evidence and keep the case open. Currency is
@@ -125,7 +129,7 @@ Focused executable coverage:
   custody evidence, private status output, and refusal while replay is pending.
 - `run_player_death_disposition_mysql.sh`: native SQL disposition and retained
   missing descendant, followed by `test_death_recovery_visibility_sql.py` for
-  protected pagination, reconciliation, delivery loss, retirement, and the
+  protected pagination, pending verification, reconciliation, delivery loss, retirement, and the
   independent wallet obligation. Use `DEATH_DISPOSITION_DB_IMAGE=mysql:8.0` or
   `mariadb:10.11`; only disposable synthetic databases are used.
 - Existing custody, transfer compatibility, save pipeline, staff authorization,
@@ -157,6 +161,13 @@ both before and after terminal disposition. The SQL cases use the existing
 native conflict-evidence fixture and explicit disposable database guards.
 
 ## Historical obligations
+
+Validation on 2026-10-03 passed native disposition fixtures and protected status
+journeys on MariaDB 10.11.19 and MySQL 8.0.46 for master and the accounting port.
+Both branches passed `make -C src`, the flatfile build, the relevant executable
+regressions above, changed-line formatting and formatting checks, and
+`git diff --check`. Database/player fixtures were synthetic and disposable;
+live gameplay and historical production recovery were not exercised.
 
 No historical assets have been restored and no production migrations or recovery
 writes have been performed. The incident's durable-only descendant still needs
