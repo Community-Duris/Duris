@@ -174,6 +174,7 @@ def run(binary, output, population=1000, seconds=180, smoke=False, runtime_index
             client.send("quit"); client.expect("ACCOUNT MENU", timeout=30); stop()
             journey.make_overlord(state, "Taverek")
             boot(); client = journey.reconnect_character(port, expected_room="Pos: standing >" if full_world else "The Regression Arena"); drain(client)
+            client.send("toggle paging"); client.expect("Paging mode off."); drain(client)
             if full_world:
                 client.send(f"goto {home}"); client.expect("The Regression Arena"); drain(client)
             if scenario == "busy":
@@ -208,6 +209,7 @@ def run(binary, output, population=1000, seconds=180, smoke=False, runtime_index
                         client = journey.reconnect_character(port, expected_room="Pos: standing >"); drain(client)
                     continue
                 # Let the previous cadence and warm-up analytics window drain.
+                print(f"CAPTURE PHASE: scenario={scenario} enabled={enabled} warmup=80 measured={seconds}", flush=True)
                 deadline = time.monotonic() + 80
                 while time.monotonic() < deadline:
                     if client: drain(client, 1)
@@ -328,5 +330,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if not args.smoke and args.seconds < 160:
         parser.error("capture at least 160 seconds for a complete steady-state window")
+    journey.build_inspector()
     run(args.binary.resolve(), args.output, population=args.population, seconds=args.seconds,
         smoke=args.smoke, runtime_index=args.runtime_index, scenario=args.scenario, full_world=args.full_world)

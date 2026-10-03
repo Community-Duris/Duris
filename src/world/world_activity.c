@@ -965,11 +965,17 @@ int world_activity_mundane_delay(P_char ch, bool quick_retry, bool legacy_zone_o
 	if (config.enabled && ready && ch)
 	{
 		refresh_controlled_presence(ch);
+		const auto tier = world_activity_tier_for_room(ch->in_room);
 		if (world_activity_mob_is_timing_sensitive(ch))
-			base = PULSE_MOBILE;
+		{
+			// Exempt NPCs keep their legacy cadence outside protected regions.
+			// Enabling an idle-work throttle must not speed up remote scripts.
+			if (tier == world_activity_tier::active)
+				base = PULSE_MOBILE;
+		}
 		else
 		{
-			switch (world_activity_tier_for_room(ch->in_room))
+			switch (tier)
 			{
 			case world_activity_tier::active:
 				base = PULSE_MOBILE;
