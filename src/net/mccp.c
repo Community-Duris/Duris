@@ -2,6 +2,7 @@
 #include "core/structs.h"
 #include "core/utils.h"
 #include "net/mccp.h"
+#include "net/comm.h"
 #include <errno.h>
 #include <gnutls/gnutls.h>
 #include <stdlib.h>
@@ -90,6 +91,8 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 	case DO:
 		if (buflen < 3)
 			return 0;
+		if (!admit_session_oob(player, 3))
+			return 3;
 		switch (*(p + 2))
 		{
 		case TELOPT_COMPRESS:
@@ -109,6 +112,8 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 	case DONT:
 		if (buflen < 3)
 			return 0;
+		if (!admit_session_oob(player, 3))
+			return 3;
 		switch (*(p + 2))
 		{
 		case TELOPT_GMCP:
@@ -122,12 +127,16 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 	case WILL:
 		if (buflen < 3)
 			return 0;
+		if (!admit_session_oob(player, 3))
+			return 3;
 		if (*(p + 2) == TELOPT_TTYPE)
 			ttype_handle_negotiation(player, WILL);
 		return 3;
 	case WONT:
 		if (buflen < 3)
 			return 0;
+		if (!admit_session_oob(player, 3))
+			return 3;
 		if (*(p + 2) == TELOPT_TTYPE)
 			ttype_handle_negotiation(player, WONT);
 		return 3;
@@ -144,6 +153,8 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 			return 0;
 
 		len += 2; /* include IAC SE */
+		if (!admit_session_oob(player, len))
+			return len;
 
 		if (p[2] == TELOPT_TTYPE)
 		{
