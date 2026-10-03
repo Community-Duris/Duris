@@ -4405,6 +4405,7 @@ int process_output(P_desc t)
 int process_input(P_desc t)
 {
 	int thisround, begin;
+	bool incomplete_telnet_command = false;
 	char *buf, *bp;
 
 	/* WebSocket connections use their own input processing */
@@ -4416,6 +4417,12 @@ int process_input(P_desc t)
 	begin = t->buflen;
 	if (begin < 0 || begin >= MAX_QUEUE_LENGTH)
 		panic_corruption("comm", "process_input: invalid buffer length %d", begin);
+	if (begin >= MAX_QUEUE_LENGTH - 1)
+	{
+		logit(LOG_COMM, "process_input: input buffer exhausted for descriptor %d.",
+		      t->descriptor);
+		return -1;
+	}
 	buf = t->buf;
 	const size_t read_capacity =
 		MIN(static_cast<size_t>(MAX_QUEUE_LENGTH - begin - 1), t->network_input_remaining);
@@ -4502,6 +4509,7 @@ int process_input(P_desc t)
 			if (consumed <= 0)
 			{
 				/* Preserve a fragmented Telnet command for the next socket read. */
+				incomplete_telnet_command = true;
 				memmove(bp, buf + i, len - i);
 				bp += len - i;
 				goto incomplete;
@@ -4528,7 +4536,15 @@ int process_input(P_desc t)
 	}
 
 incomplete:
-	if (bp - buf > MAX_INPUT_LENGTH - 1)
+	const int buffered_length = static_cast<int>(bp - buf);
+	if (incomplete_telnet_command && buffered_length >= MAX_QUEUE_LENGTH - 1)
+	{
+		/* Do not strand a full, unterminated Telnet frame without read space. */
+		logit(LOG_COMM, "process_input: input buffer exhausted for descriptor %d.",
+		      t->descriptor);
+		return -1;
+	}
+	if (!incomplete_telnet_command && buffered_length > MAX_INPUT_LENGTH - 1)
 	{
 		// is it even a good idea to process it anyway?
 		*bp = 0;
