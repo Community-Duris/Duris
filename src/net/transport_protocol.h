@@ -15,7 +15,7 @@
 
 namespace duris_transport
 {
-constexpr uint16_t version = 1;
+constexpr uint16_t version = 2;
 constexpr size_t header_size = 32;
 constexpr size_t payload_limit = 4 * 1024 * 1024 + 2048;
 constexpr size_t channel_limit = 8 * 1024 * 1024;
