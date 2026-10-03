@@ -30,6 +30,12 @@ extern "C" ssize_t send(int fd, const void *data, size_t length, int flags)
 	if (!mode || length < 32 || memcmp(bytes, "DTP1", 4))
 		return original(fd, data, length, flags);
 	const unsigned type = (bytes[6] << 8) | bytes[7];
+	if (type == 8 && !getenv("DURIS_TRANSPORT_FD") && strstr(mode, "trace-close"))
+	{
+		constexpr char marker[] = "transport-test: frontend close sent\n";
+		const ssize_t marked = write(STDERR_FILENO, marker, sizeof(marker) - 1);
+		(void)marked;
+	}
 	if (type == 9 && strstr(mode, "delay-pause"))
 	{
 		constexpr char marker[] = "transport-test: pause barrier delayed\n";
