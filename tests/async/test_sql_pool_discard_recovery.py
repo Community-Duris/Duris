@@ -67,11 +67,13 @@ void resume_factory() {
 void retire(MYSQL *connection) {
     connection->server_status = SERVER_STATUS_IN_TRANS;
     const auto before = closed.load();
+    const int leased_before = sql_pool_in_use();
     sql_pool_discard_connection(connection);
     sql_pool_discard_connection(connection);
     assert(closed.load() == before); // Still owned by the borrower.
     assert(sql_pool_replace_connection(connection) == nullptr);
-    sql_pool_release(connection);
+    // Replacement consumes only this lease, retaining other borrowers.
+    assert(sql_pool_in_use() == leased_before - 1);
     assert(closed.load() == before + 1);
 }
 void queue_probe(ProbeReply reply = {}) {
@@ -320,9 +322,76 @@ int main() {
     assert(!waiting_result && !borrowed_shutdown_done);
     assert(closed.load() == closed_before_shutdown);
     assert(!sql_pool_replace_connection(borrowed));
-    sql_pool_release(borrowed);
+    assert(sql_pool_in_use() == 0);
     borrowed_closer.join();
     assert(borrowed_shutdown_done && opened == closed && sql_pool_total() == 0);
+
+    // A failed replacement consumes the old lease; no caller may touch its
+    // pointer afterward, even when the connection factory throws.
+    for (int fault = 0; fault < 2; ++fault) {
+        assert(sql_pool_init(1) == 0);
+        MYSQL *original = sql_pool_acquire(); assert(original);
+        const auto prior_closed = closed.load();
+        fail_open = fault == 0; throw_open = fault == 1;
+        assert(sql_pool_replace_connection(original) == nullptr);
+        fail_open = false; throw_open = false;
+        assert(sql_pool_in_use() == 0 && sql_pool_available() == 0);
+        assert(closed.load() == prior_closed + 1);
+        MYSQL *fresh = sql_pool_acquire(); assert(fresh);
+        sql_pool_release(fresh); sql_pool_shutdown();
+        assert(opened == closed);
+    }
+
+    // A slow replacement cannot hold the pool mutex or block an unrelated
+    // healthy lease; successful replacement returns one clean borrowed handle.
+    assert(sql_pool_init(2) == 0);
+    MYSQL *slow = sql_pool_acquire(), *other = sql_pool_acquire();
+    assert(slow && other);
+    const auto slow_id = slow->thread_id;
+    pause_factory();
+    MYSQL *fresh_replacement = nullptr;
+    std::thread slow_replacer([&] { fresh_replacement = sql_pool_replace_connection(slow); });
+    await_factory();
+    sql_pool_release(other);
+    assert(sql_pool_acquire() == other);
+    sql_pool_release(other);
+    resume_factory(); slow_replacer.join();
+    assert(fresh_replacement && fresh_replacement != other && fresh_replacement->thread_id != slow_id);
+    assert(sql_pool_in_use() == 1 && sql_pool_available() == 1);
+    sql_pool_release(fresh_replacement); sql_pool_shutdown();
+    assert(opened == closed);
+
+    // Closing while the replacement factory is outside the mutex consumes
+    // both the original and unpublished fresh handle, and releases shutdown.
+    assert(sql_pool_init(1) == 0);
+    MYSQL *original = sql_pool_acquire(); assert(original);
+    pause_factory();
+    MYSQL *replacing_result = original;
+    std::thread replacing([&] { replacing_result = sql_pool_replace_connection(original); });
+    await_factory();
+    std::atomic<bool> replacement_shutdown_done{false};
+    std::thread replacement_closer([&] { sql_pool_shutdown(); replacement_shutdown_done = true; });
+    bool replacement_closing_seen = false;
+    const auto replacement_closing_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+    while (std::chrono::steady_clock::now() < replacement_closing_deadline) {
+        int still_active = 1;
+        assert(!sql_pool_acquire_with_status(&still_active));
+        if (!still_active) { replacement_closing_seen = true; break; }
+    }
+    assert(replacement_closing_seen && !replacement_shutdown_done);
+    resume_factory(); replacing.join();
+    assert(!replacing_result && sql_pool_in_use() == 0);
+    replacement_closer.join();
+    assert(replacement_shutdown_done && opened == closed);
+
+    // An unborrowed handle is not a lease and must never be replaced/closed.
+    assert(sql_pool_init(1) == 0);
+    MYSQL *unborrowed = sql_pool_acquire(); assert(unborrowed);
+    sql_pool_release(unborrowed);
+    const auto prior_closed = closed.load();
+    assert(!sql_pool_replace_connection(unborrowed));
+    assert(closed.load() == prior_closed && sql_pool_available() == 1);
+    sql_pool_shutdown(); assert(opened == closed);
 
     // Repeated faults must not permanently exhaust even a one-slot pool.
     assert(sql_pool_init(1) == 0);
@@ -421,7 +490,8 @@ with tempfile.TemporaryDirectory(prefix="sql-pool-discard-recovery-") as directo
     cflags = shlex.split(subprocess.check_output(["mysql_config", "--cflags"], text=True))
     libs = shlex.split(subprocess.check_output(["mysql_config", "--libs"], text=True))
     subprocess.run([os.environ.get("CXX", "g++"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
-                    "-pthread", "-Isrc", *cflags,
+                    "-pthread", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
+                    "-fno-pie", "-no-pie", "-Isrc", *cflags,
                     str(source), "src/sql/sql_pool.c", "-Wl,--wrap=pthread_cond_timedwait", *libs,
                     "-o", str(binary)], cwd=ROOT, check=True)
     subprocess.run([str(binary)], cwd=ROOT, check=True, timeout=15)
