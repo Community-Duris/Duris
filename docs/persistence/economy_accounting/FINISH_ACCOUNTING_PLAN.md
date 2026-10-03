@@ -413,3 +413,14 @@ and full-world save/item/process-restart journey at native ce7550d6. Keep that
 bounded proof separate from the incoming transport source 4180f745, captured
 staging clone and measured integrated workload qualification. Current-source
 broad and all full R1-R8 gates remain open; 600 seconds/-j2 are unchanged.
+
+
+### October 3 bounded guild treasury audit capture
+
+The independent SQL cut now includes every guild's persisted unsigned
+money vector, distinct from mapped holdings and prestige/construction revisions.
+Both engines pass read-only value/refusal/consistent-view/CLI/exact-restoration
+probes; 81 focused tests pass. Guild money revision/lifetime and actual
+same-root deposit/withdraw gameplay/recovery remain unqualified. Full R7 and
+R1-R8 gates remain open. See the latest review status for source and failed/
+passing evidence; raw capture does not qualify enrollment or activation.

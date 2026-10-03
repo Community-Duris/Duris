@@ -340,3 +340,43 @@ Cache milestone LF-normalized source/evidence SHA-256:
 - tests/async/test_server_build_artifacts.py: 8f4e46b7612f49f77c9b9d13088400cde985b78633b7d85f3c129008b13f45d8
 - tests/async/test_server_build_artifacts_resume.py: 0779635d56c0aa18ccb6298070c0e1ff991541e4f5917b7c62f243bdb0e09d7d
 - tmp/sql-account-erasure-cache-full-world.local.log: a8daa8840feec5bbb4d6c4376297be48f4d43b77f260510a419baeade7a177e0
+
+
+## Persisted guild treasury audit capture
+
+The SELECT-only SQL cut reproduced a missing native.guild_treasuries collection
+on real MariaDB. It now captures all guild IDs and exact four unsigned-INT
+money values, including zero and UINT32_MAX. IDs remain reusable native locators;
+outcome_revision is excluded because ordinary deposits/withdrawals do not
+advance that prestige/construction revision. Guilds joins the required InnoDB
+sources (18). Raw candidates remain outside mapped holdings and no account key,
+lineage, origin or monetary revision is invented.
+
+Independent validation recomputes bounded coverage and reports unsupported
+native guild authority and missing monetary revisions for every row. Malformed
+vectors, aliases, fake revisions, duplicate IDs and forged counts refuse.
+Both MySQL and MariaDB pass SELECT-only value-change, fixed outcome revision,
+missing/nontransactional source refusal, exact restoration, concurrent-writer
+read-view isolation and CLI export/reconcile with detail limit zero. The first
+independent run caught a missing exception-detail guild locator; the final
+implementation safely emits the native ID. All 81 focused tests pass, including
+five guild tests, five coffer tests, 61 reconciler tests and ten exporter/origin
+checks. Failed attempts are retained.
+
+Native source remains transport-integrated 4180f745; this diagnostic milestone
+does not change gameplay or native persistence. Guild enrollment, money
+revision/lifetime, deposit/withdraw atomic roots and recovery, full native audit,
+protected retention, current broad suite, captured clone and measured workload
+remain open. backend=sql_partial; complete=false; full R1-R8 release BLOCKED.
+
+Guild milestone LF-normalized source/evidence SHA-256:
+
+- scripts/economic_sql_audit_snapshot.py: 33868861e79f466cdf7fe3631f80c149b421722fae91749bd3a3a227718d106a
+- scripts/reconcile_economy_accounting.py: 5a6a279ed376c008b3dc4609c38d904262011761d1fe12e967c2e6bdcb451abe
+- tests/async/run_economic_sql_audit_snapshot_mysql.py: a640edc204bfb34f85519582eb50f917d7028aefe83d1507129489f6a1feddf1
+- tests/async/test_guild_treasury_audit.py: 8624627ebc372008f10b059da358d1c425c72825b4567c265aa85ea305e8d75e
+- tmp/audit-guild-money-red.local.log: efdf9e7a2cac4b62810ce2a9c5b2de3b47349cd6dcf5c41564333ef057bf2ae4
+- tmp/audit-guild-money-green.local.log: 189e97c579fcaa5b290b3dd5c65d6ec42ccad60564e4888d1127210fdc3246b1
+- tmp/guild-treasury-focused.local.log: 92634f8a58687761906ab1a8d2a84f4ad4c777b2074778665d7e766ca64f9ccd
+- tmp/guild-treasury-focused-final.local.log: 8d7cdad19b122fd409a8572a5317020815a9107b1274b98d51984fff247ecbc5
+- tmp/audit-guild-money-final.local.log: 189e97c579fcaa5b290b3dd5c65d6ec42ccad60564e4888d1127210fdc3246b1

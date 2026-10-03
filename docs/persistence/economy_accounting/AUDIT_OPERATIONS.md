@@ -67,6 +67,21 @@ read-only consistent cut. These candidates are outside mapped `native.holdings`;
 ship lifetimes, origins, revisions, gameplay writers and runtime-only funds
 remain unqualified. This evidence retains `complete: false`.
 
+Persisted guild treasuries are likewise separate raw candidates:
+`native.guild_treasuries` contains only `guild_id` and four unsigned-INT
+denominations in `balance`. Every `guilds` row is included, including zero
+and unloaded guilds. IDs are reusable native locators, not accounting lifetimes.
+`outcome_revision` tracks prestige/construction and is not a money revision.
+`native.guild_treasury_coverage` records rows, positive/zero rows and
+missing-revision rows. The independent reconciler validates unsigned bounds,
+unique IDs and exact collection shape, recomputes coverage and reports
+`unsupported_native_guild_treasury` and `missing_guild_money_revision` for
+each row. Missing SQL coverage reports `missing_guild_treasury_coverage`;
+counts remain intact with detail limit zero. The exporter requires `guilds`
+to be InnoDB within the same SELECT-only consistent cut. These raw values
+remain outside mapped holdings: enrollment, durable lifetimes, origins,
+monetary revisions and gameplay writers still need qualification.
+
 Its `source_claims` collection covers nonbaseline claims across the selected
 lineage, including claims from other epochs. The SQL rows carry their owning
 operation's lineage, epoch, source and outcome so the reconciler can distinguish
