@@ -166,6 +166,12 @@ def run(server):
                     # A later same-process state write exercises cache invalidation.
                     client=journey.MudClient(plain)
                     journey.create_character(client, account='Eraseview', character='Observer')
+                    client.send('save'); client.expect('Save complete for Observer.', timeout=30)
+                    published = bytes.fromhex(sql('SELECT HEX(state_blob) FROM zone_story_quest_state WHERE state_id=1')).decode()
+                    new_pid = number("SELECT pid FROM player_data WHERE name='Observer'")
+                    assert new_pid != pid
+                    assert sum(row.startswith(f'N|1|{new_pid}|4f62736572766572|') for row in published.splitlines()) == 1, \
+                        'post-erasure cache refresh disabled quest publication'
                     client.send('quit'); client.expect('ACCOUNT MENU',timeout=30)
                     erased(); client.close(); client=None; stop(); process=boot()
                     client=journey.MudClient(plain)

@@ -176,8 +176,11 @@ void baseline(P_char ch)
 	assert(getenv("LOCKER_TEST_DATABASE") && getenv("TEST_DB_HOST"));
 	db = mysql_init(nullptr);
 	assert(db);
+	const char *port_value = getenv("TEST_DB_PORT");
+	const unsigned int port =
+		port_value ? static_cast<unsigned int>(strtoul(port_value, nullptr, 10)) : 3306;
 	assert(mysql_real_connect(db, getenv("TEST_DB_HOST"), getenv("TEST_DB_USER"),
-				  getenv("TEST_DB_PASSWORD"), getenv("LOCKER_TEST_DATABASE"), 3306,
+				  getenv("TEST_DB_PASSWORD"), getenv("LOCKER_TEST_DATABASE"), port,
 				  nullptr, 0));
 	// The runner creates a dedicated disposable schema; each scenario gets its own account.
 	ch->account = "receipt_" + std::to_string(std::hash<std::string>{}(root));

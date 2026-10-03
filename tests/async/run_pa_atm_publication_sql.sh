@@ -31,13 +31,14 @@ IMAGE="${ATM_PUBLICATION_DB_IMAGE:-mariadb:10.11}"
 PROXY_PID=""
 PORT_FILE=""
 export MARIADB_ROOT_PASSWORD="$PASSWORD"
+SQL_FIXTURE_CONTAINER_ID=
 cleanup() {
     if [[ -n "$PROXY_PID" ]]; then
         kill "$PROXY_PID" >/dev/null 2>&1 || true
         wait "$PROXY_PID" >/dev/null 2>&1 || true
     fi
     if [[ -n "$PORT_FILE" ]]; then rm -f "$PORT_FILE"; fi
-    docker rm -fv "$NAME" >/dev/null 2>&1 || true
+    [[ "${SQL_FIXTURE_CONTAINER_ID:-}" =~ ^[0-9a-f]{64}$ ]] && docker rm -fv "$SQL_FIXTURE_CONTAINER_ID" >/dev/null 2>&1 || true
     if docker container inspect "$NAME" >/dev/null 2>&1; then
         printf 'ATM SQL disposable container remains after cleanup: %s\n' "$NAME" >&2
         return 1
@@ -50,10 +51,12 @@ if docker container inspect "$NAME" >/dev/null 2>&1; then
 fi
 
 if [[ "$IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PASSWORD_ENV=MYSQL_ROOT_PASSWORD; fi
-export MYSQL_ROOT_PASSWORD="$PASSWORD"
-docker run -d --name "$NAME" --cpus=2 --memory=2g --memory-swap=2g \
-    -p 127.0.0.1::3306 -e "$PASSWORD_ENV" "$IMAGE" >/dev/null
-mapping="$(docker port "$NAME" 3306/tcp)"
+export "$PASSWORD_ENV=$PASSWORD"
+source "$ROOT/tests/async/_sql_fixture_network.sh"
+sql_fixture_network
+SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$NAME" --cpus=2 --memory=2g --memory-swap=2g \
+    "${SQL_FIXTURE_NETWORK[@]}" -e "$PASSWORD_ENV" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}")
+mapping="$(sql_fixture_mapping "$NAME")"
 if [[ "$mapping" != 127.0.0.1:* ]]; then
     printf 'ATM SQL fixture published outside loopback: %s\n' "$mapping" >&2
     exit 1
@@ -62,11 +65,16 @@ published_port="${mapping##*:}"
 export ENVIRONMENT=test DB_USER=root DB_PASSWD="$PASSWORD" MYSQL_PWD="$PASSWORD"
 if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then MYSQL_SSL=(--ssl-mode=PREFERRED); else MYSQL_SSL=(--skip-ssl); fi
 ready=0
-for candidate in "127.0.0.1:$published_port" "host.docker.internal:$published_port"; do
+CANDIDATES=("127.0.0.1:$published_port" "host.docker.internal:$published_port")
+if [[ -n "$SQL_FIXTURE_PRIVATE_PORT" ]]; then
+    CANDIDATES=("127.0.0.1:$published_port")
+fi
+for candidate in "${CANDIDATES[@]}"; do
     TARGET_HOST="${candidate%:*}"
     TARGET_PORT="${candidate##*:}"
     MYSQL=(mysql "${MYSQL_SSL[@]}" --protocol=tcp --connect-timeout=3 -h "$TARGET_HOST" -P "$TARGET_PORT" -u "$DB_USER" -N -B)
-    for _ in $(seq 1 10); do
+    deadline=$((SECONDS + 90))
+    while ((SECONDS < deadline)); do
         if "${MYSQL[@]}" -e 'SELECT 1' >/dev/null 2>&1; then ready=1; break 2; fi
         sleep 1
     done

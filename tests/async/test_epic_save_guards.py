@@ -1,18 +1,40 @@
 #!/usr/bin/env python3
-from _paths import SRC
+"""Execute epic refund callers with refused transactions and failed checkpoints.
+
+The whole production translation unit is compiled. External persistence and
+terminal output are fixture boundaries; no save or refund is simulated as durable.
+"""
+import subprocess
+import tempfile
 from pathlib import Path
-import sys
+import unittest
 
-text = (SRC / "epic.c").read_text()
-reset_guard = text.count('logit(LOG_WIZ, "Failed to save %s after epic reset refund.", GET_NAME(t_ch));')
-refund_guard = text.count('logit(LOG_WIZ, "Failed to save %s after epic skill refund.", GET_NAME(ch));')
-wrapped_tch = text.count('if (!do_save_silent(t_ch, 1))')
-wrapped_ch = text.count('if (!do_save_silent(ch, 1))')
-print(f'reset_guard={reset_guard} refund_guard={refund_guard} wrapped_tch={wrapped_tch} wrapped_ch={wrapped_ch}')
+from native_build_artifacts import build_native
 
-ok = True
-if reset_guard < 2 or refund_guard < 1 or wrapped_tch < 2 or wrapped_ch < 1:
-    print('missing epic save guard(s)')
-    ok = False
+ROOT = Path(__file__).resolve().parents[2]
 
-sys.exit(0 if ok else 1)
+
+class EpicSaveGuards(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        (ROOT / "bin/tests").mkdir(parents=True, exist_ok=True)
+        cls.directory = tempfile.TemporaryDirectory(prefix="epic-refund-", dir=ROOT / "bin/tests")
+        cls.addClassCleanup(cls.directory.cleanup)
+        cls.binary = build_native(
+            Path(cls.directory.name) / "refund",
+            ["tests/async/epic_save_guards_harness.cpp"],
+            ["-std=c++20", "-O1", "-g", "-ffunction-sections", "-fdata-sections",
+             "-D__NO_MYSQL__", "-Isrc", "-Isrc/no_mysql"],
+            ["-Wl,--gc-sections"], name="epic-save-guards",
+        )
+        print("EPIC-NATIVE compiled", flush=True)
+
+    def test_refused_refund_preserves_skills_and_never_attempts_save(self):
+        subprocess.run([str(self.binary), "refused"], cwd=ROOT, check=True, timeout=20)
+
+    def test_committed_refund_checks_save_result_and_reports_failed_checkpoint(self):
+        subprocess.run([str(self.binary), "checkpoint"], cwd=ROOT, check=True, timeout=20)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -85,7 +85,14 @@ def main() -> None:
 
     assert "test-slot-0.lock" in runner and "docker-heavy.lock" in runner
     assert "PA_RUNTIME_SQL_SLOT_LOCK" in runner and "PA_RUNTIME_SQL_HEAVY_LOCK" in runner
-    assert "--pull=never" in runner and "127.0.0.1::3306" in runner
+    network = (ROOT / "tests/async/_sql_fixture_network.sh").read_text()
+    assert "--pull=never" in runner
+    assert 'source "$ROOT/tests/async/_sql_fixture_network.sh"' in runner
+    assert "sql_fixture_network" in runner and "127.0.0.1::3306" in network
+    assert "from disposable_sql_fixture import private_network" in network
+    provider = (ROOT / "tests/async/disposable_sql_fixture.py").read_text()
+    assert "DURIS_TEST_CONTAINER" in provider
+    assert 'metadata["Id"].startswith(socket.gethostname())' in provider
     assert "duris.task=pa-runtime-sql" in runner and "duris.run_id" in runner
     assert "mariadb:10.11" in runner and "mysql:8.0" in runner
     assert "pa_runtime_sql_test_" in runner

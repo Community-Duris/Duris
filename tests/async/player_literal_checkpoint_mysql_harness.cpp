@@ -76,10 +76,14 @@ void guard_target()
 	check(!std::strcmp(required("DB_HOST"), "127.0.0.1"), "loopback SQL only");
 	check(!std::getenv("DB_SOCKET") && !std::getenv("TEST_DB_SOCKET"), "no inherited socket");
 	const std::string schema = required("DB_NAME");
-	const std::string prefix = "economic_schema_test_li_";
-	check(schema.starts_with(prefix) && schema.size() == prefix.size() + 8 &&
-		      schema.find_first_not_of("0123456789abcdef", prefix.size()) ==
-			      std::string::npos,
+	const auto matches_namespace = [&schema](const std::string &prefix, size_t digits)
+	{
+		return schema.starts_with(prefix) && schema.size() == prefix.size() + digits &&
+		       schema.find_first_not_of("0123456789abcdef", prefix.size()) ==
+			       std::string::npos;
+	};
+	check(matches_namespace("economic_schema_test_li_", 8) ||
+		      matches_namespace("economic_schema_test_", 12),
 	      "exact private schema namespace");
 	check(std::strlen("duris.player.death.restitution.") + schema.size() <= 64,
 	      "native MySQL advisory lock name bound");
