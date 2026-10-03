@@ -7224,7 +7224,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1927
+          1929
         ],
         "file": "src/combat/fight.c",
         "function": "die",
@@ -7460,7 +7460,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3521
+          3523
         ],
         "file": "src/combat/fight.c",
         "function": "check_shields",
@@ -7814,7 +7814,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4971
+          4973
         ],
         "file": "src/combat/fight.c",
         "function": "hit",
@@ -10990,7 +10990,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          805
+          807
         ],
         "file": "src/combat/fight.c",
         "function": "make_corpse",
@@ -11113,7 +11113,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          805
+          807
         ],
         "file": "src/combat/fight.c",
         "function": "make_corpse",
@@ -11174,7 +11174,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          648
+          650
         ],
         "file": "src/combat/fight.c",
         "function": "clear_corpse_transfer_dispute",
@@ -11235,7 +11235,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          805
+          807
         ],
         "file": "src/combat/fight.c",
         "function": "make_corpse",
@@ -13541,7 +13541,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1586
+          1588
         ],
         "file": "src/combat/fight.c",
         "function": "save_disputed_death_disposition",
