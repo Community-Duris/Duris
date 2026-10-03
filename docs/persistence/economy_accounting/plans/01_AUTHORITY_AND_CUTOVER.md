@@ -174,8 +174,8 @@ no existing ordinary-drop gameplay route has been upgraded.
    verify resulting room graph/custody. Release the scoped hold only after
    coordinator publication ACK, in normal and ACK-retry paths, independent of
    whether the original actor still exists.
-5. Restore schema-2 ordinary-drop obligations from durable commands after cold
-   room hydration. Verify already-restored original UIDs, exact bytes/topology
+5. Register schema-2 ordinary-drop obligations during critical durable-command
+   replay, then verify cold room hydration before ACK. Verify original UIDs, exact bytes/topology
    and after-custody without moving/advancing them again or repeating messages.
    Missing or conflicting graphs remain held. Process-local tokens cannot be
    reconstructed against a room root: a distinct restored save/lifecycle
@@ -191,7 +191,9 @@ Restored-obligation design review found a separate login boundary: current
 A restored ordinary-drop hold must distinguish clean authoritative hydration
 from save/lifecycle admission; reuse of that flag would retain a degraded actor
 and can strand the fence after ACK. Preserve genuine quarantine, target, death
-and degraded gates. This is a proposal, not an implemented bypass. The restored
+and degraded gates. The separate authoritative-hydration API and account/nanny
+classification are now implemented and component-qualified on both SQL engines;
+production replay registration and ACK callers are still unwired. The restored
 room verifier must be explicitly actor independent, and original-operation hold
 release belongs after successful publication ACK in both the normal and
 `ack_pending` branches, before pending-owner erasure. Notifications must not
@@ -204,5 +206,8 @@ runtime-zero scopes survive pulse cleanup. Register restored obligations without
 requiring save-journal replay completion, but only after pipeline initialization.
 The exceptional final teardown now retains dependent save/locker owners if
 critical shutdown refuses; native branch and normal boot/shutdown evidence are
-recorded in the October 3 review. These ordering findings are not implemented
-restored-obligation registration or copyover/replay qualification.
+recorded in the October 3 review. The bounded restore-registration API now
+passes both SQL engines, including delayed save-journal replay and runtime-zero
+holds, and original-operation release needs no actor or allocation. These APIs
+are not yet called by the production replay/publication owners. Copyover and
+actual critical replay/ACK qualification remain open.
