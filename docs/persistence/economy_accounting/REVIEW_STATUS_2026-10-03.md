@@ -1883,3 +1883,18 @@ ordinary-drop producer/replay/restored-save/copyover, active accounting, combine
 remote source and current-head broad qualification remain open. No R1-R8 route
 or release gate is promoted; publication still awaits the pending explicit local
 Git integration decision under the retained no-merge restriction.
+
+### Quarantined dispatcher regression fixture repair
+
+The maintained extracted dispatcher fixture failed compilation because its
+literal inventory helper references STRUNG_KEYS/DESC1/DESC2/DESC3 without the
+owning core/defines.h header. Adding that one include repairs the fixture; no
+production function, flag value, assertion or compiler/runtime budget changes.
+Its original sanitizer owner now passes all ordinary, directory-sync retry and
+archive-plus-deque-allocation-failure cases: exact quarantined bytes survive,
+healthy backlog proceeds, no fake ACK, and shutdown returns within8 seconds.
+The failed attempt remains in the private evidence. Declaration
+`tmp/quarantined-dispatcher-header-fix.local.json` SHA-256
+01f3dc948577f78f29f4f434a28e1b71a3c89e09c0e9198957a369bbadc0379f
+pins the before/after fixture and failure/pass logs. This is a repaired regression
+owner, not current broad qualification or an accounting route completion.
