@@ -270,8 +270,7 @@ void do_chaos(P_char ch, char *arg, int /*cmd*/)
 
 	if (is_abbrev(buff, "platinum") || is_abbrev(buff, "plats"))
 	{
-		ADD_MONEY(ch, 10000000);
-		send_to_char("Here's &+W10k plat&n, enjoy!\n", ch);
+		ADD_MONEY(ch, 10000000, "Here's &+W10k plat&n, enjoy!\n");
 		return;
 	}
 
