@@ -368,6 +368,31 @@ economic_sql_currency_writer_guard::~economic_sql_currency_writer_guard()
 #endif
 }
 
+bool economic_sql_currency_writer_guard::is_valid_for(MYSQL *connection) const noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	return false;
+#else
+	try
+	{
+		if (!connection || connection != connection_ || !session_ || !writer_lock_ ||
+		    !local_shared_.owns_lock() || mysql_thread_id(connection) != session_)
+			return false;
+		using flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+		flag reconnect = false;
+		if (mysql_get_option(connection, MYSQL_OPT_RECONNECT, &reconnect) || reconnect ||
+		    mysql_ping(connection) || mysql_thread_id(connection) != session_)
+			return false;
+		return owns_named_lock(connection, writer_lock, session_);
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
 unsigned int
 economic_sql_currency_writer_guard::acquire(MYSQL *connection,
 					    economic_sql_currency_writer_guard *output) noexcept
