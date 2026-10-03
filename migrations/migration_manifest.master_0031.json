@@ -728,6 +728,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "47608d67ec12401d2de2f74174b7739cbce7d942153618f0dbc4b6287769b877",
       "verify_checksum": "bf2a03adde513bd954ac07e552ceb0329d4c98a056a7e30d05868b96fa07ac67"
+    },
+    {
+      "id": "0056_spell_ward_durability",
+      "sequence": 56,
+      "description": "Persist finite spell ward capacity and equipment renewal deadlines",
+      "apply": "immutable/0056_spell_ward_durability.sql",
+      "verify": "immutable/0056_spell_ward_durability.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "e53e06ca7a5b482b6efee950a4db69fdb7d796b7ff71ed495e67bd3194133bb1",
+      "verify_checksum": "e3fbff0b062da55fc7231411beefe8be216341755df7fa088ba64b1f86653551"
     }
   ]
 }

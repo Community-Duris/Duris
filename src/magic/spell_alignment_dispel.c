@@ -6,6 +6,7 @@
 #include "core/utils.h"
 #include "core/defines.h"
 #include "combat/damage.h"
+#include "combat/spell_wards.h"
 #include "magic/spells.h"
 #include "item/objmisc.h"
 #include "world/vnum.obj.h"
@@ -186,8 +187,10 @@ void spell_dispel_magic(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 		{
 			next_af_dude = af->next;
 
-			// Skip over the multiple affect spells.
-			while (next_af_dude && next_af_dude->type == af->type)
+			// Equipment is a separate, non-dispellable source. It must not
+			// hide a following cast of the same ward from this attempt.
+			while (next_af_dude && next_af_dude->type == af->type &&
+			       !spell_ward_is_equipment(af))
 			{
 				next_af_dude = next_af_dude->next;
 			}
