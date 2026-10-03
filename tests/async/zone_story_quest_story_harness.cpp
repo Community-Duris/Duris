@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 46 &&
-				tracker.summary_for(7, 42).total == 2237,
+		require(catalog.story_mappings.size() == 47 &&
+				tracker.summary_for(7, 42).total == 2217,
 			"native story projection disagreed with the complete source audit");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -1834,6 +1834,131 @@ int main(int argc, char **argv)
 				restored_tikitt.progress_for_zone(7, 42, 441).completed == 4 &&
 				restored_tikitt.progress_for_zone(7, 42, 441).total == 4,
 			"temple receipt recovery counted services or changed independent outcomes");
+		const auto &jade_map =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "jade"; });
+		const auto &jade_fish = story_for("jade", "one-fish-for-the-fisherman");
+		const auto &jade_token = story_for("jade", "the-princesss-royal-token");
+		service supplied_jade(catalog);
+		require(supplied_jade.discover_zone(7, 42, 766, 76601, 100, "arrival") ==
+				result::applied,
+			"Jade discovery fixture failed");
+		journal = supplied_jade.render_journal(7, 42, 766, 10, 1, 101, false, false);
+		require(journal.find("] " + jade_token.title) == std::string::npos,
+			"Jade discovery exposed an unseen Emperor request");
+		for (const auto &contact : jade_map.contacts)
+			require(supplied_jade.meet_npc(7, 42, contact.mob_vnum, 76601, 102) ==
+					result::applied,
+				"Jade encounter fixture failed");
+		const auto jade_section = [&](const auto &story)
+		{
+			const auto at = journal.find("] " + story.title + "\r\n");
+			require(at != std::string::npos, "Jade journal row missing");
+			const auto end = journal.find("\r\n  [", at + 1);
+			return journal.substr(at, end == std::string::npos ? end : end - at);
+		};
+		// Supplied proof skips optional sources and earlier exchanges. Exact live
+		// quantities remain necessary, including four meat and two orchid roots.
+		for (const auto &recipe : jade_map.stories)
+		{
+			supplies = {};
+			for (const auto &step : recipe.steps)
+				if (step.kind == "carried_item" && !step.optional)
+					supplies.carried[step.item_vnums.front()] = step.count;
+			const auto before_read = supplied_jade.serialize_state();
+			journal = supplied_jade.render_journal(7, 42, 766, 10, 1, 125, false, false,
+							       &supplies);
+			require(jade_section(recipe).find("Next: " + recipe.steps.back().text) !=
+						std::string::npos &&
+					supplied_jade.serialize_state() == before_read,
+				"supplied Jade proof required history or journal read awarded an event");
+			for (const auto &step : recipe.steps)
+			{
+				if (step.optional)
+					require(jade_section(recipe).find("Next: " + step.text) ==
+							std::string::npos,
+						"optional Jade access or producer displaced the delivery");
+				if (step.kind != "carried_item" || step.optional)
+					continue;
+				const auto item = step.item_vnums.front();
+				supplies.carried[item] = step.count - 1;
+				supplies.equipped[16] = item;
+				const auto other = std::find_if(
+					recipe.steps.begin(), recipe.steps.end(),
+					[&](const auto &candidate)
+					{
+						return candidate.kind == "carried_item" &&
+						       !candidate.optional &&
+						       candidate.item_vnums.front() != item;
+					});
+				if (other != recipe.steps.end())
+					supplies.carried[other->item_vnums.front()] += 10;
+				journal = supplied_jade.render_journal(7, 42, 766, 10, 1, 126,
+								       false, false, &supplies);
+				require(jade_section(recipe).find("Next: " + step.text) !=
+						std::string::npos,
+					"worn item or another Jade kind substituted for the missing quantity");
+				if (other != recipe.steps.end())
+					supplies.carried[other->item_vnums.front()] -= 10;
+				supplies.equipped.clear();
+				supplies.carried[item] = step.count;
+			}
+		}
+		supplies = {};
+		supplies.carried[319] = 1;
+		journal = supplied_jade.render_journal(7, 42, 766, 10, 1, 127, false, false,
+						       &supplies);
+		require(jade_section(jade_fish).find("Next: " + jade_fish.steps.back().text) !=
+				std::string::npos,
+			"Jade fish alternative required both pike and lobster");
+		fee_warnings = 0;
+		for (size_t at = journal.find(unavailable); at != std::string::npos;
+		     at = journal.find(unavailable, at + unavailable.size()))
+			++fee_warnings;
+		require(fee_warnings == 4 && jade_section(story_for("jade", "buy-a-capture-net"))
+							     .find("still needs payment support") !=
+						     std::string::npos,
+			"Jade paid prerequisites lost warnings or cash rewards became unsupported fees");
+		for (const char *id :
+		     { "five-portions-for-a-harvest-bag", "grind-the-harvest-bag" })
+			record(supplied_jade, story_for("jade", id).contracts.front(), id, 766,
+			       76793);
+		supplies = {};
+		const auto &jade_hat = story_for("jade", "rice-paper-hat");
+		journal = supplied_jade.render_journal(7, 42, 766, 10, 1, 128, false, false,
+						       &supplies);
+		const auto missing_rice =
+			std::find_if(jade_hat.steps.begin(), jade_hat.steps.end(),
+				     [](const auto &step)
+				     { return step.kind == "carried_item" && !step.optional; });
+		require(missing_rice != jade_hat.steps.end() &&
+				jade_section(jade_hat).find("Next: " + missing_rice->text) !=
+					std::string::npos,
+			"rice producer receipts replaced a spent current portion");
+		service credited_jade(catalog);
+		for (const auto &recipe : jade_map.stories)
+			if (recipe.category == "service")
+				record(credited_jade, recipe.contracts.front(), recipe.id.c_str(),
+				       766, 76601);
+		for (const auto &excluded : jade_map.exclusions)
+			record(credited_jade, excluded.first, excluded.first.c_str(), 766, 76601);
+		require(credited_jade.progress_for_zone(7, 42, 766).completed == 0 &&
+				credited_jade.progress_for_zone(7, 42, 766).total == 17,
+			"Jade support exchanges or rejected/unfinished outcomes inflated achievements");
+		record(credited_jade, jade_token.contracts.front(), "jade-supplied-token", 766,
+		       76901);
+		require(credited_jade.progress_for_zone(7, 42, 766).completed == 1,
+			"supplied royal token invented invitation, rescue or other local history");
+		for (const auto &recipe : jade_map.stories)
+			if (recipe.category != "service")
+				for (const auto &contract : recipe.contracts)
+					record(credited_jade, contract, contract.c_str(), 766,
+					       76601);
+		service restored_jade(catalog);
+		require(restored_jade.deserialize_state(credited_jade.serialize_state(), &error) &&
+				restored_jade.progress_for_zone(7, 42, 766).completed == 17 &&
+				restored_jade.progress_for_zone(7, 42, 766).total == 17,
+			"Jade recovery counted equivalent fish, services or exclusions twice");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

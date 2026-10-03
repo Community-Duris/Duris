@@ -72845,6 +72845,2099 @@
     {
       "contacts": [
         {
+          "description": "The fisherman at the long pier accepts either one pike or one lobster for the same payment. He also sells a recognized fishing pole.",
+          "keyword": "fisherman",
+          "mob_vnum": 76603,
+          "name": "a fisherman",
+          "topics": []
+        },
+        {
+          "description": "The hunter accepts four meat strips together. Giving the huge boar hide instead upsets him and removes him; that rejection earns no journal achievement.",
+          "keyword": "hunter",
+          "mob_vnum": 76606,
+          "name": "a hunter",
+          "topics": []
+        },
+        {
+          "description": "The kite-flyer near the fields makes a hat from ground rice. The same rice can instead be used for food or a drink.",
+          "keyword": "resident",
+          "mob_vnum": 76623,
+          "name": "a resident kite-flyer",
+          "topics": []
+        },
+        {
+          "description": "The restaurant chef makes sushi from ground rice or soup from a turtle. These are separate cooking services.",
+          "keyword": "master",
+          "mob_vnum": 76629,
+          "name": "a master chef",
+          "topics": []
+        },
+        {
+          "description": "The crop runner collects five rice portions together and returns a full bag; this is the rice-delivery outcome.",
+          "keyword": "crop",
+          "mob_vnum": 76630,
+          "name": "a crop runner",
+          "topics": []
+        },
+        {
+          "description": "The city mystic enchants a rice paper hat or simple necktie for a fee. His white silk belt exchange has no declared outcome and is excluded pending review.",
+          "keyword": "jade",
+          "mob_vnum": 76654,
+          "name": "a jade mystic",
+          "topics": []
+        },
+        {
+          "description": "The gardener wants emerald rose seeds, two orchid-seed portions, a bonzai seed and lilac seeds together. Snapdragon seeds, cherries and whole plants do not substitute.",
+          "keyword": "elderly",
+          "mob_vnum": 76656,
+          "name": "an elderly gardener",
+          "topics": []
+        },
+        {
+          "description": "The grinding wheel below the wheelhouse accepts a full bag and returns ground rice through an item exchange.",
+          "keyword": "grinder",
+          "mob_vnum": 76657,
+          "name": "a grinding wheel",
+          "topics": []
+        },
+        {
+          "description": "The entangled coastline turtle accepts a utility knife and becomes a carried turtle item when freed. The knife is consumed and the entangled recipient leaves.",
+          "keyword": "seaturtle",
+          "mob_vnum": 76658,
+          "name": "an entangled seaturtle",
+          "topics": []
+        },
+        {
+          "description": "The Tigerlily bartender makes a drink from ground rice. It competes with the kite-flyer and chef for the current portion.",
+          "keyword": "barman",
+          "mob_vnum": 76659,
+          "name": "a well-dressed barman",
+          "topics": []
+        },
+        {
+          "description": "The soldier of fortune accepts the signet ring from Scralack's bin, gives a chain and departs. His proposed return with the Hunters has no declared local finale.",
+          "keyword": "soldier",
+          "mob_vnum": 76660,
+          "name": "a soldier of fortune",
+          "topics": []
+        },
+        {
+          "description": "The thief-hunter accepts the captured outlaw item, pays the bounty and leaves. A capture receipt alone is not the offering.",
+          "keyword": "tharnadian",
+          "mob_vnum": 76665,
+          "name": "a tharnadian thief-hunter",
+          "topics": []
+        },
+        {
+          "description": "The tamer offers paid nets, rewards the captured alpha razorback with money, or exchanges a turtle for two inferior silver ores. His net purchase still needs accounting support.",
+          "keyword": "beast",
+          "mob_vnum": 76668,
+          "name": "a beast tamer",
+          "topics": []
+        },
+        {
+          "description": "The Daimyo returns a heart during an optional briefing. A heart plus Feng Cho's exact finger earns the invitation. Earlier briefing history is not required.",
+          "keyword": "city",
+          "mob_vnum": 76669,
+          "name": "the city daimyo",
+          "topics": []
+        },
+        {
+          "description": "The alpha razorback in the jungle accepts a net and becomes a captured-animal item. Bring that output to the tamer for the reward.",
+          "keyword": "male",
+          "mob_vnum": 76674,
+          "name": "an alpha male razorback",
+          "topics": []
+        },
+        {
+          "description": "The high priest wants the four different directional relics together; only the eastern source is local. The reward includes Lohengrin and bamboo battle dress.",
+          "keyword": "high",
+          "mob_vnum": 76679,
+          "name": "the high priest",
+          "topics": []
+        },
+        {
+          "description": "The sobbing woman wants the family heirloom from the bones in the hive mother's lair. She gives a heritage bracelet and leaves.",
+          "keyword": "sobbing",
+          "mob_vnum": 76684,
+          "name": "a sobbing woman",
+          "topics": []
+        },
+        {
+          "description": "Macavor in the palace temple explains Mande and Troggahn. Ask about hi, mande or troggahn. Bring the head and foreign dragon egg together for the aura and two vials; delivered proof does not establish your own kills.",
+          "keyword": "saint",
+          "mob_vnum": 76688,
+          "name": "Saint Macavor",
+          "topics": [
+            "hi",
+            "mande",
+            "troggahn"
+          ]
+        },
+        {
+          "description": "The metalsmith refines electrum plus adamantium or inferior mithril. His electium weapon and chestplate each require a separate template and fee. His separate forge menu remains unavailable while accounting is active.",
+          "keyword": "smith",
+          "mob_vnum": 76691,
+          "name": "a local metalsmith",
+          "topics": []
+        },
+        {
+          "description": "The chamberlain accepts Kobe Chi's mankillers' mark for two bamboo armor pieces. The item's legend does not impose personal murder counts.",
+          "keyword": "chamberlain",
+          "mob_vnum": 76693,
+          "name": "the emperor's chamberlain",
+          "topics": []
+        },
+        {
+          "description": "The dark outlaw in Feng Cho's backroom accepts a net and becomes a carried captive item. It can then be delivered to the thief-hunter.",
+          "keyword": "outcast",
+          "mob_vnum": 76696,
+          "name": "an outcast",
+          "topics": []
+        },
+        {
+          "description": "The elite bushi exchanges a royal invitation for the emerald royal key, which opens the Emperor's room. The key is a physical access item, not a completed audience by itself.",
+          "keyword": "elite",
+          "mob_vnum": 76697,
+          "name": "an elite bushi",
+          "topics": []
+        },
+        {
+          "description": "The lost legionaire accepts a current Jade map and leaves after paying money and experience. The foreign purchase price is greater than his cash reward.",
+          "keyword": "member",
+          "mob_vnum": 76699,
+          "name": "a legionaire",
+          "topics": []
+        },
+        {
+          "description": "The Emperor rewards the princess's royal token, produced by her rescue exchange in the neighboring ship-battle area. A supplied token is valid without personal rescue or earlier invitation history.",
+          "keyword": "emperor",
+          "mob_vnum": 76711,
+          "name": "the emperor",
+          "topics": []
+        },
+        {
+          "description": "The Bloodstone delegate accepts Kyan Itsu's medallion of vengence for a royal clasp. Kyan's load position and movement need actual encounter qualification.",
+          "keyword": "delegate",
+          "mob_vnum": 76715,
+          "name": "a delegate from bloodstone",
+          "topics": []
+        },
+        {
+          "description": "The Nax ambassador accepts the purse carried by a huge olyx in the neighboring fields. His promise to collect the stowaway later is not a recorded escort.",
+          "keyword": "ambassador",
+          "mob_vnum": 76718,
+          "name": "an ambassador",
+          "topics": []
+        },
+        {
+          "description": "Ordinary wild boars carry the hunter's meat strips. Stocked meat and a supplied strip are both accepted; freshness and personal hunting are separate policies.",
+          "keyword": "wild",
+          "mob_vnum": 76611,
+          "name": "a wild boar",
+          "topics": []
+        },
+        {
+          "description": "Scralack in the hidden cave carries the breakable blood-red guild key. The cave bin contains the signet ring, and its mirror leads to the eastern-relic encounter.",
+          "keyword": "scralack",
+          "mob_vnum": 76631,
+          "name": "Scralack",
+          "topics": []
+        },
+        {
+          "description": "The swamp hydra in its secret jungle lair carries the heart used for royal invitation. Its scale has a separate foreign consumer.",
+          "keyword": "swamp",
+          "mob_vnum": 76640,
+          "name": "a swamp hydra",
+          "topics": []
+        },
+        {
+          "description": "The street performer wears the simple necktie accepted by the mystic. It must be directly carried for the exchange.",
+          "keyword": "performer",
+          "mob_vnum": 76651,
+          "name": "a street performer",
+          "topics": []
+        },
+        {
+          "description": "The shifty orc near the harbor carries the dice-shaped key for the secret Tigerlily backroom door.",
+          "keyword": "shifty",
+          "mob_vnum": 76664,
+          "name": "a shifty-eyed orc",
+          "topics": []
+        },
+        {
+          "description": "Kobe Chi in the assassin guild carries the chamberlain's mark and wears the electrum fan. The fan's legacy proc keyword does not establish a special quest power.",
+          "keyword": "kobe",
+          "mob_vnum": 76683,
+          "name": "Kobe Chi",
+          "topics": []
+        },
+        {
+          "description": "The celestial Jade wyrm carries the adamantium bar in its lair. Its scale can appear separately and belongs to a foreign commission. Delivery does not require a personal kill of this benefactor.",
+          "keyword": "celestial",
+          "mob_vnum": 76685,
+          "name": "the great celestial jade wyrm",
+          "topics": []
+        },
+        {
+          "description": "Feng Cho in the shady backroom carries the index finger required with the hydra heart. The same room also contains the net-capture outlaw.",
+          "keyword": "feng",
+          "mob_vnum": 76695,
+          "name": "Feng Cho",
+          "topics": []
+        },
+        {
+          "description": "The giant wild boar carries the huge hide that upsets the hunter. That rejection can remove the recipient needed for the meat request.",
+          "keyword": "giant",
+          "mob_vnum": 76706,
+          "name": "a giant wild boar",
+          "topics": []
+        },
+        {
+          "description": "The physical projection of Agaures carries the eastern relic in the void, reached through Scralack's mirror. The northern relic is a different foreign kind.",
+          "keyword": "physical",
+          "mob_vnum": 76717,
+          "name": "the metaphysical projection of agaures",
+          "topics": []
+        },
+        {
+          "description": "Brother Mande in the Oda barracks carries Macavor's exact head proof and the separate robes used by a Cloister recipient.",
+          "keyword": "brother",
+          "mob_vnum": 76720,
+          "name": "Brother Mande",
+          "topics": []
+        },
+        {
+          "description": "Marn in the pirate den beneath the pier carries the brig key for the captive princess's foreign cell. It does not open the Lacedon's keyless helm trapdoor or pay her shackle-key exchange.",
+          "keyword": "marn",
+          "mob_vnum": 76725,
+          "name": "Marn One-Eye",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [
+        {
+          "contracts": [
+            {
+              "completion_key": "give=I:76620;receive=C:0;disappear=1",
+              "giver_vnum": 76606
+            }
+          ],
+          "reason": "Giving the huge boar hide upsets and retires the hunter; this rejection has a zero-copper reward and is not a successful request."
+        },
+        {
+          "contracts": [
+            {
+              "completion_key": "give=I:76706;receive=;disappear=0",
+              "giver_vnum": 76654
+            }
+          ],
+          "reason": "The white silk belt exchange consumes the offering without declared reward or explanation; exclude this unfinished outcome until builder review."
+        }
+      ],
+      "introduction": "Jade connects rice-field work, wild creatures, family proofs, royal audience and a rescue at sea. Discover the Empire and meet its people to reveal their journal requests. Deliveries record their exact outcomes; personal sources, battles, access and escort need their own evidence. Active, ready accounting is required.",
+      "orientation": [
+        "Start with the city streets, eight rice paddies, tool shed and long pier. Five current rice portions make a harvest bag; the wheel below the wheelhouse turns that bag into ground rice. Supplied exact ingredients work without that preparation history.",
+        "Choose how to use each ground-rice portion: the kite-flyer makes a hat, the chef makes sushi, and the bartender makes a drink. The mystic can enchant the hat or a simple necktie for 10,000 copper each; those paid enchantments still need accounting support.",
+        "The hunter wants four exact boar-meat strips together. Giving the giant boar hide instead is an upsetting rejection that removes him. The word fresh in an item name does not add a freshness clock or require your own kill.",
+        "Enter the tool shed to recover the knife from its shelves. Give it to the entangled coastline turtle to receive a carried turtle. That turtle can pay the chef's soup or the tamer's two-silver-ore exchange; one copy cannot pay both.",
+        "The gardener combines one emerald-rose seed portion, two orchid-seed portions, one bonzai seed and one lilac-seed portion. Search the appropriate plants and remove their seeds from the containers. Rose seeds are outside the royal audience door; an audience key is not required for that source. Snapdragon seeds and cherry blossoms are not accepted.",
+        "The tamer sells giant nets for 10,000 copper; that purchase still needs accounting support. Give an available net to the alpha razorback or dark outlaw for the corresponding captured item, then deliver that item to its reward recipient. Captures become carried items rather than following creatures, and nets dissolve when dropped.",
+        "For the hidden cave, push the stone switch at its secret approach. Scralack carries the blood-red key and the cave bin contains the signet ring. His key opens the assassin guild but breaks on use; the separate Winterhaven entry reaches the guild attic. The soldier of fortune rewards the ring and departs, without a declared army-return finale.",
+        "The shifty orc's dice-shaped key fits the secret Tigerlily doorway to Feng Cho and the outlaw. A hydra heart plus Feng Cho's finger earns the Daimyo's invitation. His heart-only briefing returns a new heart and is optional. The bushi exchanges the invitation for the emerald royal key; use that key for the Emperor's room.",
+        "The high priest wants four distinct directional relics. The eastern relic is carried by Agaures' physical projection beyond the cave mirror; the western relic is inside an obsidian-keyed obelisk in the Rogue invasion. The northern eye and southern Nansuo use foreign load rooms and movement. Supplied exact relics qualify without those journeys.",
+        "The sobbing woman wants the heirloom inside the hive mother's bones. Kobe Chi's mark goes to the chamberlain; Kyan Itsu's medallion goes to the Bloodstone delegate. Each proof is an independent delivery, and legends or load positions do not guarantee personal combat or availability.",
+        "Ask Macavor about mande and troggahn. Mande's head comes from the Oda barracks; Troggahn's egg is carried by the black dragon below Father Tel's Holy Cloister. Bring both together. Mande's robes and other egg requests remain separate foreign paths.",
+        "The metalsmith combines attic electrum and wyrm-carried adamantium into electium. Weapon and armor commissions each consume a separate bar, the matching template and 10,000 copper. The weapon template is in the tool-shed shelves; the armor template is inside harbor cargo crates. Paid commissions, the separate forge menu and mining still need accounting support.",
+        "The royal rescue continues in the neighboring ship-battle area. Marn carries the brig key in the den beneath the pier, reached by pushing the pillars. Miu Pai carries a different set of keys on the Lacedon helm. The keyless locked helm trapdoor has an alternative underwater route through the secret cargo porthole; the brig key opens the princess's cell.",
+        "Give Miu Pai's set of keys to the captive princess for her royal token, then bring the token to the Emperor. A supplied token skips the rescue preparation. The token delivery does not prove the brig unlock, your own fighting or an escort back to the palace. The ambassador separately accepts the purse from the huge olyx in the neighboring fields.",
+        "The lost legionaire accepts a Jade map. The neighboring halfling's purchase costs 50,000 copper and still needs accounting support, while the legionaire pays 10,000 copper and experience. The mystic's white silk belt exchange has no declared outcome and earns no journal credit.",
+        "Fresh supplies depend on available stock, appearance chances and recipients. Carry exact current offerings outside equipment and containers. Supporting cooking, crafting, capture and access exchanges stay visible without adding separate quest achievements or dailies; journal reads and readiness checks award nothing."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "jade",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:318;receive=C:10000;disappear=0",
+              "giver_vnum": 76603
+            },
+            {
+              "completion_key": "give=I:319;receive=C:10000;disappear=0",
+              "giver_vnum": 76603
+            }
+          ],
+          "id": "one-fish-for-the-fisherman",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Fishing can produce this exact pike. You need fishing skill, a directly carried recognized pole and a water room. The fisherman sells a suitable pole; catches are random. A lobster also satisfies his independent one-fish request. Fishing can produce this exact lobster; a pike is an alternative for the same one-fish request. One of either kind is enough, rather than one of each.",
+              "id": "one-fish",
+              "item_vnums": [
+                318,
+                319
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry one pike or one lobster."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:318;receive=C:10000;disappear=0",
+                  "giver_vnum": 76603
+                },
+                {
+                  "completion_key": "give=I:319;receive=C:10000;disappear=0",
+                  "giver_vnum": 76603
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give one pike or lobster to a fisherman for 10000 copper."
+            }
+          ],
+          "summary": "An independent named request. one pike or one lobster \u2192 10000 copper.",
+          "title": "One Fish for the Fisherman"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:76619,I:76619,I:76619,I:76619;receive=C:50000,E:80000;disappear=0",
+              "giver_vnum": 76606
+            }
+          ],
+          "id": "four-strips-for-the-hunter",
+          "steps": [
+            {
+              "count": 4,
+              "hint": "Wild boars in the jungle and plains carry four declared meat strips between them. Bring four separate strips together. Their name does not impose a freshness deadline or require your own kill. Giving the giant boar hide instead upsets the hunter and removes him.",
+              "id": "item-76619",
+              "item_vnums": [
+                76619
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry 4 copies of a strip of fresh boar meat."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76619,I:76619,I:76619,I:76619;receive=C:50000,E:80000;disappear=0",
+                  "giver_vnum": 76606
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offerings to a hunter for 80000 experience, 50000 copper."
+            }
+          ],
+          "summary": "An independent named request. 4 copies of a strip of fresh boar meat \u2192 80000 experience, 50000 copper.",
+          "title": "Four Strips for the Hunter"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:76626;receive=I:76635;disappear=0",
+              "giver_vnum": 76623
+            }
+          ],
+          "id": "rice-paper-hat",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76608,I:76608,I:76608,I:76608,I:76608;receive=I:76607;disappear=0",
+                  "giver_vnum": 76630
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-7",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Five Portions for a Harvest Bag."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76607;receive=I:76626;disappear=0",
+                  "giver_vnum": 76657
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-12",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Grind the Harvest Bag."
+            },
+            {
+              "count": 1,
+              "hint": "Give a full harvest bag to the grinding wheel below the wheelhouse. One portion of ground rice can become a hat, sushi or a drink; the same portion cannot pay all three exchanges.",
+              "id": "item-76626",
+              "item_vnums": [
+                76626
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry some ground rice."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76626;receive=I:76635;disappear=0",
+                  "giver_vnum": 76623
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to a resident kite-flyer for a rice paper hat."
+            }
+          ],
+          "summary": "A support exchange. some ground rice \u2192 a rice paper hat.",
+          "title": "Fold a Rice Paper Hat"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:76624;receive=I:76652;disappear=0",
+              "giver_vnum": 76629
+            }
+          ],
+          "id": "turtle-soup",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76623;receive=I:76624;disappear=1",
+                  "giver_vnum": 76658
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-13",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Free the Entangled Turtle."
+            },
+            {
+              "count": 1,
+              "hint": "Give the utility knife from the tool-shed shelves to the entangled turtle on the coastline. The rescued turtle becomes an item you can carry; it can go to the tamer for two silver ores or the chef for soup, but one turtle cannot serve both.",
+              "id": "item-76624",
+              "item_vnums": [
+                76624
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a seaturtle."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76624;receive=I:76652;disappear=0",
+                  "giver_vnum": 76629
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to a master chef for some piping hot turtle soup."
+            }
+          ],
+          "summary": "A support exchange. a seaturtle \u2192 some piping hot turtle soup.",
+          "title": "Cook Turtle Soup"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:76626;receive=I:76651;disappear=0",
+              "giver_vnum": 76629
+            }
+          ],
+          "id": "rice-sushi",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76608,I:76608,I:76608,I:76608,I:76608;receive=I:76607;disappear=0",
+                  "giver_vnum": 76630
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-7",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Five Portions for a Harvest Bag."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76607;receive=I:76626;disappear=0",
+                  "giver_vnum": 76657
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-12",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Grind the Harvest Bag."
+            },
+            {
+              "count": 1,
+              "hint": "Give a full harvest bag to the grinding wheel below the wheelhouse. One portion of ground rice can become a hat, sushi or a drink; the same portion cannot pay all three exchanges.",
+              "id": "item-76626",
+              "item_vnums": [
+                76626
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry some ground rice."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76626;receive=I:76651;disappear=0",
+                  "giver_vnum": 76629
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to a master chef for some special recipe sushi."
+            }
+          ],
+          "summary": "A support exchange. some ground rice \u2192 some special recipe sushi.",
+          "title": "Make Rice Sushi"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:76608,I:76608,I:76608,I:76608,I:76608;receive=I:76607;disappear=0",
+              "giver_vnum": 76630
+            }
+          ],
+          "id": "five-portions-for-a-harvest-bag",
+          "steps": [
+            {
+              "count": 5,
+              "hint": "Rice portions are declared on the ground in the eight city paddies, with a chance of appearing. Five current portions make one harvest bag. Picking them up is the preparation route; the crop runner accepts supplied portions too.",
+              "id": "item-76608",
+              "item_vnums": [
+                76608
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry 5 copies of a rice harvest."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76608,I:76608,I:76608,I:76608,I:76608;receive=I:76607;disappear=0",
+                  "giver_vnum": 76630
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offerings to a crop runner for a full harvest bag."
+            }
+          ],
+          "summary": "Follow this story to its declared delivery outcome. 5 copies of a rice harvest \u2192 a full harvest bag.",
+          "title": "Five Portions for a Harvest Bag"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:10000,I:76635;receive=I:76636;disappear=0",
+              "giver_vnum": 76654
+            }
+          ],
+          "id": "enchant-the-rice-hat",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76608,I:76608,I:76608,I:76608,I:76608;receive=I:76607;disappear=0",
+                  "giver_vnum": 76630
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-7",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Five Portions for a Harvest Bag."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76607;receive=I:76626;disappear=0",
+                  "giver_vnum": 76657
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-12",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Grind the Harvest Bag."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76626;receive=I:76635;disappear=0",
+                  "giver_vnum": 76623
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-4",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Fold a Rice Paper Hat."
+            },
+            {
+              "count": 1,
+              "hint": "The kite-flyer makes this hat from ground rice. Bring the hat to the mystic for the paid enchantment. A cooking or drink reward is a different item.",
+              "id": "item-76635",
+              "item_vnums": [
+                76635
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a rice paper hat."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:10000,I:76635;receive=I:76636;disappear=0",
+                  "giver_vnum": 76654
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history. This exchange also costs 10000 copper and still needs payment support while accounting is active. Carrying the item ingredients alone does not complete it.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to a jade mystic for an enchanted rice paper hat."
+            }
+          ],
+          "summary": "A support exchange. a rice paper hat plus 10000 copper \u2192 an enchanted rice paper hat.",
+          "title": "Enchant the Rice Paper Hat"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:10000,I:76724;receive=I:76725;disappear=0",
+              "giver_vnum": 76654
+            }
+          ],
+          "id": "enchant-the-necktie",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "A street performer wears the simple necktie near the garrison street. Remove it from equipment before offering it to the mystic; the enchantment also has a fee.",
+              "id": "item-76724",
+              "item_vnums": [
+                76724
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a simple necktie."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:10000,I:76724;receive=I:76725;disappear=0",
+                  "giver_vnum": 76654
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history. This exchange also costs 10000 copper and still needs payment support while accounting is active. Carrying the item ingredients alone does not complete it.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to a jade mystic for an enchanted necktie."
+            }
+          ],
+          "summary": "A support exchange. a simple necktie plus 10000 copper \u2192 an enchanted necktie.",
+          "title": "Enchant the Simple Necktie"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:76678,I:76690,I:76690,I:76692,I:76693;receive=I:76703;disappear=0",
+              "giver_vnum": 76656
+            }
+          ],
+          "id": "the-gardeners-seed-bouquet",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The emerald roses outside the Emperor's room can contain these seeds. They are on the approach side of the royal door, so the royal audience key is not required to reach this declared source. Seed contents are not guaranteed.",
+              "id": "item-76678",
+              "item_vnums": [
+                76678
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry some emerald rose seeds."
+            },
+            {
+              "count": 2,
+              "hint": "Five orchid plants in the city can contain wild orchid seeds. The gardener wants two separate seed portions, in addition to the other three kinds. Snapdragon seeds do not substitute.",
+              "id": "item-76690",
+              "item_vnums": [
+                76690
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry 2 copies of some wild orchid seeds."
+            },
+            {
+              "count": 1,
+              "hint": "Bonzai trees in three city locations can contain this seed. Retrieve the seed from the tree; the whole tree is not an offering.",
+              "id": "item-76692",
+              "item_vnums": [
+                76692
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a bonzai tree seed."
+            },
+            {
+              "count": 1,
+              "hint": "Lilac bushes at four city locations can contain these seeds. Cherry blossoms and wildflowers are different items.",
+              "id": "item-76693",
+              "item_vnums": [
+                76693
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry some lilac seeds."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76678,I:76690,I:76690,I:76692,I:76693;receive=I:76703;disappear=0",
+                  "giver_vnum": 76656
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offerings to an elderly gardener for a masterfully-arranged bouquet."
+            }
+          ],
+          "summary": "An independent named request. some emerald rose seeds, 2 copies of some wild orchid seeds, a bonzai tree seed, some lilac seeds \u2192 a masterfully-arranged bouquet.",
+          "title": "The Gardener's Seed Bouquet"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:76607;receive=I:76626;disappear=0",
+              "giver_vnum": 76657
+            }
+          ],
+          "id": "grind-the-harvest-bag",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76608,I:76608,I:76608,I:76608,I:76608;receive=I:76607;disappear=0",
+                  "giver_vnum": 76630
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-7",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Five Portions for a Harvest Bag."
+            },
+            {
+              "count": 1,
+              "hint": "Five rice portions given together to the crop runner produce one full bag. Give the current bag to the wheel below the wheelhouse for ground rice.",
+              "id": "item-76607",
+              "item_vnums": [
+                76607
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a full harvest bag."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76607;receive=I:76626;disappear=0",
+                  "giver_vnum": 76657
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to a grinding wheel for some ground rice."
+            }
+          ],
+          "summary": "A support exchange. a full harvest bag \u2192 some ground rice.",
+          "title": "Grind the Harvest Bag"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:76623;receive=I:76624;disappear=1",
+              "giver_vnum": 76658
+            }
+          ],
+          "id": "free-the-entangled-turtle",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "A utility knife is declared inside the shelves in the tool shed. Enter the small shed on the street to reach it, then take the knife out of its container before the turtle exchange. The knife is consumed.",
+              "id": "item-76623",
+              "item_vnums": [
+                76623
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a dull utility knife."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76623;receive=I:76624;disappear=1",
+                  "giver_vnum": 76658
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history. The recipient leaves after the accepted exchange; another attempt needs an available recipient.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to an entangled seaturtle for a seaturtle."
+            }
+          ],
+          "summary": "Follow this story to its declared delivery outcome. a dull utility knife \u2192 a seaturtle.",
+          "title": "Free the Entangled Turtle"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:76626;receive=I:76628;disappear=0",
+              "giver_vnum": 76659
+            }
+          ],
+          "id": "a-drink-from-ground-rice",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76608,I:76608,I:76608,I:76608,I:76608;receive=I:76607;disappear=0",
+                  "giver_vnum": 76630
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-7",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Five Portions for a Harvest Bag."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76607;receive=I:76626;disappear=0",
+                  "giver_vnum": 76657
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-12",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Grind the Harvest Bag."
+            },
+            {
+              "count": 1,
+              "hint": "Give a full harvest bag to the grinding wheel below the wheelhouse. One portion of ground rice can become a hat, sushi or a drink; the same portion cannot pay all three exchanges.",
+              "id": "item-76626",
+              "item_vnums": [
+                76626
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry some ground rice."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76626;receive=I:76628;disappear=0",
+                  "giver_vnum": 76659
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to a well-dressed barman for a bottle of ricewine."
+            }
+          ],
+          "summary": "A support exchange. some ground rice \u2192 a bottle of ricewine.",
+          "title": "A Drink from Ground Rice"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:76615;receive=I:76707;disappear=1",
+              "giver_vnum": 76660
+            }
+          ],
+          "id": "warn-the-soldier-of-fortune",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The blood-stained bin in Scralack's cave contains the signet ring. Look for the stone-operated secret cave approach. Delivering this proof earns the mercenary's chain; it does not by itself bring an army back to Jade.",
+              "id": "item-76615",
+              "item_vnums": [
+                76615
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry an armageddon signet ring."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76615;receive=I:76707;disappear=1",
+                  "giver_vnum": 76660
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history. The recipient leaves after the accepted exchange; another attempt needs an available recipient.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to a soldier of fortune for a neck-chain of fortune."
+            }
+          ],
+          "summary": "An independent named request. an armageddon signet ring \u2192 a neck-chain of fortune.",
+          "title": "Warn the Soldier of Fortune"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:76704;receive=C:200000;disappear=1",
+              "giver_vnum": 76665
+            }
+          ],
+          "id": "the-outlaws-bounty",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:10000;receive=I:76617;disappear=0",
+                  "giver_vnum": 76668
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-17",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Buy a Capture Net."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76617;receive=I:76704;disappear=1",
+                  "giver_vnum": 76696
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-31",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Prepare a Captured Outlaw."
+            },
+            {
+              "count": 1,
+              "hint": "Give a giant net to the dark outlaw in the shady backroom to obtain this carried captive. The dice-shaped key from the shifty orc fits the secret Tigerlily doorway. Deliver the captive to the thief-hunter for the bounty; an earlier capture receipt does not replace the captive item.",
+              "id": "item-76704",
+              "item_vnums": [
+                76704
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a captured outlaw."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76704;receive=C:200000;disappear=1",
+                  "giver_vnum": 76665
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history. The recipient leaves after the accepted exchange; another attempt needs an available recipient.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to a tharnadian thief-hunter for 200000 copper."
+            }
+          ],
+          "summary": "Follow this story to its declared delivery outcome. a captured outlaw \u2192 200000 copper.",
+          "title": "The Outlaw's Bounty"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:10000;receive=I:76617;disappear=0",
+              "giver_vnum": 76668
+            }
+          ],
+          "id": "buy-a-capture-net",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:10000;receive=I:76617;disappear=0",
+                  "giver_vnum": 76668
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history. This exchange also costs 10000 copper and still needs payment support while accounting is active. Carrying the item ingredients alone does not complete it.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the payment to a beast tamer for an enormous hemp net."
+            }
+          ],
+          "summary": "A support exchange. 10000 copper \u2192 an enormous hemp net.",
+          "title": "Buy a Capture Net"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:76624;receive=I:222,I:222;disappear=0",
+              "giver_vnum": 76668
+            }
+          ],
+          "id": "a-turtle-for-silver-ore",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76623;receive=I:76624;disappear=1",
+                  "giver_vnum": 76658
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-13",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Free the Entangled Turtle."
+            },
+            {
+              "count": 1,
+              "hint": "Give the utility knife from the tool-shed shelves to the entangled turtle on the coastline. The rescued turtle becomes an item you can carry; it can go to the tamer for two silver ores or the chef for soup, but one turtle cannot serve both.",
+              "id": "item-76624",
+              "item_vnums": [
+                76624
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a seaturtle."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76624;receive=I:222,I:222;disappear=0",
+                  "giver_vnum": 76668
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to a beast tamer for 2 copies of a large piece of inferior silver ore."
+            }
+          ],
+          "summary": "A support exchange. a seaturtle \u2192 2 copies of a large piece of inferior silver ore.",
+          "title": "Exchange a Turtle for Silver Ore"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:76644;receive=C:100000;disappear=0",
+              "giver_vnum": 76668
+            }
+          ],
+          "id": "a-razorback-for-the-tamer",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:10000;receive=I:76617;disappear=0",
+                  "giver_vnum": 76668
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-17",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Buy a Capture Net."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76617;receive=I:76644;disappear=1",
+                  "giver_vnum": 76674
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-22",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Prepare a Captured Razorback."
+            },
+            {
+              "count": 1,
+              "hint": "Give a giant net to the alpha razorback in the jungle to obtain this captured creature, then bring it to the tamer. A donated captured animal also qualifies. No separate throw command or escort is required by the offering.",
+              "id": "item-76644",
+              "item_vnums": [
+                76644
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a captured razorback alpha male."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76644;receive=C:100000;disappear=0",
+                  "giver_vnum": 76668
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to a beast tamer for 100000 copper."
+            }
+          ],
+          "summary": "An independent named request. a captured razorback alpha male \u2192 100000 copper.",
+          "title": "A Razorback for the Tamer"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:76665,I:76666;receive=I:76667;disappear=0",
+              "giver_vnum": 76669
+            }
+          ],
+          "id": "earn-the-royal-invitation",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76665;receive=I:76665;disappear=0",
+                  "giver_vnum": 76669
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-21",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: The Daimyo's Heart Briefing."
+            },
+            {
+              "count": 1,
+              "hint": "The shifty orc near the harbor carries the dice-shaped key. It fits the secret Tigerlily doorway to Feng Cho and the outlaw. It is different from the blood-red guild key, emerald royal key and brig key.",
+              "id": "item-76629",
+              "item_vnums": [
+                76629
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: Directly carry a dice-shaped key."
+            },
+            {
+              "count": 1,
+              "hint": "Feng Cho carries his index finger in the shady backroom. The shifty orc's dice-shaped key opens the secret Tigerlily doorway. Bring the exact finger and hydra heart together to the Daimyo.",
+              "id": "item-76666",
+              "item_vnums": [
+                76666
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a severed index finger."
+            },
+            {
+              "count": 1,
+              "hint": "The swamp hydra carries the heart in its secret lair below the jungle. The Daimyo's heart-only briefing returns a new heart of the same kind; the final audience invitation consumes a current heart together with Feng Cho's finger. The briefing is optional.",
+              "id": "item-76665",
+              "item_vnums": [
+                76665
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a still-beating heart of a hydra."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76665,I:76666;receive=I:76667;disappear=0",
+                  "giver_vnum": 76669
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offerings to the city daimyo for a royal invitation."
+            }
+          ],
+          "summary": "Follow this story to its declared delivery outcome. a severed index finger, a still-beating heart of a hydra \u2192 a royal invitation.",
+          "title": "Earn the Royal Invitation"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:76665;receive=I:76665;disappear=0",
+              "giver_vnum": 76669
+            }
+          ],
+          "id": "the-daimyos-heart-briefing",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The swamp hydra carries the heart in its secret lair below the jungle. The Daimyo's heart-only briefing returns a new heart of the same kind; the final audience invitation consumes a current heart together with Feng Cho's finger. The briefing is optional.",
+              "id": "item-76665",
+              "item_vnums": [
+                76665
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a still-beating heart of a hydra."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76665;receive=I:76665;disappear=0",
+                  "giver_vnum": 76669
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history. The old heart is consumed and a new heart of the same kind is returned. This briefing earns no invitation, and it is not required before the two-proof delivery.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to the city daimyo for a still-beating heart of a hydra."
+            }
+          ],
+          "summary": "A support exchange. a still-beating heart of a hydra \u2192 a still-beating heart of a hydra.",
+          "title": "The Daimyo's Heart Briefing"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:76617;receive=I:76644;disappear=1",
+              "giver_vnum": 76674
+            }
+          ],
+          "id": "capture-the-alpha-razorback",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:10000;receive=I:76617;disappear=0",
+                  "giver_vnum": 76668
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-17",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Buy a Capture Net."
+            },
+            {
+              "count": 1,
+              "hint": "The tamer offers a giant net for 10,000 copper. That paid purchase still needs support while accounting is active. An already available or supplied net can prepare either the outlaw or alpha razorback capture, and each exchange consumes it. Dropping a net causes it to dissolve.",
+              "id": "item-76617",
+              "item_vnums": [
+                76617
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry an enormous hemp net."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76617;receive=I:76644;disappear=1",
+                  "giver_vnum": 76674
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history. The recipient leaves after the accepted exchange; another attempt needs an available recipient. The captured creature is a carried item after the recipient leaves; this is not a following mobile.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to an alpha male razorback for a captured razorback alpha male."
+            }
+          ],
+          "summary": "A support exchange. an enormous hemp net \u2192 a captured razorback alpha male.",
+          "title": "Prepare a Captured Razorback"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:76708,I:76711,I:76712,I:76713;receive=I:76649,I:76723;disappear=0",
+              "giver_vnum": 76679
+            }
+          ],
+          "id": "four-directional-holy-relics",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Mabus carries the obsidian key beside the Plateau of Flames. It opens the obelisk containing the western relic, rather than a Jade city door.",
+              "id": "item-75829",
+              "item_vnums": [
+                75829
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: Directly carry an obsidian key."
+            },
+            {
+              "count": 1,
+              "hint": "The physical projection of Agaures carries the eastern relic in the void. Enter the mirror in Scralack's cave for the declared route; the separate void mirror returns to the cave. Delivering the relic does not record that journey.",
+              "id": "item-76708",
+              "item_vnums": [
+                76708
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry the holy relic of the east."
+            },
+            {
+              "count": 1,
+              "hint": "The unblinking eye of Agaures carries the northern relic in the Stronghold multi-zone load room. Its declared departure toward Jade is one possible world route; the journal does not guarantee where the mobile will be encountered.",
+              "id": "item-76712",
+              "item_vnums": [
+                76712
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry the holy relic of the north."
+            },
+            {
+              "count": 1,
+              "hint": "Nansuo carries the southern relic from his Celestial Plane load room. His movement and actual encounter need qualification; three eastern relics cannot replace the other directions.",
+              "id": "item-76713",
+              "item_vnums": [
+                76713
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry the holy relic of the south."
+            },
+            {
+              "count": 1,
+              "hint": "The western relic is declared inside the obelisk on the Plateau of Flames in the Rogue invasion. Mabus carries the obsidian key that opens that container. It is a foreign source, separate from Jade's royal key.",
+              "id": "item-76711",
+              "item_vnums": [
+                76711
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry the holy relic of the west."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76708,I:76711,I:76712,I:76713;receive=I:76649,I:76723;disappear=0",
+                  "giver_vnum": 76679
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offerings to the high priest for 'Lohengrin' the legendary greatsword, a bamboo battledress."
+            }
+          ],
+          "summary": "Follow this story to its declared delivery outcome. the holy relic of the east, the holy relic of the north, the holy relic of the south, the holy relic of the west \u2192 'Lohengrin' the legendary greatsword, a bamboo battledress.",
+          "title": "Four Directional Holy Relics"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:76654;receive=I:76663;disappear=1",
+              "giver_vnum": 76684
+            }
+          ],
+          "id": "the-womans-family-heirloom",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The family heirloom is declared inside scattered human bones in the hive mother's lair. Remove it from the bones and bring it to the sobbing woman. Her gratitude rewards the exact delivery, without requiring your own killing of a creature.",
+              "id": "item-76654",
+              "item_vnums": [
+                76654
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a family heirloom."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76654;receive=I:76663;disappear=1",
+                  "giver_vnum": 76684
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history. The recipient leaves after the accepted exchange; another attempt needs an available recipient.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to a sobbing woman for a hertitage bracelet."
+            }
+          ],
+          "summary": "Follow this story to its declared delivery outcome. a family heirloom \u2192 a hertitage bracelet.",
+          "title": "The Woman's Family Heirloom"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:67116,I:76730;receive=I:32019,I:32019,I:55324;disappear=0",
+              "giver_vnum": 76688
+            }
+          ],
+          "id": "macavors-two-proofs",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Troggahn carries this egg in the underground tunnels beneath Father Tel's Holy Cloister. Macavor wants it together with Mande's head. The egg also has separate consumers elsewhere, so a spent copy cannot pay another request.",
+              "id": "item-67116",
+              "item_vnums": [
+                67116
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry an egg of Troggahn, the black."
+            },
+            {
+              "count": 1,
+              "hint": "Brother Mande carries his head in the Oda barracks. His robes are a different proof for a separate Cloister request. Bring the head and Troggahn's egg together to Macavor.",
+              "id": "item-76730",
+              "item_vnums": [
+                76730
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry the bloody head of Mande."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:67116,I:76730;receive=I:32019,I:32019,I:55324;disappear=0",
+                  "giver_vnum": 76688
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offerings to Saint Macavor for the aura of Saint Macavor, 2 copies of a vial of purple liquid."
+            }
+          ],
+          "summary": "Follow this story to its declared delivery outcome. an egg of Troggahn, the black, the bloody head of Mande \u2192 the aura of Saint Macavor, 2 copies of a vial of purple liquid.",
+          "title": "Macavor's Two Proofs"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:10000,I:76659,I:76660;receive=I:76699;disappear=0",
+              "giver_vnum": 76691
+            }
+          ],
+          "id": "forge-miasma",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76657,I:76658;receive=I:76659;disappear=0",
+                  "giver_vnum": 76691
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-29",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Combine Electrum and Adamantium."
+            },
+            {
+              "count": 1,
+              "hint": "The metalsmith combines an electrum bar from the assassin-guild attic and an adamantium bar carried by the celestial Jade wyrm. One refined electium bar can pay the weapon or chestplate commission; one copy cannot pay both.",
+              "id": "item-76659",
+              "item_vnums": [
+                76659
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a bar of refined electium."
+            },
+            {
+              "count": 1,
+              "hint": "The tool-shed shelves can contain an iron weapon template, with a chance of appearing. It is different from the armor template inside the harbor cargo crate.",
+              "id": "item-76660",
+              "item_vnums": [
+                76660
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry an iron weapon template."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:10000,I:76659,I:76660;receive=I:76699;disappear=0",
+                  "giver_vnum": 76691
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history. This exchange also costs 10000 copper and still needs payment support while accounting is active. Carrying the item ingredients alone does not complete it.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offerings to a local metalsmith for an electium katar dubbed 'Miasma'."
+            }
+          ],
+          "summary": "A support exchange. a bar of refined electium, an iron weapon template plus 10000 copper \u2192 an electium katar dubbed 'Miasma'.",
+          "title": "Forge Miasma"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:10000,I:76659,I:76679;receive=I:76720;disappear=0",
+              "giver_vnum": 76691
+            }
+          ],
+          "id": "forge-the-electium-chestplate",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76657,I:76658;receive=I:76659;disappear=0",
+                  "giver_vnum": 76691
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-29",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Combine Electrum and Adamantium."
+            },
+            {
+              "count": 1,
+              "hint": "The metalsmith combines an electrum bar from the assassin-guild attic and an adamantium bar carried by the celestial Jade wyrm. One refined electium bar can pay the weapon or chestplate commission; one copy cannot pay both.",
+              "id": "item-76659",
+              "item_vnums": [
+                76659
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a bar of refined electium."
+            },
+            {
+              "count": 1,
+              "hint": "Enter the cargo crates by the ocean-side harbor to find the armor template inside; its appearance is not guaranteed. Leave by the ordinary exit. This template is different from the weapon template in the tool shed.",
+              "id": "item-76679",
+              "item_vnums": [
+                76679
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry an iron armor template."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:10000,I:76659,I:76679;receive=I:76720;disappear=0",
+                  "giver_vnum": 76691
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history. This exchange also costs 10000 copper and still needs payment support while accounting is active. Carrying the item ingredients alone does not complete it.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offerings to a local metalsmith for a magnificent electium chestplate."
+            }
+          ],
+          "summary": "A support exchange. a bar of refined electium, an iron armor template plus 10000 copper \u2192 a magnificent electium chestplate.",
+          "title": "Forge the Electium Chestplate"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:233;receive=I:76700;disappear=0",
+              "giver_vnum": 76691
+            }
+          ],
+          "id": "refine-inferior-mithril",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "This is the exact inferior mithril ore, not any mithril bar. Current mined ores are different kinds, and no declared stock or quest producer for this old ore was found. An already available or supplied copy can pay the refinement; new mining is also unavailable while accounting is active.",
+              "id": "item-233",
+              "item_vnums": [
+                233
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a large piece of inferior mithril ore."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:233;receive=I:76700;disappear=0",
+                  "giver_vnum": 76691
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to a local metalsmith for a refined bar of mithril."
+            }
+          ],
+          "summary": "A support exchange. a large piece of inferior mithril ore \u2192 a refined bar of mithril.",
+          "title": "Refine Inferior Mithril"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:76657,I:76658;receive=I:76659;disappear=0",
+              "giver_vnum": 76691
+            }
+          ],
+          "id": "combine-electrum-and-adamantium",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Three electrum bars are declared in the assassin-guild attic, each with an appearance chance. Scralack's blood-red key opens the normal guild approach and always breaks when successfully used. A separate Winterhaven entry reaches the attic.",
+              "id": "item-76657",
+              "item_vnums": [
+                76657
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a solid bar of electrum."
+            },
+            {
+              "count": 1,
+              "hint": "The celestial wyrm carries an adamantium bar in its lair. Enter the crack in the basement wall for the declared approach, then climb the dangerous shaft and enter its upper crack to return to a palace residence. The offering accepts a supplied bar without a personal kill.",
+              "id": "item-76658",
+              "item_vnums": [
+                76658
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a solid chunk of adamantium."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76657,I:76658;receive=I:76659;disappear=0",
+                  "giver_vnum": 76691
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offerings to a local metalsmith for a bar of refined electium."
+            }
+          ],
+          "summary": "A support exchange. a solid bar of electrum, a solid chunk of adamantium \u2192 a bar of refined electium.",
+          "title": "Combine Electrum and Adamantium"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:76687;receive=I:76648,I:76726;disappear=0",
+              "giver_vnum": 76693
+            }
+          ],
+          "id": "the-chamberlains-mankiller-proof",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Scralack carries the blood-red key in his cave. It opens the assassin-guild entrance, but it always breaks after a successful unlock. Supplied materials do not require this particular route.",
+              "id": "item-76611",
+              "item_vnums": [
+                76611
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: Directly carry a blood-red key."
+            },
+            {
+              "count": 1,
+              "hint": "Kobe Chi carries the mankillers' mark in the assassin guild. The chamberlain wants the mark itself; its description does not add a requirement for you to commit a hundred murders.",
+              "id": "item-76687",
+              "item_vnums": [
+                76687
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry the mark of the mankillers."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76687;receive=I:76648,I:76726;disappear=0",
+                  "giver_vnum": 76693
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to the emperor's chamberlain for a bamboo chestguard, a bamboo battlehelm."
+            }
+          ],
+          "summary": "An independent named request. the mark of the mankillers \u2192 a bamboo chestguard, a bamboo battlehelm.",
+          "title": "The Chamberlain's Mankiller Proof"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:76617;receive=I:76704;disappear=1",
+              "giver_vnum": 76696
+            }
+          ],
+          "id": "capture-the-dark-outlaw",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:10000;receive=I:76617;disappear=0",
+                  "giver_vnum": 76668
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-17",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Buy a Capture Net."
+            },
+            {
+              "count": 1,
+              "hint": "The shifty orc near the harbor carries the dice-shaped key. It fits the secret Tigerlily doorway to Feng Cho and the outlaw. It is different from the blood-red guild key, emerald royal key and brig key.",
+              "id": "item-76629",
+              "item_vnums": [
+                76629
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: Directly carry a dice-shaped key."
+            },
+            {
+              "count": 1,
+              "hint": "The tamer offers a giant net for 10,000 copper. That paid purchase still needs support while accounting is active. An already available or supplied net can prepare either the outlaw or alpha razorback capture, and each exchange consumes it. Dropping a net causes it to dissolve.",
+              "id": "item-76617",
+              "item_vnums": [
+                76617
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry an enormous hemp net."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76617;receive=I:76704;disappear=1",
+                  "giver_vnum": 76696
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history. The recipient leaves after the accepted exchange; another attempt needs an available recipient. The captured creature is a carried item after the recipient leaves; this is not a following mobile.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to an outcast for a captured outlaw."
+            }
+          ],
+          "summary": "A support exchange. an enormous hemp net \u2192 a captured outlaw.",
+          "title": "Prepare a Captured Outlaw"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:76667;receive=I:76689;disappear=0",
+              "giver_vnum": 76697
+            }
+          ],
+          "id": "exchange-the-royal-invitation",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76665;receive=I:76665;disappear=0",
+                  "giver_vnum": 76669
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-21",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: The Daimyo's Heart Briefing."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76665,I:76666;receive=I:76667;disappear=0",
+                  "giver_vnum": 76669
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-20",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Earn the Royal Invitation."
+            },
+            {
+              "count": 1,
+              "hint": "Give a hydra heart and Feng Cho's finger together to the Daimyo for this invitation. The elite bushi exchanges it for the emerald royal key. A supplied invitation skips the earlier request.",
+              "id": "item-76667",
+              "item_vnums": [
+                76667
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a royal invitation."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76667;receive=I:76689;disappear=0",
+                  "giver_vnum": 76697
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to an elite bushi for an emerald royal key."
+            }
+          ],
+          "summary": "A support exchange. a royal invitation \u2192 an emerald royal key.",
+          "title": "Exchange the Royal Invitation"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:76676;receive=C:10000,E:10000;disappear=1",
+              "giver_vnum": 76699
+            }
+          ],
+          "id": "a-map-for-the-lost-legionaire",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:50000;receive=I:76676;disappear=0",
+                  "giver_vnum": 77202
+                }
+              ],
+              "hint": "The halfling adventurer in the neighboring rice fields offers this map for 50,000 copper. That foreign paid purchase still needs accounting support. A supplied map qualifies for the lost legionaire; the payment exceeds his 10,000-copper reward.",
+              "id": "map-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: buy the halfling's map."
+            },
+            {
+              "count": 1,
+              "hint": "The halfling adventurer in the neighboring rice fields offers this map for 50,000 copper. That foreign paid purchase still needs accounting support. A supplied map qualifies for the lost legionaire; the payment exceeds his 10,000-copper reward.",
+              "id": "item-76676",
+              "item_vnums": [
+                76676
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a map of jade."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76676;receive=C:10000,E:10000;disappear=1",
+                  "giver_vnum": 76699
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history. The recipient leaves after the accepted exchange; another attempt needs an available recipient.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to a legionaire for 10000 copper, 10000 experience."
+            }
+          ],
+          "summary": "An independent named request. a map of jade \u2192 10000 copper, 10000 experience.",
+          "title": "A Map for the Lost Legionaire"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:77205;receive=I:55372,I:76722;disappear=0",
+              "giver_vnum": 76711
+            }
+          ],
+          "id": "the-princesss-royal-token",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76665;receive=I:76665;disappear=0",
+                  "giver_vnum": 76669
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-21",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: The Daimyo's Heart Briefing."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76665,I:76666;receive=I:76667;disappear=0",
+                  "giver_vnum": 76669
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-20",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Earn the Royal Invitation."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76667;receive=I:76689;disappear=0",
+                  "giver_vnum": 76697
+                }
+              ],
+              "hint": "This earlier exchange is one preparation route. Supplied exact materials work without it, and its receipt cannot replace an item you have already spent.",
+              "id": "preparation-32",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: Exchange the Royal Invitation."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:77204;receive=I:77205;disappear=1",
+                  "giver_vnum": 77214
+                }
+              ],
+              "hint": "Marn's brig key opens her cell, while Miu Pai's separate keys pay the princess exchange. Her departure is the foreign receipt; it does not establish an escort back to the palace. A supplied token skips this preparation.",
+              "id": "princess-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain the princess's royal token."
+            },
+            {
+              "count": 1,
+              "hint": "Marn carries the brig key in the pirate den beneath the Jade pier. Push the pier pillars for the secret beach approach. This key opens the foreign Lacedon brig; it is different from Miu Pai's set of shackle keys.",
+              "id": "item-76710",
+              "item_vnums": [
+                76710
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: Directly carry the brig key."
+            },
+            {
+              "count": 1,
+              "hint": "Miu Pai carries this set of keys on the Lacedon helm. Offer the keys to the captive princess after reaching her cell. The locked, keyless helm trapdoor is not opened by either these keys or the brig key; the declared alternative passes underwater through the secret cargo-hold porthole.",
+              "id": "item-77204",
+              "item_vnums": [
+                77204
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: Directly carry a set of keys."
+            },
+            {
+              "count": 1,
+              "hint": "The captive princess in the neighboring Lacedon brig gives this token when offered Miu Pai's set of keys. Marn's separate brig key opens the cell. The Emperor accepts the current token; a supplied token skips that preparation history.",
+              "id": "item-77205",
+              "item_vnums": [
+                77205
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a token of jade royalty."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:77205;receive=I:55372,I:76722;disappear=0",
+                  "giver_vnum": 76711
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history. The Emperor's gratitude records this token delivery, without proving your own rescue, the brig unlock or the princess's return journey.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to the emperor for the hood of cunning, the Jade charm of empowerment."
+            }
+          ],
+          "summary": "Follow this story to its declared delivery outcome. a token of jade royalty \u2192 the hood of cunning, the Jade charm of empowerment.",
+          "title": "The Princess's Royal Token"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:76688;receive=I:76729;disappear=0",
+              "giver_vnum": 76715
+            }
+          ],
+          "id": "the-bloodstone-delegates-proof",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Scralack carries the blood-red key in his cave. It opens the assassin-guild entrance, but it always breaks after a successful unlock. Supplied materials do not require this particular route.",
+              "id": "item-76611",
+              "item_vnums": [
+                76611
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: Directly carry a blood-red key."
+            },
+            {
+              "count": 1,
+              "hint": "Kyan Itsu wears this medallion at his declared load room above the assassin extra-load corridor. His actual wandering or encounter is not guaranteed by the declaration. Give the medallion itself to the Bloodstone delegate.",
+              "id": "item-76688",
+              "item_vnums": [
+                76688
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry the medallion of vengence."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:76688;receive=I:76729;disappear=0",
+                  "giver_vnum": 76715
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to a delegate from bloodstone for the royal clasp of Bloodstone."
+            }
+          ],
+          "summary": "An independent named request. the medallion of vengence \u2192 the royal clasp of Bloodstone.",
+          "title": "The Bloodstone Delegate's Proof"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:77200;receive=E:30000;disappear=1",
+              "giver_vnum": 76718
+            }
+          ],
+          "id": "report-the-stowaways-purse",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "A huge olyx in the neighboring rice fields carries this half-digested purse. It is a proof item, not a spendable pile of money. Bringing it to the ambassador earns his report reward; it does not move a citizen or escort him home.",
+              "id": "item-77200",
+              "item_vnums": [
+                77200
+              ],
+              "kind": "carried_item",
+              "text": "Directly carry a half-digested money bag."
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:77200;receive=E:30000;disappear=1",
+                  "giver_vnum": 76718
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials work without earlier source, combat, travel or producer history. The recipient leaves after the accepted exchange; another attempt needs an available recipient. This report does not move or escort the stowaway.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Give the exact offering to an ambassador for 30000 experience."
+            }
+          ],
+          "summary": "An independent named request. a half-digested money bag \u2192 30000 experience.",
+          "title": "Report the Stowaway's Purse"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Seek this contact near the lavish bedchamber of Caer Dauthe. His claw and shard exchanges provide different keys; the later Krizzix request has no native terminal.",
           "keyword": "kristigrogg",
           "mob_vnum": 78400,

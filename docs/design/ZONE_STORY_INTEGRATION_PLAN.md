@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 46 authored journals, accounting-gated player surfaces, starter/town
+**Status: 47 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -11,9 +11,19 @@ Twin Towers, Plains of Life, Ailvio, Braddistock, Breale, Abandoned Elven
 Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus, Torg, Vast Hidden
 Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter
 Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl, Ravenloft
-Catacombs, the Realm of Barovia and Lost Temple of Tikitzopl now have complete
-source story maps;
-their active-world journeys remain unqualified. Tikitzopl projects 29 exchanges
+Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl and the Jade Empire
+now have complete source story maps;
+their active-world journeys remain unqualified. Jade projects 37 contracts into
+seventeen achievements/potential dailies, seventeen services and two exclusions,
+with 38 contacts and 35 optional checks. The
+[Jade dossier](zone-stories/THE_JADE_EMPIRE.md) adds rice/ground-rice and
+turtle/net/electium allocation, exact four-meat/two-orchid/four-directional
+quantities, optional heart briefing, true royal/keyless-water rescue routes,
+foreign proof ownership and same-kind replacement. Qualify paid net/map/mixed
+fees and legacy mithril supply before fresh journeys; computed forge/mining
+remain deliberately unavailable with accounting active. Fishing already submits
+ownership grants but publishes catch effects before their accepted result.
+Tikitzopl projects 29 exchanges
 into four story/request achievements and potential dailies plus 25 equipment
 services, with nineteen contacts and 44 optional checks. The
 [Tikitzopl dossier](zone-stories/LOST_TEMPLE_OF_TIKITZOPL.md) adds exact repeated
@@ -676,7 +686,14 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   clover/mirror/Zynar routes, nineteen contacts and 44 optional checks. Record
   exact quantities/same-name kinds, real parents/speech doors/foreign return,
   successful power/class outcomes and selected crypt/prose/closure decisions.
-- [ ] Complete comprehensive source dossiers for the other 197 roadmap areas.
+- [x] Complete Jade Empire source dossier: all 37 Q/four M blocks, 340 rooms,
+  134 mobs, 130 objects, 583 resets/all 331 families, three shops, literal
+  ship/crew and computed smith services, plus bounded foreign relic/rescue proofs.
+  Ship seventeen achievements/potential dailies, seventeen services, two
+  exclusions, 38 contacts/all three addressed topics and 35 optional checks.
+  Record paid prerequisites, legacy ore, capture/source/access/lineage, load-room
+  availability, fishing publication and builder-selected belt/lore/prose repairs.
+- [ ] Complete comprehensive source dossiers for the other 196 roadmap areas.
 - [ ] Add district/family authoring and shared presentation for large zones.
   Winterhaven's 219 rows fit existing story/objective limits but need a bounded
   512 KiB source-sidecar allowance for detailed guidance. Preserve receipt IDs;
@@ -713,6 +730,7 @@ contract classification; it does not claim complete objective coverage.
 | The Ravenloft Catacombs | 1 | Complete: twelve stories, thirteen requests and eight services across 37 exchanges | [Source-comprehensive dossier](zone-stories/THE_RAVENLOFT_CATACOMBS.md); 25 contacts/all 135 addressed blocks, fourteen optional checks, exact fortune roles and distinct ash/skull finales | Active generation/shopping, stateful paid reading, source/travel evidence and selected mechanism repairs pending | Native projection/receipt checks; committed container parent, accepted lore/session, confirmed unlock/travel and explicitly selected resurrection/faction outcomes pending |
 | The Realm of Barovia | 1 | Complete: five stories, one request and three services across nine exchanges | [Source-comprehensive dossier](zone-stories/THE_REALM_OF_BAROVIA.md); 24 contacts/all 41 addressed blocks, ten optional checks, exact nine-trinket collection and independent note/brooch/heart/daughter routes | Active stock/access, paid clue, legacy combat/attempt bridge, object rescue and selected carrier/letter/orb/barricade policies pending | Native projection/receipt checks; preserve supplied finals and foreign ownership, qualify exact source/transfer/travel and explicit campaign/closure outcomes |
 | Lost Temple of Tikitzopl | 1 | Complete: two stories, two requests and 25 services across 29 exchanges | [Source-comprehensive dossier](zone-stories/LOST_TEMPLE_OF_TIKITZOPL.md); nineteen contacts/all nine addressed blocks, 44 optional checks, exact key/recipe and competing Orb guidance | Active generation and mode-zero availability pending; existing committed 100-EP class debit retained | Native projection/receipt checks; qualify actual source/access/return, exact allocation and successful reflection/class outcomes; builder selects crypt/prose/temple closure |
+| The Jade Empire | 1 | Complete: eight stories/nine requests/seventeen services/two exclusions across 37 contracts | [Source-comprehensive dossier](zone-stories/THE_JADE_EMPIRE.md); 38 contacts/all three addressed blocks, 35 optional checks and equivalent fish grouping | Paid net/map/mixed fees, legacy mithril supply and computed forge/mining pending; native cash rewards preserved | Qualify fresh sources/captures, exact allocation, same-kind replacement, load-room encounters, actual keys/water/foreign routes and fishing publication; builder selects belt/lore/prose repairs |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
 
 ## Twin Towers evidence and decisions

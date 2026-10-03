@@ -516,7 +516,66 @@ assert any(r["command"] == "O" and r["arguments"][1:4] == [44100, 1, 44290] for 
 assert any(r["command"] == "D" and r["arguments"][1:4] == [44290, 5, 14] for r in tikitt["reset_commands"])
 assert not any(r["command"] == "D" and r["arguments"][1:3] == [44332, 2] for r in tikitt["reset_commands"])
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt"):
+jade = inventory_module.area_evidence(ROOT, "jade")
+assert len(jade["requests"]) == 37 and len(jade["dialogue"]) == 3
+assert len(jade["mobs"]) == 134 and len(jade["items"]) == 130
+assert len(jade["reset_commands"]) == 583
+assert collections.Counter(r["command"] for r in jade["reset_commands"]) == {"M": 298, "D": 76, "E": 71, "O": 70, "P": 34, "G": 30, "F": 4}
+assert {(a["kind"], a["vnum"], a["function"]) for a in jade["special_assignments"]} == {("room", 76859, "crew_shop_proc"), ("room", 76659, "ship_shop_proc")}
+jade_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "jade")
+assert jade_mapping["schema_version"] == 3 and jade_mapping["coverage"] == "complete"
+jade_contacts = {c["mob_vnum"]: c for c in jade_mapping["contacts"]}
+assert len(jade_contacts) == 38 and {r["block"]["giver_vnum"] for r in jade["requests"]} <= jade_contacts.keys()
+assert jade_contacts[76688]["topics"] == ["hi", "mande", "troggahn"]
+for vnum, contact in jade_contacts.items():
+    assert contact["keyword"] in jade["mobs"][vnum]["keywords"]
+    assert re.fullmatch(r"[a-z0-9_-]{1,64}", contact["keyword"])
+jade_stories = {s["id"]: s for s in jade_mapping["stories"]}
+assert collections.Counter(s["category"] for s in jade_stories.values()) == {"story": 8, "request": 9, "service": 17}
+assert sum(t.get("optional", False) for s in jade_stories.values() for t in s["steps"]) == 35
+native_jade = {(r["block"]["giver_vnum"], r["block"]["binding"]["completion_key"]): r["block"] for r in jade["requests"]}
+for story in jade_stories.values():
+    assert story["steps"][-1]["contracts"] == story["contracts"]
+    required = {s["item_vnums"][0]: s["count"] for s in story["steps"] if s["kind"] == "carried_item" and not s.get("optional")}
+    if story["id"] == "one-fish-for-the-fisherman":
+        assert {r["completion_key"] for r in story["contracts"]} == {"give=I:318;receive=C:10000;disappear=0", "give=I:319;receive=C:10000;disappear=0"}
+        assert story["steps"][0]["item_vnums"] == [318, 319] and story["steps"][0]["count"] == 1
+    else:
+        ref = story["contracts"][0]
+        block = native_jade[(ref["giver_vnum"], ref["completion_key"])]
+        assert required == collections.Counter(v for k, v in block["give"] if k == "I")
+    optional_receipts = [(r["giver_vnum"], r["completion_key"]) for s in story["steps"] if s.get("optional") and s["kind"] == "completion" for r in s["contracts"]]
+    assert len(optional_receipts) == len(set(optional_receipts))
+assert {r["completion_key"] for x in jade_mapping["exclusions"] for r in x["contracts"]} == {"give=I:76620;receive=C:0;disappear=1", "give=I:76706;receive=;disappear=0"}
+assert jade_stories["the-daimyos-heart-briefing"]["contracts"] == [{"giver_vnum": 76669, "completion_key": "give=I:76665;receive=I:76665;disappear=0"}]
+assert jade_stories["macavors-two-proofs"]["contracts"] == [{"giver_vnum": 76688, "completion_key": "give=I:67116,I:76730;receive=I:32019,I:32019,I:55324;disappear=0"}]
+princess_preparation = next(s for s in jade_stories["the-princesss-royal-token"]["steps"] if s["id"] == "princess-preparation")
+assert princess_preparation["optional"] and princess_preparation["contracts"] == [{"giver_vnum": 77214, "completion_key": "give=I:77204;receive=I:77205;disappear=1"}]
+jade_units = [u for u in catalog_module.story_units(catalog) if u["zone_number"] == 766]
+assert len(jade_units) == 34 and sum(u["achievement"] for u in jade_units) == 17 and sum(u["daily_candidate"] for u in jade_units) == 17
+assert sum(r["definition"]["daily_eligible"] for r in jade["requests"]) == 31
+jade_sources = collections.defaultdict(list)
+parent = room = None
+for reset in jade["reset_commands"]:
+    command, values = reset["command"], reset["arguments"]
+    if command in ("M", "F"):
+        parent, room = values[1], values[3]
+    if command in ("G", "E"):
+        jade_sources[values[1]].append((command, parent, room, values[2], values[4]))
+    elif command in ("O", "P"):
+        jade_sources[values[1]].append((command, values[3], None, values[2], values[4]))
+assert jade_sources[76623] == [("P", 76622, None, 1, 100)]
+assert jade_sources[76660] == [("P", 76622, None, 1, 33)]
+assert jade_sources[76679] == [("O", 76910, None, 1, 33)]
+assert jade_sources[76678] == [("P", 76664, None, 1, 20)]
+assert len(jade_sources[76690]) == 5 and all(s[3:] == (5, 20) for s in jade_sources[76690])
+assert len(jade_sources[76608]) == 8 and all(s[3:] == (8, 20) for s in jade_sources[76608])
+assert len(jade_sources[76619]) == 4 and all(s[3:] == (4, 100) for s in jade_sources[76619])
+assert jade_sources[76688] == [("E", 76712, 76915, 1, 100)]
+assert jade_sources[76710] == [("G", 76725, 76938, 1, 100)]
+assert not jade_sources[233]
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

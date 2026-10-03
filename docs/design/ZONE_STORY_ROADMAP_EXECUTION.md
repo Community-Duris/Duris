@@ -48,9 +48,10 @@ neither every branch nor every historical prerequisite.
 | 21 | The Ravenloft Catacombs | [Comprehensive source dossier](zone-stories/THE_RAVENLOFT_CATACOMBS.md): 37 Q/QA and 162 M/MA, 400 rooms, 98 mobs, 327 objects, two shops, 1,457 resets/all 665 families; computed shared roles and bounded foreign sources/routes reviewed | Revision 1: twelve stories/thirteen requests/eight services, one five-artifact family, 25 contacts/all 135 addressed blocks and fourteen optional checks; exact five-coin roles and three distinct skull finales | Active sources/shopping; exact repeated-container parent; key/switch/travel/source evidence; stateful cards; narrated resurrection/forms/key promises and selected mechanism repair |
 | 22 | The Realm of Barovia | [Comprehensive source dossier](zone-stories/THE_REALM_OF_BAROVIA.md): nine exchanges/78 M blocks, 168 rooms, 57 mobs, 66 objects, 405 resets/all 194 families; shared roles, foreign keys/Gertruda and legacy combat/session policy reviewed | Revision 1: five stories/one request/three services, 24 contacts/all 41 addressed blocks and ten optional checks; exact collection, independent letters, heart and daughter routes | Active sources/access; quest-person lineage; ordered group combat/attempt bridge; foreign brittle gates; selected brooch/letter/orb/barricade/reveal policies |
 | 23 | Lost Temple of Tikitzopl | [Comprehensive source dossier](zone-stories/LOST_TEMPLE_OF_TIKITZOPL.md): 29 Q/nine M, 234 rooms, 76 mobs, 97 objects, 340 resets/all 202 families, five assigned procedures and bounded foreign components/routes reviewed | Revision 1: two stories/two requests/25 services, nineteen contacts/all topics and 44 optional checks; exact key, distinct/duplicate ingredients and competing Orb guidance | Active sources/mode-zero availability; exact allocation/lineage; accepted lore and confirmed access/return; successful reflection/class outcomes and builder-selected crypt/prose/closure |
-| 24–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 24 | The Jade Empire | [Comprehensive source dossier](zone-stories/THE_JADE_EMPIRE.md): 37 Q/four M, 340 rooms, 134 mobs, 130 objects, 583 resets/all 331 families, three shops, two literal room services/computed smith and bounded foreign proofs/routes | Revision 1: eight stories/nine requests/seventeen services/two exclusions, 38 contacts/all three addressed topics and 35 optional checks; equivalent fish and exact allocation/access guidance | Paid net/map/mixed fees, legacy mithril and deliberate forge/mining refusal; accepted fishing/source/capture/recipient, same-kind replacement, load-room encounters and real key/water/foreign travel; builder-selected belt/lore/prose repairs |
+| 25–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is the Jade Empire, followed by the Savannah of Broken Trusts.
+The next area is the Savannah of Broken Trusts, followed by Alatorin - the Forge City.
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -988,3 +989,45 @@ Validation for the Tikitzopl checkpoint:
   All 2,668 native definitions/terms, registry, fingerprint/revision and the other
   45 mappings are unchanged. No played active source/access/power/class journey,
   accounting activation, migration, DB/server operation or merge was performed.
+
+## Jade Empire checkpoint
+
+Completed priority 24 with the [source dossier](zone-stories/THE_JADE_EMPIRE.md)
+and [reproducible index](../reference/zone-story-audits/jade.md). Reviewed all
+41 native blocks, 340 rooms, 134 mobiles, 130 objects and 583 resets/all 331
+families; all three shops; literal crew/shipwright and computed smith services;
+shared native exact giving, keys/switches/teleports, fishing ownership,
+mining/forging refusal and relevant foreign proof, parent and rescue boundaries.
+No local explicit data procedure adds a custom quest handler.
+
+Revision 1 projects all 37 contracts into eight stories, nine requests,
+seventeen supporting exchanges and two exclusions, with equivalent one-fish
+alternatives sharing one request. Thirty-eight contacts cover all givers and
+three addressed blocks; 35 optional checks preserve supplied proofs. Exact
+five-rice/four-meat/two-orchid/four-directional quantities and competing
+rice/turtle/net/heart/invitation/electium/egg supplies remain distinct. A current
+heart is returned with new lineage in the optional briefing. Native cash rewards
+are supported; paid offerings do not acquire support from journal metadata.
+
+| Capability / repair | Evidence and qualification proposal |
+| --- | --- |
+| ZSQ-JADE-SUPPLY / PAYMENT | New nets require an unsupported 10,000-copper purchase; foreign maps cost 50,000 copper; four commissions mix items and money. Exact legacy mithril 233 has no declared producer, while current mining uses different kinds. Add durable fee/material/output admission and selected guarded source/recipe repair; keep deliberate forge/mining refusal until qualified. |
+| ZSQ-JADE-CAPTURE / RESCUE | Native knife/net/shackle deliveries retire runtime recipients and grant carried turtle/captive/token outputs; no follower/escort is implemented. Link accepted actor/attempt, exact consumed and output UIDs and generation; personal recovery/rescue objectives are explicit opt-ins, never inferred for donated proofs. |
+| ZSQ-JADE-ACCESS / TRAVEL | Five valid switches, breaking guild key, distinct dice/royal/brig/shackle kinds and keyless helm trapdoor have alternate cave/mirror/crack/water routes. Brig key opens the foreign cell; shackle keys pay the princess, whose token pays the Emperor. Emit real accepted access/arrival episodes, preserving supplied finales and foreign ownership. |
+| ZSQ-JADE-ALLOCATION / EPISODES | Chance-limited plants/templates/ore, four meat roots, competing food/capture/metal/egg uses, same-kind heart replacement and retiring/load-room mobiles need exact UID allocation and generation-aware availability. NORENT and the word fresh do not establish hunting/freshness. Qualify Kyan/eye/Nansuo movement before declaring unreachable sources. |
+| ZSQ-JADE-FISHING | Fishing has a real ownership grant, but catch narration, pole damage and XP precede its accepted result. Freeze the catch/actor/pole episode and deliberately publish/compensate effects on accepted/refused/partial/recovered outcome; add a specific source adapter separately from broad crafting provenance. |
+| ZSQ-JADE-INCOMPLETE | Huge-hide retirement is a deliberate rejection. White silk belt is consumed with no outcome; select reward/service or removal and audit nested ampoules. Legacy ore, absent army/escort/rickshaw/religion closure, blank inn/load prose and canner fee mismatch need bounded builder decisions rather than invented progress or balance changes. |
+
+The current catalog contains 47 journals, 2,217 achievement units, 1,866 potential
+daily units and 2,482 projected rows, preserving all 2,668 native definitions.
+Twenty-four of 220 roadmap areas are source-comprehensive, with 196 pending.
+Continue with Savannah of Broken Trusts, then Alatorin. Actual active sources,
+payment, access, capture, fishing and persistence journeys remain unqualified.
+Accounting remains mandatory and the full roadmap goal remains in progress.
+
+Validation passed: production-catalog source/snapshot/inventory and 24 evidence
+indices; native story/projection, production-runtime and arrival regressions;
+authoritative harness formatting, whitespace and cached SQL build. All 2,668
+native definitions/terms and the other 46 maps remain unchanged as parsed
+objects; 567 changed-document links resolve. No accounting activation,
+migration, DB/server operation or merge is part of the source mapping.
