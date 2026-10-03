@@ -243,9 +243,14 @@ def run(server, inspector, fence_fault=None):
                     # tracker would restore the erased account's old aliases.
                     client = journey.MudClient(plain)
                     journey.create_character(client, account="Eraseview", character="Observer")
+                    client.send("save")
+                    client.expect("Save complete for Observer.", timeout=30)
                     client.send("quit")
                     client.expect("ACCOUNT MENU", timeout=30)
-                    assert (1, journey.CHARACTER) not in quest_aliases(retained.read_bytes()), "runtime cache restored an erased alias"
+                    refreshed_aliases = quest_aliases(retained.read_bytes())
+                    assert (1, journey.CHARACTER) not in refreshed_aliases, "runtime cache restored an erased alias"
+                    observers = [pid for pid, name in refreshed_aliases if name == "Observer"]
+                    assert len(observers) == 1 and observers[0] != 1, "new quest identity was never published after cache refresh"
                     client.close()
                     client = None
                     stop()
