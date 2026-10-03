@@ -5949,7 +5949,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4391
+          4405
         ],
         "file": "src/flatfile/flatfile_item_repository.c",
         "function": "flatfile_coin_apply",
@@ -7224,7 +7224,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1846
+          1927
         ],
         "file": "src/combat/fight.c",
         "function": "die",
@@ -7460,7 +7460,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3436
+          3521
         ],
         "file": "src/combat/fight.c",
         "function": "check_shields",
@@ -7814,7 +7814,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4886
+          4971
         ],
         "file": "src/combat/fight.c",
         "function": "hit",
@@ -10990,7 +10990,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          730
+          805
         ],
         "file": "src/combat/fight.c",
         "function": "make_corpse",
@@ -11113,7 +11113,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          730
+          805
         ],
         "file": "src/combat/fight.c",
         "function": "make_corpse",
@@ -11174,7 +11174,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          592
+          648
         ],
         "file": "src/combat/fight.c",
         "function": "clear_corpse_transfer_dispute",
@@ -11235,7 +11235,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          730
+          805
         ],
         "file": "src/combat/fight.c",
         "function": "make_corpse",
@@ -13541,7 +13541,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1502
+          1586
         ],
         "file": "src/combat/fight.c",
         "function": "save_disputed_death_disposition",
@@ -22518,7 +22518,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2366
+          2367
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_execute_at_offset",
@@ -22579,7 +22579,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3014
+          3015
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_destroy_owners",
@@ -51029,7 +51029,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1644
+          1645
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "insert_craft_output_item",

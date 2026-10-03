@@ -5922,32 +5922,32 @@
       "sites": [
         [
           "src/combat/fight.c",
-          2102,
+          2183,
           "item_lifecycle"
         ],
         [
           "src/combat/fight.c",
-          2103,
+          2184,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          2116,
+          2197,
           "item_lifecycle"
         ],
         [
           "src/combat/fight.c",
-          2117,
+          2198,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          2162,
+          2243,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          2173,
+          2254,
           "item_publication"
         ]
       ],
@@ -6146,12 +6146,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          4716,
+          4801,
           "item_lifecycle"
         ],
         [
           "src/combat/fight.c",
-          4727,
+          4812,
           "item_publication"
         ]
       ],
@@ -6472,12 +6472,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          5134,
+          5219,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          5141,
+          5226,
           "item_publication"
         ]
       ],
@@ -9435,12 +9435,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          707,
+          781,
           "economic_submit"
         ],
         [
           "src/combat/fight.c",
-          712,
+          786,
           "economic_submit"
         ]
       ],
@@ -9523,12 +9523,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          973,
+          1054,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          974,
+          1055,
           "item_lifecycle"
         ]
       ],
@@ -9574,12 +9574,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          634,
+          696,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          635,
+          697,
           "item_publication"
         ]
       ],
@@ -9625,37 +9625,37 @@
       "sites": [
         [
           "src/combat/fight.c",
-          736,
+          811,
           "item_lifecycle"
         ],
         [
           "src/combat/fight.c",
-          866,
+          947,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          870,
+          951,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          875,
+          956,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          888,
+          969,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          892,
+          973,
           "item_publication"
         ],
         [
           "src/combat/fight.c",
-          896,
+          977,
           "item_lifecycle"
         ]
       ],
@@ -11705,12 +11705,12 @@
       "sites": [
         [
           "src/combat/fight.c",
-          1521,
+          1605,
           "item_lifecycle"
         ],
         [
           "src/combat/fight.c",
-          1534,
+          1618,
           "item_lifecycle"
         ]
       ],
@@ -20002,22 +20002,22 @@
       "sites": [
         [
           "src/item/item_transfer_repository.c",
-          1389,
+          1390,
           "sql_economy"
         ],
         [
           "src/item/item_transfer_repository.c",
-          1422,
+          1423,
           "sql_economy"
         ],
         [
           "src/item/item_transfer_repository.c",
-          1506,
+          1507,
           "sql_economy"
         ],
         [
           "src/item/item_transfer_repository.c",
-          2113,
+          2114,
           "sql_economy"
         ]
       ],
@@ -20053,12 +20053,12 @@
       "sites": [
         [
           "src/item/item_transfer_repository.c",
-          3070,
+          3071,
           "economic_submit"
         ],
         [
           "src/item/item_transfer_repository.c",
-          3137,
+          3138,
           "economic_submit"
         ]
       ],
@@ -27099,7 +27099,7 @@
       "sites": [
         [
           "src/player/player_snapshot_repository.c",
-          1915,
+          1938,
           "sql_economy"
         ]
       ],
@@ -45862,7 +45862,7 @@
       "sites": [
         [
           "src/item/item_transfer_repository.c",
-          1655,
+          1656,
           "sql_economy"
         ]
       ],
@@ -50068,151 +50068,151 @@
     },
     {
       "path": "src/combat/fight.c",
-      "line": 707,
+      "line": 781,
       "family": "economic_submit",
       "excerpt": "item_movement_transaction_submit("
     },
     {
       "path": "src/combat/fight.c",
-      "line": 712,
+      "line": 786,
       "family": "economic_submit",
       "excerpt": "item_movement_transaction_submit_batch("
     },
     {
       "path": "src/combat/fight.c",
-      "line": 736,
+      "line": 811,
       "family": "item_lifecycle",
       "excerpt": "corpse = read_object(2, VIRTUAL);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 896,
+      "line": 977,
       "family": "item_lifecycle",
       "excerpt": "extract_obj("
     },
     {
       "path": "src/combat/fight.c",
-      "line": 974,
+      "line": 1055,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(corpse);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 1521,
+      "line": 1605,
       "family": "item_lifecycle",
       "excerpt": "wallet_pile = create_money(GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch),"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 1534,
+      "line": 1618,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(wallet_pile, FALSE);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2102,
+      "line": 2183,
       "family": "item_lifecycle",
       "excerpt": "P_obj dragon_scale = read_object(VOBJ_DRAGON_SCALE, VIRTUAL);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2116,
+      "line": 2197,
       "family": "item_lifecycle",
       "excerpt": "P_obj teobj = read_object(400230, VIRTUAL);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 4716,
+      "line": 4801,
       "family": "item_lifecycle",
       "excerpt": "P_obj portal = read_object(400220, VIRTUAL);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 634,
+      "line": 696,
       "family": "item_publication",
       "excerpt": "obj_from_char(item);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 635,
+      "line": 697,
       "family": "item_publication",
       "excerpt": "obj_to_obj(item, corpse);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 866,
+      "line": 947,
       "family": "item_publication",
       "excerpt": "obj_to_room(corpse, real_room(ch->specials.was_in_room));"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 870,
+      "line": 951,
       "family": "item_publication",
       "excerpt": "obj_to_room(corpse, real_room(CORPSE_STORAGE_II));"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 875,
+      "line": 956,
       "family": "item_publication",
       "excerpt": "obj_to_room(corpse, ch->in_room);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 888,
+      "line": 969,
       "family": "item_publication",
       "excerpt": "obj_from_obj(o);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 892,
+      "line": 973,
       "family": "item_publication",
       "excerpt": "obj_to_room(o, corpse->loc.room);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 973,
+      "line": 1054,
       "family": "item_publication",
       "excerpt": "obj_from_room(corpse);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2103,
+      "line": 2184,
       "family": "item_publication",
       "excerpt": "obj_to_char(dragon_scale, ch);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2117,
+      "line": 2198,
       "family": "item_publication",
       "excerpt": "obj_to_char(teobj, ch);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2162,
+      "line": 2243,
       "family": "item_publication",
       "excerpt": "obj_to_char(tempobj, ch);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 2173,
+      "line": 2254,
       "family": "item_publication",
       "excerpt": "obj_to_char(tempobj, ch);"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 4727,
+      "line": 4812,
       "family": "item_publication",
       "excerpt": "obj_to_room(portal, real_room(400000));"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 5134,
+      "line": 5219,
       "family": "item_publication",
       "excerpt": "P_obj weap = pos < MAX_WEAR ? unequip_char(ch, pos) : NULL;"
     },
     {
       "path": "src/combat/fight.c",
-      "line": 5141,
+      "line": 5226,
       "family": "item_publication",
       "excerpt": "obj_to_char(weap, ch);"
     },
@@ -54472,43 +54472,43 @@
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 3070,
+      "line": 3071,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, payload,"
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 3137,
+      "line": 3138,
       "family": "economic_submit",
       "excerpt": "!item_transfer_command_build(&command, operation_id, *payload,"
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1389,
+      "line": 1390,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,\""
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1422,
+      "line": 1423,
       "family": "sql_economy",
       "excerpt": "\"UPDATE item_current_owner SET root_item_uid=?,parent_item_uid=IF(?=0,NULL,?),\""
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1506,
+      "line": 1507,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO item_ownership_ledger(operation_id,event_index,item_uid,root_item_uid,\""
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 1655,
+      "line": 1656,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,\""
     },
     {
       "path": "src/item/item_transfer_repository.c",
-      "line": 2113,
+      "line": 2114,
       "family": "sql_economy",
       "excerpt": "\"UPDATE item_current_owner SET coin_payload=? WHERE item_uid=? AND item_revision=?\";"
     },
@@ -56764,7 +56764,7 @@
     },
     {
       "path": "src/player/player_snapshot_repository.c",
-      "line": 1915,
+      "line": 1938,
       "family": "sql_economy",
       "excerpt": "\"UPDATE item_current_owner AS current_item SET item_revision=item_revision+1,state=\" +"
     },

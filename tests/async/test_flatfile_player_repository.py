@@ -75,6 +75,32 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
             raise SystemExit(recovery_result.stdout)
         print(recovery_result.stdout.strip())
 
+    recovery_root = temporary_path / "recovery"
+    subprocess.run([str(binary), str(recovery_root), "seed-recovery"], cwd=ROOT, check=True)
+    import json
+    import os
+    recovery_artifact = temporary_path / "recovery-status.json"
+    status_command = [sys.executable, str(ROOT / "scripts/player_death_restitution.py"),
+                      "status", "--flatfile-root", str(recovery_root), "--artifact", str(recovery_artifact)]
+    subprocess.run(status_command, cwd=ROOT, check=True)
+    first = json.loads(recovery_artifact.read_text())
+    case = first["cases"][0]
+    assert case["terminal_custody"] == "quarantine" and case["recovery_owner"] == "reviewed_restitution"
+    assert case["counts"]["quarantine"] == 2 and case["unmatched_count"] == 1
+    assert case["captured_count"] == 1 and case["authority_count"] == 2
+    assert {item["item_uid"] for item in case["items"]} == {100, 101}
+    assert recovery_artifact.stat().st_mode & 0o077 == 0
+    subprocess.run(status_command + ["--overwrite"], cwd=ROOT, check=True)
+    second = json.loads(recovery_artifact.read_text())
+    assert second["cases"][0]["correlation"] == case["correlation"]
+    assert second["cases"][0]["items"] == case["items"]
+    pending = recovery_root / "domains/.critical-authority-transaction"
+    pending.write_bytes(b"synthetic interruption")
+    refused = subprocess.run(status_command + ["--overwrite"], cwd=ROOT, capture_output=True, text=True)
+    assert refused.returncode != 0 and "authority replay is pending" in refused.stderr
+    pending.unlink()
+    print("[PASS] cold-load durable-only descendant, disputed batch, authority interruption, restart and protected custody query")
+
     domain_source = (SRC / "flatfile_player_domain_repository.c").read_text()
     player_source = (SRC / "flatfile_player_repository.c").read_text()
     materialize_source = (SRC / "player_load_materialize.c").read_text()

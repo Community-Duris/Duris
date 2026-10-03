@@ -12,8 +12,11 @@ SQL_FIXTURE_CONTAINER_ID=
 cleanup() { [[ "${SQL_FIXTURE_CONTAINER_ID:-}" =~ ^[0-9a-f]{64}$ ]] && docker rm -f "$SQL_FIXTURE_CONTAINER_ID" >/dev/null 2>&1 || true; }
 trap cleanup EXIT HUP INT TERM
 if [[ "$IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PASSWORD_ENV=MYSQL_ROOT_PASSWORD; fi
-SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$NAME" -p 127.0.0.1::3306 -e "$PASSWORD_ENV=$PASSWORD" "$IMAGE")
-mapping="$(docker port "$NAME" 3306/tcp)"
+source "$ROOT/tests/async/_sql_fixture_network.sh"
+sql_fixture_network
+SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$NAME" "${SQL_FIXTURE_NETWORK[@]}" \
+    -e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}")
+mapping="$(sql_fixture_mapping "$NAME")"
 export ENVIRONMENT=test DB_HOST=127.0.0.1 DB_PORT="${mapping##*:}"
 export DB_USER=root DB_PASSWD="$PASSWORD" MYSQL_PWD="$PASSWORD"
 export DB_NAME=death_disposition_test
@@ -60,9 +63,13 @@ mkdir -p "$ROOT/bin/tests"
 read -r -a MYSQL_CFLAGS <<< "$(mysql_config --cflags)"
 read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
 g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
+    -ffunction-sections -fdata-sections -Wl,--gc-sections \
     "${MYSQL_CFLAGS[@]}" tests/async/player_death_disposition_mysql_harness.cpp \
     src/player/player_snapshot_repository.c src/player/player_snapshot_codec.c \
+    src/player/player_save_journal.c \
     src/sql/item_extra_descr_codec.c \
     src/persistence/persistence_observability.c \
-    "${MYSQL_LIBS[@]}" -o "$ROOT/bin/tests/player_death_disposition_mysql_harness"
+    "${MYSQL_LIBS[@]}" -lcrypto -o "$ROOT/bin/tests/player_death_disposition_mysql_harness"
 "$ROOT/bin/tests/player_death_disposition_mysql_harness"
+export DB_ALLOWED_TARGETS="$DB_HOST/$DB_NAME" DURIS_RECOVERY_SYNTHETIC_FIXTURE=1
+python3 tests/async/test_death_recovery_visibility_sql.py
