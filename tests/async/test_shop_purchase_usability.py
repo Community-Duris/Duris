@@ -2,7 +2,7 @@
 """Execute the real buy parser, command, and shop callbacks with controlled completions.
 
 World lookup, wallet/grant submission and publication are fixtures. Production
-parsing, validation, sequencing and fixture_messages are compiled directly from shop.c.
+parsing, validation, sequencing and messages are compiled directly from shop.c.
 No database, running server, or local player state is used.
 """
 
@@ -38,6 +38,7 @@ PRELUDE = r'''
 #include "persistence/persistence_mode.h"
 #include "world/epic_bonus.h"
 #include <cassert>
+#include <algorithm>
 #include <cstdarg>
 #include <cerrno>
 #include <cstdio>
@@ -191,7 +192,7 @@ struct fixture {
             const auto payload = trade_payload; auto callback = trade_callback;
             shop_trade_result result{};
             if (committed) { result.shop_revision = 1; result.item_count = 1; GET_COPPER(&player) -= payload.price; }
-            exact = publish; callback(&player, committed, result, error, payload);
+            exact = publish; callback(&player, committed && publish, result, error, payload);
         } else {
             if (payment_callback) {
                 auto callback = payment_callback; payment_callback = nullptr;
@@ -210,6 +211,12 @@ struct fixture {
 };
 
 int main() {
+    for (const char *prefix : {"ration '", "ration quantity '", "ration quantity 2 into '"}) {
+        std::string input = prefix;
+        input.append(MAX_INPUT_LENGTH - 1 - input.size(), 'x');
+        shop_purchase_request request;
+        assert(shop_purchase_parse(input.data(), request));
+    }
     const std::string quantity_error = "The quantity must be a whole number between 1 and 50; nothing was purchased or charged.\r\n";
     for (const char *count : {"0", "-1", "+2", "1x", "1.0", "no", "51", "99999999999999999999999999999", ""}) {
         for (const char *prefix : {"ration quantity ", "ration backpack "}) {
@@ -224,6 +231,23 @@ int main() {
         if (std::string(command).find("into") != std::string::npos) assert(*request.destination);
     }
     for (const auto backend : {PERSISTENCE_MODE_FLATFILE_PRIMARY, PERSISTENCE_MODE_MARIADB_PRIMARY}) {
+        {
+            fixture f(backend);
+            std::vector<obj_data> stock(MAX_STRING_LENGTH / 40, f.stock);
+            for (size_t index = 0; index + 1 < stock.size(); ++index)
+                stock[index].next_content = &stock[index + 1];
+            f.keeper.carrying = stock.data();
+            shopping_list(nullptr, &f.player, &f.keeper, 0);
+            std::string listing;
+            for (const auto &message : fixture_messages) {
+                assert(message.size() < MAX_STRING_LENGTH);
+                listing += message;
+            }
+            assert(listing.size() > MAX_STRING_LENGTH && submissions == 0);
+            assert(std::count(listing.begin(), listing.end(), '\n') == static_cast<int>(stock.size()) + 2);
+            assert(listing.find(std::to_string(stock.size()) + ") An iron ration") != std::string::npos);
+            assert(listing.ends_with("Quantity purchase: buy <item> quantity <1-50> [into <container>]\r\n"));
+        }
         for (bool produced : {false, true}) {
             for (int item_type : {ITEM_FOOD, ITEM_DRINKCON}) {
                 fixture f(backend); f.stock.type = item_type;
@@ -245,6 +269,14 @@ int main() {
         {
             fixture f(backend); busy = true; f.buy("ration quantity 2"); assert(submissions == 0);
             assert(fixture_messages.size() == 1 && fixture_messages[0] == "Your previous purchase is still being processed; nothing new was purchased or charged.\r\n");
+        }
+        {
+            fixture f(backend); f.buy("ration quantity 2"); f.buy("ration quantity 3");
+            assert(submissions == 1 && produced_purchase_sequences.at(42).requested == 2);
+            assert(GET_MONEY(&f.player) == 1000 && fixture_messages.size() == 2);
+            assert(fixture_messages.back() == "Your previous purchase is still being processed; nothing new was purchased or charged.\r\n");
+            f.complete(); f.complete();
+            assert(GET_MONEY(&f.player) == 996 && produced_purchase_sequences.empty());
         }
         {
             fixture f(backend); refuse_submit = true; f.buy("ration quantity 2"); assert(submissions == 0);
@@ -278,6 +310,11 @@ int main() {
             assert(fixture_messages.back() == "Purchase delivery pending: 0 of 2 copies of an iron ration delivered to your inventory; 2 copper charged in total. 1 more copy was charged and is still being delivered. The remaining 1 were not charged.\r\nYour purchase is safe. Please wait a moment or reconnect; do not purchase it again.\r\n");
         }
         {
+            fixture f(backend); f.buy("ration quantity 3"); f.complete(); f.complete(true, false);
+            assert(fixture_messages.size() == 2 && rooms == 1 && refunds == 0 && GET_MONEY(&f.player) == 996);
+            assert(fixture_messages.back() == "Purchase delivery pending: 1 of 3 copies of an iron ration delivered to your inventory; 4 copper charged in total. 1 more copy was charged and is still being delivered. The remaining 1 were not charged.\r\nYour purchase is safe. Please wait a moment or reconnect; do not purchase it again.\r\n");
+        }
+        {
             fixture f(backend); shop.number_items_produced = 0; f.buy("ration quantity 2");
             assert(submissions == 0 && fixture_messages[0] == "Quantity and container purchases require produced stock; nothing was purchased or charged.\r\n");
         }
@@ -298,6 +335,11 @@ int main() {
         {
             fixture f(backend); f.buy("ration quantity 1"); f.complete(); assert(fixture_messages.size() == 2);
             assert(fixture_messages.back().find("Purchase complete: 1 of 1") == 0);
+        }
+        {
+            fixture f(backend); f.buy("ration"); f.complete(true, false);
+            assert(fixture_messages.size() == 2 && rooms == 0 && refunds == 0 && GET_MONEY(&f.player) == 998);
+            assert(fixture_messages.back() == "Your purchase is safe but is still being delivered. Please wait a moment or reconnect; do not purchase it again.\r\n");
         }
     }
     {
@@ -355,6 +397,7 @@ def main():
         binary = Path(directory) / "shop_usability"
         cpp.write_text(harness, encoding="utf-8")
         subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Werror",
+                        "-g", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
                         "-ffunction-sections", "-fdata-sections", "-Isrc", "-I/usr/include/libxml2",
                         "-I/usr/include/mysql", str(cpp), "-Wl,--gc-sections", "-o", str(binary)], cwd=ROOT, check=True)
         subprocess.run([str(binary)], cwd=ROOT, check=True)

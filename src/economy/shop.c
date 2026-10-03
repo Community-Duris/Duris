@@ -157,6 +157,23 @@ static const char *shop_purchase_parse(char *argument, shop_purchase_request &re
 	if (!argument || strlen(argument) >= MAX_INPUT_LENGTH)
 		return "Invalid purchase arguments; nothing was purchased or charged.\r\n";
 	argument = one_argument(argument, request.item);
+	// lohrr_chop retries an unterminated quoted token without resetting its output.
+	// Reject that input before handing any suffix token to the existing helper.
+	for (const char *cursor = argument; cursor && *cursor;)
+	{
+		if (isspace(static_cast<unsigned char>(*cursor)))
+			++cursor;
+		else if (*cursor == '\'')
+		{
+			cursor = strchr(cursor + 1, '\'');
+			if (!cursor)
+				return "Close the quoted purchase argument; nothing was purchased or charged.\r\n";
+			++cursor;
+		}
+		else
+			while (*cursor && !isspace(static_cast<unsigned char>(*cursor)))
+				++cursor;
+	}
 	while (argument && isspace(static_cast<unsigned char>(*argument)))
 		++argument;
 	const bool has_destination = argument && *argument;
@@ -515,7 +532,9 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 			return;
 		if (durable_commit)
 			send_to_char(
-				"Your purchase is safe but is still being delivered. Please wait a moment or reconnect; do not purchase it again.\r\n",
+				buying ?
+					"Your purchase is safe but is still being delivered. Please wait a moment or reconnect; do not purchase it again.\r\n" :
+					"Your shop trade is safe but is still being completed. Please wait a moment or reconnect; do not repeat it.\r\n",
 				ch);
 		else if (error_code == ENOSPC)
 			send_to_char("You don't have enough money for that purchase.\r\n", ch);
@@ -673,6 +692,10 @@ static void shop_creation_grant_completion(P_char ch, uint64_t item_uid, bool co
 		const produced_purchase_sequence stopped = sequence;
 		produced_purchase_sequences.erase(found);
 		shop_purchase_report(ch, stopped, false, nullptr, true);
+		if (!stopped.batch)
+			send_to_char(
+				"Your purchase is safe but is still being delivered. Please wait a moment or reconnect; do not purchase it again.\r\n",
+				ch);
 		return;
 	}
 
@@ -1951,6 +1974,15 @@ void shopping_list(char * /*arg*/, P_char ch, P_char keeper, int shop_nr)
 	 */
 	temp = 0;
 	strcpy(Gbuf1, "You can buy:\r\n");
+	const auto append_listing = [&](const char *text)
+	{
+		if (strlen(Gbuf1) + strlen(text) >= sizeof(Gbuf1))
+		{
+			send_to_char(Gbuf1, ch);
+			*Gbuf1 = '\0';
+		}
+		strcat(Gbuf1, text);
+	};
 
 	// Start sellling random eq code..
 	/*
@@ -2031,8 +2063,8 @@ void shopping_list(char * /*arg*/, P_char ch, P_char keeper, int shop_nr)
 
 				snprintf(Gbuf4, MAX_STRING_LENGTH, "%2d) ", temp);
 				CAP(Gbuf2);
-				strcat(Gbuf4, Gbuf2);
-				strcat(Gbuf1, Gbuf4);
+				append_listing(Gbuf4);
+				append_listing(Gbuf2);
 			}
 		}
 	}
@@ -2041,8 +2073,8 @@ void shopping_list(char * /*arg*/, P_char ch, P_char keeper, int shop_nr)
 		strcat(Gbuf1, "Nothing!\r\n");
 
 	if (quantity_stock)
-		strcat(Gbuf1,
-		       "Quantity purchase: buy <item> quantity <1-50> [into <container>]\r\n");
+		append_listing(
+			"Quantity purchase: buy <item> quantity <1-50> [into <container>]\r\n");
 	send_to_char(Gbuf1, ch);
 	return;
 }
