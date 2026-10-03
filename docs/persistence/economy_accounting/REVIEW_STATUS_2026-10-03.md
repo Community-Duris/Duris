@@ -1702,3 +1702,28 @@ This solved issue is a separate local milestone; normal publication still awaits
 explicit local Git integration authorization after automatic approval review
 rejected merging under the retained no-merge instruction. No history workaround,
 divergent push, accounting activation or production-data mutation occurred.
+
+### SQL reconciliation fixture result description
+
+The private strict native preparation for the new eleven-case partial-save
+fixture first failed before any SQL scenario: the maintained result-description
+switch omitted player_save_journal_result::quarantined_pid. The helper now names
+that existing result; no production source or assertion is weakened. The original
+fixture/snapshot/scripts and compile log remain preserved as a setup failure,
+not a semantic RED. A new immutable candidate passes the exact16-unit strict
+-Wall/-Wextra/-Werror ASan/UBSan compile in58.256 seconds. Native binary SHA-256
+31bf1ff01c080a3b7c9801a77caaec2842b5939ea702fd773ffe71c2e785f67f.
+The wrapper adds new supervised300-second compile/120-second runtime limits;
+the maintained main originally has neither. Actual SQL cases remain unmeasured.
+This one-line fixture repair is a separate solved milestone; the unfinished
+partial-save regression additions remain outside its commit.
+
+A fresh remote read is33d23aeec438b7fc99911a50a75614468b1f57df, whose additional
+change consolidates issue tracking documentation. Its #490 acceptance retains
+all R1-R8; superseded issues are not completion claims. That remote source is
+still unintegrated with the local qualified milestones; local merge authorization
+remains pending under automatic approval review's retained no-merge restriction.
+The primary performed the required notebook-only fallback after the curator
+agent could not start at the thread limit. Both scoped owning notes stay below
+20KB; existing unrelated oversized code-research and derived index drift remain
+reported by the read-only overlay validators.
