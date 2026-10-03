@@ -42,13 +42,22 @@ activity = function_region("static void run_activity_phase", "static void run_co
 combat = function_region("static void run_combat_phase", "static void run_pulse_reset_phase")
 reset = function_region("static void run_pulse_reset_phase", "/**\n * Run network and simulation pulses")
 
-for needle in ("persistence_log_poll();", "select(",
-               "drain_new_connections(s, 0, \"Telnet\");", "process_input(point);",
-               "ssl_negotiate(point->sslses);"):
+for needle in ("persistence_log_poll();", "service_network_turn(ctx, 0)",
+               "websocket_dispatch_pending_input(point);", "point->network_close_pending",
+               "close_socket(point);"):
     assert contains(connection, needle)
-assert contains(connection, "return false;")
+assert contains(connection, "return ready;")
 assert not contains(connection, "critical_command_coordinator_pulse")
 assert not contains(connection, "checkpointing();")
+network = function_region("static bool service_network_turn", "static bool run_connection_phase")
+for needle in ("poll(", "process_input(point)", "ssl_negotiate(point->sslses);",
+               "network_wakeup_drain();", "drain_network_transport(point)"):
+    assert contains(network, needle), needle
+for needle in ("run_session_input_phase", "dispatch_session_input", "process_output(",
+               "ne_events();", "nevent_advance_tick();", "perform_violence();",
+               "critical_command_coordinator_pulse", "password_async_pulse",
+               "websocket_dispatch_pending_input", "close_socket(point);"):
+    assert not contains(network, needle)
 
 for needle in ("session_input_authentication_pending(point)",
                "descriptor_latency.finish();", "repair_session_command_gate(t_ch)",
@@ -58,7 +67,7 @@ for needle in ("session_input_authentication_pending(point)",
 assert not contains(session, "ssl_negotiate(point->sslses);")
 assert index(session, "descriptor_latency.finish();") < index(session, "repair_session_command_gate")
 
-for needle in ("telnet_flush_output(point)", "process_output(point)",
+for needle in ("drain_network_transport(point)", "process_output(point)",
                "websocket_flush_output(point)", "point->ws_control_output_len"):
     assert contains(output, needle)
 
@@ -79,7 +88,7 @@ for needle in ("perform_violence();", "display_map_room(", "map_look(t_ch, MAP_A
                "gmcp_send_group_status(t_ch);", "move_regen(t_ch"):
     assert contains(combat, needle)
 for needle in ("nevent_advance_tick();", "affect_update();", "point_update();",
-               "latency_trace_record(\"total_tick\"", "select(0, (fd_set *)0"):
+               "latency_trace_record(\"total_tick\"", "network_wait_until(ctx, network_next_pulse_us("):
     assert contains(reset, needle)
 
 loop_start = index(comm, "while (!shutdownflag)")

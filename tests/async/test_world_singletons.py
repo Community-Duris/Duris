@@ -34,15 +34,16 @@ assert comm.count('initialize_transport();') == 2  # declaration and post-recove
 assert loop.index('redis_world_recovery_boot_clear();') < loop.index('initialize_transport();')
 assert loop.index('copyover_recover(') < loop.index('reconcile_shopkeepers(')
 copyover = (ROOT / 'src/persistence/copyover.c').read_text()
-assert 'copyover_version_supported(header.version)' in copyover
-assert 'version >= 12 && version <= COPYOVER_VERSION' in copyover
+codec = (ROOT / 'src/persistence/copyover_codec.c').read_text()
+assert 'version < 12 || version > 17' in codec
+assert 'copyover_codec_read(fp, &state' in copyover
 durable_shopkeepers = copyover[copyover.index('bool copyover_has_durable_shopkeepers()'):copyover.index('int is_copyover_boot(void)')]
-assert 'copyover_version_supported(header.version)' in durable_shopkeepers
-assert 'memcmp(header.magic, COPYOVER_MAGIC, 4)' in durable_shopkeepers
-assert 'offsetof(copyover_mob, transport)' in copyover
+assert 'copyover_codec_read(file, &state' in durable_shopkeepers
+assert 'state.header.version >= 13' in durable_shopkeepers
+assert 'offsetof(copyover_mob, transport) == 288' in codec
 assert copyover.count('transport_capture(mob, &entry.transport);') == 2
 assert copyover.count('transport_restore(mob, mob_entry.transport);') == 2
 save = copyover[copyover.index('bool copyover_save('):copyover.index('// find_player_by_name')]
-assert save.index('snapshot_shopkeepers_for_copyover()') < save.index('fopen(copyover_tmp')
+assert save.index('snapshot_shopkeepers_for_copyover()') < save.index('open(copyover_tmp')
 assert 'copyover_has_durable_shopkeepers()' in (ROOT / 'src/world/db.c').read_text()
 print('world singleton lifecycle and recovery compatibility passed')

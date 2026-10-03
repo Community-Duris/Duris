@@ -872,5 +872,8 @@
   "test_persistence_doctor.py": {"profile":"fast","mode":"unittest","minimum_cases":10,"cpu":1,"memory_mb":256,"seconds":2,"purpose":"Verify read-only diagnostic findings, TLS, protected output and optional native SQL.","also_profiles":["database"]},
   "test_persistence_restore_socket.py": {"profile":"fast","mode":"unittest","minimum_cases":7,"cpu":1,"memory_mb":256,"seconds":1,"purpose":"Verify native restore engine and socket bounds refuse before initialization."},
   "test_session_queues_runtime.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":2,"memory_mb":1024,"seconds":15,"purpose":"Execute bounded session queue admission, overflow, routing and output handling."},
-  "test_flatfile_account_fence.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":2,"memory_mb":1024,"seconds":30,"purpose":"Execute account deletion admission and refusal under the native authority transaction lock."}
+  "test_flatfile_account_fence.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":2,"memory_mb":1024,"seconds":30,"purpose":"Execute account deletion admission and refusal under the native authority transaction lock."},
+  "test_network_readiness_journey.py": {"profile":"journey","mode":"script","minimum_cases":1,"cpu":2,"memory_mb":2048,"seconds":120,"purpose":"Measure real telnet, TLS and WebSocket readiness, capacity, idle CPU and command pacing in a private server."},
+  "test_network_readiness_runtime.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":5,"purpose":"Execute production transport readiness, wakeups, descriptor registration and deadline turns against real sockets."},
+  "test_portable_copyover_codec.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":8,"purpose":"Execute portable copyover encoding and decoding against independent golden bytes, legacy ABI inputs and corrupt/truncated negatives."}
 }}

@@ -130,7 +130,7 @@ gnutls_session_t ssl_new(int s)
 	}
 
 	gnutls_certificate_server_set_request(ses, GNUTLS_CERT_IGNORE);
-	gnutls_handshake_set_timeout(ses, GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
+	gnutls_handshake_set_timeout(ses, TLS_HANDSHAKE_TIMEOUT_MS);
 	gnutls_transport_set_int(ses, s);
 
 	return ses;

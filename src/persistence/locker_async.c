@@ -15,6 +15,7 @@
  * carried by the locker character after LockerToPFile transitions.
  */
 
+#include "net/network_wakeup.h"
 #include "core/prototypes.h"
 #include "sql/sql_thread_init.h"
 #include "core/structs.h"
@@ -233,6 +234,7 @@ static void result_push_locked(const struct locker_async_result *r)
 		{
 			g_results[i] = *r;
 			g_results[i].used = 1;
+			network_wakeup_notify();
 			return;
 		}
 	}

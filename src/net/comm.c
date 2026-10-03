@@ -22,6 +22,8 @@
 #include "telemetry/telemetry_runtime.h"
 #include "net/comm.h"
 #include "net/session_input.h"
+#include "net/network_readiness.h"
+#include "net/network_wakeup.h"
 #include "net/output_style.h"
 #include "net/chat_presentation.h"
 #include "net/output_profiles.h"
@@ -383,7 +385,6 @@ static void process_line(P_desc t, char *in);
 /* local globals */
 
 P_desc descriptor_list, next_to_process, next_save = 0;
-fd_set input_set, output_set, exc_set; /* for socket handling */
 int mini_mode = 0;
 int lawful = 0;
 int no_specials = 0;
@@ -1157,13 +1158,13 @@ int run_the_game(int port, int sslport)
 
 /* Accept new connects, relay commands, and call 'heartbeat-functs' */
 
-#define MAX_ACCEPTS_PER_PULSE 32
+#define MAX_ACCEPTS_PER_TURN 32
 
 static int drain_new_connections(int listener, int conn_type, const char *label)
 {
 	int accepted_count = 0;
 
-	for (int attempt = 0; attempt < MAX_ACCEPTS_PER_PULSE; attempt++)
+	for (int attempt = 0; attempt < MAX_ACCEPTS_PER_TURN; attempt++)
 	{
 		if (new_descriptor(listener, conn_type) == 0)
 		{
@@ -1321,12 +1322,6 @@ struct game_loop_pulse_context
 	struct host_answer *host_answer;
 	unsigned long *accept_debug_pulse;
 	long *last_desc_per_hour_reset;
-	struct timeval *opt_time;
-	struct timeval *last_time;
-	struct timeval *null_time;
-	struct timeval *timeout;
-	sigset_t *signal_mask;
-	sigset_t *old_signal_mask;
 	bool accept_debug;
 	uint64_t loop_time_begin_us;
 	uint64_t loop_tick;
@@ -1439,79 +1434,254 @@ static void dispatch_session_input(P_desc descriptor, P_char character, char *in
  * durable completions remain after that event phase.
  */
 
+/* Drain retained wire bytes only. Application output/prompt construction remains
+ * in run_output_phase() at the simulation boundary. */
+static int drain_network_transport(P_desc point)
+{
+	if (point->write_failed)
+		return -1;
+	if (point->connected == CON_SSLNEGO)
+		return 0;
+	if (network_transport_pending(point) &&
+	    (point->network_revents & network_write_interest(point)))
+	{
+		if ((!point->websocket && telnet_flush_output(point) < 0) ||
+		    (point->websocket && websocket_flush_output(point) < 0))
+		{
+			point->write_failed = 1;
+			return -1;
+		}
+	}
+	if (point->websocket && point->ws_state == WS_STATE_OPEN && point->ws_ping_queued &&
+	    point->ws_control_output_len == 0)
+	{
+		point->ws_ping_queued = 0;
+		point->ws_ping_outstanding = 1;
+		point->ws_pong_received = 0;
+		point->ws_last_ping = time(0);
+	}
+	if (point->websocket && point->ws_state == WS_STATE_CLOSING &&
+	    !network_transport_pending(point))
+		return -1;
+	return 0;
+}
+
+/* One bounded network turn: direct descriptor entries, one read per client,
+ * bounded accept/output/parser work, and no game commands or world callbacks.
+ * Every registered client gets a turn, so a busy client cannot take another
+ * read ahead of its peers. Never retain borrowed pointers across a turn. */
+static bool service_network_turn(game_loop_pulse_context &ctx, int timeout_ms)
+{
+	std::vector<pollfd> sockets = {
+		{ ctx.telnet_listener, POLLIN, 0 },
+		{ ctx.ssl_listener, POLLIN, 0 },
+		{ ctx.websocket_listener, POLLIN, 0 },
+		{ network_wakeup_fd(), POLLIN, 0 },
+	};
+	std::vector<P_desc> clients;
+	const uint64_t registration_us = loop_monotonic_us();
+	for (P_desc point = descriptor_list; point; point = point->next)
+	{
+		point->network_revents = 0;
+		const short interests = network_read_interest(point) |
+					network_write_interest(point);
+		sockets.push_back(
+			{ point->network_close_pending || !interests ? -1 : point->descriptor,
+			  static_cast<short>(interests | POLLPRI), 0 });
+		clients.push_back(point);
+		if (!point->network_close_pending && network_buffered_input(point))
+			timeout_ms = 0;
+		if (!point->network_close_pending && point->connected == CON_SSLNEGO &&
+		    point->tls_handshake_deadline_us)
+			timeout_ms =
+				MIN(timeout_ms, network_timeout_ms(point->tls_handshake_deadline_us,
+								   registration_us));
+	}
+	const int poll_result = poll(sockets.data(), sockets.size(), timeout_ms);
+	if (poll_result < 0)
+	{
+		if (errno != EINTR)
+		{
+			logit(LOG_COMM, "Network poll failed: %s", strerror(errno));
+			shutdownflag = 1;
+		}
+		return false;
+	}
+	// Assign results before accepting/closing anything. A reused descriptor
+	// number cannot inherit readiness from the previous connection.
+	for (size_t index = 0; index < clients.size(); ++index)
+		clients[index]->network_revents = sockets[index + 4].revents;
+	if (sockets[3].revents & POLLIN)
+		network_wakeup_drain();
+	for (size_t index = 0; index < 3; ++index)
+	{
+		if (sockets[index].revents & (POLLERR | POLLHUP | POLLNVAL))
+		{
+			logit(LOG_COMM, "Listener %d failed: poll events=%d", sockets[index].fd,
+			      sockets[index].revents);
+			shutdownflag = 1;
+			return false;
+		}
+	}
+	if (ctx.accept_debug &&
+	    ((++*ctx.accept_debug_pulse % 20) == 0 || (sockets[0].revents & POLLIN)))
+		logit(LOG_STATUS,
+		      "ACCEPT DEBUG: turn=%lu listener=%d poll_result=%d listener_ready=%d descriptors=%d",
+		      *ctx.accept_debug_pulse, ctx.telnet_listener, poll_result,
+		      (sockets[0].revents & POLLIN) ? 1 : 0, used_descs);
+
+	/* Nonblocking accept is the authoritative readiness check. */
+	// The boundary's zero-time poll also probes listeners, retaining the accept
+	// watchdog. Blocking waits drain only listeners reported ready.
+	if ((sockets[0].revents & POLLIN) || timeout_ms == 0)
+		drain_new_connections(ctx.telnet_listener, 0, "Telnet");
+	if ((sockets[1].revents & POLLIN) || timeout_ms == 0)
+		drain_new_connections(ctx.ssl_listener, 1, "SSL");
+	if (ctx.websocket_listener >= 0 && ((sockets[2].revents & POLLIN) || timeout_ms == 0))
+		drain_new_connections(ctx.websocket_listener, 2, "WebSocket");
+
+	for (P_desc point = descriptor_list; point; point = next_to_process)
+	{
+		next_to_process = point->next;
+		if (point->network_close_pending)
+			continue;
+		if (point->network_revents & (POLLERR | POLLNVAL | POLLPRI))
+		{
+			point->network_close_pending = 1;
+			continue;
+		}
+		if (point->connected == CON_SSLNEGO)
+		{
+			if (point->tls_handshake_deadline_us &&
+			    loop_monotonic_us() >= point->tls_handshake_deadline_us)
+			{
+				logit(LOG_COMM, "TLS handshake timed out on descriptor %d",
+				      point->descriptor);
+				point->network_close_pending = 1;
+				continue;
+			}
+			if (!(point->network_revents & (network_read_interest(point) | POLLHUP)))
+				continue;
+			command_latency_event ssl_event = {};
+			prepare_descriptor_latency_event(&ssl_event, COMMAND_LATENCY_SSL, point,
+							 NULL);
+			const uint64_t ssl_started_us = loop_monotonic_us();
+			const int ssl_result = ssl_negotiate(point->sslses);
+			command_latency_record(&ctx.command_latency, &ssl_event,
+					       latency_trace_elapsed_us(ssl_started_us,
+									loop_monotonic_us()));
+			if (ssl_result == 0)
+			{
+				point->tls_read_interest = 0;
+				point->tls_handshake_deadline_us = 0;
+				greet(point);
+			}
+			else if (ssl_result == 1)
+				point->tls_read_interest =
+					gnutls_record_get_direction(point->sslses) ? POLLOUT :
+										     POLLIN;
+			else
+				point->network_close_pending = 1;
+			continue;
+		}
+		// HUP is reported even without the requested readiness direction. A
+		// paused reader/retained TLS send must not spin on a terminal peer.
+		if ((point->network_revents & POLLHUP) && !network_read_interest(point))
+		{
+			point->network_close_pending = network_has_unoffered_input(point) ? 2 : 1;
+			continue;
+		}
+		// Resume a retained TLS send before allowing another TLS operation to
+		// overwrite its required retry direction.
+		if (drain_network_transport(point) < 0)
+		{
+			// A normal WebSocket close can follow queued application frames.
+			// Offer those at the boundary before retiring the connection, as for EOF.
+			point->network_close_pending =
+				point->websocket && point->ws_state == WS_STATE_CLOSING &&
+						!point->write_failed &&
+						point->ws_pending_application ?
+					2 :
+					1;
+			continue;
+		}
+		if (point->telnet_tls_retry)
+			continue;
+		if (point->websocket && websocket_input_paused(point))
+			continue;
+		if (!point->network_input_remaining && !network_buffered_input(point))
+			continue;
+		if (!(point->network_revents & (network_read_interest(point) | POLLHUP)) &&
+		    !network_buffered_input(point))
+			continue;
+		const int input_result = process_input(point);
+		if (input_result == NETWORK_INPUT_EOF)
+		{
+			// A read performed between pulses has not yet been offered to
+			// session input. Retain the old one-boundary opportunity before
+			// EOF teardown; input from an earlier boundary gets no extension.
+			point->network_close_pending = network_has_unoffered_input(point) ? 2 : 1;
+		}
+		else if (input_result < 0)
+		{
+			if (point->websocket && point->ws_state == WS_STATE_OPEN)
+			{
+				const int close_code = point->ws_error_code ?
+							       point->ws_error_code :
+							       WS_CLOSE_PROTOCOL_ERROR;
+				const char *reason =
+					close_code == WS_CLOSE_MESSAGE_TOO_BIG ? "Message too big" :
+					close_code == WS_CLOSE_INVALID_DATA    ? "Invalid data" :
+					close_code == WS_CLOSE_INTERNAL_ERROR  ? "Internal error" :
+										 "Protocol error";
+				websocket_close(point, close_code, reason);
+			}
+			else
+				point->network_close_pending = 1;
+		}
+	}
+	return true;
+}
+
+static void network_wait_until(game_loop_pulse_context &ctx, uint64_t deadline_us)
+{
+	for (;;)
+	{
+		if (shutdownflag)
+			return;
+		const uint64_t now_us = loop_monotonic_us();
+		if (!now_us)
+		{
+			logit(LOG_COMM, "Network deadline clock unavailable; requesting shutdown.");
+			shutdownflag = 1;
+			return;
+		}
+		if (now_us >= deadline_us)
+			return;
+		service_network_turn(ctx, network_timeout_ms(deadline_us, now_us));
+	}
+}
+
 static bool run_connection_phase(game_loop_pulse_context &ctx)
 {
-	const int s = ctx.telnet_listener;
-	const int S = ctx.ssl_listener;
-	const int WS = ctx.websocket_listener;
-	char *buf = ctx.network_buffer;
-	struct host_answer &host_ans_buf = *ctx.host_answer;
-	unsigned long &accept_debug_pulse = *ctx.accept_debug_pulse;
-	long &last_desc_per_hour_reset = *ctx.last_desc_per_hour_reset;
-	struct timeval &null_time = *ctx.null_time;
-	sigset_t &mask = *ctx.signal_mask;
-	sigset_t &oldset = *ctx.old_signal_mask;
-	const bool accept_debug = ctx.accept_debug;
-	const uint64_t loop_tick = ctx.loop_tick;
-	command_latency_tracker &command_latency = ctx.command_latency;
-	P_desc point, next_point;
-
-	// check for signal-initiated shutdown (from launcher)
-	//PROFILE_START(process_signal_shutdown_pending);
 	if (signal_shutdown_pending)
 	{
-		int type = signal_shutdown_pending;
+		const int type = signal_shutdown_pending;
 		signal_shutdown_pending = 0;
 		request_shutdown(type, "Launcher", "signal from launcher");
 	}
-	//PROFILE_END(process_signal_shutdown_pending);
 	persistence_log_poll();
-
-	if ((last_desc_per_hour_reset + 3600) <= time(0))
+	if ((*ctx.last_desc_per_hour_reset + 3600) <= time(0))
 	{
 		max_descs_this_hour = used_descs;
-		last_desc_per_hour_reset = time(0);
+		*ctx.last_desc_per_hour_reset = time(0);
 	}
-	/*
-	    struct host_answer host_ans_buf;
-	*/
+	char *buf = ctx.network_buffer;
+	struct host_answer &host_ans_buf = *ctx.host_answer;
 	bzero(&host_ans_buf, sizeof(host_ans_buf));
-	/* Check for answers to hostname queuries */
-	/* just ignore errors (hope they are all "no message" errors) */
-#if 0
-    if (msgrcv(ipc_id, (struct msgbuf *) &host_ans_buf,
-               sizeof(struct host_answer) - sizeof(long),
-               MSG_HOST_ANS, IPC_NOWAIT) == -1)
-      host_ans_buf.desc = s;    /* so nothing happens  */
-#endif
-	/* Check what's happening out there */
-	FD_ZERO(&input_set);
-	FD_ZERO(&output_set);
-	FD_ZERO(&exc_set);
-
-	/* Get the file descriptors for asynchrnonous IO */
-
-#ifdef USE_ASYNCHRONOUS_IO
-	input_set = io_readfds;
-	output_set = io_writefds;
-	exc_set = io_exceptfds;
-#endif
-
-	/* Continue with original code */
-	PROFILE_START(connections);
-	const uint64_t connections_begin_us = loop_monotonic_us();
-	FD_SET(s, &input_set);
-	FD_SET(S, &input_set);
-	if (WS >= 0)
-		FD_SET(WS, &input_set); /* WebSocket listener */
-	for (point = descriptor_list; point; point = point->next)
+	for (P_desc point = descriptor_list, next_point; point; point = next_point)
 	{
-		/*
-		 * while we are looping through descriptors, it would be a
-		 * good time to see if the message answer we checked for
-		 * before matches
-		 */
-
+		next_point = point->next;
 		if ((point->descriptor == host_ans_buf.desc) &&
 		    !strncmp(host_ans_buf.addr, point->host /*+ 3 */, strlen(host_ans_buf.addr)))
 		{
@@ -1545,144 +1715,33 @@ static bool run_connection_phase(game_loop_pulse_context &ctx)
 				point->wait = 1;
 			}
 		}
-		FD_SET(point->descriptor, &input_set);
-		FD_SET(point->descriptor, &exc_set);
-		FD_SET(point->descriptor, &output_set);
 	}
-
-	sigprocmask(SIG_SETMASK, &mask, &oldset);
-
-	int select_result = select(FD_SETSIZE, &input_set, &output_set, &exc_set, &null_time);
-	if (accept_debug && ((++accept_debug_pulse % 20) == 0 || FD_ISSET(s, &input_set)))
+	PROFILE_START(connections);
+	const uint64_t connections_begin_us = loop_monotonic_us();
+	const bool ready = service_network_turn(ctx, 0);
+	// Application WebSocket actions and link-loss teardown retain the original
+	// connection phase boundary. close_socket() advances next_to_process if an
+	// application handler removes a later descriptor during reconnect/logout.
+	// An interrupted poll leaves this work staged for a successful boundary.
+	for (P_desc point = ready ? descriptor_list : NULL; point; point = next_to_process)
 	{
-		logit(LOG_STATUS,
-		      "ACCEPT DEBUG: pulse=%lu listener=%d select_result=%d listener_ready=%d descriptors=%d",
-		      accept_debug_pulse, s, select_result, FD_ISSET(s, &input_set) ? 1 : 0,
-		      used_descs);
-	}
-	if (select_result < 0)
-	{
-		perror("Select poll");
-		// bad file descriptor - find and nuke it so we dont loop forever
-		if (errno == EBADF)
-		{
-			struct descriptor_data *d, *next_d;
-			for (d = descriptor_list; d; d = next_d)
-			{
-				next_d = d->next;
-				if (fcntl(d->descriptor, F_GETFD) == -1 && errno == EBADF)
-				{
-					logit(LOG_STATUS,
-					      "ebadf: closing bad descriptor %d, host=%s, ws=%d, state=%d",
-					      d->descriptor, *d->host ? d->host : "null",
-					      d->websocket, d->connected);
-					close_socket(d);
-				}
-			}
-		}
-		sigprocmask(SIG_SETMASK, &oldset, 0);
-		return false;
-	}
-	sigprocmask(SIG_SETMASK, &oldset, 0);
-
-	/*
-	 ** Handle the asynchronous IO first.
-	 **
-	 ** Note that it is IMPORTANT that asynchronous is done before
-	 ** anything else.  Reason:  if we process something else, it
-	 ** is conceivable for the user to type in another command,
-	 ** i.e. "rent", then "kill receptionist", which will mean
-	 ** that the player will start attacking receptionist, but
-	 ** then he would have RENTED!!!!!!
-	 */
-
-#ifdef USE_ASYNCHRONOUS_IO
-	(void)io_processFDS(&input_set, &output_set, &exc_set);
-#endif
-
-	/* Respond to whatever might be happening */
-
-	/* Nonblocking accept is the authoritative readiness check. */
-	drain_new_connections(s, 0, "Telnet");
-	drain_new_connections(S, 1, "SSL");
-	if (WS >= 0)
-		drain_new_connections(WS, 2, "WebSocket");
-
-	/* kick out the freaky folks */
-	for (point = descriptor_list; point; point = next_point)
-	{
-		next_point = point->next;
-		if (FD_ISSET(point->descriptor, &exc_set))
-		{
-			logit(LOG_COMM, "Closing socket with exception.  FIXME!");
+		next_to_process = point->next;
+		if (point->network_close_pending == 1)
 			close_socket(point);
-		}
-		else if (FD_ISSET(point->descriptor, &input_set))
+		else
 		{
-			int input_result = 0;
-			if (point->connected != CON_SSLNEGO)
-				input_result = process_input(point);
-			if (input_result < 0)
-			{
-				if (point->websocket && point->ws_state == WS_STATE_OPEN)
-				{
-					int close_code = point->ws_error_code ?
-								 point->ws_error_code :
-								 WS_CLOSE_PROTOCOL_ERROR;
-					const char *reason =
-						close_code == WS_CLOSE_MESSAGE_TOO_BIG ?
-							"Message too big" :
-							(close_code == WS_CLOSE_INVALID_DATA ?
-								 "Invalid data" :
-								 (close_code == WS_CLOSE_INTERNAL_ERROR ?
-									  "Internal error" :
-									  "Protocol error"));
-					websocket_close(point, close_code, reason);
-				}
-				else
-				{
-					close_socket(point);
-				}
-			}
+			if (point->network_close_pending == 2)
+				point->network_close_pending = 1;
+			point->network_input_remaining = point->websocket ? WS_INPUT_BUFFER_SIZE :
+									    MAX_QUEUE_LENGTH - 1;
+			if (point->websocket)
+				websocket_dispatch_pending_input(point);
 		}
 	}
-	/* TLS negotiation belongs to the connection/readiness phase.  A session
-	 * that is still negotiating must not consume a command in this pulse. */
-	for (point = descriptor_list; point; point = next_point)
-	{
-		next_point = point->next;
-		if (point->connected != CON_SSLNEGO)
-			continue;
-		command_latency_event ssl_event = {};
-		prepare_descriptor_latency_event(&ssl_event, COMMAND_LATENCY_SSL, point, NULL);
-		const uint64_t ssl_started_us = loop_monotonic_us();
-		const int ssl_result = ssl_negotiate(point->sslses);
-		command_latency_record(&command_latency, &ssl_event,
-				       latency_trace_elapsed_us(ssl_started_us,
-								loop_monotonic_us()));
-		switch (ssl_result)
-		{
-		case 0:
-			greet(point);
-			break;
-		default:
-			close_socket(point);
-		case 1:
-			continue;
-		}
-	}
+	ctx.connections_us = latency_trace_elapsed_us(connections_begin_us, loop_monotonic_us());
+	latency_trace_record("connections", ctx.connections_us, ctx.loop_tick);
 	PROFILE_END(connections);
-	const uint64_t connections_us =
-		latency_trace_elapsed_us(connections_begin_us, loop_monotonic_us());
-	latency_trace_record("connections", connections_us, loop_tick);
-
-#if 0
-    if (debug_mode)
-      loop_debug();
-#endif
-
-	ctx.connections_us = connections_us;
-	return true;
+	return ready;
 }
 
 static void run_session_input_phase(game_loop_pulse_context &ctx)
@@ -1891,37 +1950,17 @@ static void run_output_phase(game_loop_pulse_context &ctx)
 			close_socket(point);
 			continue;
 		}
-		if (!FD_ISSET(point->descriptor, &output_set))
-			continue;
-
-		// skip ssl connections still negotiating
+		// Application output stays at this boundary. Retained bytes must
+		// drain first, following the transport/TLS readiness direction.
 		if (point->connected == CON_SSLNEGO)
 			continue;
-
-		if (!point->websocket && point->telnet_output_len)
+		if (drain_network_transport(point) < 0)
 		{
-			if (telnet_flush_output(point) < 0)
-			{
-				close_socket(point);
-				continue;
-			}
-			if (point->telnet_output_len)
-				continue;
+			close_socket(point);
+			continue;
 		}
-
-		/* Drain WebSocket bytes retained after a partial write/EAGAIN before
-		 * framing additional application output for this descriptor. */
-		if (point->websocket && point->ws_output_offset < point->ws_output_len)
-		{
-			if (websocket_flush_output(point) < 0)
-			{
-				point->write_failed = 1;
-				close_socket(point);
-				continue;
-			}
-			if (point->ws_output_offset < point->ws_output_len)
-				continue;
-		}
+		if (network_transport_pending(point))
+			continue;
 
 		if (process_output(point) < 0)
 		{
@@ -2273,11 +2312,6 @@ static void run_pulse_reset_phase(game_loop_pulse_context &ctx)
 	const uint64_t loop_time_begin_us = ctx.loop_time_begin_us;
 	const uint64_t loop_tick = ctx.loop_tick;
 	const uint64_t loop_start_mono_us = ctx.loop_start_mono_us;
-	struct timeval &opt_time = *ctx.opt_time;
-	struct timeval &last_time = *ctx.last_time;
-	struct timeval &timeout = *ctx.timeout;
-	sigset_t &mask = *ctx.signal_mask;
-	sigset_t &oldset = *ctx.old_signal_mask;
 	const uint64_t connections_us = ctx.connections_us;
 	const uint64_t command_sweep_us = ctx.command_sweep_us;
 	const uint64_t prompts_us = ctx.prompts_us;
@@ -2360,32 +2394,11 @@ static void run_pulse_reset_phase(game_loop_pulse_context &ctx)
 		latency_trace_snapshot_dump(stderr, &snapshot);
 		fflush(stderr);
 	}
-	memcpy(&timeout, &opt_time, sizeof(timeout));
-	const suseconds_t usec_spent = (suseconds_t)MIN(
-		loop_us == LATENCY_TRACE_DURATION_INVALID ? 0 : loop_us, (uint64_t)timeout.tv_usec);
-	timeout.tv_usec = MAX(0, timeout.tv_usec - usec_spent);
-
-	if (timeout.tv_sec || timeout.tv_usec)
-	{
-		/*
-		 * This keeps game from being a total processor hog by putting
-		 * it to sleep for the part of each 1/4 second that is not
-		 * used for game processing.
-		 */
-
-		sigprocmask(SIG_SETMASK, &mask, &oldset);
-
-		if (select(0, (fd_set *)0, (fd_set *)0, (fd_set *)0, &timeout) < 0)
-		{
-			sigprocmask(SIG_SETMASK, &oldset, 0);
-			if (errno == EINTR)
-				return; // interrupted by signal; the next pulse retries
-			perror("Select sleep");
-			return;
-		}
-		sigprocmask(SIG_SETMASK, &oldset, 0);
-	}
-	gettimeofday(&last_time, (struct timezone *)0); /* end of pulse reset */
+	// Pace from the monotonic pulse start. On an overrun discard missed wall
+	// slots and allow a full interval before the next logical simulation tick.
+	// Network readiness and completion hints wake this wait without advancing
+	// commands, combat, world events, or durable-completion publication.
+	network_wait_until(ctx, network_next_pulse_us(loop_time_begin_us, loop_monotonic_us()));
 	PROFILE_END(pulse_reset);
 
 	ctx.affect_us = affect_us;
@@ -2422,10 +2435,7 @@ void game_loop(int port, int sslport)
 	char buf[MAX_STRING_LENGTH];
 	char comm[MAX_INPUT_LENGTH];
 	P_desc point;
-	static struct timeval opt_time;
-	struct timeval last_time, timeout, null_time;
 	struct host_answer host_ans_buf;
-	sigset_t mask, oldset;
 	int s, S;
 	int WS; /* WebSocket listener socket */
 	int accept_debug = getenv("DURIS_ACCEPT_DEBUG") != NULL;
@@ -2433,32 +2443,13 @@ void game_loop(int port, int sslport)
 
 	sentbytes = 0;
 	receivedbytes = 0;
-	null_time.tv_sec = 0;
-	null_time.tv_usec = 0;
-
-	opt_time.tv_usec = OPT_USEC; /* Init time values */
-	opt_time.tv_sec = 0;
-	gettimeofday(&last_time, (struct timezone *)0);
+	if (network_wakeup_fd() < 0)
+		fatal_boot_error("comm", "Could not initialize network completion wakeups");
 
 	avail_descs = MAX_CONNECTIONS;
 
 	snprintf(buf, MAX_STRING_LENGTH, "avail_descs set to: %d", avail_descs);
 	logit(LOG_STATUS, "%s", buf);
-
-	sigemptyset(&mask);
-	sigaddset(&mask, SIGUSR1);
-	sigaddset(&mask, SIGUSR2);
-	sigaddset(&mask, SIGINT);
-	sigaddset(&mask, SIGPIPE);
-	sigaddset(&mask, SIGHUP);
-	sigaddset(&mask, SIGALRM);
-	sigaddset(&mask, SIGTERM);
-	sigaddset(&mask, SIGURG);
-	sigaddset(&mask, SIGSEGV);
-
-#ifdef USE_ASYNCHRONOUS_IO
-	io_init();
-#endif
 
 	dead_desc_pool = mm_create("SOCKET", sizeof(struct descriptor_data),
 				   offsetof(struct descriptor_data, next),
@@ -2597,12 +2588,6 @@ resume_game_loop:
 		context.host_answer = &host_ans_buf;
 		context.accept_debug_pulse = &accept_debug_pulse;
 		context.last_desc_per_hour_reset = &last_desc_per_hour_reset;
-		context.opt_time = &opt_time;
-		context.last_time = &last_time;
-		context.null_time = &null_time;
-		context.timeout = &timeout;
-		context.signal_mask = &mask;
-		context.old_signal_mask = &oldset;
 		context.accept_debug = accept_debug;
 		context.loop_time_begin_us = loop_time_begin_us;
 		context.loop_tick = loop_tick;
@@ -3700,85 +3685,6 @@ void nonblock(int s)
         * old/new socket code. 9/18/95  JAB                                                                                                                                                            \
         */
 
-static int proxy_peer_is_trusted(int desc)
-{
-	const char *trusted_ip = getenv("DURIS_TRUSTED_PROXY_IP");
-	struct sockaddr_storage peer;
-	struct in_addr trusted4;
-	struct in6_addr trusted6;
-	socklen_t peer_len = sizeof(peer);
-
-	if (!trusted_ip || !*trusted_ip ||
-	    getpeername(desc, (struct sockaddr *)&peer, &peer_len) < 0)
-		return 0;
-	if (peer.ss_family == AF_INET)
-		return inet_pton(AF_INET, trusted_ip, &trusted4) == 1 &&
-		       memcmp(&((struct sockaddr_in *)&peer)->sin_addr, &trusted4,
-			      sizeof(trusted4)) == 0;
-	if (peer.ss_family == AF_INET6)
-		return inet_pton(AF_INET6, trusted_ip, &trusted6) == 1 &&
-		       memcmp(&((struct sockaddr_in6 *)&peer)->sin6_addr, &trusted6,
-			      sizeof(trusted6)) == 0;
-	return 0;
-}
-
-/* parse proxy protocol v1 header - returns 1 if found, stores real ip */
-static int parse_proxy_protocol(int desc, char *real_ip, size_t ip_len)
-{
-	char buf[108];
-	char proto[8], src_ip[46], dst_ip[46], trailing;
-	int src_port, dst_port;
-	struct in_addr src4, dst4;
-	struct in6_addr src6, dst6;
-	ssize_t n;
-	int i;
-
-	/* peek first 6 bytes to check for "PROXY " */
-	n = recv(desc, buf, 6, MSG_PEEK);
-	if (n < 6 || strncmp(buf, "PROXY ", 6) != 0)
-		return 0;
-
-	/* read full line up to \r\n */
-	for (i = 0; i < (int)sizeof(buf) - 1; i++)
-	{
-		n = recv(desc, &buf[i], 1, 0);
-		if (n <= 0)
-			return 0;
-		if (buf[i] == '\n')
-		{
-			buf[i + 1] = '\0';
-			break;
-		}
-	}
-	buf[i] = '\0';
-	if (i > 0 && buf[i - 1] == '\r')
-		buf[i - 1] = '\0';
-
-	if (sscanf(buf, "PROXY %7s %45s %45s %d %d %c", proto, src_ip, dst_ip, &src_port, &dst_port,
-		   &trailing) != 5)
-		return 0;
-	if (src_port < 1 || src_port > 65535 || dst_port < 1 || dst_port > 65535)
-		return 0;
-	if (strcmp(proto, "TCP4") == 0)
-	{
-		if (inet_pton(AF_INET, src_ip, &src4) != 1 ||
-		    inet_pton(AF_INET, dst_ip, &dst4) != 1)
-			return 0;
-	}
-	else if (strcmp(proto, "TCP6") == 0)
-	{
-		if (inet_pton(AF_INET6, src_ip, &src6) != 1 ||
-		    inet_pton(AF_INET6, dst_ip, &dst6) != 1)
-			return 0;
-	}
-	else
-		return 0;
-
-	strncpy(real_ip, src_ip, ip_len - 1);
-	real_ip[ip_len - 1] = '\0';
-	return 1;
-}
-
 struct hostname_lookup_request
 {
 	char address[INET6_ADDRSTRLEN];
@@ -3817,8 +3723,8 @@ static void *hostname_lookup_worker(void *arg)
 			{
 				int write_ok = fprintf(f, "%s\n", hostname) >= 0;
 				int close_ok = fclose(f) == 0;
-				if (write_ok && close_ok)
-					rename(temp_path, final_path);
+				if (write_ok && close_ok && rename(temp_path, final_path) == 0)
+					network_wakeup_notify();
 			}
 		}
 		freeaddrinfo(result);
@@ -3889,35 +3795,22 @@ int new_descriptor(int s, int conn_type)
 	if ((desc = new_connection(s)) < 0)
 		return (-1);
 
-	if (desc >= FD_SETSIZE)
+	// Capacity counts live connections, never the numeric descriptor value.
+	if (used_descs >= avail_descs)
 	{
-		logit(LOG_COMM, "Accepted descriptor %d exceeds FD_SETSIZE %d; closing connection.",
-		      desc, FD_SETSIZE);
 		shutdown(desc, 2);
 		close(desc);
-		return (0);
+		return 0;
 	}
-
-	/* SSL connection - initialize TLS */
+	/* SSL connection - initialize TLS only after admission. */
 	if (conn_type == 1 && !(sslses = ssl_new(desc)))
 	{
 		shutdown(desc, 2);
 		close(desc);
-		return 0; // can legitimately fail if client sends garbage
+		return 0;
 	}
-
 	used_descs++;
-
-	if (used_descs >= avail_descs)
-	{
-		// shouldn't write anything before setup
-		// write(desc, "Sorry, the game is full...\r\n");
-		used_descs--;
-		shutdown(desc, 2);
-		close(desc);
-		return (0);
-	}
-	else if (used_descs > max_descs)
+	if (used_descs > max_descs)
 		max_descs = used_descs;
 
 	if (used_descs > max_descs_this_hour)
@@ -3955,14 +3848,6 @@ int new_descriptor(int s, int conn_type)
 			memmove(newd->host, mapped, strlen(mapped) + 1);
 		}
 
-		/* check for proxy protocol on websocket connections */
-		if (conn_type == 2 && proxy_peer_is_trusted(desc))
-		{
-			char proxy_ip[46];
-			if (parse_proxy_protocol(desc, proxy_ip, sizeof(proxy_ip)))
-				strlcpy(newd->host, proxy_ip, sizeof newd->host);
-		}
-
 		/*
 		 * things got ugly, 20k+ sites, so, split it into 2 files, a
 		 * sorted historical one and an unsorted 'recent' one.  Rather
@@ -3993,6 +3878,8 @@ int new_descriptor(int s, int conn_type)
 	 * init desc data
 	 */
 	newd->descriptor = desc;
+	newd->network_input_remaining = conn_type == 2 ? WS_INPUT_BUFFER_SIZE :
+							 MAX_QUEUE_LENGTH - 1;
 	// newd->connected = CON_HOST_LOOKUP;
 	newd->wait = 1;
 	resolve_descriptor_hostname_async(strip_ansi(newd->host).c_str(), desc);
@@ -4044,7 +3931,10 @@ int new_descriptor(int s, int conn_type)
 
 	if (conn_type == 1) // ssl - always use CON_SSLNEGO, let game loop handle greet
 	{
-		ssl_negotiate(sslses); // do first round immediately
+		newd->tls_read_interest = POLLIN;
+		newd->tls_handshake_deadline_us =
+			loop_monotonic_us() +
+			static_cast<uint64_t>(TLS_HANDSHAKE_TIMEOUT_MS) * 1000;
 		STATE(newd) = CON_SSLNEGO;
 	}
 	else if (conn_type == 2)
@@ -4527,14 +4417,17 @@ int process_input(P_desc t)
 	if (begin < 0 || begin >= MAX_QUEUE_LENGTH)
 		panic_corruption("comm", "process_input: invalid buffer length %d", begin);
 	buf = t->buf;
+	const size_t read_capacity =
+		MIN(static_cast<size_t>(MAX_QUEUE_LENGTH - begin - 1), t->network_input_remaining);
+	if (!read_capacity)
+		return 0;
 
 	/*
 	 * Read in some stuff
 	 */
 	if (t->sslses)
 	{
-		thisround =
-			gnutls_record_recv(t->sslses, buf + begin, MAX_QUEUE_LENGTH - begin - 1);
+		thisround = gnutls_record_recv(t->sslses, buf + begin, read_capacity);
 		if (!thisround)
 		{
 			logit(LOG_COMM,
@@ -4542,7 +4435,7 @@ int process_input(P_desc t)
 			      (t->character) ? GET_NAME(t->character) : "NOCHAR",
 			      *t->host ? t->host : "unknown", t->descriptor, t->connected,
 			      t->sslses ? "yes" : "no");
-			return (-1);
+			return NETWORK_INPUT_EOF;
 		}
 		else if (thisround < 0)
 		{
@@ -4553,12 +4446,15 @@ int process_input(P_desc t)
 				      thisround, gnutls_strerror(thisround));
 				return (-1);
 			}
+			t->tls_read_interest = gnutls_record_get_direction(t->sslses) ? POLLOUT :
+											POLLIN;
 			return 0;
 		}
+		t->tls_read_interest = 0;
 	}
 	else
 	{
-		thisround = read(t->descriptor, buf + begin, MAX_QUEUE_LENGTH - begin - 1);
+		thisround = read(t->descriptor, buf + begin, read_capacity);
 		if (!thisround)
 		{
 			logit(LOG_COMM,
@@ -4566,11 +4462,11 @@ int process_input(P_desc t)
 			      (t->character) ? GET_NAME(t->character) : "NOCHAR",
 			      *t->host ? t->host : "unknown", t->descriptor, t->connected,
 			      t->sslses ? "yes" : "no");
-			return (-1);
+			return NETWORK_INPUT_EOF;
 		}
 		else if (thisround < 0)
 		{
-			if (errno != EAGAIN)
+			if (errno != EAGAIN && errno != EINTR)
 			{
 				logit(LOG_COMM, "process_input() CON_%d %s Read: %d Error: %d",
 				      t->connected, (t->character) ? GET_NAME(t->character) : "",
@@ -4581,6 +4477,7 @@ int process_input(P_desc t)
 		}
 	}
 
+	t->network_input_remaining -= thisround;
 	int len = begin + thisround;
 	buf[len] = 0; // safety vs broken code
 	bp = buf;
