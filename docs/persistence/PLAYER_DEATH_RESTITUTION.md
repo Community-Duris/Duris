@@ -16,7 +16,10 @@ canonical row or the separately approved exact-evidence reconciliation path.
   versions 2, 4, and 6, and for wire version 8. Death frames carrying spell
   application receipts use matching wire and normalized schema 13. Death frames
   carrying quest XP receipts, with optional spell receipts, use matching wire and
-  normalized schema 15. Evidence envelopes 10, 14, and 16 remain excluded from
+  normalized schema 15. Craft receipts use schema 18. Ward-bearing wires 21, 26,
+  28, and 31 normalize to these same death request schemas and retain finite ward
+  state. Evidence envelopes 10, 14, 16, and 19, including ward-bearing variants,
+  remain excluded from
   ordinary restitution. Retained XP receipts are progression evidence and do not
   authorize an item grant or an XP adjustment by restitution. Exact
   item encoding is validated by the native codec; unknown or corrupt encodings
