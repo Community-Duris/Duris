@@ -53926,6 +53926,1355 @@
     {
       "contacts": [
         {
+          "description": "Canderthal pole shop: ordinary fishing poles are shop stock. The refundable note service is separate from the ten-material lure request.",
+          "keyword": "pol",
+          "mob_vnum": 43103,
+          "name": "Pol",
+          "topics": []
+        },
+        {
+          "description": "Fisherman's Hutch in Canderthal: his engraved stein is equipped as a weapon. Ambient wiping does not grant a recovery receipt.",
+          "keyword": "huge",
+          "mob_vnum": 43120,
+          "name": "a huge bartender",
+          "topics": []
+        },
+        {
+          "description": "Canderthal seafood kitchen: ask about pike or fillet for the six-pike request.",
+          "keyword": "voshen",
+          "mob_vnum": 43125,
+          "name": "Voshen the Chef",
+          "topics": [
+            "hi",
+            "hello",
+            "pike",
+            "fillet"
+          ]
+        },
+        {
+          "description": "Martinek's Clam House in Fenaline: ask hello about his stein left in Canderthal.",
+          "keyword": "crendethyl",
+          "mob_vnum": 43126,
+          "name": "Crendethyl",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "A roaming young fisherman: ask about Voshen or fillet for a kitchen lead. His reply is guidance, without a separate quest outcome.",
+          "keyword": "young",
+          "mob_vnum": 43131,
+          "name": "a young fisherman",
+          "topics": [
+            "voshen",
+            "filet",
+            "fillet"
+          ]
+        },
+        {
+          "description": "Roaming Canderthal seafood supplier: five platinum buys one clam, pending supported coin settlement.",
+          "keyword": "merchant",
+          "mob_vnum": 43132,
+          "name": "a merchant",
+          "topics": []
+        },
+        {
+          "description": "Gringash's bar in Canderthal: ask hello about the desert-city map. His cellar also holds the ale cask and Krintis.",
+          "keyword": "gringash",
+          "mob_vnum": 43135,
+          "name": "Gringash the Barkeep",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Canderthal wine cellar: ask hello about three venom sacs and three panther teeth.",
+          "keyword": "krintis",
+          "mob_vnum": 43136,
+          "name": "Krintis the Rogue",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "End of the northern Canderthal pier: ask hello about the exact foreign totem. His hawk departure is success prose.",
+          "keyword": "gelden",
+          "mob_vnum": 43138,
+          "name": "Gelden the Shaman",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Canderthal dock pathway: ask hello about normal crate recovery. He remains after delivery.",
+          "keyword": "chundel",
+          "mob_vnum": 43139,
+          "name": "Chundel the Harbor Master",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Wind's Breath Inn in Fenaline: ask hello about Canderthal ale.",
+          "keyword": "elthindeal",
+          "mob_vnum": 43145,
+          "name": "Elthindeal the Bartender",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Wind's Breath dining chamber: ask hello about five jade katanas.",
+          "keyword": "trismerk",
+          "mob_vnum": 43148,
+          "name": "Trismerk the Hunter",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Starts on a grassy road in Fenaline and can roam: ask hello about five hydralisk glands.",
+          "keyword": "austugus",
+          "mob_vnum": 43151,
+          "name": "Austugus the Fenaline Captain",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Roaming Fenaline seafood supplier: five platinum buys one pike, pending supported coin settlement.",
+          "keyword": "merchant",
+          "mob_vnum": 43152,
+          "name": "a merchant",
+          "topics": []
+        },
+        {
+          "description": "Fenaline clam house: ask hello about six small clams.",
+          "keyword": "martinek",
+          "mob_vnum": 43153,
+          "name": "Martinek",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Fenaline moonwell: ask hello about the distant bone-pile ring. Your own moonwell travel is not a prerequisite.",
+          "keyword": "shaenae",
+          "mob_vnum": 43156,
+          "name": "Shaenae the Mystic",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Thur'Gurax watchtower top: ask hello about three glands and three venom sacs.",
+          "keyword": "ayden",
+          "mob_vnum": 43163,
+          "name": "Ayden Stoneheart",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Thur'Gurax Banner Square: ask hello about the siege map; the siege itself has no accepted endpoint.",
+          "keyword": "kruthurgur",
+          "mob_vnum": 43167,
+          "name": "Kruth'Urgur the Crier",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Thur'Gurax barracks office: ask hello about three wicked maces and three panther teeth. Qualify the locked eastern barracks route separately.",
+          "keyword": "vrash",
+          "mob_vnum": 43170,
+          "name": "Vrash Steelclaw the Sergeant",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Cairme's tavern in Thur'Gurax: ask hello about four shivs and exact tundra rations. His conflicting six-shiv line needs correction.",
+          "keyword": "cairme",
+          "mob_vnum": 43174,
+          "name": "Cairme BloodFang",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Thur'Gurax passenger pier: ask hello about his two differently priced crate alternatives.",
+          "keyword": "grimashk",
+          "mob_vnum": 43177,
+          "name": "Grimashk the Dock Lord",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Witchdoctor's loft: ask hello about three separate fifty-platinum totem recipes. The troll below sells all three materials.",
+          "keyword": "bronak",
+          "mob_vnum": 43178,
+          "name": "Bronak the Witchdoctor",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Witchdoctor's Hut: ordinary shop stock includes brown potion, firwood bear, obsidian figurine and quartz. These support Bestile and Bronak's separate exchanges.",
+          "keyword": "troll",
+          "mob_vnum": 43179,
+          "name": "a troll shopkeeper",
+          "topics": []
+        },
+        {
+          "description": "Starts in Thur'Gurax Banner Square and can roam: ask hello about Werrun cigars.",
+          "keyword": "frull",
+          "mob_vnum": 43181,
+          "name": "Frull Thelstone",
+          "topics": [
+            "hi",
+            "hello",
+            "yes"
+          ]
+        },
+        {
+          "description": "Gutted Githzerai dining area: ask hello about six exact potions; potion possession cannot prove shop visits or his proposed transformation.",
+          "keyword": "bestile",
+          "mob_vnum": 43187,
+          "name": "Bestile AxeCrack",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Snapjaw turtles are loaded through a dispersal room into the lowland marshes of Skulldrach Lake. Their ordinary shells share a cap of fifteen; captive turtles on the Crimson Fulgur provide another reviewed source. Five supplied shells also qualify.",
+          "keyword": "snapjaw",
+          "mob_vnum": 43192,
+          "name": "a snapjaw turtle",
+          "topics": []
+        },
+        {
+          "description": "Stonescale pyrolisks disperse into the Great Lava Fields of the Damned. Their fire glands share a cap of nineteen, with some held and others carried. One dispersal branch is unloaded and needs correction. Captive pyrolisks provide another source. Pol and Ayden compete for the glands.",
+          "keyword": "stonescale",
+          "mob_vnum": 43193,
+          "name": "a stonescale pyrolisk",
+          "topics": []
+        },
+        {
+          "description": "Sand vipers disperse mostly into the Calimshan Desert; a loaded fourth destination is ocean rather than sand and needs source review. Their venom sacs share a cap of twenty. Krintis and Ayden compete for these supplies; gifts also qualify.",
+          "keyword": "sand",
+          "mob_vnum": 43194,
+          "name": "a sand viper",
+          "topics": []
+        },
+        {
+          "description": "Tundra panthers disperse into the partially frozen IceCrag grasslands and forest. Their teeth are equipped as weapons and share a cap of twenty-two. Captive panthers provide another source. Krintis and Vrash compete for the same exact teeth.",
+          "keyword": "tundra",
+          "mob_vnum": 43195,
+          "name": "a tundra panther",
+          "topics": []
+        },
+        {
+          "description": "Highland samurai disperse into the Lush Fields of the Jade Empire and equip jade katanas, sharing a cap of eight. Other samurai swords are different objects. Five supplied katanas qualify without recording five personal kills or weakening a world defense state.",
+          "keyword": "highland",
+          "mob_vnum": 43196,
+          "name": "a highland samurai",
+          "topics": []
+        },
+        {
+          "description": "Green hydralisks disperse into the DarkPeak valley and hills, carrying gas glands with a shared cap of seventeen. Captive hydralisks provide another reviewed source. Five actual glands are needed; the proposed antidote is lore rather than an additional reward.",
+          "keyword": "green",
+          "mob_vnum": 43197,
+          "name": "a green hydralisk",
+          "topics": []
+        },
+        {
+          "description": "Human bandits disperse into mainland grassy pastures and nearby light forest, carrying shivs with a shared cap of eleven. Carry four shivs for the actual recipe. Cairme also says six in one sentence; that is a clue conflict, not the accepted count.",
+          "keyword": "human",
+          "mob_vnum": 43198,
+          "name": "a human bandit",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Discover the ports, meet their contacts and follow nineteen independent commissions: local supplies, overseas proof and exact mixed collections. Six supplier and equipment services stay separate. Active, ready accounting is required.",
+      "orientation": [
+        "Canderthal, Fenaline and Thur'Gurax have separate loaded land approaches from the Surface Realm. Visiting one discovers this shared area, but other contacts remain hidden until encountered. No ship ownership or sailing receipt is required for the native deliveries.",
+        "Start with dock supply recovery and the seafood kitchens. Chundel and Grimashk pay different prices for normal crates; Grimashk also accepts old reinforced crates as one recovery alternative. Voshen and Martinek each need six of their own exact seafood kind.",
+        "Pol sells an ordinary fishing pole separately from his refunded briefing. His final lure request consumes five shells and five fire glands, pays cash and XP, and does not require his note or award Fishfetcher. Optional current supplies and earlier history do not add achievements.",
+        "Crendethyl wants the engraved stein equipped by the huge bartender in Canderthal. Elthindeal wants the Canderthal ale cask from Gringash's cellar. Carry their actual proofs between the ports; tavern dialogue and visits provide guidance without enforced prior stages.",
+        "The turtle, pyrolisk, viper, panther, samurai, hydralisk and bandit sources disperse into distinct mainland regions. Their caps, worn proof and current roaming locations need active qualification. One pyrolisk branch is unloaded and one viper destination is ocean. Supplied materials remain valid.",
+        "Gringash and Kruth'Urgur want the same tinker map for different independent purposes and payments. Gelden wants a Sarmiz obsidian and steel totem; Shaenae wants the aged ring from a foreign bone pile; Frull wants a Werrun cigar box. The delivery receipt belongs to this port area even when its source is elsewhere.",
+        "Krintis, Ayden and Vrash compete for venom, glands or panther teeth. Trismerk needs five jade katanas; Austugus needs five hydralisk glands. Cairme's implemented recipe needs four shivs and the exact tundra rations despite a conflicting six-shiv line. These research and military commissions do not implement poison, antidote, siege or arsenal state.",
+        "Bestile needs six distinct potion kinds, one each. The troll in Thur'Gurax stocks his brown potion locally as well as all three Bronak materials. Exact supplies can come from shops, alternate sources or other players; their possession does not prove first personal acquisition or visiting every named shop.",
+        "Bronak's three totems each require one exact material and fifty platinum. His outputs differ from Gelden's proof. The refunded briefing, two seafood purchases and three totem recipes remain support services with guarded coin settlement.",
+        "Closed port gates are unkeyed. The barracks east door is reset locked with key zero; ordinary lock-picking and other valid access need qualification. A hidden cellar staircase connects to a foreign gambling room. Loaded sea edges use ocean movement; three other legacy port exits are unloaded and need deliberate repair.",
+        "Worshipping the garden statue and touching the storm altar use ordinary teleport objects with walking return routes. The moonwell enters Shaledrieth. These actions, teachers suggested by prose, inns, ship construction and crew hiring have no new quest milestones without accepted event evidence. Paid ship services also need coordinated accounting settlement.",
+        "Quest rewards preserve actual cash, items, declared XP and recipient retirement. Native XP is subject to actor and companion caps. Gifts can prepare a valid turn-in without recording personal hunting, fishing, sailing, faction standing, learned keywords or a whole campaign."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "shipy",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:43137,I:43137,I:43137,I:43137,I:43137,I:43138,I:43138,I:43138,I:43138,I:43138;receive=C:300000,E:125000;disappear=1",
+              "giver_vnum": 43103
+            }
+          ],
+          "id": "pols-lure-materials",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:300000;receive=C:300000,I:43136;disappear=0",
+                  "giver_vnum": 43103
+                }
+              ],
+              "hint": "The earlier paid exchange returns the same 300,000 copper and gives a note; its settlement remains unavailable with active accounting. It does not buy a pole or establish a mandatory deposit entitlement.",
+              "id": "pol-briefing-history",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional history: receive Pol's briefing and refunded deposit"
+            },
+            {
+              "count": 1,
+              "hint": "Pol gives this note with the refunded deposit. He asks for it in prose, but the final recipe does not accept or consume it. A supplied note is current possession, without proving that briefing.",
+              "id": "pol-note",
+              "item_vnums": [
+                43136
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry Pol's note"
+            },
+            {
+              "count": 5,
+              "hint": "Snapjaw turtles are loaded through a dispersal room into the lowland marshes of Skulldrach Lake. Their ordinary shells share a cap of fifteen; captive turtles on the Crimson Fulgur provide another reviewed source. Five supplied shells also qualify.",
+              "id": "supply-43137",
+              "item_vnums": [
+                43137
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 5 snapjaw shells"
+            },
+            {
+              "count": 5,
+              "hint": "Stonescale pyrolisks disperse into the Great Lava Fields of the Damned. Their fire glands share a cap of nineteen, with some held and others carried. One dispersal branch is unloaded and needs correction. Captive pyrolisks provide another source. Pol and Ayden compete for the glands.",
+              "id": "supply-43138",
+              "item_vnums": [
+                43138
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 5 pyrolisk fire glands"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43137,I:43137,I:43137,I:43137,I:43137,I:43138,I:43138,I:43138,I:43138,I:43138;receive=C:300000,E:125000;disappear=1",
+                  "giver_vnum": 43103
+                }
+              ],
+              "hint": "Pol starts in his pole shop in Canderthal. Acceptance declares 125,000 XP, subject to native caps, pays 300,000 copper and retires his appearance. A supplied collection qualifies without an earlier deposit, note, personal hunting or sailing history.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Pol needs five snapjaw shells and five pyrolisk fire glands for a lure experiment. Return ten actual materials together for three hundred platinum and a native XP award. His earlier refunded deposit and note are optional history; the final contract requires neither and gives no Fishfetcher pole.",
+          "title": "Pol's lure materials"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:318,I:318,I:318,I:318,I:318,I:318;receive=C:50000,E:40000;disappear=1",
+              "giver_vnum": 43125
+            }
+          ],
+          "id": "voshens-six-pike",
+          "steps": [
+            {
+              "count": 6,
+              "hint": "Fishing can produce this exact pike when you have fishing skill, an eligible pole in top-level carrying and a supported water room. A roaming seafood merchant also offers one for five platinum, pending supported paid settlement. Supplied pike qualify; freshness and personal catching are not native requirements.",
+              "id": "supply-318",
+              "item_vnums": [
+                318
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 6 large fresh pikes"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:318,I:318,I:318,I:318,I:318,I:318;receive=C:50000,E:40000;disappear=1",
+                  "giver_vnum": 43125
+                }
+              ],
+              "hint": "Find Voshen at the seafood kitchen behind the Fisherman's Hutch. Acceptance declares 40,000 XP, pays 50,000 copper and retires him; it creates no fillet object.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "The anxious chef needs six large pike for his kitchen. Deliver six together for fifty platinum and a native XP award. Freshness, a personal catch and the complimentary fillet promised in his speech are not implemented outcomes.",
+          "title": "Voshen's six pike"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:43111;receive=C:24000,E:166000;disappear=1",
+              "giver_vnum": 43126
+            }
+          ],
+          "id": "crendethyls-stein",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The huge bartender in the Fisherman's Hutch holds Crendethyl's engraved glass stein as a weapon. Recover or obtain that exact object, then carry it for delivery. Similar cups and the bartender's ambient wiping text do not substitute or record a personal recovery.",
+              "id": "supply-43111",
+              "item_vnums": [
+                43111
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 engraved glass stein"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43111;receive=C:24000,E:166000;disappear=1",
+                  "giver_vnum": 43126
+                }
+              ],
+              "hint": "Crendethyl starts at Martinek's Clam House in Fenaline; the huge bartender in Canderthal is the source. Acceptance pays 24,000 copper, declares 166,000 XP and retires Crendethyl. Asking hello explains the request without granting keyword achievements.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "The elven glassblower asks for the engraved stein he left in Canderthal. Retrieve or obtain the exact glass stein and return it to him in Fenaline for twenty-four platinum and a native XP award.",
+          "title": "Crendethyl's old stein"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:49179;receive=C:65656,E:81000;disappear=1",
+              "giver_vnum": 43135
+            }
+          ],
+          "id": "gringashs-city-map",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The tinker at the Shoppe of the Traveling People in Venan'Trut stocks this exact map. Gringash and Kruth'Urgur accept it independently for different rewards. A gift or land route is valid; neither contract requires a personal shop purchase or sailing receipt.",
+              "id": "supply-49179",
+              "item_vnums": [
+                49179
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 map of Venan'Trut"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:49179;receive=C:65656,E:81000;disappear=1",
+                  "giver_vnum": 43135
+                }
+              ],
+              "hint": "Find Gringash in his Canderthal bar. Acceptance pays 65,656 copper, declares 81,000 XP and retires him. Kruth'Urgur pays differently for a separate delivery of the same map.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Gringash wants a map of Venan'Trut for his cousin's proposed bar. Bring the tinker map for his independent payment and XP. The accepted delivery does not open a bar, establish a Kimordril endpoint or require sailing.",
+          "title": "Gringash's city map"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:43139,I:43139,I:43139,I:43140,I:43140,I:43140;receive=C:210000,E:100000;disappear=1",
+              "giver_vnum": 43136
+            }
+          ],
+          "id": "krintis-poison-reagents",
+          "steps": [
+            {
+              "count": 3,
+              "hint": "Sand vipers disperse mostly into the Calimshan Desert; a loaded fourth destination is ocean rather than sand and needs source review. Their venom sacs share a cap of twenty. Krintis and Ayden compete for these supplies; gifts also qualify.",
+              "id": "supply-43139",
+              "item_vnums": [
+                43139
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 sand viper venom sacs"
+            },
+            {
+              "count": 3,
+              "hint": "Tundra panthers disperse into the partially frozen IceCrag grasslands and forest. Their teeth are equipped as weapons and share a cap of twenty-two. Captive panthers provide another source. Krintis and Vrash compete for the same exact teeth.",
+              "id": "supply-43140",
+              "item_vnums": [
+                43140
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 tundra panther teeth"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43139,I:43139,I:43139,I:43140,I:43140,I:43140;receive=C:210000,E:100000;disappear=1",
+                  "giver_vnum": 43136
+                }
+              ],
+              "hint": "Krintis starts in the wine cellar below Gringash. Acceptance pays 210,000 copper, declares 100,000 XP and retires him. Ayden and Vrash compete for parts of these supplies.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bring three sand viper venom sacs and three tundra panther teeth for Krintis's poison research. Six exact objects earn his payment and XP; the contract gives no finished poison.",
+          "title": "Krintis's poison reagents"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:9440;receive=C:150000,E:65000;disappear=1",
+              "giver_vnum": 43138
+            }
+          ],
+          "id": "geldens-elemental-study",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "A half-orc shaman in Sarmiz'Duul holds the obsidian and steel totem, with cap one. Bronak's elemental, spirit and chimera totems are three different objects and cannot substitute. A supplied exact totem qualifies.",
+              "id": "supply-9440",
+              "item_vnums": [
+                9440
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 obsidian and steel totem"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:9440;receive=C:150000,E:65000;disappear=1",
+                  "giver_vnum": 43138
+                }
+              ],
+              "hint": "Find Gelden at the end of the northern pier in Canderthal. Acceptance pays 150,000 copper, declares 65,000 XP and retires him. Bronak's different paid totems do not complete this study.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Gelden seeks an obsidian and steel totem from Sarmiz'Duul to study elemental power. Deliver the exact totem for a payment and XP. His flight as a hawk is success prose and retirement, without a recorded transformation or travel stage.",
+          "title": "Gelden's elemental study"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:43101;receive=C:200;disappear=0",
+              "giver_vnum": 43139
+            }
+          ],
+          "id": "chundels-port-crates",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Normal supply crates are ordinary ground stock around the ports, with a shared local cap of forty-two and additional foreign placements. Chundel and Grimashk are separate recipients paying different amounts. A prior crate delivery does not replace a currently carried crate.",
+              "id": "supply-43101",
+              "item_vnums": [
+                43101
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 normal supply crate"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43101;receive=C:200;disappear=0",
+                  "giver_vnum": 43139
+                }
+              ],
+              "hint": "Chundel starts on the dock pathway in Canderthal. Each accepted normal crate pays 200 copper and he remains. A Grimashk receipt cannot complete this request.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Recover a normal supply crate and return it to Chundel for two gold. This repeatable port supply request remains separate from Grimashk's better-paying crate recovery in Thur'Gurax.",
+          "title": "Chundel's port crates"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:43115;receive=C:45000,E:55000;disappear=1",
+              "giver_vnum": 43145
+            }
+          ],
+          "id": "elthindeals-canderthal-ale",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "A cask of Canderthal ale is ground stock in the wine cellar below Gringash's bar, with cap one. Carry it to Elthindeal at the Wind's Breath Inn in Fenaline. Drinking local ale or acquiring another cask does not complete the accepted return.",
+              "id": "supply-43115",
+              "item_vnums": [
+                43115
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 cask of Canderthal ale"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43115;receive=C:45000,E:55000;disappear=1",
+                  "giver_vnum": 43145
+                }
+              ],
+              "hint": "Find Elthindeal at the Wind's Breath Inn. Acceptance pays 45,000 copper, declares 55,000 XP and retires her. The cask comes from the Canderthal wine cellar.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Elthindeal wants to sample a cask of Canderthal ale. Bring the exact cask to Fenaline for forty-five platinum and a native XP award. Tavern visits and other drinks are guidance rather than required prior stages.",
+          "title": "Elthindeal's Canderthal ale"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:43141,I:43141,I:43141,I:43141,I:43141;receive=C:135000,E:80000;disappear=1",
+              "giver_vnum": 43148
+            }
+          ],
+          "id": "trismerks-five-katanas",
+          "steps": [
+            {
+              "count": 5,
+              "hint": "Highland samurai disperse into the Lush Fields of the Jade Empire and equip jade katanas, sharing a cap of eight. Other samurai swords are different objects. Five supplied katanas qualify without recording five personal kills or weakening a world defense state.",
+              "id": "supply-43141",
+              "item_vnums": [
+                43141
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 5 jade katanas"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43141,I:43141,I:43141,I:43141,I:43141;receive=C:135000,E:80000;disappear=1",
+                  "giver_vnum": 43148
+                }
+              ],
+              "hint": "Trismerk starts in the Wind's Breath dining chamber in Fenaline. Acceptance pays 135,000 copper, declares 80,000 XP and retires him.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Trismerk asks for five jade katanas from the highland samurai. Deliver five exact weapons together for payment and XP. His military objective is explained as lore; the receipt does not establish five personal kills or altered defenses.",
+          "title": "Trismerk's five katanas"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:43142,I:43142,I:43142,I:43142,I:43142;receive=C:240000,E:110000;disappear=1",
+              "giver_vnum": 43151
+            }
+          ],
+          "id": "austugus-hydralisk-research",
+          "steps": [
+            {
+              "count": 5,
+              "hint": "Green hydralisks disperse into the DarkPeak valley and hills, carrying gas glands with a shared cap of seventeen. Captive hydralisks provide another reviewed source. Five actual glands are needed; the proposed antidote is lore rather than an additional reward.",
+              "id": "supply-43142",
+              "item_vnums": [
+                43142
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 5 hydralisk gas glands"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43142,I:43142,I:43142,I:43142,I:43142;receive=C:240000,E:110000;disappear=1",
+                  "giver_vnum": 43151
+                }
+              ],
+              "hint": "Austugus starts on a grassy road in Fenaline and can roam. Acceptance pays 240,000 copper, declares 110,000 XP and retires him; his initial room is a lead rather than a live location.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Collect five green hydralisk gas glands for Austugus's proposed poison treatment. The delivery earns payment and XP without giving an antidote, curing a player or finishing an alchemy campaign.",
+          "title": "Austugus's hydralisk research"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:334,I:334,I:334,I:334,I:334,I:334;receive=C:50000,E:45000;disappear=1",
+              "giver_vnum": 43153
+            }
+          ],
+          "id": "martineks-six-clams",
+          "steps": [
+            {
+              "count": 6,
+              "hint": "Fishing can produce this exact small clam. A roaming seafood merchant also offers one for five platinum, pending supported paid settlement. Six separate clams must be carried together; supplied clams qualify without personal fishing or freshness history.",
+              "id": "supply-334",
+              "item_vnums": [
+                334
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 6 small clams"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:334,I:334,I:334,I:334,I:334,I:334;receive=C:50000,E:45000;disappear=1",
+                  "giver_vnum": 43153
+                }
+              ],
+              "hint": "Find Martinek in his Fenaline clam house. Acceptance pays 50,000 copper, declares 45,000 XP and retires him. Supplied clams reach the same terminal.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Martinek needs six small clams for his hungry customers. Deliver six together for fifty platinum and a native XP award. A personal fishing trip and restaurant-restoration state are not required.",
+          "title": "Martinek's six clams"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:94307;receive=C:200000,E:155000;disappear=1",
+              "giver_vnum": 43156
+            }
+          ],
+          "id": "shaenaes-aged-ring",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The aged silver ring is nested in the bone pile at the Boneheap in the Behemoth Herders area, with cap one. Another bone pile holds a stud instead. Remove the actual ring into top-level carrying; a different silver ring or stud cannot replace it.",
+              "id": "supply-94307",
+              "item_vnums": [
+                94307
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 aged silver ring"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:94307;receive=C:200000,E:155000;disappear=1",
+                  "giver_vnum": 43156
+                }
+              ],
+              "hint": "Shaenae starts at Fenaline's moonwell. Acceptance pays 200,000 copper, declares 155,000 XP and retires her. The bone-pile ring is different from other silver jewelry.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Shaenae remembers a silver ring in a distant bone yard. Return the exact aged silver ring for two hundred platinum and a native XP award. Her departure into the moonwell is success prose rather than a recorded transformation or your required portal journey.",
+          "title": "Shaenae's aged ring"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:43138,I:43138,I:43138,I:43139,I:43139,I:43139;receive=C:160000,E:90000;disappear=1",
+              "giver_vnum": 43163
+            }
+          ],
+          "id": "aydens-horde-reagents",
+          "steps": [
+            {
+              "count": 3,
+              "hint": "Stonescale pyrolisks disperse into the Great Lava Fields of the Damned. Their fire glands share a cap of nineteen, with some held and others carried. One dispersal branch is unloaded and needs correction. Captive pyrolisks provide another source. Pol and Ayden compete for the glands.",
+              "id": "supply-43138",
+              "item_vnums": [
+                43138
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 pyrolisk fire glands"
+            },
+            {
+              "count": 3,
+              "hint": "Sand vipers disperse mostly into the Calimshan Desert; a loaded fourth destination is ocean rather than sand and needs source review. Their venom sacs share a cap of twenty. Krintis and Ayden compete for these supplies; gifts also qualify.",
+              "id": "supply-43139",
+              "item_vnums": [
+                43139
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 sand viper venom sacs"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43138,I:43138,I:43138,I:43139,I:43139,I:43139;receive=C:160000,E:90000;disappear=1",
+                  "giver_vnum": 43163
+                }
+              ],
+              "hint": "Ayden starts atop the Thur'Gurax watchtower. Acceptance pays 160,000 copper, declares 90,000 XP and retires him. Pol and Krintis compete for these same materials.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Ayden wants three pyrolisk fire glands and three sand viper venom sacs for his poison project. Deliver both exact groups together for payment and XP; no poison item or horde arsenal state follows.",
+          "title": "Ayden's horde reagents"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:49179;receive=C:35000,E:35000;disappear=1",
+              "giver_vnum": 43167
+            }
+          ],
+          "id": "kruthurgurs-siege-map",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The tinker at the Shoppe of the Traveling People in Venan'Trut stocks this exact map. Gringash and Kruth'Urgur accept it independently for different rewards. A gift or land route is valid; neither contract requires a personal shop purchase or sailing receipt.",
+              "id": "supply-49179",
+              "item_vnums": [
+                49179
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 map of Venan'Trut"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:49179;receive=C:35000,E:35000;disappear=1",
+                  "giver_vnum": 43167
+                }
+              ],
+              "hint": "Kruth'Urgur starts in Banner Square in Thur'Gurax. Acceptance pays 35,000 copper, declares 35,000 XP and retires him. Gringash's earlier map receipt cannot substitute.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bring Kruth'Urgur a map of Venan'Trut for his siege planning. This is his own accepted delivery, with a different reward from Gringash. It does not establish a siege, faction enlistment or personal desert travel.",
+          "title": "Kruth'Urgur's siege map"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:43140,I:43140,I:43140,I:93501,I:93501,I:93501;receive=C:245000,E:90000;disappear=1",
+              "giver_vnum": 43170
+            }
+          ],
+          "id": "vrashs-mace-materials",
+          "steps": [
+            {
+              "count": 3,
+              "hint": "Wemic warriors equip the wicked looking mace at several village paths, sharing a cap of six. Three separate maces are required alongside three exact panther teeth. Similar maces and possession of a proposed finished weapon do not replace the recipe.",
+              "id": "supply-93501",
+              "item_vnums": [
+                93501
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 wicked looking maces"
+            },
+            {
+              "count": 3,
+              "hint": "Tundra panthers disperse into the partially frozen IceCrag grasslands and forest. Their teeth are equipped as weapons and share a cap of twenty-two. Captive panthers provide another source. Krintis and Vrash compete for the same exact teeth.",
+              "id": "supply-43140",
+              "item_vnums": [
+                43140
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 tundra panther teeth"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43140,I:43140,I:43140,I:93501,I:93501,I:93501;receive=C:245000,E:90000;disappear=1",
+                  "giver_vnum": 43170
+                }
+              ],
+              "hint": "Vrash starts in the Thur'Gurax barracks office. Acceptance pays 245,000 copper, declares 90,000 XP and retires him. The eastern barracks door is reset locked with no matching key; qualify ordinary lock-picking or other valid access before promising this route.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Vrash requests three wicked looking maces and three tundra panther teeth for proposed spiked prototypes. Deliver the six exact materials for payment and XP; the contract does not give a new mace or upgrade the troops.",
+          "title": "Vrash's mace materials"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:13723,I:43143,I:43143,I:43143,I:43143;receive=C:160000,E:105000;disappear=1",
+              "giver_vnum": 43174
+            }
+          ],
+          "id": "cairmes-shivs-and-rations",
+          "steps": [
+            {
+              "count": 4,
+              "hint": "Human bandits disperse into mainland grassy pastures and nearby light forest, carrying shivs with a shared cap of eleven. Carry four shivs for the actual recipe. Cairme also says six in one sentence; that is a clue conflict, not the accepted count.",
+              "id": "supply-43143",
+              "item_vnums": [
+                43143
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 4 bandit shivs"
+            },
+            {
+              "count": 1,
+              "hint": "The barbarian-human halfbreed stocks these exact iron rations at a small tundra general store. Other legitimate sources and gifts also qualify. Ordinary port iron rations are another object kind and cannot substitute; no specific merchant purchase receipt is required.",
+              "id": "supply-13723",
+              "item_vnums": [
+                13723
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 tundra iron rations"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:13723,I:43143,I:43143,I:43143,I:43143;receive=C:160000,E:105000;disappear=1",
+                  "giver_vnum": 43174
+                }
+              ],
+              "hint": "Cairme starts in his Thur'Gurax tavern. Acceptance pays 160,000 copper, declares 105,000 XP and retires him. Ordinary port rations are another object kind; extra shivs cannot replace the right rations.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bring four bandit shivs and the exact tundra iron rations to Cairme. His dialogue conflicts between four and six; the accepted recipe needs four. Supplied rations qualify without the particular merchant purchase he suggests.",
+          "title": "Cairme's shivs and rations"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:43101;receive=C:250;disappear=0",
+              "giver_vnum": 43177
+            },
+            {
+              "completion_key": "give=I:43125;receive=C:845;disappear=0",
+              "giver_vnum": 43177
+            }
+          ],
+          "id": "grimashks-crate-recovery",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Normal supply crates are ordinary ground stock around the ports, with a shared local cap of forty-two and additional foreign placements. Chundel and Grimashk are separate recipients paying different amounts. A prior crate delivery does not replace a currently carried crate. Old reinforced supply crates are ground stock in Cairme's wine cellar, with local cap two; additional foreign placements exist. Grimashk pays a different price for this exact kind. Normal and reinforced crates are alternatives within his recovery request.",
+              "id": "recoverable-crate",
+              "item_vnums": [
+                43101,
+                43125
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one normal or old reinforced supply crate"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43101;receive=C:250;disappear=0",
+                  "giver_vnum": 43177
+                },
+                {
+                  "completion_key": "give=I:43125;receive=C:845;disappear=0",
+                  "giver_vnum": 43177
+                }
+              ],
+              "hint": "Grimashk starts at the end of a passenger pier in Thur'Gurax. A normal crate pays 250 copper; an old reinforced crate pays 845 copper. He remains after either acceptance. Each underlying receipt stays separate, while the story contributes one achievement and potential daily unit.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Return either a normal supply crate for two gold and five silver, or an old reinforced supply crate for eight gold, four silver and five copper. These are two exact price alternatives within one recovery request; Chundel's separate delivery remains independent.",
+          "title": "Grimashk's crate recovery"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:38314;receive=C:66666;disappear=1",
+              "giver_vnum": 43181
+            }
+          ],
+          "id": "frulls-werrun-cigars",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "A box of Werrun cigars is ordinary ground stock in its bar storage room, with cap one; a rare foreign placement also exists. The contract accepts the exact box without requiring personal sailing, theft or a merchant purchase.",
+              "id": "supply-38314",
+              "item_vnums": [
+                38314
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 box of Werrun cigars"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:38314;receive=C:66666;disappear=1",
+                  "giver_vnum": 43181
+                }
+              ],
+              "hint": "Frull starts in Banner Square in Thur'Gurax and can roam. Acceptance pays 66,666 copper and retires him. No XP or new item is declared.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Frull asks for a box of Werrun cigars. Deliver the exact box for his cash reward; the receipt records his commission without requiring a personal voyage or proving how the cigars were acquired.",
+          "title": "Frull's Werrun cigars"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:2800,I:9428,I:11562,I:40469,I:66723,I:93914;receive=C:666666,E:100000,I:43144;disappear=1",
+              "giver_vnum": 43187
+            }
+          ],
+          "id": "bestiles-six-potions",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The thick cyan potion is stocked by the graveside mystic in Bloodstone, with additional foreign stock. Its identified label may change, while the exact object kind remains the same.",
+              "id": "supply-2800",
+              "item_vnums": [
+                2800
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 thick cyan potion"
+            },
+            {
+              "count": 1,
+              "hint": "The pitch black potion is stocked by Severne in Sarmiz'Duul, with additional foreign stock. Extra cyan, brown or ordinary black potions cannot replace this exact kind.",
+              "id": "supply-9428",
+              "item_vnums": [
+                9428
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 pitch black potion"
+            },
+            {
+              "count": 1,
+              "hint": "The steel grey potion is stocked by Chukth at the underground market of Ghore, with additional foreign stock. A gift or alternate legitimate source qualifies without that shop receipt.",
+              "id": "supply-11562",
+              "item_vnums": [
+                11562
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 steel grey potion"
+            },
+            {
+              "count": 1,
+              "hint": "The purple potion is stocked by Flakun at the Gruneegth Drug Store, with additional foreign stock. Keep it available for delivery rather than consuming it.",
+              "id": "supply-40469",
+              "item_vnums": [
+                40469
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 purple potion"
+            },
+            {
+              "count": 1,
+              "hint": "The sparkling potion is stocked by Tirila at the Shop of Enchantment in Torrhan, with additional foreign stock. This is one of six distinct required potion kinds.",
+              "id": "supply-66723",
+              "item_vnums": [
+                66723
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 sparkling potion"
+            },
+            {
+              "count": 1,
+              "hint": "The bubbling brown potion is stocked by the troll in the Witchdoctor's Hut here in Thur'Gurax as well as by foreign sources. Bestile's Shadowclave clue does not enforce a mandatory journey there.",
+              "id": "supply-93914",
+              "item_vnums": [
+                93914
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 bubbling brown potion"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2800,I:9428,I:11562,I:40469,I:66723,I:93914;receive=C:666666,E:100000,I:43144;disappear=1",
+                  "giver_vnum": 43187
+                }
+              ],
+              "hint": "Find Bestile in the Gutted Githzerai dining area. Acceptance pays 666,666 copper, declares 100,000 XP, grants the mixed potion and retires him. Bought or supplied exact ingredients qualify; six personal shop visits and drinking the reward are not required.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bestile wants six distinct potions: cyan, pitch black, steel grey, purple, sparkling and bubbling brown. Bring one of each for payment, XP and a mixed potion. He retires after acceptance; the Hulk described in his speech is not a new transformed mobile or a separate achievement.",
+          "title": "Bestile's six potions"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:300000;receive=C:300000,I:43136;disappear=0",
+              "giver_vnum": 43103
+            }
+          ],
+          "id": "pols-refunded-briefing",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:300000;receive=C:300000,I:43136;disappear=0",
+                  "giver_vnum": 43103
+                }
+              ],
+              "hint": "Find Pol in the Canderthal pole shop. His final shell-and-gland recipe is independent of this receipt and does not consume the note.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Pol takes three hundred platinum, immediately returns the same amount and gives his note. This support exchange neither buys Fishfetcher nor creates an extra achievement or daily. Its coin settlement is unavailable with active accounting.",
+          "title": "Pol's refunded briefing service"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:5000;receive=I:334;disappear=1",
+              "giver_vnum": 43132
+            }
+          ],
+          "id": "seafood-clam-service",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:5000;receive=I:334;disappear=1",
+                  "giver_vnum": 43132
+                }
+              ],
+              "hint": "The purchase costs 5,000 copper and grants the exact clam. Buying or being handed it can prepare the chef's separate six-item delivery without completing it.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "A roaming seafood merchant offers one clam for five platinum, then departs. This paid supplier awards no quest achievement or daily; its coin settlement is unavailable with active accounting.",
+          "title": "Roaming clam merchant service"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:5000;receive=I:318;disappear=1",
+              "giver_vnum": 43152
+            }
+          ],
+          "id": "seafood-pike-service",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:5000;receive=I:318;disappear=1",
+                  "giver_vnum": 43152
+                }
+              ],
+              "hint": "The purchase costs 5,000 copper and grants the exact pike. Buying or being handed it can prepare the chef's separate six-item delivery without completing it.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "A roaming seafood merchant offers one pike for five platinum, then departs. This paid supplier awards no quest achievement or daily; its coin settlement is unavailable with active accounting.",
+          "title": "Roaming pike merchant service"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:50000,I:108;receive=I:43130;disappear=0",
+              "giver_vnum": 43178
+            }
+          ],
+          "id": "bronaks-chimera-totem",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The troll in the Witchdoctor's Hut stocks the firwood bear. Bronak needs this exact material and fifty platinum for a chimera totem; an obsidian figurine or quartz cannot substitute.",
+              "id": "supply-108",
+              "item_vnums": [
+                108
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 firwood bear"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:50000,I:108;receive=I:43130;disappear=0",
+                  "giver_vnum": 43178
+                }
+              ],
+              "hint": "Find Bronak in the Witchdoctor's loft in Thur'Gurax. The troll downstairs stocks the material. Gelden requires a different obsidian and steel totem; Bronak's output cannot complete his study.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bronak takes the exact firwood bear and fifty platinum for a chimera totem. This paid equipment service adds no achievement or daily and remains guarded pending supported material-and-fee settlement.",
+          "title": "Bronak's chimera totem service"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:50000,I:111;receive=I:43129;disappear=0",
+              "giver_vnum": 43178
+            }
+          ],
+          "id": "bronaks-spirit-totem",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The troll in the Witchdoctor's Hut stocks quartz. Bronak needs this exact material and fifty platinum for a spirit totem; other stones and his other totems cannot substitute.",
+              "id": "supply-111",
+              "item_vnums": [
+                111
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 quartz"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:50000,I:111;receive=I:43129;disappear=0",
+                  "giver_vnum": 43178
+                }
+              ],
+              "hint": "Find Bronak in the Witchdoctor's loft in Thur'Gurax. The troll downstairs stocks the material. Gelden requires a different obsidian and steel totem; Bronak's output cannot complete his study.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bronak takes the exact quartz and fifty platinum for a spirit totem. This paid equipment service adds no achievement or daily and remains guarded pending supported material-and-fee settlement.",
+          "title": "Bronak's spirit totem service"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:50000,I:109;receive=I:43128;disappear=0",
+              "giver_vnum": 43178
+            }
+          ],
+          "id": "bronaks-elemental-totem",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The troll in the Witchdoctor's Hut stocks the obsidian figurine. Bronak needs this exact material and fifty platinum for an elemental totem; the Sarmiz totem requested by Gelden is different.",
+              "id": "supply-109",
+              "item_vnums": [
+                109
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 obsidian figurine"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:50000,I:109;receive=I:43128;disappear=0",
+                  "giver_vnum": 43178
+                }
+              ],
+              "hint": "Find Bronak in the Witchdoctor's loft in Thur'Gurax. The troll downstairs stocks the material. Gelden requires a different obsidian and steel totem; Bronak's output cannot complete his study.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bronak takes the exact obsidian figurine and fifty platinum for a elemental totem. This paid equipment service adds no achievement or daily and remains guarded pending supported material-and-fee settlement.",
+          "title": "Bronak's elemental totem service"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "The crafty magician waits in the hidden chamber beneath the Necromancy temple. Ask about mages, list or help and examine the room journal for the resistance plan. He assembles the treasure key and offers 25 separate equipment services; no implemented takeover finale follows those recipes.",
           "keyword": "magician",
           "mob_vnum": 44101,

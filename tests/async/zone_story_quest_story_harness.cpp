@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 52 &&
-				tracker.summary_for(7, 42).total == 1784,
+		require(catalog.story_mappings.size() == 53 &&
+				tracker.summary_for(7, 42).total == 1777,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -194,8 +194,10 @@ int main(int argc, char **argv)
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
 										    140, 2) == 3 &&
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
-										    281, 2) == 6,
-			"complete Alatorin/Newhaven/Faerie/Verspin sidecars failed the native file loader");
+										    281, 2) == 6 &&
+				zone_story_quest_catalog::eligible_definition_count(file_catalog,
+										    431, 2) == 19,
+			"complete Alatorin/Newhaven/Faerie/Verspin/Ship Yards sidecars failed the native file loader");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
 			const auto mapping = std::find_if(catalog.story_mappings.begin(),
@@ -2306,6 +2308,129 @@ int main(int argc, char **argv)
 				recovered_verspin.progress_for_zone(7, 42, 281).total == 6 &&
 				recovered_verspin.progress_for_zone(7, 42, 550).completed == 0,
 			"Verspin recovery merged independent receipts or reassigned foreign proof ownership");
+		// Port supplies and explanatory history cannot establish a personal journey.
+		const auto &shipy_pol = story_for("shipy", "pols-lure-materials");
+		const auto &shipy_potions = story_for("shipy", "bestiles-six-potions");
+		const auto &shipy_crates = story_for("shipy", "grimashks-crate-recovery");
+		const auto &shipy_chundel = story_for("shipy", "chundels-port-crates");
+		const auto &shipy_map = *std::find_if(catalog.story_mappings.begin(),
+						      catalog.story_mappings.end(),
+						      [](const auto &mapping)
+						      { return mapping.source_area == "shipy"; });
+		service supplied_shipy(catalog);
+		require(supplied_shipy.discover_zone(7, 42, 431, 43100, 100, "arrival") ==
+					result::applied &&
+				supplied_shipy.render_journal(7, 42, 431, 10, 1, 101, false, false)
+						.find(shipy_pol.title) == std::string::npos,
+			"port discovery exposed an unseen Pol story");
+		for (const auto &contact : shipy_map.contacts)
+			require(supplied_shipy.meet_npc(7, 42, contact.mob_vnum, 43116, 101) ==
+					result::applied,
+				"port contact could not be encountered");
+		const auto shipy_section = [&](const auto &entry)
+		{
+			const auto start = journal.find(entry.title);
+			require(start != std::string::npos, "port story was missing");
+			return journal.substr(start, journal.find("\r\n  [", start) - start);
+		};
+		supplies = {};
+		supplies.carried[43137] = supplies.carried[43138] = 5;
+		supplies.carried[43144] = 1;
+		const auto shipy_before_view = supplied_shipy.serialize_state();
+		journal = supplied_shipy.render_journal(7, 42, 431, 10, 1, 121, false, false,
+							&supplies);
+		require(shipy_section(shipy_pol).find("[Ready now] " + shipy_pol.steps[2].text) !=
+					std::string::npos &&
+				shipy_section(shipy_pol).find("[Ready now] " +
+							      shipy_pol.steps[3].text) !=
+					std::string::npos &&
+				shipy_section(shipy_pol).find("[Recorded] " +
+							      shipy_pol.steps[0].text) ==
+					std::string::npos &&
+				supplied_shipy.serialize_state() == shipy_before_view &&
+				supplied_shipy.progress_for_zone(7, 42, 431).completed == 0,
+			"supplied lure materials required the note or viewing/output possession granted credit");
+		record(supplied_shipy, shipy_pol.contracts.front(), "shipy-supplied-lure", 431,
+		       43116);
+		require(supplied_shipy.progress_for_zone(7, 42, 431).completed == 1,
+			"Pol required an earlier paid briefing receipt");
+		// Every repeated preparation uses its exact carried count; worn and other
+		// kinds cannot fill a shortage. Six potion colors are separate kinds.
+		for (const auto &entry : shipy_map.stories)
+			for (const auto &step : entry.steps)
+			{
+				if (step.kind != "carried_item" || step.item_vnums.size() != 1)
+					continue;
+				supplies = {};
+				const int item = step.item_vnums.front();
+				supplies.carried[item] = step.count - 1;
+				supplies.carried[item == 43137 ? 43138 : 43137] = 10;
+				supplies.equipped[16] = item;
+				journal = supplied_shipy.render_journal(7, 42, 431, 10, 1, 122,
+									false, false, &supplies);
+				require(shipy_section(entry).find("[Missing now] " + step.text) !=
+						std::string::npos,
+					"wrong-kind or worn stock replaced an exact port supply");
+				supplies.carried[item] = step.count;
+				journal = supplied_shipy.render_journal(7, 42, 431, 10, 1, 123,
+									false, false, &supplies);
+				require(shipy_section(entry).find("[Ready now] " + step.text) !=
+						std::string::npos,
+					"an exact carried port supply was missing");
+			}
+		supplies = {};
+		for (int item : { 2800, 9428, 11562, 40469, 66723, 93914 })
+			supplies.carried[item] = 1;
+		journal = supplied_shipy.render_journal(7, 42, 431, 10, 1, 124, false, false,
+							&supplies);
+		for (const auto &step : shipy_potions.steps)
+			if (step.kind == "carried_item")
+				require(shipy_section(shipy_potions)
+							.find("[Ready now] " + step.text) !=
+						std::string::npos,
+					"the six distinct potion collection was incomplete");
+		for (int item : { 43101, 43125 })
+		{
+			supplies = {};
+			supplies.carried[item] = 1;
+			journal = supplied_shipy.render_journal(7, 42, 431, 10, 1, 125, false,
+								false, &supplies);
+			require(shipy_section(shipy_crates)
+						.find("[Ready now] " +
+						      shipy_crates.steps.front().text) !=
+					std::string::npos,
+				"either legitimate crate kind failed the optional alternative check");
+		}
+		for (const auto &contract : shipy_crates.contracts)
+			record(supplied_shipy, contract, contract.c_str(), 431, 43151);
+		require(supplied_shipy.progress_for_zone(7, 42, 431).completed == 2,
+			"Grimashk alternatives counted twice or completed Chundel");
+		for (const auto &entry : shipy_map.stories)
+			if (entry.category == "service")
+				record(supplied_shipy, entry.contracts.front(), entry.id.c_str(),
+				       431, 43311);
+		service restored_shipy(catalog);
+		require(restored_shipy.deserialize_state(supplied_shipy.serialize_state(),
+							 &error) &&
+				restored_shipy.progress_for_zone(7, 42, 431).completed == 2 &&
+				restored_shipy.progress_for_zone(7, 42, 431).total == 19,
+			"port services or alternate receipts inflated recovered completion");
+		record(restored_shipy, shipy_chundel.contracts.front(), "shipy-chundel", 431,
+		       43111);
+		require(restored_shipy.progress_for_zone(7, 42, 431).completed == 3,
+			"Chundel lost his independent delivery outcome");
+		for (const auto &entry : shipy_map.stories)
+			if (entry.category != "service")
+				record(restored_shipy, entry.contracts.front(), entry.id.c_str(),
+				       431, 43116);
+		service recovered_shipy(catalog);
+		require(recovered_shipy.deserialize_state(restored_shipy.serialize_state(),
+							  &error) &&
+				recovered_shipy.progress_for_zone(7, 42, 431).completed == 19 &&
+				recovered_shipy.progress_for_zone(7, 42, 431).total == 19 &&
+				recovered_shipy.progress_for_zone(7, 42, 490).completed == 0 &&
+				recovered_shipy.progress_for_zone(7, 42, 943).completed == 0,
+			"port recovery lost independent outcomes or assigned foreign proofs to source zones");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

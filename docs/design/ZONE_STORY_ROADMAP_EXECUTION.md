@@ -54,9 +54,10 @@ neither every branch nor every historical prerequisite.
 | 27 | The City of Newhaven | [Comprehensive source dossier](zone-stories/NEWHAVEN.md): nine Q/two addressed/53 ambient blocks, all local world/prototypes/four shops/252 resets and bounded foreign/shared review | Revision 1: three named outcomes/six services, seventeen contacts/twelve optional checks; exact source, fee, counterpart and unfinished-lore guidance | Active source/personal proof, five mixed payments, badge choices, tail trap/custody and actual travel/inn; builder-selected pipe/reel, collar-table, stale pool/prose and rift/prisoner endpoints |
 | 28 | Faerie Realm | [Comprehensive source dossier](zone-stories/FAERIE_REALM.md): all seven Q/ten M, 211 rooms/74 mobs/123 objects/one shop, 454 resets/213 families, four local procedures and bounded foreign/shared review | Revision 1: three stories/two services/one rejection, ten contacts/thirteen optional checks; independent retiring outcomes, equivalent forge recipes and exact access/source guidance | Active source/recipient episodes; both mixed fees; held/carried keys, speech/orb travel; unserved combat helpers; targeted Fix effects; builder-selected riddle/prose/missing-target repairs |
 | 29 | Verspin | [Comprehensive source dossier](zone-stories/VERSPIN.md): all twelve Q/QA/nine addressed/31 ambient blocks, 200 rooms/79 mobs/57 objects/five shops, 389 resets/206 families, two literal services, computed teachers/inn and bounded foreign/shared review | Revision 1: six stories/six services, eighteen contacts/eighteen optional checks; exact five-count/color inputs, optional producer history, foreign proof ownership and actual access guidance | Active source/cap/retirement qualification; five mixed fees; virtual stat/wallet/save effects; denied crew-payment ordering/ship settlement; XP cap policy; builder-selected sign/cap/clue/lore repairs |
-| 30–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 30 | Ship Yards | [Comprehensive source dossier](zone-stories/SHIP_YARDS.md): all 124 blocks/26 exchanges/twenty addressed/78 ambient, 229 rooms/102 mobs/46 objects/seven shops, 719 resets/265 families, eight literal services and bounded foreign/shared review | Revision one: nineteen outcomes/six services, thirty-two contacts/thirty-four optional checks; supplied proofs, optional briefing/note, exact quantities/kinds and two crate-price alternatives | Active source/slot/cap/dispersal/retirement and travel qualification; four missing exits/ocean viper ecology; builder-selected count/clue/reward repairs; fishing ownership publication and wallet/epic/ship/crew settlement |
+| 31–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is the Ship Yards, followed by Ultarium and the Surface Realm.
+The next area is Ultarium, followed by the Surface Realm and Tharnadia.
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -150,6 +151,8 @@ matches, or a candidate item graph was extracted.
 | ZSQ-VERSPIN-CONTENT / SOURCE | Unplaced ten-offer sign has only five recipes; four-red shield exceeds reviewed ordinary cap three; Vulm's crabmen clue differs from actual jewel thief. Persuasion/reunion/contest/purge have no accepted terminal. | Builder selects sign placement/offer correction, bounded supply/recipe balance and clue/description repairs. Qualify actual sources, exact quantities/colors, rare gem, one foreign sigil parent, retirement and supplied terminals; add explicit endpoints before campaign credit. |
 | ZSQ-VERSPIN-STAT / CREW | Nine guarded virtual stat purchases apply +1 rather than creating potions. Crew hiring ignores denied SUB_MONEY before changing crew/chief and saving. | Keep stat refusal until wallet/expected-stat/effect/save settlement is qualified. Reject denied crew debit before mutation, then coordinate wallet/ship revision/save and replay. Preserve native prices/stat caps/hire eligibility; confirm room placement separately. |
 | ZSQ-VERSPIN-XP / ACCESS | Frozen XP preserves actor tenth-level and companion full-level caps. Bartender spectator access does not use secured-pit keys; deep-water/secret/falling paths have ordinary alternatives. | Confirm XP intent before balance changes and preserve admitted recipients/amounts on recovery. Qualify actual reciprocal key/open/travel/water routes and current source evidence; no personal kill or mandatory key/boat history from delivery alone. |
+| ZSQ-SHIPY-CONTENT / ACCESS | Pol's note is not final input and Fishfetcher is not an output; four/six shiv text, absent fillet and transformation/research promises exceed native state. Four unloaded exits are removed at bootstrap; one viper dispersal destination is ocean. | Builder chooses accurate clues/products and bounded topology/ecology/lock corrections. Preserve valid supplied proofs, exact quantities/prices and existing terminal receipts; author real endpoints before deeper credit. |
+| ZSQ-SHIPY-FISH / PAID | Catch/effects/XP precede ownership grant; six paid native services are guarded. Shared ship/crew paths ignore denied cash, with mixed epic/coin hull settlement. | Extend existing accepted fishing and paid-service continuations. Freeze selected draw/material/output/price and stable ship revision; settle/save/refund before success. Qualify denial, interruption, concurrency, replay/restart and legitimate supplied proofs. |
 
 ## Verification record
 
@@ -1294,3 +1297,53 @@ formatting and whitespace passed. Source/invariant review verified 615 local
 links, exact boundary/property/cap evidence and unchanged native definitions,
 revision/fingerprint, registry and fifty-one earlier maps. These fixtures do
 not qualify played source, paid, stat, crew, combat or travel journeys.
+
+
+## Ship Yards completed source map — October 3, 2026
+
+Completed priority 30 with the [source dossier](zone-stories/SHIP_YARDS.md),
+[revision-one journal](../../areas/story/shipy.story.json) and reproducible
+[review index](../reference/zone-story-audits/shipy.md). All 124 native blocks,
+229 rooms, 102 mobiles, 46 objects, seven shops, 719 resets/265 families, eight
+literal services and computed properties were reviewed. Bounded foreign evidence
+includes all accepted proof producer/reset occurrences, primary vendor/room/shop
+records, a nested ring, captive and foreign alternatives, support prototypes,
+loaded boundary/dispersal destinations and actual teleport/locked/ocean access.
+
+The journal ships nineteen independent outcomes, six support services,
+thirty-two contacts and thirty-four optional checks. Grimashk's two differently
+priced crates share one recovery story with separate receipts; Chundel remains
+independent. Exact seafood/material counts, four shivs, six potion kinds and
+optional Pol history/note preserve supplied final proof. Native cash/XP/items,
+recipient retirement and foreign source ownership stay unchanged.
+
+Recorded balanced plans for Pol's refunded offer/missing pole/note predicate,
+Cairme's count conflict, absent fillet, unimplemented transformation/research/
+military state, four missing exit targets and ocean viper ecology. Extend the
+existing accepted fishing publication and wallet/epic/ship/crew settlement work;
+do not require guarded support fees or imaginary personal sailing/hunting stages
+for valid native delivery. Actor/companion XP intent needs explicit confirmation
+before balance changes, while admitted frozen awards remain recoverable.
+
+Current catalog: **53 journals, 1,777 achievement units, 1,541 potential daily
+units and 2,237 projected rows; 30 of 220 roadmap areas are source-comprehensive,
+with 190 remaining.** All 2,668 native definitions, revision two, fingerprint,
+zone registry and prior fifty-two parsed maps remain unchanged. Classification
+changes denominators without changing native receipts/rewards. Continue with
+Ultarium, the Surface Realm and Tharnadia. Active-world qualification remains
+pending; no accounting activation, migration, DB/server operation or merge.
+
+Focused validation covers all bindings/topics/source parents, supplied terminals,
+exact repeated/mixed collections, optional history, two crate alternatives,
+independent recipients, service exclusion and receipt reload. Catalog/index/
+invariant/link review, formatting, whitespace and maintained server build
+complement the fixtures; actual source, combat, paid, fishing, ship and travel
+journeys remain unqualified.
+
+Validation passed: production catalog coverage and all thirty review indices,
+C++20 native story/schema/projection and receipt-recovery regression, full
+harness formatting, whitespace and maintained SQL server build. Source/invariant
+review verified 672 local/source-line links, complete local evidence, four
+missing exits and the ocean viper destination, with unchanged native definitions,
+registry, revision/fingerprint and fifty-two earlier parsed maps. These checks
+do not certify played source, fishing, paid, ship, combat or travel journeys.

@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 52 authored journals, accounting-gated player surfaces, starter/town
+**Status: 53 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -12,7 +12,7 @@ Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus, Torg, Vast Hidden
 Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter
 Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl, Ravenloft
 Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl, the Jade Empire and
-the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm and Verspin now have
+the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm, Verspin and Ship Yards now have
 complete source story maps;
 their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
@@ -249,6 +249,21 @@ debit before mutation; close that ordering gap before qualifying the existing
 wallet/ship settlement plan. XP qualification must preserve admitted frozen
 awards while builders confirm the different actor/companion caps. Static lore
 does not establish persuasion, justice, full tower cleansing or contest victory.
+
+Ship Yards' [comprehensive dossier](zone-stories/SHIP_YARDS.md) covers 26
+exchanges with nineteen independent outcomes and six support services. Its
+thirty-two contacts cover all twenty addressed families; thirty-four optional
+checks explain Pol's refunded briefing/note, ten exact materials, six seafood,
+four shivs, six separate potions and two crate-price alternatives. Supplied
+proofs stay valid; foreign hunting and shops do not relocate receipt ownership.
+
+Four unresolved exit targets, an ocean viper destination, worn/dispersed proof
+and foreign nested stock need actual access/source qualification. Pol's absent
+Fishfetcher output, missing note predicate, Cairme's four/six conflict, absent
+fillet and research/transformation promises have balanced builder repair plans.
+Extend existing fishing accepted-issuance/effect publication and paid wallet/
+ship/crew settlement work. Native ingredient delivery does not require an
+unavailable optional fee, personal catching/sailing or imagined campaign state.
 
 ## Accounting requirement and delivery sequence
 
@@ -935,7 +950,18 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 191 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 190 roadmap areas.
+- [x] Complete Ship Yards' 26-exchange/twenty-addressed/78-ambient source dossier:
+  all 229 rooms/102 mobs/46 objects/seven shops, 719 resets/265 families, eight
+  literal services, computed properties, complete local sources and bounded
+  foreign/shared access. Ship nineteen outcomes/six services, thirty-two
+  contacts and thirty-four optional checks across all exact contracts.
+- [ ] Qualify Ship Yards' active sources/slots/caps/dispersal, supplied proofs,
+  retirement, locked/ocean/teleport travel and paid recipes. Resolve four
+  unloaded exit targets and ocean viper ecology with builders. Choose accurate
+  Pol/note/pole, four/six-shiv, fillet and transformation/research clues before
+  authoring new rewards or endpoints. Extend accepted fishing publication and
+  wallet/epic/ship/crew settlement; preserve admitted XP and native terms.
 - [x] Complete Verspin's twelve-Q/QA, nine-addressed/31-ambient source dossier:
   all 200 rooms/79 mobs/57 objects/five shops, 389 resets/206 families, both
   literal room services and computed teachers/inn, bounded foreign/shared
@@ -1032,6 +1058,7 @@ contract classification; it does not claim complete objective coverage.
 | Faerie Realm | 1 | Complete: three stories, two services and one rejection across seven Q | [Source-comprehensive dossier](zone-stories/FAERIE_REALM.md); ten contacts/all ten addressed families, thirteen optional checks; cellar/tomb/orb/source guidance | Three achievement/potential daily units; both five-item fees remain guarded; actual reset/retirement availability unqualified | Native supplied-key journey and receipt recovery; qualify dispatch, exact parts, targeted Fix use and builder-selected gate/source/prose repairs |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
 | Verspin | 1 | Complete: six stories and six services across twelve Q/QA | [Source-comprehensive dossier](zone-stories/VERSPIN.md); eighteen contacts/all nine addressed families, eighteen optional checks; five-count, exact-color, producer and foreign-source guidance | Six achievement/potential daily units; five mixed recipes and nine virtual stat purchases guarded; crew payment ordering and active source/cap availability unqualified | Native supplied-bone journey, exact quantities/colors and independent receipt recovery; qualify source/access, expected-stat/ship settlement, frozen XP and builder-selected sign/cap/clue repairs |
+| Ship Yards | 1 | Complete: nineteen independent outcomes/six services across 26 Q/QA | [Source-comprehensive dossier](zone-stories/SHIP_YARDS.md); thirty-two contacts/all twenty addressed families and thirty-four optional checks, exact quantities/kinds and optional producer history | Nineteen achievement/potential daily units; six paid services guarded; unresolved exits/dispersal, accepted fishing and paid ship/crew settlement unqualified | Native supplied-item, exact collection and alternative-receipt recovery; qualify actual source/access/retirement and builder-selected clue/reward/topology decisions |
 
 ## Twin Towers evidence and decisions
 

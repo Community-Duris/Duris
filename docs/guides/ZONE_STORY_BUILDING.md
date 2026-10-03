@@ -256,6 +256,31 @@ builders add accepted outcomes. XP sharing/caps do not prove personal source
 recovery or campaign participation; preserve admitted frozen awards during any
 deliberate balance correction.
 
+## Refunded briefings, regional collections and crate alternatives
+
+The [Ship Yards dossier](../design/zone-stories/SHIP_YARDS.md) illustrates an
+optional producer route: Pol refunds the briefing fee and supplies a note, but
+his final recipe requires only five shells and five fire glands. The earlier
+receipt and current note explain history/preparation without becoming mandatory
+or additional achievements. Do not award an advertised pole that no contract
+outputs. Keep six distinct potion kinds separate, four exact shivs despite a
+conflicting six-shiv clue, and source versus gifted materials explicit.
+
+Grimashk's normal and reinforced crates have different prices within one
+recovery request. Group their achievement/daily projection while preserving each
+native receipt and payout. Chundel is a different recipient with his own price
+and independent outcome. Real source review includes dispersal destinations,
+worn proof, caps, foreign nested containers, alternate stock and unresolved
+exits removed by bootstrap; initial reset rooms are leads, not live locations.
+
+Fishing text/XP before denied ownership does not establish an accepted catch.
+Paid ship/crew mutation after denied debit does not establish a service purchase.
+Extend accepted issuance and wallet/ship/save continuations before attaching
+semantic objectives. Freshness, personal sailing, six vendor visits, allegiance,
+poison/antidote/arsenal state and transformations need deliberate predicates and
+outcomes. Keep supplied proof valid for the existing terminal while builders
+choose accurate clues or balanced content extensions.
+
 ## The gardener dependency
 
 Alvinar's Q contract does not describe the barrier. `gardener_block` in

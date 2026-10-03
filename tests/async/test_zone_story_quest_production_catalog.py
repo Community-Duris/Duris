@@ -895,7 +895,65 @@ for area, item, expected_parent, expected_room, expected_chance in (("mntcastl",
             sources.append((parent, room, v[2], v[4]))
     assert sources == [(expected_parent, expected_room, 1, expected_chance)]
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin"):
+# Ship Yards: exact port collections, optional briefing, alternate crates.
+shipy = inventory_module.area_evidence(ROOT, "shipy")
+shipy_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "shipy")
+shipy_stories = {s["id"]: s for s in shipy_mapping["stories"]}
+assert shipy_mapping["coverage"] == "complete" and shipy_mapping["revision"] == 1
+assert len(shipy_stories) == 25 and len(shipy_mapping["contacts"]) == 32
+assert sum(s["category"] == "service" for s in shipy_stories.values()) == 6
+assert sum(t.get("optional", False) for s in shipy_stories.values() for t in s["steps"]) == 34
+assert {tuple(sorted(b.items())) for s in shipy_stories.values() for b in s["contracts"]} == {
+    tuple(sorted(r["block"]["binding"].items())) for r in shipy["requests"]}
+pol = shipy_stories["pols-lure-materials"]
+briefing = shipy_stories["pols-refunded-briefing"]
+assert pol["contracts"] == [{"giver_vnum": 43103, "completion_key": "give=I:43137,I:43137,I:43137,I:43137,I:43137,I:43138,I:43138,I:43138,I:43138,I:43138;receive=C:300000,E:125000;disappear=1"}]
+assert briefing["contracts"] == [{"giver_vnum": 43103, "completion_key": "give=C:300000;receive=C:300000,I:43136;disappear=0"}]
+assert pol["steps"][0]["optional"] and pol["steps"][0]["contracts"] == briefing["contracts"]
+assert pol["steps"][1]["item_vnums"] == [43136] and pol["steps"][1]["optional"]
+assert [(t["item_vnums"],t["count"]) for t in pol["steps"][2:-1]] == [([43137],5),([43138],5)]
+for id, expected in {
+    "voshens-six-pike": [(318,6)], "martineks-six-clams": [(334,6)],
+    "krintis-poison-reagents": [(43139,3),(43140,3)],
+    "trismerks-five-katanas": [(43141,5)], "austugus-hydralisk-research": [(43142,5)],
+    "aydens-horde-reagents": [(43138,3),(43139,3)],
+    "vrashs-mace-materials": [(93501,3),(43140,3)],
+    "cairmes-shivs-and-rations": [(43143,4),(13723,1)],
+    "bestiles-six-potions": [(v,1) for v in (2800,9428,11562,40469,66723,93914)],
+}.items():
+    assert [(t["item_vnums"][0],t["count"]) for t in shipy_stories[id]["steps"] if t["kind"] == "carried_item"] == expected
+crates = shipy_stories["grimashks-crate-recovery"]
+assert crates["contracts"] == [
+    {"giver_vnum":43177,"completion_key":"give=I:43101;receive=C:250;disappear=0"},
+    {"giver_vnum":43177,"completion_key":"give=I:43125;receive=C:845;disappear=0"}]
+assert crates["steps"][0]["item_vnums"] == [43101,43125] and crates["steps"][0]["count"] == 1
+assert shipy_stories["chundels-port-crates"]["contracts"] == [{"giver_vnum":43139,"completion_key":"give=I:43101;receive=C:200;disappear=0"}]
+assert shipy_stories["gringashs-city-map"]["contracts"] != shipy_stories["kruthurgurs-siege-map"]["contracts"]
+assert shipy_stories["geldens-elemental-study"]["steps"][0]["item_vnums"] == [9440]
+assert all(s["category"] == "service" for id,s in shipy_stories.items() if id.startswith("bronaks-"))
+shipy_units = [u for u in catalog_module.story_units(catalog) if u["zone_number"] == 431]
+assert len(shipy_units) == 25 and sum(u["achievement"] for u in shipy_units) == 19
+assert sum(u["daily_candidate"] for u in shipy_units) == 19
+assert sum(r["definition"]["daily_eligible"] for r in shipy["requests"]) == 20
+assert len(shipy["requests"]) == 26 and len(shipy["dialogue"]) == 20
+parent = room = None
+supplies = collections.defaultdict(list)
+for reset in shipy["reset_commands"]:
+    c,v = reset["command"],reset["arguments"]
+    if c in ("M","F"): parent,room = v[1],v[3]
+    if c in ("G","E") and v[1] in (43111,43137,43138,43139,43140,43141,43142,43143,93914):
+        supplies[v[1]].append((c,parent,room,v[2],v[3] if c == "E" else None,v[4]))
+assert supplies[43111] == [("E",43120,43249,1,16,100)]
+assert supplies[43137] == [("G",43192,43322,15,None,100)] * 15
+assert collections.Counter(supplies[43138]) == {("G",43193,43323,19,None,100):16,("E",43193,43323,19,18,100):3}
+assert supplies[43139] == [("G",43194,43324,20,None,100)] * 20
+assert supplies[43140] == [("E",43195,43325,22,16,100)] * 22
+assert supplies[43141] == [("E",43196,43326,8,16,100)] * 8
+assert supplies[43142] == [("G",43197,43327,17,None,100)] * 17
+assert supplies[43143] == [("G",43198,43328,11,None,100)] * 11
+assert supplies[93914] == [("G",43179,43310,999,None,100)]
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

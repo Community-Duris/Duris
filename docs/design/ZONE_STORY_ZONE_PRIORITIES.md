@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 29 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 30 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -26,6 +26,11 @@ Verspin's [completed dossier](zone-stories/VERSPIN.md) adds six independent
 deliveries, six support services, exact repeated/color quantities and supplied
 proof routes. Sign/cap/clue repairs, virtual stat settlement, crew payment
 ordering and frozen group-XP policy now have explicit qualification plans.
+Ship Yards' [completed dossier](zone-stories/SHIP_YARDS.md) separates nineteen
+independent commissions from six paid services, with exact mixed/repeated proof,
+optional Pol history and two crate-price alternatives. Missing exits/dispersal,
+misleading reward/count/transform prose, accepted fishing publication and local
+ship/crew settlement are explicit qualification and balanced repair work.
 Active reset-generation qualification is a shared prerequisite for the pilots.
 
 ## Reviewed first integrations
@@ -61,7 +66,7 @@ Active reset-generation qualification is a shared prerequisite for the pilots.
 | 27 | [The City of Newhaven](zone-stories/NEWHAVEN.md) (`newhaven`) | Living city → rift/corrupted counterpart → recover the blacksmith's wife; ruined berries/tobacco → living recipients; optional badge/bracer/cloak/collar recipes; scholar/erinyes/prisoner lore. | Source-comprehensive, revision 1: three achievements/potential dailies, six services, seventeen contacts/twelve optional checks. Exact pipe-versus-reel mismatch, inside-blocked collar switch, tail trap, mainland beast dispersal and five accounting-blocked fees have explicit qualification/repair plans. No invented rift closure or prisoner rescue. |
 | 28 | [Faerie Realm](zone-stories/FAERIE_REALM.md) (`realm`) | Anna's cellar route → tree signet → Finn's map/ring; cottage-heart blade → Celriya; tree amulet → tomb/Oberon's key → Finn's retiring farewell; five exact planar parts + fee → either maker's Fix service → separate targeted use. | Source-comprehensive, revision 1: three achievements/potential dailies, two services/one rejection, ten contacts/all ten addressed families and thirteen optional checks. Actual orb return, speech/key policy, wandering makers and source parents are documented. Combat helper dispatch, ring/scroll/shop prose, unfinished/missing routes and durable paid/repair effects have explicit qualification/repair plans. |
 | 29 | [Verspin](zone-stories/VERSPIN.md) (`verspin`) | Circus backstage → five totems → pants; apple → Ramous/bone → retiring lion collar; five shrine symbols → retiring holyman; foreign stolen amethyst → three ore pieces; three exact amulet colors → Transo's belt; one Bloodstone sigil → monk's necklace. Five paid Lozin recipes are separate support services. | Source-comprehensive, revision 1: six achievements/potential dailies, six services, eighteen contacts/all nine addressed families and eighteen optional checks. Real source parents/caps, spectator/pit/secret/water access and supplied proofs are documented. Builder-selected sign/cap/clue repairs, guarded stat effects, crew payment ordering and XP policy remain planned. |
-| 30 | [The Ship Yards](../../areas/qst/shipy.qst) (`shipy`) | Chef's six-pike request; glassblower's lost work; shipyard supply requests; trade/support services. | Candidate reviewed in Q/M source. Require fishing/freshness evidence only for explicitly authored sourcing objectives. |
+| 30 | [The Ship Yards](zone-stories/SHIP_YARDS.md) (`shipy`) | Port crates → two local kitchens; refunded Pol briefing → optional note → ten lure materials; stein/cask between ports; two independent desert maps; foreign totem/ring/cigars; competing glands/venom/teeth, five katanas/glands, four shivs plus rations; six distinct potions. Three Bronak recipes and seafood suppliers are services. | Source-comprehensive, revision one: nineteen achievements/potential dailies, six services, thirty-two contacts and thirty-four optional checks. Actual dispersed/worn/nested sources and foreign alternatives documented. Four missing exits, ocean viper destination, clue/promise repairs, fishing publication and paid ship/crew settlement remain planned. |
 | 31 | [The Sky City of Ultarium](../../areas/qst/cosmic.qst) (`cosmic`) | Engineer blueprints; separate soul offerings; four-soul Pandora's-box collection. | Candidate reviewed in Q source. Investigate shared-input branches, class services, and soul provenance. |
 | 32 | [The Surface Realm of Duris](../../areas/qst/surface.qst) (`surface`) | Four-traitor proofs; elemental lockets + book → mystic reward; Mountaineer claws; local transformation routes. | Candidate reviewed in Q/M source. Large travel area: assign named stories to actual giver ownership and review heads-versus-hearts prose. |
 | 33 | [Tharnadia - City of Humans](../../areas/qst/tharnadia.qst) (`tharnadia`) | Local recovery/delivery requests → reviewed weaponsmith improvement services. | Mapped baseline. Deepen a bounded town route; preserve the excluded missing-prototype contract until world repair. |
