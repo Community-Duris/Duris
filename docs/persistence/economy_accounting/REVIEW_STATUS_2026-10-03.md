@@ -735,3 +735,16 @@ Native direct dependencies equal published e36644777a9a0c88a631317e590394d2f1582
 This is component evidence, not live player/database publication or a broad pass.
 Evidence: tmp/prompt-dependencies-summary.local.json SHA-256
 45eddac2d2943c4f72aa3e3d3a7d0656a1bf038faa4771f9c51da59cb30dd310.
+
+## Descriptor poll and connection-capacity contract repair
+
+The old contract still required FD_SETSIZE rejection after readiness moved to
+dynamic poll registration. It now checks the actual registration/readiness and
+live-capacity admission boundaries; eight unsafe source mutations remain RED.
+The existing native readiness harness also passes under strict ASan/UBSan with
+an actual descriptor above FD_SETSIZE. This supplies component readiness proof,
+not listener load or complete gameplay qualification. Primary verified the
+owner, manifest and all five frozen qualification log hashes against
+`tmp/contract-drift-three-summary.local.json` SHA-256
+8afeaec1177fcf411ee513dd806ffa5ad6bdf76bd54113f23b7e0e0e543a687d.
+The original frozen broad failure remains recorded separately.
