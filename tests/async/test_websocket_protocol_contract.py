@@ -147,8 +147,9 @@ def test_legacy_binary_output_cannot_bypass_websocket_framing():
     assert 'result = websocket_send_text(player, json_msg)' in MCCP
     assert 'return result;' in MCCP
     assert '#define WS_OUTPUT_QUEUE_FULL (-2)' in HEADER
-    assert 'output_result == WS_OUTPUT_QUEUE_FULL' in COMM
-    assert '!(t->websocket && output_result == WS_OUTPUT_QUEUE_FULL)' in COMM
+    # Failed application-output framing is terminal, including a full wire queue.
+    assert 'if (output_result < 0)' in COMM
+    assert '!(t->websocket && output_result == WS_OUTPUT_QUEUE_FULL)' not in COMM
     assert 'if (d->websocket)' in GMCP
     assert 'websocket_send_json(d, package, json)' in GMCP
 

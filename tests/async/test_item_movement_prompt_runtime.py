@@ -156,6 +156,8 @@ void write_to_q(const char *text, struct txt_q *q, const int)
     block->text = strdup(text);
     if (q->tail) q->tail->next = block; else q->head = block;
     q->tail = block;
+    q->bytes += strlen(text) + 1;
+    ++q->entries;
 }
 '''
 
@@ -416,6 +418,7 @@ def main():
         binary = Path(directory) / 'harness'
         source.write_text('\n'.join([PRELUDE,
             extract_function('comm.c', 'int get_from_q(struct txt_q *queue, char *dest)'),
+            extract_function('comm.c', 'static void report_input_queue_overflow('),
             extract_function('comm.c', 'int process_output(P_desc t)'), DRIVER]))
         # Keep both sanitizers; this functional fixture does not need optimized dependencies.
         subprocess.run(['g++', '-std=c++20', '-g', '-O0', '-ffunction-sections', '-fdata-sections',
@@ -424,7 +427,7 @@ def main():
                             'item_movement_transaction.c', 'item_ownership_runtime.c',
                             'item_transfer_command.c', "craft_pouch_mutation.c", "chaos_pouch_ledger.c", 'critical_command.c',
                             'player_snapshot_capture.c', 'player_snapshot_codec.c']],
-                        '-Wl,--gc-sections', '-Wl,--wrap=write', '-lz', '-lcrypto', '-lcjson', '-o', str(binary)],
+                        '-Wl,--gc-sections', '-Wl,--wrap=write', '-lz', '-lcrypto', '-lcjson', '-lbsd', '-o', str(binary)],
                        cwd=ROOT, check=True, timeout=300)
         subprocess.run([str(binary)], check=True, timeout=30)
 

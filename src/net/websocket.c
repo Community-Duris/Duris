@@ -1647,7 +1647,7 @@ void websocket_free(struct descriptor_data *d)
 
 /* helper: handle a complete websocket message (after fragmentation reassembly) */
 static void websocket_handle_message(struct descriptor_data *d, int opcode, char *payload,
-				     size_t /*payload_len*/)
+				     size_t payload_len)
 {
 	if (opcode == WS_OPCODE_TEXT && payload)
 	{
@@ -1666,6 +1666,14 @@ static void websocket_handle_message(struct descriptor_data *d, int opcode, char
 			if (cmd_item && cJSON_IsString(cmd_item))
 				cmd = cmd_item->valuestring;
 
+			if (type &&
+			    (strcmp(type, "gmcp") == 0 ||
+			     (strcmp(type, "cmd") == 0 && cmd && strcmp(cmd, "game") != 0)) &&
+			    !admit_session_oob(d, payload_len))
+			{
+				cJSON_Delete(json);
+				return;
+			}
 			if (type && strcmp(type, "cmd") == 0 && cmd)
 			{
 				/* use websocket command handler */
@@ -1720,11 +1728,11 @@ static void websocket_handle_message(struct descriptor_data *d, int opcode, char
 				/* in-game: pass raw text as command */
 				if (data_item && cJSON_IsString(data_item))
 				{
-					write_to_q(data_item->valuestring, &d->input, 0);
+					queue_websocket_input(d, data_item->valuestring);
 				}
 				else if (cmd)
 				{
-					write_to_q(cmd, &d->input, 0);
+					queue_websocket_input(d, cmd);
 				}
 			}
 			cJSON_Delete(json);
@@ -1734,7 +1742,7 @@ static void websocket_handle_message(struct descriptor_data *d, int opcode, char
 			/* not valid json - treat as raw text command if in game */
 			if (d->connected == CON_PLAYING)
 			{
-				write_to_q(payload, &d->input, 0);
+				queue_websocket_input(d, payload);
 			}
 		}
 	}
