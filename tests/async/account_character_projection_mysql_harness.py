@@ -13,10 +13,10 @@ import uuid
 from contract_text import index
 
 ROOT = Path(__file__).resolve().parents[2]
-source_text = (SRC / "sql_player.c").read_text(
+source_text = (SRC / "account_load.c").read_text(
     encoding="utf-8", errors="replace"
 )
-mysql_source_text = source_text[source_text.index("\n#else\n\n// globals") :]
+mysql_source_text = source_text
 
 
 def body(text, signature):
@@ -38,7 +38,7 @@ def body(text, signature):
 
 repair = body(
     mysql_source_text,
-    "int sql_repair_account_character_projection(const char *account_name)",
+    "int account_load_repair(",
 )
 
 harness = f'''\
@@ -46,6 +46,7 @@ harness = f'''\
 
 #include <cassert>
 #include <climits>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -76,7 +77,19 @@ bool sql_run_query(const char *query)
     return false;
 }}
 
+char *escape(MYSQL *, const char *name)
+{{
+    return sql_escape_string(name);
+}}
+bool repair_query(MYSQL *, const char *query, uint64_t)
+{{
+    return sql_run_query(query);
+}}
 {repair}
+int sql_repair_account_character_projection(const char *name)
+{{
+    return account_load_repair(DB, name, 0);
+}}
 
 /* Return one required database setting for the isolated fixture. */
 static const char *required_env(const char *name)
