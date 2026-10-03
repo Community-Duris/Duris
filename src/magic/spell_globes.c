@@ -4,6 +4,7 @@
 #include "core/utils.h"
 #include "core/defines.h"
 #include "magic/spells.h"
+#include "combat/spell_wards.h"
 #include <strings.h>
 
 void spell_group_globe(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
@@ -30,65 +31,48 @@ void spell_globe(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int 
 		 P_obj /*obj*/)
 {
 	struct affected_type af;
-
-	if (IS_AFFECTED2(victim, AFF2_GLOBE))
+	/* NPC protection bits are native state, not finite player equipment. */
+	if (IS_NPC(victim) && IS_AFFECTED2(victim, AFF2_GLOBE))
 		return;
+	const bool already_active = affected_by_spell(victim, SPELL_GLOBE);
+	int duration;
 
-	if (!affected_by_spell(victim, SPELL_GLOBE))
+	if (GET_CLASS(ch, CLASS_CONJURER))
+		duration = 15;
+	else if (GET_CLASS(ch, CLASS_SUMMONER))
+		duration = 12;
+	else
+		duration = 8;
+
+	if (!already_active)
 	{
 		act("&+R$n &+Rbegins to shimmer.", TRUE, victim, 0, 0, TO_ROOM);
 		act("&+RYou begin to shimmer.", TRUE, victim, 0, 0, TO_CHAR);
-
-		bzero(&af, sizeof(af));
-		af.type = SPELL_GLOBE;
-		if (GET_CLASS(ch, CLASS_CONJURER))
-			af.duration = 15;
-		else if (GET_CLASS(ch, CLASS_SUMMONER))
-			af.duration = 12;
-		else
-			af.duration = 8;
-		af.bitvector2 = AFF2_GLOBE;
-		affect_to_char(victim, &af);
 	}
-	else
-	{
-		struct affected_type *af1;
 
-		for (af1 = victim->affected; af1; af1 = af1->next)
-			if (af1->type == SPELL_GLOBE)
-			{
-				af1->duration = 8;
-			}
-	}
+	bzero(&af, sizeof(af));
+	af.type = SPELL_GLOBE;
+	af.bitvector2 = AFF2_GLOBE;
+	spell_ward_apply_cast(victim, &af, duration);
 }
 
 void spell_minor_globe(int /*level*/, P_char /*ch*/, char * /*arg*/, [[maybe_unused]] int type,
 		       P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
-
-	if (IS_AFFECTED(victim, AFF_MINOR_GLOBE))
+	/* NPC protection bits are native state, not finite player equipment. */
+	if (IS_NPC(victim) && IS_AFFECTED(victim, AFF_MINOR_GLOBE))
 		return;
+	const bool already_active = affected_by_spell(victim, SPELL_MINOR_GLOBE);
 
-	if (!affected_by_spell(victim, SPELL_MINOR_GLOBE))
+	if (!already_active)
 	{
 		act("&+r$n &+rbegins to shimmer.", TRUE, victim, 0, 0, TO_ROOM);
 		act("&+rYou begin to shimmer.", TRUE, victim, 0, 0, TO_CHAR);
-
-		bzero(&af, sizeof(af));
-		af.type = SPELL_MINOR_GLOBE;
-		af.duration = 6;
-		af.bitvector = AFF_MINOR_GLOBE;
-		affect_to_char(victim, &af);
 	}
-	else
-	{
-		struct affected_type *af1;
 
-		for (af1 = victim->affected; af1; af1 = af1->next)
-			if (af1->type == SPELL_MINOR_GLOBE)
-			{
-				af1->duration = 6;
-			}
-	}
+	bzero(&af, sizeof(af));
+	af.type = SPELL_MINOR_GLOBE;
+	af.bitvector = AFF_MINOR_GLOBE;
+	spell_ward_apply_cast(victim, &af, 6);
 }

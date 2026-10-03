@@ -132,7 +132,7 @@ class RestitutionCliTests(unittest.TestCase):
         # and the current writer's raw wire 8 all normalize to death schema 8.
         self.assertEqual(cli.DEATH_NORMALIZED_SCHEMA_VERSION, 8)
         self.assertEqual(cli.DEATH_SCHEMA_VERSION, 8)
-        for wire in (2, 4, 6, 8):
+        for wire in (2, 4, 6, 8, 21):
             with self.subTest(wire=wire):
                 run.return_value = mock.Mock(returncode=0, stdout=json.dumps({
                     "wire_version": wire, "schema_version": 8,
@@ -224,6 +224,18 @@ class RestitutionCliTests(unittest.TestCase):
                     self.assertEqual(decoded["wire_version"], 15)
                     self.assertEqual(decoded["schema_version"], 15)
                     self.assertIsInstance(decoded["death"], dict)
+                for line in subprocess.check_output([str(fixture), "--craft-receipt"]).decode("ascii").splitlines():
+                    decoded = cli.decode_payload(bytes.fromhex(line))
+                    self.assertEqual(decoded["wire_version"], 18)
+                    self.assertEqual(decoded["schema_version"], 18)
+                    self.assertIsInstance(decoded["death"], dict)
+                for option, schema in ((None, 8), ("--spell-receipt", 13), ("--quest-receipt", 15), ("--craft-receipt", 18)):
+                    command = [str(fixture)] + ([option] if option else []) + ["--wards"]
+                    for line in subprocess.check_output(command).decode("ascii").splitlines():
+                        decoded = cli.decode_payload(bytes.fromhex(line))
+                        self.assertEqual(decoded["wire_version"], schema + 13)
+                        self.assertEqual(decoded["schema_version"], schema)
+                        self.assertIsInstance(decoded["death"], dict)
             for bad_wire in (7, 99):
                 corrupted = bytearray(payloads[0])
                 corrupted[:4] = bad_wire.to_bytes(4, "little")

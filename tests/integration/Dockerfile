@@ -23,5 +23,7 @@ RUN apt-get update \
     && mysqld --no-defaults --version
 
 WORKDIR /suite
+# The caller's mounted checkout retains its host UID inside this fixture image.
+RUN git config --system --add safe.directory /suite
 ENTRYPOINT []
 CMD ["sleep", "infinity"]
