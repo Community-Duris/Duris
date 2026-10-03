@@ -411,13 +411,20 @@ pass per backend mode with a controlled apply callback; actual restored SQL
 ownership is not connected. Collection allocation failure is contained before
 callbacks, preserving the original journal.
 Its resume allocation guarantee does not repair existing allocation gaps in
-initial worker admission, retry scheduling or pending promotion; those remain
-separate qualification work.
+retry scheduling or pending promotion. Retained initial/pending admission now
+has bounded qualification recorded below; result delivery remains separate.
 
-Read-only review identifies the distinct failure states for that next work:
-make_unique receives an already-moved snapshot temporary before its allocation;
-post-emplace ready-queue failure can leave a slot after bytes/revision rollback;
-and pulse consumes a result before retry/promotion queue allocations. Promotion
+Before-admission source review established input loss from an already-moved
+make_unique argument, stranded post-emplace slots after ready allocation, and
+replacement failure after a newer uncaptured mark. Empty job/slot/cancelable
+readiness are now staged before moves or revision claims, and exact current
+revision/unacknowledged mask is checked before replacement. Sixteen paired before
+failures/four controls become20 after passes per native mode, with unchanged8
+parking regressions each, both strict incremental builds and maintained owners.
+Actual inactive MariaDB/MySQL journeys/follow-ups and flatfile restart/relog pass;
+final declaration20a99f56 pins exact evidence in October3 review. This closes
+retained admission only. Pulse still consumes a result before retry/promotion
+queue allocations. Promotion
 can then lose an original receipt-bearing completion after its real journal ACK.
 Stage cancelable queue ownership and an empty job before moving input or changing
 revision/receipt state; fault-injected native tests must establish each failure
@@ -468,3 +475,36 @@ worker ACK and public revision checkpoints also need the same authority fence.
 A per-pass journal deferral marker cannot establish a resident hold or load
 permission. After reopening, the durable critical owner must reinstall its gate
 before any replay; preserving frame bytes alone does not reinstall that gate.
+
+### Ordinary SQL exception ownership: reviewed implementation boundary
+
+Source-only review at local9cfdad368 and fetched3dbb8bc83 confirms ordinary apply
+has no exception rollback guard and pooled apply/readback can escape while a
+lease is still held. Ward columns/new0056 do not repair this. Keep cleanup
+metadata specific to the SQL repository: original session, untouched/verified
+idle/retire-required disposition, confirmed rollback and cleanup error. A new
+borrowing overload may report that proof; the existing direct API never closes,
+replaces or releases caller handles. Reject an existing transaction, autocommit
+OFF or reconnect-enabled connection before changing caller state.
+
+Install a nonallocating guard before START, explicitly finalize cleanup using
+literal ROLLBACK on the original session, and require successful cleanup plus
+same session/idle/autocommit/reconnect-disabled state for pooled reuse. A
+best-effort destructor alone is not reuse proof. Own the lease immediately after
+acquire; unproven cleanup discards then releases it. Replacement consumes the old
+lease even when NULL; own only its returned replacement thereafter. Precommit
+caught bad_alloc with confirmed rollback is retryable ENOMEM/no proof; possible
+COMMIT followed by readback allocation retains ambiguous outcome. Explicit
+returned terminal ENOMEM and genuine custody/death diagnoses stay unchanged.
+
+Death-conflict continuation needs confirmed original rollback before beginning
+retained-evidence work, and separate checked cleanup for that evidence
+transaction or conservative lease retirement. Ordinary cleanup cannot certify
+later work. Also own extra-description malloc buffers before string assignment
+and pet MYSQL_RES before allocating comparisons. Actual engine tests must prove
+START/DML rollback, successful-COMMIT reply loss/readback OOM, failed rollback,
+replacement failure, borrowed transaction/settings refusal, conflict continuation
+and resource allocation witnesses. Use calibrated client transaction bits after
+SELECT1 for both engines. Force-rebuild changed header consumers/dependent
+harnesses from verified .d closure. This is a design boundary, not implemented or
+qualified SQL cleanup, and it does not authorize incoming history integration.

@@ -14,6 +14,7 @@
 #include <mutex>
 #include <new>
 #include <thread>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -31,6 +32,8 @@ struct queued_snapshot
 	uint64_t queued_at_usec = 0;
 	unsigned int retry_count = 0;
 };
+
+static_assert(std::is_nothrow_move_assignable_v<player_snapshot>);
 
 struct pid_slot
 {
@@ -108,6 +111,16 @@ void queue_ready_locked(int pid)
 		}
 		job_available.notify_one();
 	}
+}
+
+// Called only for a ready entry staged by the current admission. No worker can
+// consume it while worker_mutex is held, and erasing integer entries allocates nothing.
+void cancel_ready_locked(int pid)
+{
+	const auto entry = std::find(ready_pids.begin(), ready_pids.end(), pid);
+	if (entry != ready_pids.end())
+		ready_pids.erase(entry);
+	ready_set.erase(pid);
 }
 
 void update_depth_health_locked()
@@ -476,34 +489,42 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 		    revision_state.queued_revision != snapshot.revision ||
 		    !revision_state.queued_components ||
 		    (snapshot.components & revision_state.queued_components) !=
-			    revision_state.queued_components ||
-		    !player_revision_begin_inflight(snapshot.pid, snapshot.revision,
-						    revision_state.queued_components))
+			    revision_state.queued_components)
 			return player_save_submit_result::revision_state_mismatch;
-		// An earlier worker ACK can narrow the queued mask while this sealed
-		// capture waits for its journal append. Apply the remaining components,
-		// just as promote_pending_locked does for a capture retained by the worker.
-		snapshot.components = revision_state.queued_components;
 		const int pid = snapshot.pid;
-		const player_revision_t revision = snapshot.revision;
-		const player_component_mask_t components = snapshot.components;
-		const size_t snapshot_bytes = snapshot.encoded_size_bound;
-		bool bytes_accounted = false;
+		bool slot_staged = false;
 		try
 		{
-			pid_slot slot;
-			slot.active = std::make_unique<queued_snapshot>(
-				queued_snapshot{ std::move(snapshot), now_usec(), 0 });
-			retained_bytes += snapshot_bytes;
-			bytes_accounted = true;
-			slots.emplace(pid, std::move(slot));
+			// Allocate every owner before consuming the caller's retained capture
+			// or claiming its revision. Even ready-container growth can fail.
+			auto job = std::make_unique<queued_snapshot>();
+			auto inserted = slots.try_emplace(pid);
+			if (!inserted.second)
+				return player_save_submit_result::revision_state_mismatch;
+			slot_staged = true;
 			queue_ready_locked(pid);
+			if (!player_revision_begin_inflight(pid, snapshot.revision,
+							    revision_state.queued_components))
+			{
+				cancel_ready_locked(pid);
+				slots.erase(inserted.first);
+				return player_save_submit_result::revision_state_mismatch;
+			}
+			// Existing ordinary/typed mask behavior is unchanged here; preserving
+			// exact typed journal identity is a separate prerequisite.
+			snapshot.components = revision_state.queued_components;
+			job->snapshot = std::move(snapshot);
+			job->queued_at_usec = now_usec();
+			retained_bytes += job->snapshot.encoded_size_bound;
+			inserted.first->second.active = std::move(job);
 		}
 		catch (const std::bad_alloc &)
 		{
-			if (bytes_accounted)
-				retained_bytes -= snapshot_bytes;
-			player_revision_fail_inflight(pid, revision, components);
+			if (slot_staged)
+			{
+				cancel_ready_locked(pid);
+				slots.erase(pid);
+			}
 			return player_save_submit_result::capacity_exceeded;
 		}
 		saturating_increment(health.submitted);
@@ -527,37 +548,47 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 	if (snapshot.encoded_size_bound >
 	    PLAYER_SAVE_WORKER_MAX_BYTES - (retained_bytes - replaced_bytes))
 		return player_save_submit_result::capacity_exceeded;
+	bool ready_staged = false;
 	try
 	{
-		auto pending = std::make_unique<queued_snapshot>(
-			queued_snapshot{ std::move(snapshot), now_usec(), 0 });
+		// Construct the empty owner first; a moved aggregate argument would
+		// consume the input before make_unique attempts its allocation.
+		auto pending = std::make_unique<queued_snapshot>();
 		if (replace_undispatched)
 		{
 			player_revision_snapshot revision = {};
-			if (!player_revision_snapshot_copy(pending->snapshot.pid, &revision) ||
-			    revision.queued_revision != pending->snapshot.revision ||
-			    revision.queued_components != pending->snapshot.components ||
-			    !player_revision_fail_inflight(slot.active->snapshot.pid,
+			if (!player_revision_snapshot_copy(snapshot.pid, &revision) ||
+			    revision.current_revision != snapshot.revision ||
+			    revision.queued_revision != snapshot.revision ||
+			    revision.queued_components != snapshot.components ||
+			    revision.unacknowledged_components != snapshot.components)
+				return player_save_submit_result::revision_state_mismatch;
+			ready_staged = !ready_set.contains(snapshot.pid);
+			queue_ready_locked(snapshot.pid);
+			if (!player_revision_fail_inflight(slot.active->snapshot.pid,
 							   slot.active->snapshot.revision,
 							   slot.active->snapshot.components) ||
-			    !player_revision_begin_inflight(pending->snapshot.pid,
-							    pending->snapshot.revision,
-							    pending->snapshot.components))
+			    !player_revision_begin_inflight(snapshot.pid, snapshot.revision,
+							    snapshot.components))
+			{
+				if (ready_staged)
+					cancel_ready_locked(snapshot.pid);
 				return player_save_submit_result::revision_state_mismatch;
-			retained_bytes = retained_bytes - replaced_bytes +
-					 pending->snapshot.encoded_size_bound;
+			}
+		}
+		pending->snapshot = std::move(snapshot);
+		pending->queued_at_usec = now_usec();
+		retained_bytes =
+			retained_bytes - replaced_bytes + pending->snapshot.encoded_size_bound;
+		if (replace_undispatched)
 			slot.active = std::move(pending);
-			queue_ready_locked(slot.active->snapshot.pid);
-		}
 		else
-		{
-			retained_bytes = retained_bytes - replaced_bytes +
-					 pending->snapshot.encoded_size_bound;
 			slot.pending = std::move(pending);
-		}
 	}
 	catch (const std::bad_alloc &)
 	{
+		if (ready_staged)
+			cancel_ready_locked(snapshot.pid);
 		return player_save_submit_result::capacity_exceeded;
 	}
 	saturating_increment(health.coalesced);

@@ -660,7 +660,8 @@ plus flatfile creation/save/coldrestart/relog journeys pass. Final declaration
 Startup/registration, checkpoint-owned permits, affected-PID hydration, retained
 wakes, independent ACK/checkpoint fencing and original publication release remain
 pending. A per-pass marker does not establish a resident or cold-restart hold.
-Existing admission/retry/promotion/result-queue allocation gaps are separate work.
+Worker allocation gaps are separate work; the later admission milestone below
+closes retained submission only. Retry/promotion/result delivery remain open.
 Unresolved callback proof withdrawal and bad_alloc classification now have
 bounded paired qualification:19 before failures/four terminal controls become23
 passes per mode; unchanged19-case deferral owners also pass per mode. Both strict
@@ -668,7 +669,23 @@ incremental builds, nine maintained owners,14 validations/30 contracts and actua
 inactive MariaDB/MySQL plus flatfile restart/relog journeys pass. Final declaration
 9ef8c4b2 pins exact source, native cases, gameplay and owned service teardown.
 Ordinary SQL transaction/pool-lease exception cleanup, general postcallback
-allocation safety and worker admission/retry/promotion/completion allocation
-remain separate. A newly confirmed typed snapshot-mask/exact-journal identity
+allocation safety and worker retry/promotion/completion allocation remain
+separate; retained admission is closed by the later bounded milestone below. A newly confirmed typed snapshot-mask/exact-journal identity
 race also remains open; native custody and stale-frame safety must be preserved. See Plan1 and October3 review for exact scope.
 This does not authorize ordinary-drop wiring, active accounting or gate promotion.
+
+The retained-admission allocation prerequisite now has paired component evidence:
+16 native before failures/four controls become20 after passes per SQL-header and
+flatfile mode. Empty owners and cancelable readiness are staged before moves or
+revision claims; newer uncaptured marks refuse before replacing original state.
+Eight unchanged parking regressions also pass per mode. Both strict incremental
+builds and nine maintained owners,14 validations/30 contracts and nonmutating
+matrix pass. Declarationfd0e36bf retains exact native inputs and case artifacts.
+Actual inactive MariaDB/MySQL journeys and native follow-ups pass, as does
+flatfile creation/save/cold restart/relog in131.800 seconds. Final declaration
+20a99f56 reverifies native inputs, component cases, strict binaries/logs, gameplay
+and owned schema/server teardown/port rebind. This bounded admission prerequisite
+is solved locally. Scheduling/retry/promotion, result delivery, typed mask identity,
+SQL lease cleanup and restored-save integration remain separate. Fresh remote
+3dbb8bc83 adds ward0056; combined-source qualification and history integration
+are pending under the no-merge restriction. No R1-R8 or coverage gate is promoted.

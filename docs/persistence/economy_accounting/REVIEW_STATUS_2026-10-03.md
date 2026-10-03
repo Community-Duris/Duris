@@ -2134,3 +2134,96 @@ SQL apply-time custody comparison. This remains unimplemented. General worker
 allocation, SQL transaction/lease cleanup, restored-save gates, current broad and
 combined incoming-source qualification remain open. GitHub publication remains
 pending local history integration authorization under the no-merge restriction.
+
+### Retained worker admission: reproduced failures; repair in preparation
+
+The frozen19-case admission owner links actual worker/revision/codec/journal/
+observability with a controlled canonical apply callback and real journal ACK.
+The first actual SQL-header run reproduces15 admission failures: allocation can
+consume caller input before make_unique, leave a slot after queue failure, or
+narrow the retained input after a real older ACK. No/real-journal initial ordinals,
+pending/replacement/protected-deferral and measured native ready-set/deque growth
+all fail exact caller/owner checks. Cumulative receipt coalescing, PID capacity
+and null-pointer controls pass. The byte-capacity control has a separate fixture
+setup failure: capture remembered8192, then the final serialized bound changed
+to4MiB without resealing the oracle. Its seven controlled apply refusals are not
+counted as production evidence. The original executed owner/artifact is retained:
+`tmp/worker-admission-before-qualified-artifact-v2.local.json` SHA-256
+d65caa6eeb4a4b6b38526273762d60e16e37fde4b6fcf28a687901298fef4cde;
+binary e71122c0e09c15d3e0e1b1df046579f1380b418bce1ffe27da50656fb43e13eb,
+strict compile37.410 seconds within300. The revised owner will repair that final
+oracle and add a genuine newer-uncaptured-mark refusal/repair case, preserving
+original capacity, assertions and real ACK gates.
+
+Read-only review confirms a related replacement admission bug: fail_inflight
+regenerates queued identity from current state. A newer uncaptured mark after
+r2 capture can make begin_inflight fail after the original active revision and
+caller input were changed. Validate current revision/unacknowledged mask before
+replacement, and stage empty job/slot/cancelable ready ownership before any move,
+mask change or revision claim. The proposed private source candidate has not
+been applied or qualified yet. Typed mask/exact-journal identity, retry/promotion
+and result-delivery allocation are separate issues. No gate is promoted.
+
+The corrected frozen20-case owner establishes16 production semantic failures and
+four controls PASS on the unchanged original source. Strict compile45.192/300,
+aggregate6.324/120; binary b9c0850316d5d302affd7aef8f6dd5d6279223d84f8bb1a53397f2f15ae48b53.
+The new uncaptured-mark witness records input_exact0/revision_exact0 under the
+actual old replacement path. Final-byte-capacity resealing restores that genuine
+control without changing any production capacity or native assertion. Revised
+runner1317d86a05d7e17702a01de26cb924b066d260cfe59c149e69060bbb13f10b17,
+harness e93ddfff47761ab6c479d655a7aede1df10629d1a5d53e1ae067d6063a3276b1;
+`tmp/worker-admission-before-qualified-artifact-v3.local.json` SHA-256
+e119a981a8cae55c76f6b831c5faeaf31c6f86ceb837559a7eae3b24a1c6e51c.
+
+The reviewed candidate now allocates an empty job, empty PID slot and cancelable
+ready ownership before claiming revision state or moving the caller capture.
+All commit steps after begin_inflight are nonallocating, including a statically
+noexcept snapshot move. Refusal removes staged owners without altering retained
+bytes/input/revision. Pending/replacement allocation also precedes moving input;
+undispatched replacement validates current revision/unacknowledged components
+before fail_inflight can regenerate queued identity. Existing return enums,
+capacity limits, inactive selection and typed mask behavior are preserved.
+
+All20 after cases pass per SQL-header and flatfile mode, along with unchanged8
+worker-parking regressions per mode rebuilt on this exact source. Admission SQL
+compile/runtime38.221/6.401 seconds, flat37.971/5.502; parking42.900/0.685 and
+35.648/0.579. Original300/120 gates are unchanged. Immutable component declaration
+`tmp/worker-admission-qualified-artifact.local.json` SHA-256
+fd0e36bf355708722f2d4d4a6edfd52b391fa794a2bf0fb4a5cc882a704a45a8
+pins five actual artifacts, binaries/compiler argv/header+owner inputs, native
+case logs/results and negative wrong-SHA/backend/source guards. It also retains
+the first byte-capacity fixture failure. Driver preparation first refused a
+wrong prior-manifest path, then a missing parking-owner path, both before any
+compiler/precompile declaration; original scripts are preserved. The recovered
+driver uses the verified original frozen parking owner, with assertions intact.
+Frozen worker source101bb4cbc60060e139efce7de63a79886af4e13323c94a59f47d745a4e3e5ef8;
+all other1231 native inputs unchanged, production manifest
+`tmp/worker-admission-production-inputs.local.json` SHA-256
+ff3ec51aebda8baf055701c2a185512e01cee6d99d05b424fce12c6376f0db11.
+Both strict incremental builds pass original600/-j2, forcing exactly the changed
+worker translation unit per backend;13 seconds each. SQL binary
+c83bed3969dc22eae46d5979c41f858ade75dd8d09d592b5c868c3ee04b90798;
+flatfile b8a985130fb7919bc2f701caafafd641351d9a2dc99b46620ee62d6d33847925.
+All nine maintained owners,14 accounting validations/30 contracts and matrix
+--check pass. Actual inactive MariaDB b13f3fc7 and MySQL1fd7e752 journeys pass
+elapsed/quiet/repeated saves, link loss, quit/restart, death/reload, crash recovery,
+live copyover and maintained native follow-ups. Flatfile creation/save/cold
+restart/relog passes131.800 seconds within its original600-second outer budget.
+Final owned schema/server teardown and port35283/35284 rebind checks pass.
+Immutable `tmp/worker-admission-final-milestone.local.json`, SHA-256
+20a99f56dc10e0efa0a701cf25563a8e594ca6bb9c791fe694d7c75314fc3882,
+reverifies all1232 native/current source pins, five component declarations/case
+logs/binaries, strict build outputs, gameplay/teardown, maintained owners and
+unchanged false/BLOCKED matrix. Nonmutating clang-format18 and final whitespace
+checks pass. This bounded retained-admission issue is solved locally. Typed mask
+identity, retry/promotion/result delivery, ordinary SQL cleanup, restored-save
+gates and full/current/combined-source acceptance remain open. No route is promoted.
+
+A fresh read-only remote fetch is now3dbb8bc831a3caf2ae37381e844ce203e89e9379,
+12 local/114 incoming commits. The eight new incoming commits merge PR597 finite
+renewable spell wards, extending affects/snapshot wire identity and adding0056.
+Worker admission and ordinary SQL cleanup remain unfixed in that incoming source.
+Preserve new ward semantics and earlier durable-only death-descendant evidence
+on eventual authorized integration. Local qualification remains source/schema
+0055 only; combined incoming/0056 checks are pending. No history integration or
+push was performed under the retained no-merge restriction.
