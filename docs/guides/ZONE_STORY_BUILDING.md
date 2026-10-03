@@ -303,6 +303,30 @@ restore or retire the feature deliberately. Blank responses, unused prototypes
 and promised campaign finales need fair content review before declaring new
 products, personal kills or whole-zone completion.
 
+## Competing campaign materials and large regions
+
+The [Surface Realm dossier](../design/zone-stories/SURFACE_REALM.md) distinguishes
+four different trophies for a book, four consumed instances of one heart kind
+for four different lockets, and a five-kind finale. Optional current possession
+is guidance; prior receipts and duplicate kinds cannot replace consumed proof.
+Recipients killed for one branch can require later appearances for another.
+Do not manufacture exclusivity or a full campaign from opposed native requests;
+define episode/allocation policy before deeper credit.
+
+Group market price alternatives into support rows, preserving every exact
+binding and distinguishing same-name kinds such as Breale versus normal bass.
+Keep item-count preparation separate from coin readiness and guarded mixed
+settlement. A retiring story recipient can remove its still-independent crafting
+service, so explain useful order without inventing mandatory earlier receipts.
+Use an actual valid plain NPC alias when its personal-name alias contains an
+apostrophe; advertise verified addressed topics rather than ambient speech.
+
+For large terrain areas, retain one discovery identity and use encountered
+regional guidance. Verify the actual directional lock beyond an area's boundary
+instead of inferring access from a reward's promise. Death-created wood, helper
+spawns, race-context travel, disabled identity commands and commented invasions
+need accepted evidence or deliberate repair decisions before journal stages.
+
 ## The gardener dependency
 
 Alvinar's Q contract does not describe the barrier. `gardener_block` in

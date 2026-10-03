@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 31 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 32 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -36,6 +36,12 @@ outcomes/eight support rows, four distinct competing souls, exact same-name
 proof/output separation, three access keys and a foreign study continuation.
 Rare/holding sources, custom effect/teacher events, guarded paid identity/pet
 services and balanced unrewarded-soul/claim-restoration repairs remain explicit.
+The Surface Realm's [completed dossier](zone-stories/SURFACE_REALM.md) adds
+seventeen independent outcomes/six support rows, competing heart/trophy episodes,
+the actual tomb-key route, distinct bass and repeated-material guidance.
+Custom source/helper/rift/actor and regional presentation need accepted events;
+missing boundary edges, mixed fees, bracer supply and disabled campaign endpoints
+have targeted qualification and balanced repair plans.
 Active reset-generation qualification is a shared prerequisite for the pilots.
 
 ## Reviewed first integrations
@@ -73,7 +79,7 @@ Active reset-generation qualification is a shared prerequisite for the pilots.
 | 29 | [Verspin](zone-stories/VERSPIN.md) (`verspin`) | Circus backstage → five totems → pants; apple → Ramous/bone → retiring lion collar; five shrine symbols → retiring holyman; foreign stolen amethyst → three ore pieces; three exact amulet colors → Transo's belt; one Bloodstone sigil → monk's necklace. Five paid Lozin recipes are separate support services. | Source-comprehensive, revision 1: six achievements/potential dailies, six services, eighteen contacts/all nine addressed families and eighteen optional checks. Real source parents/caps, spectator/pit/secret/water access and supplied proofs are documented. Builder-selected sign/cap/clue repairs, guarded stat effects, crew payment ordering and XP policy remain planned. |
 | 30 | [The Ship Yards](zone-stories/SHIP_YARDS.md) (`shipy`) | Port crates → two local kitchens; refunded Pol briefing → optional note → ten lure materials; stein/cask between ports; two independent desert maps; foreign totem/ring/cigars; competing glands/venom/teeth, five katanas/glands, four shivs plus rations; six distinct potions. Three Bronak recipes and seafood suppliers are services. | Source-comprehensive, revision one: nineteen achievements/potential dailies, six services, thirty-two contacts and thirty-four optional checks. Actual dispersed/worn/nested sources and foreign alternatives documented. Four missing exits, ocean viper destination, clue/promise repairs, fishing publication and paid ship/crew settlement remain planned. |
 | 31 | [The Sky City of Ultarium](zone-stories/ULTARIUM.md) (`cosmic`) | Foreman clue → nested second draft → engineer cape; harpy golem plans → old head; recovered study → distinct delivery copy → foreign Xavier; three keys → four distinct council souls → rare immaterial box; competing halo/donation offerings; security-key smuggler; raw → wearable wind; six trapper barters/hydra gorget as services. | Source-comprehensive, revision one: seven outcomes/eight support rows, twenty-three contacts and twenty-two optional checks. Exact competing proof and same-name kinds preserved. Rare/holding sources, source/gift/episode/access/effect tracking, paid services and balanced soul/clue/pet-claim repairs remain planned. |
-| 32 | [The Surface Realm of Duris](../../areas/qst/surface.qst) (`surface`) | Four-traitor proofs; elemental lockets + book → mystic reward; Mountaineer claws; local transformation routes. | Candidate reviewed in Q/M source. Large travel area: assign named stories to actual giver ownership and review heads-versus-hearts prose. |
+| 32 | [The Surface Realm of Duris](zone-stories/SURFACE_REALM.md) (`surface`) | Four distinct warden trophies → book; four separate labyrinthmaster hearts → four elemental lockets → five-material mystic finale → actual connector tomb key; opposing rival/prophet bounties; five claws/totem; grey paw → white potion → independent nomad; three crystals/two egg recipients; three markets and three equipment services. | Source-comprehensive, revision one: seventeen outcomes/six support rows, 37 contacts/31 optional checks. Complete grouped grid/source/custom/foreign review. Episode allocation, first-source/gift, actual travel/helper/actor and paid services unqualified; two missing exits, bracer supply, copied proof/clue text, dormant invasion and disabled descent have balanced plans. |
 | 33 | [Tharnadia - City of Humans](../../areas/qst/tharnadia.qst) (`tharnadia`) | Local recovery/delivery requests → reviewed weaponsmith improvement services. | Mapped baseline. Deepen a bounded town route; preserve the excluded missing-prototype contract until world repair. |
 | 34 | [Mini Zones](../../areas/qst/minizones.qst) (`minizones`) | Local spirit history; ghostly armor + blood crystals → named armor transformations. | Candidate reviewed in Q/M source. Separate the independent mini-areas and service recipes before campaign grouping. |
 

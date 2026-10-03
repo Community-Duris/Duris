@@ -56,9 +56,10 @@ neither every branch nor every historical prerequisite.
 | 29 | Verspin | [Comprehensive source dossier](zone-stories/VERSPIN.md): all twelve Q/QA/nine addressed/31 ambient blocks, 200 rooms/79 mobs/57 objects/five shops, 389 resets/206 families, two literal services, computed teachers/inn and bounded foreign/shared review | Revision 1: six stories/six services, eighteen contacts/eighteen optional checks; exact five-count/color inputs, optional producer history, foreign proof ownership and actual access guidance | Active source/cap/retirement qualification; five mixed fees; virtual stat/wallet/save effects; denied crew-payment ordering/ship settlement; XP cap policy; builder-selected sign/cap/clue/lore repairs |
 | 30 | Ship Yards | [Comprehensive source dossier](zone-stories/SHIP_YARDS.md): all 124 blocks/26 exchanges/twenty addressed/78 ambient, 229 rooms/102 mobs/46 objects/seven shops, 719 resets/265 families, eight literal services and bounded foreign/shared review | Revision one: nineteen outcomes/six services, thirty-two contacts/thirty-four optional checks; supplied proofs, optional briefing/note, exact quantities/kinds and two crate-price alternatives | Active source/slot/cap/dispersal/retirement and travel qualification; four missing exits/ocean viper ecology; builder-selected count/clue/reward repairs; fishing ownership publication and wallet/epic/ship/crew settlement |
 | 31 | Ultarium | [Comprehensive source dossier](zone-stories/ULTARIUM.md): all 22 blocks/seventeen exchanges/five addressed, 268 rooms/82 mobs/71 objects/two shops, 338 resets/227 families, three literal assignments, computed teachers/shared effects and bounded foreign continuation | Revision one: seven outcomes/eight support rows, twenty-three contacts/twenty-two optional checks; competing distinct souls, same-name kinds, keys, supplied proof and foreign ownership | Active rare/holding/capped/nested/roaming sources/appearances; source/gift/episode/access/travel/effect/actor-state adapters; paid rename/pet/epic lesson settlement; balanced soul/clue/name/claim repair |
-| 32–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 32 | Surface Realm | [Comprehensive source dossier](zone-stories/SURFACE_REALM.md): all 141 blocks/31 exchanges/36 addressed, 160,004 rooms in 562 prose/56 metadata/311 exit groups, 234 mobs/78 objects, 1,736 resets/320 families, eight literal assignments/104 computed teachers and bounded foreign evidence | Revision one: seventeen outcomes/six support rows, 37 contacts/31 optional checks; exact competing campaign materials, repeated supplies, distinct bass, actual tomb continuation and supplied routes | Active source/recipient/episode qualification; accepted treant/fishing/helper/rift/actor/region and paid ship/class/fee events; targeted two-edge/clue repair and deliberate bracer/invasion/descent policy |
+| 33–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is the Surface Realm, followed by Tharnadia and Mini Zones.
+The next area is Tharnadia, followed by Mini Zones and the City of Torrhan.
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -156,6 +157,8 @@ matches, or a candidate item graph was extracted.
 | ZSQ-SHIPY-FISH / PAID | Catch/effects/XP precede ownership grant; six paid native services are guarded. Shared ship/crew paths ignore denied cash, with mixed epic/coin hull settlement. | Extend existing accepted fishing and paid-service continuations. Freeze selected draw/material/output/price and stable ship revision; settle/save/refund before success. Qualify denial, interruption, concurrency, replay/restart and legitimate supplied proofs. |
 | ZSQ-COSMIC-SOUL / IDENTITY | Director's three branches consume distinct souls without declared rewards; box needs all four together. Study/wind proof and output share aliases; Xavier owns the foreign delivery. | Preserve native allocation/receipts and exact kinds. Confirm donation/clue/name/campaign intent; add accepted source/gift lineage and attempt/world outcomes before deeper credit. |
 | ZSQ-COSMIC-CUSTOM / PAID | Rare box/windkin, cap-one proof, directional keys/secret boulders, teleports and effect/teacher state need accepted evidence. Rename/pet/epic purchases are guarded; legacy pet claim has no restoration call. | Extend shared reset/appearance/access/arrival/effect/actor-state and wallet/identity/pet/lesson continuations. Deliberately restore or retire pet claims; qualify denial/refund, partial identity/save failure and replay/restart before removing guards. |
+| ZSQ-SURFACE-ALLOCATION / SOURCE | Four different trophies buy a book; four wardens consume separate instances of one heart kind; mystic needs five current kinds. Claws/crystals/eggs and retiring hunter compete; bracer 729 has no ordinary loaded repeatable producer. | Preserve exact supplied routes and independent receipts; qualify recipient/source episodes and imported custody. Add allocation/first-source/gift evidence and builder-selected supply/branch policy before deeper campaign credit. |
+| ZSQ-SURFACE-CUSTOM / REPAIR | Two Mril exits target unloaded 33807; wood has a death-created source without confirmed decay binding; guardian/rift need accepted effects/arrival. Devil invasion is commented out; descent is disabled; fishing text/XP precedes grant. | Targeted loaded-edge/proof/clue repair; accepted source/helper/race-context arrival and post-grant publication. Deliberately restore or retire dormant endpoints with coordinated custody/identity/actor recovery; keep fee/epic guards and qualify shared ship settlement. |
 
 ## Verification record
 
@@ -1393,3 +1396,63 @@ with 189 remaining.** All 2,668 native definitions, revision two, fingerprint,
 registry and fifty-three earlier maps remain unchanged. Continue with the
 Surface Realm, Tharnadia and Mini Zones. Active accounting remains mandatory;
 no operational accounting activation, DB migration or merge is authorized.
+
+
+### Surface Realm completion
+
+Priority 32 is source-comprehensive. The [dossier](zone-stories/SURFACE_REALM.md)
+reviews all 141 native blocks/31 exchanges/36 addressed blocks, 234 mobiles,
+78 objects and 1,736 resets/320 families, plus eight literal assignments,
+104 computed teacher roles, all proof sources and bounded foreign ownership.
+All 160,004 room records were reviewed in 562 exact title/prose groups,
+56 complete metadata groups and 311 exit families; 370 loaded outgoing and
+423 incoming boundary edges were checked. Two exits reference unloaded 33807;
+all reset references resolve. Source coverage remains distinct from played
+active-world qualification.
+
+Revision one adds seventeen independent outcomes and six support rows with
+37 contacts/31 optional checks. Four different trophies, four separately
+consumed heart instances and the five-kind mystic collection retain exact
+native terms. Three fish markets group eleven barters; three recipes remain
+services, including two guarded mixed fees. Gifts, distinct bass kinds, repeated
+claws/crystals/eggs, opposing requests and the retiring hunter's competing
+service have explicit guidance. The mystic's reward key opens the connector
+tomb, not the separate transparent gateway. No personal hunt, allegiance,
+membership, rebirth, study or permanent campaign completion is invented.
+
+First-source/gift/episode, actual helper/rift/travel/actor outcomes and regional
+presentation need qualification. Treant death wood, catch publication before
+grant, two missing boundary edges, absent ordinary bracer stock, copied proof/
+alias/clue wording, commented devil invasion and disabled descent have precise
+balanced plans. Ship/class/fee settlement remains shared work with existing
+refusals; no operational accounting activation, migration or merge occurred.
+
+Verification covers full binding/classification/topic/source evidence, distinct
+versus duplicate five-kind materials, repeated quantities, worn versus carried
+proof, supplied potion without producer credit, different bass kinds, independent
+opposing receipts, six service exclusions and persisted recovery. Catalog/index,
+source/invariant/link checks, formatting, whitespace and maintained build
+complement focused native/Python fixtures; live journeys remain unqualified.
+
+Validation passed: focused production catalog/all 32 source indices, C++20
+native journal/schema/projection and receipt recovery, authoritative formatting,
+whitespace and the maintained server build. The invariant review verifies
+672 local/source-line links, grouped world/boundary counts, exact tomb versus
+gateway keys and unchanged native definitions/revision/fingerprint/registry
+and all 54 earlier parsed maps.
+
+The accounting base has subsequently advanced to `100bee62f`; a read-only merge
+preview reports fifteen conflict files across migration/runtime compatibility,
+flat-file/SQL quest state, special assignment and their focused fixtures.
+The unmerged daily migration's sequence 54 now collides with the base's alchemy
+migration. Synchronize the feature branch with the dependency, preserve new
+accounting recovery/deletion behavior and saved journal encounters, allocate
+the unmerged daily migration after the current immutable base head, regenerate
+all compatibility histories and rerun focused integration/build checks before
+claiming merge readiness. This preview performs no merge or database operation.
+
+Current catalog: **55 journals, 1,753 achievement units, 1,519 potential daily
+units and 2,227 projected rows; 32 of 220 roadmap areas are source-comprehensive,
+with 188 remaining.** All 2,668 native definitions, revision two, fingerprint,
+registry and fifty-four earlier maps remain unchanged. Continue with Tharnadia,
+Mini Zones and the City of Torrhan. Active, ready accounting remains mandatory.

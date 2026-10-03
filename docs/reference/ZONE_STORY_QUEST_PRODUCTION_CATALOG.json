@@ -102775,6 +102775,1406 @@
           "title": "Dwarf Hunter: Small Gem"
         }
       ]
+    },
+    {
+      "contacts": [
+        {
+          "description": "The campaign actors start in a private dispersal atrium and have 99-percent reset declarations, with cap one each. Their ten onward routes and actual current appearances need qualification; the atrium is not a promised public contact location. Accepts four distinct warden trophies for the book.",
+          "keyword": "labyrinthmaster",
+          "mob_vnum": 500000,
+          "name": "Sa'Dah the labyrinthmaster",
+          "topics": [
+            "yes",
+            "dreams",
+            "power",
+            "powers",
+            "dream",
+            "traitor",
+            "traitors"
+          ]
+        },
+        {
+          "description": "Witchdoctor source role: five equipped totems begin in a private dispersal hub. The actual totem, rather than any lizardman head, satisfies the watchman.",
+          "keyword": "lizardman",
+          "mob_vnum": 500014,
+          "name": "a lizardman witch doctor",
+          "topics": []
+        },
+        {
+          "description": "Small temple: accepts four distinct elemental lockets and the book for the sash and ornate gemmed key. The key serves the forest tomb, not its neighboring transparent gateway.",
+          "keyword": "mystic",
+          "mob_vnum": 500023,
+          "name": "a powerful mystic",
+          "topics": [
+            "hi",
+            "mystic",
+            "power",
+            "powerful",
+            "key",
+            "keys"
+          ]
+        },
+        {
+          "description": "Fisherman at \"Along a Crumbling Cobblestone Road\": two nine-silver fish barters; clam frustration supplies lore without a separate contract.",
+          "keyword": "jagunk",
+          "mob_vnum": 500024,
+          "name": "Ja'Gunk the Fisherman",
+          "topics": [
+            "clams",
+            "hi",
+            "hello",
+            "frustrated"
+          ]
+        },
+        {
+          "description": "Starts at \"Overgrown Grasslands of the Northern Wilds\": accepts the rival raider head for a bracer and payment.",
+          "keyword": "krekish",
+          "mob_vnum": 500026,
+          "name": "Krekish ViceFang",
+          "topics": [
+            "hi",
+            "hello",
+            "hunting",
+            "hunt"
+          ]
+        },
+        {
+          "description": "Starts at \"A Thick Forest of Tanglewood\": accepts the opposing hunter head for a bracelet and payment.",
+          "keyword": "raider",
+          "mob_vnum": 500027,
+          "name": "Gr'Tak the raider",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Starts at \"Along a Crumbling Cobblestone Road\": gland/bracer/coin equipment service remains guarded while accounting is active.",
+          "keyword": "agnut",
+          "mob_vnum": 500028,
+          "name": "Agnut the shaman",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "A wandering watchman supplies local Tharnadian greetings. His topics grant guidance without a quest achievement.",
+          "keyword": "decorated",
+          "mob_vnum": 500041,
+          "name": "a decorated Tharnadian watchman",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Starts at \"Rugged Hills of the Hearth Valley\" and can roam: five nightcrawler claws earn the insignia; membership praise is not a durable membership flag.",
+          "keyword": "crodog",
+          "mob_vnum": 500052,
+          "name": "Crodog Forgefire the Mountaineer",
+          "topics": [
+            "hi",
+            "hello",
+            "mountaineer",
+            "mountaineers"
+          ]
+        },
+        {
+          "description": "The highwayman guardian can periodically summon a helping actor while fighting. A confirmed helper event is separate from faction lore or completing a quest.",
+          "keyword": "elite",
+          "mob_vnum": 500058,
+          "name": "an elite highwayman",
+          "topics": []
+        },
+        {
+          "description": "Starts at \"Along a Gravel Highway\" and can roam: accepts a witchdoctor totem for fifty platinum.",
+          "keyword": "jonius",
+          "mob_vnum": 500070,
+          "name": "Sir Jonius the Verspin Watchman",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "The campaign actors start in a private dispersal atrium and have 99-percent reset declarations, with cap one each. Their ten onward routes and actual current appearances need qualification; the atrium is not a promised public contact location. Accepts a labyrinthmaster heart for the air locket; carries a competing story trophy.",
+          "keyword": "stargazer",
+          "mob_vnum": 500075,
+          "name": "Jorl'gan the stargazer",
+          "topics": [
+            "hi",
+            "stargazer"
+          ]
+        },
+        {
+          "description": "The campaign actors start in a private dispersal atrium and have 99-percent reset declarations, with cap one each. Their ten onward routes and actual current appearances need qualification; the atrium is not a promised public contact location. Accepts a labyrinthmaster heart for the earth locket; carries a competing story trophy.",
+          "keyword": "philosopher",
+          "mob_vnum": 500076,
+          "name": "Cho'van the philosopher",
+          "topics": [
+            "power",
+            "quest"
+          ]
+        },
+        {
+          "description": "The campaign actors start in a private dispersal atrium and have 99-percent reset declarations, with cap one each. Their ten onward routes and actual current appearances need qualification; the atrium is not a promised public contact location. Accepts a labyrinthmaster heart for the water locket; his own pulsing darkness is the actual competing proof.",
+          "keyword": "merrova",
+          "mob_vnum": 500078,
+          "name": "Merrova the traveler",
+          "topics": [
+            "hi",
+            "merrova",
+            "yes",
+            "evil",
+            "power"
+          ]
+        },
+        {
+          "description": "The campaign actors start in a private dispersal atrium and have 99-percent reset declarations, with cap one each. Their ten onward routes and actual current appearances need qualification; the atrium is not a promised public contact location. Accepts a labyrinthmaster heart for the fire locket; carries a competing story trophy.",
+          "keyword": "thorne",
+          "mob_vnum": 500079,
+          "name": "Thorne the enchanter",
+          "topics": [
+            "hi"
+          ]
+        },
+        {
+          "description": "Nightcrawler source role: nine equipped claws across fourteen initial appearances at two private hubs. Remove actual claws into carrying; kill counts and equipment are different evidence.",
+          "keyword": "nightcrawler",
+          "mob_vnum": 500087,
+          "name": "a nightcrawler",
+          "topics": []
+        },
+        {
+          "description": "Starts at \"A Secluded Island on Lake Moria\": six independently priced bait items. Breale bass and normal large bass have different kinds.",
+          "keyword": "fisherman",
+          "mob_vnum": 500092,
+          "name": "Kres'Nesthius the fisherman",
+          "topics": [
+            "hi",
+            "hello",
+            "fishing"
+          ]
+        },
+        {
+          "description": "Starts at \"A Small Camp Site\": five fangs give a necklace without retirement; grey paw gives the white potion and retires this appearance.",
+          "keyword": "chesynn",
+          "mob_vnum": 500094,
+          "name": "Cheshynn the Tundra Hunter",
+          "topics": [
+            "hi",
+            "hello",
+            "yes",
+            "panther",
+            "panthers",
+            "tundra"
+          ]
+        },
+        {
+          "description": "Grey panther at \"Snow Capped Hills of the Tundra\": carries the exact paw and one sharp fang. Supplied trophies do not prove a personal hunt.",
+          "keyword": "grey",
+          "mob_vnum": 500095,
+          "name": "Grey Fang the alpha panther",
+          "topics": []
+        },
+        {
+          "description": "Starts at \"The Amber Sands of an Island Desert\" and can roam: accepts the exact white potion independently from its producer.",
+          "keyword": "tren",
+          "mob_vnum": 500096,
+          "name": "Tren Tind the halfling nomad",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Starts at \"The Rugged Foothills of Cyric the Destroyer\": accepts three blood crystals; competes with the separate four-crystal paid recipe.",
+          "keyword": "snardag",
+          "mob_vnum": 500098,
+          "name": "Snardag the Dark Wizard",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Starts at \"A High Egress Along the Sylvan Bluffs\": accepts one wyvern egg for study/payment.",
+          "keyword": "krethin",
+          "mob_vnum": 500099,
+          "name": "Krethin the Centaur Peak Seer",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Starts at \"Rocky Foothills of the Black Mountains\" and can roam: consumes one wyvern egg; rebirth text has no transformed actor endpoint.",
+          "keyword": "azikarzith",
+          "mob_vnum": 500100,
+          "name": "Azikarzith the DemiLich",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Starts at \"Vast Plains of the Eagle Ridge Delta\" and can roam: four-crystal/coin wand service remains guarded while accounting is active.",
+          "keyword": "flegnus",
+          "mob_vnum": 500101,
+          "name": "Flegnus the Ancient Larethian",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Flamewood treant: its death procedure creates exact flamewood in the room. First recovery/source credit needs accepted death-created custody evidence; no native journal exchange requests this wood.",
+          "keyword": "flamewood",
+          "mob_vnum": 500102,
+          "name": "a flamewood treant",
+          "topics": []
+        },
+        {
+          "description": "Spiritwood treant: its death procedure creates exact spiritwood in the room. A timer value alone does not establish that the corpse-decay procedure is assigned to this wood.",
+          "keyword": "spiritwood",
+          "mob_vnum": 500103,
+          "name": "a spiritwood treant",
+          "topics": []
+        },
+        {
+          "description": "Starts at \"A Small Fisherman's Dock\": three alternative food-fish barters without a catch-history requirement.",
+          "keyword": "moldug",
+          "mob_vnum": 500111,
+          "name": "Moldug the barbarian fisherman",
+          "topics": [
+            "hi",
+            "hello",
+            "fish"
+          ]
+        },
+        {
+          "description": "Starts at \"An Altar of Fire\": accepts the Ice head for the fire ring and three living-flame potions. Copied Ice wording in the request does not change his real identity.",
+          "keyword": "prophet",
+          "mob_vnum": 500116,
+          "name": "the Prophet of Fire",
+          "topics": [
+            "hi",
+            "hello",
+            "howdy",
+            "hey",
+            "pledge",
+            "yes",
+            "allegiance"
+          ]
+        },
+        {
+          "description": "Starts at \"An Altar of Ice\": accepts the Fire head for the frosty ring and three cold potions.",
+          "keyword": "prophet",
+          "mob_vnum": 500117,
+          "name": "the Prophet of Ice",
+          "topics": [
+            "hi",
+            "hello",
+            "howdy",
+            "hey",
+            "pledge",
+            "yes",
+            "allegiance"
+          ]
+        },
+        {
+          "description": "Baltazo has active periodic/attack-warning behavior. His old death invasion is commented out; do not promise or credit a restored eleven-devil campaign.",
+          "keyword": "general",
+          "mob_vnum": 500129,
+          "name": "a sickly, emaciated ex-general",
+          "topics": []
+        },
+        {
+          "description": "Class/specialization teacher through actual properties. Ambient epic-lore leads can point to foreign instructors; these sayings grant no learned-topic achievement, foreign lesson receipt or local epic purchase.",
+          "keyword": "perin",
+          "mob_vnum": 500188,
+          "name": "Perin, the forest druid",
+          "topics": []
+        },
+        {
+          "description": "Class/specialization teacher through actual properties. Ambient epic-lore leads can point to foreign instructors; these sayings grant no learned-topic achievement, foreign lesson receipt or local epic purchase.",
+          "keyword": "mugtogg",
+          "mob_vnum": 500190,
+          "name": "the elementalist, Mugtogg the great",
+          "topics": []
+        },
+        {
+          "description": "Class/specialization teacher through actual properties. Ambient epic-lore leads can point to foreign instructors; these sayings grant no learned-topic achievement, foreign lesson receipt or local epic purchase.",
+          "keyword": "surak",
+          "mob_vnum": 500193,
+          "name": "the muscle-bound dwarf named Surak",
+          "topics": []
+        },
+        {
+          "description": "Class/specialization teacher through actual properties. Ambient epic-lore leads can point to foreign instructors; these sayings grant no learned-topic achievement, foreign lesson receipt or local epic purchase.",
+          "keyword": "ghiran",
+          "mob_vnum": 500200,
+          "name": "Ghiran, the grand wizard",
+          "topics": []
+        },
+        {
+          "description": "Class/specialization teacher through actual properties. Ambient epic-lore leads can point to foreign instructors; these sayings grant no learned-topic achievement, foreign lesson receipt or local epic purchase.",
+          "keyword": "father",
+          "mob_vnum": 500209,
+          "name": "Father Benali",
+          "topics": []
+        },
+        {
+          "description": "Class/specialization teacher through actual properties. Ambient epic-lore leads can point to foreign instructors; these sayings grant no learned-topic achievement, foreign lesson receipt or local epic purchase.",
+          "keyword": "mu",
+          "mob_vnum": 500212,
+          "name": "Mu",
+          "topics": []
+        },
+        {
+          "description": "Class/specialization teacher through actual properties. Ambient epic-lore leads can point to foreign instructors; these sayings grant no learned-topic achievement, foreign lesson receipt or local epic purchase.",
+          "keyword": "suri",
+          "mob_vnum": 500217,
+          "name": "Suri, maiden of the earth",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore the Surface Realm: seventeen independent story outcomes and six support rows, including regional deliveries, competing trophies and the labyrinth's exact five-material finale. Active, ready accounting is required.",
+      "orientation": [
+        "The Surface Realm is one large discovered zone covering many continental regions. Use nearby contacts and the exact zone journal command to follow encountered requests. Discovery supplies regional guidance; it does not reveal every contact or require exploring every grid room.",
+        "Most stories are independent deliveries. Native exchanges accept exact materials supplied by another player. Current possession, personal source recovery and durable accepted delivery are separate facts; inspecting this journal grants no history or keyword achievement.",
+        "The labyrinth campaign has competing offerings: four different warden trophies buy a book, while each warden asks for a separate labyrinthmaster heart to buy one elemental locket. A single heart cannot serve four consumers, and killing a warden can remove that appearance as a locket recipient.",
+        "The mystic's finale requires the book plus fire, water, earth and air lockets together. These are five current item kinds, not five earlier receipts. The air locket has copied fire keywords; the actual object kind distinguishes it. Earlier personal campaign receipts are optional rather than enforced.",
+        "The ornate gemmed reward key opens the downwards tomb door in the forest beyond the surface approach. The neighboring transparent gateway has another key and a different continuation. Local hand-in credit does not establish later access or foreign quest completion.",
+        "Opposing raider bounties and elemental prophet requests remain separate stories. Their pledge or victory prose supplies a role-playing choice without durable allegiance, permanent world defeat or mutually exclusive branch enforcement.",
+        "The tundra hunter has a five-fang equipment service and a paw story. Complete desired necklace work before the paw exchange retires that appearance. The rewarded white potion can serve a separate nomad request; a supplied potion qualifies without the producer's earlier receipt.",
+        "Five nightcrawler claws, a witchdoctor totem, three blood crystals and two independent wyvern-egg requests use exact current materials. Kills, worn items and earlier deliveries cannot replace those supplies. One egg is consumed by one recipient; narrated study or rebirth has no extra recorded endpoint.",
+        "Three fishing-market rows group independent support barters without quest achievements or dailies. Breale bass and normal large bass are distinct kinds. A valid supplied fish satisfies a barter without manufacturing a first personal catch.",
+        "The gland/bracer and four-crystal wand recipes also require coins. Their mixed settlement remains guarded while accounting is active. Preparation hints do not prove wallet readiness. The bracer has no ordinary loaded repeatable source found in this review.",
+        "Private dispersal hubs, capped proof, roaming contacts and 99-percent campaign appearances need actual availability qualification. A starting room or reset declaration is a lead; do not promise that a quest recipient or every material is currently present.",
+        "Treant death creates wood, the highwayman guardian can summon help, and the shadow rift chooses its destination by racewar context. Accepted source, helper and confirmed-travel events are needed before these mechanics can become recorded stages. The old devil death invasion is commented out.",
+        "Ports, travel buildings and class teachers have separate service and travel mechanics. Epic purchases remain unavailable while accounting is active. The old descend continuation is disabled; possession of campaign rewards does not make it a playable quest.",
+        "Directional boundary access and foreign source or continuation receipts retain their own area ownership. Two surface exits reference an unloaded room and have a targeted repair plan; neither discovery nor receipt tests certify a played access journey."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "surface",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:500016,I:500017,I:500018,I:500019;receive=C:1000000,E:1000000,I:500032;disappear=1",
+              "giver_vnum": 500000
+            }
+          ],
+          "id": "labyrinthmaster-trophies",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The stargazer carries his heart, with cap one. Giving it here competes with contacting that same appearance for its locket.",
+              "id": "supply-500016",
+              "item_vnums": [
+                500016
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the still beating heart of Jorl'gan"
+            },
+            {
+              "count": 1,
+              "hint": "The philosopher carries this exact heart, with cap one. It is distinct from the stargazer and enchanter hearts.",
+              "id": "supply-500017",
+              "item_vnums": [
+                500017
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the still beating heart of Cho'van"
+            },
+            {
+              "count": 1,
+              "hint": "The traveler carries pulsing darkness, with cap one. Despite the request mentioning a heart, this distinct object is the actual third proof.",
+              "id": "supply-500018",
+              "item_vnums": [
+                500018
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the pulsing darkness of Merrova"
+            },
+            {
+              "count": 1,
+              "hint": "The enchanter carries his heart, with cap one. Four copies of another trophy cannot replace four distinct kinds.",
+              "id": "supply-500019",
+              "item_vnums": [
+                500019
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the still beating heart of Thorne"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500016,I:500017,I:500018,I:500019;receive=C:1000000,E:1000000,I:500032;disappear=1",
+                  "giver_vnum": 500000
+                }
+              ],
+              "hint": "The campaign actors start in a private dispersal atrium and have 99-percent reset declarations, with cap one each. Their ten onward routes and actual current appearances need qualification; the atrium is not a promised public contact location. Acceptance grants the book of many powers, 1,000,000 copper and declared 1,000,000 XP subject to native caps, then retires the recipient appearance.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bring four different warden trophies together to the labyrinthmaster for a book, one thousand platinum and a declared one million XP. This offering competes with the wardens' reverse requests; it records an accepted delivery without proving four personal kills or a lasting campaign victory.",
+          "title": "The labyrinthmaster's four trophies"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:500015;receive=C:100000,E:100000,I:500031;disappear=1",
+              "giver_vnum": 500075
+            }
+          ],
+          "id": "stargazers-air-locket",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The labyrinthmaster carries this exact heart, with cap one. Each of the four wardens consumes a different instance of this same kind. Supplied hearts qualify; a prior delivery or one reused heart does not prepare all four branches. The request says head, but the actual input is the heart.",
+              "id": "supply-500015",
+              "item_vnums": [
+                500015
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the still beating heart of Sa'Dah"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500015;receive=C:100000,E:100000,I:500031;disappear=1",
+                  "giver_vnum": 500075
+                }
+              ],
+              "hint": "The campaign actors start in a private dispersal atrium and have 99-percent reset declarations, with cap one each. Their ten onward routes and actual current appearances need qualification; the atrium is not a promised public contact location. Acceptance grants the crumbling locket of air, 100,000 copper and declared 100,000 XP, then retires this warden. Reading the locket's runes supplies a clue, without a learned-reading achievement.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Deliver the labyrinthmaster's actual heart to this warden for one elemental locket, one hundred platinum and declared one hundred thousand XP. Each branch is independent and consumes a separate heart; allegiance and personal victory are not recorded prerequisites.",
+          "title": "The stargazer's air locket"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:500015;receive=C:100000,E:100000,I:500030;disappear=1",
+              "giver_vnum": 500076
+            }
+          ],
+          "id": "philosophers-earth-locket",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The labyrinthmaster carries this exact heart, with cap one. Each of the four wardens consumes a different instance of this same kind. Supplied hearts qualify; a prior delivery or one reused heart does not prepare all four branches. The request says head, but the actual input is the heart.",
+              "id": "supply-500015",
+              "item_vnums": [
+                500015
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the still beating heart of Sa'Dah"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500015;receive=C:100000,E:100000,I:500030;disappear=1",
+                  "giver_vnum": 500076
+                }
+              ],
+              "hint": "The campaign actors start in a private dispersal atrium and have 99-percent reset declarations, with cap one each. Their ten onward routes and actual current appearances need qualification; the atrium is not a promised public contact location. Acceptance grants the crumbling locket of earth, 100,000 copper and declared 100,000 XP, then retires this warden. Reading the locket's runes supplies a clue, without a learned-reading achievement.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Deliver the labyrinthmaster's actual heart to this warden for one elemental locket, one hundred platinum and declared one hundred thousand XP. Each branch is independent and consumes a separate heart; allegiance and personal victory are not recorded prerequisites.",
+          "title": "The philosopher's earth locket"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:500015;receive=C:100000,E:100000,I:500029;disappear=1",
+              "giver_vnum": 500078
+            }
+          ],
+          "id": "travelers-water-locket",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The labyrinthmaster carries this exact heart, with cap one. Each of the four wardens consumes a different instance of this same kind. Supplied hearts qualify; a prior delivery or one reused heart does not prepare all four branches. The request says head, but the actual input is the heart.",
+              "id": "supply-500015",
+              "item_vnums": [
+                500015
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the still beating heart of Sa'Dah"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500015;receive=C:100000,E:100000,I:500029;disappear=1",
+                  "giver_vnum": 500078
+                }
+              ],
+              "hint": "The campaign actors start in a private dispersal atrium and have 99-percent reset declarations, with cap one each. Their ten onward routes and actual current appearances need qualification; the atrium is not a promised public contact location. Acceptance grants the crumbling locket of water, 100,000 copper and declared 100,000 XP, then retires this warden. Reading the locket's runes supplies a clue, without a learned-reading achievement.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Deliver the labyrinthmaster's actual heart to this warden for one elemental locket, one hundred platinum and declared one hundred thousand XP. Each branch is independent and consumes a separate heart; allegiance and personal victory are not recorded prerequisites.",
+          "title": "The traveler's water locket"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:500015;receive=C:100000,E:100000,I:500028;disappear=1",
+              "giver_vnum": 500079
+            }
+          ],
+          "id": "enchanters-fire-locket",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The labyrinthmaster carries this exact heart, with cap one. Each of the four wardens consumes a different instance of this same kind. Supplied hearts qualify; a prior delivery or one reused heart does not prepare all four branches. The request says head, but the actual input is the heart.",
+              "id": "supply-500015",
+              "item_vnums": [
+                500015
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the still beating heart of Sa'Dah"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500015;receive=C:100000,E:100000,I:500028;disappear=1",
+                  "giver_vnum": 500079
+                }
+              ],
+              "hint": "The campaign actors start in a private dispersal atrium and have 99-percent reset declarations, with cap one each. Their ten onward routes and actual current appearances need qualification; the atrium is not a promised public contact location. Acceptance grants the crumbling locket of fire, 100,000 copper and declared 100,000 XP, then retires this warden. Reading the locket's runes supplies a clue, without a learned-reading achievement.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Deliver the labyrinthmaster's actual heart to this warden for one elemental locket, one hundred platinum and declared one hundred thousand XP. Each branch is independent and consumes a separate heart; allegiance and personal victory are not recorded prerequisites.",
+          "title": "The enchanter's fire locket"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:500028,I:500029,I:500030,I:500031,I:500032;receive=I:500033,I:500034;disappear=1",
+              "giver_vnum": 500023
+            }
+          ],
+          "id": "mystics-five-offerings",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The enchanter rewards the fire locket. It is one of four different locket kinds; supplied exact lockets are accepted.",
+              "id": "supply-500028",
+              "item_vnums": [
+                500028
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the crumbling locket of fire"
+            },
+            {
+              "count": 1,
+              "hint": "The traveler rewards the water locket. An earlier branch receipt does not replace the currently carried locket.",
+              "id": "supply-500029",
+              "item_vnums": [
+                500029
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the crumbling locket of water"
+            },
+            {
+              "count": 1,
+              "hint": "The philosopher rewards the earth locket. Keep it separate from the three other elemental kinds.",
+              "id": "supply-500030",
+              "item_vnums": [
+                500030
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the crumbling locket of earth"
+            },
+            {
+              "count": 1,
+              "hint": "The stargazer rewards the air locket. Its copied keywords say fire, but its exact kind and display name identify air. Four fire lockets cannot replace this collection.",
+              "id": "supply-500031",
+              "item_vnums": [
+                500031
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the crumbling locket of air"
+            },
+            {
+              "count": 1,
+              "hint": "The labyrinthmaster rewards this book for the four different warden trophies. A supplied book is valid without requiring the bearer's own earlier campaign receipt.",
+              "id": "supply-500032",
+              "item_vnums": [
+                500032
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the mystical book of tommorrows"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500028,I:500029,I:500030,I:500031,I:500032;receive=I:500033,I:500034;disappear=1",
+                  "giver_vnum": 500023
+                }
+              ],
+              "hint": "The mystic starts at the small temple. Acceptance grants the sash of sorcerous power and ornate gemmed key, then retires the mystic. The key opens the downwards tomb door in the forest beyond the nearby surface approach; the separate transparent gateway uses a different key and is not this reward's access route.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bring the book and four distinct elemental lockets together to the powerful mystic. The accepted exchange grants a sash and an ornate key. These are five current materials, without an enforced earlier sequence or proof of reading every rune.",
+          "title": "The mystic's five offerings"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:500004;receive=C:10000,E:40000,I:500005;disappear=1",
+              "giver_vnum": 500026
+            }
+          ],
+          "id": "krekishs-rival-trophy",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The rival raider carries his head, with cap one, starting at \"A Thick Forest of Tanglewood\". Supplied proof qualifies without a personally recorded kill.",
+              "id": "supply-500004",
+              "item_vnums": [
+                500004
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody head of Gr'Tak the Raider"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500004;receive=C:10000,E:40000,I:500005;disappear=1",
+                  "giver_vnum": 500026
+                }
+              ],
+              "hint": "Krekish starts at \"Overgrown Grasslands of the Northern Wilds\". Acceptance grants bracer, 10,000 copper and declared 40,000 XP, then retires this appearance.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bring the raider's head to Krekish for a hunting-arm bracer, ten platinum and declared forty thousand XP. His rival has an independent reverse bounty; neither establishes a faction choice.",
+          "title": "Krekish's rival trophy"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:500006;receive=C:15000,E:90000,I:500007;disappear=1",
+              "giver_vnum": 500027
+            }
+          ],
+          "id": "grtaks-rival-trophy",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Krekish carries his head, with cap one, starting at \"Overgrown Grasslands of the Northern Wilds\". It is different from the raider head used by the opposing request.",
+              "id": "supply-500006",
+              "item_vnums": [
+                500006
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody head of Krekish ViceFang"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500006;receive=C:15000,E:90000,I:500007;disappear=1",
+                  "giver_vnum": 500027
+                }
+              ],
+              "hint": "Gr'Tak starts at \"A Thick Forest of Tanglewood\". Acceptance grants bracelet, 15,000 copper and declared 90,000 XP, then retires this appearance.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bring Krekish's head to Gr'Tak for a chain bracelet, fifteen platinum and declared ninety thousand XP. Both opposing deliveries can have independent receipts; the native contracts enforce no lasting allegiance.",
+          "title": "Gr'Tak's rival trophy"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:500020,I:500020,I:500020,I:500020,I:500020;receive=E:105000,I:500021;disappear=0",
+              "giver_vnum": 500052
+            }
+          ],
+          "id": "mountaineers-five-claws",
+          "steps": [
+            {
+              "count": 5,
+              "hint": "Nine equipped claws share cap nine across fourteen nightcrawler appearances at the two local dispersal hubs. Five appearances have no claw equipment declaration. Remove five actual claws into top-level carrying; five kills or worn claws do not replace them.",
+              "id": "supply-500020",
+              "item_vnums": [
+                500020
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry five nightcrawler claws"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500020,I:500020,I:500020,I:500020,I:500020;receive=E:105000,I:500021;disappear=0",
+                  "giver_vnum": 500052
+                }
+              ],
+              "hint": "The Mountaineer starts at \"Rugged Hills of the Hearth Valley\" and can roam. Acceptance grants insignia and declared 105,000 XP; he remains available.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bring five actual nightcrawler claws together for the Mountaineers' insignia and declared 105,000 XP. Membership praise is narrative; no persistent guild membership or personal-kill predicate is created.",
+          "title": "The Mountaineer's five claws"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:500024;receive=C:50000;disappear=0",
+              "giver_vnum": 500070
+            }
+          ],
+          "id": "watchmans-witchdoctor-totem",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Five lizardman witchdoctor equipment declarations share cap five in the private dispersal hub. The actual witchdoctor totem is required; an arbitrary lizardman head cannot substitute.",
+              "id": "supply-500024",
+              "item_vnums": [
+                500024
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a lizardman totem"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500024;receive=C:50000;disappear=0",
+                  "giver_vnum": 500070
+                }
+              ],
+              "hint": "The watchman starts at \"Along a Gravel Highway\" and can roam. Acceptance pays 50,000 copper and leaves him present.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Deliver the lizardman witchdoctor's totem for fifty platinum. The accepted proof does not establish a personal raid, leader kill or permanent regional victory.",
+          "title": "The watchman's witchdoctor totem"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:500022;receive=E:90000,I:500023;disappear=1",
+              "giver_vnum": 500094
+            }
+          ],
+          "id": "hunters-grey-paw",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The grey panther carries this paw, with cap one, at \"Snow Capped Hills of the Tundra\". Exact supplied proof qualifies. Complete any desired fang-necklace work before this exchange retires the current hunter appearance.",
+              "id": "supply-500022",
+              "item_vnums": [
+                500022
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody paw of Grey Fang"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500022;receive=E:90000,I:500023;disappear=1",
+                  "giver_vnum": 500094
+                }
+              ],
+              "hint": "The hunter starts at \"A Small Camp Site\". Acceptance grants white potion and declared 90,000 XP, then retires him. It does not record personal revenge or completing the necklace service.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bring the grey panther's paw to the hunter for a white potion and declared ninety thousand XP. The potion can then be delivered to a separate nomad, but that onward request is independently owned and accepts supplied potions.",
+          "title": "The hunter's lost brother"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:500023;receive=C:300000,E:50000;disappear=1",
+              "giver_vnum": 500096
+            }
+          ],
+          "id": "nomads-white-potion",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The tundra hunter rewards this exact potion for the grey paw; a rare Alatorin equipment declaration is another source. A supplied potion is accepted without requiring the bearer's earlier hunter receipt.",
+              "id": "supply-500023",
+              "item_vnums": [
+                500023
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a frosty white potion"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500023;receive=C:300000,E:50000;disappear=1",
+                  "giver_vnum": 500096
+                }
+              ],
+              "hint": "The nomad starts at \"The Amber Sands of an Island Desert\" and can roam. Acceptance pays 300,000 copper and declared 50,000 XP, then retires this appearance. Possessing the potion records neither delivery.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Deliver the white potion to the nomad for three hundred platinum and declared fifty thousand XP. The hunter's reward provides a suggested route; it is not a compulsory history step.",
+          "title": "The nomad's white potion"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:500025,I:500025,I:500025;receive=C:200000,E:115000;disappear=1",
+              "giver_vnum": 500098
+            }
+          ],
+          "id": "wizards-three-crystals",
+          "steps": [
+            {
+              "count": 3,
+              "hint": "Twenty-four ordinary ground declarations on the Isle of Death share cap twenty-four. The wizard consumes three crystals; the wand service consumes four different currently carried crystals and a fee. An earlier hand-in cannot supply either later recipe.",
+              "id": "supply-500025",
+              "item_vnums": [
+                500025
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry three blood crystals"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500025,I:500025,I:500025;receive=C:200000,E:115000;disappear=1",
+                  "giver_vnum": 500098
+                }
+              ],
+              "hint": "The wizard starts at \"The Rugged Foothills of Cyric the Destroyer\". Acceptance pays 200,000 copper and declared 115,000 XP, then retires him.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bring three blood crystals together for two hundred platinum and declared 115,000 XP. This independent offering competes with the paid four-crystal wand recipe.",
+          "title": "The wizard's three blood crystals"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:500026;receive=C:95000,E:65000;disappear=1",
+              "giver_vnum": 500099
+            }
+          ],
+          "id": "seers-wyvern-egg",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Two surface ground egg declarations at \"The Rugged Foothills of Cyric the Destroyer\" and \"The Rugged Foothills of Cyric the Destroyer\" share cap two; foreign vehicle and Alatorin placements also exist. Each recipient consumes one actual egg. One egg or an earlier receipt cannot prepare both requests.",
+              "id": "supply-500026",
+              "item_vnums": [
+                500026
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a wyvern egg"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500026;receive=C:95000,E:65000;disappear=1",
+                  "giver_vnum": 500099
+                }
+              ],
+              "hint": "The seer starts at \"A High Egress Along the Sylvan Bluffs\". Acceptance pays 95,000 copper and declared 65,000 XP, then retires him.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bring a wyvern egg to the centaur seer for ninety-five platinum and declared sixty-five thousand XP. This study is separate from the demi-lich's same-kind request; no hatch, protection or study-completion state is recorded.",
+          "title": "The seer's wyvern study"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:500026;receive=C:95000,E:95000;disappear=1",
+              "giver_vnum": 500100
+            }
+          ],
+          "id": "demilichs-wyvern-egg",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Two surface ground egg declarations at \"The Rugged Foothills of Cyric the Destroyer\" and \"The Rugged Foothills of Cyric the Destroyer\" share cap two; foreign vehicle and Alatorin placements also exist. Each recipient consumes one actual egg. One egg or an earlier receipt cannot prepare both requests.",
+              "id": "supply-500026",
+              "item_vnums": [
+                500026
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a wyvern egg"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500026;receive=C:95000,E:95000;disappear=1",
+                  "giver_vnum": 500100
+                }
+              ],
+              "hint": "The demi-lich starts at \"Rocky Foothills of the Black Mountains\" and can roam. Acceptance pays 95,000 copper and declared 95,000 XP, then retires this appearance.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bring a wyvern egg to the demi-lich for ninety-five platinum and declared ninety-five thousand XP. Rebirth prose accompanies acceptance, while no transformed wyvern actor or world rebirth event is implemented.",
+          "title": "The demi-lich's wyvern egg"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:500048;receive=I:500003,I:500049,I:500049,I:500049;disappear=0",
+              "giver_vnum": 500116
+            }
+          ],
+          "id": "fire-prophets-rival",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The Ice prophet carries this exact head, with cap one. Delivering it here is distinct from the opposing Fire-head request. A supplied head does not prove personal combat.",
+              "id": "supply-500048",
+              "item_vnums": [
+                500048
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry The head of the Prophet of Ice"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500048;receive=I:500003,I:500049,I:500049,I:500049;disappear=0",
+                  "giver_vnum": 500116
+                }
+              ],
+              "hint": "The Fire prophet starts at \"An Altar of Fire\" and remains after acceptance. The native request mistakenly introduces him as Ice; the actual prototype and rewards identify Fire. Acceptance grants ring and three potions.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bring the Ice prophet's head to the Fire prophet for a fire ring and three living-flame potions. Allegiance keywords are guidance, without a durable faction commitment or a required keyword achievement.",
+          "title": "The Fire prophet's rival"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:500047;receive=I:500046,I:500050,I:500050,I:500050;disappear=0",
+              "giver_vnum": 500117
+            }
+          ],
+          "id": "ice-prophets-rival",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The Fire prophet carries this exact head, with cap one. It is different from the Ice head requested by the opposing prophet.",
+              "id": "supply-500047",
+              "item_vnums": [
+                500047
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the head of the Prophet of Fire"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:500047;receive=I:500046,I:500050,I:500050,I:500050;disappear=0",
+                  "giver_vnum": 500117
+                }
+              ],
+              "hint": "The Ice prophet starts at \"An Altar of Ice\" and remains after acceptance. Acceptance grants ring and three potions; describing a pledge does not establish a recorded faction choice.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bring the Fire prophet's head to the Ice prophet for a frosty ring and three icy-cold potions. Opposing receipts are independent; the native contracts enforce no mutually exclusive allegiance.",
+          "title": "The Ice prophet's rival"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:355;receive=C:900;disappear=0",
+              "giver_vnum": 500024
+            },
+            {
+              "completion_key": "give=I:356;receive=C:900;disappear=0",
+              "giver_vnum": 500024
+            }
+          ],
+          "id": "jagunks-fish-market",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Carry one exact listed fish or shellfish. Most ordinary kinds have fishing or other sources; the Breale bass is a different kind from the normal large bass. Supplied stock is valid without manufacturing a first personal catch.",
+              "id": "supply-355-356",
+              "item_vnums": [
+                355,
+                356
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one accepted market item"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:355;receive=C:900;disappear=0",
+                  "giver_vnum": 500024
+                },
+                {
+                  "completion_key": "give=I:356;receive=C:900;disappear=0",
+                  "giver_vnum": 500024
+                }
+              ],
+              "hint": "Starts at \"Along a Crumbling Cobblestone Road\". Either exact fish pays 900 copper; the fisherman remains. One selected barter completes this support row, with no story achievement or daily.",
+              "id": "accepted-barter",
+              "kind": "completion",
+              "text": "Complete one accepted barter"
+            }
+          ],
+          "summary": "Two independent support barters pay nine silver for one rainbow trout or one perch. The fisherman's clam/frustration topic is a clue, without a clam contract or a fishing achievement.",
+          "title": "Ja'Gunk's fish market"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:2676;receive=C:4000;disappear=0",
+              "giver_vnum": 500092
+            },
+            {
+              "completion_key": "give=I:319;receive=C:1000;disappear=0",
+              "giver_vnum": 500092
+            },
+            {
+              "completion_key": "give=I:330;receive=C:800;disappear=0",
+              "giver_vnum": 500092
+            },
+            {
+              "completion_key": "give=I:333;receive=C:600;disappear=0",
+              "giver_vnum": 500092
+            },
+            {
+              "completion_key": "give=I:334;receive=C:900;disappear=0",
+              "giver_vnum": 500092
+            },
+            {
+              "completion_key": "give=I:335;receive=C:750;disappear=0",
+              "giver_vnum": 500092
+            }
+          ],
+          "id": "kres-bait-market",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Carry one exact listed fish or shellfish. Most ordinary kinds have fishing or other sources; the Breale bass is a different kind from the normal large bass. Supplied stock is valid without manufacturing a first personal catch.",
+              "id": "supply-2676-319-330-333-334-335",
+              "item_vnums": [
+                2676,
+                319,
+                330,
+                333,
+                334,
+                335
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one accepted market item"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2676;receive=C:4000;disappear=0",
+                  "giver_vnum": 500092
+                },
+                {
+                  "completion_key": "give=I:319;receive=C:1000;disappear=0",
+                  "giver_vnum": 500092
+                },
+                {
+                  "completion_key": "give=I:330;receive=C:800;disappear=0",
+                  "giver_vnum": 500092
+                },
+                {
+                  "completion_key": "give=I:333;receive=C:600;disappear=0",
+                  "giver_vnum": 500092
+                },
+                {
+                  "completion_key": "give=I:334;receive=C:900;disappear=0",
+                  "giver_vnum": 500092
+                },
+                {
+                  "completion_key": "give=I:335;receive=C:750;disappear=0",
+                  "giver_vnum": 500092
+                }
+              ],
+              "hint": "Starts at \"A Secluded Island on Lake Moria\" and remains: Breale bass pays 4,000 copper, lobster pays 1,000, crab pays 800, oyster pays 600, clam pays 900 and mussel pays 750. Breale bass is stocked by the Breale shop; normal large bass is not valid here.",
+              "id": "accepted-barter",
+              "kind": "completion",
+              "text": "Complete one accepted barter"
+            }
+          ],
+          "summary": "Six independent bait barters are alternatives within one support row. They pay different prices rather than requiring a six-kind collection or awarding a shark. Ordinary catches and shop-supplied stock have separate source histories.",
+          "title": "Kres's bait market"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:293;receive=C:1000;disappear=0",
+              "giver_vnum": 500111
+            },
+            {
+              "completion_key": "give=I:294;receive=C:2000;disappear=0",
+              "giver_vnum": 500111
+            },
+            {
+              "completion_key": "give=I:295;receive=C:950;disappear=0",
+              "giver_vnum": 500111
+            }
+          ],
+          "id": "moldugs-food-market",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Carry one exact listed fish or shellfish. Most ordinary kinds have fishing or other sources; the Breale bass is a different kind from the normal large bass. Supplied stock is valid without manufacturing a first personal catch.",
+              "id": "supply-293-294-295",
+              "item_vnums": [
+                293,
+                294,
+                295
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one accepted market item"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:293;receive=C:1000;disappear=0",
+                  "giver_vnum": 500111
+                },
+                {
+                  "completion_key": "give=I:294;receive=C:2000;disappear=0",
+                  "giver_vnum": 500111
+                },
+                {
+                  "completion_key": "give=I:295;receive=C:950;disappear=0",
+                  "giver_vnum": 500111
+                }
+              ],
+              "hint": "Starts at \"A Small Fisherman's Dock\" and remains: normal large bass pays 1,000 copper, piranha pays 2,000 and cod pays 950. Breale bass is a different kind and cannot replace the normal bass.",
+              "id": "accepted-barter",
+              "kind": "completion",
+              "text": "Complete one accepted barter"
+            }
+          ],
+          "summary": "Three independent village-food barters form one support row. A normal large bass, piranha or cod is accepted without requiring all three or a personal fishing receipt.",
+          "title": "Moldug's food market"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:100000,I:729,I:43142,I:43142,I:43142;receive=I:500008;disappear=1",
+              "giver_vnum": 500028
+            }
+          ],
+          "id": "agnuts-gland-bracelet",
+          "steps": [
+            {
+              "count": 3,
+              "hint": "Green hydralisk glands come from exact Ship Yards/vehicle carriers. Three distinct current instances are required; current source availability and imported custody need qualification.",
+              "id": "supply-43142",
+              "item_vnums": [
+                43142
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry three green hydralisk glands"
+            },
+            {
+              "count": 1,
+              "hint": "The actual fee recipe requires one bronze-colored bracer, despite plural prose. It occurs in a class starter kit and a generic item table; no ordinary loaded reset or native quest producer was found. Qualify legitimate carried supply before promising repeat availability.",
+              "id": "supply-729",
+              "item_vnums": [
+                729
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a bronze-colored bracer"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:100000,I:729,I:43142,I:43142,I:43142;receive=I:500008;disappear=1",
+                  "giver_vnum": 500028
+                }
+              ],
+              "hint": "Starts at \"Along a Crumbling Cobblestone Road\". Native terms are 100,000 copper plus the four actual items for gaseous bracelet, with recipient retirement. Item preparation does not establish fee readiness or bypass the accounting guard.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "This equipment service asks for three glands, one bronze-colored bracer and one hundred platinum. Its mixed item-and-coin settlement is guarded while accounting is active. The row adds no story achievement or daily.",
+          "title": "Agnut's gland bracelet service"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:43140,I:43140,I:43140,I:43140,I:43140;receive=I:500053;disappear=0",
+              "giver_vnum": 500094
+            }
+          ],
+          "id": "hunters-five-fangs",
+          "steps": [
+            {
+              "count": 5,
+              "hint": "The local grey panther carries one sharp fang with cap one; Ship Yards, vehicle and Alatorin carriers provide further exact sources. Five actual instances are needed. Complete desired necklace work before giving the grey paw, which retires the current hunter.",
+              "id": "supply-43140",
+              "item_vnums": [
+                43140
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry five sharp fangs"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43140,I:43140,I:43140,I:43140,I:43140;receive=I:500053;disappear=0",
+                  "giver_vnum": 500094
+                }
+              ],
+              "hint": "Starts at \"A Small Camp Site\". Acceptance grants necklace and leaves the hunter present. The paw exchange retires this same recipient appearance, so order matters for availability.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "Bring five sharp fangs together for a sharptooth necklace. This repeat equipment service is independent from the hunter's revenge story and contributes no achievement or daily.",
+          "title": "The hunter's five-fang necklace service"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:50000,I:500025,I:500025,I:500025,I:500025;receive=I:500027;disappear=1",
+              "giver_vnum": 500101
+            }
+          ],
+          "id": "flegnus-crystal-wand",
+          "steps": [
+            {
+              "count": 4,
+              "hint": "Twenty-four ordinary ground declarations on the Isle of Death share cap twenty-four. The wizard consumes three crystals; the wand service consumes four different currently carried crystals and a fee. An earlier hand-in cannot supply either later recipe.",
+              "id": "supply-500025",
+              "item_vnums": [
+                500025
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry four blood crystals"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:50000,I:500025,I:500025,I:500025,I:500025;receive=I:500027;disappear=1",
+                  "giver_vnum": 500101
+                }
+              ],
+              "hint": "Starts at \"Vast Plains of the Eagle Ridge Delta\" and can roam. Native terms are four crystals plus 50,000 copper for wand, then retirement. Current item checks do not prove fee readiness or bypass the accounting guard.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the accepted exchange"
+            }
+          ],
+          "summary": "This equipment service asks for four blood crystals and fifty platinum for a living wand. Mixed item-and-coin settlement is guarded while accounting is active. It competes with the wizard's three-crystal story and adds no achievement or daily.",
+          "title": "Flegnus's crystal wand service"
+        }
+      ]
     }
   ],
   "zones": [

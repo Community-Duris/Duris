@@ -1001,7 +1001,59 @@ for a,b in ((76068,76069),(76064,76065)):
     assert cosmic["items"][a]["name"] == cosmic["items"][b]["name"]
     assert cosmic["items"][a]["keywords"] == cosmic["items"][b]["keywords"]
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic"):
+# Surface Realm: five exact kinds, consumed quantities and distinct market alternatives.
+surface = inventory_module.area_evidence(ROOT, "surface")
+surface_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "surface")
+surface_stories = {s["id"]: s for s in surface_mapping["stories"]}
+assert surface_mapping["coverage"] == "complete" and surface_mapping["revision"] == 1
+assert len(surface_stories) == 23 and len(surface_mapping["contacts"]) == 37
+assert sum(s["category"] == "service" for s in surface_stories.values()) == 6
+assert sum(t.get("optional", False) for s in surface_stories.values() for t in s["steps"]) == 31
+assert {tuple(sorted(b.items())) for s in surface_stories.values() for b in s["contracts"]} == {
+    tuple(sorted(r["block"]["binding"].items())) for r in surface["requests"]}
+mystic = surface_stories["mystics-five-offerings"]
+assert mystic["contracts"] == [{"giver_vnum":500023,"completion_key":"give=I:500028,I:500029,I:500030,I:500031,I:500032;receive=I:500033,I:500034;disappear=1"}]
+assert [t["item_vnums"] for t in mystic["steps"][:-1]] == [[v] for v in range(500028,500033)]
+assert [t["item_vnums"] for t in surface_stories["labyrinthmaster-trophies"]["steps"][:-1]] == [[v] for v in range(500016,500020)]
+for id, giver, output in [("stargazers-air-locket",500075,500031),("philosophers-earth-locket",500076,500030),("travelers-water-locket",500078,500029),("enchanters-fire-locket",500079,500028)]:
+    assert surface_stories[id]["contracts"] == [{"giver_vnum":giver,"completion_key":f"give=I:500015;receive=C:100000,E:100000,I:{output};disappear=1"}]
+    assert surface_stories[id]["steps"][0]["item_vnums"] == [500015]
+for id, expected in {
+    "mountaineers-five-claws": [(500020,5)], "hunters-five-fangs": [(43140,5)],
+    "wizards-three-crystals": [(500025,3)], "flegnus-crystal-wand": [(500025,4)],
+    "agnuts-gland-bracelet": [(43142,3),(729,1)],
+}.items():
+    assert [(t["item_vnums"][0],t["count"]) for t in surface_stories[id]["steps"] if t["kind"] == "carried_item"] == expected
+for id, items in [("jagunks-fish-market",[355,356]),("kres-bait-market",[2676,319,330,333,334,335]),("moldugs-food-market",[293,294,295])]:
+    assert surface_stories[id]["category"] == "service"
+    assert surface_stories[id]["steps"][0]["item_vnums"] == items
+    assert surface_stories[id]["steps"][0]["count"] == 1
+    assert len(surface_stories[id]["contracts"]) == len(items)
+assert surface_stories["nomads-white-potion"]["contracts"] == [{"giver_vnum":500096,"completion_key":"give=I:500023;receive=C:300000,E:50000;disappear=1"}]
+assert all(t["kind"] == "carried_item" for t in surface_stories["nomads-white-potion"]["steps"][:-1])
+assert surface_stories["seers-wyvern-egg"]["contracts"] != surface_stories["demilichs-wyvern-egg"]["contracts"]
+surface_units = [u for u in catalog_module.story_units(catalog) if u["zone_number"] == 5000]
+assert len(surface_units) == 23 and sum(u["achievement"] for u in surface_units) == 17
+assert sum(u["daily_candidate"] for u in surface_units) == 17
+assert len(surface["requests"]) == 31 and len(surface["dialogue"]) == 36
+assert sum(r["definition"]["daily_eligible"] for r in surface["requests"]) == 29
+contacts = {c["mob_vnum"]: c for c in surface_mapping["contacts"]}
+for d in surface["dialogue"]:
+    assert set(d["body"][0].rstrip("~").split()) <= set(contacts[d["giver_vnum"]]["topics"])
+parent = room = None
+sources = collections.defaultdict(list)
+for reset in surface["reset_commands"]:
+    c,v = reset["command"],reset["arguments"]
+    if c in ("M","F"): parent,room = v[1],v[3]
+    if c in ("G","E") and v[1] in range(500015,500025):
+        sources[v[1]].append((c,parent,room,v[2],v[3] if c == "E" else None,v[4]))
+assert sources[500020] == [("E",500087,586602,9,16,100)] * 9
+assert sources[500024] == [("E",500014,629058,5,18,100)] * 5
+assert [(r["arguments"][1],r["arguments"][3],r["arguments"][4]) for r in surface["reset_commands"] if r["command"] == "M" and r["arguments"][1] in (500000,500075,500076,500078,500079)] == [(v,619004,99) for v in (500000,500075,500076,500078,500079)]
+assert [(r["arguments"][2],r["arguments"][3],r["arguments"][4]) for r in surface["reset_commands"] if r["command"] == "O" and r["arguments"][1] == 500026] == [(2,637471,100),(2,637874,100)]
+assert len(surface["special_assignments"]) == 8
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

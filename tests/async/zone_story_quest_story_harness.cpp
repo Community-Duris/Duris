@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 54 &&
-				tracker.summary_for(7, 42).total == 1767,
+		require(catalog.story_mappings.size() == 55 &&
+				tracker.summary_for(7, 42).total == 1753,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -198,8 +198,10 @@ int main(int argc, char **argv)
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
 										    431, 2) == 19 &&
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
-										    760, 2) == 7,
-			"complete Alatorin/Newhaven/Faerie/Verspin/Ship Yards/Ultarium sidecars failed the native file loader");
+										    760, 2) == 7 &&
+				zone_story_quest_catalog::eligible_definition_count(file_catalog,
+										    5000, 2) == 17,
+			"complete Alatorin/Newhaven/Faerie/Verspin/Ship Yards/Ultarium/Surface sidecars failed the native file loader");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
 			const auto mapping = std::find_if(catalog.story_mappings.begin(),
@@ -2574,6 +2576,153 @@ int main(int argc, char **argv)
 				recovered_cosmic.progress_for_zone(7, 42, 311).completed == 0 &&
 				recovered_cosmic.progress_for_zone(7, 42, 766).completed == 0,
 			"Ultarium recovery lost independent receipts or credited foreign proof sources");
+		// Large-region stories retain exact materials and independent accepted receipts.
+		const auto &surface_mystic = story_for("surface", "mystics-five-offerings");
+		const auto &surface_nomad = story_for("surface", "nomads-white-potion");
+		const auto &surface_hunter = story_for("surface", "hunters-grey-paw");
+		const auto &surface_kres = story_for("surface", "kres-bait-market");
+		const auto &surface_moldug = story_for("surface", "moldugs-food-market");
+		const auto &surface_map = *std::find_if(
+			catalog.story_mappings.begin(), catalog.story_mappings.end(),
+			[](const auto &mapping) { return mapping.source_area == "surface"; });
+		service supplied_surface(catalog);
+		require(supplied_surface.discover_zone(7, 42, 5000, 500000, 100, "arrival") ==
+					result::applied &&
+				supplied_surface.render_journal(7, 42, 5000, 10, 1, 101, false,
+								false)
+						.find(surface_mystic.title) == std::string::npos,
+			"Surface discovery exposed an unseen mystic request");
+		for (const auto &contact : surface_map.contacts)
+			require(supplied_surface.meet_npc(7, 42, contact.mob_vnum, 500000, 101) ==
+					result::applied,
+				"Surface contact was not encountered");
+		const auto surface_section = [&](const auto &entry)
+		{
+			const auto start = journal.find("] " + entry.title + "\r\n");
+			require(start != std::string::npos, "Surface story was missing");
+			return journal.substr(start, journal.find("\r\n  [", start) - start);
+		};
+		supplies = {};
+		supplies.carried[500028] = 5;
+		const auto surface_before_read = supplied_surface.serialize_state();
+		journal = supplied_surface.render_journal(7, 42, 5000, 10, 1, 121, false, false,
+							  &supplies);
+		for (const auto &step : surface_mystic.steps)
+			if (step.kind == "carried_item" && step.item_vnums.front() != 500028)
+				require(surface_section(surface_mystic)
+							.find("[Missing now] " + step.text) !=
+						std::string::npos,
+					"five fire lockets replaced five distinct mystic materials");
+		require(supplied_surface.serialize_state() == surface_before_read &&
+				supplied_surface.progress_for_zone(7, 42, 5000).completed == 0,
+			"Surface preparation manufactured durable history");
+		for (const auto &entry : surface_map.stories)
+			for (const auto &step : entry.steps)
+			{
+				if (step.kind != "carried_item" || step.item_vnums.size() != 1)
+					continue;
+				supplies = {};
+				const int item = step.item_vnums.front();
+				supplies.equipped[16] = item;
+				supplies.carried[item] = step.count - 1;
+				journal = supplied_surface.render_journal(7, 42, 5000, 10, 1, 122,
+									  false, false, &supplies);
+				require(surface_section(entry).find("[Missing now] " + step.text) !=
+						std::string::npos,
+					"worn or insufficient Surface proof replaced exact carried quantity");
+				supplies.carried[item] = step.count;
+				journal = supplied_surface.render_journal(7, 42, 5000, 10, 1, 123,
+									  false, false, &supplies);
+				require(surface_section(entry).find("[Ready now] " + step.text) !=
+						std::string::npos,
+					"exact supplied Surface quantity failed current preparation");
+			}
+		for (const auto &[item, ready] :
+		     { std::pair{ 2676, true }, std::pair{ 293, false } })
+		{
+			supplies = {};
+			supplies.carried[item] = 1;
+			journal = supplied_surface.render_journal(7, 42, 5000, 10, 1, 124, false,
+								  false, &supplies);
+			require(surface_section(surface_kres)
+							.find(std::string(ready ? "[Ready now] " :
+										  "[Missing now] ") +
+							      surface_kres.steps.front().text) !=
+						std::string::npos &&
+					surface_section(surface_moldug)
+							.find(std::string(ready ? "[Missing now] " :
+										  "[Ready now] ") +
+							      surface_moldug.steps.front().text) !=
+						std::string::npos,
+				"distinct Breale and normal bass kinds were treated as interchangeable");
+		}
+		record(supplied_surface, surface_nomad.contracts.front(), "surface-supplied-potion",
+		       5000, 544219);
+		supplies = {};
+		journal = supplied_surface.render_journal(7, 42, 5000, 10, 1, 125, false, false,
+							  &supplies);
+		require(supplied_surface.progress_for_zone(7, 42, 5000).completed == 1 &&
+				surface_section(surface_hunter)
+						.find("[Missing now] " +
+						      surface_hunter.steps.front().text) !=
+					std::string::npos &&
+				supplied_surface.progress_for_zone(7, 42, 831).completed == 0,
+			"supplied potion delivery required or fabricated producer/source credit");
+		for (const char *id : { "stargazers-air-locket", "philosophers-earth-locket",
+					"travelers-water-locket", "enchanters-fire-locket" })
+			record(supplied_surface, story_for("surface", id).contracts.front(), id,
+			       5000, 619004);
+		journal = supplied_surface.render_journal(7, 42, 5000, 10, 1, 126, false, false,
+							  &supplies);
+		for (const auto &step : surface_mystic.steps)
+			if (step.kind == "carried_item")
+				require(surface_section(surface_mystic)
+							.find("[Missing now] " + step.text) !=
+						std::string::npos,
+					"consumed branch history substituted for current mystic materials");
+		for (const auto &step : surface_mystic.steps)
+			if (step.kind == "carried_item")
+				supplies.carried[step.item_vnums.front()] = step.count;
+		journal = supplied_surface.render_journal(7, 42, 5000, 10, 1, 127, false, false,
+							  &supplies);
+		for (const auto &step : surface_mystic.steps)
+			if (step.kind == "carried_item")
+				require(surface_section(surface_mystic)
+							.find("[Ready now] " + step.text) !=
+						std::string::npos,
+					"five distinct supplied materials did not prepare the mystic");
+		record(supplied_surface, surface_mystic.contracts.front(),
+		       "surface-supplied-finale", 5000, 544842);
+		const auto surface_before_services =
+			supplied_surface.progress_for_zone(7, 42, 5000).completed;
+		for (const auto &entry : surface_map.stories)
+			if (entry.category == "service")
+				for (const auto &contract : entry.contracts)
+					record(supplied_surface, contract, contract.c_str(), 5000,
+					       500000);
+		require(supplied_surface.progress_for_zone(7, 42, 5000).completed ==
+					surface_before_services &&
+				supplied_surface.progress_for_zone(7, 42, 5000).total == 17,
+			"Surface markets or guarded equipment receipts inflated story progress");
+		service recovered_surface(catalog);
+		require(recovered_surface.deserialize_state(supplied_surface.serialize_state(),
+							    &error),
+			"Surface independent receipt recovery failed");
+		for (const auto &entry : surface_map.stories)
+			if (entry.category != "service" && entry.id != surface_mystic.id &&
+			    entry.id != surface_nomad.id &&
+			    entry.id.find("-locket") == std::string::npos)
+				record(recovered_surface, entry.contracts.front(), entry.id.c_str(),
+				       5000, 500000);
+		service restored_surface(catalog);
+		require(restored_surface.deserialize_state(recovered_surface.serialize_state(),
+							   &error) &&
+				restored_surface.progress_for_zone(7, 42, 5000).completed == 17 &&
+				restored_surface.progress_for_zone(7, 42, 5000).total == 17 &&
+				restored_surface.progress_for_zone(7, 42, 431).completed == 0 &&
+				restored_surface.progress_for_zone(7, 42, 262).completed == 0 &&
+				restored_surface.progress_for_zone(7, 42, 831).completed == 0,
+			"Surface recovery merged independent opposing requests or fabricated foreign source credit");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

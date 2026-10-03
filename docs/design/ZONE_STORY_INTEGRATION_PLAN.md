@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 54 authored journals, accounting-gated player surfaces, starter/town
+**Status: 55 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -13,7 +13,7 @@ Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter
 Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl, Ravenloft
 Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl, the Jade Empire and
 the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm, Verspin,
-Ship Yards and Ultarium now have complete source story maps;
+Ship Yards, Ultarium and the Surface Realm now have complete source story maps;
 their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
 with seventeen contacts/all nineteen raw addressed families and twelve optional
@@ -280,6 +280,24 @@ ordering and the commented pet claim restoration need deliberate coordinated
 settlement/repair. Confirm three unrewarded soul offerings as donation policy or
 incomplete content; clarify exact proof names and sparse crafting clues before
 adding rewards, liberation, rescue or a new full-stage campaign.
+
+The Surface Realm's [comprehensive dossier](zone-stories/SURFACE_REALM.md)
+covers all 31 exchanges with seventeen independent outcomes/six support rows,
+37 contacts/all 36 addressed blocks and 31 optional current-material checks.
+Its 160,004 world records have complete grouped prose/metadata/exit review;
+all 234 mobiles/78 objects and 1,736 resets/320 families were reviewed, plus
+eight literal assignments, 104 computed teacher roles and bounded foreign
+sources, ownership and actual reward-key continuation.
+
+The labyrinth's four different trophies, four separate consumed heart instances
+and five-kind finale need explicit episode/allocation policy for deeper credit.
+Preserve gifts, distinct bass kinds, repeated claws/crystals/eggs and independent
+opposing requests. Three markets and three recipes remain support services;
+two mixed fees stay guarded. Extend accepted treant/fishing source, guardian,
+race-context rift arrival, regional presentation and wallet/ship/class events.
+Plan targeted missing-Mril-edge repair, exact proof/alias/clue corrections,
+bracer source qualification and deliberate dormant-invasion/disabled-descent
+decisions before promising unimplemented world or actor outcomes.
 
 ## Accounting requirement and delivery sequence
 
@@ -966,7 +984,17 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 189 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 188 roadmap areas.
+- [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
+  all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
+  320 families, eight literal assignments/104 computed teachers and bounded
+  foreign sources/access. Ship seventeen outcomes/six support rows, 37 contacts
+  and 31 optional checks without changing native terms.
+- [ ] Qualify surface capped/dispersed/roaming sources and retiring recipients,
+  four consumed hearts/four distinct trophies/five-material finale and competing
+  claws/crystals/eggs. Extend first-source/gift, episode, helper/travel/actor and
+  ship/class/fee settlement; repair selected missing edges/proof/clue text and
+  deliberately resolve bracer supply, dormant invasion and disabled descent.
 - [x] Complete Ultarium's seventeen-exchange/five-addressed source dossier:
   all 268 rooms/82 mobs/71 objects/two shops, 338 resets/227 families, three
   literal assignments, computed teachers/shared effects and bounded foreign
@@ -1086,6 +1114,7 @@ contract classification; it does not claim complete objective coverage.
 | Verspin | 1 | Complete: six stories and six services across twelve Q/QA | [Source-comprehensive dossier](zone-stories/VERSPIN.md); eighteen contacts/all nine addressed families, eighteen optional checks; five-count, exact-color, producer and foreign-source guidance | Six achievement/potential daily units; five mixed recipes and nine virtual stat purchases guarded; crew payment ordering and active source/cap availability unqualified | Native supplied-bone journey, exact quantities/colors and independent receipt recovery; qualify source/access, expected-stat/ship settlement, frozen XP and builder-selected sign/cap/clue repairs |
 | Ship Yards | 1 | Complete: nineteen independent outcomes/six services across 26 Q/QA | [Source-comprehensive dossier](zone-stories/SHIP_YARDS.md); thirty-two contacts/all twenty addressed families and thirty-four optional checks, exact quantities/kinds and optional producer history | Nineteen achievement/potential daily units; six paid services guarded; unresolved exits/dispersal, accepted fishing and paid ship/crew settlement unqualified | Native supplied-item, exact collection and alternative-receipt recovery; qualify actual source/access/retirement and builder-selected clue/reward/topology decisions |
 | Ultarium | 1 | Complete: seven independent outcomes/eight support rows across seventeen Q/QA | [Source-comprehensive dossier](zone-stories/ULTARIUM.md); twenty-three contacts/all five addressed families and twenty-two optional checks; exact souls, duplicate-name proof/output and three access keys | Seven achievement/potential daily units; rare appearances/sources, deeper events and paid rename/pet/epic lessons unqualified | Native exact proof and four-kind collection; preserve gifts/foreign ownership and guards; qualify source/episode/effect/access and deliberately resolve soul/campaign/claim policy |
+| Surface Realm | 1 | Complete: seventeen outcomes/six support rows across 31 exchanges | [Source-comprehensive dossier](zone-stories/SURFACE_REALM.md); 37 contacts/all 36 addressed blocks and 31 optional checks; exact competing campaign/region/source guidance | Seventeen achievement/potential daily units; two mixed fees guarded; live sources, episode/travel/effect policy unqualified | Preserve supplied proof/independent ownership; qualify exact allocation, first source and custom events; targeted boundary/clue repair and deliberate disabled-campaign/source decisions |
 
 ## Twin Towers evidence and decisions
 
