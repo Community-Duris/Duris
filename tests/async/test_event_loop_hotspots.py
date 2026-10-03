@@ -11,10 +11,8 @@ even with SQL_TRACE explicitly set to off.  That was the bulk of the 24ms spent 
 event_write_statistic (the INSERT itself measures ~1.3ms).
 
 Verifies:
-1. generic_char_event splits its sweep into stable slices and its registry-owned
-   cadence uses the matching fraction of the period, so each character is still
-   visited once per full period.
-2. The mob sanity check still runs on every pass.
+1. Character maintenance uses owned deadlines, with no population sweep.
+2. The NPC sanity check remains five-second work and body work twenty-second work.
 3. sql_trace_enabled() only turns tracing on when the environment asks for it.
 4. A redundant drain after a legacy caller consumed its result does not enable a
    production trace burst for MySQL's commands-out-of-sync diagnostic.
@@ -28,37 +26,38 @@ from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
 handler = (SRC / "handler.c").read_text(encoding="utf-8", errors="replace")
+maintenance = (SRC / "character_maintenance.c").read_text(encoding="utf-8")
 events = (SRC / "new_events.c").read_text(encoding="utf-8", errors="replace")
 sql = (SRC / "sql.c").read_text(encoding="utf-8", errors="replace")
 
 checks = []
 
 checks.append((
-    "generic_char_event declares slices and a period",
-    contains(handler, "#define GENERIC_CHAR_EVENT_SLICES") and contains(handler, "#define GENERIC_CHAR_EVENT_PERIOD")
+    "character maintenance preserves the body and NPC check periods",
+    contains(maintenance, "BODY_PERIOD = 20 * WAIT_SEC") and contains(maintenance, "NPC_CHECK_PERIOD = 5 * WAIT_SEC")
 ))
 checks.append((
-    "slice comes from a stable per-character hash",
-    contains(handler, "static unsigned int char_sweep_slice(P_char c)") and contains(handler, "(uintptr_t)c")
+    "deadlines spread using runtime identities",
+    contains(maintenance, "character->runtime_id % BODY_PERIOD") and
+    contains(maintenance, "character->runtime_id % NPC_CHECK_PERIOD")
 ))
 
-m = re.search(r"void generic_char_event\([^)]*\)\s*\{.*?\n\}", handler, re.S)
+m = re.search(r"void generic_char_event\([^)]*\)\s*\{.*?\n\}", maintenance, re.S)
 if m:
     body = m.group(0)
     checks.append((
-        "sweep advances a phase and skips characters outside it",
-        contains(body, "generic_char_event_phase++ % GENERIC_CHAR_EVENT_SLICES") and
-        contains(body, "if (char_sweep_slice(i) != phase)")
+        "callback resolves one owned character without a population walk",
+        "character_list" not in body and "find_character_by_runtime_id" not in body and
+        contains(body, "current_nevent->owner_runtime_id != ch->runtime_id")
     ))
     checks.append((
-        "mob sanity check still runs on every pass",
-        body.index("without only.npc struct") < body.index("char_sweep_slice(i) != phase")
+        "mob sanity check precedes the body deadline",
+        body.index("without only.npc struct") < body.index("ne_event_tick >= ch->character_maintenance_body_due")
     ))
     checks.append((
-        "registry cadence preserves the period / slices interval",
-        "add_event(generic_char_event" not in body and
-        contains(events, '"generic-character-sweep", generic_char_event, 20 * WAIT_SEC') and
-        contains(events, "5 * WAIT_SEC, nevent_periodic_policy::fixed_delay")
+        "the full-population periodic sweep is removed",
+        '"generic-character-sweep"' not in events and
+        contains(events, "character_maintenance_init();") and "char_sweep_slice" not in handler
     ))
 else:
     checks.append(("generic_char_event present", False))

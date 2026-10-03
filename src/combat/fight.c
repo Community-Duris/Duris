@@ -11,6 +11,7 @@
 #define TROPHY
 
 #include "core/prototypes.h"
+#include "world/character_maintenance.h"
 #include "cmd/track.h"
 #include "combat/death_messages.h"
 #include "telemetry/telemetry_runtime.h"
@@ -1861,6 +1862,7 @@ void die(P_char ch, P_char killer)
 	{
 		GET_HIT(ch) = GET_MAX_HIT(ch);
 		SET_POS(ch, POS_STANDING + STAT_NORMAL);
+		character_maintenance_changed(ch);
 		return;
 	}
 

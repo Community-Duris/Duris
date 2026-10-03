@@ -55,6 +55,7 @@
 #include "persistence/persistence_mode.h"
 #include "world/world_recovery_pipeline.h"
 #include "world/world_activity.h"
+#include "world/character_maintenance.h"
 #include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
@@ -271,124 +272,6 @@ int container_total_weight(P_obj cont)
 		recalc_container_weight(cont);
 	}
 	return GET_OBJ_WEIGHT(cont);
-}
-
-/*
- * called every 20 seconds, just loops through chars doing...stuff
- */
-/*
- * This is a housekeeping sweep over every character in the game.  Walking the
- * whole character list at once cost ~18ms, which is most of a single event
- * pulse's budget and pushed everything else in that pulse late.  The work is
- * split into GENERIC_CHAR_EVENT_SLICES groups that run one per invocation, at
- * the matching fraction of the old delay: a character is still visited exactly
- * once every GENERIC_CHAR_EVENT_PERIOD pulses, but each pass does a quarter of
- * the work.  The slice comes from the character's address, so it is stable for
- * the character's lifetime -- nobody is skipped or done twice.
- */
-#define GENERIC_CHAR_EVENT_SLICES 4
-#define GENERIC_CHAR_EVENT_PERIOD (20 * WAIT_SEC)
-
-static unsigned int generic_char_event_phase = 0;
-
-static unsigned int char_sweep_slice(P_char c)
-{
-	unsigned long long h = (unsigned long long)(uintptr_t)c;
-
-	h ^= h >> 33;
-	h *= 0xff51afd7ed558ccdULL;
-	h ^= h >> 33;
-
-	return (unsigned int)(h % GENERIC_CHAR_EVENT_SLICES);
-}
-
-void generic_char_event(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
-{
-	P_char i, i_next;
-	int n;
-	unsigned int phase = generic_char_event_phase++ % GENERIC_CHAR_EVENT_SLICES;
-
-	for (i = character_list; i; i = i_next)
-	{
-		i_next = i->next;
-
-		/* A basic mob sanity check */
-		if (IS_NPC(i) && !i->only.npc && !IS_MORPH(i))
-		{
-			wizlog(AVATAR,
-			       "&=LRDanger! Mob without only.npc struct! Attempting to neutralize!");
-			logit(LOG_DEBUG, "mob #%u (%s) without only.npc struct", GET_RNUM(i),
-			      i->player.long_descr);
-			extract_char(i);
-			continue;
-		}
-
-		/* Everything below is this character's turn only once per full period. */
-		if (char_sweep_slice(i) != phase)
-		{
-			continue;
-		}
-
-		if (!IS_BLOODLUST && has_innate(i, INNATE_VULN_SUN))
-		{
-			sun_damage_check(i);
-		}
-
-		if (GET_CLASS(i, CLASS_DRUID) && (GET_LEVEL(i) > 30) &&
-		    (IS_AFFECTED2(i, AFF2_POISONED)))
-		{
-			if (poison_common_remove(i))
-			{
-				send_to_char("You neutralize the poison in your bloodstream!\r\n",
-					     i);
-			}
-		}
-
-		// that wonderful god spell...
-		if (affected_by_spell(i, SPELL_PLEASANTRY))
-		{
-			pleasantry(i);
-		}
-
-		/* repair munged flyers/swimmers */
-		if (i->specials.z_cord > 0 && !OUTSIDE(i))
-		{
-			i->specials.z_cord = 0;
-		}
-		else if (i->specials.z_cord < 0 && !IS_WATER_ROOM(i->in_room))
-		{
-			i->specials.z_cord = 0;
-		}
-		if (IS_SET(i->specials.affected_by3, AFF3_SWIMMING) && !IS_WATER_ROOM(i->in_room))
-		{
-			REMOVE_BIT(i->specials.affected_by3, AFF3_SWIMMING);
-		}
-
-		/* keep taught/learned proper */
-		if (IS_PC(i) && !IS_MORPH(i))
-		{
-			for (n = FIRST_SKILL; n <= LAST_SKILL; n++)
-			{
-				if (i->only.pc->skills[n].taught < i->only.pc->skills[n].learned)
-					i->only.pc->skills[n].learned =
-						i->only.pc->skills[n].taught;
-			}
-		}
-
-		/* light sources, et al */
-		update_char_objects(i);
-
-		/* since fights stop healing, lets make sure we restart it */
-		if (GET_HIT(i) < GET_MAX_HIT(i))
-		{
-			StartRegen(i, regen_resource::hit);
-		}
-		if (GET_WARD(i) < GET_MAX_WARD(i))
-		{
-			StartRegen(i, regen_resource::ward);
-		}
-	}
-	// AddEvent(EVENT_SPECIAL, 20 * WAIT_SEC, TRUE, generic_char_event, 0);
 }
 
 void event_sundamage(P_char ch, P_char victim, P_obj obj, void *data);
@@ -1450,6 +1333,7 @@ bool char_to_room(P_char ch, int room, int dir)
 
 	AddCharToZone(ch);
 	world_activity_character_enter(ch);
+	character_maintenance_enter(ch);
 
 	if ((t_ch = get_linked_char(ch, LNK_RIDING)) && t_ch->in_room != ch->in_room)
 	{
@@ -5604,6 +5488,8 @@ void extract_char(P_char ch)
 		un_morph(ch);
 		return;
 	}
+
+	character_maintenance_leave(ch);
 
 	if (IS_PC(ch) && !ch->desc)
 	{
