@@ -1595,7 +1595,14 @@ static bool service_network_turn(game_loop_pulse_context &ctx, int timeout_ms)
 		// overwrite its required retry direction.
 		if (drain_network_transport(point) < 0)
 		{
-			point->network_close_pending = 1;
+			// A normal WebSocket close can follow queued application frames.
+			// Offer those at the boundary before retiring the connection, as for EOF.
+			point->network_close_pending =
+				point->websocket && point->ws_state == WS_STATE_CLOSING &&
+						!point->write_failed &&
+						point->ws_pending_application ?
+					2 :
+					1;
 			continue;
 		}
 		if (point->telnet_tls_retry)
