@@ -951,13 +951,9 @@ void note_creation_grant_publication_failure(P_char actor, creation_grant_queue 
 			  kind, item_uid, vnum, recipient_pid, loc_p, carrier_pid, wearer_pid,
 			  static_cast<unsigned long long>(container_uid), room);
 	if (actor)
-		send_to_char(
-			queue.batch_submission ?
-				"The ownership authority committed, but your item grant batch "
-				"needs live publication repair. Please wait or reconnect.\r\n" :
-				"The ownership authority committed, but the granted item needs "
-				"live publication repair. Please wait or reconnect.\r\n",
-			actor);
+		send_to_char("Your items are safe but are still being delivered.\r\n"
+			     "Please wait a moment or reconnect; do not request them again.\r\n",
+			     actor);
 }
 
 bool reconcile_creation_grant_batch(P_char actor, pending_movement &entry,

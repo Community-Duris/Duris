@@ -9236,7 +9236,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3229
+          3239
         ],
         "file": "src/core/utility.c",
         "function": "publish_account_bank_balances_revision",
@@ -9425,7 +9425,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3190
+          3200
         ],
         "file": "src/core/utility.c",
         "function": "publish_account_bank_balance",
@@ -10425,7 +10425,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3286
+          3300
         ],
         "file": "src/core/utility.c",
         "function": "SUB_MONEY",
@@ -17101,8 +17101,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2884,
-          2896
+          2880,
+          2892
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17164,7 +17164,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1276
+          1272
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -17226,7 +17226,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1176
+          1172
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -17411,7 +17411,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1057
+          1053
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -19668,7 +19668,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3132
+          3128
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19730,7 +19730,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2944
+          2940
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20716,7 +20716,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2027
+          2023
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -21367,7 +21367,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1552
+          1548
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -21429,7 +21429,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1108
+          1104
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -21797,7 +21797,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          963
+          959
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -36917,7 +36917,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1018
+          1221
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_buy",
@@ -36980,7 +36980,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          259
+          420
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_submit_produced_continuation",
@@ -37105,7 +37105,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          898
+          1101
         ],
         "file": "src/economy/shop.c",
         "function": "get_purchase_obj",
@@ -37168,7 +37168,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          320
+          481
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_completion",
@@ -37229,7 +37229,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2671
+          2948
         ],
         "file": "src/economy/shop.c",
         "function": "transact",
@@ -37290,7 +37290,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1639
+          1899
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_peruse",
@@ -37353,7 +37353,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1877
+          2154
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_repair",
@@ -37416,7 +37416,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1358
+          1618
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_sell",
@@ -37479,7 +37479,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1358
+          1618
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_sell",
@@ -37541,7 +37541,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1991
+          2268
         ],
         "file": "src/economy/shop.c",
         "function": "shop_keeper",
@@ -37603,7 +37603,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1716
+          1976
         ],
         "file": "src/economy/shop.c",
         "function": "shopping_list",
@@ -37794,7 +37794,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          306
+          467
         ],
         "file": "src/economy/shop.c",
         "function": "shop_trade_route_invalid_cleanup",
@@ -50847,7 +50847,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2541
+          2537
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
