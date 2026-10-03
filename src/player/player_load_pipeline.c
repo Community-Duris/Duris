@@ -1,3 +1,4 @@
+#include "net/network_wakeup.h"
 #include "player/player_load_pipeline.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_save_journal.h"
@@ -323,6 +324,7 @@ void worker_main()
 			inflight_pid = 0;
 			record_result_locked(result);
 			completions.push_back(std::move(result));
+			network_wakeup_notify();
 			refresh_health_locked();
 			completion_available.notify_all();
 		}

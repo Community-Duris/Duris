@@ -1,3 +1,4 @@
+#include "net/network_wakeup.h"
 #include "world/world_recovery_pipeline.h"
 
 #include "persistence/copyover.h"
@@ -550,7 +551,10 @@ void publisher_main()
 		else
 			++health.publish_failures;
 		if (completions.size() < WORLD_RECOVERY_QUEUE_CAPACITY * 2)
+		{
 			completions.push_back({ generation.sequence, published, attempts });
+			network_wakeup_notify();
+		}
 		worker_busy = false;
 		health.worker_busy = false;
 	}

@@ -1027,7 +1027,7 @@ with tempfile.TemporaryDirectory(prefix="duris-world-recovery-") as temp_dir:
             "-ffunction-sections", "-fdata-sections", "-Isrc", str(source),
             rel("world_recovery_pipeline.c"), rel("world_recovery_codec.c"), rel("generated_npc_state.c"), rel("generated_npc_runtime.c"), rel("pet_restore_state.c"),
             rel("redis_command_observability.c"),
-            "-Wl,--gc-sections", "-lz", "-pthread",
+            "-Wl,--gc-sections", "-lz", "-lbsd", "-pthread",
             "-o", str(binary),
         ],
         cwd=ROOT,
