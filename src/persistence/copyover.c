@@ -5,6 +5,7 @@
 
 #include "persistence/persistence_log.h"
 #include "core/prototypes.h"
+#include "core/game_loop_watchdog.h"
 #include "world/world_singletons.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -1114,6 +1115,13 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		return false;
 	}
 	resume_workers.redis_released = true;
+
+	if (!game_loop_watchdog_prepare_copyover())
+	{
+		logit(LOG_STATUS, "copyover: could not preserve game-loop watchdog channel");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
+	}
 
 	// All prerequisite saves and the complete copyover file are durable. Only
 	// now may non-preservable transports be disconnected.
