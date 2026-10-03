@@ -36,22 +36,22 @@
       "sites": [
         [
           "src/account/account.c",
-          1955,
+          1956,
           "item_publication"
         ],
         [
           "src/account/account.c",
-          1956,
+          1957,
           "item_lifecycle"
         ],
         [
           "src/account/account.c",
-          1964,
+          1965,
           "item_publication"
         ],
         [
           "src/account/account.c",
-          1965,
+          1966,
           "item_lifecycle"
         ]
       ],
@@ -45882,25 +45882,25 @@
   "census": [
     {
       "path": "src/account/account.c",
+      "line": 1957,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj, FALSE);"
+    },
+    {
+      "path": "src/account/account.c",
+      "line": 1966,
+      "family": "item_lifecycle",
+      "excerpt": "extract_obj(obj, FALSE);"
+    },
+    {
+      "path": "src/account/account.c",
       "line": 1956,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj, FALSE);"
-    },
-    {
-      "path": "src/account/account.c",
-      "line": 1965,
-      "family": "item_lifecycle",
-      "excerpt": "extract_obj(obj, FALSE);"
-    },
-    {
-      "path": "src/account/account.c",
-      "line": 1955,
       "family": "item_publication",
       "excerpt": "P_obj obj = unequip_char(ch, i);"
     },
     {
       "path": "src/account/account.c",
-      "line": 1964,
+      "line": 1965,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },
