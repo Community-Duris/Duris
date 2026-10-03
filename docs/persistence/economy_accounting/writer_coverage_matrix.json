@@ -17101,8 +17101,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2905,
-          2917
+          3013,
+          3025
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17164,7 +17164,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1279
+          1292
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -17226,7 +17226,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1179
+          1192
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -17411,7 +17411,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1060
+          1073
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -18533,7 +18533,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          897
+          910
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -18595,7 +18595,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          904
+          917
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -19668,7 +19668,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3153
+          3261
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -19730,7 +19730,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2965
+          3073
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20716,7 +20716,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2048
+          2156
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -21367,7 +21367,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1555
+          1568
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -21429,7 +21429,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1111
+          1124
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -21797,7 +21797,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          966
+          979
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -50847,7 +50847,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2562
+          2670
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
@@ -50913,7 +50913,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          697
+          710
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_craft",
@@ -50963,7 +50963,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          747
+          760
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_craft_outputs",

@@ -703,10 +703,8 @@ int main(int argc, char **argv)
 				      !critical_command_coordinator_is_fenced(
 					      { critical_entity_type::item, 5001 }, nullptr),
 			      "execution rejection releases only after repaired real journal checkpoint");
-			// The maintained craft ACK callback duplication is a separate issue.
-			// This control proves custody/discard idempotence and authority lifetime.
-			check(completion_calls >= 1 && extractions == discarded_before_repair,
-			      "durable rejection repair does not repeat physical craft disposal");
+			check(completion_calls == 1 && extractions == discarded_before_repair,
+			      "durable rejection repair completes once without repeated physical craft disposal");
 			(void)callbacks_before_repair;
 		}
 		else

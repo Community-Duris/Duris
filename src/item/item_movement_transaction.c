@@ -71,7 +71,9 @@ struct pending_movement
 	bool creation_batch;
 	bool registry_applied;
 	bool recovered_publication;
-	bool craft_notified = false;
+	// Preserve completed effects independently of retry/disposition status.
+	bool craft_publication_started = false;
+	bool craft_publication_ready = false;
 	bool collector_invalidated;
 	critical_completion completed;
 	bool disposition_blocked = false;
@@ -504,6 +506,17 @@ P_char find_live_player(uint32_t pid)
 		if (IS_PC(character) && GET_PID(character) == static_cast<int>(pid))
 			return character;
 	return NULL;
+}
+
+/** Craft publication requires membership in the native character registry. */
+P_char find_registered_craft_player(uint32_t pid)
+{
+	for (P_char character = character_list; character; character = character->next)
+		if (IS_PC(character) && GET_PID(character) == static_cast<int>(pid) &&
+		    character->runtime_id &&
+		    find_character_by_runtime_id(character->runtime_id) == character)
+			return character;
+	return nullptr;
 }
 
 P_char find_live_mobile(uint64_t runtime_id)
@@ -1585,6 +1598,123 @@ void retain_publication_failure(pending_movement &entry, const char *reason)
 					   publication_state::retrying;
 }
 
+/** Keep the authoritative craft receipt once any projection may have started. */
+bool same_craft_publication_receipt(const critical_completion &original,
+				    const critical_completion &incoming)
+{
+	const auto durable_success = [](critical_apply_outcome outcome)
+	{
+		return outcome == critical_apply_outcome::applied ||
+		       outcome == critical_apply_outcome::already_applied;
+	};
+	return (original.outcome == incoming.outcome ||
+		(durable_success(original.outcome) && durable_success(incoming.outcome))) &&
+	       original.disposition == incoming.disposition &&
+	       original.durable_revision == incoming.durable_revision &&
+	       original.error_code == incoming.error_code &&
+	       original.failure_stage == incoming.failure_stage &&
+	       original.result_size == incoming.result_size &&
+	       original.result_payload == incoming.result_payload;
+}
+
+/** Complete craft only after its original ACK; detach before calling external hooks. */
+void finalize_craft(std::unordered_map<std::string, pending_movement>::iterator found,
+		    const item_transfer_result &result, bool committed, unsigned int error_code,
+		    bool never_admitted)
+{
+	pending_movement &entry = found->second;
+	entry.publication_status = publication_state::ack_pending;
+	P_char actor = find_registered_craft_player(entry.actor_pid);
+	if (!actor)
+	{
+		account_health();
+		return;
+	}
+	const uint64_t actor_runtime_id = actor->runtime_id;
+	const bool recipe = entry.payload.continuation.kind ==
+			    item_transfer_continuation_kind::craft_recipe;
+	craft_recipe_continuation terms;
+	try
+	{
+		// Decode before ACK: a malformed or unallocatable continuation remains owned.
+		if (recipe &&
+		    !craft_recipe_continuation_decode(entry.payload.continuation.data, &terms))
+		{
+			retain_publication_failure(entry, "recipe notification continuation");
+			account_health();
+			return;
+		}
+		if (!never_admitted && !critical_command_coordinator_acknowledge_publication(
+					       entry.completed.operation_id))
+		{
+			account_health();
+			return;
+		}
+	}
+	catch (...)
+	{
+		// An ACK allocation failure retains the same owner, effects and operation ID.
+		account_health();
+		return;
+	}
+
+	// Extraction does not allocate. No pending-map iterator/reference survives a hook.
+	auto settled = pending.extract(found);
+	const pending_movement &completed = settled.mapped();
+	const critical_operation_id operation_id = completed.completed.operation_id;
+	const auto hooks = craft_progression_hooks;
+	const auto completion_fn = completed.completion;
+	const auto context = completed.context;
+	const size_t context_size = completed.context_size;
+	const uint32_t actor_pid = completed.actor_pid;
+	if (committed)
+		++health.committed;
+	else
+		++health.rejected;
+	account_health();
+
+	if (recipe && !never_admitted && hooks.acknowledged)
+	{
+		try
+		{
+			hooks.acknowledged(operation_id);
+		}
+		catch (...)
+		{
+			logit(LOG_FILE, "craft post-ACK progression cleanup failed (pid=%u)",
+			      actor_pid);
+		}
+	}
+	actor = find_character_by_runtime_id(actor_runtime_id);
+	if (recipe && hooks.notify && actor)
+	{
+		try
+		{
+			hooks.notify(actor, committed, terms);
+		}
+		catch (...)
+		{
+			logit(LOG_FILE, "craft post-ACK notification failed (pid=%u)", actor_pid);
+		}
+	}
+	// A notification may retire the actor. Never reuse its previous pointer.
+	actor = find_character_by_runtime_id(actor_runtime_id);
+	if (completion_fn && actor)
+	{
+		try
+		{
+			completion_fn(actor, committed, result, error_code, context.data(),
+				      context_size);
+		}
+		catch (...)
+		{
+			logit(LOG_FILE, "craft post-ACK completion failed (pid=%u)", actor_pid);
+		}
+	}
+	else if (completion_fn)
+		logit(LOG_FILE, "craft post-ACK completion actor retired (pid=%u)", actor_pid);
+}
+
 /** Publish a completion, retaining committed work if the live registry cannot advance. */
 void publish(std::unordered_map<std::string, pending_movement>::iterator found, P_char actor)
 {
@@ -1623,6 +1753,34 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 	const bool durable_outcome = entry.completed.outcome == critical_apply_outcome::applied ||
 				     entry.completed.outcome ==
 					     critical_apply_outcome::already_applied;
+	if (retained && durable_outcome && !decoded)
+	{
+		// A durable success without a decodable result cannot be safely projected.
+		// Keep both the movement record and coordinator fence for repair; never
+		// reinterpret it as a rejection and release ownership authority.
+		retain_publication_failure(entry, "invalid_result");
+		account_health();
+		return;
+	}
+	if (craft)
+	{
+		actor = find_registered_craft_player(entry.actor_pid);
+		if (!actor)
+		{
+			account_health();
+			return;
+		}
+		// Bind the receipt before registry/physical/progression effects can begin.
+		entry.craft_publication_started = true;
+		if (entry.craft_publication_ready)
+		{
+			finalize_craft(found, result, committed,
+				       decoded || never_admitted ? entry.completed.error_code :
+								   EBADMSG,
+				       never_admitted);
+			return;
+		}
+	}
 	if (retained && entry.publication_status == publication_state::ack_pending)
 	{
 		P_char completion_actor = actor;
@@ -1651,15 +1809,6 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 				completion_fn(completion_actor, was_committed, result, error_code,
 					      context.data(), context_size);
 		}
-		account_health();
-		return;
-	}
-	if (retained && durable_outcome && !decoded)
-	{
-		// A durable success without a decodable result cannot be safely projected.
-		// Keep both the movement record and coordinator fence for repair; never
-		// reinterpret it as a rejection and release ownership authority.
-		retain_publication_failure(entry, "invalid_result");
 		account_health();
 		return;
 	}
@@ -1757,51 +1906,10 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		}
 		if (!committed)
 			discard_craft_outputs(entry);
-		// Mark before notification. An ack retry must not notch or announce twice.
-		const std::string pending_key = found->first;
-		const critical_operation_id operation_id = entry.completed.operation_id;
-		if (!entry.craft_notified)
-		{
-			entry.craft_notified = true;
-			if (entry.payload.continuation.kind ==
-				    item_transfer_continuation_kind::craft_recipe &&
-			    craft_progression_hooks.notify)
-			{
-				craft_recipe_continuation terms;
-				if (craft_recipe_continuation_decode(
-					    entry.payload.continuation.data, &terms))
-					craft_progression_hooks.notify(actor, committed, terms);
-			}
-			const auto context = entry.context;
-			const size_t context_size = entry.context_size;
-			if (entry.completion)
-				entry.completion(actor, committed, result,
-						 decoded || never_admitted ?
-							 entry.completed.error_code :
-							 EBADMSG,
-						 context.data(), context_size);
-		}
-		found = pending.find(pending_key);
-		if (found == pending.end())
-			return;
-		if (!never_admitted &&
-		    !critical_command_coordinator_acknowledge_publication(operation_id))
-		{
-			found->second.publication_status = publication_state::ack_pending;
-			account_health();
-			return;
-		}
-		if (!never_admitted &&
-		    found->second.payload.continuation.kind ==
-			    item_transfer_continuation_kind::craft_recipe &&
-		    craft_progression_hooks.acknowledged)
-			craft_progression_hooks.acknowledged(operation_id);
-		pending.erase(found);
-		if (committed)
-			++health.committed;
-		else
-			++health.rejected;
-		account_health();
+		entry.craft_publication_ready = true;
+		finalize_craft(found, result, committed,
+			       decoded || never_admitted ? entry.completed.error_code : EBADMSG,
+			       never_admitted);
 		return;
 	}
 	if (entry.publication)
@@ -3259,6 +3367,15 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 			entry.disposition_blocked = true;
 			entry.disposition_blocked_this_batch = true;
 			retain_publication_failure(entry, "invalid_completion_disposition");
+			entry.publication_status = publication_state::blocked;
+			continue;
+		}
+		if (entry.craft_publication_started &&
+		    !same_craft_publication_receipt(entry.completed, completions[index]))
+		{
+			entry.disposition_blocked = true;
+			entry.disposition_blocked_this_batch = true;
+			retain_publication_failure(entry, "changed_craft_publication_receipt");
 			entry.publication_status = publication_state::blocked;
 			continue;
 		}

@@ -62,6 +62,7 @@ expected_resource_intensive = {
     "test_area_coin_pickup.py",
     "test_coin_publication_ack_retention.py",
     "test_critical_admission_owner_release.py",
+    "test_craft_publication_ack_retention.py",
     "test_flatfile_auction_coin_put_journey.py",
     "test_flatfile_boot_preflight.py",
     "test_flatfile_chaos_new_character_kit.py",
