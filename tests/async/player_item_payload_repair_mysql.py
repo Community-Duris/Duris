@@ -117,6 +117,19 @@ def main() -> None:
             db.run(sql)
             refuse(label)
             db.run(undo)
+        # A 33-object chain exceeds the production codec's root-inclusive depth.
+        parent_uid = 52602
+        parent_id = int(db.scalar("SELECT id FROM player_items WHERE obj_uid=52602"))
+        for extra_uid in range(52701, 52732):
+            db.run(f"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,vnum,item_revision,state) VALUES({extra_uid},52602,{parent_uid},1,43,0,{extra_uid},8,1)")
+            db.run(f"INSERT INTO player_items(pid,vnum,obj_uid,item_type,container_id) VALUES(43,{extra_uid},{extra_uid},15,{parent_id})")
+            parent_uid = extra_uid
+            parent_id = int(db.scalar(f"SELECT id FROM player_items WHERE obj_uid={extra_uid}"))
+        db.run(f"UPDATE item_current_owner SET parent_item_uid={parent_uid},root_item_uid=52602 WHERE item_uid=52601")
+        refuse("invalid_topology")
+        db.run("UPDATE item_current_owner SET parent_item_uid=NULL,root_item_uid=52601 WHERE item_uid=52601")
+        db.run("DELETE FROM player_items WHERE obj_uid BETWEEN 52701 AND 52731")
+        db.run("DELETE FROM item_current_owner WHERE item_uid BETWEEN 52701 AND 52731")
         journal = Path(os.environ["CRITICAL_COMMAND_JOURNAL_DIR"]) / "critical-command.journal"
         journal.write_bytes(b"CCJ1pending")
         journal.chmod(0o600)

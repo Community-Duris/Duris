@@ -241,7 +241,7 @@ def validate_topology(api: Any, db: Any, uid: int, owner: dict[str, Any], *, mis
         visited = set()
         current = row
         while current["parent_item_uid"]:
-            if current["item_uid"] in visited or len(visited) >= 32:
+            if current["item_uid"] in visited or len(visited) >= 31:  # production maximum 32 counts the root
                 raise api.ToolError("invalid_topology: cycle or excessive depth")
             visited.add(current["item_uid"])
             parent = owners.get(str(current["parent_item_uid"]))
