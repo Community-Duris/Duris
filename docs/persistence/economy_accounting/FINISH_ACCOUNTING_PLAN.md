@@ -235,6 +235,10 @@ The journal CRC uses a compile-time table for the original IEEE recurrence.
 Focused equivalence controls cover existing frames and incremental checksums;
 Save admission deadlines and full accounting release gates remain open.
 
+The original directed character-link lookup is a separate production provider.
+Its read policy and public declaration are unchanged; affected native fixtures can
+link that provider directly. Gameplay and complete Source/32 MiB gates remain open.
+
 ## Resource and verification discipline
 
 Start with one heavy cohort at a time. Inspect current compatible containers,

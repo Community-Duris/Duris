@@ -217,6 +217,7 @@ OBJS =  $(SHIP_OBJS) \
 				 specs/specs.ailvio.o \
 				 guild/alliances.o \
 				 mob/automatic_rules.o \
+				 magic/character_link_lookup.o \
 				 magic/affects.o \
 				 world/falling.o \
 				 world/falling_policy.o \

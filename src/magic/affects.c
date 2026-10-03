@@ -2896,17 +2896,6 @@ struct char_link_data *link_char(P_char ch, P_char target, ush_int type)
 }
 
 //---------------------------------------------------------------------------------
-P_char get_linked_char(P_char ch, ush_int type)
-{
-	struct char_link_data *cld;
-
-	for (cld = ch->linking; cld; cld = cld->next_linking)
-		if (cld->type == type)
-			return cld->linked;
-
-	return NULL;
-}
-
 //---------------------------------------------------------------------------------
 P_char get_linking_char(P_char ch, ush_int type)
 {

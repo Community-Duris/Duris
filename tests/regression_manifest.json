@@ -8521,6 +8521,19 @@
         "recovery"
       ]
     },
+    "test_character_link_lookup.py": {
+      "profile": "native",
+      "mode": "script",
+      "minimum_cases": 1,
+      "cpu": 1,
+      "memory_mb": 512,
+      "seconds": 3.7247300439994433,
+      "timeout_seconds": 180,
+      "locks": [
+        "native-compiler"
+      ],
+      "purpose": "Real directed character-link first-match/missing/reverse-only controls, both header profiles and sanitizers. Native13 predecessor measurement; exact canonical gate separate. No game/factory/Source32/release qualification."
+    },
     "test_player_save_journal_crc.py": {
       "profile": "native",
       "mode": "script",
