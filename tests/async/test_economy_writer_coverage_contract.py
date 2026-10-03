@@ -404,9 +404,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         sites = {row["id"]: row["sites"] for row in registry["writers"]}
         expected = {
             "world.mobile_template": ("src/world/db.c", {2298, 2299, 2300, 2301, 2689, 2690, 2691, 2692}),
-            "player.flatfile_baseline_projection": ("src/core/files.c", {1872, 1873, 1874, 1875, 1877, 1878, 1879, 1880}),
-            "player.legacy_flatfile_load": ("src/core/files.c", {2426, 2427, 2428, 2429}),
-            "recovery.pet_cash_discard": ("src/core/files.c", {4691, 4692, 4693, 4694, 4696, 4697, 4698, 4699}),
+            "player.flatfile_baseline_projection": ("src/core/files.c", {1873, 1874, 1875, 1876, 1878, 1879, 1880, 1881}),
+            "player.legacy_flatfile_load": ("src/core/files.c", {2431, 2432, 2433, 2434}),
+            "recovery.pet_cash_discard": ("src/core/files.c", {4696, 4697, 4698, 4699, 4701, 4702, 4703, 4704}),
             "recovery.copyover_npc_gold_projection": ("src/persistence/copyover.c", {1633, 2144}),
         }
         current = {(row["path"], row["line"], row["family"])
@@ -495,9 +495,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
                          {"auction.money_claim_compensation"})
         self.assertEqual(owners[("src/economy/auction_houses.c", 2967, "sql_economy")],
                          {"auction.money_claim_legacy"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 9561, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 9569, "sql_economy")],
                          {"recovery.saved_sql_delete"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 10982, "sql_economy")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10990, "sql_economy")],
                          {"recovery.saved_sql"})
         shop_path = "src/persistence/economic_sql_shop_trade_transaction.c"
         for line in (887, 907, 940):
@@ -827,9 +827,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new SQL item load sites")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/sql/sql_player.c", 10224, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 10232, "item_publication")],
                          {"recovery.sql_shopkeeper_catalog"})
-        self.assertEqual(owners[("src/sql/sql_player.c", 11364, "item_publication")],
+        self.assertEqual(owners[("src/sql/sql_player.c", 11372, "item_publication")],
                          {"recovery.sql_saved_item_hydration"})
         for route_id in ("recovery.sql_diff_proto_probe", "recovery.sql_temp_char_cleanup",
                          "recovery.sql_corpse_stage_cleanup",
@@ -1133,13 +1133,13 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new legacy file item calls")
         shared_finish = {("src/core/files.c", line, "item_lifecycle")
-                         for line in (1744, 1750)}
+                         for line in (1745, 1751)}
         self.assertTrue(all(len(owners[site]) == (2 if site in shared_finish else 1)
                             for site in current))
         for site in shared_finish:
             self.assertEqual(owners[site], {"player.flat_terminal_inventory_unload",
                                             "player.sql_terminal_inventory_unload"})
-        self.assertEqual(owners[("src/core/files.c", 3690, "item_publication")],
+        self.assertEqual(owners[("src/core/files.c", 3695, "item_publication")],
                          {"recovery.legacy_object_restore"})
         for route_id in ("player.object_save_template_probe",
                          "player.single_item_save_template_probe",

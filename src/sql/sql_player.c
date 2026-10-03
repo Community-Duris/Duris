@@ -12,6 +12,7 @@
 #include "sql/sql_corpse.h"
 #include "sql/sql_guild.h"
 #include "sql/sql_player_deletion.h"
+#include "persistence/economic_sql_lifecycle_guard.h"
 #include "sql/sql_player.h"
 #include "sql/sql_player_migration.h"
 #include "sql/sql_saved_item.h"
@@ -269,11 +270,12 @@ bool sql_load_player_pets(P_char ch)
 	return false;
 }
 
-bool sql_delete_player(int pid, bool forget_revision)
+bool sql_delete_player(int pid, bool forget_revision,
+		       const economic_sql_currency_writer_guard *writer)
 {
 	return false;
 }
-bool sql_player_deletion_guard(int pid)
+bool sql_player_deletion_guard(int pid, const economic_sql_currency_writer_guard &writer)
 {
 	return false;
 }
@@ -1193,9 +1195,9 @@ static bool sql_try_get_player_pid(const char *name, int *pid_out)
 
 // player delete
 
-bool sql_player_deletion_guard(int pid)
+bool sql_player_deletion_guard(int pid, const economic_sql_currency_writer_guard &writer)
 {
-	if (!DB || pid <= 0 || !sql_in_transaction())
+	if (!DB || pid <= 0 || !sql_in_transaction() || !writer.is_valid_for(DB))
 		return false;
 	if (character_deletion_guard_pid)
 		return character_deletion_guard_pid == pid;
@@ -1240,27 +1242,31 @@ bool sql_player_deletion_guard(int pid)
 	return true;
 }
 
-bool sql_delete_player(int pid, bool forget_revision)
+bool sql_delete_player(int pid, bool forget_revision,
+		       const economic_sql_currency_writer_guard *writer)
 {
 	if (!DB || pid <= 0 || player_save_journal_pid_quarantined(pid))
 		return false;
 
+	economic_sql_currency_writer_guard own_writer;
 	bool own_txn = false;
 	if (!sql_in_transaction())
 	{
-		if (!sql_begin_transaction())
+		if (writer || economic_sql_currency_writer_guard::acquire(DB, &own_writer) ||
+		    !sql_begin_transaction())
 			return false;
 		own_txn = true;
+		writer = &own_writer;
 	}
 	if (own_txn)
 	{
-		if (!sql_player_deletion_guard(pid))
+		if (!sql_player_deletion_guard(pid, *writer))
 		{
 			sql_rollback();
 			return false;
 		}
 	}
-	else if (character_deletion_guard_pid != pid)
+	else if (!writer || !writer->is_valid_for(DB) || character_deletion_guard_pid != pid)
 		return false;
 
 	char query[128];
@@ -5582,7 +5588,9 @@ bool sql_delete_account(const char *name)
 		return false;
 	}
 	std::vector<std::pair<int, std::string>> identities;
-	if (!sql_begin_transaction())
+	economic_sql_currency_writer_guard deletion_writer;
+	if (economic_sql_currency_writer_guard::acquire(DB, &deletion_writer) ||
+	    !sql_begin_transaction())
 	{
 		free(escaped_account);
 		return false;

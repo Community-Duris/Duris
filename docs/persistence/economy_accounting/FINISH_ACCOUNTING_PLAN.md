@@ -86,10 +86,24 @@ ASan/UBSan deletion/recovery checks, borrowed-lock reads, both strict production
 builds and the inactive real account-menu deletion/cold-restart journey pass.
 All ten native recovery/restore cases also pass in 427.430 seconds with both SQL
 engines, exact legacy replay and private service boot.
-This is bounded R6/R8 unsupported-writer refusal; typed erasure, SQL deletion
-admission, account-menu pre-fence admission, complete retention/audit and release
-qualification remain open. Native source is `4968da54...`; the frozen broad
+This is bounded R6/R8 unsupported-writer refusal; typed erasure, account-menu
+pre-fence admission, complete retention/audit and release qualification remain
+open. SQL deletion admission is now repaired as described below. Native source is `4968da54...`; the frozen broad
 `88d3b364c` run does not contain these changes. See the October 2 review status.
+
+SQL legacy deletion now acquires native writer admission before BEGIN. The
+character guard and physical-delete boundary validate the exact same-session
+held lease; a cached PID cannot bypass absent/lost authority. Both SQL engines
+pass native active/staged/schema-error/reconnect/lost-lease refusal and the two
+retained-death-evidence lock-order races. ASan/UBSan runtime refusal/rollback/
+publication checks and strict SQL, flatfile and offline pfile builds pass.
+Real inactive character-menu journeys pass lifecycle-read-error refusal,
+playable repair/retry, deletion once and cold restart on both SQL engines;
+flatfile's inactive journey also passes. All ten native recovery cases pass in
+316.257 seconds at native source `971da564...`. Whole-account cleanup now acquires
+the same gate before its transaction; that change has build/source-order proof,
+not whole-account runtime qualification. Account-menu pre-fence admission,
+typed erasure and full R1-R8 qualification remain open. See the October 2 status.
 
 The later frozen `79540e65d` broad run also finished: 826 passed, 11 skipped
 and two stale source-contract assertions failed in 6,127.39 seconds. NPC cash

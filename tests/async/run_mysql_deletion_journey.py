@@ -105,6 +105,28 @@ def run(server):
                     pid = number("SELECT pid FROM player_data WHERE name='"+journey.CHARACTER+"'")
                     items_before = number(f'SELECT COUNT(*) FROM player_items WHERE pid={pid}')
                     assert items_before > 0
+                    # A deliberately unavailable lifecycle table tests native SQL
+                    # admission with an inactive gameplay cache. Only this newly
+                    # created disposable schema is touched; restore before retry.
+                    choose_delete()
+                    assert number('SELECT COUNT(*) FROM economic_sql_lifecycle_installation') == 0
+                    sql('RENAME TABLE economic_sql_lifecycle_installation TO deletion_fixture_lifecycle_unavailable')
+                    try:
+                        client.send('yes')
+                        client.expect('Character deletion did not complete.', timeout=30)
+                        client.expect('ACCOUNT MENU')
+                        assert b'Character deleted successfully.' not in client.transcript
+                        assert number(f'SELECT COUNT(*) FROM player_data WHERE pid={pid}') == 1
+                        assert number(f'SELECT COUNT(*) FROM account_characters WHERE pid={pid} AND deleted_at IS NULL') == 1
+                        assert number(f'SELECT COUNT(*) FROM player_items WHERE pid={pid}') == items_before
+                    finally:
+                        sql('RENAME TABLE deletion_fixture_lifecycle_unavailable TO economic_sql_lifecycle_installation')
+                    client.send('0'); client.close()
+                    client = journey.reconnect_character(plain)
+                    client.send('inventory'); client.expect('You are carrying')
+                    client.send('save'); client.expect('Save complete for '+journey.CHARACTER+'.', timeout=30)
+                    client.send('quit'); client.expect('ACCOUNT MENU', timeout=30)
+                    print('lifecycle-admission: native refusal preserved mapping/inventory; repaired retry remains playable', flush=True)
                     for label, table, action in [('soft-delete', 'account_characters', 'UPDATE'),
                                                   ('late-cleanup', 'player_data', 'DELETE')]:
                         choose_delete()

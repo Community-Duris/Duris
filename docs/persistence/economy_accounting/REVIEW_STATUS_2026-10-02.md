@@ -1137,3 +1137,95 @@ cannot certify these changes. coverage_complete=False; release BLOCKED.
 
 Recovery log: tmp/flat-delete-native-recovery.local.log, SHA-256
 9f801895144b1bc5692422401de74255f15b09b0faf9799a649112480f1e3f92.
+
+## SQL legacy deletion accounting admission
+
+The exact production sql_player_deletion_guard/sql_delete_player definitions
+reproduced physical player deletion under a synthetic active-epoch pointer on
+both native SQL engines. The previous PID/death-conflict guard did not establish
+accounting admission. The new implementation acquires the existing native writer
+lease before an owned transaction begins. Outer character-deletion owners acquire
+it before BEGIN and retain it through confirmed commit/rollback. Both the guard
+(before any cached PID approval or consistent read) and the physical-delete
+boundary validate the exact lease, session, named-lock ownership, reconnect
+setting and local authority lock. No caller boolean can assert admission.
+
+Whole-account cleanup also acquires the existing native gate before BEGIN and
+retains it through commit/rollback. That route currently has strict-build and
+source-order evidence only; these character tests do not qualify whole-account
+runtime erasure or admission before the account menu writes its durable fence.
+The offline pfile build initially failed to link the new guard dependency. Its
+existing no-SQL stubs now expose explicit unavailable admission and a null DB;
+the strict pfile rebuild passes without linking native SQL authority into the
+offline tool. The first retry also exposed shell environment expansion in the
+local command; the saved LF driver passes with the intended compiler wrapper.
+
+Native MariaDB/MySQL component fixtures pass active/staged/missing-schema
+refusal before BEGIN with unchanged identity, cleanup and revision state;
+empty/absent/null/lost lease refusal; reconnect-enabled invalidation and
+exact repair; retained death-conflict/read-error refusal; rollback; and ordinary
+inactive deletion. Two real-session REPEATABLE_READ races still pass retention-
+first and deletion-first ordering. An observer cannot acquire the native writer
+lock during deletion or after SQL commit while the owner retains its lease.
+These exact-definition fixtures use minimal temporary tables and synthetic
+metadata, not a source-complete baseline or active player qualification.
+ASan/UBSan execution of production account-menu/character-delete bodies also
+passes admission failure before BEGIN, rollback/ambiguous commit, publication,
+cancel and retry. Client-free and PID revision checks pass.
+
+Both strict production server profiles pass. The actual inactive mortal
+character-deletion journey passes on fresh canonical 53-migration MySQL and
+MariaDB schemas: unavailable lifecycle metadata refuses accurately without
+losing the player, mapping or original item rows; exact repair permits playable
+login/save/retry; existing soft-delete and late-cleanup SQL faults roll back;
+retry deletes once and cold restart leaves the account usable. The actual
+flatfile inactive refusal/retry/alias-erasure/cold-restart journey also passes.
+All ten native recovery/restore cases pass in 316.257 seconds, including both
+SQL engines' dump/import/schema/history/value checks, exact legacy replay,
+flatfile WAL/catalog/receipts, private foreign-owned checkout and service boot.
+These are owned disposable fixtures and isolated recovery checks, not captured
+full-world restore, active gameplay or complete accounting certification.
+
+Native source tree: 971da56436ece326fa248f6b175b2e49784cb7eb.
+The complete tracked native source was hash-compared to the strict-build/recovery
+checkout after the offline stub repair; no mismatches remain.
+SQL binary SHA-256: 35d277a3911c7be14a80f138941e22cc607d4c54b5f604c75750427beb1218c2.
+Flatfile binary SHA-256: f06a3863e91fc6dd13cfed64721809be223ed87d4006402e7b6e3ddd00f6bb3f.
+QA: /opt/duris-accounting-delete-admission-sql-green-review/source and
+/opt/duris-accounting-sql-delete-build-review/source.
+
+Local ignored evidence SHA-256:
+
+- tmp/deletion-accounting-admission-sql-red.local.log: 5c5f926c38122e1ab5dbe175906b1eb2ea99a991bd0287588a530706aaae22f8
+- tmp/deletion-accounting-admission-sql-green-latest.local.log: 2ce66bff2478360cf42be7483c0403ff7aca493d4cef3318c8f6709e88ff4772
+- tmp/deletion-accounting-admission-native-unit-latest.local.log: 1652b3f25ed5b8658e2175735a85ac1f59ad9d8ba78b78393fab2597b0328f29
+- tmp/sql-delete-current-journeys.local.log: e5135d40bcf0290280c92a55874c6c8d39ecb5bdc7578b0e55872faa76963ad5
+- tmp/sql-delete-current-flatfile-journey.local.log: 8c854b3ad1417d59b836a42fd81eb1ae4637112ca12792be7df502e591f325f4
+- tmp/sql-delete-native-recovery.local.log: 36840d470b094df09cd417041a01dfb3ceb4231d78b77e66da1eaac47154c909
+- tmp/sql-delete-strict-pfile.local.log: a4db67065f714c162ceef658dfce93c63850ab81eb019b39e3c8706a6a28d03f
+- tmp/sql-delete-strict-pfile-retry.local.log: 96e6658d2911c3b7953307767f87b71ded51956fcc6e17b82e64d3877f8c8264
+- tmp/sql-delete-source-contracts.local.log: 649de28fc9aaa64fbc7eea93b7831b90ae6487e142bd986216a5496a63855a66
+
+The census retains 864 routes, 2,815 occurrences, 2,756 unique sites and zero
+unmapped sites after source-anchor refresh. Backend completion statuses remain
+unverified; refusal evidence is recorded separately. The frozen 88d3b364c broad
+run does not contain this or the preceding three milestones and cannot certify
+them. coverage_complete=False; release BLOCKED. All R1-R8 full-feature gates,
+account-menu pre-fence admission, typed erasure, complete audit/retention,
+captured full-world rollback generation and measured workload remain open.
+The pending captured-generation path question remains unanswered. Production
+activation/data and the declined inactive spell-path changes were not touched.
+
+The full writer-contract refresh initially exposed four stale test anchors
+(two assertion failures and two missing-key errors), including core/files.c
+locations affected by the new include and transaction-owner changes. Literal
+expectations now follow identical source lines from frozen 88d3b364c to this
+candidate; route classifications, ownership counts and activation assertions
+are retained. The original failure log remains available rather than being
+relabelled as a passing run.
+
+After refresh, all 54 writer-contract tests pass (52 matrix tests plus two route-evidence tests); the standalone writer-site check also passes. Normal 14-fixture validation and matrix --check pass with release still BLOCKED. The final dual-engine native deletion run additionally refuses a held lease on each of two other live SQL sessions.
+
+- tmp/sql-delete-writer-checks.local.log: a7800d0f6d6e0c690809912bbbd35c859fb654363d11e32f2b8c74753a0a238e
+- tmp/sql-delete-writer-checks-reanchored.local.log: 9e34262bda18c10c5f86fdb122abeb14ca43ac444acd32de1d55250ea58d6dce
+- tmp/deletion-accounting-admission-sql-green-final.local.log: 0f05d6deb9a0683e308785d97ebce59a5efb55808e85583e337478dfab0dcb10
