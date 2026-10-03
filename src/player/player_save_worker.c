@@ -14,6 +14,7 @@
 #include <mutex>
 #include <new>
 #include <thread>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -32,11 +33,17 @@ struct queued_snapshot
 	unsigned int retry_count = 0;
 };
 
+static_assert(std::is_nothrow_move_assignable_v<player_snapshot>);
+static_assert(std::is_nothrow_move_assignable_v<player_save_completion>);
+static_assert(std::is_nothrow_move_constructible_v<player_save_completion>);
+
 struct pid_slot
 {
 	std::unique_ptr<queued_snapshot> active;
 	std::unique_ptr<queued_snapshot> pending;
 	bool dispatched = false;
+	bool deferred = false;
+	bool deferred_original = false;
 };
 
 std::mutex worker_mutex;
@@ -93,17 +100,38 @@ bool valid_snapshot(const player_snapshot &snapshot)
 
 void queue_ready_locked(int pid)
 {
+	if (ready_set.contains(pid))
+		return;
 	if (ready_set.insert(pid).second)
 	{
-		ready_pids.push_back(pid);
+		try
+		{
+			ready_pids.push_back(pid);
+		}
+		catch (...)
+		{
+			ready_set.erase(pid);
+			throw;
+		}
 		job_available.notify_one();
 	}
+}
+
+// Called only for a ready entry staged by the current admission. No worker can
+// consume it while worker_mutex is held, and erasing integer entries allocates nothing.
+void cancel_ready_locked(int pid)
+{
+	const auto entry = std::find(ready_pids.begin(), ready_pids.end(), pid);
+	if (entry != ready_pids.end())
+		ready_pids.erase(entry);
+	ready_set.erase(pid);
 }
 
 void update_depth_health_locked()
 {
 	uint64_t queued = 0;
 	uint64_t inflight = 0;
+	uint64_t deferred = 0;
 	for (const auto &[pid, slot] : slots)
 	{
 		(void)pid;
@@ -116,9 +144,12 @@ void update_depth_health_locked()
 		}
 		if (slot.pending)
 			++queued;
+		if (slot.deferred)
+			++deferred;
 	}
 	health.queued_pids = queued;
 	health.inflight_pids = inflight;
+	health.deferred_pids = deferred;
 	health.queued_bytes = retained_bytes;
 	update_max(health.high_water_pids, queued + inflight);
 	update_max(health.high_water_bytes, retained_bytes);
@@ -149,7 +180,7 @@ void worker_main()
 			ready_set.erase(pid);
 			auto found = slots.find(pid);
 			if (found == slots.end() || !found->second.active ||
-			    found->second.dispatched)
+			    found->second.dispatched || found->second.deferred)
 				continue;
 			found->second.dispatched = true;
 			job = found->second.active.get();
@@ -198,6 +229,16 @@ void worker_main()
 			  applied.outcome == player_save_apply_outcome::ambiguous_commit) &&
 			 job->retry_count >= PLAYER_SAVE_WORKER_MAX_RETRIES);
 		persistence_trace_record(trace);
+		if (applied.outcome == player_save_apply_outcome::deferred)
+		{
+			std::lock_guard<std::mutex> lock(worker_mutex);
+			auto &slot = slots.at(pid);
+			slot.dispatched = false;
+			slot.deferred = true;
+			slot.deferred_original = true;
+			update_depth_health_locked();
+			continue;
+		}
 		if ((applied.outcome == player_save_apply_outcome::applied ||
 		     applied.outcome == player_save_apply_outcome::already_applied ||
 		     applied.outcome == player_save_apply_outcome::stale_revision) &&
@@ -319,6 +360,7 @@ bool promote_pending_locked(int pid, pid_slot &slot)
 		return false;
 	slot.active = std::move(slot.pending);
 	slot.dispatched = false;
+	slot.deferred_original = false;
 	queue_ready_locked(pid);
 	return true;
 }
@@ -451,34 +493,42 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 		    revision_state.queued_revision != snapshot.revision ||
 		    !revision_state.queued_components ||
 		    (snapshot.components & revision_state.queued_components) !=
-			    revision_state.queued_components ||
-		    !player_revision_begin_inflight(snapshot.pid, snapshot.revision,
-						    revision_state.queued_components))
+			    revision_state.queued_components)
 			return player_save_submit_result::revision_state_mismatch;
-		// An earlier worker ACK can narrow the queued mask while this sealed
-		// capture waits for its journal append. Apply the remaining components,
-		// just as promote_pending_locked does for a capture retained by the worker.
-		snapshot.components = revision_state.queued_components;
 		const int pid = snapshot.pid;
-		const player_revision_t revision = snapshot.revision;
-		const player_component_mask_t components = snapshot.components;
-		const size_t snapshot_bytes = snapshot.encoded_size_bound;
-		bool bytes_accounted = false;
+		bool slot_staged = false;
 		try
 		{
-			pid_slot slot;
-			slot.active = std::make_unique<queued_snapshot>(
-				queued_snapshot{ std::move(snapshot), now_usec(), 0 });
-			retained_bytes += snapshot_bytes;
-			bytes_accounted = true;
-			slots.emplace(pid, std::move(slot));
+			// Allocate every owner before consuming the caller's retained capture
+			// or claiming its revision. Even ready-container growth can fail.
+			auto job = std::make_unique<queued_snapshot>();
+			auto inserted = slots.try_emplace(pid);
+			if (!inserted.second)
+				return player_save_submit_result::revision_state_mismatch;
+			slot_staged = true;
 			queue_ready_locked(pid);
+			if (!player_revision_begin_inflight(pid, snapshot.revision,
+							    revision_state.queued_components))
+			{
+				cancel_ready_locked(pid);
+				slots.erase(inserted.first);
+				return player_save_submit_result::revision_state_mismatch;
+			}
+			// Existing ordinary/typed mask behavior is unchanged here; preserving
+			// exact typed journal identity is a separate prerequisite.
+			snapshot.components = revision_state.queued_components;
+			job->snapshot = std::move(snapshot);
+			job->queued_at_usec = now_usec();
+			retained_bytes += job->snapshot.encoded_size_bound;
+			inserted.first->second.active = std::move(job);
 		}
 		catch (const std::bad_alloc &)
 		{
-			if (bytes_accounted)
-				retained_bytes -= snapshot_bytes;
-			player_revision_fail_inflight(pid, revision, components);
+			if (slot_staged)
+			{
+				cancel_ready_locked(pid);
+				slots.erase(pid);
+			}
 			return player_save_submit_result::capacity_exceeded;
 		}
 		saturating_increment(health.submitted);
@@ -493,7 +543,8 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 	if ((snapshot.components & newest->snapshot.components) != newest->snapshot.components)
 		return player_save_submit_result::revision_state_mismatch;
 
-	const bool replace_undispatched = !slot.dispatched && !slot.pending;
+	const bool replace_undispatched = !slot.dispatched && !slot.deferred_original &&
+					  !slot.pending;
 	const size_t replaced_bytes = slot.pending ? slot.pending->snapshot.encoded_size_bound :
 				      replace_undispatched ?
 						     slot.active->snapshot.encoded_size_bound :
@@ -501,37 +552,47 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 	if (snapshot.encoded_size_bound >
 	    PLAYER_SAVE_WORKER_MAX_BYTES - (retained_bytes - replaced_bytes))
 		return player_save_submit_result::capacity_exceeded;
+	bool ready_staged = false;
 	try
 	{
-		auto pending = std::make_unique<queued_snapshot>(
-			queued_snapshot{ std::move(snapshot), now_usec(), 0 });
+		// Construct the empty owner first; a moved aggregate argument would
+		// consume the input before make_unique attempts its allocation.
+		auto pending = std::make_unique<queued_snapshot>();
 		if (replace_undispatched)
 		{
 			player_revision_snapshot revision = {};
-			if (!player_revision_snapshot_copy(pending->snapshot.pid, &revision) ||
-			    revision.queued_revision != pending->snapshot.revision ||
-			    revision.queued_components != pending->snapshot.components ||
-			    !player_revision_fail_inflight(slot.active->snapshot.pid,
+			if (!player_revision_snapshot_copy(snapshot.pid, &revision) ||
+			    revision.current_revision != snapshot.revision ||
+			    revision.queued_revision != snapshot.revision ||
+			    revision.queued_components != snapshot.components ||
+			    revision.unacknowledged_components != snapshot.components)
+				return player_save_submit_result::revision_state_mismatch;
+			ready_staged = !ready_set.contains(snapshot.pid);
+			queue_ready_locked(snapshot.pid);
+			if (!player_revision_fail_inflight(slot.active->snapshot.pid,
 							   slot.active->snapshot.revision,
 							   slot.active->snapshot.components) ||
-			    !player_revision_begin_inflight(pending->snapshot.pid,
-							    pending->snapshot.revision,
-							    pending->snapshot.components))
+			    !player_revision_begin_inflight(snapshot.pid, snapshot.revision,
+							    snapshot.components))
+			{
+				if (ready_staged)
+					cancel_ready_locked(snapshot.pid);
 				return player_save_submit_result::revision_state_mismatch;
-			retained_bytes = retained_bytes - replaced_bytes +
-					 pending->snapshot.encoded_size_bound;
+			}
+		}
+		pending->snapshot = std::move(snapshot);
+		pending->queued_at_usec = now_usec();
+		retained_bytes =
+			retained_bytes - replaced_bytes + pending->snapshot.encoded_size_bound;
+		if (replace_undispatched)
 			slot.active = std::move(pending);
-			queue_ready_locked(slot.active->snapshot.pid);
-		}
 		else
-		{
-			retained_bytes = retained_bytes - replaced_bytes +
-					 pending->snapshot.encoded_size_bound;
 			slot.pending = std::move(pending);
-		}
 	}
 	catch (const std::bad_alloc &)
 	{
+		if (ready_staged)
+			cancel_ready_locked(snapshot.pid);
 		return player_save_submit_result::capacity_exceeded;
 	}
 	saturating_increment(health.coalesced);
@@ -552,6 +613,44 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 	size_t consumed = 0;
 	while (consumed < capacity && !results.empty())
 	{
+		// Retain the deliverable result until every allocation needed for its
+		// retry or pending promotion has succeeded. A real journal ACK may
+		// already have happened; consuming this result early loses its receipts.
+		const auto &front = results.front();
+		auto staged_slot = slots.find(front.pid);
+		bool ready_staged = false;
+		if (staged_slot != slots.end() && staged_slot->second.active &&
+		    staged_slot->second.active->snapshot.revision == front.revision &&
+		    staged_slot->second.active->snapshot.components == front.components)
+		{
+			const auto &slot = staged_slot->second;
+			const bool retry =
+				front.outcome == player_save_apply_outcome::retryable_failure ||
+				front.outcome == player_save_apply_outcome::ambiguous_commit;
+			const bool retry_ready = retry && slot.active->retry_count <
+								  PLAYER_SAVE_WORKER_MAX_RETRIES;
+			const bool finish_ready =
+				slot.pending &&
+				(front.outcome == player_save_apply_outcome::applied ||
+				 front.outcome == player_save_apply_outcome::already_applied ||
+				 front.outcome == player_save_apply_outcome::stale_revision ||
+				 front.outcome == player_save_apply_outcome::terminal_failure ||
+				 (retry && !retry_ready));
+			if (retry_ready || finish_ready)
+			{
+				try
+				{
+					ready_staged = !ready_set.contains(front.pid);
+					queue_ready_locked(front.pid);
+				}
+				catch (const std::bad_alloc &)
+				{
+					// queue_ready_locked removes any partial ready entry. Leave
+					// all result/job/revision/receipt ownership for a later pulse.
+					break;
+				}
+			}
+		}
 		player_save_completion completion = std::move(results.front());
 		results.pop_front();
 		result_available.notify_one();
@@ -624,6 +723,9 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 						      completion.components);
 			finished = true;
 			break;
+		case player_save_apply_outcome::deferred:
+			// worker_main parks this outcome before creating a completion.
+			break;
 		}
 
 		if (finished)
@@ -647,8 +749,11 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 			remove_active_bytes_locked(slot);
 			slot.active.reset();
 			slot.dispatched = false;
+			slot.deferred_original = false;
 			if (!promote_pending_locked(completion.pid, slot))
 			{
+				if (ready_staged)
+					cancel_ready_locked(completion.pid);
 				saturating_increment(health.terminal_failures);
 				retained_bytes -= slot.pending->snapshot.encoded_size_bound;
 				slot.pending.reset();
@@ -672,6 +777,28 @@ bool player_save_worker_pid_pending(int pid)
 	const auto found = slots.find(pid);
 	return found != slots.end() &&
 	       (found->second.active != nullptr || found->second.pending != nullptr);
+}
+
+bool player_save_worker_resume_deferred(int pid) noexcept
+{
+	if (pid <= 0)
+		return false;
+	std::lock_guard<std::mutex> lock(worker_mutex);
+	const auto found = slots.find(pid);
+	if (!health.running || stop_requested || !apply_callback || found == slots.end() ||
+	    !found->second.active || found->second.dispatched || !found->second.deferred)
+		return false;
+	try
+	{
+		queue_ready_locked(pid);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	found->second.deferred = false;
+	update_depth_health_locked();
+	return true;
 }
 
 player_save_worker_health player_save_worker_health_copy(void)

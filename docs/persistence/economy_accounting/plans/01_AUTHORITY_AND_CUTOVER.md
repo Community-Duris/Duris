@@ -357,3 +357,162 @@ revision/no-op, rollback, inline-coin and inactive legacy equipment rules. New
 actual-repository/direct-SQL regression preparation is separate from a genuine
 pooled schema-2 drop and two-session lock-order proof. Both engines, journal
 exact-frame quarantine/restart and unrelated-PID controls remain required.
+
+Actual before-source partial-save qualification now reproduces all eight semantic
+failures on both MySQL8.0.46 and MariaDB10.11.14. Existing full/legacy and three
+partial controls pass per engine; true postwrite faults prove STATUS/projection
+rollback and unrelated-PID replay progress. Exact declaration/log/source/binary
+pins and preserved setup failures are recorded in October3 review. Production
+implementation and all after-source checks remain in progress. Direct synthetic
+room after-state cannot establish real economic drop/pool serialization; a separate
+opt-in real-pool/barrier matrix retains original budgets and awaits execution.
+
+The complete partial replacement prerequisite now passes actual paired engines:
+34 direct contracts and51 allocation ordinals each, plus six READ COMMITTED
+pooled-drop/direct-save cases each with real1205/1452 witnesses. Strict SQL/flat
+builds and inactive SQL save/death/crash/restart/copyover journeys pass. Selected
+root forest/cascade bounds, legacy position proof and partial restitution scope
+preserve opposite rows; allocation failures return through rollback. See October3
+review/declaration71055b7b. This does not connect ordinary-drop native publication,
+first-boot/replay/hydration or restored-save deferral, qualify every SQL isolation
+or allocation boundary, or complete cutover/activation/R1-R8.
+
+### Restored-save admission and release contract
+
+Current source review identifies four bypasses that must be closed together
+before wiring an ordinary-drop recovery caller: startup launches save replay
+before critical restoration, durable-ready dispatch ignores restored holds,
+workers can already own a snapshot, and journal replay invokes the repository
+directly. A bounded per-PID apply permit must serialize restored registration
+with execution; registration refuses an active permit. SQL and callbacks run
+outside worker, journal and pipeline locks. Use opt-in startup suspension until
+the restoration census is complete, preserving default inactive behavior.
+
+Deferral is distinct from retryable failure: park the exact worker request
+without completion, ACK, retry increment or quarantine; keep its original
+identity through the wake-to-dispatch window while coalescing only pending work.
+Selective journal replay must retain every exact frame for the held PID and
+exclude it from checkpoint/proof maps while unrelated PIDs progress. Deferred
+death/operation-bearing frames require a per-PID load fence; a clean global
+replay pass does not establish affected-PID hydration eligibility. The dispatcher
+needs an explicit retained wake to revisit deferred frames without spinning.
+
+The worker-only parking primitive has bounded native qualification with actual
+worker/revision/codec/journal and a controlled apply callback: eight cases per
+SQL-header/flatfile mode pass, along with strict builds and unchanged inactive
+SQL/flatfile gameplay. It remains unused by normal pipeline selection and does
+not qualify restored-save integration. Its explicit resume returns false before
+the callback has parked; the owner must retain that wake for retry. The journal
+now has a separate bounded selective-replay prerequisite: a deferred PID retains
+every exact frame and loses both prior ordinary and exact operation proofs from
+that pass, while unrelated PIDs checkpoint. Its appended replay_deferred result
+keeps the existing global replay/load fence closed. Nineteen paired native cases
+pass per backend mode with a controlled apply callback; actual restored SQL
+ownership is not connected. Collection allocation failure is contained before
+callbacks, preserving the original journal.
+Its resume allocation guarantee does not repair existing allocation gaps in
+retry scheduling or pending promotion. Retained initial/pending admission now
+has bounded qualification recorded below; result delivery remains separate.
+
+Before-admission source review established input loss from an already-moved
+make_unique argument, stranded post-emplace slots after ready allocation, and
+replacement failure after a newer uncaptured mark. Empty job/slot/cancelable
+readiness are now staged before moves or revision claims, and exact current
+revision/unacknowledged mask is checked before replacement. Sixteen paired before
+failures/four controls become20 after passes per native mode, with unchanged8
+parking regressions each, both strict incremental builds and maintained owners.
+Actual inactive MariaDB/MySQL journeys/follow-ups and flatfile restart/relog pass;
+final declaration20a99f56 pins exact evidence in October3 review. This closes
+retained admission only. Retry/pending promotion now has separate paired component
+qualification:11 before failures/four controls become15 passes per backend,
+including real native set/deque growth and quest/spell/craft completion receipts.
+Cancelable readiness is staged before result consumption or health/revision/receipt
+mutation. Failed allocation retains the exact front for a later pulse; successful
+staging makes later queue calls allocation-free. Failed promotion removes only
+newly staged readiness. Unchanged20 admission/eight parking regressions also pass
+per mode. Declaration36ec8996 pins the seven artifacts and every case log; strict
+incremental builds, nine maintained owners,14 validations/30 contracts and matrix
+pass. Actual inactive MariaDB/MySQL save/death/crash/copyover journeys and native
+follow-ups pass; flatfile creation/save/restart/relog passes133.956 seconds. Final
+declaration1c6b2a43 pins source/binaries/logs/cases/owned teardown. This bounded
+scheduling prerequisite is solved locally.
+Separately, result-queue allocation in worker_main can throw
+after journal ACK. Ready-queue repairs cannot qualify completion-delivery safety.
+
+Separate source review identifies unresolved-replay proof retention: an earlier
+same-PID ordinary durable revision or exact death/receipt proof remains eligible
+when a later callback returns retryable/ambiguous. Withdraw both proof stores
+for the failed PID before checkpointing unaffected work. A callback bad_alloc
+must remain unresolved, with no proof, rather than create a corruption archive;
+execution or COMMIT may already have happened. Genuine runtime, custody and death
+failures retain their quarantine rules. This journal-only repair now has paired
+native qualification:19 before-source failures and four terminal controls become
+23 passing cases per backend mode, with unchanged19-case deferral regressions.
+Both incremental strict builds and actual inactive SQL/flatfile gameplay pass;
+October3 review and declaration9ef8c4b2 pin the exact evidence. General
+postcallback allocation safety remains open. Ordinary SQL exception rollback and
+pool-lease cleanup are separate: current ordinary apply can escape with a
+transaction or lease still held, including ambiguous-commit readback allocation.
+
+Worker submission and pending promotion also overwrite the mask of an already
+journaled typed snapshot after an older component ACK. Apply/ACK then differ from
+the exact original bytes, and typed required components can disappear. Keep
+sealed apply/ACK identity distinct from revision ownership; never acknowledge
+original bytes after applying narrowed data. Reapplying redundant item/pet
+components also needs current native authority validation, especially flatfile
+which lacks SQL apply-time custody comparison. This newly confirmed dependency
+is separate from admission allocation and remains unimplemented/unqualified.
+
+Publication ACK must retain the original operation until a complete affected-PID
+save census is clean, or every unresolved frame has a legitimate durable
+disposition/recovery handoff. Pausing a newer stale frame then blindly resuming
+it after publication can quarantine the player. An in-memory residual hold after
+critical ACK cannot survive restart because that critical command is checkpointed.
+Reserve readiness by original operation/generation while the hold remains,
+perform coordinator ACK outside state locks, and clear only the reservation
+after success. No frame rewriting, invented revision, drop-result save ACK or
+discard is permitted. Actor-independent room recovery must not depend on loading
+a player with unresolved save obligations. Both-engine ordering/ACK/restart and
+shutdown/copyover checks remain prerequisites to production integration.
+
+Replay ownership must extend through proof publication and journal checkpoint,
+or revalidate the restored-owner generation before checkpointing. A callback-only
+permit released after SQL cannot protect a hold registered after the PID's final
+callback; a later duplicate frame may not invoke a callback at all. Independent
+worker ACK and public revision checkpoints also need the same authority fence.
+A per-pass journal deferral marker cannot establish a resident hold or load
+permission. After reopening, the durable critical owner must reinstall its gate
+before any replay; preserving frame bytes alone does not reinstall that gate.
+
+### Ordinary SQL exception ownership: reviewed implementation boundary
+
+Source-only review at local9cfdad368 and fetched3dbb8bc83 confirms ordinary apply
+has no exception rollback guard and pooled apply/readback can escape while a
+lease is still held. Ward columns/new0056 do not repair this. Keep cleanup
+metadata specific to the SQL repository: original session, untouched/verified
+idle/retire-required disposition, confirmed rollback and cleanup error. A new
+borrowing overload may report that proof; the existing direct API never closes,
+replaces or releases caller handles. Reject an existing transaction, autocommit
+OFF or reconnect-enabled connection before changing caller state.
+
+Install a nonallocating guard before START, explicitly finalize cleanup using
+literal ROLLBACK on the original session, and require successful cleanup plus
+same session/idle/autocommit/reconnect-disabled state for pooled reuse. A
+best-effort destructor alone is not reuse proof. Own the lease immediately after
+acquire; unproven cleanup discards then releases it. Replacement consumes the old
+lease even when NULL; own only its returned replacement thereafter. Precommit
+caught bad_alloc with confirmed rollback is retryable ENOMEM/no proof; possible
+COMMIT followed by readback allocation retains ambiguous outcome. Explicit
+returned terminal ENOMEM and genuine custody/death diagnoses stay unchanged.
+
+Death-conflict continuation needs confirmed original rollback before beginning
+retained-evidence work, and separate checked cleanup for that evidence
+transaction or conservative lease retirement. Ordinary cleanup cannot certify
+later work. Also own extra-description malloc buffers before string assignment
+and pet MYSQL_RES before allocating comparisons. Actual engine tests must prove
+START/DML rollback, successful-COMMIT reply loss/readback OOM, failed rollback,
+replacement failure, borrowed transaction/settings refusal, conflict continuation
+and resource allocation witnesses. Use calibrated client transaction bits after
+SELECT1 for both engines. Force-rebuild changed header consumers/dependent
+harnesses from verified .d closure. This is a design boundary, not implemented or
+qualified SQL cleanup, and it does not authorize incoming history integration.

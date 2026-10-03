@@ -27,6 +27,9 @@ enum class player_save_journal_result : uint8_t
 	corrupt_data,
 	replay_blocked,
 	quarantined_pid,
+	// Unaffected PIDs checkpointed, but at least one PID retained every frame
+	// because its apply owner deferred. This is not complete replay or load proof.
+	replay_deferred,
 };
 
 struct player_save_journal_health
@@ -63,6 +66,11 @@ player_save_journal_result player_save_journal_append(const player_snapshot &sna
 player_save_journal_result player_save_journal_archive_quarantined(const player_snapshot &snapshot);
 player_save_journal_result player_save_journal_checkpoint(int pid,
 							  player_revision_t durable_revision);
+// A deferred apply retains all frames for that PID, including earlier proofs
+// from this pass, and skips later same-PID callbacks. Other PIDs may checkpoint.
+// replay_deferred keeps the existing global replay/load gate closed. The caller
+// must reinstall durable authority before reopen/replay and retain a later wake;
+// this per-pass marker does not fence independent ACK/checkpoint callers.
 player_save_journal_result player_save_journal_replay(player_save_apply_fn apply, void *context);
 player_save_journal_health player_save_journal_health_copy(void);
 

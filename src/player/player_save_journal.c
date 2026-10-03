@@ -1605,12 +1605,33 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 				// waits for native recovery verification; unrelated PIDs replay.
 				continue;
 			}
-			frames.push_back(std::move(frame));
+			try
+			{
+				frames.push_back(std::move(frame));
+			}
+			catch (const std::bad_alloc &)
+			{
+				// Collection has not invoked an apply callback or checkpoint.
+				// Keep the original durable frames and refuse replay completion.
+				++health.backpressure;
+				return player_save_journal_result::replay_blocked;
+			}
 		}
 	}
 	std::map<int, player_revision_t> acknowledged;
 	std::vector<operation_record_proof> proven_operations;
 	std::set<int> runtime_quarantined_pids;
+	int deferred_pid = 0;
+	bool replay_has_deferred = false;
+	auto withdraw_pid_proofs = [&](int pid)
+	{
+		acknowledged.erase(pid);
+		proven_operations.erase(std::remove_if(proven_operations.begin(),
+						       proven_operations.end(),
+						       [&](const operation_record_proof &proof)
+						       { return proof.pid == pid; }),
+					proven_operations.end());
+	};
 	auto quarantine_failed_pid = [&](persistence_trace_event trace)
 	{
 		const int pid = trace.pid;
@@ -1621,12 +1642,7 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 		if (quarantined != player_save_journal_result::ok)
 			return quarantined;
 		runtime_quarantined_pids.insert(pid);
-		acknowledged.erase(pid);
-		proven_operations.erase(std::remove_if(proven_operations.begin(),
-						       proven_operations.end(),
-						       [&](const operation_record_proof &proof)
-						       { return proof.pid == pid; }),
-					proven_operations.end());
+		withdraw_pid_proofs(pid);
 		return player_save_journal_result::ok;
 	};
 	auto stop_replay = [&]()
@@ -1651,7 +1667,8 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 		std::unordered_map<std::string, std::vector<const journal_frame *>> identities;
 		for (const journal_frame &frame : frames)
 		{
-			if (runtime_quarantined_pids.count(frame.snapshot.pid))
+			if (runtime_quarantined_pids.count(frame.snapshot.pid) ||
+			    frame.snapshot.pid == deferred_pid)
 				continue;
 			const std::string identity = std::to_string(frame.snapshot.pid) + ":" +
 						     std::to_string(frame.snapshot.revision) + ":" +
@@ -1686,6 +1703,14 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 			{
 				applied = apply(frame.snapshot, context);
 			}
+			catch (const std::bad_alloc &)
+			{
+				// Allocation may fail before execution or during possible-commit
+				// verification. Keep the request unresolved, without durability
+				// proof, deferral or a new corruption quarantine.
+				applied = { player_save_apply_outcome::retryable_failure, 0,
+					    ENOMEM };
+			}
 			catch (...)
 			{
 				trace.stage = persistence_trace_stage::save_replay_result;
@@ -1709,9 +1734,22 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 			trace.incident = applied.outcome ==
 					 player_save_apply_outcome::terminal_failure;
 			persistence_trace_record(trace);
+			if (applied.outcome == player_save_apply_outcome::deferred)
+			{
+				// Sorted traversal needs no allocating held-PID set. Withdraw
+				// both earlier proof sources: a newer ordinary durable revision
+				// or an exact receipt must not retire this PID's retained frames.
+				deferred_pid = frame.snapshot.pid;
+				replay_has_deferred = true;
+				withdraw_pid_proofs(deferred_pid);
+				continue;
+			}
 			if (applied.outcome == player_save_apply_outcome::retryable_failure ||
 			    applied.outcome == player_save_apply_outcome::ambiguous_commit)
 			{
+				// Earlier success for this PID cannot retire any of its frames
+				// once a later request is unresolved. Drain only unaffected PIDs.
+				withdraw_pid_proofs(frame.snapshot.pid);
 				{
 					std::lock_guard<std::mutex> lock(journal_mutex);
 					++health.backpressure;
@@ -1769,7 +1807,11 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 			std::lock_guard<std::mutex> lock(journal_mutex);
 			++health.replayed;
 		}
-		return checkpoint_proven(acknowledged, proven_operations);
+		const player_save_journal_result checkpointed =
+			checkpoint_proven(acknowledged, proven_operations);
+		return checkpointed == player_save_journal_result::ok && replay_has_deferred ?
+			       player_save_journal_result::replay_deferred :
+			       checkpointed;
 	}
 	catch (const std::bad_alloc &)
 	{
