@@ -489,10 +489,83 @@ whole-suite evidence.
 Raw JSON/XML/logs, qualification drivers and the source-bound review index remain
 ignored artifacts under bin/streamline-review-evidence, with earlier benchmark
 material under bin/streamline. All exported bytes are SHA-256 verified before
-owned qualification containers are removed. The review branch remains a draft;
-no PR merge or auto-merge is performed.
+owned qualification containers are removed. At 22514903d the review branch
+remained a draft. The target subsequently advanced; the final review below
+incorporates those changes and qualifies the affected code before merge.
 
-The target continued advancing after the bounded a209af827 integration. Final
-review uses the frozen source cohorts above; later SQL pool and commit-reply-loss
-changes require branch synchronization and focused qualification before an
-eventual merge. The PR remains open for review with that boundary explicit.
+## Merge review qualification
+
+The executable review incorporates experimental-accounting through 100bee62f,
+including actual SQL pool/commit-reply-loss recovery, literal checkpoints, shop
+feedback and death-recovery visibility. Documentation-only target commit
+33d23aeec is also incorporated without changing the qualified production tree.
+The maintained inventory is 893 entries: 867 automatic and 26 manual. The required
+integration matrix is 150 identities: 67 per pinned SQL engine and 16 shared rows.
+Added status journeys use the existing synthetic native death-disposition fixture
+and verify protected output, pagination, retained children, pending verification,
+delivery loss and reconciliation.
+
+The final review found and repaired these additional gaps:
+
+- Unittest class/module cleanup errors and skipped subtests could escape the
+  observer when a test discarded its result. Real child regressions now retain
+  those outcomes and reject a failed suite returning success.
+- A missing immutable migration baseline could reopen legacy DDL even when
+  history or applied-state evidence remained. Both corruption cases now fail
+  before legacy changes; the regression fails against the old migration owner.
+- Legacy SQL wrappers could remove an existing container after creation failed
+  with a name collision. Twenty-five wrappers now clean up only a validated ID
+  returned by their own successful creation. The actual-wrapper negative control
+  detects the old behavior; the repaired collision/setup-failure controls pass.
+- Runtime compatibility flattened sealed verifiers and broke sibling imports.
+  It now preserves their manifest-declared layout. Native literal qualification
+  accepts the same exact private namespaces as its Python guard, and its 15
+  negative cases independently satisfy the unrelated allowlist precondition.
+- Exact room recovery lacked its post-publication native observer. The matrix
+  now freezes a separate complete observer build, records its source/command/hash,
+  and requires exact graph/custody readback after two cold SQL boots.
+- The death-recovery test's reporter stub accepted string conversions that the
+  production reporter deliberately rejects. The strengthened test executes the
+  real reporter and fails on the original missing details. The correction renders
+  only bounded correlation/numeric/category metadata through a closed literal
+  alphabet. Generic string/pointer/write conversions remain refused.
+
+The source-bound final records are:
+
+| Source | Scope | Outcome |
+| --- | --- | --- |
+| c3a76403f | Formatting and maintained SQL/flat-file builds | Passed. |
+| c3a76403f | Full fast profile | 372 entries passed in 46.99 s; four documented partial integration skips, no whole-entry skips or pending entries. |
+| c3a76403f | Expanded affected native subset | All 74 attempted in 739.92 s: 70 passed and four stale fixtures failed; zero skips or pending entries. |
+| 9843fb1fe | Four repaired native fixtures plus root harness | All five entries passed in 57.65 s, with zero skips. Production tree and all frozen binary hashes are identical to the preceding cohort. |
+| c3a76403f | Affected SQL matrix | All 28 required rows attempted on MySQL 8.0.46 and MariaDB 10.11.19: 26 passed and two runtime-schema rows found one remaining hardcoded fixture path. Zero skips or pending rows. |
+| 9843fb1fe | Repaired runtime-schema rows | Both engines passed the complete upgrade, replay and corruption checks, with zero skips or pending rows. |
+| c3a76403f | Real flat-file journeys | Account recovery with SMTP enabled/disabled, all 13 creation scenarios, two first-session variants, three combat variants and ordinary/durable/uncertain deletion passed. |
+| 973fcf1cb | Complete persistent transport journey | All 16 witnesses passed in 580.77 s, including authenticated protocol replacement, failure recovery, bounds and watchdog behavior. |
+
+The four fixture repairs add the new reporting adapter and crypto dependency,
+update the observed player-facing deferred-delivery message, and supply literal
+checkpoint metadata. The last also asserts retained/open, held/closed and cleared
+admission states. They preserve the existing custody, failure, retry, nonblocking
+and exactly-once assertions. The final Windows writer/census/documentation cohort
+has 69 named passing cases and records its own clean source revision.
+
+The earlier final-review batch at 973fcf1cb retained two stale fast assertions, a
+missing native flags header and the three SQL fixture failures on both engines.
+Their revised owners pass in the final cohorts above. Original failures and the
+missing-baseline, container-collision and real-reporter negative controls remain
+retained alongside the repairs; none is overwritten with a successful rerun.
+
+The ignored merge-review-index.json verifies passing evidence for all 150 required
+integration identities across the recorded source cohorts. Each selected record
+has its named cases, required native witnesses, zero skips and hashed original
+log/result files. All 33 behavioral before/fault/after phases are checked against
+the fault catalog. This aggregation is not a complete final-head core or matrix
+run. The historic complete-core result and controlled cache benchmark
+above retain their original source and measurement boundaries.
+
+The writer census remains 2,818 occurrences and 2,759 unique mapped sites, with
+zero unmatched sites and no new runtime coverage claims from line remapping.
+Accounting release remains blocked: the inactive death/resurrection journey
+still reports 27 uncovered item events and two currency operations. Active food
+acceptance and interrupted effect publication remain unqualified.
