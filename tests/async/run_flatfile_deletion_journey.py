@@ -239,13 +239,23 @@ def run(server, inspector, fence_fault=None):
                     assert not (state / "domains/.critical-authority-transaction").exists()
                     client.close()
                     client = None
+                    # Force a new quest-state write in the same process. A stale
+                    # tracker would restore the erased account's old aliases.
+                    client = journey.MudClient(plain)
+                    journey.create_character(client, account="Eraseview", character="Observer")
+                    client.send("quit")
+                    client.expect("ACCOUNT MENU", timeout=30)
+                    assert (1, journey.CHARACTER) not in quest_aliases(retained.read_bytes()), "runtime cache restored an erased alias"
+                    client.close()
+                    client = None
                     stop()
                     process = boot()
                     client = journey.MudClient(plain)
                     client.expect("Please enter your account name:")
                     client.send(journey.ACCOUNT)
                     client.expect("is this correct?", timeout=30)
-                    assert not snapshot.exists() and not account_images()
+                    assert not snapshot.exists() and not any((state / name).exists() for name in original_accounts)
+                    assert (1, journey.CHARACTER) not in quest_aliases(retained.read_bytes())
                     stop()
                     print(f"[PASS] real flatfile {fence_fault} fence publication, persistent recovery refusal, non-cancellable request, pending-journal crash/restart, exact deletion retry and second cold restart")
                     return

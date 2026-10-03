@@ -20,6 +20,8 @@ uint32_t current_season_id();
 uint32_t content_revision();
 zone_story_quest_feature::service *service();
 bool persist(std::string *error = nullptr);
+/* Replace cached state only from authority; failed refresh disables publication. */
+bool refresh_after_erasure(std::string *error = nullptr);
 bool remember_character(struct char_data *player, std::string *error = nullptr);
 bool erase_character(uint32_t pid, std::string *error = nullptr);
 std::string render_daily(struct char_data *player, bool colors, std::string *error = nullptr);

@@ -22,6 +22,7 @@
 using namespace std;
 
 #include "core/prototypes.h"
+#include "world/character_maintenance.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -1242,6 +1243,7 @@ bool reset_one_outpost(Building *building)
 		GET_HIT(building->get_mob()) = building_types[BUILDING_OUTPOST - 1].hitpoints;
 
 	SET_POS(building->get_mob(), POS_STANDING + STAT_NORMAL);
+	character_maintenance_changed(building->get_mob());
 
 	// remove portals
 	building->clear_portal_op();

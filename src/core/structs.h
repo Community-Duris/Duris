@@ -1515,6 +1515,11 @@ struct char_data
 	 * makes the pointer safe to validate after scheduler-pool reuse. */
 	P_nevent world_activity_mundane_event;
 	unsigned long long world_activity_mundane_event_sequence;
+	/* Character maintenance uses the existing scheduler's owner cancellation. */
+	P_nevent character_maintenance_event;
+	unsigned long long character_maintenance_event_sequence;
+	unsigned long long character_maintenance_body_due;
+	bool character_maintenance_in_world;
 
 	struct char_player_data player; /* Normal data               */
 	struct player_disguise_data disguise;
