@@ -1657,7 +1657,8 @@
       "timeout_seconds": 900,
       "covers": [],
       "required_markers": [
-        "successful retry deleted the synthetic character exactly once; account remained usable after restart"
+        "successful retry deleted the synthetic character exactly once; account remained usable after restart",
+        "account-quest-cleanup: persistence refusal retained fenced identities across restart; retry erased credentials and aliases before safe name reuse"
       ]
     },
     {
