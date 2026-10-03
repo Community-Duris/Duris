@@ -615,7 +615,9 @@ def command(client, text: str, needles: Sequence[str], *, timeout: int = 30) -> 
 
 
 def gameplay(journey, wrapper: Path, character: str, pid: int, game_port: int) -> None:
-    client = journey.reconnect_character(game_port, expected_room="The Regression Arena")
+    client = journey.reconnect_character(
+        game_port, expected_room="The Regression Arena", account=journey.ACCOUNT, character=character,
+    )
     try:
         inventory = command(client, "inventory", ("recovered leather bag",), timeout=30)
         if any(item not in inventory for item in (
@@ -645,7 +647,9 @@ WHERE child.pid={pid} AND child.obj_uid=51002 AND child.container_id=bag.id
         if moved != "1":
             raise HarnessError("save did not persist inventory-to-container movement")
 
-        client = journey.reconnect_character(game_port, expected_room="The Regression Arena")
+        client = journey.reconnect_character(
+            game_port, expected_room="The Regression Arena", account=journey.ACCOUNT, character=character,
+        )
         command(client, "look in qabag", ("recovered wooden mace",), timeout=30)
         command(client, "get qamace qabag", ("You get", "Ok."), timeout=30)
         command(client, "remove sword", ("You stop using", "You remove", "Ok."), timeout=30)
@@ -689,7 +693,9 @@ def restart_and_replay(journey, wrapper: Path, character: str, pid: int,
     # The caller has already saved and disconnected.  Restart the actual game,
     # reconnect once, then stop it for an idempotent guarded replay.
     start_server()
-    client = journey.reconnect_character(GAME_PORT, expected_room="The Regression Arena")
+    client = journey.reconnect_character(
+        GAME_PORT, expected_room="The Regression Arena", account=journey.ACCOUNT, character=character,
+    )
     try:
         inventory = command(client, "inventory", ("recovered leather bag",), timeout=30)
         if "recovered leather bag" not in inventory or "recovered spellbook" not in inventory:
@@ -769,7 +775,9 @@ def main() -> int:
         server_started = False
         start_server()
         server_started = True
-        baseline = journey.reconnect_character(GAME_PORT, expected_room="The Regression Arena")
+        baseline = journey.reconnect_character(
+            GAME_PORT, expected_room="The Regression Arena", account=account, character=character,
+        )
         baseline.send("save")
         baseline.expect(f"Save complete for {character}.", timeout=30)
         baseline.send("quit")
@@ -821,7 +829,10 @@ def main() -> int:
         recovered = sql_one(wrapper, f"SELECT GROUP_CONCAT(obj_uid ORDER BY obj_uid) FROM player_items WHERE pid={pid} AND obj_uid IN ({expected_uids})")
         unresolved_coins = sql_one(wrapper, f"SELECT COUNT(*) FROM player_items WHERE pid={pid} AND obj_uid=51006")
         if delivery != expected_uids or recovered != expected_uids or unresolved_coins != "0":
-            raise HarnessError(f"backend recovery readback mismatch: delivery={delivery}, recovered={recovered}")
+            raise HarnessError(
+                f"backend recovery readback mismatch: delivery={delivery}, recovered={recovered}, "
+                f"unresolved_coins={unresolved_coins}"
+            )
         mark("backend delivery/player_items/artifact authority readback: verified")
         start_server()
         server_started = True
