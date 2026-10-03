@@ -24,18 +24,19 @@ else
 fi
 proxy_pid=
 ready_file=
+SQL_FIXTURE_CONTAINER_ID=
 cleanup() {
     if [[ -n "$ready_file" ]]; then rm -f -- "$ready_file"; fi
     if [[ -n "$proxy_pid" ]]; then kill "$proxy_pid" >/dev/null 2>&1 || true; fi
-    docker rm -f "$name" >/dev/null 2>&1 || true
+    [[ "${SQL_FIXTURE_CONTAINER_ID:-}" =~ ^[0-9a-f]{64}$ ]] && docker rm -f "$SQL_FIXTURE_CONTAINER_ID" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
 source "$ROOT/tests/async/_sql_fixture_network.sh"
 sql_fixture_network
-docker run -d --name "$name" \
+SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$name" \
     -e "$password_name=$password" -e "$host_name=%" \
-    "${SQL_FIXTURE_NETWORK[@]}" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}" >/dev/null
+    "${SQL_FIXTURE_NETWORK[@]}" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}")
 
 ready=0
 for _ in $(seq 1 120); do
