@@ -1489,6 +1489,15 @@ int stat_shops(int /*room*/, P_char ch, int cmd, char *arg)
 	else if (cmd == CMD_BUY)
 	{
 		arg = one_argument(arg, buf);
+		while (arg && isspace(static_cast<unsigned char>(*arg)))
+			++arg;
+		if (arg && *arg)
+		{
+			send_to_char(
+				"The epic shop accepts one purchase at a time without extra arguments; nothing was purchased or charged.\r\n",
+				ch);
+			return TRUE;
+		}
 		if (!atoi(buf))
 		{
 			send_to_char("Exactly what are you trying to buy?\r\n", ch);

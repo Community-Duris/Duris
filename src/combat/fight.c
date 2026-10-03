@@ -5529,7 +5529,7 @@ int melee_damage(P_char ch, P_char victim, double dam, int flags, struct damage_
 	struct damage_messages dummy_messages;
 	unsigned int skin;
 	int result, shld_result, ac;
-	float reduction;
+	float reduction = 0.0f;
 	bool dragonfist;
 
 	// float    f_cur_hit, f_max_hit, f_skill = 0;  <-- ill use those for max_str later
