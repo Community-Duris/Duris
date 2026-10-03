@@ -407,7 +407,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
             "player.flatfile_baseline_projection": ("src/core/files.c", {1873, 1874, 1875, 1876, 1878, 1879, 1880, 1881}),
             "player.legacy_flatfile_load": ("src/core/files.c", {2431, 2432, 2433, 2434}),
             "recovery.pet_cash_discard": ("src/core/files.c", {4696, 4697, 4698, 4699, 4701, 4702, 4703, 4704}),
-            "recovery.copyover_npc_gold_projection": ("src/persistence/copyover.c", {1641, 2152}),
+            "recovery.copyover_npc_gold_projection": ("src/persistence/copyover.c", {1465, 1991}),
         }
         current = {(row["path"], row["line"], row["family"])
                    for row in self.census}
@@ -545,11 +545,11 @@ class SplitEconomyActivationContract(unittest.TestCase):
             for site in writer.get("sites", []):
                 if site[0] == path:
                     owners.setdefault(tuple(site), set()).add(writer["id"])
-        self.assertEqual(owners[(path, 1222, "economic_submit")],
+        self.assertEqual(owners[(path, 1214, "economic_submit")],
                          {"tradeskill.bandage_durable_submission"})
-        self.assertEqual(owners[(path, 1019, "item_lifecycle")],
+        self.assertEqual(owners[(path, 1011, "item_lifecycle")],
                          {"tradeskill.bandage_durable_publication"})
-        self.assertEqual(owners[(path, 1238, "item_lifecycle")],
+        self.assertEqual(owners[(path, 1230, "item_lifecycle")],
                          {"tradeskill.bandage"})
         self.assertTrue(self.routes["tradeskill.bandage_durable_submission"]
                         ["blocking_policy_after_activation"]["must_block_on_activation"])
@@ -759,9 +759,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
         self.assertEqual(owners[("src/world/handler.c", 3385, "item_lifecycle")],
                          {"item.extraction"})
-        self.assertEqual(owners[("src/world/handler.c", 4001, "item_publication")],
+        self.assertEqual(owners[("src/world/handler.c", 3999, "item_publication")],
                          {"death.corpse_compaction_bone_grant"})
-        self.assertEqual(owners[("src/world/handler.c", 4370, "item_lifecycle")],
+        self.assertEqual(owners[("src/world/handler.c", 4368, "item_lifecycle")],
                          {"death.resurrection_money_pile"})
         for route_id in ("item.prototype_weight_probe", "item.creation_candidate_reject",
                          "coin.wallet_pile_stage_cleanup", "death.corpse_compaction_stage_cleanup"):
@@ -936,9 +936,9 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
         self.assertEqual(owners[("src/guild/artifact.c", 883, "item_publication")],
                          {"artifact.ground_restore_unqualified_creation"})
-        self.assertEqual(owners[("src/guild/artifact.c", 4973, "item_publication")],
+        self.assertEqual(owners[("src/guild/artifact.c", 4974, "item_publication")],
                          {"artifact.npc_restore_unqualified_creation"})
-        self.assertEqual(owners[("src/guild/artifact.c", 4265, "item_lifecycle")],
+        self.assertEqual(owners[("src/guild/artifact.c", 4266, "item_lifecycle")],
                          {"artifact.swap_replacement"})
         for route_id in ("artifact.cache_display_probe", "artifact.dummy_character_unload",
                          "artifact.swap_second_template_stage", "artifact.fixit_template_probe"):
@@ -1282,7 +1282,7 @@ class SplitEconomyActivationContract(unittest.TestCase):
                     owners.setdefault(tuple(site), set()).add(route["id"])
         self.assertEqual(current, owners.keys(), "review new conjuration item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[(path, 2280, "item_lifecycle")],
+        self.assertEqual(owners[(path, 2272, "item_lifecycle")],
                          {"spell.snakes_committed_arrow_cleanup"})
         for route_id in ("spell.room_creation_rejected_stage",
                          "spell.player_creation_rejected_stage"):

@@ -20,7 +20,8 @@ with tempfile.TemporaryDirectory(prefix="flat-account-fence-") as temporary:
     subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
                     "-g", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
                     "-fno-pie", "-no-pie", "-ffunction-sections", "-fdata-sections",
-                    "-Wl,--gc-sections", "-D__NO_MYSQL__",
+                    "-Wl,--gc-sections", "-Wl,--wrap=fsync", "-D__NO_MYSQL__",
+                    "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
                     "-DDURIS_FLATFILE_ACCOUNTING_TEST", "-Isrc", "-Isrc/no_mysql",
                     *sources, "-lcrypto", "-pthread", "-o", str(binary)], cwd=ROOT, check=True)
     subprocess.run([str(binary), str(Path(temporary) / "state")], cwd=ROOT, check=True,
