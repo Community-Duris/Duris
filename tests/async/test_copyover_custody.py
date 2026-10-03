@@ -119,6 +119,7 @@ unsigned mm_find_best_chunk(int, int, int) { std::abort(); }
 mm_ds *mm_create(const char *, size_t, size_t, unsigned) { std::abort(); }
 void mm_release(mm_ds *, void *) { std::abort(); }
 void clear_char(P_char) { std::abort(); }
+void register_character_runtime_id(P_char) { std::abort(); }
 void free_char(P_char) { std::abort(); }
 void nonblock(int) { std::abort(); }
 void check_cp437(P_desc) { std::abort(); }

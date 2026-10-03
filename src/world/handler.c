@@ -3614,10 +3614,8 @@ P_obj find_live_object(P_obj expected, uint64_t uid)
 
 P_char find_live_character(P_char expected, uint64_t runtime_id)
 {
-	for (P_char character = character_list; character; character = character->next)
-		if (character == expected && character->runtime_id == runtime_id)
-			return character;
-	return nullptr;
+	P_char character = find_character_by_runtime_id(runtime_id);
+	return character == expected ? character : nullptr;
 }
 
 bool corpse_release_room(P_obj corpse, int *room)
@@ -5586,6 +5584,10 @@ void extract_char(P_char ch)
 	}
 	const bool terminal_items_saved =
 		IS_PC(ch) && IS_SET(ch->runtime_flags, CHAR_RFLAG_TERMINAL_ITEMS_SAVED);
+	// A morph delegates to un_morph, which re-enters extraction for the body.
+	// Retire other identities before any teardown callbacks, including CTF cleanup.
+	if (!IS_MORPH(ch))
+		unregister_character_runtime_id(ch);
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 	while (affected_by_spell(ch, TAG_CTF))
 	{

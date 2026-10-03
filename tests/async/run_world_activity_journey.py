@@ -25,7 +25,7 @@ def cpu(path):
     return (int(fields[11]) + int(fields[12])) / os.sysconf("SC_CLK_TCK")
 
 
-def run(binary, output, population=1000, seconds=180, smoke=False):
+def run(binary, output, population=1000, seconds=180, smoke=False, runtime_index=False):
     with tempfile.TemporaryDirectory(prefix="activity-server-journey-") as temporary:
         root = Path(temporary); state = root / "state"; runtime = root / "runtime"
         state.mkdir(mode=0o700); (state / "domains").mkdir(mode=0o700); runtime.mkdir()
@@ -80,6 +80,17 @@ def run(binary, output, population=1000, seconds=180, smoke=False):
                 time.sleep(.1)
 
         results = []
+        def check_runtime_index(stage):
+            if not runtime_index:
+                return
+            client.send("toggle debug"); drain(client, .5)
+            client.send("world debug_events once")
+            report = client.expect("check_nevents: errors=", timeout=15) + drain(client, .5)
+            assert "check_nevents: errors=0 " in report, report
+            assert "character runtime index disagrees" not in journey.runtime_logs(runtime)
+            client.send("toggle debug"); drain(client, .5)
+            print(f"runtime index/list and scheduler consistent after {stage}", flush=True)
+
         try:
             boot(); client = journey.MudClient(port); journey.create_character(client)
             client.send("save"); client.expect("Save complete for Taverek.")
@@ -89,6 +100,7 @@ def run(binary, output, population=1000, seconds=180, smoke=False):
             status = journey.runtime_logs(runtime)
             indexed = re.findall(r"WORLD ACTIVITY: enabled=1 ready=1 indexed_npcs=(\d+)", status)
             assert indexed and int(indexed[-1]) >= population, indexed
+            check_runtime_index("boot population and player login")
             for enabled in (0, 1):
                 client.send(f"properties set world.activity.enabled {enabled}"); drain(client, 1)
                 client.send("properties show world.activity.enabled")
@@ -157,6 +169,12 @@ def run(binary, output, population=1000, seconds=180, smoke=False):
             status = journey.runtime_logs(runtime)
             matches = re.findall(r"WORLD ACTIVITY: enabled=1 ready=1 indexed_npcs=(\d+) players=(\d+) corpses=(\d+)", status)
             assert matches and int(matches[-1][0]) >= population and int(matches[-1][1]) == 1, matches
+            check_runtime_index("copyover reconstruction")
+            if runtime_index:
+                client.send("load mob 22801"); drain(client, .5)
+                check_runtime_index("staff NPC creation")
+                client.send("purge activitypredator"); drain(client, .5)
+                check_runtime_index("extraction before deferred memory release")
             mode = "population/reload smoke" if smoke else "matched sparse capture"
             print(f"real world activity server: {mode}, normal wandering callbacks, live disable/enable and copyover rebuild passed", flush=True)
         except Exception:
@@ -166,4 +184,5 @@ def run(binary, output, population=1000, seconds=180, smoke=False):
 
 
 if __name__ == "__main__":
-    run(Path(sys.argv[1]).resolve(), sys.argv[2], smoke="--smoke" in sys.argv[3:])
+    run(Path(sys.argv[1]).resolve(), sys.argv[2], smoke="--smoke" in sys.argv[3:],
+        runtime_index="--runtime-index" in sys.argv[3:])
