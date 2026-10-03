@@ -1,4 +1,5 @@
 #include "player/player_save_pipeline.h"
+#include "net/network_wakeup.h"
 #include "sql/sql_thread_init.h"
 #include "persistence/persistence_observability.h"
 #include <cstdlib>
@@ -302,6 +303,7 @@ void dispatcher_main()
 				try
 				{
 					durable_ready.push_back(std::move(snapshot));
+					network_wakeup_notify();
 					if (terminal_fence *fence = find_terminal_fence_locked(
 						    durable_ready.back().pid);
 					    fence &&

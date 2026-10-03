@@ -3,6 +3,7 @@
 #include "net/comm.h"
 #include "net/gmcp.h"
 #include "net/mccp.h"
+#include "net/network_readiness.h"
 #include "net/session_input.h"
 #include "net/telnet.h"
 #include "net/ttype.h"
@@ -65,7 +66,6 @@ long receivedbytes;
 static bool transaction_busy, creation_busy, active_item;
 static int closed, oob_dispatched, wire_result;
 static std::string delivered;
-static fd_set output_set;
 struct game_loop_pulse_context
 {
 	uint64_t loop_tick = 0;
@@ -284,7 +284,13 @@ struct connection
 				bytes += message[i] ^ mask[i % 4];
 		}
 		assert(send(sockets[1], bytes.data(), bytes.size(), 0) == (ssize_t)bytes.size());
+		// Each receive models a connection boundary; OOB logical tick budgets
+		// remain independently controlled by the scenarios below.
+		descriptor.network_input_remaining = descriptor.websocket ? WS_INPUT_BUFFER_SIZE :
+									    MAX_QUEUE_LENGTH - 1;
 		assert(process_input(&descriptor) == 0);
+		if (descriptor.websocket)
+			websocket_dispatch_pending_input(&descriptor);
 		check_accounting(descriptor.input);
 	}
 };
@@ -470,7 +476,7 @@ static void output_limits_and_disconnect(bool websocket)
 	assert(d->output.overflowed && queue_allocations == allocations);
 	check_accounting(d->output);
 	// A non-writable socket must still be closed at the safe output boundary.
-	FD_ZERO(&output_set);
+	d->network_revents = 0;
 	descriptor_list = d;
 	int before = closed;
 	game_loop_pulse_context ctx;
@@ -549,7 +555,7 @@ static void oob_budgets(bool websocket)
 	c.receive(message);
 	assert(d->oob_input_overflowed && oob_dispatched == before + (int)SESSION_OOB_MAX_ENTRIES);
 	descriptor_list = d;
-	FD_ZERO(&output_set);
+	d->network_revents = 0;
 	game_loop_pulse_context ctx;
 	before = closed;
 	run_output_phase(ctx);
