@@ -218,6 +218,16 @@ int main() {
     metadata = player_save_pipeline_diagnostic_copy(9001);
     assert(metadata.available && !metadata.pid_admission_open && metadata.retained_save);
     has_terminal = false;
+    literal_inventory_checkpoints[0].token.pid = 9001;
+    literal_inventory_checkpoints[0].held = true;
+    metadata = player_save_pipeline_diagnostic_copy(9001);
+    assert(metadata.available && !metadata.pid_admission_open && metadata.retained_save);
+    metadata = player_save_pipeline_diagnostic_copy(9002);
+    assert(metadata.available && metadata.pid_admission_open && !metadata.retained_save);
+    literal_inventory_checkpoints[0].held = false;
+    metadata = player_save_pipeline_diagnostic_copy(9001);
+    assert(metadata.available && metadata.pid_admission_open && metadata.retained_save);
+    literal_inventory_checkpoints[0] = {};
     {
         std::lock_guard<std::mutex> held(pipeline_mutex);
         std::thread reader([] { assert(!player_save_pipeline_diagnostic_copy(9001).available); });
@@ -268,11 +278,15 @@ int main() {
 }
 '''
 pipeline = (ROOT / "src/player/player_save_pipeline.c").read_text()
+literal_start = pipeline.index("struct literal_inventory_checkpoint")
+literal_globals = pipeline[literal_start:pipeline.index("#ifndef __NO_MYSQL__", literal_start)]
+lookup_start = pipeline.index("literal_inventory_checkpoint *find_literal_inventory_locked(")
+literal_lookup = pipeline[lookup_start:pipeline.index("#ifndef __NO_MYSQL__", lookup_start)]
 metadata_start = pipeline.index("player_save_pipeline_diagnostic player_save_pipeline_diagnostic_copy(")
 metadata_body = pipeline[metadata_start:pipeline.index("bool player_save_pipeline_loads_allowed(", metadata_start)]
 with tempfile.TemporaryDirectory(prefix="duris-staff-diagnosis-") as directory:
     source, binary = Path(directory) / "command.cpp", Path(directory) / "command"
-    source.write_text(COMMAND_PREAMBLE + metadata_body + body + COMMAND_MAIN)
+    source.write_text(COMMAND_PREAMBLE + literal_globals + literal_lookup + metadata_body + body + COMMAND_MAIN)
     subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-pthread",
                     "-Isrc", str(source), "-o", str(binary)], cwd=ROOT, check=True)
     reports = [json.loads(line) for line in subprocess.check_output([str(binary)], timeout=15).splitlines()]
