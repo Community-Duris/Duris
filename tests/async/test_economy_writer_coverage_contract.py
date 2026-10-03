@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import sys
 import unittest
+from _paths import extract_function
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -17,6 +18,18 @@ MATRIX = ROOT / "docs/persistence/economy_accounting/writer_coverage_matrix.json
 
 
 class SplitEconomyActivationContract(unittest.TestCase):
+    def source_site(self, path, signature, family, expression=None):
+        """Locate the reviewed operation by its owner and code, independent of spacing above it."""
+        source = (ROOT / path).read_text(encoding="utf-8")
+        if expression is None:
+            self.assertEqual(source.count(signature), 1, "review ambiguous source declaration")
+            offset = source.index(signature)
+        else:
+            body = extract_function(Path(path).name, signature)
+            self.assertEqual(body.count(expression), 1, "review changed or ambiguous source operation")
+            offset = source.index(body) + body.index(expression)
+        return path, source[:offset].count("\n") + 1, family
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.artifact = json.loads(MATRIX.read_text(encoding="utf-8"))
@@ -61,9 +74,12 @@ class SplitEconomyActivationContract(unittest.TestCase):
             ("src/cmd/actobj.c", 1336): "item.legacy_get",
             ("src/cmd/actobj.c", 6278): "item.legacy_give",
             ("src/cmd/actobj.c", 7908): "item.equipment_remove",
-            ("src/world/handler.c", 1856): "item.obj_to_char_admission",
-            ("src/world/handler.c", 2029): "item.obj_to_char_admission",
-            ("src/world/handler.h", 15): "macro.checked_item_publication_declaration",
+            self.source_site("src/world/handler.c", "obj_to_char_result obj_to_char_checked(",
+                             "item_publication")[:2]: "item.obj_to_char_admission",
+            self.source_site("src/world/handler.c", "void obj_to_char(", "item_publication",
+                             "(void)obj_to_char_checked(object, ch);")[:2]: "item.obj_to_char_admission",
+            self.source_site("src/world/handler.h", "obj_to_char_result obj_to_char_checked(",
+                             "item_publication")[:2]: "macro.checked_item_publication_declaration",
         }
         for row in checked:
             site = (row["path"], row["line"], row["family"])
@@ -777,11 +793,15 @@ class SplitEconomyActivationContract(unittest.TestCase):
         self.assertTrue(current)
         self.assertFalse(current - owners.keys(), "review new handler item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[("src/world/handler.c", 3385, "item_lifecycle")],
+        self.assertEqual(owners[self.source_site("src/world/handler.c", "void extract_obj(",
+                                                "item_lifecycle")],
                          {"item.extraction"})
-        self.assertEqual(owners[("src/world/handler.c", 3999, "item_publication")],
+        self.assertEqual(owners[self.source_site("src/world/handler.c", "void publish_corpse_release(",
+                                                "item_publication", "obj_to_room(compact_pile, room);")],
                          {"death.corpse_compaction_bone_grant"})
-        self.assertEqual(owners[("src/world/handler.c", 4368, "item_lifecycle")],
+        self.assertEqual(owners[self.source_site("src/world/handler.c", "void publish_corpse_resurrection(",
+                                                "item_lifecycle",
+                                                "P_obj money = create_money(payload.money[0], payload.money[1], payload.money[2],")],
                          {"death.resurrection_money_pile"})
         for route_id in ("item.prototype_weight_probe", "item.creation_candidate_reject",
                          "coin.wallet_pile_stage_cleanup", "death.corpse_compaction_stage_cleanup"):
