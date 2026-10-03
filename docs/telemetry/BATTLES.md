@@ -4,8 +4,10 @@ Enabled, qualified telemetry now captures shared-battle facts at native hostile,
 effective-healing support, presence, context and lifecycle boundaries. Its bounded
 association engine, portable definition-1 packets and independent kind-10 writer
 preserve battle history and conservative uncertainty. This establishes live
-association capture; exact shared contribution linkage, expanded context/control/
-prevention/faction sources and atomic balance projections remain under implementation.
+association capture. A bounded contribution accumulator and portable segment
+contract are qualified separately below; their native capture, durable linkage,
+expanded context/control/prevention/faction sources and atomic balance projections
+remain under implementation.
 [Implementation status](IMPLEMENTATION_STATUS.md) retains the full accepted scope
 and the actual personal-local gameplay qualification requirement.
 
@@ -207,6 +209,87 @@ complete later terminal packet does not repair an earlier missing mutation or
 establish a winner. Existing persistent kinds 1–9 and report definitions 1–3
 retain their meanings. The additive storage integration below preserves every
 earlier sealed migration.
+
+## Sealed contribution segments
+
+The pure `telemetry_battle_contribution` module aggregates exact source/recipient
+amounts in disjoint segments. Each segment identifies its battle, maintained
+live actor and owner, optional actual session/encounter, configuration and native
+context, mode/side basis, and first/last association revision and fact sequence.
+The owning collector must supply the exact effective association packet/context;
+positive references alone do not prove a complete or admitted packet. An
+unchanged receipt cannot authorize a changed context.
+
+The domain replay identity is `(battle producer boot/process, segment sequence)`.
+The sequence is allocated once across all retained battles and is independent of
+the later transport receipt. Actor/battle IDs are attribution, rather than
+segment deduplication keys. A changed owner, group revision, mode, configuration
+or battle ID seals the preceding amounts before a fresh segment starts at zero.
+No contribution totals transfer between alias IDs. Publication must resolve the
+immutable battle aliases and count each retained segment exactly once.
+
+Damage increments source dealt and recipient taken once. Healing retains
+attempted, effective, overhealing and recipient effective healing separately;
+attempted equals effective plus overhealing unless an explicitly flagged counter
+saturates. Control retains outgoing applications and recipient applications.
+Casting retains actual completions and actual aborts; an unfinished cast at a
+context/close boundary contributes one unresolved attempt and `UNCLOSED_TAIL`.
+It cannot become an invented abort or completion. Observed opponent-link time
+is named `engaged_target_usec`; it establishes neither incoming pressure,
+tanking, nor prevented damage. A segment's `battle_ended` boundary establishes no
+winner, objective or whole-battle victory.
+
+The availability mask names reviewed producer families: damage, healing,
+control, casting and engagement. An unset family's zero counters mean unknown.
+Availability does not establish complete historical coverage, and an absent
+actor stream does not prove a measured zero. Positive paired events preflight
+both actors and sequence/slot capacity before changing either counter. Both old
+segments close before either replacement starts, including a full 128-slot
+transition whose only reusable slot belongs to the target. Refused capacity,
+saturation, backward monotonic clocks, and rejected sink rows retain explicit
+quality. A failed finalized row is released rather than copied into a later
+segment; source continuity loss remains latched conservatively.
+
+A later decision clock may close an earlier observed prefix. Casting and
+engagement duration stop at the supplied observation, which must cover all
+retained actual actor observations; grace or decision latency adds no time.
+Signed UTC occurrence labels retain the existing `INT64_MIN` unknown sentinel,
+real zero/negative epoch labels and explicit clock-reversal quality. A UTC
+reversal or unavailable clock during the segment remains visible even if the
+final UTC label recovers.
+
+The module retains 128 battles and 64 metric actors per battle in 3,674,176
+bytes, guarded by a separate 4 MiB compile-time budget. A payload occupies 400
+bytes; its 65 named fields have an exact 385-byte network-order encoding with
+no ABI padding or reserved bytes. The independent Python contract and native
+decoder enforce the same widths and intrinsic invariants. These are module
+allocation bounds, not a measured server allocation or game-loop/writer
+performance result.
+
+```sh
+python3 tests/async/test_telemetry_battle_contributions.py
+python3 tests/async/test_telemetry_battle_contributions.py --sanitize
+python3 tests/async/test_telemetry_battle_contribution_contract.py
+```
+
+Ten executable journeys qualify counter conservation, actual complete association
+packets and aliases, PvP-to-mixed mode and configuration changes, changing
+pet owners/kinds, distinct NPC lifetimes, unresolved casting, observed-time
+censoring, backward clock/reference refusal, 64-actor/128-battle and sequence
+limits, saturation, sink failure, and allocation-free event/codec paths. Seven
+cross-language regressions round-trip every actual sealed field and qualify
+immutable layout, strict types/widths/lengths, semantic corruption, signed clocks,
+unknown metrics and logical keys. Normal and ASan/UBSan executions passed.
+
+This layer is compiled into the maintained server but is not yet allocated or
+called by the runtime. The existing record kinds 1–10, kind-8 encounter summaries,
+kind-10 association storage and report definitions retain their contracts. The
+next required integration connects this accumulator at authoritative gameplay
+and association boundaries, admits a separate typed contribution family through
+the native writer/replay/outage/incident contracts, and atomically publishes
+complete battle reports with source/linkage coverage. No timestamp join or
+prototype-based conversion of legacy kind-8 totals is acceptable. Actual
+personal-server journeys and performance qualification remain required.
 
 ## Durable shared-battle storage
 

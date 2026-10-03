@@ -23,7 +23,7 @@ work. A future production deployment is a separate operational decision.
 | Atomic identity effort and observed XP portfolio publication | Implemented and locally qualified | Migration 0060 adds exact bounded source retention tied to the cursor, a conserved publication header and two reports. Definition 3 consumes the reserved dated review and incident schema 2 in the same publication transaction. Both 60-step chains qualified the actual CLI, corrections, old generations, explicit unknown identity, source/publication rollback, real committed writes with lost acknowledgements, private roles, budget refusal, guarded reruns and exact fresh/restored fingerprints. Definitions 1/2 retain their earlier amounts. See [IDENTITY_PUBLICATION.md](IDENTITY_PUBLICATION.md). |
 | Durable shared-battle facts and loss review | Implemented and locally qualified | Migration 0061 maps all 70 canonical kind-10 fields with independent logical/transport replay, immutable configuration qualification and NULL family separation. Both 61-step chains qualified actual native packets, lost acknowledgements, header/scope/constraint refusals, exact quarantine evidence, guarded reruns, drift/restoration, private v3 review CLI and unchanged definitions 1/2/3. Outage v2 retains readable original v1 histories. Live capture and atomic battle publication remain separate requirements. See [BATTLES.md](BATTLES.md). |
 | Character/account/confirmed controller association | In progress | Dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation, authenticated source capture, identity wire handoff, reviewed SQL registration and immutable generation reservations are qualified. Atomic identity effort/report publication now consumes the reserved review and qualified ownership incident snapshot. Real personal source journeys and linkage coverage in the complete balance suites remain required. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
-| Shared battles and changing rosters | In progress | Native callbacks now capture shared hostile, effective-support and actual formal-presence relationships through the existing worker and kind-10 writer. Qualified source context, roster changes, teardown and censored lifecycle retain battle identity; configuration cuts preserve cumulative effort, and unavailable properties produce an explicit unknown-mode gap. Unique NPC/pet lifetimes, conservative sides, immutable aliases, canonical packets and independent replay/loss contracts remain qualified. Compact build/power/arena context, additional control/prevention and faction exposure sources, exact shared contribution linkage, atomic balance publication and actual personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
+| Shared battles and changing rosters | In progress | Native callbacks capture shared hostile, effective-support and actual formal-presence relationships through the existing worker and kind-10 writer. Qualified context, roster changes, teardown and censored lifecycle retain battle identity; configuration cuts preserve cumulative effort, and unavailable properties produce an unknown-mode gap. Unique NPC/pet lifetimes, conservative sides, immutable aliases, canonical packets and independent replay/loss remain qualified. A bounded disjoint contribution accumulator and 65-field native/Python codec are separately qualified. Its native capture/durable linkage, compact build/power/arena context, actual additional control/prevention and faction exposure sources, atomic balance publication and personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
 | Progression and portfolios | In progress | Observed XP/level projections and published exact account/controller effort unions and observed XP portfolio amounts are qualified. Rested/assistance provenance, milestone exposure/censoring, switching, canonical comparable rewards and rates remain required. |
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
@@ -766,3 +766,62 @@ PvE attempt/objective/reward, progression/rested/assistance/milestone/switching,
 four-suite/statistical, #487 compatibility and actual personal-local
 gameplay/persistence/performance requirements. Technical acceptance requires no
 production or staging access.
+
+## Qualified disjoint shared-battle contribution contract
+
+The pure contribution accumulator seals amounts under their exact effective
+battle/live actor/owner, native context, mode/side and configuration. First/last
+association references are retained; a changed context requires an advancing
+reference. The process-wide segment sequence supplies a separate logical replay
+key. Battle aliases never copy accumulated totals into another segment. Paired
+source/recipient events preflight capacity before either counter changes, and
+release both changed streams before creating replacements.
+
+Ten executable journeys passed normal and AddressSanitizer/UndefinedBehaviorSanitizer
+qualification. They cover source/recipient conservation, actual complete pure
+association packets/merges, PvP-to-mixed mode/configuration cuts, pets changing
+owners/kinds, distinct live NPC identities, casting completion/abort/unresolved
+partitions, opponent-link duration and censored observed prefixes, stale clocks/
+references, 64-actor and 128-battle atomic capacity, sequence exhaustion,
+saturation, source gaps and sink refusal. Allocation traps cover every exercised
+event and codec path. The separate fixed contribution state measures 3,674,176
+bytes; a payload measures 400 bytes, and its 65 canonical fields encode in 385
+bytes. Compile-time guards retain a 4 MiB module budget and the existing 512-byte
+payload/header bound.
+
+Seven independent native/Python contract regressions passed exact source-row
+round trips, immutable layout, domain keys, all declared numeric boundaries,
+strict types/widths/lengths and semantic corruption. Unknown producer families
+remain unknown rather than measured zero. Unknown UTC retains `INT64_MIN`;
+negative/zero epoch labels remain real labels. An interrupted cast remains
+unresolved rather than an invented abort. Opponent-link time cannot be
+relabeled as prevention or tanking. A close boundary supplies no victory.
+Intermediate UTC reversal/unknown observations retain uncertainty even when
+their final labels recover.
+
+The existing 12 battle packet regressions and pure association ASan/UBSan
+journeys passed. Legacy combat reconciliation, standalone headers and the frozen
+40-record/9-configuration/3-transition bridge passed. The maintained server
+built with `make -C src -j1`; new C/C++ code follows the repository formatter.
+
+```sh
+python3 tests/async/test_telemetry_battle_contributions.py
+python3 tests/async/test_telemetry_battle_contributions.py --sanitize
+python3 tests/async/test_telemetry_battle_contribution_contract.py
+python3 tests/async/test_telemetry_contract_headers.py
+make -C src
+```
+
+This module is compiled but not allocated/called by the runtime. Migration head
+61, record kinds 1–10 and report definitions 1/2/3 are unchanged. Native
+authoritative contribution capture, a separate typed durable contribution
+family with the existing replay/outage/incident contracts, exact association/
+alias/linkage coverage and atomic battle publication remain required. This
+qualification uses pure collector fixtures, not a running personal game server;
+it establishes no actual producer/control/prevention or performance coverage.
+All seven accepted identity/source-suite, full battle/context/population,
+PvE attempt/objective/interruption/reward, progression/rested/assistance/
+milestone/switching/comparable portfolio, four-suite/statistical, #487
+compatibility and personal-local gameplay/persistence/performance requirements
+retain their incomplete portions under #258. No production or staging access
+is needed for technical completion.
