@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/character_maintenance.h"
 #include "world/world_singletons.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
@@ -2792,6 +2793,8 @@ P_char read_mobile(int nr, int type, bool apply_mob_gold)
 
 	// The legacy list is linked early; publish identity only after initialization.
 	register_character_runtime_id(mob);
+	if (!mobile_probe_mode)
+		character_maintenance_enter(mob);
 	return (mob);
 }
 
@@ -4275,6 +4278,7 @@ void free_char(P_char ch)
 	}
 	unregister_character_runtime_id(ch);
 	++character_removal_generation;
+	character_maintenance_leave(ch);
 	if ((GET_OPPONENT(ch)))
 	{
 		logit(LOG_EXIT, "free_char: called with a non-extracted char");
