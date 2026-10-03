@@ -147,33 +147,8 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
 PLAYER_LOAD_DISPOSABLE_SCHEMA=1 GAME_ACCOUNT_NAME=coin_matrix_account GAME_ACCOUNT_CHARACTER_NAME=CoinMatrix \
     "$ROOT/bin/tests/player_load_repository_mysql_harness"
 
-# Exercise schema-2 item custody through the same pooled coordinator and
-# retained-receipt reconciliation path, using this runner's disposable schema.
-"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/shopkeeper_item_owner.sql"
-"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/collector_item_owner.sql"
-DB_NAME="$DB_NAME" "$ROOT/migrations/verify_collector_item_owner.sh"
-DB_NAME="$DB_NAME" "$ROOT/migrations/verify_item_ownership_schema.sh"
-export ITEM_TRANSFER_TEST_DB_NAME="$DB_NAME"
-SQL_DISPATCH_SOURCES_TEXT="$(python3 tests/async/_sql_dispatch_sources.py)"
-read -r -a SQL_DISPATCH_SOURCES <<< "$SQL_DISPATCH_SOURCES_TEXT"
-g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fdata-sections -Wl,--gc-sections -Isrc \
-    "${MYSQL_CFLAGS[@]}" tests/async/item_transfer_mysql_harness.cpp \
-    "${SQL_DISPATCH_SOURCES[@]}" \
-    src/persistence/critical_command.c \
-    src/world/epic_command.c \
-    src/economy/currency_command.c \
-    src/sql/item_extra_descr_codec.c \
-    tests/async/item_extra_descr_codec_sql_escape_stub.cpp \
-    src/combat/combat_outcome_command.c \
-    src/item/item_uid_allocator.c \
-    src/flatfile/flatfile_item_uid_allocator.c \
-    src/flatfile/flatfile_store.c \
-    src/persistence/persistence_mode.c \
-    src/player/player_snapshot_repository.c \
-    src/player/player_quarantine_recovery.c \
-    src/persistence/critical_command_journal.c \
-    src/persistence/critical_command_coordinator.c \
-    -Wl,--wrap=mysql_real_query "${MYSQL_LIBS[@]}" -lcrypto -lz -o "$ROOT/bin/tests/item_transfer_mysql_harness"
-# Match the dedicated owner's stack budget for its retained item fixtures.
-ulimit -s 65536
-"$ROOT/bin/tests/item_transfer_mysql_harness"
+# The complete item-transfer executable has its own required, isolated matrix
+# row on each engine. Running it again after the coin/load fixtures both repeats
+# every assertion and violates its clean-database precondition (retained mappings
+# can produce unrelated foreign-key failures). Keep its dedicated owner:
+# tests/async/run_item_transfer_schema_mysql.sh.

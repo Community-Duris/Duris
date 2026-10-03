@@ -71,6 +71,20 @@ STEP=0
 TOTAL=150
 FAILED=0
 
+# An adopted schema belongs to the immutable runner. Reapplying legacy
+# convergence DDL can undo later column/index definitions before adoption is
+# checked. Route any existing baseline to its validating owner; malformed or
+# partial immutable state must fail there without falling back to legacy DDL.
+adopted_baselines=0
+baseline_table=$("${MYSQL[@]}" -N -B -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='mud_schema_baselines';")
+if [[ "$baseline_table" == 1 ]]; then
+    adopted_baselines=$("${MYSQL[@]}" -N -B -e "SELECT COUNT(*) FROM mud_schema_baselines;")
+fi
+if ! [[ "$adopted_baselines" =~ ^[0-9]+$ ]]; then
+    printf 'immutable baseline inventory is malformed; no steps applied\n' >&2
+    exit 1
+fi
+
 run_sql() {
     local desc="$1"
     local sql="$2"
@@ -115,6 +129,7 @@ run_sql_file() {
 run_check() {
     local desc="$1"
     local check_script="$2"
+    shift 2
     STEP=$((STEP + 1))
     printf "[%2d/%d] %s... " "$STEP" "$TOTAL" "$desc"
 
@@ -122,7 +137,7 @@ run_check() {
     output_file=$(mktemp)
     if DB_HOST="$DB_HOST" DB_PORT="${DB_PORT:-3306}" DB_USER="$DB_USER" \
        DB_PASSWD="$DB_PASSWD" DB_NAME="$DB_NAME" \
-       "$check_script" >"$output_file" 2>&1; then
+       "$check_script" "$@" >"$output_file" 2>&1; then
         cat "$output_file"
     else
         echo "FAILED"
@@ -240,6 +255,11 @@ WHERE table_schema = DATABASE()
     echo "ok"
 }
 
+if [[ "$adopted_baselines" != 0 ]]; then
+    TOTAL=4
+    run_check "apply pending immutable migrations" python3 "$PROJECT_ROOT/scripts/migration_runner.py" run
+    run_check "verify adopted immutable schema" "$SCRIPT_DIR/verify_runtime_compatibility.sh" --schema-only
+else
 run_sql "set database to server default" "
 ALTER DATABASE \`$DB_NAME\` CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;"
 
@@ -3134,6 +3154,7 @@ ALTER TABLE ship_cargo_prices ENGINE=InnoDB;
 ALTER TABLE ship_cargo_market_mods ENGINE=InnoDB;"
 
 run_check "adopt verified legacy migration baseline" "$SCRIPT_DIR/adopt_migration_baseline.sh"
+fi
 # The current item contract includes columns installed by immutable migrations.
 # Verify it after that owner reaches its head, rather than against the earlier
 # legacy baseline, which intentionally lacks those later columns.

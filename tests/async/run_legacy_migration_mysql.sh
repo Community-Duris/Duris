@@ -137,6 +137,20 @@ if "${ITEM_VERIFY[@]}" >/dev/null 2>&1; then
     echo 'FAILED: current item-ownership verifier accepted a missing equipment slot' >&2
     exit 1
 fi
+drift_evidence=${DURIS_MATRIX_ROW_EVIDENCE:-"$ROOT/bin/migration-replay"}
+mkdir -p "$drift_evidence"
+drift_log=$(mktemp "$drift_evidence/adopted-schema-drift.XXXXXX.log")
+if MIGRATION_ENV_FILE="$CONFIG" "$ROOT/migrations/run_migration.sh" >"$drift_log" 2>&1; then
+    echo 'FAILED: migration replay accepted a damaged adopted schema' >&2
+    exit 1
+fi
+grep -q 'normalized metadata fingerprint mismatch' "$drift_log"
+remaining_slot=$(MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" -N -B "$MIGRATED_DB" -e \
+    "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='item_current_owner' AND column_name='equipment_slot'")
+remaining_head=$(MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" -N -B "$MIGRATED_DB" -e \
+    "SELECT migration_id FROM mud_schema_history ORDER BY sequence_number DESC LIMIT 1")
+[[ "$remaining_slot" == 0 && "$remaining_head" == "$actual_head" ]]
+echo 'adopted schema drift: rejected without legacy repair or history changes'
 MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$MIGRATED_DB" -e \
     "ALTER TABLE item_current_owner ADD COLUMN equipment_slot SMALLINT UNSIGNED NOT NULL DEFAULT 0 AFTER $slot_predecessor"
 "${ITEM_VERIFY[@]}"
