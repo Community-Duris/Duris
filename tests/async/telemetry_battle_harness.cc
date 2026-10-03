@@ -1,14 +1,19 @@
 #include "telemetry/telemetry_battle.h"
+#include "telemetry/telemetry_battle_contract.h"
 
 #include <cassert>
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <limits>
 #include <memory>
 #include <new>
+#include <string_view>
 #include <vector>
 
 bool forbid_battle_allocation = false;
+std::FILE *battle_contract_export = nullptr;
+unsigned battle_fixture_sequence = 0U;
 void *operator new(std::size_t size)
 {
 	if (forbid_battle_allocation)
@@ -39,6 +44,7 @@ struct fixture
 	std::unique_ptr<telemetry_battle_state> state = std::make_unique<telemetry_battle_state>();
 	std::vector<telemetry_battle_fact> facts;
 	int reject_after = -1;
+	unsigned fixture_id = ++battle_fixture_sequence;
 	fixture()
 	{
 		facts.reserve(5000U);
@@ -50,6 +56,13 @@ struct fixture
 bool sink(void *context, const telemetry_battle_fact &fact) noexcept
 {
 	auto &test = *static_cast<fixture *>(context);
+	assert(telemetry_battle_fact_is_valid(fact));
+	std::array<std::uint8_t, TELEMETRY_BATTLE_WIRE_BYTES> wire{};
+	assert(telemetry_battle_fact_encode(fact, wire.data(), wire.size()));
+	telemetry_battle_fact decoded{};
+	assert(telemetry_battle_fact_decode(wire.data(), wire.size(), &decoded));
+	assert(telemetry_battle_fact_same_key(fact, decoded) &&
+	       telemetry_battle_fact_equal(fact, decoded));
 	assert(fact.definition_version == TELEMETRY_BATTLE_DEFINITION_VERSION);
 	assert(fact.battle.producer.boot_id == 101U && fact.battle.sequence != 0U);
 	assert(fact.fact_count != 0U && fact.fact_index < fact.fact_count);
@@ -63,6 +76,13 @@ bool sink(void *context, const telemetry_battle_fact &fact) noexcept
 	if (test.reject_after > 0)
 		--test.reject_after;
 	test.facts.push_back(fact);
+	if (battle_contract_export)
+	{
+		std::fprintf(battle_contract_export, "{\"case\":%u,\"wire\":\"", test.fixture_id);
+		for (auto byte : wire)
+			std::fprintf(battle_contract_export, "%02x", byte);
+		std::fputs("\"}\n", battle_contract_export);
+	}
 	return true;
 }
 
@@ -132,6 +152,23 @@ void complete_packets(const fixture &test)
 	{
 		const auto &first = test.facts[start];
 		assert(start + first.fact_count <= test.facts.size());
+		assert(telemetry_battle_packet_is_valid(&first, first.fact_count));
+		telemetry_battle_packet_state packet{};
+		{
+			allocation_guard no_allocation;
+			for (std::size_t index = first.fact_count; index != 0U; --index)
+			{
+				const auto received = telemetry_battle_packet_receive(
+					&packet, test.facts[start + index - 1U]);
+				assert(received ==
+				       (index == 1U ? telemetry_battle_packet_result::complete :
+						      telemetry_battle_packet_result::pending));
+				assert(telemetry_battle_packet_receive(
+					       &packet, test.facts[start + index - 1U]) ==
+				       telemetry_battle_packet_result::duplicate_identical);
+			}
+		}
+		assert(packet.complete && packet.received == first.fact_count);
 		for (std::uint16_t index = 0U; index < first.fact_count; ++index)
 		{
 			const auto &row = test.facts[start + index];
@@ -477,10 +514,116 @@ void loss_clock_and_cap_refusals()
 					  1000U, 33, sink, &slots)
 		       .outcome == telemetry_battle_outcome::invalid);
 }
+
+void packet_loss_replay_and_malformed_values()
+{
+	fixture test;
+	const auto started =
+		observe(test, telemetry_battle_relation::hostile, player(1), player(2), 10U);
+	assert(test.facts.size() == 5U);
+	const auto original = test.facts;
+	telemetry_battle_packet_state packet{};
+	for (std::size_t index = 0U; index < 4U; ++index)
+		assert(telemetry_battle_packet_receive(&packet, original[index]) ==
+		       telemetry_battle_packet_result::pending);
+	assert(!packet.complete && packet.received == 4U);
+	assert(!telemetry_battle_packet_is_valid(original.data(), 4U));
+	assert(telemetry_battle_packet_receive(&packet, original[4]) ==
+	       telemetry_battle_packet_result::complete);
+	assert(telemetry_battle_packet_receive(&packet, original[4]) ==
+	       telemetry_battle_packet_result::duplicate_identical);
+	auto changed = original[1];
+	++changed.actor.actor.power_band;
+	assert(telemetry_battle_fact_is_valid(changed));
+	assert(telemetry_battle_fact_same_key(changed, original[1]) &&
+	       !telemetry_battle_fact_equal(changed, original[1]));
+	assert(telemetry_battle_packet_receive(&packet, changed) ==
+	       telemetry_battle_packet_result::duplicate_conflict);
+	assert(!packet.complete && packet.conflicted);
+	assert(telemetry_battle_packet_receive(&packet, original[1]) ==
+	       telemetry_battle_packet_result::duplicate_conflict);
+	telemetry_battle_packet_reset(&packet);
+	assert(packet.count == 0U && packet.received == 0U && !packet.conflicted);
+	assert(telemetry_battle_packet_receive(&packet, original[1]) ==
+	       telemetry_battle_packet_result::pending);
+	auto foreign = original[0];
+	++foreign.battle.sequence;
+	assert(telemetry_battle_packet_receive(&packet, foreign) ==
+	       telemetry_battle_packet_result::other_packet);
+	assert(packet.received == 1U && !packet.complete);
+	changed = original[1];
+	++changed.fact_sequence;
+	assert(telemetry_battle_packet_receive(&packet, changed) ==
+	       telemetry_battle_packet_result::duplicate_conflict);
+	assert(!telemetry_battle_packet_is_valid(nullptr, 5U));
+	assert(!telemetry_battle_packet_is_valid(original.data(), 0U));
+	assert(!telemetry_battle_packet_is_valid(original.data(),
+						 TELEMETRY_BATTLE_PACKET_MAX_FACTS + 1U));
+	auto malformed = original;
+	malformed[2].actor = malformed[1].actor;
+	assert(!telemetry_battle_packet_is_valid(malformed.data(), malformed.size()));
+	malformed = original;
+	malformed[3].actor.actor.power_band++;
+	assert(!telemetry_battle_packet_is_valid(malformed.data(), malformed.size()));
+	malformed = original;
+	for (auto &row : malformed)
+		row.observed_owner_count = 1U;
+	assert(!telemetry_battle_packet_is_valid(malformed.data(), malformed.size()));
+	malformed = original;
+	malformed.back().scope.config_id++;
+	assert(!telemetry_battle_packet_is_valid(malformed.data(), malformed.size()));
+	malformed = original;
+	for (std::size_t index = 2U; index < malformed.size(); ++index)
+	{
+		malformed[index].quality_flags |= TELEMETRY_QUALITY_QUEUE_DROP;
+		malformed[index].side_status = telemetry_battle_side_status::partial;
+		malformed[index].side = 0U;
+	}
+	assert(telemetry_battle_packet_is_valid(malformed.data(), malformed.size()));
+	malformed.back().quality_flags &= ~TELEMETRY_QUALITY_QUEUE_DROP;
+	assert(!telemetry_battle_packet_is_valid(malformed.data(), malformed.size()));
+	std::array<std::uint8_t, TELEMETRY_BATTLE_WIRE_BYTES> bytes{};
+	assert(telemetry_battle_fact_encode(original[1], bytes.data(), bytes.size()));
+	assert(bytes[7] == 101U && bytes[15] == 202U && bytes[23] == 1U);
+	telemetry_battle_fact decoded = original[1];
+	assert(!telemetry_battle_fact_decode(bytes.data(), bytes.size() - 1U, &decoded));
+	assert(telemetry_battle_id_is_zero(decoded.battle));
+	assert(!telemetry_battle_fact_encode(original[1], bytes.data(), bytes.size() + 1U));
+	assert(!telemetry_battle_fact_decode(nullptr, bytes.size(), &decoded));
+	assert(!telemetry_battle_fact_decode(bytes.data(), bytes.size(), nullptr));
+	auto invalid = original[1];
+	invalid.actor.actor.reserved[0] = 1U;
+	assert(!telemetry_battle_fact_encode(invalid, bytes.data(), bytes.size()));
+	invalid = original[1];
+	invalid.effort.pvp_usec = 1U;
+	assert(!telemetry_battle_fact_is_valid(invalid));
+	invalid = original[1];
+	invalid.actor.session.session_seq = 0U;
+	assert(!telemetry_battle_fact_is_valid(invalid));
+	invalid = original[1];
+	invalid.quality_flags |= TELEMETRY_QUALITY_QUEUE_DROP;
+	assert(!telemetry_battle_fact_is_valid(invalid));
+	close(test, started.battle, 20U);
+	malformed.assign(test.facts.end() - 3U, test.facts.end());
+	malformed[1].actor = malformed[0].actor;
+	assert(!telemetry_battle_packet_is_valid(malformed.data(), malformed.size()));
+	invalid = test.facts.back();
+	invalid.end_censored = 0U;
+	assert(!telemetry_battle_fact_is_valid(invalid));
+	complete_packets(test);
+}
 } // namespace
 
-int main()
+int main(int argc, char **argv)
 {
+	if (argc == 3)
+	{
+		assert(std::string_view(argv[1]) == "--export");
+		battle_contract_export = std::fopen(argv[2], "wb");
+		assert(battle_contract_export);
+	}
+	else
+		assert(argc == 1);
 	duel_reinforcement_support_and_departure();
 	group_presence_context_flee_rejoin_and_chase();
 	pve_mixed_pvp_and_pet_lifetimes();
@@ -489,6 +632,9 @@ int main()
 	source_scopes_roster_uncertainty_and_inline_expiry();
 	merge_at_capacity_and_sequence_exhaustion();
 	loss_clock_and_cap_refusals();
+	packet_loss_replay_and_malformed_values();
+	if (battle_contract_export)
+		assert(std::fclose(battle_contract_export) == 0);
 	std::printf("bounded battle association journeys passed: state=%zu fact=%zu bytes\n",
 		    sizeof(telemetry_battle_state), sizeof(telemetry_battle_fact));
 }

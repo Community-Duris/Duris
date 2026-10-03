@@ -22,7 +22,7 @@ work. A future production deployment is a separate operational decision.
 | Copyover ownership context and ownership-loss review | Implemented and locally qualified | Outer copyover 18/telemetry-v2 retains last observed account context without importing an old monotonic clock or using the token as current authority. Legacy framing, overflow/unknown context and actual reloaded-token/scope/deletion changes passed native and ASan/UBSan fixtures. Migration 0059 adds independent incident schema-v2 inputs for families 1–9 and reuses existing snapshots; both 59-step chains, CLI, capacity, replay, private roles, atomic snapshot rollback and exact fresh/restored fingerprints passed. Definition-3 integration is qualified below. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md) and [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
 | Atomic identity effort and observed XP portfolio publication | Implemented and locally qualified | Migration 0060 adds exact bounded source retention tied to the cursor, a conserved publication header and two reports. Definition 3 consumes the reserved dated review and incident schema 2 in the same publication transaction. Both 60-step chains qualified the actual CLI, corrections, old generations, explicit unknown identity, source/publication rollback, real committed writes with lost acknowledgements, private roles, budget refusal, guarded reruns and exact fresh/restored fingerprints. Definitions 1/2 retain their earlier amounts. See [IDENTITY_PUBLICATION.md](IDENTITY_PUBLICATION.md). |
 | Character/account/confirmed controller association | In progress | Dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation, authenticated source capture, identity wire handoff, reviewed SQL registration and immutable generation reservations are qualified. Atomic identity effort/report publication now consumes the reserved review and qualified ownership incident snapshot. Real personal source journeys and linkage coverage in the complete balance suites remain required. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
-| Shared battles and changing rosters | In progress | Native prerequisites retain producer-scoped formal group generations through appointment/departure and observe actual PCs on both accepted combat sides, including pet-owned PvP context and explicit NPC union guards. The pure bounded association module qualifies shared hostile/support/presence graphs, roster/mode/context cuts, pets, aliases, uncertainty and censored closure. Native value adapters qualify existing live NPC lifetimes, actual formal-roster revisions/presence and admitted current session/encounter links. Native battle callbacks, compact context/control/prevention/population sources, durable facts/contributions and atomic published projections remain required. See [BATTLES.md](BATTLES.md). |
+| Shared battles and changing rosters | In progress | Native prerequisites retain producer-scoped formal group generations through appointment/departure and observe actual PCs on both accepted combat sides, including pet-owned PvP context and explicit NPC union guards. The pure bounded association module qualifies shared hostile/support/presence graphs, roster/mode/context cuts, pets, aliases, uncertainty and censored closure. Native value adapters qualify existing live NPC lifetimes, actual formal-roster revisions/presence and admitted current session/encounter links. Portable definition-1 facts, canonical numeric fields, complete mutation packets and bounded replay receivers are now qualified across native/Python fixtures. Native battle callbacks, compact context/control/prevention/population sources, durable facts/contributions and atomic published projections remain required. See [BATTLES.md](BATTLES.md). |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
 | Progression and portfolios | In progress | Observed XP/level projections and published exact account/controller effort unions and observed XP portfolio amounts are qualified. Rested/assistance provenance, milestone exposure/censoring, switching, canonical comparable rewards and rates remain required. |
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
@@ -587,3 +587,54 @@ cuts and uncertainty, explicit shared contribution linkage, additive writer/
 schema/permissions/incident/lifecycle contracts and bounded atomic publication.
 The full #258 checklist and real personal-local gameplay/persistence/performance
 qualification remain required; no production or staging access is needed.
+
+## Qualified portable shared-battle fact and packet contract
+
+The definition-1 actor/battle value types are now independent of the pure
+association state. Intrinsic validators qualify producer/lifetime identity,
+optional session/encounter references, formal revisions, conserved effort,
+cardinality, clocks, loss and censored terminal boundaries.
+`telemetry_battle_fields.inc` declares 70 canonical numeric fields, encoded in
+366 bytes independently of C++ padding. Native/Python layouts and a retained
+semantic digest agree. Actor reserved bytes cannot be serialized as valid facts.
+
+Normal packets require their final cut; terminal packets require unique complete
+rosters and consistent active/owner counts. Scope, clocks, revision, counts and
+contiguous fact sequences agree across frames. Loss quality may increase during
+a packet but cannot disappear. The fixed native receiver retains at most 65 facts
+in less than 32 KiB, accepts reordered/identical retries and latches conflicting
+logical facts. Missing frames remain pending, and another packet cannot silently
+replace them. Python receivers preserve the same boundaries and copy their
+accepted/returned values.
+
+Ten cross-language contract regressions passed using actual native battle
+journeys, including all 65 terminal ordinals, callback loss, immutable encoding,
+negative clocks/PIDs, changing pet ownership, alias facts, width/type/length
+refusal, malformed packets and replay conflicts. The pure battle executable and
+native gameplay adapter executable passed AddressSanitizer/UndefinedBehaviorSanitizer.
+Standalone C++20 public headers and the existing 40-record/9-configuration/
+3-transition golden bridge passed.
+The maintained SQL server built with `make -C src -j1`, including the new
+contract object. Runtime lifecycle/copyover integration passed both SQL-header
+and client-free variants. All touched C/C++ and the canonical descriptor passed
+the repository formatter; the codec also asserts each field's actual native
+width and signedness at compile time.
+
+```sh
+python3 tests/async/test_telemetry_battle_contract.py
+python3 tests/async/test_telemetry_battles.py --sanitize
+python3 tests/async/test_telemetry_gameplay_adapters.py --sanitize
+python3 tests/async/test_telemetry_contract_headers.py
+python3 tests/async/test_telemetry_runtime_integration.py
+make -C src
+```
+
+This increment prepares durable integration. It does not activate a new
+persistent record kind or native battle callbacks, change sealed migrations,
+or publish balance results. The next step uses this descriptor through the
+existing queue/writer, with independent logical/transport replay identities,
+additive schema and versioned outage/incident handling, followed by atomic
+projection. Packet completeness does not repair cross-packet source gaps or
+prove ownership, outcome or alias-history coverage. All seven remaining full
+completion requirements in #258 remain open, including the four balance suites
+and real personal-local gameplay/persistence/performance qualification.

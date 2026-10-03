@@ -17,7 +17,8 @@ def main(sanitize=False):
         command = ['g++', '-std=c++20', '-Wall', '-Wextra', '-Werror', '-pedantic',
                    '-I', str(ROOT / 'src'),
                    str(ROOT / 'tests/async/telemetry_battle_harness.cc'),
-                   str(ROOT / 'src/telemetry/telemetry_battle.c'), '-o', str(executable)]
+                   str(ROOT / 'src/telemetry/telemetry_battle.c'),
+                   str(ROOT / 'src/telemetry/telemetry_battle_contract.c'), '-o', str(executable)]
         if sanitize:
             command += ['-g', '-fno-omit-frame-pointer', '-fsanitize=address,undefined']
         subprocess.run(command, check=True, timeout=120)

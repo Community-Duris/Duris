@@ -833,6 +833,135 @@ struct telemetry_ownership_payload
 	telemetry_quality_mask quality_flags;
 };
 
+/* Shared battle values have a separate actor/episode domain. Their durable
+ * tagged-record activation is qualified with the additive writer contract. */
+inline constexpr std::uint16_t TELEMETRY_BATTLE_DEFINITION_VERSION = 1U;
+inline constexpr std::uint16_t TELEMETRY_BATTLE_ACTOR_CONTEXT_VERSION = 1U;
+inline constexpr std::size_t TELEMETRY_BATTLE_MAX_ACTORS = 64U;
+inline constexpr std::uint32_t TELEMETRY_BATTLE_MAX_MUTATION_FACTS = 4096U;
+inline constexpr std::size_t TELEMETRY_BATTLE_MAX_FACTS_PER_MUTATION = 5U;
+inline constexpr telemetry_id TELEMETRY_BATTLE_NPC_GENERATION_TAG = 1ULL << 63U;
+inline constexpr std::uint16_t TELEMETRY_BATTLE_ROLE_COMBAT = 1U << 0U;
+inline constexpr std::uint16_t TELEMETRY_BATTLE_ROLE_SUPPORT = 1U << 1U;
+inline constexpr std::uint16_t TELEMETRY_BATTLE_ROLE_GROUP_PRESENCE = 1U << 2U;
+
+struct telemetry_combat_actor_ref
+{
+	telemetry_id actor_id;
+	telemetry_pid actor_pid;
+	telemetry_subject_id owner_subject_id;
+	telemetry_combat_actor_kind kind;
+	std::uint8_t reserved[3];
+	std::uint16_t power_band;
+};
+
+struct telemetry_battle_id
+{
+	telemetry_producer_id producer;
+	telemetry_sequence sequence;
+};
+
+struct telemetry_battle_actor_key
+{
+	telemetry_id id;
+	telemetry_combat_actor_kind kind;
+};
+
+struct telemetry_battle_actor_context
+{
+	telemetry_combat_actor_ref actor;
+	telemetry_encounter_id encounter;
+	telemetry_session_id session;
+	telemetry_dimensions dimensions;
+	telemetry_id group_key;
+	std::uint16_t group_revision;
+	std::uint16_t context_version;
+	telemetry_quality_mask quality_flags;
+};
+
+enum class telemetry_battle_relation : std::uint8_t
+{
+	hostile = 1,
+	support = 2,
+	group_presence = 3,
+};
+
+enum class telemetry_battle_side_status : std::uint8_t
+{
+	qualified_observed_graph = 1,
+	ambiguous = 2,
+	partial = 3,
+};
+
+enum class telemetry_battle_fact_kind : std::uint8_t
+{
+	start = 1,
+	actor_context = 2,
+	relation = 3,
+	cut = 4,
+	merge_alias = 5,
+	actor_summary = 6,
+	close = 7,
+};
+
+enum class telemetry_battle_close_reason : std::uint8_t
+{
+	unknown = 0,
+	inactivity = 1,
+	copyover = 2,
+	shutdown = 3,
+};
+
+/* Per-actor presence is distinct from input-derived activity, unique owner
+ * characters, controllers and canonical reward-credit membership. */
+struct telemetry_battle_effort
+{
+	telemetry_duration_usec present_usec;
+	telemetry_duration_usec contributor_usec;
+	telemetry_duration_usec pve_usec;
+	telemetry_duration_usec pvp_usec;
+	telemetry_duration_usec mixed_usec;
+	telemetry_duration_usec unknown_mode_usec;
+	telemetry_duration_usec outnumbered_owner_usec;
+	telemetry_duration_usec unknown_side_usec;
+};
+
+struct telemetry_battle_fact
+{
+	telemetry_battle_id battle;
+	telemetry_battle_id related_battle;
+	telemetry_encounter_source scope;
+	telemetry_revision revision;
+	std::uint32_t fact_sequence;
+	std::uint16_t fact_index;
+	std::uint16_t fact_count;
+	std::uint16_t definition_version;
+	telemetry_battle_fact_kind kind;
+	telemetry_battle_relation relation;
+	telemetry_battle_side_status side_status;
+	telemetry_encounter_mode mode;
+	telemetry_battle_close_reason close_reason;
+	std::uint8_t active;
+	std::uint8_t side;
+	std::uint8_t end_censored;
+	std::uint16_t roles;
+	std::uint16_t actor_count;
+	std::uint16_t active_actor_count;
+	std::uint16_t observed_owner_count;
+	std::uint32_t dropped_actor_count;
+	telemetry_battle_actor_context actor;
+	telemetry_battle_actor_key related_actor;
+	telemetry_battle_effort effort;
+	telemetry_monotonic_usec start_monotonic_usec;
+	telemetry_monotonic_usec at_monotonic_usec;
+	telemetry_monotonic_usec observed_through_monotonic_usec;
+	telemetry_monotonic_usec last_engagement_monotonic_usec;
+	telemetry_duration_usec inactivity_grace_usec;
+	telemetry_utc_usec at_utc_usec;
+	telemetry_utc_usec observed_through_utc_usec;
+	telemetry_quality_mask quality_flags;
+};
+
 union telemetry_record_payload
 {
 	telemetry_interval_payload interval;
@@ -1618,6 +1747,232 @@ telemetry_ownership_payload_is_valid(const telemetry_ownership_payload &value) n
 		value.source == telemetry_ownership_source::reconnect ||
 		value.source == telemetry_ownership_source::copyover ||
 		value.source == telemetry_ownership_source::ownership_changed);
+}
+
+constexpr bool telemetry_combat_actor_ref_is_valid(const telemetry_combat_actor_ref &actor) noexcept
+{
+	if (!telemetry_combat_actor_kind_is_valid(actor.kind) || actor.actor_id == 0U ||
+	    actor.reserved[0] != 0U || actor.reserved[1] != 0U || actor.reserved[2] != 0U)
+		return false;
+	if (actor.kind == telemetry_combat_actor_kind::player)
+		return actor.actor_pid > 0 && actor.owner_subject_id == actor.actor_id;
+	if (actor.kind == telemetry_combat_actor_kind::pet)
+		return actor.actor_pid == TELEMETRY_UNKNOWN_PID && actor.owner_subject_id != 0U;
+	return actor.actor_pid == TELEMETRY_UNKNOWN_PID && actor.owner_subject_id == 0U;
+}
+
+constexpr bool
+telemetry_battle_actor_context_is_valid(const telemetry_battle_actor_context &context) noexcept
+{
+	if (!telemetry_combat_actor_ref_is_valid(context.actor) ||
+	    !telemetry_quality_mask_is_valid(context.quality_flags) ||
+	    !telemetry_dimensions_are_valid(context.dimensions) ||
+	    context.actor.owner_subject_id >
+		    static_cast<telemetry_subject_id>(std::numeric_limits<telemetry_pid>::max()) ||
+	    context.context_version != TELEMETRY_BATTLE_ACTOR_CONTEXT_VERSION)
+		return false;
+	if (context.actor.kind == telemetry_combat_actor_kind::player)
+	{
+		if (context.actor.actor_id != static_cast<telemetry_id>(context.actor.actor_pid))
+			return false;
+	}
+	else if ((context.actor.actor_id & TELEMETRY_BATTLE_NPC_GENERATION_TAG) == 0U ||
+		 (context.actor.actor_id & ~TELEMETRY_BATTLE_NPC_GENERATION_TAG) == 0U)
+		return false;
+	if ((context.group_key & TELEMETRY_GROUP_GENERATION_TAG) != 0U &&
+	    ((context.group_key & ~TELEMETRY_GROUP_GENERATION_TAG) == 0U ||
+	     context.group_revision == 0U))
+		return false;
+	if ((context.group_key & TELEMETRY_GROUP_GENERATION_TAG) == 0U &&
+	    context.group_revision != 0U)
+		return false;
+	const bool empty_encounter = context.encounter.producer.boot_id == 0U &&
+				     context.encounter.producer.process_id == 0U &&
+				     context.encounter.sequence == 0U;
+	const bool empty_session = context.session.producer.boot_id == 0U &&
+				   context.session.producer.process_id == 0U &&
+				   context.session.session_seq == 0U;
+	return (empty_encounter || telemetry_encounter_id_is_valid(context.encounter)) &&
+	       (empty_session || (context.actor.kind == telemetry_combat_actor_kind::player &&
+				  telemetry_session_id_is_valid(context.session)));
+}
+
+constexpr bool telemetry_battle_id_is_zero(telemetry_battle_id id) noexcept
+{
+	return id.producer.boot_id == 0U && id.producer.process_id == 0U && id.sequence == 0U;
+}
+
+constexpr bool telemetry_battle_id_is_valid(telemetry_battle_id id) noexcept
+{
+	return telemetry_producer_id_is_valid(id.producer) && id.sequence != 0U;
+}
+
+constexpr bool telemetry_battle_actor_key_is_valid(telemetry_battle_actor_key actor) noexcept
+{
+	if (!telemetry_combat_actor_kind_is_valid(actor.kind))
+		return false;
+	if (actor.kind == telemetry_combat_actor_kind::player)
+		return actor.id > 0U &&
+		       actor.id <=
+			       static_cast<telemetry_id>(std::numeric_limits<telemetry_pid>::max());
+	return (actor.id & TELEMETRY_BATTLE_NPC_GENERATION_TAG) != 0U &&
+	       (actor.id & ~TELEMETRY_BATTLE_NPC_GENERATION_TAG) != 0U;
+}
+
+constexpr bool
+telemetry_battle_actor_context_is_zero(const telemetry_battle_actor_context &context) noexcept
+{
+	return context.actor.actor_id == 0U && context.actor.actor_pid == 0 &&
+	       context.actor.owner_subject_id == 0U &&
+	       static_cast<std::uint8_t>(context.actor.kind) == 0U &&
+	       context.actor.reserved[0] == 0U && context.actor.reserved[1] == 0U &&
+	       context.actor.reserved[2] == 0U && context.actor.power_band == 0U &&
+	       context.encounter.producer.boot_id == 0U &&
+	       context.encounter.producer.process_id == 0U && context.encounter.sequence == 0U &&
+	       context.session.producer.boot_id == 0U &&
+	       context.session.producer.process_id == 0U && context.session.session_seq == 0U &&
+	       context.dimensions.level_band == 0U && context.dimensions.class_id == 0U &&
+	       context.dimensions.race_id == 0U && context.dimensions.faction_id == 0U &&
+	       context.dimensions.zone_vnum == 0 && context.dimensions.group_size == 0U &&
+	       context.group_key == 0U && context.group_revision == 0U &&
+	       context.context_version == 0U && context.quality_flags == 0U;
+}
+
+constexpr bool telemetry_battle_effort_is_valid(const telemetry_battle_effort &effort) noexcept
+{
+	telemetry_duration_usec total = 0U;
+	const telemetry_duration_usec modes[] = { effort.pve_usec, effort.pvp_usec,
+						  effort.mixed_usec, effort.unknown_mode_usec };
+	for (auto value : modes)
+	{
+		if (value > std::numeric_limits<telemetry_duration_usec>::max() - total)
+			return false;
+		total += value;
+	}
+	return total == effort.present_usec && effort.contributor_usec <= effort.present_usec &&
+	       effort.outnumbered_owner_usec <= effort.pvp_usec &&
+	       effort.unknown_side_usec <= effort.present_usec;
+}
+
+/* One intrinsic fact is not proof that its mutation packet or battle is complete.
+ * Complete-packet validation and source/linkage coverage remain mandatory. */
+constexpr bool telemetry_battle_fact_is_valid(const telemetry_battle_fact &fact) noexcept
+{
+	if (!telemetry_battle_id_is_valid(fact.battle) ||
+	    fact.definition_version != TELEMETRY_BATTLE_DEFINITION_VERSION ||
+	    !telemetry_encounter_source_is_valid(fact.scope) || fact.scope.group_key != 0U ||
+	    fact.scope.zone_vnum != -1 || fact.revision == 0U || fact.fact_sequence == 0U ||
+	    fact.fact_count == 0U || fact.fact_index >= fact.fact_count ||
+	    fact.fact_sequence <= fact.fact_index ||
+	    fact.kind < telemetry_battle_fact_kind::start ||
+	    fact.kind > telemetry_battle_fact_kind::close ||
+	    fact.side_status < telemetry_battle_side_status::qualified_observed_graph ||
+	    fact.side_status > telemetry_battle_side_status::partial ||
+	    !telemetry_encounter_mode_is_valid(fact.mode) ||
+	    !telemetry_quality_mask_is_valid(fact.quality_flags) || fact.actor_count < 2U ||
+	    fact.actor_count > TELEMETRY_BATTLE_MAX_ACTORS ||
+	    fact.active_actor_count > fact.actor_count ||
+	    fact.observed_owner_count > fact.active_actor_count ||
+	    fact.last_engagement_monotonic_usec < fact.start_monotonic_usec ||
+	    fact.observed_through_monotonic_usec < fact.last_engagement_monotonic_usec ||
+	    fact.at_monotonic_usec < fact.observed_through_monotonic_usec ||
+	    fact.inactivity_grace_usec == 0U || fact.active > 1U || fact.side > 2U ||
+	    fact.end_censored > 1U ||
+	    (fact.roles & ~(TELEMETRY_BATTLE_ROLE_COMBAT | TELEMETRY_BATTLE_ROLE_SUPPORT |
+			    TELEMETRY_BATTLE_ROLE_GROUP_PRESENCE)) != 0U ||
+	    !telemetry_battle_effort_is_valid(fact.effort) ||
+	    fact.effort.present_usec >
+		    fact.observed_through_monotonic_usec - fact.start_monotonic_usec)
+		return false;
+	const bool terminal = fact.kind == telemetry_battle_fact_kind::actor_summary ||
+			      fact.kind == telemetry_battle_fact_kind::close;
+	if (terminal)
+	{
+		if (fact.close_reason < telemetry_battle_close_reason::inactivity ||
+		    fact.close_reason > telemetry_battle_close_reason::shutdown ||
+		    fact.end_censored != 1U ||
+		    (fact.quality_flags & TELEMETRY_QUALITY_UNCLOSED_TAIL) == 0U ||
+		    fact.fact_count != fact.actor_count + 1U ||
+		    (fact.kind == telemetry_battle_fact_kind::close ?
+			     fact.fact_index != fact.actor_count :
+			     fact.fact_index >= fact.actor_count))
+			return false;
+	}
+	else if (fact.close_reason != telemetry_battle_close_reason::unknown ||
+		 fact.end_censored != 0U ||
+		 fact.fact_count > TELEMETRY_BATTLE_MAX_FACTS_PER_MUTATION)
+		return false;
+	const bool actor_fact = fact.kind == telemetry_battle_fact_kind::actor_context ||
+				fact.kind == telemetry_battle_fact_kind::relation ||
+				fact.kind == telemetry_battle_fact_kind::actor_summary;
+	if (actor_fact)
+	{
+		if (!telemetry_battle_actor_context_is_valid(fact.actor) || fact.roles == 0U ||
+		    (fact.actor.quality_flags & ~fact.quality_flags) != 0U ||
+		    (!fact.active && fact.side != 0U) ||
+		    (fact.side_status != telemetry_battle_side_status::qualified_observed_graph &&
+		     fact.side != 0U) ||
+		    (fact.actor.encounter.sequence != 0U &&
+		     (fact.actor.encounter.producer.boot_id != fact.battle.producer.boot_id ||
+		      fact.actor.encounter.producer.process_id !=
+			      fact.battle.producer.process_id)) ||
+		    ((fact.roles &
+		      (TELEMETRY_BATTLE_ROLE_COMBAT | TELEMETRY_BATTLE_ROLE_SUPPORT)) == 0U &&
+		     fact.effort.contributor_usec != 0U))
+			return false;
+	}
+	else if (!telemetry_battle_actor_context_is_zero(fact.actor) || fact.roles != 0U ||
+		 fact.active != 0U || fact.side != 0U || fact.effort.present_usec != 0U)
+		return false;
+	const bool alias = fact.kind == telemetry_battle_fact_kind::merge_alias;
+	if (alias)
+	{
+		if (!telemetry_battle_id_is_valid(fact.related_battle) ||
+		    fact.related_battle.producer.boot_id != fact.battle.producer.boot_id ||
+		    fact.related_battle.producer.process_id != fact.battle.producer.process_id ||
+		    fact.related_battle.sequence <= fact.battle.sequence || fact.fact_index != 0U)
+			return false;
+	}
+	else if (!telemetry_battle_id_is_zero(fact.related_battle))
+		return false;
+	if (fact.kind == telemetry_battle_fact_kind::relation)
+	{
+		if (fact.relation < telemetry_battle_relation::hostile ||
+		    fact.relation > telemetry_battle_relation::group_presence ||
+		    !telemetry_battle_actor_key_is_valid(fact.related_actor) || !fact.active)
+			return false;
+	}
+	else if (static_cast<std::uint8_t>(fact.relation) != 0U || fact.related_actor.id != 0U ||
+		 static_cast<std::uint8_t>(fact.related_actor.kind) != 0U)
+		return false;
+	if (fact.kind == telemetry_battle_fact_kind::start &&
+	    (fact.fact_index != 0U || fact.revision != 1U || fact.fact_count != 5U))
+		return false;
+	if (fact.kind == telemetry_battle_fact_kind::cut && fact.fact_index + 1U != fact.fact_count)
+		return false;
+	if (fact.kind == telemetry_battle_fact_kind::actor_context &&
+	    fact.fact_index + 1U >= fact.fact_count)
+		return false;
+	if (fact.dropped_actor_count != 0U &&
+	    (fact.quality_flags & TELEMETRY_QUALITY_CARDINALITY_OVERFLOW) == 0U)
+		return false;
+	constexpr telemetry_quality_mask incomplete_graph =
+		TELEMETRY_QUALITY_QUEUE_DROP | TELEMETRY_QUALITY_CARDINALITY_OVERFLOW |
+		TELEMETRY_QUALITY_CONTEXT_OVERFLOW | TELEMETRY_QUALITY_CLOCK_DISCONTINUITY;
+	if ((fact.quality_flags & incomplete_graph) != 0U &&
+	    fact.side_status == telemetry_battle_side_status::qualified_observed_graph)
+		return false;
+	if (fact.kind == telemetry_battle_fact_kind::relation &&
+	    fact.relation != telemetry_battle_relation::support &&
+	    fact.actor.actor.actor_id == fact.related_actor.id)
+		return false;
+	if (terminal && (fact.close_reason == telemetry_battle_close_reason::inactivity ?
+				 fact.at_monotonic_usec - fact.last_engagement_monotonic_usec <
+					 fact.inactivity_grace_usec :
+				 fact.observed_through_monotonic_usec != fact.at_monotonic_usec ||
+					 fact.observed_through_utc_usec != fact.at_utc_usec))
+		return false;
+	return true;
 }
 
 /* The switch reads only the union member selected by header.kind. */

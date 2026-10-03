@@ -16,6 +16,9 @@ SRC = ROOT / "src"
 PUBLIC_HEADERS = (
     "telemetry/telemetry_types.h",
     "telemetry/telemetry_progression.h",
+    "telemetry/telemetry_battle.h",
+    "telemetry/telemetry_battle_contract.h",
+    "telemetry/telemetry_combat_summary.h",
     "telemetry/telemetry_runtime.h",
     "telemetry/telemetry_transport.h",
     "telemetry/telemetry_repository.h",

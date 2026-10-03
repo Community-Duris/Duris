@@ -11,6 +11,10 @@ Native actor, roster and actual-presence value adapters are also implemented
 and locally qualified. They supply values for the association module's pending
 capture wiring; they do not yet enqueue its facts.
 
+The portable definition-1 fact, mutation-packet and numeric wire contract is also
+implemented and locally qualified. This prepares durable writer/report
+integration; it does not activate a new record kind or persist shared battles.
+
 ## Association and actor identity
 
 A battle starts on a typed hostile interaction involving an observed player or
@@ -118,6 +122,59 @@ partial. No close path declares a winner, and no death or kill is promoted into
 a whole-battle victory. Reviewed death/escape/objective evidence remains part of
 the native integration requirement.
 
+## Portable facts, packets and replay
+
+The shared value types live in `telemetry_types.h` independently of the
+association engine. `telemetry_battle_contract.h` supplies exact-length numeric
+encoding, named-field replay equality and complete-packet validation. The
+definition-1 descriptor in `telemetry_battle_fields.inc` declares 70 ordered,
+typed fields. Their canonical representation is 366 bytes in network byte order,
+excluding ABI padding and reserved bytes. Signed unknown UTC and PID sentinels
+retain their meanings. Reserved actor bytes must be zero before encoding.
+The Python reader's field layout is checked against the same descriptor and a
+retained semantic digest; widths/order/signedness cannot drift silently.
+
+Intrinsic validation refuses invalid producer/lifetime identities, partial
+optional session/encounter keys, foreign current-encounter producers, fabricated
+formal revisions, unsupported definitions/enums, incorrect cardinalities, reversed
+clocks and nonconserved effort. Mode durations partition presence; contribution,
+unknown-side and outnumbered exposure cannot exceed their covered denominators.
+Queue/clock/cardinality/context loss cannot claim qualified sides. Terminal
+facts require explicit censored closure and the actual observed boundary, so
+inactivity grace remains separate from measured time.
+
+The logical fact key is the full battle producer/sequence plus fact sequence.
+It has a distinct domain from both legacy encounter identity and the enclosing
+transport's admitted replay key. Identical named values compare identically
+despite C++ padding; a changed canonical value under the same key conflicts.
+Writer activation must still enforce both logical and transport identities in
+durable storage before these facts enter the native stream.
+
+A complete normal packet ends in one final cut. Initial packets additionally
+prove one distinct hostile pair and consistent initial mode/owner counts.
+Contexts precede the relationship, repeated context identities are refused and
+an alias requires a real bridge relation. Terminal packets contain one unique
+summary per retained actor plus their final close, with checked active-actor and
+distinct owner-character counts. Every packet shares its scope, revision, clocks
+and counts, and has contiguous ordered fact sequences/ordinals. Quality can grow
+after a sink failure within one mutation; requiring uniform side status would
+hide that loss. Quality cannot disappear before the final cut.
+
+The native packet receiver owns at most 65 facts in a fixed buffer below 32 KiB;
+the Python receiver uses the same explicit 65-fact bound. They accept reordered
+frames and identical retries, preserve pending packets when another revision
+arrives, and latch conflicts until explicit reset. Missing initial frames, middle
+frames or the final cut never become complete. Input and returned Python values
+are copied, preventing later mutation from rewriting an accepted packet.
+
+Packet completeness is one prerequisite. Cross-packet gaps, retired aliases,
+source/contribution linkage, dated identity attribution, outcome evidence and
+incident coverage still need the durable capture/publication integration. A
+complete later terminal packet does not repair an earlier missing mutation or
+establish a winner. Existing persistent kinds 1–9, schema and report definitions
+1–3 retain their meanings; this portable increment changes none of their stored
+records or sealed migrations.
+
 ## Bounds and qualification
 
 The state retains 128 battles, 64 actors per battle, a 64-entry terminal cache,
@@ -141,6 +198,8 @@ performance or representative racewar capacity.
 ```sh
 python3 tests/async/test_telemetry_battles.py
 python3 tests/async/test_telemetry_battles.py --sanitize
+python3 tests/async/test_telemetry_battle_contract.py
+python3 tests/async/test_telemetry_contract_headers.py
 python3 tests/async/test_telemetry_group_hooks.py
 python3 tests/async/test_telemetry_combat_hooks.py
 python3 tests/async/test_telemetry_gameplay_adapters.py --sanitize
@@ -154,6 +213,15 @@ modes, pets/owner loss, distinct NPC generations, retained aliases, exact
 inactivity bounds, inline expiry accounting, callback loss, row/actor/slot caps,
 and sequence exhaustion. Complete packets and duration conservation passed;
 normal, AddressSanitizer and UndefinedBehaviorSanitizer executions passed.
+
+Ten additional contract regressions exercise the actual native fixtures through
+the independent Python parser and back into native verification. They qualify
+exact numeric round trips, immutable layout, every retained real mutation packet,
+accepted-frame loss, reordered/identical/conflicting replay, all 65 terminal
+ordinals, changing in-packet quality, semantic/packet corruption, width/type/
+length refusals, unknown clocks, NPC/pet attribution and copied receiver values.
+Standalone public headers retain C++20 compilation and the earlier golden
+record fixtures. Allocation traps include the native codec and packet receiver.
 
 The next integration gate is registering the qualified native actor/roster/
 presence values at reviewed hostile/support/control/prevention boundaries;

@@ -459,37 +459,6 @@ telemetry_battle_update refused(telemetry_battle_outcome outcome) noexcept
 
 } // namespace
 
-bool telemetry_battle_actor_context_is_valid(const telemetry_battle_actor_context &context) noexcept
-{
-	if (!telemetry_combat_actor_ref_is_valid(context.actor) ||
-	    !telemetry_quality_mask_is_valid(context.quality_flags) ||
-	    context.dimensions.zone_vnum < -1 ||
-	    context.context_version != TELEMETRY_BATTLE_ACTOR_CONTEXT_VERSION)
-		return false;
-	if (context.actor.kind == telemetry_combat_actor_kind::player)
-	{
-		if (context.actor.actor_id != static_cast<telemetry_id>(context.actor.actor_pid))
-			return false;
-	}
-	else if ((context.actor.actor_id & TELEMETRY_BATTLE_NPC_GENERATION_TAG) == 0U ||
-		 (context.actor.actor_id & ~TELEMETRY_BATTLE_NPC_GENERATION_TAG) == 0U)
-		return false;
-	if ((context.group_key & TELEMETRY_GROUP_GENERATION_TAG) != 0U && !formal_group(context))
-		return false;
-	if ((context.group_key & TELEMETRY_GROUP_GENERATION_TAG) == 0U &&
-	    context.group_revision != 0U)
-		return false;
-	const bool empty_encounter = context.encounter.producer.boot_id == 0U &&
-				     context.encounter.producer.process_id == 0U &&
-				     context.encounter.sequence == 0U;
-	const bool empty_session = context.session.producer.boot_id == 0U &&
-				   context.session.producer.process_id == 0U &&
-				   context.session.session_seq == 0U;
-	return (empty_encounter || telemetry_encounter_id_is_valid(context.encounter)) &&
-	       (empty_session || (context.actor.kind == telemetry_combat_actor_kind::player &&
-				  telemetry_session_id_is_valid(context.session)));
-}
-
 bool telemetry_battle_state_init(telemetry_battle_state *state, telemetry_producer_id producer,
 				 telemetry_encounter_source scope,
 				 telemetry_duration_usec inactivity_grace_usec) noexcept
