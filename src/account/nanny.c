@@ -1536,6 +1536,7 @@ void enter_game(P_desc d)
 	ch->desc = d;
 	ch->next = character_list;
 	character_list = ch;
+	register_character_runtime_id(ch);
 
 	// Need to walk through ch->affects, and drop AFFTYPE_OFFLINE timers.
 	for (afp1 = ch->affected; afp1; afp1 = afp2)

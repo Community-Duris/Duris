@@ -337,12 +337,10 @@ query_result apply_replacement_rows(MYSQL *connection, const player_snapshot &sn
 						  << ",0))";
 				      });
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_TIMERS))
-		result = replace_rows(connection, snapshot.pid, "player_timers",
-				      "timer_id,timer_value", snapshot.timers,
-				      [](auto &sql, const auto &row) {
-					      sql << row.index << ",FROM_UNIXTIME(NULLIF("
-						  << row.value << ",0))";
-				      });
+		result = replace_rows(
+			connection, snapshot.pid, "player_timers", "timer_id,timer_value",
+			snapshot.timers, [](auto &sql, const auto &row)
+			{ sql << row.index << ",FROM_UNIXTIME(NULLIF(" << row.value << ",0))"; });
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_UNDEAD_SLOTS))
 		result = replace_rows(connection, snapshot.pid, "player_undead_slots",
 				      "circle,slots", snapshot.undead_slots,
@@ -2077,9 +2075,8 @@ player_snapshot_repository_write_retained_death(MYSQL *connection, const player_
 						player_revision_t source_revision)
 {
 	using outcome = player_death_terminal_write_outcome;
-	const auto failed = [](unsigned int code) {
-		return player_death_terminal_write_result{ outcome::failed, code ? code : EIO };
-	};
+	const auto failed = [](unsigned int code)
+	{ return player_death_terminal_write_result{ outcome::failed, code ? code : EIO }; };
 	if (!connection)
 		return failed(EINVAL);
 #ifndef __NO_MYSQL__

@@ -124,8 +124,14 @@ its 180-second deadline, and the isolated publication-ACK harness omitted the
 new observation bindings. The ACK harness now executes the current production
 function with those bindings and asserts command/outcome traces across blocked
 checkpoint, failure and retry; its focused test passes without changing native
-code or checkpoint semantics. Formatter/full-world/current-head broad gates
-remain open. The separate unchanged-source inspector build takes 98.804 seconds;
+code or checkpoint semantics. The two native formatting violations are now
+repaired; the full formatting contract, strict SQL/flatfile/pfile builds and
+54 writer contracts pass at native source `a132651b...`. Full-world and fresh
+current-head broad gates remain open. The formatter milestone was then integrated
+with remote PRs #684/#685; both strict server profiles, pfile, the full formatting
+contract, account-worker/watchdog regressions and refreshed writer contracts pass
+at native source `44528a2f...`. These are separate combined-source checks.
+The separate unchanged-source inspector build takes 98.804 seconds;
 that compile result does not replace the failed full-world journey.
 
 The later frozen `79540e65d` broad run also finished: 826 passed, 11 skipped
@@ -300,6 +306,19 @@ native repository APIs. Missing authority retains the saved character and quest
 alias; playable retry, deletion once, quest-alias erasure and cold restart pass
 without changing production fences. Retained economic identity, all other alias
 paths and the wider R8 gates remain open; the October 2 status records hashes.
+
+Remote PR #686 session-queue changes are also integrated locally. The current
+formatter/native queue and writer-contract checks pass. Copied native .d targets
+still name prior QA directories, so cached integrated binaries do not qualify
+new descriptor headers. Fresh strict production SQL/flatfile/pfile builds pass
+from empty object directories. Real inactive SQL deletion journeys pass on both
+engines; the existing flatfile character deletion journey also passes. The
+flatfile pre-fence admission repair now passes the real menu journey, sanitizer
+owner tests, both strict backend builds and all ten native recovery checks. A native fault
+probe establishes an additional committed-fence acknowledgement defect; it
+remains open. Current broad and full-feature qualification remain open. The unchanged frozen full-world retry passes inspector
+compilation but times out in its 600-second server-build stage before gameplay.
+No deadline was increased or gate waived; see the October 2 review status.
 
 ## Nonnegotiable invariants
 

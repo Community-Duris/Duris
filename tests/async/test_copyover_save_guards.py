@@ -29,6 +29,7 @@ save = body.index("persistence_save_character_terminal")
 flush = body.index("persistence_flush_all_character_saves")
 drain = body.index("player_save_pipeline_drain")
 publish = body.index("rename(copyover_tmp, COPYOVER_FILE)")
+codec = (SRC / "persistence/copyover_codec.c").read_text()
 close = body.index("close(d->descriptor)")
 prepare_client = body.index("copyover_prepare_socket(d->descriptor)")
 progress_notice = body.index("*** Copyover in progress... ***")
@@ -107,15 +108,17 @@ checks = {
     "copyover keeps materialized inventory attached": "reset_char(ch);" not in recover,
     "descriptor capture requires the player's actual pet link":
         "GET_MASTER(f->follower) == ch" in descriptor_capture,
-    "copyover v17 appends retry state while retaining old descriptor sizes":
-        "#define COPYOVER_VERSION 17" in (SRC / "copyover.h").read_text() and
-        "offsetof(copyover_desc, death_retry_pending)" in copyover and
-        "copyover_desc_bytes_for_version(header.version)" in copyover and
-        "fread(&desc_entry, desc_bytes, 1, fp)" in copyover,
-    "copyover v16 mob layout remains intact":
-        "if (version < 16)" in copyover and "if (header.version < 16)" in copyover,
+    "portable file validates completely before descriptor allocation":
+        "#define COPYOVER_VERSION 18" in (SRC / "copyover.h").read_text() and
+        recover.index("copyover_codec_read(fp, &state") < recover.index("mm_get(dead_desc_pool)"),
+    "legacy v12-v17 reads require the known ABI":
+        "version < 12 || version > 17" in codec and
+        "copyover_codec_legacy_abi_compatible()" in codec,
+    "file and directory sync precede socket mutation":
+        body.index("copyover_codec_finish(fp") < publish <
+        body.index("copyover_codec_sync_parent(COPYOVER_FILE)") < prepare_client,
     "death retry state is validated and restored after player placement":
-        "invalid death retry state in desc" in copyover and
+        "invalid descriptor identity or death retry state" in codec and
         recover.index("player_load_pets_place(ch);") <
         recover.index("death_extract_retry_restore(ch,") <
         recover.index("raw_write_to_fd(d->descriptor"),
@@ -131,7 +134,7 @@ assert all(checks.values())
 
 HARNESS = r'''
 #include "core/utils.h"
-#include "persistence/copyover.h"
+#include "persistence/copyover_codec.h"
 #include <cassert>
 #include <cstdlib>
 #include <cstdio>
@@ -189,10 +192,21 @@ int main()
     descriptor.character = &owner;
     FILE *file = tmpfile();
     assert(file);
+    copyover_header header = {};
+    header.num_descriptors = 1;
+    const int listeners[3] = {-1, -1, -1};
+    assert(copyover_codec_begin(file, header, listeners));
     assert(write_desc_entry(file, &descriptor));
+    telemetry_copyover_entry telemetry = {};
+    telemetry.fd = 10;
+    strcpy(telemetry.player_name, "owner");
+    assert(copyover_codec_write(file, telemetry));
+    assert(copyover_codec_finish(file, nullptr));
     rewind(file);
-    copyover_desc saved = {};
-    assert(fread(&saved, sizeof(saved), 1, file) == 1);
+    copyover_decoded_state state;
+    const char *error = nullptr;
+    assert(copyover_codec_read(file, &state, &error));
+    copyover_desc saved = state.descriptors[0];
     fclose(file);
     assert(saved.num_pets == 1);
     assert(saved.pet_vnums[0] == 1201);
@@ -200,10 +214,13 @@ int main()
     retry_pending = true;
     file = tmpfile();
     assert(file);
+    assert(copyover_codec_begin(file, header, listeners));
     assert(write_desc_entry(file, &descriptor));
+    assert(copyover_codec_write(file, telemetry));
+    assert(copyover_codec_finish(file, nullptr));
     rewind(file);
-    saved = {};
-    assert(fread(&saved, sizeof(saved), 1, file) == 1);
+    assert(copyover_codec_read(file, &state, &error));
+    saved = state.descriptors[0];
     fclose(file);
     assert(saved.death_retry_pending == 1);
     assert(saved.death_retry_delay == 8);
@@ -215,7 +232,10 @@ with tempfile.TemporaryDirectory(prefix="duris-copyover-pet-owner-") as director
     binary = Path(directory) / "copyover_pet_owner"
     source.write_text(HARNESS)
     subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-Isrc",
-                    str(source), "-lbsd", "-o", str(binary)], cwd=root, check=True)
+                    str(source), "src/persistence/copyover_codec.c", "src/world/world_recovery_codec.c",
+                    "src/world/generated_npc_state.c", "src/player/pet_restore_state.c",
+                    "src/item/item_transfer_command.c", "-ffunction-sections", "-fdata-sections",
+                    "-Wl,--gc-sections", "-lbsd", "-o", str(binary)], cwd=root, check=True)
     subprocess.run([str(binary)], check=True)
 
 print("copyover save guards passed")

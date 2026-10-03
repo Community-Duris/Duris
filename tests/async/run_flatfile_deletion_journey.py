@@ -101,6 +101,43 @@ def run(server, inspector):
                 original_quest_state = retained.read_bytes()
                 assert (1, journey.CHARACTER) in quest_aliases(original_quest_state), "quest alias was never retained"
                 original_snapshot = snapshot.read_bytes()
+
+                # The native account+membership authority must stay usable when
+                # accounting metadata refuses a new permanent deletion fence.
+                client.send("7")
+                client.expect("Re-enter your account password")
+                client.send(journey.PASSWORD)
+                client.expect("PERMANENT ACCOUNT DELETION", timeout=30)
+                client.expect("CANCEL:")
+                account_root = state / "identities/accounts"
+                def account_images():
+                    return {str(p.relative_to(state)): p.read_bytes()
+                            for p in account_root.rglob("*")
+                            if p.is_file() and not p.name.endswith(".lock")}
+                original_accounts = account_images()
+                assert original_accounts, "native account authority missing"
+                fault = state / "economic-evidence/corrupt-account-fence.fixture"
+                assert not fault.exists(), "owned admission fault already exists"
+                fault.write_bytes(b"synthetic corrupt accounting metadata")
+                fault.chmod(0o600)
+                try:
+                    client.send(journey.ACCOUNT)
+                    client.expect("Account deletion could not establish its durable fence;", timeout=30)
+                    client.expect("ACCOUNT MENU")
+                    assert account_images() == original_accounts, "admission refusal fenced native account/membership"
+                    assert snapshot.read_bytes() == original_snapshot, "account admission refusal changed player snapshot"
+                    assert retained.read_bytes() == original_quest_state, "account admission refusal erased quest alias"
+                finally:
+                    fault.unlink()
+                client.send("0")
+                client.close()
+                client = journey.reconnect_character(plain)
+                client.send("save")
+                client.expect("Save complete for " + journey.CHARACTER + ".", timeout=30)
+                client.send("quit")
+                client.expect("ACCOUNT MENU", timeout=30)
+                original_snapshot = snapshot.read_bytes()
+                original_quest_state = retained.read_bytes()
                 summon_catalog = state / "domains/account_reward_summon_catalog"
                 held_catalog = root / "held-summon-catalog"
                 summon_catalog.rename(held_catalog)

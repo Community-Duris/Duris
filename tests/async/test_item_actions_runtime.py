@@ -46,7 +46,6 @@ P_char fixture_pet_master = nullptr;
 #define clock_gettime nevent_test_clock_gettime
 #include "item/item_actions.c"
 #undef clock_gettime
-#include "account/character_identity.c"
 #include "magic/spells.h"
 #include <cassert>
 
@@ -87,6 +86,7 @@ static void depart(P_char ch) {
 }
 static void remove_character(P_char ch) {
     item_actions_character_leaving(ch);
+    unregister_character_runtime_id(ch);
     disarm_char_nevents(ch, nullptr);
     while (ch->linked) {
         auto *link = ch->linked;
@@ -185,6 +185,8 @@ struct scene {
         actor->in_room = target->in_room = 0;
         actor->next = target;
         character_list = actor;
+        register_character_runtime_id(actor);
+        register_character_runtime_id(target);
         object_list = source;
         source->obj_uid = 100;
         source->loc_p = LOC_WORN;
@@ -207,6 +209,7 @@ struct scene {
             P_char ch = character_list;
             assert(!ch->nevents && !ch->linked && !ch->linking);
             character_list = ch->next;
+            unregister_character_runtime_id(ch);
             delete ch;
         }
         while (object_list) {
@@ -314,7 +317,11 @@ static void test_completion_validation() {
         switch (kind) {
         case 0: s.report.permitted = false; break;
         case 1: SET_POS(s.target, STAT_DEAD); break;
-        case 2: s.target->runtime_id = allocate_character_runtime_id(); break;
+        case 2:
+            unregister_character_runtime_id(s.target);
+            s.target->runtime_id = allocate_character_runtime_id();
+            register_character_runtime_id(s.target);
+            break;
         case 3: s.source->obj_uid = 777; break;
         case 4: s.source->loc.wearing = s.target; break;
         }
