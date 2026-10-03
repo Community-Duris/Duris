@@ -6698,7 +6698,7 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 		send_to_char("\n", ch);
 	}
 
-	char ward_status[512];
+	char ward_status[1024];
 	spell_ward_status(ch, ward_status, sizeof(ward_status));
 	if (*ward_status)
 	{

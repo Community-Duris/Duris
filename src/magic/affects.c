@@ -3932,6 +3932,11 @@ void affect_update(void)
 			{
 				next_af_dude = af->next;
 
+				// Ward events own pulse lifetimes. Broken and unequipped item
+				// pools must retain their renewal state even without SHORT.
+				if (spell_ward_is_managed(af))
+					continue;
+
 				if (af->flags & AFFTYPE_SHORT)
 					; /* short affects are removed by the associated events */
 				else if (af->duration >= 1)
