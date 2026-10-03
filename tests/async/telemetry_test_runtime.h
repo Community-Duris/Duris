@@ -9,6 +9,18 @@
 #include <source_location>
 #include <thread>
 
+#ifdef TELEMETRY_TEST_STUB_REPOSITORY
+/* Runtime-only fixtures do not link native account persistence. They retain
+ * unknown identity; the account identity fixture executes the real adapter. */
+bool sql_prepare_telemetry_account_token(const char *, std::uint64_t, std::uint64_t,
+					 std::uint64_t *token)
+{
+	if (token)
+		*token = 0U;
+	return false;
+}
+#endif
+
 /* Integration fixtures wait for the actual worker qualification boundary;
  * producer calls never initialize the repository or wait for SQL themselves. */
 inline void

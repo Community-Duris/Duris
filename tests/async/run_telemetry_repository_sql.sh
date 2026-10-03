@@ -6,7 +6,8 @@ case "${1:-}" in
     '') [[ $# == 0 ]] || exit 2; TEST_SCRIPT=test_telemetry_repository.py ;;
     --incidents) [[ $# == 1 ]] || exit 2; TEST_SCRIPT=test_telemetry_incidents.py ;;
     --observations) [[ $# == 1 ]] || exit 2; TEST_SCRIPT=test_telemetry_observations.py ;;
-    *) printf 'usage: run_telemetry_repository_sql.sh [--incidents|--observations]\n' >&2; exit 2 ;;
+    --identity) [[ $# == 1 ]] || exit 2; TEST_SCRIPT=test_telemetry_account_identity.py ;;
+    *) printf 'usage: run_telemetry_repository_sql.sh [--incidents|--observations|--identity]\n' >&2; exit 2 ;;
 esac
 IMAGE="${TELEMETRY_REPOSITORY_DB_IMAGE:-mariadb:10.11.14}"
 case "$IMAGE" in

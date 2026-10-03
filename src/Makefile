@@ -560,6 +560,7 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/latency_trace.o \
 				 sql/sql_persistence_raw.o \
 				 sql/sql_pool.o \
+				 sql/sql_telemetry_account_identity.o \
 				 sql/sql_economic_runtime.o \
 				 item/plushit.o \
 				 net/poll.o \

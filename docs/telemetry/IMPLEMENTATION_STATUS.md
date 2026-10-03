@@ -16,7 +16,8 @@ work. A future production deployment is a separate operational decision.
 | #567: reviewed incident coverage | Implemented and locally qualified | Consecutive retained inventory versions, nullable unknown ends, committed first verified post-fix references, explicit backlog/reconstruction dispositions and atomic published coverage snapshots. Reports preserve gaps, source uncertainty and bounded private-role separation. Full local MariaDB/MySQL chains, capacity, digest/permission negatives, lost commit replies and unchanged v1 totals qualified. Historical facts require evidence; synthetic fixtures do not establish a real incident history. See [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
 | Initial session qualification/capacity recovery | Implemented and locally qualified | Existing descriptor sweep and context/evidence adapters retry missing entry. Deferred copyover retains one handoff in descriptor memory; supplied keys/totals/revision survive. No earlier unobserved time or human activity is invented. True capacity refusal rolls back IDs; lifecycle queue loss retains admitted IDs. See [SESSION_LIFECYCLE.md](SESSION_LIFECYCLE.md). |
 | Publish existing progression/encounter/combat observations | Implemented and locally qualified | Definition 2 publishes five bounded projections from typed kinds 6–8. Cumulative participant/actor facts replace earlier measurements, threshold consumption stays separate from XP, unknown tails remain NULL, and published read-only snapshots retain incident coverage. Both engines passed the full 55-step chain and replay, rollback, constraints and role negatives. See [OBSERVATION_PROJECTIONS.md](OBSERVATION_PROJECTIONS.md). |
-| Character/account/confirmed controller association | In progress | Offline dated review/correction, ownership cuts, same-producer attribution and unknown linkage are implemented and qualified. Remaining: account lifetime/token allocation, authenticated cache preparation and capture, wire handoff, restricted SQL registry/publication and real source journeys. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
+| Native account lifetime and scoped token preparation | Implemented and locally qualified | Migration 0056 retains retired lifetimes, follows actual renames and issues one opaque token per scoped lifetime. Account-load caching, transaction/entropy/allocation failures, ambiguity, simultaneous preparation, deletion/recreation and restricted permissions passed on both local SQL engines. Preparation itself emits no authentication or participation evidence. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
+| Character/account/confirmed controller association | In progress | Offline dated review/correction, ownership cuts, same-producer attribution and unknown linkage are qualified; native lifetime/token allocation and account-load caching are now qualified. Remaining: authenticated typed capture, wire handoff, restricted SQL registry/publication and real source journeys. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
 | Shared battles and changing rosters | Pending | Link opponents and support actors to a shared battle, retain mode/roster segments, ownership-aware pets, compact context, observed outcomes and censored boundaries. |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
 | Progression and portfolios | In progress | Observed XP/level projections and offline exact account/controller effort union are qualified. Rested/assistance provenance, milestone exposure/censoring, published portfolio amounts, switching and comparable rates remain required. |
@@ -156,7 +157,7 @@ The final definition 2 fixture passed on MariaDB 10.11.14 and MySQL 8.0.46. Each
 loaded and verified the complete 55-step accounting manifest through
 `0055_telemetry_observation_projections`. Both measured metadata fingerprints,
 all three retained migration histories, compiled boot constants and the lifecycle
-inventory agree. The current inventory contains 234 SQL tables and 51
+inventory agree. That qualification covered 234 SQL tables and 51
 non-database stores; destructive rules remain disabled. Previously sealed
 migration SQL, verifiers and history prefixes remain unchanged.
 
@@ -226,8 +227,62 @@ classify excessive numeric encodings without exposing their private source or
 path. Identity packets and attribution/effort inputs have explicit finite bounds.
 
 These tests do not establish live account/controller collection or SQL publication.
-The account lifetime allocator, authenticated login preparation/cached tokens,
-live typed source and copyover handoff, restricted association registry and
-published generation integration still need implementation and real gameplay/SQL
-qualification. The existing runtime/schema remains at migration 0055. No
-production or staging access is required for those remaining checks.
+Live authenticated typed source and copyover handoff, restricted association
+registry and published generation integration still need implementation and real
+gameplay/SQL qualification. Native account lifetime allocation and account-load
+token caching are qualified below. No production or staging access is required
+for those remaining checks.
+
+## Qualified native account identity preparation
+
+The final `test_telemetry_account_identity.py --sql-fixture` passed on MariaDB
+10.11.14 and MySQL 8.0.46. Each loaded and verified the full 56-step canonical
+chain through `0056_telemetry_account_identity`. All three retained migration
+histories, compiled boot constants and lifecycle inventory are synchronized.
+The current inventory is 236 SQL tables and 51 non-database stores. Earlier sealed
+migrations and verifier checksums remain unchanged. The two new stores are
+protected pseudonymous subject data with retained lifetime/token history;
+destructive rules remain disabled.
+
+The fixture executes the production C++ allocator against each real engine.
+Repeated and case-alias loads reuse one token; scope changes prepare another;
+renames preserve the lifetime, while deletion retires its binding and name reuse
+allocates another lifetime. Two simultaneous account loads receive the same
+committed token. Missing/fenced accounts, invalid scopes and oversized names
+retain unknown identity; quoted names and injection-shaped missing names are
+handled as escaped literals. Native allocation does not query historical
+character ownership or infer a lifetime from creation timestamps.
+
+Caller transactions remain owned by the caller. Zero/colliding entropy has a
+fixed four-attempt ceiling, entropy and heap-allocation failures return unknown,
+and later write/commit failures roll back earlier allocation. A lost commit reply
+withholds the output token; retry reads the durable original without allocating
+again. Minimum account-owner permissions qualify; missing MySQL account-lock
+privilege refuses preparation without creating records. Identity-store
+UPDATE/DELETE and private account fields are denied to the restricted preparation
+fixture, and the SELECT-only report role cannot read accounts or either identity
+store. Direct constraint negatives and strict check-expression drift passed.
+
+Four local cache/schema tests passed, including execution of the actual runtime
+helper in SQL-header and client-free variants and compilation of the actual
+client-free allocator. Account reload clears stale cache values, including before
+a failed read. Preparation failure does not change account-load success. Existing
+account-character projection, runtime lifecycle/copyover and gameplay-adapter
+checks passed. The 25 offline identity and 13 incident regressions also passed;
+immutable history (24), runtime boot (10) and lifecycle inventory (22) checks
+passed against the updated head. The maintained SQL C++20 server built after the
+final fingerprint seal, and touched C/C++ passed the repository formatter.
+
+```sh
+python3 tests/async/test_telemetry_account_identity.py
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh --identity
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --identity
+```
+
+Account-load preparation can occur before password verification and emits no
+ownership fact. Allocator row counts cannot stand in for participating accounts.
+The authenticated observation producer and identity handoff, reviewed SQL
+association registry, published portfolios, shared battles/zone attempts, four
+balance suites, canonical economic rewards and final personal-server gate remain
+in the accepted implementation scope. Production and staging access are not
+prerequisites.

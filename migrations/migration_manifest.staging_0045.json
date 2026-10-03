@@ -728,6 +728,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "b39e37286927c8f94cb32e3ca3aff73658a1a8f317e13f6d99d3b065ee04063c",
       "verify_checksum": "6f5e2dd39410bb4a2417ecef028cecb2906abf15408b51dd9cfdff0ade630ce9"
+    },
+    {
+      "id": "0056_telemetry_account_identity",
+      "sequence": 56,
+      "description": "Retain private account lifetimes and scoped opaque telemetry account tokens",
+      "apply": "immutable/0056_telemetry_account_identity.sql",
+      "verify": "immutable/0056_telemetry_account_identity.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "72e84f8fcea1dee822d1f73a8275696da27d3079124a1bdf5a2dff86c27686a8",
+      "verify_checksum": "4f3d1d21ded4380197fea2917335af873786dc279a0b6778a236182b99795e24"
     }
   ]
 }

@@ -12,6 +12,7 @@
 #include "telemetry/telemetry_transport.h"
 #include "telemetry/telemetry_transport_private.h"
 #include "core/defines.h"
+#include "sql/sql_telemetry_account_identity.h"
 
 extern P_char get_linked_char(P_char ch, ush_int type);
 
@@ -2605,6 +2606,31 @@ combat_summary_capture_from_update(const telemetry_combat_summary_update &update
 }
 
 } // namespace
+
+bool telemetry_runtime_account_prepare(struct acct_entry *account)
+{
+	if (!account)
+		return false;
+	account->telemetry_account_token = 0U;
+	account->telemetry_environment_id = 0U;
+	account->telemetry_season_id = 0U;
+#ifndef __NO_MYSQL__
+	if (!R.initialized || !R.enabled || R.shutdown_pending || !R.session_scope_environment_id ||
+	    !R.session_scope_season_id)
+		return false;
+	std::uint64_t token = 0U;
+	if (!sql_prepare_telemetry_account_token(account->acct_name, R.session_scope_environment_id,
+						 R.session_scope_season_id, &token) ||
+	    !token)
+		return false;
+	account->telemetry_account_token = token;
+	account->telemetry_environment_id = R.session_scope_environment_id;
+	account->telemetry_season_id = R.session_scope_season_id;
+	return true;
+#else
+	return false;
+#endif
+}
 
 telemetry_capture_result telemetry_runtime_game_enter(struct char_data *character,
 						      struct descriptor_data *descriptor)

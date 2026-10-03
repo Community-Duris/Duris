@@ -8671,6 +8671,68 @@
         "database:telemetry_rollup_state",
         "database:telemetry_interval"
       ]
+    },
+    {
+      "id": "database:telemetry_account_lifetime",
+      "kind": "database_table",
+      "locator": "telemetry_account_lifetime",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "private_current_account_binding_or_retained_account_lifetime_scoped_token",
+      "technical_purpose": "Private current-account lifetime binding and retained environment/season account tokens; allocation is not authentication evidence",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:accounts"
+      ]
+    },
+    {
+      "id": "database:telemetry_account_token",
+      "kind": "database_table",
+      "locator": "telemetry_account_token",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "private_current_account_binding_or_retained_account_lifetime_scoped_token",
+      "technical_purpose": "Private current-account lifetime binding and retained environment/season account tokens; allocation is not authentication evidence",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_account_lifetime"
+      ]
     }
   ]
 }

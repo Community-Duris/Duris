@@ -72,6 +72,7 @@ struct telemetry_runtime_options
 
 struct char_data;
 struct descriptor_data;
+struct acct_entry;
 
 /* Typed, value-only evidence accepted from gameplay hooks.  The enum values
  * intentionally mirror telemetry_activity_evidence_kind without including the
@@ -326,6 +327,11 @@ bool telemetry_runtime_next_connection(telemetry_connection_id *connection) noex
 bool telemetry_runtime_next_session(telemetry_session_id *session) noexcept;
 bool telemetry_runtime_now(telemetry_monotonic_usec *monotonic_usec,
 			   telemetry_utc_usec *utc_usec) noexcept;
+
+/* Account-load preparation may use native account SQL. Call only at the
+ * account persistence boundary, before capture. Unknown identity never gates
+ * authentication; capture uses the cached values and never calls this helper. */
+bool telemetry_runtime_account_prepare(struct acct_entry *account);
 
 /*
  * Value-only server-boundary adapters.  They keep gameplay hooks free of
