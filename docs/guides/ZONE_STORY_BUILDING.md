@@ -281,6 +281,28 @@ poison/antidote/arsenal state and transformations need deliberate predicates and
 outcomes. Keep supplied proof valid for the existing terminal while builders
 choose accurate clues or balanced content extensions.
 
+## Competing proofs and same-name outputs
+
+The [Ultarium dossier](../design/zone-stories/ULTARIUM.md) maps four separate
+soul kinds required simultaneously by the box. A director offering consumes
+one of those proofs; its receipt cannot substitute for current proof at another
+recipient. Three offerings declare no reward and stay support services pending
+builder intent. A future all-stage campaign needs an actual allocation/episode
+policy and world endpoint, while the current terminal still accepts exact gifts.
+
+Recovered/delivery studies and raw/wearable living wind share names/aliases
+but have different VNUMs. Test incorrect reward substitution and foreign onward
+receipt ownership. Current key checks explain access without imposing an already
+completed route. For secret boulders, distinguish accepted near-side clearance
+from reverse clearance and actual arrival. For equipment, random pool effects
+and class development, record the accepted state change rather than the command.
+
+Keep paid identity, pet and epic-lesson guards until settlement is qualified.
+Legacy pet claim text without a restoration call does not prove a returned pet;
+restore or retire the feature deliberately. Blank responses, unused prototypes
+and promised campaign finales need fair content review before declaring new
+products, personal kills or whole-zone completion.
+
 ## The gardener dependency
 
 Alvinar's Q contract does not describe the barrier. `gardener_block` in

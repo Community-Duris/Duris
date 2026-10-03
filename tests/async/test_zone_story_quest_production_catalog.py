@@ -953,7 +953,55 @@ assert supplies[43142] == [("G",43197,43327,17,None,100)] * 17
 assert supplies[43143] == [("G",43198,43328,11,None,100)] * 11
 assert supplies[93914] == [("G",43179,43310,999,None,100)]
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy"):
+# Ultarium: competing exact souls, duplicate-name proof/output and rare sources.
+cosmic = inventory_module.area_evidence(ROOT, "cosmic")
+cosmic_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "cosmic")
+cosmic_stories = {s["id"]: s for s in cosmic_mapping["stories"]}
+assert cosmic_mapping["coverage"] == "complete" and cosmic_mapping["revision"] == 1
+assert len(cosmic_stories) == 15 and len(cosmic_mapping["contacts"]) == 23
+assert sum(s["category"] == "service" for s in cosmic_stories.values()) == 8
+assert sum(t.get("optional", False) for s in cosmic_stories.values() for t in s["steps"]) == 22
+assert {tuple(sorted(b.items())) for s in cosmic_stories.values() for b in s["contracts"]} == {
+    tuple(sorted(r["block"]["binding"].items())) for r in cosmic["requests"]}
+seal = cosmic_stories["four-soul-seal"]
+assert seal["contracts"] == [{"giver_vnum":76047,"completion_key":"give=I:76038,I:76039,I:76040,I:76041;receive=I:55174,I:76032,I:76050,I:76051;disappear=1"}]
+assert [t["item_vnums"] for t in seal["steps"][:-1]] == [[76011],[76049],[76045],[76038],[76039],[76040],[76041]]
+assert cosmic_stories["zeeniums-soul-offering"]["contracts"] == [{"giver_vnum":76027,"completion_key":"give=I:76038;receive=I:76066;disappear=0"}]
+assert cosmic_stories["other-soul-offerings"]["contracts"] == [
+    {"giver_vnum":76027,"completion_key":f"give=I:{v};receive=;disappear=0"} for v in (76039,76040,76041)]
+assert cosmic_stories["recovered-planetary-study"]["contracts"] == [{"giver_vnum":76029,"completion_key":"give=I:76068;receive=I:76069;disappear=0"}]
+assert cosmic_stories["windwalkers-companion"]["contracts"] == [{"giver_vnum":76054,"completion_key":"give=I:76064;receive=I:76065;disappear=1"}]
+assert cosmic_stories["smugglers-security-key"]["contracts"] == [{"giver_vnum":76048,"completion_key":"give=I:76028;receive=C:100000;disappear=1"}]
+for id, expected in {"second-draft-blueprints":76027,"recovered-planetary-study":76068,"siege-golem-plans":31115,"windwalkers-companion":76064,"hydra-scale-craft":76631}.items():
+    assert cosmic_stories[id]["steps"][0]["item_vnums"] == [expected]
+cosmic_units = [u for u in catalog_module.story_units(catalog) if u["zone_number"] == 760]
+assert len(cosmic_units) == 15 and sum(u["achievement"] for u in cosmic_units) == 7
+assert sum(u["daily_candidate"] for u in cosmic_units) == 7
+assert len(cosmic["requests"]) == 17 and len(cosmic["dialogue"]) == 5
+assert all(r["definition"]["daily_eligible"] for r in cosmic["requests"])
+contacts = {c["mob_vnum"]: c for c in cosmic_mapping["contacts"]}
+for d in cosmic["dialogue"]:
+    assert set(d["body"][0].rstrip("~").split()) <= set(contacts[d["giver_vnum"]]["topics"])
+parent = room = None
+sources = collections.defaultdict(list)
+for reset in cosmic["reset_commands"]:
+    c,v = reset["command"],reset["arguments"]
+    if c in ("M","F"): parent,room = v[1],v[3]
+    if c == "G" and v[1] in (76038,76039,76040,76041,76064,76068,76045,76049):
+        sources[v[1]].append((parent,room,v[2],v[4]))
+    if c == "P" and v[1] == 76027: assert v == [1,76027,1,76026,100,0,0,0]
+assert sources == {76038:[(76038,76191,1,100)],76039:[(76058,76191,1,100)],
+    76040:[(76050,76200,1,100)],76041:[(76052,76202,1,100)],
+    76064:[(76075,76236,1,100)],76068:[(76072,76227,1,100)],
+    76045:[(76065,76198,1,100)],76049:[(76071,76176,1,100)]}
+assert [(r["arguments"][1],r["arguments"][3],r["arguments"][4]) for r in cosmic["reset_commands"] if r["command"] == "M" and r["arguments"][1] in (76047,76075)] == [(76047,76228,50),(76075,76236,33)]
+mira = inventory_module.area_evidence(ROOT, "mira")
+assert any(r["block"]["binding"] == {"giver_vnum":82507,"completion_key":"give=I:76069;receive=I:82522;disappear=0"} and r["definition"]["zone_number"] == 825 for r in mira["requests"])
+for a,b in ((76068,76069),(76064,76065)):
+    assert cosmic["items"][a]["name"] == cosmic["items"][b]["name"]
+    assert cosmic["items"][a]["keywords"] == cosmic["items"][b]["keywords"]
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

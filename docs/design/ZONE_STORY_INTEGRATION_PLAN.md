@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 53 authored journals, accounting-gated player surfaces, starter/town
+**Status: 54 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -12,8 +12,8 @@ Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus, Torg, Vast Hidden
 Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter
 Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl, Ravenloft
 Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl, the Jade Empire and
-the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm, Verspin and Ship Yards now have
-complete source story maps;
+the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm, Verspin,
+Ship Yards and Ultarium now have complete source story maps;
 their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
 with seventeen contacts/all nineteen raw addressed families and twelve optional
@@ -264,6 +264,22 @@ fillet and research/transformation promises have balanced builder repair plans.
 Extend existing fishing accepted-issuance/effect publication and paid wallet/
 ship/crew settlement work. Native ingredient delivery does not require an
 unavailable optional fee, personal catching/sailing or imagined campaign state.
+
+Ultarium's [comprehensive dossier](zone-stories/ULTARIUM.md) covers seventeen
+exchanges through seven independent outcomes and eight support rows, with
+twenty-three contacts/all five addressed families and twenty-two optional checks.
+Four distinct souls compete between independent offerings and a simultaneous
+seal; recovered/delivery study and raw/wearable wind share names but not identity.
+Three exact access keys, rare recipient/proof appearances, nested plans and
+foreign source/continuation ownership have explicit guidance and qualification.
+
+Extend accepted first-source/gift lineage, directional switch/key/confirmed
+travel, episode allocation and effect/actor-state publication before deeper
+credit. Paid rename/pet/epic lesson guards remain necessary; legacy rename
+ordering and the commented pet claim restoration need deliberate coordinated
+settlement/repair. Confirm three unrewarded soul offerings as donation policy or
+incomplete content; clarify exact proof names and sparse crafting clues before
+adding rewards, liberation, rescue or a new full-stage campaign.
 
 ## Accounting requirement and delivery sequence
 
@@ -950,7 +966,17 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 190 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 189 roadmap areas.
+- [x] Complete Ultarium's seventeen-exchange/five-addressed source dossier:
+  all 268 rooms/82 mobs/71 objects/two shops, 338 resets/227 families, three
+  literal assignments, computed teachers/shared effects and bounded foreign
+  sources/continuation. Ship seven outcomes/eight support rows, twenty-three
+  contacts and twenty-two optional exact-proof/access checks.
+- [ ] Qualify Ultarium's rare/capped/nested/roaming sources and appearances,
+  four distinct competing souls, exact same-name study/wind kinds, directional
+  keys/boulders and actual teleport arrival. Extend source/gift, episode,
+  effect/actor-state and paid identity/pet/lesson settlement. Resolve commented
+  pet restoration and builder-selected soul/clue/name/campaign policy fairly.
 - [x] Complete Ship Yards' 26-exchange/twenty-addressed/78-ambient source dossier:
   all 229 rooms/102 mobs/46 objects/seven shops, 719 resets/265 families, eight
   literal services, computed properties, complete local sources and bounded
@@ -1059,6 +1085,7 @@ contract classification; it does not claim complete objective coverage.
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
 | Verspin | 1 | Complete: six stories and six services across twelve Q/QA | [Source-comprehensive dossier](zone-stories/VERSPIN.md); eighteen contacts/all nine addressed families, eighteen optional checks; five-count, exact-color, producer and foreign-source guidance | Six achievement/potential daily units; five mixed recipes and nine virtual stat purchases guarded; crew payment ordering and active source/cap availability unqualified | Native supplied-bone journey, exact quantities/colors and independent receipt recovery; qualify source/access, expected-stat/ship settlement, frozen XP and builder-selected sign/cap/clue repairs |
 | Ship Yards | 1 | Complete: nineteen independent outcomes/six services across 26 Q/QA | [Source-comprehensive dossier](zone-stories/SHIP_YARDS.md); thirty-two contacts/all twenty addressed families and thirty-four optional checks, exact quantities/kinds and optional producer history | Nineteen achievement/potential daily units; six paid services guarded; unresolved exits/dispersal, accepted fishing and paid ship/crew settlement unqualified | Native supplied-item, exact collection and alternative-receipt recovery; qualify actual source/access/retirement and builder-selected clue/reward/topology decisions |
+| Ultarium | 1 | Complete: seven independent outcomes/eight support rows across seventeen Q/QA | [Source-comprehensive dossier](zone-stories/ULTARIUM.md); twenty-three contacts/all five addressed families and twenty-two optional checks; exact souls, duplicate-name proof/output and three access keys | Seven achievement/potential daily units; rare appearances/sources, deeper events and paid rename/pet/epic lessons unqualified | Native exact proof and four-kind collection; preserve gifts/foreign ownership and guards; qualify source/episode/effect/access and deliberately resolve soul/campaign/claim policy |
 
 ## Twin Towers evidence and decisions
 

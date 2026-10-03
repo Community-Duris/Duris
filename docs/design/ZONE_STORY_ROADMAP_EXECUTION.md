@@ -55,9 +55,10 @@ neither every branch nor every historical prerequisite.
 | 28 | Faerie Realm | [Comprehensive source dossier](zone-stories/FAERIE_REALM.md): all seven Q/ten M, 211 rooms/74 mobs/123 objects/one shop, 454 resets/213 families, four local procedures and bounded foreign/shared review | Revision 1: three stories/two services/one rejection, ten contacts/thirteen optional checks; independent retiring outcomes, equivalent forge recipes and exact access/source guidance | Active source/recipient episodes; both mixed fees; held/carried keys, speech/orb travel; unserved combat helpers; targeted Fix effects; builder-selected riddle/prose/missing-target repairs |
 | 29 | Verspin | [Comprehensive source dossier](zone-stories/VERSPIN.md): all twelve Q/QA/nine addressed/31 ambient blocks, 200 rooms/79 mobs/57 objects/five shops, 389 resets/206 families, two literal services, computed teachers/inn and bounded foreign/shared review | Revision 1: six stories/six services, eighteen contacts/eighteen optional checks; exact five-count/color inputs, optional producer history, foreign proof ownership and actual access guidance | Active source/cap/retirement qualification; five mixed fees; virtual stat/wallet/save effects; denied crew-payment ordering/ship settlement; XP cap policy; builder-selected sign/cap/clue/lore repairs |
 | 30 | Ship Yards | [Comprehensive source dossier](zone-stories/SHIP_YARDS.md): all 124 blocks/26 exchanges/twenty addressed/78 ambient, 229 rooms/102 mobs/46 objects/seven shops, 719 resets/265 families, eight literal services and bounded foreign/shared review | Revision one: nineteen outcomes/six services, thirty-two contacts/thirty-four optional checks; supplied proofs, optional briefing/note, exact quantities/kinds and two crate-price alternatives | Active source/slot/cap/dispersal/retirement and travel qualification; four missing exits/ocean viper ecology; builder-selected count/clue/reward repairs; fishing ownership publication and wallet/epic/ship/crew settlement |
-| 31–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 31 | Ultarium | [Comprehensive source dossier](zone-stories/ULTARIUM.md): all 22 blocks/seventeen exchanges/five addressed, 268 rooms/82 mobs/71 objects/two shops, 338 resets/227 families, three literal assignments, computed teachers/shared effects and bounded foreign continuation | Revision one: seven outcomes/eight support rows, twenty-three contacts/twenty-two optional checks; competing distinct souls, same-name kinds, keys, supplied proof and foreign ownership | Active rare/holding/capped/nested/roaming sources/appearances; source/gift/episode/access/travel/effect/actor-state adapters; paid rename/pet/epic lesson settlement; balanced soul/clue/name/claim repair |
+| 32–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Ultarium, followed by the Surface Realm and Tharnadia.
+The next area is the Surface Realm, followed by Tharnadia and Mini Zones.
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -153,6 +154,8 @@ matches, or a candidate item graph was extracted.
 | ZSQ-VERSPIN-XP / ACCESS | Frozen XP preserves actor tenth-level and companion full-level caps. Bartender spectator access does not use secured-pit keys; deep-water/secret/falling paths have ordinary alternatives. | Confirm XP intent before balance changes and preserve admitted recipients/amounts on recovery. Qualify actual reciprocal key/open/travel/water routes and current source evidence; no personal kill or mandatory key/boat history from delivery alone. |
 | ZSQ-SHIPY-CONTENT / ACCESS | Pol's note is not final input and Fishfetcher is not an output; four/six shiv text, absent fillet and transformation/research promises exceed native state. Four unloaded exits are removed at bootstrap; one viper dispersal destination is ocean. | Builder chooses accurate clues/products and bounded topology/ecology/lock corrections. Preserve valid supplied proofs, exact quantities/prices and existing terminal receipts; author real endpoints before deeper credit. |
 | ZSQ-SHIPY-FISH / PAID | Catch/effects/XP precede ownership grant; six paid native services are guarded. Shared ship/crew paths ignore denied cash, with mixed epic/coin hull settlement. | Extend existing accepted fishing and paid-service continuations. Freeze selected draw/material/output/price and stable ship revision; settle/save/refund before success. Qualify denial, interruption, concurrency, replay/restart and legitimate supplied proofs. |
+| ZSQ-COSMIC-SOUL / IDENTITY | Director's three branches consume distinct souls without declared rewards; box needs all four together. Study/wind proof and output share aliases; Xavier owns the foreign delivery. | Preserve native allocation/receipts and exact kinds. Confirm donation/clue/name/campaign intent; add accepted source/gift lineage and attempt/world outcomes before deeper credit. |
+| ZSQ-COSMIC-CUSTOM / PAID | Rare box/windkin, cap-one proof, directional keys/secret boulders, teleports and effect/teacher state need accepted evidence. Rename/pet/epic purchases are guarded; legacy pet claim has no restoration call. | Extend shared reset/appearance/access/arrival/effect/actor-state and wallet/identity/pet/lesson continuations. Deliberately restore or retire pet claims; qualify denial/refund, partial identity/save failure and replay/restart before removing guards. |
 
 ## Verification record
 
@@ -1347,3 +1350,46 @@ review verified 672 local/source-line links, complete local evidence, four
 missing exits and the ocean viper destination, with unchanged native definitions,
 registry, revision/fingerprint and fifty-two earlier parsed maps. These checks
 do not certify played source, fishing, paid, ship, combat or travel journeys.
+
+
+### Ultarium completion
+
+Priority 31 is source-comprehensive. The [dossier](zone-stories/ULTARIUM.md)
+reviews all 22 native blocks/seventeen exchanges/five addressed families,
+268 rooms, 82 mobs, 71 objects, two shops and 338 resets/227 families. It
+includes all three literal assignments, computed class/epic-teacher roles,
+shared pool/stone/ward effects, every exact proof source and bounded foreign
+continuation/access. Every loaded local exit/reset reference resolves.
+
+Revision one adds seven independent outcomes and eight support rows, with
+twenty-three contacts and twenty-two optional checks. Three unrewarded soul
+branches remain one support row, six trapper barters and the gorget remain
+services. Four different council souls are required together for the box;
+prior donations and duplicate kinds cannot replace current proof. Same-name
+study/wind outputs cannot substitute for original proofs. The foreign Xavier
+delivery retains Myrabolus ownership and accepts a supplied exact copy.
+
+Source/gift lineage, rare/holding/capped/nested/roaming stock, recipient
+appearances, directional keys/boulders and confirmed teleport/fall/effect/class
+state need active qualification. Keep rename/pet/epic lesson guards until
+coordinated settlement is supported. The commented pet restoration call is
+an incomplete legacy claim path; repair or deliberately retire it. Three
+unrewarded soul branches, sparse crafting clues and duplicate-name kinds
+have balanced builder decisions. No liberation, rescue, golem construction,
+personal kill, learned keyword or equipment-use achievement is invented.
+
+Verification covers complete contracts/classification/topics, exact sources,
+four-kind and duplicate-name preparation, read-only/supplied routes, independent
+receipts, service exclusion, foreign ownership and serialized recovery. Focused
+native/Python tests, generated catalog/index, source/link checks, authoritative
+formatting, whitespace and incremental server build passed. The invariant/link
+review covers 619 local/source-line links and the unchanged native catalog and
+earlier mappings. This record claims source coverage; played active journeys
+remain unqualified.
+
+Current catalog: **54 journals, 1,767 achievement units, 1,531 potential daily
+units and 2,235 projected rows; 31 of 220 roadmap areas are source-comprehensive,
+with 189 remaining.** All 2,668 native definitions, revision two, fingerprint,
+registry and fifty-three earlier maps remain unchanged. Continue with the
+Surface Realm, Tharnadia and Mini Zones. Active accounting remains mandatory;
+no operational accounting activation, DB migration or merge is authorized.

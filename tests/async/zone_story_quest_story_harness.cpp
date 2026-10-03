@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 53 &&
-				tracker.summary_for(7, 42).total == 1777,
+		require(catalog.story_mappings.size() == 54 &&
+				tracker.summary_for(7, 42).total == 1767,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -196,8 +196,10 @@ int main(int argc, char **argv)
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
 										    281, 2) == 6 &&
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
-										    431, 2) == 19,
-			"complete Alatorin/Newhaven/Faerie/Verspin/Ship Yards sidecars failed the native file loader");
+										    431, 2) == 19 &&
+				zone_story_quest_catalog::eligible_definition_count(file_catalog,
+										    760, 2) == 7,
+			"complete Alatorin/Newhaven/Faerie/Verspin/Ship Yards/Ultarium sidecars failed the native file loader");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
 			const auto mapping = std::find_if(catalog.story_mappings.begin(),
@@ -2431,6 +2433,147 @@ int main(int argc, char **argv)
 				recovered_shipy.progress_for_zone(7, 42, 490).completed == 0 &&
 				recovered_shipy.progress_for_zone(7, 42, 943).completed == 0,
 			"port recovery lost independent outcomes or assigned foreign proofs to source zones");
+		// Competing souls and duplicate names need exact current kinds, not inferred history.
+		const auto &cosmic_seal = story_for("cosmic", "four-soul-seal");
+		const auto &cosmic_halo = story_for("cosmic", "zeeniums-soul-offering");
+		const auto &cosmic_study = story_for("cosmic", "recovered-planetary-study");
+		const auto &cosmic_wind = story_for("cosmic", "windwalkers-companion");
+		const auto &cosmic_donations = story_for("cosmic", "other-soul-offerings");
+		const auto &cosmic_map = *std::find_if(catalog.story_mappings.begin(),
+						       catalog.story_mappings.end(),
+						       [](const auto &mapping)
+						       { return mapping.source_area == "cosmic"; });
+		service supplied_cosmic(catalog);
+		require(supplied_cosmic.discover_zone(7, 42, 760, 76001, 100, "arrival") ==
+					result::applied &&
+				supplied_cosmic.render_journal(7, 42, 760, 10, 1, 101, false, false)
+						.find(cosmic_seal.title) == std::string::npos,
+			"Ultarium discovery exposed an unseen box story");
+		for (const auto &contact : cosmic_map.contacts)
+			require(supplied_cosmic.meet_npc(7, 42, contact.mob_vnum, 76001, 101) ==
+					result::applied,
+				"Ultarium contact was not encountered");
+		const auto cosmic_section = [&](const auto &entry)
+		{
+			const auto start = journal.find("] " + entry.title + "\r\n");
+			require(start != std::string::npos, "Ultarium story was missing");
+			return journal.substr(start, journal.find("\r\n  [", start) - start);
+		};
+		supplies = {};
+		supplies.carried[76069] = supplies.carried[76065] = supplies.carried[76032] = 1;
+		const auto cosmic_before_view = supplied_cosmic.serialize_state();
+		journal = supplied_cosmic.render_journal(7, 42, 760, 10, 1, 121, false, false,
+							 &supplies);
+		require(cosmic_section(cosmic_study)
+						.find("[Missing now] " +
+						      cosmic_study.steps.front().text) !=
+					std::string::npos &&
+				cosmic_section(cosmic_wind)
+						.find("[Missing now] " +
+						      cosmic_wind.steps.front().text) !=
+					std::string::npos &&
+				supplied_cosmic.serialize_state() == cosmic_before_view &&
+				supplied_cosmic.progress_for_zone(7, 42, 760).completed == 0,
+			"same-name outputs or journal inspection manufactured original proofs/history");
+		for (const auto &entry : cosmic_map.stories)
+			for (const auto &step : entry.steps)
+			{
+				if (step.kind != "carried_item" || step.item_vnums.size() != 1)
+					continue;
+				supplies = {};
+				const int item = step.item_vnums.front();
+				supplies.equipped[16] = item;
+				journal = supplied_cosmic.render_journal(7, 42, 760, 10, 1, 122,
+									 false, false, &supplies);
+				require(cosmic_section(entry).find("[Missing now] " + step.text) !=
+						std::string::npos,
+					"worn stock replaced an exact carried Ultarium proof/key");
+				supplies.carried[item] = 1;
+				journal = supplied_cosmic.render_journal(7, 42, 760, 10, 1, 123,
+									 false, false, &supplies);
+				require(cosmic_section(entry).find("[Ready now] " + step.text) !=
+						std::string::npos,
+					"supplied exact Ultarium proof/key failed the current check");
+			}
+		supplies = {};
+		supplies.carried[76038] = 4;
+		journal = supplied_cosmic.render_journal(7, 42, 760, 10, 1, 124, false, false,
+							 &supplies);
+		for (const auto &step : cosmic_seal.steps)
+			if (step.kind == "carried_item" && step.item_vnums.front() >= 76039 &&
+			    step.item_vnums.front() <= 76041)
+				require(cosmic_section(cosmic_seal)
+							.find("[Missing now] " + step.text) !=
+						std::string::npos,
+					"four copies of one soul replaced four distinct council souls");
+		for (const auto &contract : cosmic_donations.contracts)
+			record(supplied_cosmic, contract, contract.c_str(), 760, 76145);
+		supplies = {};
+		journal = supplied_cosmic.render_journal(7, 42, 760, 10, 1, 125, false, false,
+							 &supplies);
+		for (const auto &step : cosmic_seal.steps)
+			if (step.kind == "carried_item" && step.item_vnums.front() >= 76038 &&
+			    step.item_vnums.front() <= 76041)
+				require(cosmic_section(cosmic_seal)
+							.find("[Missing now] " + step.text) !=
+						std::string::npos,
+					"earlier donations replaced current box proof");
+		for (int item : { 76038, 76039, 76040, 76041 })
+			supplies.carried[item] = 1;
+		journal = supplied_cosmic.render_journal(7, 42, 760, 10, 1, 126, false, false,
+							 &supplies);
+		for (const auto &step : cosmic_seal.steps)
+			if (step.kind == "carried_item" && step.item_vnums.front() >= 76038 &&
+			    step.item_vnums.front() <= 76041)
+				require(cosmic_section(cosmic_seal)
+							.find("[Ready now] " + step.text) !=
+						std::string::npos,
+					"four distinct supplied souls did not prepare the box");
+		record(supplied_cosmic, cosmic_seal.contracts.front(), "cosmic-supplied-seal", 760,
+		       76228);
+		require(supplied_cosmic.progress_for_zone(7, 42, 760).completed == 1 &&
+				supplied_cosmic.progress_for_zone(7, 42, 760).total == 7,
+			"box acceptance required an offering/key history or counted support donations");
+		record(supplied_cosmic, cosmic_halo.contracts.front(), "cosmic-independent-halo",
+		       760, 76145);
+		for (const auto &entry : cosmic_map.stories)
+			if (entry.category == "service" && entry.id != cosmic_donations.id)
+				record(supplied_cosmic, entry.contracts.front(), entry.id.c_str(),
+				       760, 76255);
+		service restored_cosmic(catalog);
+		require(restored_cosmic.deserialize_state(supplied_cosmic.serialize_state(),
+							  &error) &&
+				restored_cosmic.progress_for_zone(7, 42, 760).completed == 2,
+			"Ultarium services inflated recovered story completion");
+		const auto xavier_copy = std::find_if(
+			catalog.definitions.begin(), catalog.definitions.end(),
+			[](const auto &definition)
+			{
+				return definition.giver_vnum == 82507 &&
+				       definition.completion_key ==
+					       "676976653d493a37363036393b726563656976653d493a38323532323b6469736170706561723d30";
+			});
+		require(xavier_copy != catalog.definitions.end(),
+			"foreign delivery-copy contract missing");
+		record(restored_cosmic, xavier_copy->definition_id, "cosmic-foreign-copy", 825,
+		       82550);
+		require(restored_cosmic.progress_for_zone(7, 42, 760).completed == 2 &&
+				restored_cosmic.progress_for_zone(7, 42, 825).completed == 1,
+			"foreign study delivery fabricated local recovery or lost recipient ownership");
+		for (const auto &entry : cosmic_map.stories)
+			if (entry.category != "service" && entry.id != cosmic_seal.id &&
+			    entry.id != cosmic_halo.id)
+				record(restored_cosmic, entry.contracts.front(), entry.id.c_str(),
+				       760, 76001);
+		service recovered_cosmic(catalog);
+		require(recovered_cosmic.deserialize_state(restored_cosmic.serialize_state(),
+							   &error) &&
+				recovered_cosmic.progress_for_zone(7, 42, 760).completed == 7 &&
+				recovered_cosmic.progress_for_zone(7, 42, 760).total == 7 &&
+				recovered_cosmic.progress_for_zone(7, 42, 825).completed == 1 &&
+				recovered_cosmic.progress_for_zone(7, 42, 311).completed == 0 &&
+				recovered_cosmic.progress_for_zone(7, 42, 766).completed == 0,
+			"Ultarium recovery lost independent receipts or credited foreign proof sources");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;
