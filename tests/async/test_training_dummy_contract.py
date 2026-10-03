@@ -1,4 +1,9 @@
+"""Structural training-dummy guards runnable by the standalone regression gate."""
+
 from pathlib import Path
+import unittest
+from _paths import extract_function
+from contract_text import contains
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -64,19 +69,22 @@ def test_spawn_rooms_keep_the_dummy_without_triggering_justice_or_unsafe_combat(
 def test_nonpet_damage_and_reflective_shields_cannot_turn_dummy_into_a_tank():
     fight = source("src/combat/fight.c")
     fight_move = source("src/classes/new_skills.c")
+    fighting = extract_function("fight_state.c", "void set_fighting(")
 
     assert fight.count('training_dummy_is(victim) && !training_dummy_target_allowed(ch, victim)') >= 3
     assert fight.count('if (training_dummy_is(ch))\n\t\treturn DAM_NONEDEAD;') >= 3
     assert 'if (!training_dummy_target_allowed(ch, victim))' in fight_move
     assert 'training_dummy_retarget_nonpet(ch, victim);' in fight_move
     assert 'if (training_dummy_is(victim))\n\t\treturn DAM_NONEDEAD;' in fight
-    assert 'if (training_dummy_is(ch))\n\t\treturn;' in fight
+    assert contains(fighting, 'if (training_dummy_is(ch)) return;')
 
 
 def test_training_dummy_is_non_hostile_and_records_damage_without_hp_loss():
     fight = source("src/combat/fight.c")
+    retaliation = extract_function("fight_state.c", "int attack_back(")
 
-    assert 'if (training_dummy_is(ch) || training_dummy_is(victim))' in fight
+    assert contains(retaliation, 'if (training_dummy_is(ch) || training_dummy_is(victim))')
+    assert contains(retaliation, 'return DAM_NONEDEAD;')
     assert 'if (!training_dummy_is(victim))\n\t\tremember(victim, ch);' in fight
     assert 'training_dummy_record_damage(victim, recorded_damage);' in fight
     assert 'return DAM_NONEDEAD;' in fight
@@ -120,7 +128,8 @@ def test_training_dummy_is_anchored_and_has_no_social_links():
 def test_training_dummy_cannot_be_charmed_or_converted_to_a_pet():
     bard = source("src/classes/bard.c")
     necromancy = source("src/classes/necromancy.c")
-    magic = source("src/magic/magic.c")
+    charm = extract_function("spell_charm.c", "void charm_generic(")
+    command_undead = extract_function("spell_status_control.c", "void spell_command_undead(")
     psionics = source("src/classes/psionics.c")
     dummy = source("src/combat/training_dummy.c")
 
@@ -128,19 +137,20 @@ def test_training_dummy_cannot_be_charmed_or_converted_to_a_pet():
     assert 'The training dummy has no mind to charm.' in bard
     assert '!training_dummy_capture_target_allowed(mob)' in necromancy
     assert '!training_dummy_capture_target_allowed(ch)' in necromancy
-    assert 'The training dummy has no mind to charm.' in magic
-    assert 'The training dummy cannot be commanded.' in magic
-    assert 'if (training_dummy_is(ch))\n\t\treturn FALSE;' in magic
+    assert contains(charm, 'if (training_dummy_is(victim))')
+    assert 'The training dummy has no mind to charm.' in charm
+    assert contains(command_undead, 'if (training_dummy_is(victim))')
+    assert 'The training dummy cannot be commanded.' in command_undead
     assert 'The training dummy has no mind to awe.' in psionics
     assert 'The training dummy has no mind to dominate.' in psionics
     assert 'cannot be charmed' in dummy
 
 
 def test_training_dummy_cannot_be_summoned_or_ridden():
-    magic = source("src/magic/magic.c")
+    summonable = extract_function("spell_conjuration.c", "int Summonable(")
     mount = source("src/classes/mount.c")
 
-    assert 'if (training_dummy_is(ch))\n\t\treturn FALSE;' in magic
+    assert contains(summonable, 'if (training_dummy_is(ch)) return FALSE;')
     assert 'The training dummy is anchored and cannot be ridden.' in mount
 
 
@@ -162,14 +172,17 @@ def test_npc_spellups_skip_the_dummy_without_blocking_explicit_affects():
     dummy = source("src/combat/training_dummy.c")
     header = source("src/combat/training_dummy.h")
     mobact = source("src/mob/mobact.c")
-    magic = source("src/magic/magic.c")
+    explicit_shields = '\n'.join([
+        extract_function("spell_globes.c", "void spell_globe("),
+        extract_function("spell_elemental_shields.c", "void spell_fireshield("),
+    ])
 
     assert 'bool training_dummy_spellup_target_allowed(P_char caster, P_char target);' in header
     assert 'return !caster || !IS_NPC(caster);' in dummy
     assert 'if (!training_dummy_spellup_target_allowed(ch, candidate))' in mobact
-    assert 'void spell_globe' in magic
-    assert 'void spell_fireshield' in magic
-    assert 'training_dummy_spellup_target_allowed' not in magic
+    assert 'void spell_globe' in explicit_shields
+    assert 'void spell_fireshield' in explicit_shields
+    assert 'training_dummy_spellup_target_allowed' not in explicit_shields
     assert 'if (training_dummy_is(ch))' in mobact
     assert 'periodic mundane event' in mobact
 
@@ -181,6 +194,7 @@ def test_dummy_cannot_be_used_as_a_shape_clone_disguise_or_capture_source():
     clone = source("src/cmd/actwiz.c")
     clone_spell = source("src/classes/sillusionist.c")
     magic = source("src/magic/magic.c")
+    conjuration = source("src/magic/spell_conjuration.c")
     disguise = source("src/classes/disguise.c")
     capture = source("src/classes/new_skills.c")
     pets = source("src/classes/necromancy.c")
@@ -194,7 +208,7 @@ def test_dummy_cannot_be_used_as_a_shape_clone_disguise_or_capture_source():
     assert 'if (!training_dummy_clone_target_allowed(mob))' in clone
     assert 'if (!training_dummy_clone_target_allowed(target))' in clone_spell
     assert 'The training dummy cannot be used as a clone form.' in clone_spell
-    assert 'P_char make_mirror(P_char ch)\n{\n\tif (training_dummy_is(ch))' in magic
+    assert 'P_char make_mirror(P_char ch)\n{\n\tif (training_dummy_is(ch))' in conjuration
     assert 'if (!training_dummy_disguise_target_allowed(target))' in disguise
     assert 'The training dummy cannot be captured.' in capture
     assert '!training_dummy_capture_target_allowed(mob)' in pets
@@ -217,3 +231,15 @@ def test_dummy_snapshots_are_skipped_and_recreated_by_bootstrap():
     assert 'recovery_training_dummy_is(ch)' in recovery
     assert 'ch->only.npc->summoned_instance || recovery_training_dummy_is(ch)' in recovery
     assert 'recovery_training_dummy_is(mob)' in recovery
+
+
+def load_tests(_loader, _tests, _pattern):
+    return unittest.TestSuite(
+        unittest.FunctionTestCase(case)
+        for name, case in globals().items()
+        if name.startswith("test_") and callable(case)
+    )
+
+
+if __name__ == "__main__":
+    unittest.main()

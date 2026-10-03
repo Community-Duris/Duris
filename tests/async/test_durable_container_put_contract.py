@@ -148,7 +148,7 @@ class DurableContainerPutContractTests(unittest.TestCase):
             self.assertIn(f"item_movement_reject::{reason}", movement)
         self.assertIn("item_movement_reject *reject = NULL", header)
         for signature, terminator in (
-                ("bool item_movement_transaction_submit(P_char actor",
+                ("bool item_movement_transaction_submit(",
                  "\nconst char *item_movement_reject_name"),
                 ("bool item_movement_transaction_submit_batch(",
                  "\nconst char *item_movement_reject_name")):
@@ -213,7 +213,7 @@ class DurableContainerPutContractTests(unittest.TestCase):
         self.assertLess(completion.index("!committed"),
                         completion.index("obj_from_char(object)"))
         self.assertLess(completion.index("obj_from_char(object)"),
-                        completion.index("obj_to_char(object, recipient)"))
+                        completion.index("obj_to_char_checked(object, recipient)"))
 
     def test_both_ownership_backends_cover_exactly_once_populated_give(self):
         mysql = (ROOT / "tests/async/item_transfer_mysql_harness.cpp").read_text()

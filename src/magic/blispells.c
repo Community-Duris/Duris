@@ -14,6 +14,7 @@
 #include "combat/ctf.h"
 #include "combat/damage.h"
 #include "core/defines.h"
+#include "economy/economic_gameplay_authority.h"
 #include "classes/disguise.h"
 #include "world/graph.h"
 #include "combat/grapple.h"
@@ -1041,6 +1042,11 @@ void spell_create_pond(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P
 		send_to_char("&+bA pond usually needs more solid ground for support!\n", ch);
 		return;
 	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("A pond cannot be formed right now.\r\n", ch);
+		return;
+	}
 
 	pond = read_object(749, VIRTUAL);
 	if (!pond)
@@ -1246,6 +1252,11 @@ void spell_bloodstone(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int
 	if (IS_ROOM(ch->in_room, ROOM_NO_TELEPORT) || world[ch->in_room].sector_type == SECT_OCEAN)
 	{
 		send_to_char("The powers of nature ignore your call for serenity.\n", ch);
+		return;
+	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("A bloodstone cannot be formed right now.\r\n", ch);
 		return;
 	}
 

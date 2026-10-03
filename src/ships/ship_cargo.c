@@ -85,7 +85,7 @@
 #include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_transaction.h"
 #include "world/timers.h"
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_store.h"

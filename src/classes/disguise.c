@@ -11,6 +11,7 @@
 #include "combat/guard.h"
 #include "combat/justice.h"
 #include "combat/training_dummy.h"
+#include "economy/economic_gameplay_authority.h"
 #include "core/mm.h"
 #include "item/objmisc.h"
 #include "magic/spells.h"
@@ -252,6 +253,16 @@ void do_disguise(P_char ch, char *arg, int /*cmd*/)
 	}
 	if (IS_TRUSTED(ch) || affected_by_spell(ch, ACH_DECEPTICON))
 		skl_lvl = 200;
+	if (economic_gameplay_authority::active() && !IS_TRUSTED(ch) &&
+	    !affected_by_spell(ch, ACH_DECEPTICON))
+	{
+		send_to_char(
+			"Disguise kits cannot be consumed while item accounting is active.\r\n",
+			ch);
+		if (target)
+			free_char(target);
+		return;
+	}
 
 	percent = number(1, 101);
 

@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = (ROOT / "src/cmd/community_spellup.c").read_text()
-ACTWIZ = (ROOT / "src/cmd/actwiz.c").read_text()
+STAFF_NEWBIE = (ROOT / "src/cmd/staff_newbie_aid.c").read_text()
 EVENTS = (ROOT / "src/world/new_events.c").read_text()
 MAKEFILE = (ROOT / "src/Makefile").read_text()
 HELP = (ROOT / "lib/information/help_index").read_text()
@@ -18,8 +18,8 @@ DESIGN = (ROOT / "docs/design/COMMUNITY_SPELLUP.md").read_text()
 
 class CommunitySpellupContractTest(unittest.TestCase):
     def test_legacy_entry_point_and_default_order_remain_visible(self) -> None:
-        self.assertIn("community_spellup_command(ch, arg);", ACTWIZ)
-        self.assertIn("void newb_spellup(P_char ch, P_char victim)", ACTWIZ)
+        self.assertIn("community_spellup_command(ch, arg);", STAFF_NEWBIE)
+        self.assertIn("void newb_spellup(P_char ch, P_char victim)", STAFF_NEWBIE)
         default_order = (
             "spell_bless",
             "spell_spirit_armor",
@@ -32,11 +32,13 @@ class CommunitySpellupContractTest(unittest.TestCase):
             "spell_agility",
             "spell_dexterity",
             "spell_accel_healing",
-            "spell_rest",
+            "grant_staff_rested_bonus",
         )
-        positions = [ACTWIZ.index(name, ACTWIZ.index("void newb_spellup")) for name in default_order]
+        positions = [STAFF_NEWBIE.index(name, STAFF_NEWBIE.index("void newb_spellup"))
+                     for name in default_order]
         self.assertEqual(positions, sorted(positions))
         self.assertIn("cmd/community_spellup.o", MAKEFILE)
+        self.assertIn("cmd/staff_newbie_aid.o", MAKEFILE)
 
     def test_allowlist_and_defaults_are_explicit(self) -> None:
         names = (

@@ -41,6 +41,7 @@ from player_death_restitution_reconciliation import (  # noqa: E402
     reconcile_artifact_authority,
 )
 from player_death_restitution_backup import create_backup  # noqa: E402
+import player_death_recovery_visibility as recovery_visibility  # noqa: E402
 from player_death_restitution_target import (  # noqa: E402
     BACKUP_RECEIPT_FORMAT,
     TARGET_INFO_FORMAT,
@@ -87,16 +88,17 @@ NATIVE_ARTIFACT_LEGACY_MORTAL = 1 << 1
 
 TOOL_VERSION = 3
 # The bridge reports the first uint32 as the raw wire version and the decoder's
-# post-compatibility value separately as schema_version.  Death schema 10 is the
-# normalized in-memory contract; wire 10 is the current writer's encoding.
-# Historical death records use wire 2, 4, 6, or 8.  Keep this allow-list explicit:
+# post-compatibility value separately as schema_version.  Death schema 8 is the
+# normalized in-memory contract; wire 8 is also the current writer's encoding.
+# Historical death records use wire 2, 4, or 6.  Keep this allow-list explicit:
 # the native decoder remains responsible for byte-level validation, while this
 # gate rejects a valid non-death snapshot or an unknown future encoding.
-DEATH_NORMALIZED_SCHEMA_VERSION = 10
+DEATH_NORMALIZED_SCHEMA_VERSION = 8
 # Compatibility alias for callers that imported the old name; the normalized
 # label is authoritative and must not be confused with raw wire_version.
 DEATH_SCHEMA_VERSION = DEATH_NORMALIZED_SCHEMA_VERSION
-DEATH_WIRE_VERSIONS = frozenset({2, 4, 6, 8, 10})
+DEATH_WIRE_VERSIONS = frozenset({2, 4, 6, 8})
+DEATH_WIRE_SCHEMAS = {wire: 8 for wire in DEATH_WIRE_VERSIONS} | {13: 13, 15: 15, 18: 18, 21: 8, 26: 13, 28: 15, 31: 18}
 ITEM_MONEY = 20
 VOBJ_COINS = 3
 ITEM_ARTIFACT = REAL_ARTIFACT_FLAG
@@ -1443,7 +1445,7 @@ def ensure_codec() -> Path:
     return CODEC_BINARY
 
 
-def decode_payload(payload: bytes) -> dict[str, Any]:
+def decode_payload(payload: bytes, *, recovery_status: bool = False) -> dict[str, Any]:
     binary = ensure_codec()
     try:
         result = subprocess.run([str(binary), "decode-death"], input=payload,
@@ -1458,10 +1460,10 @@ def decode_payload(payload: bytes) -> dict[str, Any]:
         raise ToolError("codec bridge returned invalid structured output") from exc
     if not isinstance(decoded, dict):
         raise ToolError("codec bridge returned an invalid death object")
-    if (decoded.get("wire_version") not in DEATH_WIRE_VERSIONS
-            or decoded.get("schema_version") != DEATH_NORMALIZED_SCHEMA_VERSION):
+    expected_schema = DEATH_WIRE_SCHEMAS.get(decoded.get("wire_version"))
+    if not recovery_status and (expected_schema is None or decoded.get("schema_version") != expected_schema):
         raise ToolError(
-            "death payload is not a supported raw-wire death encoding normalized to schema-10"
+            "death payload is not a supported raw-wire death encoding with matching schema-8, schema-13, schema-15 or schema-18"
         )
     return decoded
 
@@ -1703,6 +1705,8 @@ def build_inspection(
     body: dict[str, Any] = {
         "artifact_version": TOOL_VERSION,
         "kind": "death_restitution_inspection",
+        "recovery_correlation": recovery_visibility.correlation(
+            pid, decoded["death"]["corpse"][0]["values"][6]),
         "backend": "sql",
         "source": {
             "pid": pid,
@@ -2429,6 +2433,8 @@ def plan_from_inspection(
         "related_deaths": inspection.get("related_deaths", []),
         "item_loss_epochs": inspection.get("item_loss_epochs", {}),
     }
+    if inspection.get("recovery_correlation"):
+        body["recovery_correlation"] = inspection["recovery_correlation"]
     if locker_delivery is not None:
         body["locker_delivery"] = locker_delivery
     if target is not None:
@@ -5739,6 +5745,15 @@ def parser() -> argparse.ArgumentParser:
     target_info.add_argument("--artifact", type=Path)
     target_info.add_argument("--overwrite", action="store_true")
     add_policy_arguments(target_info, maintenance=True)
+    status = sub.add_parser("status", help="protected read-only terminal custody and unresolved recovery cases")
+    status.add_argument("--artifact", required=True, type=Path)
+    status.add_argument("--overwrite", action="store_true")
+    status.add_argument("--flatfile-root", type=Path)
+    status.add_argument("--limit", type=int, default=50)
+    status.add_argument("--after-pid", type=int, default=0)
+    status.add_argument("--after-revision", type=int, default=0)
+    status.add_argument("--include-resolved", action="store_true")
+    add_policy_arguments(status, target_info=True)
     inspect = sub.add_parser("inspect")
     inspect.add_argument("--pid", required=True, type=int)
     inspect.add_argument("--death-revision", required=True, type=int)
@@ -5846,6 +5861,13 @@ def main(argv: list[str]) -> int:
             )
         else:
             print(json.dumps(artifact, sort_keys=True))
+        return 0
+    if args.command == "status":
+        from player_death_recovery_visibility import status
+        artifact = status(sys.modules[__name__], args)
+        atomic_write_json(args.artifact, artifact, args.overwrite)
+        print("recovery status written: scanned=%d unresolved_cases=%d more=%s" % (
+            artifact["scanned"], artifact["unresolved_cases"], bool(artifact["next_cursor"])))
         return 0
     if args.command == "inspect":
         target_info = load_target_info(args.target_info) if args.target_info is not None else None

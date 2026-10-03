@@ -31,6 +31,7 @@
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/character_maintenance.h"
 #include "world/event_names.h"
 #include "kingdom/kingdom.h"
 #include "cmd/interp.h"
@@ -399,6 +400,20 @@ static void nevent_detach_character(P_nevent event)
 
 	if (!ch)
 		return;
+	// Drop derived wake references before the scheduler releases or reuses
+	// this event. A successor scheduled by the callback has a different handle.
+	if (ch->world_activity_mundane_event == event &&
+	    ch->world_activity_mundane_event_sequence == event->sequence)
+	{
+		ch->world_activity_mundane_event = NULL;
+		ch->world_activity_mundane_event_sequence = 0;
+	}
+	if (ch->character_maintenance_event == event &&
+	    ch->character_maintenance_event_sequence == event->sequence)
+	{
+		ch->character_maintenance_event = NULL;
+		ch->character_maintenance_event_sequence = 0;
+	}
 	if (event->prev_char_nev)
 	{
 		if (event->prev_char_nev->next_char_nev != event)
@@ -941,7 +956,8 @@ static nevent_schedule_result add_event_internal(event_func func, int delay, P_c
 
 	if (debug_event_list)
 	{
-		check_nevents();
+		// Constructors can schedule events before publishing their runtime ID.
+		check_nevents(false);
 	}
 
 	return { nevent_schedule_status::scheduled, nevent_handle_from_event(event) };
@@ -1938,6 +1954,7 @@ void ne_init_events(void)
 
 	ne_init_event_pool();
 	community_spellup_reset_for_boot();
+	character_maintenance_init();
 
 	logit(LOG_STATUS, "assigning room specials events.");
 	for (j = 0; j < top_of_world; j++)
@@ -2014,10 +2031,6 @@ void ne_init_events(void)
 			  &j, sizeof(j));
 	}
 
-	/* miscellaneous character looping */
-	nevent_register_periodic_job("generic-character-sweep", generic_char_event, 20 * WAIT_SEC,
-				     5 * WAIT_SEC, nevent_periodic_policy::fixed_delay, true);
-
 	// Kingdom upkeep: charge each realm, and walk the arrears ladder when it
 	// cannot pay. Always registered; kingdom_upkeep_event() returns at once
 	// while the subsystem is disabled. The * WAIT_SEC factor is MANDATORY --
@@ -2086,10 +2099,8 @@ void zone_purge(int zone_number)
 		}
 		for (const uint64_t runtime_id : character_ids)
 		{
-			for (vict = world[k].people; vict; vict = vict->next_in_room)
-				if (vict->runtime_id == runtime_id)
-					break;
-			if (vict && IS_NPC(vict) && !IS_MORPH(vict))
+			vict = find_character_by_runtime_id(runtime_id);
+			if (vict && vict->in_room == k && IS_NPC(vict) && !IS_MORPH(vict))
 			{
 				extract_char(vict);
 				vict = NULL;
@@ -2417,11 +2428,15 @@ static nevent_integrity_report nevent_inspect_invariants(bool emit_summary)
 }
 
 // Expensive by design, but observation-only: diagnostics never sever or repair links.
-bool check_nevents()
+bool check_nevents(bool check_character_index)
 {
 	if (!nevent_require_game_thread("check_nevents"))
 		return false;
-	return nevent_inspect_invariants(true).errors == 0;
+	const bool characters_consistent = !check_character_index ||
+					   character_runtime_index_is_consistent();
+	if (!characters_consistent)
+		logit(LOG_EXIT, "character runtime index disagrees with character_list");
+	return characters_consistent && nevent_inspect_invariants(true).errors == 0;
 }
 
 void event_broken(struct char_link_data *cld)

@@ -63,6 +63,10 @@ bool player_revision_acknowledge_durable(int pid, player_revision_t revision,
 					 player_component_mask_t components);
 bool player_revision_fail_inflight(int pid, player_revision_t revision,
 				   player_component_mask_t components);
+// Hold one exact revision while a terminal death disposition is unresolved.
+// While held, no ordinary revision mark or hydration may replace its payload.
+bool player_revision_pin_terminal_death(int pid, player_revision_t revision);
+bool player_revision_unpin_terminal_death(int pid, player_revision_t revision);
 bool player_revision_snapshot_copy(int pid, struct player_revision_snapshot *snapshot_out);
 void player_revision_forget(int pid);
 void player_revision_reset_for_tests(void);

@@ -18,8 +18,12 @@ PIPELINE = (ROOT / "docs/persistence/CRITICAL_COMMAND_PIPELINE.md").read_text()
 
 HARNESS = r'''
 #include "persistence/critical_command_coordinator.h"
+#include "persistence/persistence_diagnostics.h"
+#include "persistence/death_recovery_visibility.h"
 
 #include <cassert>
+#include <atomic>
+#include <cerrno>
 #include <chrono>
 #include <condition_variable>
 #include <fcntl.h>
@@ -30,6 +34,14 @@ HARNESS = r'''
 #include <thread>
 #include <unistd.h>
 #include <vector>
+
+std::atomic<bool> fail_checkpoint_sync{false};
+extern "C" int __real_fsync(int fd);
+extern "C" int __wrap_fsync(int fd)
+{
+    if (fail_checkpoint_sync.load()) { errno = EIO; return -1; }
+    return __real_fsync(fd);
+}
 
 struct apply_state
 {
@@ -68,6 +80,8 @@ critical_apply_result apply(const critical_command &command, void *raw)
     const unsigned int tag = command.payload[0];
     std::unique_lock<std::mutex> lock(state.mutex);
     const unsigned int attempt = ++state.attempts[tag];
+    if (tag == 18)
+        fail_checkpoint_sync = true; // admission fsync succeeded; fail subsequent checkpoints
     if (state.hold_all)
         state.changed.wait(lock, [&] { return state.release_all; });
     if (tag == 1)
@@ -439,7 +453,7 @@ int main(int argc, char **argv)
         const std::string directory = std::string(argv[2]) + "-uncertain-" + std::to_string(tag);
         apply_state uncertain;
         assert(critical_command_coordinator_init(directory.c_str(), apply, &uncertain, 1));
-        critical_command command = make_command(tag, {{critical_entity_type::item, tag}});
+        critical_command command = make_command(tag, {{critical_entity_type::item, tag}, {critical_entity_type::corpse, (uint64_t{42} << 32) | 9001}});
         assert(critical_command_coordinator_submit_for_publication(command) ==
                critical_submit_result::awaiting_durability);
         wait_until([&] { return critical_command_coordinator_pulse(completions, 16) == 1; });
@@ -447,6 +461,18 @@ int main(int argc, char **argv)
         assert(critical_command_journal_health_copy().records == 1);
         assert(!critical_command_coordinator_acknowledge_publication(command.operation_id));
         assert(critical_command_coordinator_health_copy().blocked == 1);
+        critical_recovery_case recovery[1];
+        size_t total = 0;
+        assert(critical_command_coordinator_recovery_copy(recovery, 1, &total) == 1 && total == 1);
+        assert(critical_command_coordinator_recovery_copy(recovery, 1, &total, 1) == 0 && total == 1);
+        assert(critical_command_coordinator_recovery_copy(recovery, 1, &total) == 1);
+        char correlation[33];
+        death_recovery_correlation((uint64_t{42} << 32) | 9001, correlation);
+        assert(std::string(recovery[0].correlation) == correlation);
+        assert(std::string(recovery[0].state) == "unresolved_retry_exhausted");
+        assert(recovery[0].attempts == CRITICAL_COORDINATOR_MAX_RETRIES + 1);
+        assert(critical_operation_id_equal(recovery[0].operation_id, command.operation_id));
+
         assert(critical_command_journal_health_copy().records == 1);
         critical_command_coordinator_shutdown();
         apply_state reconciled;
@@ -457,8 +483,63 @@ int main(int argc, char **argv)
             return critical_command_coordinator_health_copy().completed == 1;
         });
         assert(critical_command_journal_health_copy().records == 0);
+        assert(critical_command_coordinator_recovery_copy(recovery, 1, &total) == 0 && total == 0);
         critical_command_coordinator_shutdown();
     }
+    // DB apply success cannot hide the failed checkpoint that leaves a player
+    // fenced after retry exhaustion. Keep both checkpoint cause and effective
+    // completion, and retain the cause when recent history wraps.
+    const std::string checkpoint_directory = std::string(argv[2]) + "-checkpoint-failure";
+    apply_state checkpoint_state;
+    assert(critical_command_coordinator_init(checkpoint_directory.c_str(), apply, &checkpoint_state, 1));
+    critical_command checkpoint_command = make_command(18, {{critical_entity_type::player, 9001}});
+    assert(critical_command_coordinator_submit(checkpoint_command) == critical_submit_result::awaiting_durability);
+    wait_until([&] { return critical_command_coordinator_pulse(completions, 16) == 1; });
+    assert(completions[0].outcome == critical_apply_outcome::retryable_failure);
+    assert(completions[0].attempt == CRITICAL_COORDINATOR_MAX_RETRIES + 1);
+    assert(critical_command_coordinator_health_copy().blocked == 1);
+    assert(critical_command_coordinator_is_fenced({critical_entity_type::player, 9001}, nullptr));
+    assert(critical_command_journal_health_copy().records == 1);
+    persistence_trace_filter filter; filter.by_operation = true; filter.operation = checkpoint_command.operation_id;
+    auto trace = persistence_trace_copy(filter);
+    assert(trace.available && trace.incident_count == 1);
+    unsigned int checkpoints = 0, results = 0;
+    for (size_t i = 0; i < trace.count; ++i) {
+        const auto &event = trace.events[i];
+        if (event.stage == persistence_trace_stage::command_checkpoint) {
+            ++checkpoints;
+            assert(event.outcome == static_cast<unsigned>(critical_command_journal_result::io_failure));
+            assert(event.durable_revision == 1);
+        } else if (event.stage == persistence_trace_stage::command_result) {
+            ++results;
+            assert(event.outcome == static_cast<unsigned>(critical_apply_outcome::retryable_failure));
+            assert(i && trace.events[i - 1].stage == persistence_trace_stage::command_checkpoint);
+        }
+    }
+    assert(checkpoints == CRITICAL_COORDINATOR_MAX_RETRIES + 1 && results == checkpoints);
+    const auto incident = trace.incidents[0];
+    assert(incident.stage == persistence_trace_stage::command_checkpoint);
+    assert(incident.outcome == static_cast<unsigned>(critical_command_journal_result::io_failure));
+    assert(incident.attempt == CRITICAL_COORDINATOR_MAX_RETRIES + 1);
+    for (size_t i = 0; i < PERSISTENCE_TRACE_CAPACITY; ++i)
+        persistence_trace_record({});
+    trace = persistence_trace_copy(filter);
+    assert(trace.count == 0 && trace.incident_count == 1 && trace.incidents[0].sequence == incident.sequence);
+    const auto player_trace = persistence_trace_copy({critical_entity_type::player, 9001});
+    assert(player_trace.incident_count == 1 && player_trace.incidents[0].sequence == incident.sequence);
+    fail_checkpoint_sync = false;
+    critical_command_coordinator_shutdown();
+    // Restart with the exact native receipt already committed and checkpoint I/O restored.
+    assert(critical_command_coordinator_init(checkpoint_directory.c_str(),
+        [](const critical_command &, void *) { return critical_apply_result{critical_apply_outcome::already_applied, 1, 0}; },
+        nullptr, 1));
+    wait_until([&] {
+        critical_command_coordinator_pulse(completions, 16);
+        return critical_command_coordinator_health_copy().completed == 1;
+    });
+    assert(critical_command_journal_health_copy().records == 0);
+    assert(!critical_command_coordinator_is_fenced({critical_entity_type::player, 9001}, nullptr));
+    critical_command_coordinator_shutdown();
     return 0;
 }
 '''
@@ -474,7 +555,7 @@ with tempfile.TemporaryDirectory(prefix="duris-critical-command-") as temporary:
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
             "-pthread", "-Isrc", str(source), rel("critical_command.c"),
             rel("critical_command_journal.c"), rel("critical_command_coordinator.c"),
-            "-lz", "-lcrypto", "-o", str(binary),
+            "-lz", "-lcrypto", "-Wl,--wrap=fsync", "-o", str(binary),
         ],
         cwd=ROOT,
         check=True,

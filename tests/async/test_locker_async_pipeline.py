@@ -35,8 +35,8 @@ def main():
     ok &= check("max inflight is 1",
                 "LOCKER_ASYNC_MAX_INFLIGHT        1" in files["async_h"]
                 or "LOCKER_ASYNC_MAX_INFLIGHT 1" in files["async_h"])
-    ok &= check("obj lock only while DIRTY",
-                "state == LCHK_DIRTY && g_slots[i].user_pid == pid" in files["async_c"])
+    ok &= check("obj lock through in-flight commit",
+                "state != LCHK_FREE && g_slots[i].user_pid == pid" in files["async_c"])
     ok &= check("terminal priority selection",
                 "oldest_terminal" in files["async_c"] and "start_one_snapshot(oldest_terminal)" in files["async_c"])
     ok &= check("worker uses pool connection",

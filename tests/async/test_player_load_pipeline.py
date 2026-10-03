@@ -22,6 +22,7 @@ DIAGNOSTICS = (SRC / "actinf.c").read_text()
 
 HARNESS = r'''
 #include "player/player_load_pipeline.h"
+#include "player/player_save_pipeline.h"
 #include "persistence/persistence_observability.h"
 #include "sql/sql_pool.h"
 
@@ -32,9 +33,32 @@ HARNESS = r'''
 #include <thread>
 
 bool player_save_pipeline_save_admitted(int) { return true; }
+// This fixture isolates load-queue mechanics with a healthy save side. Actual
+// replay readiness is exercised by test_death_journal_pipeline_lifecycle.py.
+bool player_save_pipeline_loads_allowed() { return true; }
+bool item_movement_transaction_pending_craft_progression(
+    uint32_t pid, std::vector<critical_operation_id> *operations)
+{
+    assert(pid > 0 && operations);
+    critical_operation_id operation = {};
+    operation.bytes[1] = static_cast<uint8_t>(pid);
+    operations->push_back(operation);
+    return true;
+}
+bool item_movement_transaction_pending_spell_effects(
+    uint32_t pid, std::vector<critical_operation_id> *operations)
+{
+    assert(pid > 0 && operations);
+    critical_operation_id operation = {};
+    operation.bytes[0] = static_cast<uint8_t>(pid);
+    operations->push_back(operation);
+    return true;
+}
+bool player_save_journal_pid_quarantined(int) { return false; }
 
 extern "C" MYSQL *sql_pool_acquire(void) { return nullptr; }
 extern "C" void sql_pool_release(MYSQL *) {}
+extern "C" void sql_pool_discard_connection(MYSQL *) {}
 
 bool player_load_request_valid(const player_load_request &request, uint64_t now)
 {
@@ -63,6 +87,16 @@ struct callback_state
 
 player_load_result execute(const player_load_request &request, void *raw)
 {
+    if (request.include_items) {
+        assert(request.pending_spell_effect_operations.size() == 1);
+        assert(request.pending_spell_effect_operations[0].bytes[0] ==
+               static_cast<uint8_t>(request.pid));
+        assert(request.pending_craft_operations.size() == 1);
+        assert(request.pending_craft_operations[0].bytes[1] == static_cast<uint8_t>(request.pid));
+    } else {
+        assert(request.pending_spell_effect_operations.empty());
+        assert(request.pending_craft_operations.empty());
+    }
     auto &state = *static_cast<callback_state *>(raw);
     if (request.request_id >= 1000)
     {
@@ -159,6 +193,11 @@ int main()
     assert(player_load_pipeline_execute_sync(request(6, 60), &synchronous));
     assert(synchronous.request_id == 6 && synchronous.pid == 60);
     assert(synchronous.outcome == player_load_outcome::applied);
+    auto preview = request(7, 70);
+    preview.include_items = false;
+    preview.include_pets = false;
+    assert(player_load_pipeline_execute_sync(preview, &synchronous));
+    assert(synchronous.request_id == 7 && synchronous.pid == 70);
 
     assert(player_load_pipeline_submit(request(1000, 1000)) ==
            player_load_submit_outcome::accepted);
@@ -240,15 +279,20 @@ for contract in (
     "sql_pool_acquire()",
     "sql_worker_thread_init()",
     "pool_connection_guard guard",
-    "mysql_rollback(connection)",
+    "guard.discard()",
+    "connection_requires_discard(connection, result)",
+    "invalidate_uncertain_result(&result, error)",
     "selected_execute_callback()",
     "flatfile_player_load_repository_execute_selected",
+    "item_movement_transaction_pending_spell_effects(",
 ):
     assert contract in PIPELINE
 
 for contract in (
     "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ",
-    "START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY",
+    'execute(connection, "START TRANSACTION"',
+    '" LOCK IN SHARE MODE"',
+    'if (result.pid != locked_pid)',
     'execute(connection, "COMMIT"',
     'execute(connection, "ROLLBACK"',
     "PLAYER_LOAD_QUERY_MAX",
@@ -259,6 +303,10 @@ for contract in (
     assert contract in REPOSITORY
 assert REPOSITORY.index("load_status(connection") < REPOSITORY.index("load_components(connection")
 assert REPOSITORY.index("load_components(connection") < REPOSITORY.index("load_bank(connection")
+assert 'FROM player_spell_effect_receipt WHERE pid=' in REPOSITORY
+assert 'AND operation_id IN (' in REPOSITORY
+assert 'if (!request.pending_spell_effect_operations.empty())' in REPOSITORY
+assert 'ORDER BY created_at DESC,operation_id DESC LIMIT' not in REPOSITORY
 
 assert "restoreCharOnly(player" not in ACCOUNT
 assert "player_load_pipeline_submit(request)" in ACCOUNT
@@ -268,6 +316,10 @@ assert "STATE(d) = CON_PLAYER_LOAD" in ACCOUNT
 assert "player_load_materialize(player, loaded)" in ACCOUNT
 assert "d->rtype = loaded.snapshot.save_intent;" in ACCOUNT
 completion = ACCOUNT[ACCOUNT.index("void account_player_load_complete") :]
+hydration_gate = completion.index("player_save_pipeline_authoritative_hydration_admitted(d->player_load_pid)")
+assert hydration_gate < completion.index("ready_player_loads.emplace")
+assert "PLAYER_LOAD_DEGRADED_RECOVERY" in completion[hydration_gate:completion.index("ready_player_loads.emplace")]
+assert "player_save_pipeline_save_admitted(d->player_load_pid)" not in completion
 recheck = completion.index('account_confirm_char(d, writable_arg("Y"))')
 discard = completion.index("ready_player_loads.erase(completed_request_id)")
 assert recheck < discard
@@ -286,6 +338,12 @@ assert NANNY.rindex("d->player_load_mode == PLAYER_LOAD_MODE_NONE", 0, bank_load
 assert "restoreCharOnly(d->character" not in NANNY
 assert "d->player_load_mode = PLAYER_LOAD_MODE_LEGACY" in NANNY
 assert "nanny_player_load_complete" in NANNY
+nanny_completion = NANNY[NANNY.index("void nanny_player_load_complete") :]
+hydration_gate = nanny_completion.index("player_save_pipeline_authoritative_hydration_admitted(result.pid)")
+materialize = nanny_completion.index("player_load_materialize(loaded, result)")
+assert hydration_gate < materialize
+assert "PLAYER_LOAD_DEGRADED_RECOVERY" in nanny_completion[hydration_gate:materialize]
+assert "player_save_pipeline_save_admitted(result.pid)" not in nanny_completion
 assert "player_load_pipeline_execute_sync" in NANNY
 assert "player_death_restitution_runtime_login_admit" not in NANNY
 assert "d->rtype = result.snapshot.save_intent;" in NANNY

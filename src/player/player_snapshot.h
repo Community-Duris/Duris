@@ -11,8 +11,94 @@
 #include <string>
 #include <vector>
 
-constexpr uint32_t PLAYER_SNAPSHOT_SCHEMA_VERSION = 9;
-constexpr uint32_t PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION = 10;
+constexpr uint32_t PLAYER_SNAPSHOT_SCHEMA_VERSION = 7;
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION = 8;
+// Readable evidence envelope only. Existing capture/admission stays on version 8
+// until the atomic retention and player-visible recovery path is integrated.
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION = 10;
+// Ordinary save frames carrying a quest progression receipt. Kept separate from
+// the death envelopes so the receipt can be committed with player progression.
+constexpr uint32_t PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION = 11;
+// Ordinary save frames that retain operation-scoped spell effect application receipts.
+constexpr uint32_t PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION = 12;
+// Death dispositions retain applied spell receipts, including conflict evidence.
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION = 13;
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_SPELL_EVIDENCE_SCHEMA_VERSION = 14;
+// Death frames carrying quest XP and optionally applied spell receipts.
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION = 15;
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION = 16;
+
+// Recipe progression receipts commit with status, skills, notch affects and trophies.
+constexpr uint32_t PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION = 17;
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION = 18;
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_CRAFT_EVIDENCE_SCHEMA_VERSION = 19;
+constexpr size_t PLAYER_CRAFT_RECEIPT_MAX = 64;
+constexpr bool player_snapshot_has_craft_receipt_schema(uint32_t version)
+{
+	return version == PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_CRAFT_EVIDENCE_SCHEMA_VERSION;
+}
+
+constexpr bool player_snapshot_is_death_request_schema(uint32_t version)
+{
+	return version == PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION;
+}
+constexpr bool player_snapshot_is_death_evidence_schema(uint32_t version)
+{
+	return version == PLAYER_SNAPSHOT_DEATH_CRAFT_EVIDENCE_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_SPELL_EVIDENCE_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION;
+}
+constexpr bool player_snapshot_has_spell_receipt_schema(uint32_t version)
+{
+	return player_snapshot_has_craft_receipt_schema(version) ||
+	       version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_SPELL_EVIDENCE_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION;
+}
+constexpr bool player_snapshot_has_quest_receipt_schema(uint32_t version)
+{
+	return player_snapshot_has_craft_receipt_schema(version) ||
+	       version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION ||
+	       version == PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION;
+}
+constexpr uint32_t player_snapshot_death_request_schema(uint32_t version)
+{
+	if (version == PLAYER_SNAPSHOT_DEATH_CRAFT_EVIDENCE_SCHEMA_VERSION)
+		return PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION;
+	if (version == PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION)
+		return PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION;
+	return version == PLAYER_SNAPSHOT_DEATH_SPELL_EVIDENCE_SCHEMA_VERSION ?
+		       PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION :
+		       PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+}
+constexpr uint32_t player_snapshot_death_evidence_schema(uint32_t version)
+{
+	if (version == PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION)
+		return PLAYER_SNAPSHOT_DEATH_CRAFT_EVIDENCE_SCHEMA_VERSION;
+	if (version == PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION)
+		return PLAYER_SNAPSHOT_DEATH_QUEST_EVIDENCE_SCHEMA_VERSION;
+	return version == PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION ?
+		       PLAYER_SNAPSHOT_DEATH_SPELL_EVIDENCE_SCHEMA_VERSION :
+		       PLAYER_SNAPSHOT_DEATH_EVIDENCE_SCHEMA_VERSION;
+}
+constexpr uint32_t PLAYER_SPELL_EFFECT_RECEIPT_EFFECT_MAX = 6;
+constexpr size_t PLAYER_SPELL_EFFECT_RECEIPT_MAX = 4096;
+constexpr size_t PLAYER_DEATH_EVIDENCE_MAX_COLUMNS = 64;
+constexpr size_t PLAYER_DEATH_EVIDENCE_MAX_COLUMN_NAME_BYTES = 64;
+// Ward-bearing wire envelopes use the existing normalized schema plus 13.
+// This allocates versions 20, 21 and 23-32 without reusing accounting formats
+// 7-19 (including death evidence 10). Receipts retain their existing schemas.
+constexpr uint32_t PLAYER_SNAPSHOT_WARD_WIRE_OFFSET = 13;
 constexpr size_t PLAYER_SNAPSHOT_MAX_BYTES = 4 * 1024 * 1024;
 constexpr size_t PLAYER_SNAPSHOT_MAX_ROWS = 8192;
 constexpr size_t PLAYER_SNAPSHOT_MAX_OBJECTS = 4096;
@@ -235,6 +321,26 @@ struct player_trophy_snapshot
 	int32_t experience;
 };
 
+struct player_quest_xp_receipt_snapshot
+{
+	critical_operation_id offering_operation;
+	uint32_t reward_index;
+	uint32_t amount;
+};
+
+struct player_craft_receipt_snapshot
+{
+	critical_operation_id operation_id = {};
+	uint32_t discipline = 0;
+	uint32_t experience = 0;
+};
+
+struct player_spell_effect_receipt_snapshot
+{
+	critical_operation_id operation_id;
+	uint32_t effect_id;
+};
+
 // Stored with the post-death terminal snapshot, outside active inventory. The
 // corpse tree includes every captured asset; custody records ownership evidence
 // for that captured graph, including an explicit absent row when its runtime
@@ -247,6 +353,25 @@ struct player_death_custody_snapshot
 	uint64_t owner_revision;
 };
 
+// Raw observations are evidence, never an ownership grant or loadable inventory.
+// Preserve SQL NULL separately from empty strings and keep field bytes verbatim.
+using player_death_evidence_row = std::vector<std::optional<std::string>>;
+
+struct player_death_evidence_table
+{
+	std::vector<std::string> columns;
+	std::vector<player_death_evidence_row> rows;
+};
+
+struct player_death_conflict_evidence
+{
+	player_death_evidence_table player_items;
+	player_death_evidence_table player_item_affects;
+	player_death_evidence_table player_item_extra_descr;
+	player_death_evidence_table item_current_owner;
+	player_death_evidence_table item_owner_revision;
+};
+
 struct player_death_snapshot
 {
 	critical_operation_id operation_id;
@@ -257,6 +382,7 @@ struct player_death_snapshot
 	std::vector<player_item_snapshot> corpse;
 	std::vector<player_death_custody_snapshot> custody;
 	std::vector<critical_operation_id> unresolved_operations;
+	std::optional<player_death_conflict_evidence> conflict_evidence;
 };
 
 struct player_snapshot
@@ -284,6 +410,9 @@ struct player_snapshot
 	std::vector<player_pet_snapshot> pets;
 	std::vector<player_shape_snapshot> shapes;
 	std::vector<player_trophy_snapshot> trophies;
+	std::vector<player_quest_xp_receipt_snapshot> quest_xp_receipts;
+	std::vector<player_spell_effect_receipt_snapshot> spell_effect_receipts;
+	std::vector<player_craft_receipt_snapshot> craft_receipts = {};
 	bool recipes_are_external;
 	std::string output_preferences;
 	std::optional<player_death_snapshot> death;

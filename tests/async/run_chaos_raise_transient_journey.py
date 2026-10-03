@@ -66,6 +66,7 @@ def run(binary: Path, expect_refusal: bool, with_coins: bool) -> bool:
         with tempfile.TemporaryDirectory(prefix="chaos-raise-") as temporary:
             game = Path(temporary)
             (game / "logs/log").mkdir(parents=True)
+            (game / "Players").mkdir()
             journey.make_fixture(game)
             journey.generate_certificate(game)
             for kind in ("players", "critical"):

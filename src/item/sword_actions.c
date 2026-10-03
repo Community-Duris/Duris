@@ -20,6 +20,38 @@ int isWieldingVnum(P_char, int);
 int attemptToDisengage(P_char, int, char *);
 bool has_skin_spell(P_char);
 
+int isWieldingVnum(P_char ch, int vnum)
+{
+	if (!ch)
+		return FALSE;
+
+	if (ch->equipment[WIELD] && (obj_index[ch->equipment[WIELD]->R_num].virtual_number == vnum))
+		return TRUE;
+	if (ch->equipment[WIELD2] &&
+	    (obj_index[ch->equipment[WIELD2]->R_num].virtual_number == vnum))
+		return TRUE;
+	if (ch->equipment[WIELD3] &&
+	    (obj_index[ch->equipment[WIELD3]->R_num].virtual_number == vnum))
+		return TRUE;
+	if (ch->equipment[WIELD4] &&
+	    (obj_index[ch->equipment[WIELD4]->R_num].virtual_number == vnum))
+		return TRUE;
+
+	return FALSE;
+}
+
+int attemptToDisengage(P_char ch, int cmd, char * /*arg*/)
+{
+	if (cmd == CMD_KILL || cmd == CMD_HIT || cmd == CMD_INNATE || cmd == CMD_FLEE ||
+	    cmd == CMD_RESCUE || cmd == CMD_RETREAT)
+	{
+		send_to_char("&+LYour weapon compels you to continue fighting its nemesis!&N\n",
+			     ch);
+		return TRUE;
+	}
+	return FALSE;
+}
+
 namespace
 {
 enum class sword_stage : uint32_t

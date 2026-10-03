@@ -1,3 +1,4 @@
+#include "net/network_wakeup.h"
 #include "player/player_save_worker.h"
 #include "sql/sql_thread_init.h"
 
@@ -50,6 +51,7 @@ player_save_apply_fn apply_callback = nullptr;
 void *apply_context = nullptr;
 player_save_journal_append_fn journal_append_callback = nullptr;
 player_save_journal_ack_fn journal_ack_callback = nullptr;
+player_save_journal_terminal_fn journal_terminal_callback = nullptr;
 void *journal_context = nullptr;
 player_save_worker_health health = {};
 size_t retained_bytes = 0;
@@ -75,8 +77,16 @@ bool valid_snapshot(const player_snapshot &snapshot)
 {
 	const uint32_t required = snapshot.death ? PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION :
 						   PLAYER_SNAPSHOT_SCHEMA_VERSION;
-	return snapshot.schema_version == required && snapshot.pid > 0 && snapshot.revision &&
-	       snapshot.components && !(snapshot.components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) &&
+	return (snapshot.schema_version == required ||
+		(snapshot.death &&
+		 player_snapshot_is_death_request_schema(snapshot.schema_version)) ||
+		(!snapshot.death &&
+		 (snapshot.schema_version == PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION ||
+		  snapshot.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
+		  snapshot.schema_version ==
+			  PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION))) &&
+	       snapshot.pid > 0 && snapshot.revision && snapshot.components &&
+	       !(snapshot.components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) &&
 	       snapshot.encoded_size_bound &&
 	       snapshot.encoded_size_bound <= PLAYER_SNAPSHOT_MAX_BYTES;
 }
@@ -146,6 +156,13 @@ void worker_main()
 			update_depth_health_locked();
 		}
 
+		persistence_trace_event trace;
+		trace.stage = persistence_trace_stage::save_apply;
+		trace.pid = job->snapshot.pid;
+		trace.revision = job->snapshot.revision;
+		trace.components = job->snapshot.components;
+		trace.attempt = job->retry_count;
+		persistence_trace_record(trace);
 		const uint64_t started = now_usec();
 		player_save_apply_result applied = {};
 		try
@@ -160,10 +177,32 @@ void worker_main()
 		{
 			applied = { player_save_apply_outcome::terminal_failure, 0, EFAULT };
 		}
+		// Keep the journal record when a receipt-bearing save's claimed success
+		// belongs to a different durable revision.
+		if ((applied.outcome == player_save_apply_outcome::applied ||
+		     applied.outcome == player_save_apply_outcome::already_applied) &&
+		    !player_save_result_matches_exact_request(job->snapshot, applied))
+		{
+			applied.outcome = player_save_apply_outcome::terminal_failure;
+			applied.error_code = ESTALE;
+		}
+		trace.stage = persistence_trace_stage::save_result;
+		trace.outcome = static_cast<uint32_t>(applied.outcome);
+		trace.error = applied.error_code;
+		trace.diagnosis = static_cast<uint32_t>(applied.custody_diagnosis);
+		trace.witness = applied.custody_witness;
+		trace.durable_revision = applied.durable_revision;
+		trace.incident =
+			applied.outcome == player_save_apply_outcome::terminal_failure ||
+			((applied.outcome == player_save_apply_outcome::retryable_failure ||
+			  applied.outcome == player_save_apply_outcome::ambiguous_commit) &&
+			 job->retry_count >= PLAYER_SAVE_WORKER_MAX_RETRIES);
+		persistence_trace_record(trace);
 		if ((applied.outcome == player_save_apply_outcome::applied ||
 		     applied.outcome == player_save_apply_outcome::already_applied ||
 		     applied.outcome == player_save_apply_outcome::stale_revision) &&
-		    applied.durable_revision >= job->snapshot.revision)
+		    applied.durable_revision >= job->snapshot.revision &&
+		    player_save_result_matches_exact_request(job->snapshot, applied))
 		{
 			player_save_journal_ack_fn acknowledge = nullptr;
 			void *ack_context = nullptr;
@@ -172,9 +211,54 @@ void worker_main()
 				acknowledge = journal_ack_callback;
 				ack_context = journal_context;
 			}
+			bool acked = true;
 			if (acknowledge)
-				acknowledge(job->snapshot.pid, applied.durable_revision,
-					    ack_context);
+			{
+				try
+				{
+					acked = acknowledge(job->snapshot, applied.durable_revision,
+							    ack_context);
+				}
+				catch (...)
+				{
+					acked = false;
+				}
+			}
+			trace.stage = persistence_trace_stage::save_checkpoint;
+			trace.outcome = acked ? 0 : 1;
+			trace.incident = false;
+			persistence_trace_record(trace);
+			if (!acked)
+			{
+				std::lock_guard<std::mutex> lock(worker_mutex);
+				saturating_increment(health.journal_ack_failures);
+				// DB durability is real, but do not ACK the player or discard the
+				// retained job while its journal checkpoint has failed.
+				applied.outcome = player_save_apply_outcome::retryable_failure;
+				applied.error_code = EIO;
+			}
+		}
+		// Do not expose an unresolved terminal result (or drop an exhausted
+		// retry) while login can still consume an older durable DB snapshot.
+		if (applied.outcome == player_save_apply_outcome::terminal_failure ||
+		    ((applied.outcome == player_save_apply_outcome::retryable_failure ||
+		      applied.outcome == player_save_apply_outcome::ambiguous_commit) &&
+		     job->retry_count >= PLAYER_SAVE_WORKER_MAX_RETRIES))
+		{
+			player_save_journal_terminal_fn terminal = nullptr;
+			void *terminal_context = nullptr;
+			{
+				std::lock_guard<std::mutex> lock(worker_mutex);
+				terminal = journal_terminal_callback;
+				terminal_context = journal_context;
+			}
+			if (terminal)
+				terminal(job->snapshot, terminal_context);
+			trace.stage = persistence_trace_stage::save_fence;
+			trace.outcome = static_cast<uint32_t>(applied.outcome);
+			trace.error = applied.error_code;
+			trace.incident = true;
+			persistence_trace_record(trace);
 		}
 		const uint64_t completed = now_usec();
 		player_save_completion completion = {
@@ -184,10 +268,15 @@ void worker_main()
 			.outcome = applied.outcome,
 			.durable_revision = applied.durable_revision,
 			.error_code = applied.error_code,
+			.custody_diagnosis = applied.custody_diagnosis,
 			.retry_count = job->retry_count,
 			.queued_at_usec = job->queued_at_usec,
 			.started_at_usec = started,
 			.completed_at_usec = completed,
+			.quest_xp_receipts = {},
+			.spell_effect_receipts = {},
+			.failed_spell_effect_receipts = {},
+			.custody_witness = applied.custody_witness,
 		};
 		{
 			std::unique_lock<std::mutex> lock(worker_mutex);
@@ -198,7 +287,10 @@ void worker_main()
 								     PLAYER_SAVE_WORKER_MAX_RESULTS;
 					      });
 			if (results.size() < PLAYER_SAVE_WORKER_MAX_RESULTS)
+			{
 				results.push_back(completion);
+				network_wakeup_notify();
+			}
 		}
 	}
 	std::lock_guard<std::mutex> lock(worker_mutex);
@@ -310,7 +402,8 @@ void player_save_worker_shutdown(void)
 }
 
 bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
-					  player_save_journal_ack_fn acknowledge, void *context)
+					  player_save_journal_ack_fn acknowledge, void *context,
+					  player_save_journal_terminal_fn terminal)
 {
 	if (append && !acknowledge)
 		return false;
@@ -319,6 +412,7 @@ bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
 		return false;
 	journal_append_callback = append;
 	journal_ack_callback = acknowledge;
+	journal_terminal_callback = terminal;
 	journal_context = context;
 	return true;
 }
@@ -352,9 +446,19 @@ player_save_submit_result player_save_worker_submit_retained(player_snapshot *sn
 		    snapshot.encoded_size_bound > PLAYER_SAVE_WORKER_MAX_BYTES - retained_bytes)
 			return durably_journaled ? player_save_submit_result::durably_spilled :
 						   player_save_submit_result::capacity_exceeded;
-		if (!player_revision_begin_inflight(snapshot.pid, snapshot.revision,
-						    snapshot.components))
+		player_revision_snapshot revision_state = {};
+		if (!player_revision_snapshot_copy(snapshot.pid, &revision_state) ||
+		    revision_state.queued_revision != snapshot.revision ||
+		    !revision_state.queued_components ||
+		    (snapshot.components & revision_state.queued_components) !=
+			    revision_state.queued_components ||
+		    !player_revision_begin_inflight(snapshot.pid, snapshot.revision,
+						    revision_state.queued_components))
 			return player_save_submit_result::revision_state_mismatch;
+		// An earlier worker ACK can narrow the queued mask while this sealed
+		// capture waits for its journal append. Apply the remaining components,
+		// just as promote_pending_locked does for a capture retained by the worker.
+		snapshot.components = revision_state.queued_components;
 		const int pid = snapshot.pid;
 		const player_revision_t revision = snapshot.revision;
 		const player_component_mask_t components = snapshot.components;
@@ -448,7 +552,7 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 	size_t consumed = 0;
 	while (consumed < capacity && !results.empty())
 	{
-		const player_save_completion completion = results.front();
+		player_save_completion completion = std::move(results.front());
 		results.pop_front();
 		result_available.notify_one();
 		auto found = slots.find(completion.pid);
@@ -461,6 +565,7 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 		const uint64_t ack_at = now_usec();
 		account_completion_locked(completion, ack_at);
 		bool finished = false;
+		bool exact_acknowledged = false;
 		switch (completion.outcome)
 		{
 		case player_save_apply_outcome::applied:
@@ -469,6 +574,14 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 							completion.components))
 			{
 				saturating_increment(health.applied);
+				exact_acknowledged = true;
+				persistence_trace_event trace;
+				trace.stage = persistence_trace_stage::save_ack;
+				trace.pid = completion.pid;
+				trace.revision = completion.revision;
+				trace.durable_revision = completion.durable_revision;
+				trace.components = completion.components;
+				persistence_trace_record(trace);
 				finished = true;
 			}
 			else
@@ -515,6 +628,22 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 
 		if (finished)
 		{
+			if (exact_acknowledged)
+			{
+				completion.quest_xp_receipts =
+					std::move(slot.active->snapshot.quest_xp_receipts);
+				completion.spell_effect_receipts =
+					std::move(slot.active->snapshot.spell_effect_receipts);
+				completion.craft_receipts =
+					std::move(slot.active->snapshot.craft_receipts);
+			}
+			else
+			{
+				completion.failed_spell_effect_receipts =
+					std::move(slot.active->snapshot.spell_effect_receipts);
+				completion.failed_craft_receipts =
+					std::move(slot.active->snapshot.craft_receipts);
+			}
 			remove_active_bytes_locked(slot);
 			slot.active.reset();
 			slot.dispatched = false;
@@ -528,7 +657,7 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 				slots.erase(found);
 		}
 		if (completions_out)
-			completions_out[consumed] = completion;
+			completions_out[consumed] = std::move(completion);
 		++consumed;
 	}
 	update_depth_health_locked();
@@ -577,5 +706,6 @@ void player_save_worker_reset_for_tests(void)
 	health = {};
 	journal_append_callback = nullptr;
 	journal_ack_callback = nullptr;
+	journal_terminal_callback = nullptr;
 	journal_context = nullptr;
 }

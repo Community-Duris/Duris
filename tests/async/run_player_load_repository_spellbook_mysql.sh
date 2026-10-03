@@ -55,9 +55,6 @@ done
 	exit 1
 }
 "${DB_CLIENT[@]}" "$DB_NAME" < migrations/bootstrap_multithread_safe.sql
-"${DB_CLIENT[@]}" "$DB_NAME" < migrations/immutable/0020_player_death_restitution.sql
-"${DB_ADMIN[@]}" "$DB_NAME" -e \
-	"ALTER TABLE player_data ADD COLUMN IF NOT EXISTS output_preferences VARBINARY(512) NOT NULL DEFAULT ''"
 
 docker create --name "$TOOLS_CONTAINER" --network "container:$DB_CONTAINER" \
 	-w /workspace "$TOOLS_IMAGE" sleep infinity >/dev/null
@@ -65,8 +62,21 @@ TOOLS_CREATED=1
 docker start "$TOOLS_CONTAINER" >/dev/null
 docker exec "$TOOLS_CONTAINER" mkdir -p /workspace/src /workspace/tests/async
 docker cp "$ROOT/src/." "$TOOLS_CONTAINER:/workspace/src/"
+docker cp "$ROOT/migrations" "$TOOLS_CONTAINER:/workspace/"
+docker cp "$ROOT/scripts" "$TOOLS_CONTAINER:/workspace/"
 docker cp "$ROOT/tests/async/player_load_repository_spellbook_mysql_harness.cpp" \
 	"$TOOLS_CONTAINER:/workspace/tests/async/"
+# The current loader uses quest witnesses, spell receipts and rich item state.
+# Build its disposable schema through the same immutable history as the server.
+docker exec "$TOOLS_CONTAINER" env ENVIRONMENT=local DB_HOST=127.0.0.1 DB_PORT=3306 \
+	DB_USER=root DB_PASSWD="$PASSWORD" DB_NAME="$DB_NAME" DB_TLS=FALSE \
+	DB_ALLOWED_TARGETS="127.0.0.1/$DB_NAME" bash -lc '
+	set -euo pipefail
+	command -v python3 >/dev/null
+	python3 scripts/migration_runner.py adopt --kind fresh_bootstrap
+	python3 scripts/migration_runner.py run
+	python3 scripts/migration_runner.py run
+'
 docker exec "$TOOLS_CONTAINER" bash -lc '
 	set -euo pipefail
 	read -r -a MYSQL_CFLAGS <<< "$(mysql_config --cflags)"
@@ -74,10 +84,13 @@ docker exec "$TOOLS_CONTAINER" bash -lc '
 	g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
 		"${MYSQL_CFLAGS[@]}" -ffunction-sections -fdata-sections \
 		tests/async/player_load_repository_spellbook_mysql_harness.cpp \
-		src/player/player_load_repository.c src/player/player_load_topology.c \
+		src/player/player_load_repository.c src/player/player_load_topology.c src/player/player_death_recovery_query.c src/player/player_death_conflict_repository.c src/persistence/critical_command.c \
 		src/player/player_load_items.c src/player/player_snapshot_codec.c \
 		src/persistence/persistence_observability.c \
 		src/persistence/player_death_restitution_command.c \
+		src/persistence/quest_reward_obligation_repository.c \
+		src/player/player_save_journal.c \
+		src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/economy/currency_command.c \
 		-Wl,--gc-sections "${MYSQL_LIBS[@]}" -lcrypto \
 		-o /tmp/player_load_repository_spellbook_mysql_harness
 '

@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/handler.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -33,6 +34,7 @@
 #include "economy/tradeskill.h"
 #include "economy/crafting.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "economy/collector_presence.h"
 #include "world/vnum.obj.h"
 #include "combat/chaos_materials.h"
@@ -376,13 +378,29 @@ struct empty_movement_context
 	uint64_t actor_runtime_id;
 };
 
-bool item_get_ack_publication = false;
-bool item_get_deferred = false;
-bool item_get_rejected = false;
+enum class get_phase
+{
+	admission,
+	publication,
+};
+enum class get_outcome
+{
+	rejected,
+	deferred,
+	placed,
+	consumed,
+	destroyed,
+};
+static get_outcome get_with_phase(P_char ch, P_obj object, P_obj container, int showit,
+				  get_phase phase);
 static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int showit,
 			    const coin_get_submission_options *options = NULL);
-bool item_put_ack_publication = false;
-bool item_put_deferred = false;
+enum class put_phase
+{
+	admission,
+	publication,
+};
+static bool put_with_phase(P_char ch, P_obj object, P_obj container, int showit, put_phase phase);
 std::unordered_map<uint32_t, bulk_get_state> bulk_gets;
 std::unordered_map<uint32_t, bulk_drop_state> bulk_drops;
 std::unordered_map<uint32_t, bulk_put_state> bulk_puts;
@@ -418,7 +436,24 @@ P_obj find_live_item_uid(uint64_t item_uid)
 	return NULL;
 }
 
-static void publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, int showit, bool slip)
+static get_outcome get_placement_outcome(obj_to_char_result placement)
+{
+	switch (placement)
+	{
+	case obj_to_char_result::placed:
+		return get_outcome::placed;
+	case obj_to_char_result::deferred:
+		return get_outcome::deferred;
+	case obj_to_char_result::destroyed:
+		return get_outcome::destroyed;
+	case obj_to_char_result::rejected:
+		return get_outcome::rejected;
+	}
+	return get_outcome::rejected;
+}
+
+static get_outcome publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, int showit, bool slip,
+					 get_phase phase)
 {
 	obj_from_obj(o_obj);
 
@@ -426,8 +461,8 @@ static void publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, int showi
 	s_obj->space -= GET_OBJ_SPACE(o_obj);
 #endif
 
-	bulk_get_state *haul = item_get_ack_publication ? corpse_bulk_get(ch, s_obj->obj_uid) :
-							  NULL;
+	bulk_get_state *haul =
+		phase == get_phase::publication ? corpse_bulk_get(ch, s_obj->obj_uid) : NULL;
 	const uint64_t picked_uid = o_obj->obj_uid;
 	const std::string picked_name =
 		haul && o_obj->short_description ? o_obj->short_description : "";
@@ -443,7 +478,8 @@ static void publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, int showi
 		if (showit && !slip)
 			act("$n gets $p from $P.", 1, ch, o_obj, s_obj, TO_ROOM);
 	}
-	obj_to_char(o_obj, ch);
+	const obj_to_char_result placement = obj_to_char_checked(o_obj, ch);
+	bool haul_delivery_failed = false;
 	if (haul)
 	{
 		P_obj delivered = find_live_item_uid(picked_uid);
@@ -452,11 +488,12 @@ static void publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, int showi
 		else
 		{
 			haul->failed = true;
-			item_get_rejected = true;
+			haul_delivery_failed = true;
 			haul->rejections.emplace_back(
 				"An accepted item could not be delivered to your inventory.\r\n");
 		}
 	}
+	return haul_delivery_failed ? get_outcome::rejected : get_placement_outcome(placement);
 }
 
 static void report_coin_get_rejection(P_char actor, P_obj container)
@@ -517,9 +554,17 @@ void item_get_completion(P_char actor, bool committed, const item_transfer_resul
 		persistence_alert(AVATAR, "corpse", "revision_publish", "none", "none",
 				  "runtime_rejected", "save_id=%d",
 				  container->value[CORPSE_SAVEID]);
-	item_get_ack_publication = true;
-	get(actor, object, container, context.showit);
-	item_get_ack_publication = false;
+	const get_outcome publication =
+		get_with_phase(actor, object, container, context.showit, get_phase::publication);
+	if (publication != get_outcome::placed)
+	{
+		persistence_alert(AVATAR, "item_movement", "get_publish", "none", "none",
+				  "publication_rejected", "item_uid=%llu", context.item_uid);
+		send_to_char(
+			"The committed item could not be delivered; staff have been alerted.\r\n",
+			actor);
+		return;
+	}
 	if (IS_NPC(actor))
 	{
 		// Mob scavenging used to evaluate equipment immediately after the live
@@ -661,7 +706,7 @@ void item_give_completion(P_char actor, bool committed, const item_transfer_resu
 	act("$n gives $p to $N.", TRUE, actor, object, recipient, TO_NOTVICT);
 	act("$n gives you $p.", FALSE, actor, object, recipient, TO_VICT);
 	send_to_char("Ok.\r\n", actor);
-	obj_to_char(object, recipient);
+	const obj_to_char_result placement = obj_to_char_checked(object, recipient);
 	mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
 							     PLAYER_COMPONENT_EQUIPMENT |
 							     PLAYER_COMPONENT_INVENTORY);
@@ -670,6 +715,12 @@ void item_give_completion(P_char actor, bool committed, const item_transfer_resu
 								 PLAYER_COMPONENT_INVENTORY);
 	char_light(actor);
 	room_light(actor->in_room, REAL);
+	if (placement != obj_to_char_result::placed)
+	{
+		persistence_alert(AVATAR, "item_movement", "give_publish", "none", "none",
+				  "live_placement_failed", "item_uid=%llu", context.item_uid);
+		return;
+	}
 	nq_action_check(actor, recipient, NULL);
 	studioproc_give(recipient, object, actor);
 }
@@ -714,12 +765,18 @@ void pet_give_completion(P_char actor, bool committed, const item_transfer_resul
 	act("$n gives $p to $N.", TRUE, source, object, destination, TO_NOTVICT);
 	act("$n gives you $p.", FALSE, source, object, destination, TO_VICT);
 	send_to_char("Ok.\r\n", source);
-	obj_to_char(object, destination);
+	const obj_to_char_result placement = obj_to_char_checked(object, destination);
 	mark_player_dirty_components(context.owner_pid,
 				     PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |
 					     PLAYER_COMPONENT_INVENTORY | PLAYER_COMPONENT_PETS);
 	char_light(source);
 	room_light(context.room, REAL);
+	if (placement != obj_to_char_result::placed)
+	{
+		persistence_alert(AVATAR, "item_movement", "pet_give_publish", "none", "none",
+				  "live_placement_failed", "item_uid=%llu", context.item_uid);
+		return;
+	}
 	nq_action_check(source, destination, NULL);
 	studioproc_give(destination, object, source);
 }
@@ -752,9 +809,8 @@ void item_put_completion(P_char actor, bool committed, const item_transfer_resul
 				  "stale_live_topology", "item_uid=%llu", context.item_uid);
 		return;
 	}
-	item_put_ack_publication = true;
-	const bool stored = put(actor, object, container, context.showit);
-	item_put_ack_publication = false;
+	const bool stored =
+		put_with_phase(actor, object, container, context.showit, put_phase::publication);
 	(void)stored;
 }
 
@@ -769,10 +825,9 @@ void item_put_completion(P_char actor, bool committed, const item_transfer_resul
  * ownership (coins, unowned transients, PC corpse roots) and uid-less containers stay
  * synchronous.
  */
-bool defer_durable_put(P_char actor, P_obj object, P_obj container, int showit)
+bool defer_durable_put(P_char actor, P_obj object, P_obj container, int showit, put_phase phase)
 {
-	item_put_deferred = false;
-	if (item_put_ack_publication || !IS_PC(actor) ||
+	if (phase == put_phase::publication || !IS_PC(actor) ||
 	    !item_command_uses_durable_ownership(object) || !container->obj_uid)
 		return false;
 	item_ownership_runtime_entry item_runtime = {};
@@ -802,8 +857,6 @@ bool defer_durable_put(P_char actor, P_obj object, P_obj container, int showit)
 					      destination.reason_id, item_put_completion, &context,
 					      sizeof(context), NULL, &reject))
 		report_movement_reject(actor, reject, "put", object);
-	else
-		item_put_deferred = true;
 	return true;
 }
 
@@ -833,16 +886,17 @@ bool submit_player_drop(P_char ch, P_obj object, item_movement_reject *reject)
 }
 }
 
+namespace
+{
 /** Pick up one object, publishing durable item movement only after its commit. */
-void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
+static get_outcome get_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showit, get_phase phase)
 {
 	int got_p = 0, got_g = 0, got_s = 0, got_c = 0, notall = 0;
 	char Gbuf3[MAX_STRING_LENGTH];
 	P_obj corpse = NULL;
 	bool slip = FALSE;
-	item_get_deferred = false;
-	item_get_rejected = false;
-	if (item_get_ack_publication)
+	get_outcome outcome = get_outcome::rejected;
+	if (phase == get_phase::publication)
 	{
 		if (s_obj && s_obj->type == ITEM_CORPSE && IS_SET(s_obj->value[1], PC_CORPSE))
 			corpse = s_obj;
@@ -856,14 +910,14 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		logit(LOG_EXIT, "call to get with NULL obj or ch");
 		GETDBG_LOG("GETDBG[get-null-args]: ch=%p obj=%p container=%p showit=%d", (void *)ch,
 			   (void *)o_obj, (void *)s_obj, showit ? 1 : 0);
-		return;
+		return get_outcome::rejected;
 	}
 	if (s_obj && s_obj->type == ITEM_CORPSE && IS_SET(s_obj->value[CORPSE_FLAGS], PC_CORPSE) &&
 	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(s_obj->value[CORPSE_PID]),
 					      static_cast<uint32_t>(s_obj->value[CORPSE_SAVEID])))
 	{
 		send_to_char("That corpse is settling into the world; try again shortly.\r\n", ch);
-		return;
+		return get_outcome::rejected;
 	}
 
 	if (account_bound_reward_owner(ch, o_obj) == false &&
@@ -872,7 +926,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		send_to_char(
 			"You may not take that account-bound reward; it belongs to another account.\r\n",
 			ch);
-		return;
+		return get_outcome::rejected;
 	}
 
 	if (o_obj->condition <= 0)
@@ -885,7 +939,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
 			s_obj ? OBJ_VNUM(s_obj) : -1);
 		MakeScrap(ch, o_obj);
-		return;
+		return get_outcome::destroyed;
 	}
 
 	if (GET_CHAR_SKILL(ch, SKILL_SLIP))
@@ -907,7 +961,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
 			s_obj ? OBJ_VNUM(s_obj) : -1);
 		send_to_char("No mobs taking things from the well!\r\n", ch);
-		return;
+		return get_outcome::rejected;
 	}
 	if (IS_NPC(ch) && (GET_RNUM(ch) == real_mobile(250)))
 	{
@@ -919,7 +973,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
 			s_obj ? OBJ_VNUM(s_obj) : -1);
 		send_to_char("Too bad you're a mirror image and can't, eh?\r\n", ch);
-		return;
+		return get_outcome::rejected;
 	}
 
 	/* Trap check */
@@ -932,7 +986,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			OBJ_VNUM(o_obj), o_obj->obj_uid,
 			s_obj && s_obj->short_description ? s_obj->short_description : "(none)",
 			s_obj ? OBJ_VNUM(s_obj) : -1);
-		return;
+		return get_outcome::rejected;
 	}
 
 	/* Don't screw up my pointers! */
@@ -948,13 +1002,13 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			s_obj ? OBJ_VNUM(s_obj) : -1);
 		act("You can't, $p is hitched to $N.", FALSE, ch, o_obj, o_obj->hitched_to,
 		    TO_CHAR);
-		return;
+		return get_outcome::rejected;
 	}
 	if (item_command_uses_durable_ownership(o_obj) && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
 	    !IS_TRUSTED(ch) && !account_bound_reward_owner(ch, o_obj))
 	{
 		send_to_char("&+LYou cannot take that.&n\n\r", ch);
-		return;
+		return get_outcome::rejected;
 	}
 
 	GETDBG_LOG(
@@ -992,7 +1046,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		{
 			report_movement_reject(ch, item_movement_reject::owner_mismatch, "get",
 					       o_obj);
-			return;
+			return get_outcome::rejected;
 		}
 		const item_transfer_reason reason = source.type == item_owner_type::locker ?
 							    item_transfer_reason::locker_withdraw :
@@ -1005,10 +1059,9 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 						      &reject))
 		{
 			report_movement_reject(ch, reject, "get", o_obj);
-			return;
+			return get_outcome::rejected;
 		}
-		item_get_deferred = true;
-		return;
+		return get_outcome::deferred;
 	}
 	if (IS_NPC(ch) && item_command_uses_durable_ownership(o_obj))
 	{
@@ -1028,7 +1081,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			{
 				report_movement_reject(ch, item_movement_reject::owner_mismatch,
 						       "mobile_get", o_obj);
-				return;
+				return get_outcome::rejected;
 			}
 			P_char master = GET_MASTER(ch);
 			const int64_t claimant_pid =
@@ -1041,10 +1094,9 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 				    item_get_completion, &context, sizeof(context), NULL, &reject))
 			{
 				report_movement_reject(ch, reject, "mobile_get", o_obj);
-				return;
+				return get_outcome::rejected;
 			}
-			item_get_deferred = true;
-			return;
+			return get_outcome::deferred;
 		}
 	}
 
@@ -1052,11 +1104,10 @@ publish_after_ack:
 
 	if (IS_PC(ch) && o_obj->type == ITEM_MONEY)
 	{
-		item_get_deferred = submit_coin_get(ch, o_obj, s_obj, showit);
-		item_get_rejected = !item_get_deferred;
-		if (item_get_rejected)
+		const bool submitted = submit_coin_get(ch, o_obj, s_obj, showit);
+		if (!submitted)
 			report_coin_get_rejection(ch, s_obj);
-		return;
+		return submitted ? get_outcome::deferred : get_outcome::rejected;
 	}
 
 	if ((o_obj->type == ITEM_MONEY) && ((o_obj->value[0] > 0) || (o_obj->value[1] > 0) ||
@@ -1096,7 +1147,7 @@ publish_after_ack:
 								    "(none)",
 				s_obj ? OBJ_VNUM(s_obj) : -1);
 			send_to_char("You can't carry any of the coins.\r\n", ch);
-			return;
+			return get_outcome::rejected;
 		}
 		ADD_MONEY(ch, total_value);
 		if (total_value > 999999)
@@ -1230,11 +1281,6 @@ publish_after_ack:
 			}
 			send_to_char(Gbuf3, ch);
 			extract_obj(o_obj);
-			// DEFERRED: use-after-free — extract_obj frees o_obj, but callers in
-			// do_get_finalize_container_item and do_get_log_room_artifact_pickup
-			// still dereference the stale pointer (short_description, R_num, obj_uid).
-			// Fix requires obj_to_char/obj_to_room returning a freed-status, or a
-			// zombie flag, touching hundreds of call sites.
 			o_obj = NULL;
 		}
 
@@ -1252,26 +1298,26 @@ publish_after_ack:
 		/* Send GMCP update for coin change */
 		gmcp_char_vitals(ch);
 
-		return;
+		return get_outcome::consumed;
 	}
 	if (s_obj)
 	{
-		if (!item_get_ack_publication && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
+		if (phase == get_phase::admission && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
 		    !IS_TRUSTED(ch) && !account_bound_reward_owner(ch, o_obj))
 		{
 			send_to_char("&+LYou cannot take that.&n\n\r", ch);
-			return;
+			return get_outcome::rejected;
 		}
 
-		publish_container_get(ch, o_obj, s_obj, showit, slip);
+		outcome = publish_container_get(ch, o_obj, s_obj, showit, slip, phase);
 	}
 	else
 	{
-		if (!item_get_ack_publication && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
+		if (phase == get_phase::admission && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
 		    !IS_TRUSTED(ch) && !account_bound_reward_owner(ch, o_obj))
 		{
 			send_to_char("&+LYou cannot take that.&n\n\r", ch);
-			return;
+			return get_outcome::rejected;
 		}
 
 		// log floor pickup for duplication prevention
@@ -1287,7 +1333,7 @@ publish_after_ack:
 		act("You get $p.", 0, ch, o_obj, 0, TO_CHAR);
 		if (showit && !slip)
 			act("$n gets $p.", 1, ch, o_obj, 0, TO_ROOM);
-		obj_to_char(o_obj, ch);
+		outcome = get_placement_outcome(obj_to_char_checked(o_obj, ch));
 	}
 
 	if (corpse)
@@ -1295,6 +1341,13 @@ publish_after_ack:
 
 	char_light(ch);
 	room_light(ch->in_room, REAL);
+	return outcome;
+}
+} // namespace
+
+void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
+{
+	(void)get_with_phase(ch, o_obj, s_obj, showit, get_phase::admission);
 }
 
 int fight_in_room(P_char ch)
@@ -1311,33 +1364,38 @@ int fight_in_room(P_char ch)
 	return FALSE;
 }
 
-static bool do_get_commit_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found)
+static get_outcome do_get_commit_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found,
+					     get_phase phase)
 {
-	get(ch, o_obj, s_obj, TRUE);
-	if (item_get_deferred || item_get_rejected)
-		return false;
+	const get_outcome outcome = get_with_phase(ch, o_obj, s_obj, TRUE, phase);
+	if (outcome == get_outcome::deferred || outcome == get_outcome::rejected)
+		return outcome;
 	found = TRUE;
-	return true;
+	return outcome;
 }
 
-static void do_get_finalize_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found,
-					int &total)
+static get_outcome do_get_finalize_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found,
+					       int &total, get_phase phase)
 {
-	if (!do_get_commit_pickup_core(ch, s_obj, o_obj, found))
-		return;
+	const get_outcome outcome = do_get_commit_pickup_core(ch, s_obj, o_obj, found, phase);
+	if (outcome != get_outcome::placed && outcome != get_outcome::consumed)
+		return outcome;
 	++total;
 	if (s_obj && (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER))
 		if (s_obj->value[3] > 0)
 			s_obj->value[3]--;
+	return outcome;
 }
 
-static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, int &total,
-					   bool &found, const char *post_tag)
+static get_outcome do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, int &total,
+						  bool &found, const char *post_tag,
+						  get_phase phase)
 {
 	const bool money = GET_ITEM_TYPE(o_obj) == ITEM_MONEY;
-	do_get_finalize_pickup_core(ch, s_obj, o_obj, found, total);
-	if (money)
-		return;
+	const get_outcome outcome =
+		do_get_finalize_pickup_core(ch, s_obj, o_obj, found, total, phase);
+	if (money || outcome != get_outcome::placed)
+		return outcome;
 	GETDBG_LOG(
 		"%s: ch=%s room=%d obj=%s [%d] uid=%lu carried=%d container=%s [%d] cuid=%lu total=%d",
 		post_tag, GET_NAME(ch), world[ch->in_room].number,
@@ -1345,19 +1403,22 @@ static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, 
 		o_obj->obj_uid, OBJ_CARRIED_BY(o_obj, ch) ? 1 : 0,
 		s_obj->short_description ? s_obj->short_description : "(none)", OBJ_VNUM(s_obj),
 		s_obj->obj_uid, total);
+	return outcome;
 }
 
-static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj, P_obj s_obj);
+static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj, P_obj s_obj,
+						 get_phase phase);
 static void do_get_reject_not_takeable(P_char ch, P_obj o_obj, bool &fail);
 static void do_get_reject_closed(P_char ch, bool &fail);
 static void do_get_reject_fighting_bags(P_char ch, bool &fail);
 static void do_get_reject_container_not_takeable(P_char ch, P_obj s_obj, P_obj o_obj,
 						 const char *tag, int carried, int carry_w,
 						 int cap_w, bool &fail);
-static void
+static get_outcome
 do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj, int &total,
 				  bool &found, bool corpse_flag, const char *post_tag,
-				  const coin_get_submission_options *coin_options = NULL)
+				  const coin_get_submission_options *coin_options = NULL,
+				  get_phase phase = get_phase::admission)
 {
 	if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
 	{
@@ -1376,7 +1437,7 @@ do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_o
 		{
 			if (CAN_WEAR(o_obj, ITEM_WEAR_IOUN) || IS_ARTIFACT(o_obj))
 			{
-				do_get_log_container_artifact_pickup(ch, hood, o_obj, s_obj);
+				do_get_log_container_artifact_pickup(ch, hood, o_obj, s_obj, phase);
 				// If the artifact was picked up across racewar lines.
 				if ((s_obj->value[5] != RACEWAR_NONE) &&
 				    (GET_RACEWAR(ch) != s_obj->value[5]))
@@ -1397,7 +1458,7 @@ do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_o
 				      obj_index[o_obj->R_num].virtual_number,
 				      s_obj->action_description);
 
-				if (!item_get_ack_publication ||
+				if (phase == get_phase::admission ||
 				    !corpse_bulk_get(ch, s_obj->obj_uid))
 					act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
 			}
@@ -1410,14 +1471,13 @@ do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_o
 	}
 	if (coin_options && o_obj && GET_ITEM_TYPE(o_obj) == ITEM_MONEY)
 	{
-		item_get_deferred = submit_coin_get(ch, o_obj, s_obj, TRUE, coin_options);
-		item_get_rejected = !item_get_deferred;
-		if (item_get_rejected)
+		const bool submitted = submit_coin_get(ch, o_obj, s_obj, TRUE, coin_options);
+		if (!submitted)
 			report_coin_get_rejection(ch, s_obj);
-		return;
+		return submitted ? get_outcome::deferred : get_outcome::rejected;
 	}
 
-	do_get_finalize_container_item(ch, s_obj, o_obj, total, found, post_tag);
+	return do_get_finalize_container_item(ch, s_obj, o_obj, total, found, post_tag, phase);
 }
 
 static void do_get_log_room_artifact_pickup(P_char ch, P_obj o_obj)
@@ -1433,12 +1493,13 @@ static void do_get_log_room_artifact_pickup(P_char ch, P_obj o_obj)
 	}
 }
 
-static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj, P_obj s_obj)
+static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o_obj, P_obj s_obj,
+						 get_phase phase)
 {
 	logit(LOG_CORPSE, "%s %s: %s [%d] (ARTIFACT) from %s", GET_NAME(ch),
 	      (hood == ch) ? "" : GET_NAME(hood), o_obj->name,
 	      obj_index[o_obj->R_num].virtual_number, s_obj->action_description);
-	if (!item_get_ack_publication || !corpse_bulk_get(ch, s_obj->obj_uid))
+	if (phase == get_phase::admission || !corpse_bulk_get(ch, s_obj->obj_uid))
 		act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
 }
 
@@ -1770,13 +1831,15 @@ static void do_get_reject_too_heavy(P_char ch, P_obj o_obj, bool &fail)
 	do_get_reject_object(ch, o_obj, "is too heavy.", fail);
 }
 
-static void do_get_finalize_room_item(P_char ch, P_obj o_obj, bool &found, int &total)
+static get_outcome do_get_finalize_room_item(P_char ch, P_obj o_obj, bool &found, int &total,
+					     get_phase phase = get_phase::admission)
 {
 	const bool money = GET_ITEM_TYPE(o_obj) == ITEM_MONEY;
-	do_get_finalize_pickup_core(ch, 0, o_obj, found, total);
+	const get_outcome outcome = do_get_finalize_pickup_core(ch, 0, o_obj, found, total, phase);
 	/* A complete coin pickup extracts the object inside get(). */
-	if (!money)
+	if (!money && outcome == get_outcome::placed)
 		do_get_log_room_artifact_pickup(ch, o_obj);
+	return outcome;
 }
 
 namespace
@@ -1989,21 +2052,21 @@ static bool finish_bulk_get_after_commit(P_char actor, bulk_get_state &state, P_
 			}
 			options = &coin_options;
 		}
-		item_get_ack_publication = true;
+		get_outcome outcome;
 		if (container)
-			do_get_finalize_container_success(actor, actor, container, object,
-							  state.total, found_item, state.corpse,
-							  "GETDBG[get-container-bulk-post]",
-							  options);
+			outcome = do_get_finalize_container_success(
+				actor, actor, container, object, state.total, found_item,
+				state.corpse, "GETDBG[get-container-bulk-post]", options,
+				get_phase::publication);
 		else
-			do_get_finalize_room_item(actor, object, found_item, state.total);
-		item_get_ack_publication = false;
-		if (item_get_deferred)
+			outcome = do_get_finalize_room_item(actor, object, found_item, state.total,
+							    get_phase::publication);
+		if (outcome == get_outcome::deferred)
 		{
 			announce_corpse_bulk_get(actor, state, container);
 			return false;
 		}
-		if (item_get_rejected)
+		if (outcome == get_outcome::rejected)
 			state.failed = true;
 		else
 			announce_corpse_bulk_get(actor, state, container);
@@ -2079,15 +2142,28 @@ static void bulk_get_completion(P_char actor, bool committed, const item_transfe
 				  container->value[CORPSE_SAVEID]);
 
 	bool found_item = false;
-	item_get_ack_publication = true;
 	for (P_obj object : roots)
+	{
+		const uint64_t item_uid = object->obj_uid;
 		if (container)
 			do_get_finalize_container_success(actor, actor, container, object,
 							  state.total, found_item, state.corpse,
-							  "GETDBG[get-container-bulk-post]");
+							  "GETDBG[get-container-bulk-post]", NULL,
+							  get_phase::publication);
 		else
-			do_get_finalize_room_item(actor, object, found_item, state.total);
-	item_get_ack_publication = false;
+			do_get_finalize_room_item(actor, object, found_item, state.total,
+						  get_phase::publication);
+		P_obj delivered = find_live_item_uid(item_uid);
+		if (!delivered || !OBJ_CARRIED_BY(delivered, actor))
+		{
+			state.failed = true;
+			state.rejections.emplace_back(
+				"A committed item could not be delivered; staff have been alerted.\r\n");
+			persistence_alert(AVATAR, "item_movement", "get_batch_publish", "none",
+					  "none", "publication_rejected", "item_uid=%llu",
+					  item_uid);
+		}
+	}
 	if (finish_bulk_get_after_commit(actor, state, container))
 		finish_bulk_get(actor, context.actor_pid);
 }
@@ -3054,6 +3130,11 @@ void do_junk(P_char ch, char *argument, int /*cmd*/)
 	{
 		return;
 	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("Junk is unavailable while accounting is active.\r\n", ch);
+		return;
+	}
 
 	/*
 	 * SAM 7-94, make char confirm a junk command
@@ -3653,7 +3734,10 @@ bool coin_give_completion(P_char sender, bool committed, const coin_transfer_pay
 	currency_command_payload destination;
 	if (!currency_command_decode_payload(payload.destination.change, &destination))
 		return true;
-	P_char recipient = find_player_by_pid(destination.pid);
+	P_char recipient = find_character_by_runtime_id(debit.target_runtime_id);
+	if (!recipient || !IS_PC(GET_PLYR(recipient)) ||
+	    GET_PID(GET_PLYR(recipient)) != static_cast<int>(destination.pid))
+		recipient = find_player_by_pid(destination.pid);
 	const coin_give_credit_context context = { sender ? sender->runtime_id : 0,
 						   coin_debit_value(debit),
 						   debit.amount[debit.coin_type],
@@ -3667,15 +3751,23 @@ bool coin_give_completion(P_char sender, bool committed, const coin_transfer_pay
 
 bool submit_coin_give(P_char sender, P_char recipient, const coin_debit_context &context)
 {
-	if (!sender || !recipient || sender == recipient || !IS_PC(sender) || !IS_PC(recipient) ||
+	if (!sender || !recipient || !IS_PC(sender) || !(IS_PC(recipient) || IS_MORPH(recipient)) ||
 	    context.coin_type >= CURRENCY_DENOMINATION_COUNT || recipient->in_room != context.room)
+		return false;
+	P_char recipient_wallet = GET_PLYR(recipient);
+	if (!recipient_wallet || !IS_PC(recipient_wallet) || sender == recipient_wallet ||
+	    GET_PID(recipient_wallet) <= 0)
 		return false;
 	const int64_t value = coin_debit_value(context);
 	if (value <= 0)
 		return false;
 	coin_transfer_payload payload;
-	return currency_transaction_coin_wallet(sender, -value, &payload.source) &&
-	       currency_transaction_coin_wallet(recipient, value, &payload.destination) &&
+	return currency_transaction_coin_wallet_exact(sender, context.coin_type,
+						      context.amount[context.coin_type], true,
+						      &payload.source) &&
+	       currency_transaction_coin_wallet_exact(recipient_wallet, context.coin_type,
+						      context.amount[context.coin_type], false,
+						      &payload.destination) &&
 	       currency_transaction_submit_coin(sender, payload, coin_give_completion, &context,
 						sizeof(context));
 }
@@ -4591,6 +4683,14 @@ bool submit_coin_debit(P_char actor, const coin_debit_context &context)
 	const int64_t value = coin_debit_value(context);
 	if (!actor || value <= 0)
 		return false;
+	if (context.action == coin_debit_action::give && economic_gameplay_authority::active())
+	{
+		P_char recipient = find_character_by_runtime_id(context.target_runtime_id);
+		if (!IS_PC(actor) || GET_PID(actor) <= 0 || GET_LEVEL(actor) >= MAXLVL ||
+		    !recipient || !(IS_PC(recipient) || IS_MORPH(recipient)) ||
+		    !IS_PC(GET_PLYR(recipient)) || GET_PID(GET_PLYR(recipient)) <= 0)
+			return false;
+	}
 	if (IS_PC(actor) && GET_PID(actor) > 0)
 	{
 		if (context.action == coin_debit_action::put)
@@ -4598,7 +4698,7 @@ bool submit_coin_debit(P_char actor, const coin_debit_context &context)
 		if (context.action == coin_debit_action::give)
 		{
 			P_char recipient = find_character_by_runtime_id(context.target_runtime_id);
-			if (recipient && IS_PC(recipient))
+			if (recipient && (IS_PC(recipient) || IS_MORPH(recipient)))
 				return submit_coin_give(actor, recipient, context);
 		}
 		int64_t reason_id = context.room;
@@ -5240,12 +5340,10 @@ void bulk_put_completion(P_char actor, bool committed, const item_transfer_resul
 		bulk_puts.erase(found);
 		return;
 	}
-	item_put_ack_publication = true;
 	for (P_obj object : objects)
 	{
-		if (!put(actor, object, container, FALSE))
+		if (!put_with_phase(actor, object, container, FALSE, put_phase::publication))
 		{
-			item_put_ack_publication = false;
 			persistence_alert(AVATAR, "item_movement", "put_batch_publish", "none",
 					  "none", "publication_rejected", "item_uid=%llu",
 					  (unsigned long long)object->obj_uid);
@@ -5254,7 +5352,6 @@ void bulk_put_completion(P_char actor, bool committed, const item_transfer_resul
 		}
 		++state.total;
 	}
-	item_put_ack_publication = false;
 	finish_bulk_put_after_commit(actor, state, container);
 	finish_bulk_put(actor, context.actor_pid);
 }
@@ -5633,11 +5730,12 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 #undef PUT_ALLDOT
 #undef PUT_ITEM
 
-bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
+namespace
+{
+static bool put_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showit, put_phase phase)
 {
 	char Gbuf3[MAX_STRING_LENGTH];
 
-	item_put_deferred = false;
 	if (s_obj && s_obj->type == ITEM_CORPSE && IS_SET(s_obj->value[CORPSE_FLAGS], PC_CORPSE) &&
 	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(s_obj->value[CORPSE_PID]),
 					      static_cast<uint32_t>(s_obj->value[CORPSE_SAVEID])))
@@ -5692,7 +5790,7 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 				}
 				if (s_obj->value[0] > s_obj->value[3])
 				{
-					if (defer_durable_put(ch, o_obj, s_obj, showit))
+					if (defer_durable_put(ch, o_obj, s_obj, showit, phase))
 						return TRUE;
 					if (showit)
 						send_to_char("Ok.\r\n", ch);
@@ -5800,7 +5898,8 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 					      GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER)))
 					{
 #endif
-						if (defer_durable_put(ch, o_obj, s_obj, showit))
+						if (defer_durable_put(ch, o_obj, s_obj, showit,
+								      phase))
 							return TRUE;
 						if (showit)
 							send_to_char("Ok.\r\n", ch);
@@ -5900,6 +5999,12 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	room_light(ch->in_room, REAL);
 	return (FALSE);
 }
+} // namespace
+
+bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
+{
+	return put_with_phase(ch, o_obj, s_obj, showit, put_phase::admission);
+}
 
 void do_give(P_char ch, char *argument, int cmd)
 {
@@ -5968,6 +6073,16 @@ void do_give(P_char ch, char *argument, int cmd)
 		{
 			send_to_char("The collector accepts payment only through an antiquity "
 				     "purchase.\r\n",
+				     ch);
+			return;
+		}
+		if (economic_gameplay_authority::active() &&
+		    (!IS_PC(ch) || GET_PID(ch) <= 0 || GET_LEVEL(ch) >= MAXLVL ||
+		     !(IS_PC(vict) || IS_MORPH(vict)) || !IS_PC(GET_PLYR(vict)) ||
+		     GET_PID(GET_PLYR(vict)) <= 0))
+		{
+			send_to_char("That coin transfer is unavailable while active accounting "
+				     "is enabled.\r\n",
 				     ch);
 			return;
 		}
@@ -6132,8 +6247,7 @@ void do_give(P_char ch, char *argument, int cmd)
 			report_movement_reject(owner, reject, "give", obj);
 		return;
 	}
-	if (cmd == CMD_GIVE && IS_PC(ch) && IS_NPC(vict) &&
-	    item_command_uses_durable_ownership(obj))
+	if (IS_PC(ch) && IS_NPC(vict) && item_command_uses_durable_ownership(obj))
 	{
 		send_to_char(
 			"That item cannot be given to a pet or mob because its custody cannot be saved yet.\r\n",
@@ -6161,10 +6275,17 @@ void do_give(P_char ch, char *argument, int cmd)
 	act("$n gives $p to $N.", 1, ch, obj, vict, TO_NOTVICT);
 	act("$n gives you $p.", 0, ch, obj, vict, TO_VICT);
 	send_to_char("Ok.\r\n", ch);
-	// DEFERRED: use-after-free — obj_to_char may free obj via crumbleloot
-	// extraction (handler.c), but callers below dereference obj (IS_ARTIFACT,
-	// short_description, R_num). Fix requires obj_to_char returning freed-status.
-	obj_to_char(obj, vict);
+	const obj_to_char_result placement = obj_to_char_checked(obj, vict);
+	if (placement != obj_to_char_result::placed)
+	{
+		if (IS_PC(ch))
+			mark_player_dirty_components(
+				GET_PID(ch), PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |
+						     PLAYER_COMPONENT_INVENTORY);
+		char_light(ch);
+		room_light(ch->in_room, REAL);
+		return;
+	}
 	if (IS_TRUSTED(ch))
 	{
 		if (IS_ARTIFACT(obj))
@@ -7516,12 +7637,123 @@ bool check_single_artifact(P_char ch, P_obj obj)
 	return false;
 }
 
-/*
- * Helper function to cut down on massive repetition.  It executes the wear
- * call once the Controller [Wear()] has determined to do so. -Sniktiorg (Nov.16.12)
- */
+struct equipment_transition_context
+{
+	uint64_t item_uid;
+	uint16_t slot;
+	int16_t keyword;
+	uint8_t showit;
+	uint8_t wear;
+};
+
+#define REMOVE_SUCCESS 0
+#define REMOVE_CURSED 1
+#define REMOVE_BREAK_ENCHANT 2
+#define REMOVE_CANT_CARRY 3
+#define REMOVE_NOT_USING 4
+
+int remove_item(P_char ch, P_obj obj, int position);
+static bool equipment_publication_in_progress = false;
+
+static bool publish_equipment_transition(const critical_operation_id & /*operation_id*/,
+					 P_char actor, bool committed, const item_transfer_result &,
+					 unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	if (!actor || !encoded || encoded_size != sizeof(equipment_transition_context))
+		return false;
+	equipment_transition_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	if (!committed)
+	{
+		send_to_char("Your equipment did not change; the custody update failed.\r\n",
+			     actor);
+		return true;
+	}
+	if (context.slot >= MAX_WEAR || !context.item_uid)
+		return false;
+	P_obj object = find_live_item_uid(context.item_uid);
+	if (!object)
+		return false;
+	if (context.wear)
+	{
+		if (!OBJ_CARRIED_BY(object, actor) || actor->equipment[context.slot] ||
+		    object->condition <= 0)
+			return false;
+		if (context.showit)
+			perform_wear(actor, object, context.keyword);
+		obj_from_char(object);
+		if (!OBJ_NOWHERE(object))
+			return false;
+		equip_char(actor, object, context.slot, !context.showit);
+		if (actor->equipment[context.slot] != object)
+			return false;
+	}
+	else
+	{
+		if (actor->equipment[context.slot] != object ||
+		    (IS_SET(object->extra_flags, ITEM_NODROP) && !IS_TRUSTED(actor)) ||
+		    IS_OBJ_STAT2(object, ITEM2_CRUMBLELOOT) ||
+		    get_obj_affect(object, SKILL_ENCHANT) ||
+		    (context.slot == WEAR_WAIST && (actor->equipment[WEAR_ATTACH_BELT_1] ||
+						    actor->equipment[WEAR_ATTACH_BELT_2] ||
+						    actor->equipment[WEAR_ATTACH_BELT_3])) ||
+		    CAN_CARRY_N(actor) <= IS_CARRYING_N(actor))
+			return false;
+		equipment_publication_in_progress = true;
+		const bool was_invisible = IS_SET(actor->specials.affected_by, AFF_INVISIBLE) ||
+					   IS_SET(actor->specials.affected_by2, AFF2_CONCEALMENT);
+		const int removed = remove_item(actor, object, context.slot);
+		equipment_publication_in_progress = false;
+		if (removed != REMOVE_SUCCESS || !OBJ_CARRIED_BY(object, actor))
+			return false;
+		act("You stop using $p.", FALSE, actor, object, 0, TO_CHAR);
+		act("$n stops using $p.", TRUE, actor, object, 0, TO_ROOM);
+		affect_from_char(actor, SPELL_NOAUCTION);
+		struct affected_type no_auction = {};
+		no_auction.type = SPELL_NOAUCTION;
+		no_auction.duration = 2;
+		no_auction.modifier = 4000;
+		affect_to_char(actor, &no_auction);
+		if (object->R_num >= 0 && obj_index[object->R_num].virtual_number == 400218 &&
+		    !IS_MULTICLASS_PC(actor))
+			affect_from_char(actor, SPELL_BATTLEMAGE);
+		balance_affects(actor);
+		if (was_invisible && !IS_SET(actor->specials.affected_by, AFF_INVISIBLE) &&
+		    !IS_SET(actor->specials.affected_by2, AFF2_CONCEALMENT))
+		{
+			act("$n snaps into visibility.", FALSE, actor, 0, 0, TO_ROOM);
+			act("You snap into visibility.", FALSE, actor, 0, 0, TO_CHAR);
+		}
+	}
+	char_light(actor);
+	room_light(actor->in_room, REAL);
+	return true;
+}
+
+/* Execute a wear only after the same-owner slot transition commits. */
 void execute_wear(P_char ch, P_obj obj_object, int position, int keyword, bool showit)
 {
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		if (position < 0 || position >= MAX_WEAR || ch->equipment[position])
+		{
+			send_to_char("That equipment slot is occupied.\r\n", ch);
+			return;
+		}
+		const item_owner_identity owner = { item_owner_type::player,
+						    static_cast<uint64_t>(GET_PID(ch)), 0 };
+		const equipment_transition_context context = { obj_object->obj_uid,
+							       static_cast<uint16_t>(position),
+							       static_cast<int16_t>(keyword),
+							       static_cast<uint8_t>(showit), 1 };
+		item_movement_reject reject = item_movement_reject::none;
+		if (!item_movement_transaction_submit(
+			    ch, obj_object, NULL, owner, owner, item_transfer_reason::player_wear,
+			    position + 1, nullptr, &context, sizeof(context), NULL, &reject,
+			    publish_equipment_transition))
+			report_movement_reject(ch, reject, "wear", obj_object);
+		return;
+	}
 	if (showit) // Show the Object Wear?
 		perform_wear(ch, obj_object, keyword);
 	obj_from_char(obj_object);
@@ -7557,19 +7789,6 @@ int stop_or_wear(const char denied[], P_char ch, P_obj obj_object, int position,
 }
 
 /*
- * Returns TRUE if ch is wearing perm invis eq.
- */
-int wearing_invis(P_char ch)
-{
-	int found = 0, k;
-
-	for (k = 0; k < MAX_WEAR; k++)
-		if (ch->equipment[k] && IS_SET(ch->equipment[k]->bitvector, AFF_INVISIBLE))
-			found = 1;
-	return found;
-}
-
-/*
  * The receiving code should handle displaying of messages to the user.
  * - Sniktiorg 25.1.13
  * New Remove code which handles only the removing of the item.  This
@@ -7578,14 +7797,12 @@ int wearing_invis(P_char ch)
  * auto-replace wear code.  The procedure returns an int representing
  * the following:
  */
-#define REMOVE_SUCCESS 0
-#define REMOVE_CURSED 1
-#define REMOVE_BREAK_ENCHANT 2
-#define REMOVE_CANT_CARRY 3
-#define REMOVE_NOT_USING 4
 int remove_item(P_char ch, P_obj obj, int position)
 {
 	struct obj_affect *o_af;
+	if (economic_gameplay_authority::active() && IS_PC(ch) &&
+	    !equipment_publication_in_progress)
+		return REMOVE_NOT_USING;
 
 	// Tests if Object Exists
 	if (obj)
@@ -7617,16 +7834,27 @@ int remove_item(P_char ch, P_obj obj, int position)
 				strip_holy_sword(ch);
 			}
 
-			// DEFERRED: use-after-free — obj_to_char may free obj via crumbleloot
-			// extraction (handler.c), but callers below dereference obj (IS_SET,
-			// get_obj_affect, obj_affect_remove). Fix requires obj_to_char
-			// returning freed-status or a zombie flag.
-			obj_to_char(unequip_char(ch, position), ch);
+			const bool was_invisible = IS_SET(obj->bitvector, AFF_INVISIBLE);
+			const struct obj_affect *enchant = get_obj_affect(obj, SKILL_ENCHANT);
+			const bool was_enchanted = enchant != NULL;
+			const int enchant_data = was_enchanted ? enchant->data : 0;
+			const obj_to_char_result placement =
+				obj_to_char_checked(unequip_char(ch, position), ch);
 
 			// Remove Affects
-			if (IS_SET(obj->bitvector, AFF_INVISIBLE) &&
-			    affected_by_spell(ch, TAG_PERMINVIS) && !wearing_invis(ch))
+			if (was_invisible && affected_by_spell(ch, TAG_PERMINVIS) &&
+			    !wearing_invis(ch))
 				affect_from_char(ch, TAG_PERMINVIS);
+
+			if (placement == obj_to_char_result::destroyed)
+			{
+				if (was_enchanted)
+				{
+					affect_from_char(ch, enchant_data);
+					return REMOVE_BREAK_ENCHANT;
+				}
+				return REMOVE_SUCCESS;
+			}
 
 			if (obj && (o_af = get_obj_affect(obj, SKILL_ENCHANT)))
 			{
@@ -7648,6 +7876,42 @@ int remove_item(P_char ch, P_obj obj, int position)
 	return REMOVE_SUCCESS;
 }
 
+static void submit_equipment_remove(P_char ch, char *name)
+{
+	if (!name || !*name || !str_cmp(name, "all"))
+	{
+		send_to_char("Remove one item at a time while item accounting is active.\r\n", ch);
+		return;
+	}
+	int slot = -1;
+	P_obj object = get_object_in_equip(ch, name, &slot);
+	if (!object || slot < 0 || slot >= MAX_WEAR)
+	{
+		send_to_char("You are not using it.\r\n", ch);
+		return;
+	}
+	if ((IS_SET(object->extra_flags, ITEM_NODROP) && !IS_TRUSTED(ch)) ||
+	    IS_OBJ_STAT2(object, ITEM2_CRUMBLELOOT) || get_obj_affect(object, SKILL_ENCHANT) ||
+	    (slot == WEAR_WAIST &&
+	     (ch->equipment[WEAR_ATTACH_BELT_1] || ch->equipment[WEAR_ATTACH_BELT_2] ||
+	      ch->equipment[WEAR_ATTACH_BELT_3])) ||
+	    CAN_CARRY_N(ch) <= IS_CARRYING_N(ch))
+	{
+		send_to_char("You cannot remove that item right now.\r\n", ch);
+		return;
+	}
+	const item_owner_identity owner = { item_owner_type::player,
+					    static_cast<uint64_t>(GET_PID(ch)), 0 };
+	const equipment_transition_context context = { object->obj_uid, static_cast<uint16_t>(slot),
+						       0, 1, 0 };
+	item_movement_reject reject = item_movement_reject::none;
+	if (!item_movement_transaction_submit(ch, object, NULL, owner, owner,
+					      item_transfer_reason::player_remove, slot + 1,
+					      nullptr, &context, sizeof(context), NULL, &reject,
+					      publish_equipment_transition))
+		report_movement_reject(ch, reject, "remove", object);
+}
+
 /*
  * Helper function which wraps about Execute_Wear() and allows for the remove
  * and replace behavior used on single location items (ie. head, arms, body, etc). -Sniktiorg (Dec.1.12)
@@ -7656,6 +7920,12 @@ int remove_and_wear(P_char ch, P_obj obj_object, int position, int keyword, bool
 {
 	P_obj temp = ch->equipment[position];
 	int removed;
+	if (temp && economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		if (showit)
+			send_to_char("Remove the current item first.\r\n", ch);
+		return FALSE;
+	}
 	// Remove Item Already in Place
 	// send_to_char(snprintf("%1", MAX_STRING_LENGTH, ch->equipment[position]), ch);
 	if (temp)
@@ -7741,12 +8011,26 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 			send_to_char("You do not have that item in your inventory yet.\r\n", ch);
 		return FALSE;
 	}
+	if (item_restricted_for_player_pet(ch, obj_object))
+	{
+		if (showit)
+			send_to_char("You cannot use that hidden equipment.\r\n", ch);
+		return FALSE;
+	}
+
 	if (!can_equip_soulbound_item(ch, obj_object, showit))
 		return FALSE;
 
 	// Scrap it. Might cause crash. Dec08 -Lucrot
 	if (obj_object->condition <= 0)
 	{
+		if (economic_gameplay_authority::active() && IS_PC(ch))
+		{
+			if (showit)
+				send_to_char("That item needs repair before it can be worn.\r\n",
+					     ch);
+			return FALSE;
+		}
 		wizlog(56, "%s wore %s that's condition 0 or less : attempting to scrap.",
 		       GET_NAME(ch), obj_object->short_description);
 		MakeScrap(ch, obj_object);
@@ -8252,6 +8536,16 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 			}
 			else
 			{
+				if (economic_gameplay_authority::active() && IS_PC(ch))
+				{
+					const int slot =
+						!ch->equipment[WEAR_WRIST_L]  ? WEAR_WRIST_L :
+						!ch->equipment[WEAR_WRIST_R]  ? WEAR_WRIST_R :
+						!ch->equipment[WEAR_WRIST_LL] ? WEAR_WRIST_LL :
+										WEAR_WRIST_LR;
+					execute_wear(ch, obj_object, slot, keyword, showit);
+					return TRUE;
+				}
 				if (showit)
 				{
 					perform_wear(ch, obj_object, keyword);
@@ -8633,6 +8927,16 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 			}
 			else
 			{
+				if (economic_gameplay_authority::active() && IS_PC(ch))
+				{
+					const int slot = !ch->equipment[WEAR_ATTACH_BELT_1] ?
+								 WEAR_ATTACH_BELT_1 :
+							 !ch->equipment[WEAR_ATTACH_BELT_2] ?
+								 WEAR_ATTACH_BELT_2 :
+								 WEAR_ATTACH_BELT_3;
+					execute_wear(ch, obj_object, slot, keyword, showit);
+					return TRUE;
+				}
 				if (showit)
 				{
 					perform_wear(ch, obj_object, keyword);
@@ -8846,6 +9150,11 @@ void do_wear(P_char ch, char *argument, int /*cmd*/)
 	}
 
 	argument_interpreter(argument, Gbuf1, Gbuf2);
+	if (economic_gameplay_authority::active() && IS_PC(ch) && !str_cmp(Gbuf1, "all"))
+	{
+		send_to_char("Wear one item at a time while item accounting is active.\r\n", ch);
+		return;
+	}
 	// If there's an argument other than 'all'
 	if (*Gbuf1 && str_cmp(Gbuf1, "all"))
 	{
@@ -9101,6 +9410,11 @@ void do_remove(P_char ch, char *argument, int /*cmd*/)
 
 	// Determine Argument
 	one_argument(argument, Gbuf1);
+	if (economic_gameplay_authority::active() && IS_PC(ch) && GET_PID(ch) > 0)
+	{
+		submit_equipment_remove(ch, Gbuf1);
+		return;
+	}
 
 	// Determine Current Visibility
 	was_invis = IS_SET(ch->specials.affected_by, AFF_INVISIBLE) ||
@@ -9345,8 +9659,8 @@ void do_search(P_char ch, char *argument, int /*cmd*/)
 			   */
 				if (k->R_num >= 0 && obj_index[k->R_num].func.obj)
 				{
-					proc_handled = (*obj_index[k->R_num].func.obj)(
-						k, ch, CMD_FOUND, NULL);
+					proc_handled =
+						invoke_object_special(k, ch, CMD_FOUND, NULL);
 				}
 				if (!proc_handled)
 				{
@@ -9878,8 +10192,9 @@ void finish_empty(P_char actor, const empty_state &state)
 		writeSavedItem(target);
 }
 
-bool empty_completion(P_char actor, bool committed, const item_transfer_result &result,
-		      unsigned int error_code, const uint8_t *encoded, size_t encoded_size)
+bool empty_completion(const critical_operation_id & /*operation_id*/, P_char actor, bool committed,
+		      const item_transfer_result &result, unsigned int error_code,
+		      const uint8_t *encoded, size_t encoded_size)
 {
 	(void)error_code;
 	empty_movement_context context = {};

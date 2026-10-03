@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <string>
+#include <optional>
 #include <vector>
 
 struct flatfile_player_domain_record
@@ -19,6 +20,29 @@ struct flatfile_player_domain_record
 	player_load_domain_state domains = {};
 	std::vector<int64_t> recent_pvp_deaths;
 	std::vector<int32_t> completed_epic_zones;
+};
+
+struct flatfile_player_domain_native_wallet
+{
+	int32_t pid = 0;
+	std::string account_name;
+	int8_t racewar = 0;
+	std::array<uint64_t, 4> balance = {};
+	uint64_t revision = 0;
+};
+
+struct flatfile_player_domain_native_bank
+{
+	std::string account_name;
+	int8_t racewar = 0;
+	std::array<uint64_t, 4> balance = {};
+	uint64_t revision = 0;
+};
+
+struct flatfile_player_domain_native_sources
+{
+	std::vector<flatfile_player_domain_native_wallet> wallets;
+	std::vector<flatfile_player_domain_native_bank> banks;
 };
 
 enum class flatfile_player_domain_result
@@ -59,6 +83,39 @@ flatfile_player_domain_result flatfile_player_domain_load(const std::string &roo
 							  int8_t racewar,
 							  flatfile_player_domain_record *record,
 							  std::string *error);
+// Borrow the authority lock; never acquire domain_mutex after it. These helpers
+// recover both the authority and legacy domain journals before reading. All
+// result outputs are unchanged on failure. They neither authorize nor stage writes.
+flatfile_player_domain_result
+flatfile_player_domain_recover_locked(const std::string &root, const flatfile_authority_lock &lock,
+				      std::string *error);
+flatfile_player_domain_result
+flatfile_player_domain_load_locked(const std::string &root, const flatfile_authority_lock &lock,
+				   int32_t pid, const std::string &account_name, int8_t racewar,
+				   flatfile_player_domain_record *record, std::string *error);
+// Enumerate and validate every native player-wallet and shared-bank domain file
+// while borrowing the authority lock. Malformed recognized files fail closed.
+flatfile_player_domain_result flatfile_player_domain_capture_native_sources_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	flatfile_player_domain_native_sources *sources, std::string *error);
+// Exact legacy evidence, with no fabricated accounting plan or inferred schema-2
+// equivalence. Lookup uses PID/operation ID before current name/epoch policy.
+// Success with an empty optional means a valid player file without this ID;
+// not_found means the player file is missing. This is not a global ID fence.
+struct flatfile_legacy_domain_receipt
+{
+	critical_operation_id operation_id = {};
+	std::array<uint8_t, 32> command_digest = {};
+	unsigned int result_code = 0;
+	uint16_t result_size = 0;
+	std::array<uint8_t, CRITICAL_COMPLETION_RESULT_MAX_BYTES> result = {};
+	uint32_t quest_reward_index = 0; // One-based frozen reward slot; zero is unproven.
+	uint32_t quest_reward_amount = 0;
+};
+flatfile_player_domain_result flatfile_player_domain_legacy_receipt_locked(
+	const std::string &root, const flatfile_authority_lock &lock, int32_t pid,
+	const critical_operation_id &operation_id,
+	std::optional<flatfile_legacy_domain_receipt> *receipt, std::string *error);
 critical_apply_result flatfile_player_domain_apply(const std::string &root,
 						   const critical_command &command);
 flatfile_player_domain_result flatfile_player_domain_prepare_wallet(

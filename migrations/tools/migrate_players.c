@@ -547,8 +547,7 @@ static bool mig_affect_same_signature(const struct mig_affect *a, const struct m
 	       a->ward_capacity_max == b->ward_capacity_max &&
 	       a->ward_refresh_remaining == b->ward_refresh_remaining &&
 	       a->ward_source_type == b->ward_source_type &&
-	       a->ward_source_worn == b->ward_source_worn &&
-	       a->ward_active == b->ward_active;
+	       a->ward_source_worn == b->ward_source_worn && a->ward_active == b->ward_active;
 }
 
 // thread-local flag for using thread-safe db functions
@@ -929,14 +928,15 @@ static int save_player_to_db(struct mig_player *p)
 		else
 			strcpy(wor_str, "NULL");
 
-		len += snprintf(values + len, sizeof(values) - len,
-				"(%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%lu,%s,%s,%llu,%d,%llu,%llu,%d,%u,%u,%u),", pid, af->type,
-				af->duration, af->flags, af->modifier, af->location, af->level,
-				af->bitvector1, af->bitvector2, af->bitvector3, af->bitvector4,
-				af->bitvector5, woc_str, wor_str, af->ward_source_uid,
-				af->ward_full_duration, af->ward_capacity, af->ward_capacity_max,
-				af->ward_refresh_remaining, af->ward_source_type, af->ward_source_worn,
-				af->ward_active);
+		len += snprintf(
+			values + len, sizeof(values) - len,
+			"(%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%lu,%s,%s,%llu,%d,%llu,%llu,%d,%u,%u,%u),",
+			pid, af->type, af->duration, af->flags, af->modifier, af->location,
+			af->level, af->bitvector1, af->bitvector2, af->bitvector3, af->bitvector4,
+			af->bitvector5, woc_str, wor_str, af->ward_source_uid,
+			af->ward_full_duration, af->ward_capacity, af->ward_capacity_max,
+			af->ward_refresh_remaining, af->ward_source_type, af->ward_source_worn,
+			af->ward_active);
 	}
 	if (len > 0)
 	{

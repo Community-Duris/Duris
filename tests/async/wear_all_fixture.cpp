@@ -6,6 +6,7 @@
 #include "world/events.h"
 #include "magic/spells.h"
 #include "persistence/persistence_checkpoint.h"
+#include "economy/economic_gameplay_authority.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
@@ -14,6 +15,10 @@
 #include <vector>
 
 static bool bound_ok = true, usable = true, duplicate = false;
+bool economic_gameplay_authority::active()
+{
+	return false;
+}
 static extra_descr_data description{};
 static int scheduled = 0, cancelled = 0, completed = 0;
 static P_obj started_book = nullptr;

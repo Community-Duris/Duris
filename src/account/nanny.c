@@ -8,6 +8,7 @@
  *****************************************************************************/
 
 #include "core/prototypes.h"
+#include "world/rested.h"
 #include "telemetry/telemetry_runtime.h"
 #include "account/newbie_kit_plan.h"
 #include "world/object_template.h"
@@ -27,6 +28,20 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
+
+namespace
+{
+constexpr uint32_t NEWBIE_GRANT_SOURCE_TAG = 0x4e455742;
+constexpr uint32_t CHAOS_KIT_SOURCE_TAG = 0x4348414f;
+
+uint64_t starter_grant_source_id(P_char character, uint32_t tag)
+{
+	if (!character || GET_PID(character) <= 0 || GET_PID(character) > INT32_MAX || !tag)
+		return 0;
+	return (static_cast<uint64_t>(static_cast<uint32_t>(GET_PID(character))) << 32) | tag;
+}
+} // namespace
+
 #include "account/account.h"
 #include "account/account_recovery.h"
 #include "world/achievements.h"
@@ -67,7 +82,8 @@
 #include "classes/epic_skills.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_account.h"
+#include "sql/sql_player_identity.h"
 #include "persistence/critical_command.h"
 #include "persistence/persistence_checkpoint.h"
 #include "world/vnum.obj.h"
@@ -419,6 +435,7 @@ static void prepare_chaos_kit_item(P_char ch, P_obj obj)
 
 static constexpr uint32_t CHAOS_STARTER_EPIC_OPERATION_DOMAIN = 0x43484550;
 static constexpr uint32_t CHAOS_STARTER_BANK_OPERATION_DOMAIN = 0x43484250;
+static_assert(PLR3_CHAOS_STARTER_BANK_PENDING == CURRENCY_CHAOS_STARTER_BANK_PENDING_FLAG);
 
 static bool chaos_starter_operation_id(P_char ch, uint32_t domain,
 				       critical_operation_id *operation_id)
@@ -731,8 +748,9 @@ static void load_chaos_new_character_kit(P_char ch)
 		return;
 	}
 
-	if (!item_creation_grant_submit_batch_to_player_before_entry(ch, kit.roots.data(),
-								     kit.count, ch))
+	if (!item_creation_grant_submit_batch_to_player_before_entry(
+		    ch, kit.roots.data(), kit.count, ch, economic_source_kind::starter_grant,
+		    starter_grant_source_id(ch, CHAOS_KIT_SOURCE_TAG)))
 	{
 		statuslog(56, "&+RALERT&n: CHAOS starter kit grant could not be queued");
 		send_to_char(
@@ -910,7 +928,9 @@ void load_obj_to_newbies(P_char ch)
 				    return item_creation_prepare_result::failed;
 			    return ++index == plan.size() ? item_creation_prepare_result::ready :
 							    item_creation_prepare_result::more;
-		    }))
+		    },
+		    economic_source_kind::starter_grant,
+		    starter_grant_source_id(ch, NEWBIE_GRANT_SOURCE_TAG)))
 		send_to_char("Your starter kit is being prepared...\r\n", ch);
 	else
 		send_to_char(
@@ -1244,6 +1264,63 @@ void schedule_pc_events(P_char ch)
 	if (affected_by_spell(ch, SPELL_BLEAK_FOEMAN))
 		add_event(event_bleak_foeman_check, WAIT_SEC, ch, 0, 0, 0, 0, 0);
 }
+static int resolve_entry_room(P_char ch, int rent_type, time_t now)
+{
+	int room = NOWHERE;
+	if ((rent_type == RENT_QUIT && GET_LEVEL(ch) < 2) || rent_type == RENT_DEATH)
+		room = real_room(GET_BIRTHPLACE(ch));
+	else if (rent_type == RENT_CRASH)
+		room = real_room(ch->specials.was_in_room);
+	else
+	{
+		room = real_room(ch->specials.was_in_room);
+		if (room == NOWHERE)
+			room = ch->in_room;
+	}
+
+	if (ch->only.pc->pc_timer[PC_TIMER_HEAVEN] > now)
+	{
+		if (IS_RACEWAR_GOOD(ch))
+			room = real_room(GOOD_HEAVEN_ROOM);
+		else if (IS_RACEWAR_EVIL(ch))
+			room = real_room(EVIL_HEAVEN_ROOM);
+		else if (IS_RACEWAR_UNDEAD(ch))
+			room = real_room(UNDEAD_HEAVEN_ROOM);
+		else if (IS_ILLITHID(ch))
+			room = real_room(NEUTRAL_HEAVEN_ROOM);
+		else if (IS_RACEWAR_NEUTRAL(ch))
+			room = real_room(NEUTRAL_HEAVEN_ROOM);
+		else
+			room = real_room(VROOM_CAGE);
+	}
+
+	if (room == NOWHERE)
+	{
+		room = GET_HOME(ch) ? real_room(GET_HOME(ch)) : real_room(GET_BIRTHPLACE(ch));
+		if (room == NOWHERE)
+			room = IS_TRUSTED(ch) ? real_room0(1200) :
+						real_room(GET_ORIG_BIRTHPLACE(ch));
+		if (room == NOWHERE)
+			room = real_room0(11);
+	}
+	if (room < 0 || room > top_of_world)
+		room = real_room0(11);
+	else if (IS_SHIP_ROOM(room))
+		room = real_room(GET_BIRTHPLACE(ch));
+
+	// A ship or closed zone can send the candidate back through a missing
+	// birthplace. Validate it before indexing world or zone_table.
+	if (room >= 0 && room <= top_of_world && (zone_table[world[room].zone].flags & ZONE_CLOSED))
+		room = real_room(GET_BIRTHPLACE(ch));
+	if (room > top_of_world)
+		room = real_room(11);
+	if (room < 0)
+		room = real_room(1197);
+
+	room = check_gh_home(ch, room);
+	return room >= 0 && room <= top_of_world ? room : real_room0(11);
+}
+
 /*
  *    existing or new character entering game
  */
@@ -1251,7 +1328,6 @@ void enter_game(P_desc d)
 {
 	struct affected_type af1, *afp1, *afp2;
 	int cost;
-	int r_room = NOWHERE;
 	long time_gone = 0, hit_g, move_g, heal_time, rest;
 	time_t ct = time(NULL);
 	int mana_g;
@@ -1278,85 +1354,8 @@ void enter_game(P_desc d)
 	// Bring them to life!
 	SET_POS(ch, POS_STANDING + STAT_NORMAL);
 
-	// Then put them in a room.
-	if ((d->rtype == RENT_QUIT && GET_LEVEL(ch) < 2) || d->rtype == RENT_DEATH)
-	{
-		/* defaults to birthplace on quit/death */
-		r_room = real_room(GET_BIRTHPLACE(ch));
-	}
-	else if (d->rtype == RENT_CRASH)
-	{
-		r_room = real_room(ch->specials.was_in_room);
-	}
-	else
-	{
-		r_room = real_room(ch->specials.was_in_room);
-		if (r_room == NOWHERE)
-			r_room = ch->in_room;
-	}
-
-	if (ch->only.pc->pc_timer[PC_TIMER_HEAVEN] > ct)
-	{
-		if (IS_RACEWAR_GOOD(ch))
-			r_room = real_room(GOOD_HEAVEN_ROOM);
-		else if (IS_RACEWAR_EVIL(ch))
-			r_room = real_room(EVIL_HEAVEN_ROOM);
-		else if (IS_RACEWAR_UNDEAD(ch))
-			r_room = real_room(UNDEAD_HEAVEN_ROOM);
-		else if (IS_ILLITHID(ch))
-			r_room = real_room(NEUTRAL_HEAVEN_ROOM);
-		else if (IS_RACEWAR_NEUTRAL(ch))
-			r_room = real_room(NEUTRAL_HEAVEN_ROOM);
-		// Cage people on undefined racewar sides.  That'll get a fix quick
-		else
-			r_room = real_room(VROOM_CAGE);
-	}
-
-	if (r_room == NOWHERE)
-	{
-		if (GET_HOME(ch))
-			r_room = real_room(GET_HOME(ch));
-		else
-			r_room = real_room(GET_BIRTHPLACE(ch));
-
-		if (r_room == NOWHERE)
-		{
-			if (IS_TRUSTED(ch))
-				r_room = real_room0(1200);
-			else
-				r_room = real_room(GET_ORIG_BIRTHPLACE(ch));
-		}
-
-		if (r_room == NOWHERE)
-			r_room = real_room0(11);
-	}
-	if (r_room < 0 || r_room > top_of_world)
-		r_room = real_room0(11);
-	// old guildhalls (deprecated)
-	//  else if (world[r_room].number >= 48000 &&
-	//           world[r_room].number <= 48999 &&
-	//           find_house(world[r_room].number) == NULL)
-	//  {
-	//    GET_HOME(ch) = GET_BIRTHPLACE(ch) = GET_ORIG_BIRTHPLACE(ch);
-	//    r_room = real_room(GET_HOME(ch));
-	//  }
-	else if (IS_SHIP_ROOM(r_room))
-	{
-		r_room = real_room(GET_BIRTHPLACE(ch));
-	}
-
-	if (zone_table[world[r_room].zone].flags & ZONE_CLOSED)
-		r_room = real_room(GET_BIRTHPLACE(ch));
-
-	// Stick them in the cage of smoke!
-	if (r_room > top_of_world)
-		r_room = real_room(11);
-	// Stick them in An Empty Dimension
-	if (r_room < 0)
-		r_room = real_room(1197);
-
-	// check home/birthplace/spawn room to see if it's in a GH and if ch is allowed
-	r_room = check_gh_home(ch, r_room);
+	// Resolve every entry-room policy before moving the live character.
+	const int r_room = resolve_entry_room(ch, d->rtype, ct);
 
 	ch->in_room = NOWHERE;
 	char_to_room(ch, r_room, -2);
@@ -1537,6 +1536,7 @@ void enter_game(P_desc d)
 	ch->desc = d;
 	ch->next = character_list;
 	character_list = ch;
+	register_character_runtime_id(ch);
 
 	// Need to walk through ch->affects, and drop AFFTYPE_OFFLINE timers.
 	for (afp1 = ch->affected; afp1; afp1 = afp2)
@@ -1732,7 +1732,7 @@ void enter_game(P_desc d)
 	}
 
 	// Add well-rested or rested bonus, if applicable.
-	if (nobonus)
+	if (nobonus || !rested_bonus_enabled())
 	{
 	}
 	// 20 hrs (almost a day) -> 2.5h well-rested bonus.
@@ -2648,7 +2648,7 @@ void nanny_player_load_complete(P_desc d, player_load_result result)
 		STATE(d) = CON_NAME;
 		return;
 	}
-	if (!player_save_pipeline_save_admitted(result.pid))
+	if (!player_save_pipeline_authoritative_hydration_admitted(result.pid))
 	{
 		result.outcome = player_load_outcome::degraded;
 		result.degraded_components |= PLAYER_LOAD_DEGRADED_RECOVERY;

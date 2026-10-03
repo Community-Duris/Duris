@@ -10,7 +10,7 @@ old_assign = find(text, 'int old_hometown')
 check = find(text, 'if (!do_save_silent(ch, 1))', old_assign)
 restore = find(text, 'ch->player.hometown        = old_hometown;', check)
 money = find(text, 'SUB_MONEY(ch, cost, 0);', check)
-msg = find(text, 'Thank you for the payment and welcome to your new birth home', check)
+msg = find(text, 'Thank you for the payment and welcome to your new birth home', check, literal=True)
 
 print(f'old_assign={old_assign} check={check} restore={restore} money={money} msg={msg}')
 

@@ -29,6 +29,7 @@ required_ids = {
     "corpses_and_saved_items",
     "account_bound_summons",
     "shop_trade_materializations",
+    "zone_story_quests",
     "historical_operation_ledgers",
 }
 allowed_dispositions = {
@@ -83,7 +84,7 @@ runtime_calls = [
     "GET_ASSOC(ch)->save_without_member(ch)",
     "sql_delete_locker(GET_PID(ch), 0)",
     "sql_delete_ship(GET_NAME(ch))",
-    "sql_delete_player(GET_PID(ch), false)",
+    "sql_delete_player(GET_PID(ch), false, &deletion_writer)",
     "sql_commit()",
     "GET_ASSOC(ch)->forget_deleted_member(ch)",
     "remove_char_from_list(ch->desc->account",
@@ -120,6 +121,7 @@ prepared_order = [
     "flatfile_ship_prepare_player_remove",
     "flatfile_player_snapshot_prepare_remove",
     "flatfile_player_domain_prepare_remove",
+    "flatfile_zone_story_quest_state_prepare_player_remove",
     "flatfile_item_repository_prepare_player_and_custody_remove",
     "append_operation(&operations, &locker_removal.operation)",
     "append_operation(&operations, &world_item_removal.operation)",

@@ -11,12 +11,16 @@
 #undef RILDEBUG
 
 #include "core/prototypes.h"
+#include "combat/damage.h"
+#include "combat/defense_resolution.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/world_activity.h"
 #include "cmd/interp.h"
 #include "core/utils.h"
+#include "world/handler.h"
 #include <climits>
 #include <stdio.h>
 #include <string.h>
@@ -25,6 +29,7 @@
 #include "world/graph.h"
 #include "combat/grapple.h"
 #include "combat/training_dummy.h"
+#include "combat/attack_continuation.h"
 #include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "world/map.h"
@@ -36,7 +41,7 @@
 #include "item/objmisc.h"
 #include "classes/paladins.h"
 #include "core/profile.h"
-#include "classes/salchemist.h"
+#include "classes/npc_alchemist.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "world/vnum.obj.h"
@@ -65,7 +70,6 @@ extern const int top_of_world;
 extern struct str_app_type str_app[];
 extern struct zone_data *zone_table;
 extern const char *undead_type[];
-extern struct potion potion_data[];
 extern bool can_banish(P_char ch, P_char victim);
 extern bool has_skin_spell(P_char);
 extern bool has_wind_blade_wielded(P_char);
@@ -75,7 +79,6 @@ extern struct misfire_properties_struct misfire_properties;
 extern const racewar_struct racewar_color[MAX_RACEWAR + 2];
 
 int CheckFor_remember(P_char ch, P_char victim);
-int count_potions(P_char ch);
 void try_wield_weapon(P_char ch);
 int empty_slot_for_weapon(P_char ch);
 int very_angry_npc(P_char, P_char, int, char *);
@@ -705,6 +708,10 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 		if (IS_SET(skills[spl].targets, TAR_IGNORE) ||
 		    IS_SET(skills[spl].targets, TAR_AREA))
 		{
+			const uint64_t caster_runtime_id = ch->runtime_id;
+			const int caster_room = ch->in_room;
+			const int caster_height = ch->specials.z_cord;
+
 			for (tch = world[ch->in_room].people; tch; tch = tch2)
 			{
 				tch2 = tch->next_in_room;
@@ -724,7 +731,25 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 				else if (tch->only.pc->aggressive >= 0 &&
 					 tch->only.pc->aggressive < GET_HIT(tch))
 				{
+					const uint64_t target_runtime_id = tch->runtime_id;
+					const uint64_t next_tch_runtime_id =
+						tch2 ? tch2->runtime_id : 0;
 					hit(tch, ch, tch->equipment[PRIMARY_WEAPON]);
+					ch = find_character_by_runtime_id(caster_runtime_id);
+					P_char live_target =
+						find_character_by_runtime_id(target_runtime_id);
+					if (!ch || !IS_ALIVE(ch) || ch->in_room != caster_room ||
+					    ch->specials.z_cord != caster_height || !live_target)
+						return FALSE;
+					tch = live_target;
+
+					if (next_tch_runtime_id)
+					{
+						tch2 = find_character_by_runtime_id(
+							next_tch_runtime_id);
+						if (!tch2 || tch2->in_room != caster_room)
+							return FALSE;
+					}
 				}
 
 				if (!char_in_list(ch) || !char_in_list(tch))
@@ -5113,193 +5138,7 @@ void SweepAttack(P_char ch)
 
 bool MobAlchemist(P_char ch)
 {
-	P_char tch;
-	P_obj t_obj;
-	int level, i = 0;
-	int number_potions, potions = 0;
-
-	level = GET_LEVEL(ch);
-
-	potions = count_potions(ch);
-
-	if (!potions && IS_FIGHTING(ch) && !number(0, 4))
-	{
-		do_flee(ch, 0, 0);
-		return (TRUE);
-	}
-
-	if ((!IS_FIGHTING(ch) || !number(0, 8)) && potions < 10)
-	{
-		switch (((level - 1) / 5) + 1)
-		{
-		case 1:
-
-			break;
-		case 2:
-			number_potions = level - potions;
-
-			for (i = 0; i < number_potions; i++)
-				MobAlchemistGetPotions(ch, spl2potion(SPELL_NITROGEN), 1);
-
-			break;
-		case 3:
-			number_potions = level - 2 - potions;
-
-			for (i = 0; i < number_potions; i++)
-				if (number(0, 4))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_NITROGEN), 1);
-				else
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC),
-							       1);
-
-			break;
-
-		case 4:
-			number_potions = level - 4 - potions;
-
-			for (i = 0; i < number_potions; i++)
-				if (number(0, 5))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_NITROGEN), 1);
-				else if (number(0, 1))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC),
-							       1);
-				else
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_WITHER), 1);
-
-			break;
-
-		case 5:
-			number_potions = 11 + number(0, 9) - potions;
-
-			for (i = 0; i < number_potions; i++)
-				if (number(0, 4))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_NITROGEN), 1);
-				else if (number(0, 1))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC),
-							       1);
-				else if (number(0, 1))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_WITHER), 1);
-				else
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_SLOW), 1);
-			break;
-		case 6:
-			number_potions = 12 + number(0, 9) - potions;
-
-			for (i = 0; i < number_potions; i++)
-				if (number(0, 3))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_NITROGEN), 1);
-				else if (number(0, 1))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_GREASE), 1);
-				else if (number(0, 1))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC),
-							       1);
-				else if (number(0, 1))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_WITHER), 1);
-				else
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_SLOW), 1);
-
-			break;
-		case 7:
-			number_potions = 13 + number(0, 9) - potions;
-
-			for (i = 0; i < number_potions; i++)
-				if (number(0, 3))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_NAPALM), 1);
-			if (number(0, 1))
-				MobAlchemistGetPotions(ch, spl2potion(SPELL_NITROGEN), 1);
-			else if (number(0, 1))
-				MobAlchemistGetPotions(ch, spl2potion(SPELL_GREASE), 1);
-			else if (number(0, 1))
-				MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC), 1);
-			else if (number(0, 1))
-				MobAlchemistGetPotions(ch, spl2potion(SPELL_WITHER), 1);
-			else
-				MobAlchemistGetPotions(ch, spl2potion(SPELL_SLOW), 1);
-
-			break;
-		case 8:
-			number_potions = 14 + number(0, 9) - potions;
-
-			for (i = 0; i < number_potions; i++)
-				if (number(0, 4))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_GLASS_BOMB), 1);
-				else if (number(0, 1))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_GREASE), 1);
-			if (number(0, 1))
-				MobAlchemistGetPotions(ch, spl2potion(SPELL_NAPALM), 1);
-			else if (number(0, 1))
-				MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC), 1);
-			else
-				MobAlchemistGetPotions(ch, spl2potion(SPELL_SLOW), 1);
-
-			break;
-		case 9:
-		case 10:
-			number_potions = 15 + number(0, 9) - potions;
-
-			for (i = 0; i < number_potions; i++)
-				if (number(0, 5))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_STRONG_ACID),
-							       1);
-				else if (number(0, 1))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_GREASE), 1);
-			if (number(0, 1))
-				MobAlchemistGetPotions(ch, spl2potion(SPELL_GLASS_BOMB), 1);
-			else if (number(0, 1))
-				MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC), 1);
-			else
-				MobAlchemistGetPotions(ch, spl2potion(SPELL_SLOW), 1);
-			break;
-		case 11:
-		case 12:
-		case 13:
-			number_potions = 17 + number(0, 9) - potions;
-
-			for (i = 0; i < number_potions; i++)
-			{
-				if (number(0, 3))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_STRONG_ACID),
-							       1);
-				else if (number(0, 2))
-					MobAlchemistGetPotions(
-						ch, spl2potion(SPELL_GREATER_LIVING_STONE), 1);
-				if (number(0, 1))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_GLASS_BOMB), 1);
-				else if (number(0, 1))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC),
-							       1);
-				else
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_SLOW), 1);
-			}
-
-			break;
-		default:
-			wizlog(57, "mob %s failed to make any potions in [%d]", GET_NAME(ch),
-			       ch->in_room);
-		}
-		if (i > 0)
-		{
-			send_to_char("&+LYou've created some potions.&n\r\n", ch);
-			act("$n&+L quickly mixes some potions...&n", FALSE, ch, 0, 0, TO_ROOM);
-			return TRUE;
-		}
-	}
-
-	if (!IS_FIGHTING(ch))
-		return FALSE;
-
-	t_obj = NULL;
-
-	tch = pick_target(ch, PT_NUKETARGET | PT_WEAKEST);
-
-	if ((tch || (tch = GET_OPPONENT(ch))) && (t_obj = get_potion(ch)) && t_obj)
-		if (throw_potion(ch, t_obj, tch, 0))
-		{
-			CharWait(ch, PULSE_VIOLENCE);
-			return TRUE;
-		}
-
-	return FALSE;
+	return npc_alchemist_combat(ch);
 }
 
 bool MobMonk(P_char ch)
@@ -5710,7 +5549,7 @@ bool MobWarrior(P_char ch)
 	P_char tch, next_ch;
 	int n_atkr;
 
-	if (!IS_ALIVE(ch))
+	if (!ch || !char_in_list(ch) || !IS_ALIVE(ch))
 	{
 		return FALSE;
 	}
@@ -5769,12 +5608,36 @@ bool MobWarrior(P_char ch)
 		for (tch = world[ch->in_room].people; tch; tch = next_ch)
 		{
 			next_ch = tch->next_in_room;
+			const uint64_t next_ch_runtime_id = next_ch ? next_ch->runtime_id : 0;
 
 			if ((tch != ch) && IS_FIGHTING(tch) &&
 			    ((GET_OPPONENT(tch) == ch) || (GET_OPPONENT(ch) == tch)))
 			{
 				if (number(0, 135) > MAX(99, ((GET_LEVEL(ch) - 10) * 9)))
+				{
+					const attack_continuation actor_continuation =
+						begin_attack_continuation(ch, ch);
 					hit(ch, tch, ch->equipment[PRIMARY_WEAPON]);
+					const attack_continuation_result after_hit =
+						check_attack_continuation(actor_continuation);
+					if (!after_hit.can_continue())
+					{
+						ch = nullptr;
+						break;
+					}
+					ch = after_hit.actor;
+
+					if (next_ch_runtime_id)
+					{
+						P_char live_next_ch = find_character_by_runtime_id(
+							next_ch_runtime_id);
+						if (!live_next_ch ||
+						    live_next_ch->in_room !=
+							    actor_continuation.room)
+							break;
+						next_ch = live_next_ch;
+					}
+				}
 			}
 		}
 		if (char_in_list(ch))
@@ -7099,6 +6962,8 @@ int IsBetterObject(P_char ch, P_obj obj, int foo)
 
 void CheckEqWorthUsing(P_char ch, P_obj obj)
 {
+	if (item_restricted_for_player_pet(ch, obj))
+		return;
 	P_obj ob = NULL, ob2 = NULL;
 
 	if (!obj || !ch)
@@ -7466,7 +7331,7 @@ bool MobSpellUp(P_char ch)
 		if (!is_multiclass)
 			return FALSE;
 	}
-	if (GET_CLASS(ch, CLASS_ALCHEMIST) && (is_multiclass ? !number(0, 3) : !number(0, 1)))
+	if (GET_CLASS(ch, CLASS_ALCHEMIST))
 	{
 		if (MobAlchemist(ch))
 			return TRUE;
@@ -8085,6 +7950,8 @@ void event_mob_mundane(P_char ch, P_char /*victim*/, P_obj /*object*/, void * /*
 					af = get_obj_affect(best_obj, TAG_OBJ_DECAY);
 					if (af && (obj_affect_time(best_obj, af) > 2550))
 						goto normal;
+					if (corpse_has_death_conflict(best_obj))
+						goto normal;
 				}
 				//      act("$n examines $p.", FALSE, ch, best_obj, 0, TO_ROOM);
 				for (obj = best_obj->contains;
@@ -8209,18 +8076,13 @@ void event_mob_mundane(P_char ch, P_char /*victim*/, P_obj /*object*/, void * /*
 
 normal: // 99.999%
 	PROFILE_START(mundane_newevent);
-	if (remember_array[world[ch->in_room].zone])
-		add_event(event_mob_mundane, PULSE_MOBILE + number(-4, 4), ch, 0, 0, 0, 0, 0);
-	else
-		add_event(event_mob_mundane,
-			  PULSE_MOBILE * PLAYERLESS_ZONE_SPEED_MODIFIER + number(-4, 4), ch, 0, 0,
-			  0, 0, 0);
+	world_activity_schedule_mundane(ch, false, remember_array[world[ch->in_room].zone] != NULL);
 	PROFILE_END(mundane_newevent);
 	return;
 
 quick: // 0.001%
 	PROFILE_START(mundane_newevent);
-	add_event(event_mob_mundane, PULSE_VIOLENCE, ch, 0, 0, 0, 0, 0);
+	world_activity_schedule_mundane(ch, true, true);
 	PROFILE_END(mundane_newevent);
 	return;
 }
@@ -8299,8 +8161,7 @@ bool MobDestroyWall(P_char ch, P_obj wall, bool bTryHit)
 			// about the cmd.
 			if (obj_index[wall->R_num].func.obj)
 			{
-				bImpossible = !((*obj_index[wall->R_num].func.obj)(
-					wall, ch, CMD_HIT, cmdBuf));
+				bImpossible = !(invoke_object_special(wall, ch, CMD_HIT, cmdBuf));
 				// special for PATROLS - if the wall isn't hittable, then
 				// use a special dispel magic
 				if (bImpossible && IS_PATROL(ch))
@@ -8885,6 +8746,7 @@ void AddCharToZone(P_char ch)
 	if ((zn >= 0) && (zn < MAX_ZONES))
 	{
 		AddToRememberArray(ch, zn);
+		world_activity_player_enter(ch);
 		// Immortals do not affect misfire regardless of IS_TRUSTED toggle.
 		if (GET_LEVEL(ch) >= MINLVLIMMORTAL)
 		{
@@ -9061,6 +8923,8 @@ void DelCharFromZone(P_char ch)
 	if ((zn < 0) || (zn >= MAX_ZONES))
 		return;
 
+	world_activity_player_leave(ch);
+
 	// Immortals do not affect misfire regardless of IS_TRUSTED toggle.
 	if (GET_LEVEL(ch) < MINLVLIMMORTAL)
 	{
@@ -9162,7 +9026,7 @@ bool CheckForRemember(P_char ch)
 
 		if (!CAN_ACT(ch) || IS_IMMOBILE(ch))
 		{
-			add_event(event_mob_mundane, PULSE_VIOLENCE, ch, NULL, NULL, 0, NULL, 0);
+			world_activity_schedule_mundane(ch, true, true);
 			// AddEvent(current_event->type, PULSE_VIOLENCE, TRUE, ch, 0);
 			return TRUE;
 		}
@@ -10127,11 +9991,22 @@ void MobRetaliateRange(P_char ch, P_char vict)
 	   int no_range_attack = TRUE; */
 	struct affected_type af;
 
+	if (!ch || !vict || !char_in_list(ch) || !char_in_list(vict))
+		return;
+
 	if (!SanityCheck(ch, "MobRetaliateRange"))
 		return;
 
-	if (!ch || !vict)
+	if (!char_in_list(ch) || !char_in_list(vict))
 		return;
+	const uint64_t ch_runtime_id = ch->runtime_id;
+	const uint64_t victim_runtime_id = vict->runtime_id;
+	auto refresh_retaliation_participants = [&]()
+	{
+		ch = find_character_by_runtime_id(ch_runtime_id);
+		vict = find_character_by_runtime_id(victim_runtime_id);
+		return ch && IS_ALIVE(ch) && vict && IS_ALIVE(vict);
+	};
 
 	if (IS_PC(ch))
 		return;
@@ -10190,7 +10065,11 @@ void MobRetaliateRange(P_char ch, P_char vict)
 	if (IS_AWAKE(ch) && CAN_ACT(ch) && !IS_STUNNED(ch))
 		if (IS_SET(ch->specials.act, ACT_WIMPY) && (GET_HIT(ch) < (GET_LEVEL(ch) * 6)) &&
 		    room_has_valid_exit(ch->in_room))
+		{
 			do_flee(ch, 0, 0);
+			if (!refresh_retaliation_participants())
+				return;
+		}
 
 	/* Next group will handle situation on their own */
 
@@ -10229,7 +10108,11 @@ void MobRetaliateRange(P_char ch, P_char vict)
 		else
 		{
 			if (room_has_valid_exit(ch->in_room))
+			{
 				do_flee(ch, 0, 0);
+				if (!refresh_retaliation_participants())
+					return;
+			}
 			if ((!IS_AFFECTED3(ch, AFF3_COVER)))
 			{
 				bzero(&af, sizeof(af));

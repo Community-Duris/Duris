@@ -6,7 +6,8 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
 sql = (SRC / "sql_player.c").read_text()
-header = (SRC / "sql_player.h").read_text()
+header = (SRC / "sql/sql_account.h").read_text()
+bank_header = (SRC / "economy/account_bank_balances.h").read_text()
 utility = (SRC / "utility.c").read_text()
 actoth = (SRC / "actoth.c").read_text()
 boon = (SRC / "boon.c").read_text()
@@ -28,7 +29,7 @@ assert "sql_save_account_bank" not in all_sources
 assert "set bank_copper=%d" not in sql
 print("[PASS] cached absolute account-bank save API and write are gone")
 
-assert "struct AccountBankBalances" in header
+assert "struct AccountBankBalances" in bank_header
 assert "sql_account_bank_deposit_balances" in header
 assert "sql_account_bank_withdraw_value" in header
 parser = section(

@@ -9,7 +9,7 @@ body = source[start:end]
 
 assert contains(body, "if (_pwipe)")
 assert contains(body, '"pwipe_rejected"')
-assert contains(body, "fallback event rejected while season reset is active")
+assert contains(body, "fallback event rejected while season reset is active", literal=True)
 assert index(body, "if (_pwipe)") < index(body, "fopen(LOG_EVENT")
 # One worker-path fallback write per domain; the owner tag is part of the
 # pattern, since the enqueue-failure path also writes item_event lines.

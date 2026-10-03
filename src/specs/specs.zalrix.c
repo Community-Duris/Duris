@@ -51,6 +51,25 @@ extern struct zone_data *zone_table;
  * Maker of Zone: Xueqin                                               *
  ***********************************************************************/
 
+int yuan_ti_stone(P_obj obj, P_char ch, int cmd, char * /*arg*/)
+{
+	/* check for periodic event calls */
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !obj || cmd)
+		return FALSE;
+
+	/* Doesnt work in the chest */
+	if (OBJ_NOWHERE(obj) || OBJ_INSIDE(obj))
+		return FALSE;
+
+	/* annoying hum, constant */
+	act("An intense humming sound can be heard from $p&n.", FALSE, ch, obj, 0, TO_ROOM);
+
+	return FALSE;
+}
+
 int drowcrusher(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	//  P_char   ch2, victim, next;

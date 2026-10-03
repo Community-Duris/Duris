@@ -73,9 +73,22 @@ assert "account_locker_copy_v1" in runner
 assert 'run_sql "repair item persistence schema drift"' in runner
 assert "CREATE TABLE IF NOT EXISTS locker_item_extra_descr" in runner
 assert '"$SCRIPT_DIR/legacy_schema_convergence.sql"' in runner
+assert '"$SCRIPT_DIR/legacy_archive_schema_reconciliation.sql"' in runner
+assert '"$SCRIPT_DIR/legacy_archive_material_order.sql"' in runner
+assert '"$SCRIPT_DIR/legacy_archive_locker_index.sql"' in runner
+assert '"$SCRIPT_DIR/legacy_archive_affect_index.sql"' in runner
+assert '"$SCRIPT_DIR/legacy_archive_character_index.sql"' in runner
+assert 'archive preflight: archive-only columns require offline reconciliation before the runner; no steps applied' in runner
+assert runner.index('if ! archive_columns=') < runner.index('run_sql "set database to server default"')
 convergence = (ROOT / "migrations/legacy_schema_convergence.sql").read_text()
 assert "MODIFY COLUMN id INT UNSIGNED NOT NULL AUTO_INCREMENT FIRST" in convergence
 assert runner.index('"$SCRIPT_DIR/legacy_schema_convergence.sql"') < runner.index(
+    '"$SCRIPT_DIR/legacy_archive_schema_reconciliation.sql"'
+) < runner.index('"$SCRIPT_DIR/legacy_archive_material_order.sql"') < runner.index(
+    '"$SCRIPT_DIR/legacy_archive_locker_index.sql"'
+) < runner.index('"$SCRIPT_DIR/legacy_archive_affect_index.sql"') < runner.index(
+    '"$SCRIPT_DIR/legacy_archive_character_index.sql"'
+) < runner.index(
     '"$SCRIPT_DIR/adopt_migration_baseline.sh"'
 )
 assert 'PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"' in runner

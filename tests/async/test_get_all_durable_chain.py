@@ -42,13 +42,13 @@ select_item = function_body(ACTOBJ, "static bool select_bulk_get_item(")
 completion = function_body(ACTOBJ, "static void bulk_get_completion(")
 after_commit = function_body(ACTOBJ, "static bool finish_bulk_get_after_commit(")
 finish = function_body(ACTOBJ, "static void report_bulk_get(")
-single_get = function_body(ACTOBJ, "void get(P_char ch")
+single_get = function_body(ACTOBJ, "static get_outcome get_with_phase(P_char ch, P_obj o_obj", last=True)
 submit_batch = function_body(
     MOVEMENT, "bool item_movement_transaction_submit_batch("
 )
-room_finalize = function_body(ACTOBJ, "static void do_get_finalize_room_item(")
+room_finalize = function_body(ACTOBJ, "static get_outcome do_get_finalize_room_item(")
 container_finalize = function_body(
-    ACTOBJ, "static void do_get_finalize_container_item("
+    ACTOBJ, "static get_outcome do_get_finalize_container_item("
 )
 
 ok = True
@@ -114,7 +114,7 @@ ok &= check(
     and ".multi_root = true" in submit_batch,
 )
 validation = completion.index("for (uint64_t item_uid : state.durable_items)")
-publication = completion.index("item_get_ack_publication = true")
+publication = completion.index("get_phase::publication")
 ok &= check(
     "completion validates every selected root before publishing any live move",
     validation < publication
@@ -138,7 +138,7 @@ ok &= check(
 )
 ok &= check(
     "coin completions resume the existing selected-item list",
-    "if (item_get_deferred)" in after_commit
+    "if (outcome == get_outcome::deferred)" in after_commit
     and "return false;" in after_commit
     and "state.synchronous_items.erase" in after_commit
     and "bulk_gets.emplace(actor_pid, std::move(state))" in start_bulk
@@ -157,9 +157,10 @@ ok &= check(
 ok &= check(
     "coin extraction cannot be followed by stale debug or artifact dereferences",
     "const bool money" in room_finalize
-    and "if (!money)" in room_finalize
+    and "if (!money && outcome == get_outcome::placed)" in room_finalize
     and "const bool money" in container_finalize
-    and container_finalize.index("if (money)") < container_finalize.index("GETDBG_LOG"),
+    and container_finalize.index("if (money || outcome != get_outcome::placed)")
+    < container_finalize.index("GETDBG_LOG"),
 )
 
 if not ok:

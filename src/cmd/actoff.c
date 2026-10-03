@@ -35,18 +35,23 @@
 #define TAKEDOWN_PENALTY -2
 
 #include "core/prototypes.h"
+#include "combat/attack_continuation.h"
+#include "combat/defense_resolution.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/world_activity.h"
 #include "cmd/interp.h"
 #include "cmd/divine_refusal_policy.h"
+#include "cmd/divine_refusal_content.h"
 #include "core/utils.h"
 #include "telemetry/telemetry_runtime.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include "world/buildings.h"
+#include "world/bloodstains.h"
 #include "combat/damage.h"
 #include "combat/grapple.h"
 #include "combat/guard.h"
@@ -358,7 +363,7 @@ float takedown_check(P_char ch, P_char victim, float chance, int skill, ulong ap
 {
 	int cagi, vagi;
 
-	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
+	if (!char_in_list(ch) || !char_in_list(victim) || !IS_ALIVE(ch) || !IS_ALIVE(victim))
 	{
 		return TAKEDOWN_CANCELLED;
 	}
@@ -387,6 +392,7 @@ float takedown_check(P_char ch, P_char victim, float chance, int skill, ulong ap
 		act("$N is no condition to avoid $n's attack!", TRUE, ch, 0, victim, TO_NOTVICT);
 		act("$N cannot respond to your attack!", TRUE, ch, 0, victim, TO_CHAR);
 
+		const uint64_t actor_runtime_id = ch->runtime_id;
 		if (ch->equipment[PRIMARY_WEAPON])
 			hit(ch, victim, ch->equipment[PRIMARY_WEAPON]);
 		else if (ch->equipment[SECONDARY_WEAPON])
@@ -394,7 +400,9 @@ float takedown_check(P_char ch, P_char victim, float chance, int skill, ulong ap
 		else
 			hit(ch, victim, NULL);
 
-		CharWait(ch, PULSE_VIOLENCE);
+		ch = find_character_by_runtime_id(actor_runtime_id);
+		if (ch && IS_ALIVE(ch))
+			CharWait(ch, PULSE_VIOLENCE);
 
 		return TAKEDOWN_CANCELLED;
 	}
@@ -2077,8 +2085,18 @@ static bool divine_refusal_command_blocked(P_char pet, int cmd)
 	       !cmd_allowed_while_casting(pet, cmd);
 }
 
-static void show_new_divine_refusal(P_char master, P_char pet)
+static void show_new_divine_refusal(P_char master, P_char pet,
+				    const DivineRefusalContentEntry *content_entry)
 {
+	char rendered_line[DIVINE_REFUSAL_CONTENT_MAX_MESSAGE + 1];
+	char escaped_line[(DIVINE_REFUSAL_CONTENT_MAX_MESSAGE * 2) + 1];
+	char public_message[(DIVINE_REFUSAL_CONTENT_MAX_MESSAGE * 2) + 32];
+	char controller_message[(DIVINE_REFUSAL_CONTENT_MAX_MESSAGE * 2) + 32];
+	divine_refusal_content_render(content_entry, rendered_line, sizeof(rendered_line));
+	escape_act_dollars(escaped_line, sizeof(escaped_line), rendered_line);
+	snprintf(public_message, sizeof(public_message), "$n says '%s'", escaped_line);
+	snprintf(controller_message, sizeof(controller_message), "$N says '%s'", escaped_line);
+
 	const bool pet_can_speak = !is_silent(pet, false) && CAN_SPEAK(pet);
 	const bool master_can_hear =
 		master->specials.z_cord == pet->specials.z_cord &&
@@ -2087,11 +2105,9 @@ static void show_new_divine_refusal(P_char master, P_char pet)
 
 	if (pet_can_speak)
 	{
-		act("$n says 'My deity has warned me against completing that action.'", TRUE, pet,
-		    0, master, TO_NOTVICT | ACT_SILENCEABLE);
+		act(public_message, TRUE, pet, 0, master, TO_NOTVICT | ACT_SILENCEABLE);
 		if (master_can_hear)
-			act("$N says 'My deity has warned me against completing that action.'",
-			    FALSE, master, 0, pet, TO_CHAR | ACT_SILENCEABLE);
+			act(controller_message, FALSE, master, 0, pet, TO_CHAR | ACT_SILENCEABLE);
 		else
 			act("$N refuses your order with a solemn shake of $S head.", FALSE, master,
 			    0, pet, TO_CHAR);
@@ -2105,23 +2121,37 @@ static void show_new_divine_refusal(P_char master, P_char pet)
 	}
 }
 
-static bool divine_refusal_blocks_order(P_char master, P_char pet,
-					const divine_refusal_config &config, int cmd,
-					bool *new_refusal)
+static bool divine_refusal_blocks_order(
+	P_char master, P_char pet, const divine_refusal_config &config, int cmd,
+	const std::shared_ptr<const DivineRefusalContentSnapshot> &content_snapshot,
+	bool *new_refusal)
 {
 	if (new_refusal)
 		*new_refusal = false;
+
+	const DivineRefusalContentEntry *content_entry = nullptr;
+	if (content_snapshot && pet && IS_NPC(pet))
+		content_entry = content_snapshot->find(GET_VNUM(pet));
+	divine_refusal_config effective_config = config;
+	if (content_entry)
+	{
+		if (content_entry->has_enabled && !content_entry->enabled)
+			effective_config.enabled = false;
+		if (content_entry->has_percent)
+			effective_config.percent = content_entry->percent;
+	}
 
 	const bool recognized = cmd > CMD_NONE && cmd < MAX_CMD;
 	const bool exempt = cmd == CMD_ABORT || cmd == CMD_FLEE;
 	const bool blocked = recognized && divine_refusal_command_blocked(pet, cmd);
 	const divine_refusal_outcome outcome = divine_refusal_decide(
-		config, divine_refusal_eligible(master, pet, config), recognized, exempt, blocked,
-		ne_event_tick, &pet->specials.divine_refusal_until_pulse, number);
+		effective_config, divine_refusal_eligible(master, pet, effective_config),
+		recognized, exempt, blocked, ne_event_tick,
+		&pet->specials.divine_refusal_until_pulse, number);
 
 	if (outcome == divine_refusal_outcome::refused_new)
 	{
-		show_new_divine_refusal(master, pet);
+		show_new_divine_refusal(master, pet, content_entry);
 		if (new_refusal)
 			*new_refusal = true;
 		return true;
@@ -2246,9 +2276,39 @@ void do_order(P_char ch, char *argument, int /*comd*/)
 
 		/*    ch_inroom[i] = NULL;*/
 		const divine_refusal_config refusal_config = current_divine_refusal_config();
+		const auto refusal_content_snapshot = divine_refusal_content_registry().snapshot();
 		const int refusal_cmd = ordered_command_number(message);
-		const bool refusal_can_apply =
+		bool refusal_can_apply =
 			divine_refusal_order_candidate(ch, refusal_config, refusal_cmd);
+		// A template percentage override can make a group order eligible even
+		// when the shared percentage is zero. Keep the legacy early
+		// acknowledgement ordering unless one of the room's exact-vnum rows can
+		// actually participate.
+		if (!refusal_can_apply && refusal_config.enabled && refusal_content_snapshot)
+		{
+			for (int content_index = 0; content_index < numb_ch; ++content_index)
+			{
+				P_char content_candidate = ch_inroom[content_index];
+				if (!content_candidate || !IS_NPC(content_candidate))
+					continue;
+				const auto *content_entry =
+					refusal_content_snapshot->find(GET_VNUM(content_candidate));
+				divine_refusal_config effective_config = refusal_config;
+				if (content_entry)
+				{
+					if (content_entry->has_enabled && !content_entry->enabled)
+						effective_config.enabled = false;
+					if (content_entry->has_percent)
+						effective_config.percent = content_entry->percent;
+				}
+				if (divine_refusal_order_candidate(ch, effective_config,
+								   refusal_cmd))
+				{
+					refusal_can_apply = true;
+					break;
+				}
+			}
+		}
 
 		if (victim)
 		{
@@ -2286,8 +2346,9 @@ void do_order(P_char ch, char *argument, int /*comd*/)
 				if (CAN_ACT(victim))
 				{
 					bool new_refusal = false;
-					if (divine_refusal_blocks_order(ch, victim, refusal_config,
-									refusal_cmd, &new_refusal))
+					if (divine_refusal_blocks_order(
+						    ch, victim, refusal_config, refusal_cmd,
+						    refusal_content_snapshot, &new_refusal))
 					{
 						CharWait(ch, new_refusal ? PULSE_VIOLENCE : 2);
 						return;
@@ -2366,6 +2427,7 @@ void do_order(P_char ch, char *argument, int /*comd*/)
 										    ch, k,
 										    refusal_config,
 										    refusal_cmd,
+										    refusal_content_snapshot,
 										    &new_refusal))
 									{
 										refused = TRUE;
@@ -2786,7 +2848,7 @@ void do_flee(P_char ch, char *argument, int cmd)
 		 * impossible chases
 		 */
 		disarm_char_nevents(was_fighting, event_mob_mundane);
-		add_event(event_mob_mundane, WAIT_SEC / 2, was_fighting, 0, 0, 0, 0, 0);
+		world_activity_schedule_mundane_after(was_fighting, WAIT_SEC / 2);
 	}
 }
 
@@ -2839,6 +2901,9 @@ const char *monk_combos_messages[][2][3] = {
 void event_combination(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int percent = 100, skill, stage = 0, dam = 0, move, result, skill_req = 0;
+	int actor_room, actor_height;
+	uint64_t actor_runtime_id;
+	bool target_continues = false;
 	struct damage_messages messages = {
 		0,
 		0,
@@ -2850,6 +2915,10 @@ void event_combination(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 		"...then feigns low and in a blur of speed leaps into the air and lands a swift roundkick to $S head.\n"
 		"$N topples to the ground, $S neck broken."
 	};
+
+	if (!ch || !IS_ALIVE(ch))
+		return;
+	actor_runtime_id = ch->runtime_id;
 
 	victim = GET_OPPONENT(ch);
 	victim = guard_check(ch, victim);
@@ -2878,6 +2947,8 @@ void event_combination(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 		send_to_char("You decide this would be a futile effort.\n", ch);
 		return;
 	}
+	actor_room = ch->in_room;
+	actor_height = ch->specials.z_cord;
 
 	/* Ok, let's get it on! */
 	act("&+L$n's limbs begin to blur...&n", TRUE, ch, 0, 0, TO_ROOM);
@@ -2943,21 +3014,61 @@ void event_combination(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 		messages.attacker = monk_combos_messages[stage][move][1];
 		messages.victim = monk_combos_messages[stage][move][2];
 		messages.room = monk_combos_messages[stage][move][0];
+		const attack_continuation continuation = begin_attack_continuation(ch, victim);
 		result = melee_damage(ch, victim, dam, PHSDAM_TOUCH, &messages);
-		if (result == DAM_NONEDEAD && stage == 6 && GET_LEVEL(ch) >= 50)
+
+		ch = find_character_by_runtime_id(actor_runtime_id);
+		if (!ch || !IS_ALIVE(ch))
+			return;
+		target_continues = false;
+		if (result == DAM_NONEDEAD && ch->in_room == actor_room &&
+		    ch->specials.z_cord == actor_height)
 		{
-			Stun(victim, ch, PULSE_VIOLENCE * 2, TRUE);
-			if (IS_AFFECTED2(victim, AFF2_STUNNED))
+			const attack_continuation_result after_damage =
+				check_attack_continuation(continuation);
+			if (after_damage.can_continue())
 			{
-				act("Your final move stuns $N!", FALSE, ch, 0, victim, TO_CHAR);
-				act("$N is stunned by $n's vicious combination!", FALSE, ch, 0,
-				    victim, TO_NOTVICT);
+				ch = after_damage.actor;
+				victim = after_damage.target;
+				target_continues = true;
+			}
+		}
+
+		if (target_continues && stage == 6 && GET_LEVEL(ch) >= 50)
+		{
+			const attack_continuation stun_continuation =
+				begin_attack_continuation(ch, victim);
+			Stun(victim, ch, PULSE_VIOLENCE * 2, TRUE);
+
+			const attack_continuation_result after_stun =
+				check_attack_continuation(stun_continuation);
+			ch = find_character_by_runtime_id(actor_runtime_id);
+			if (!ch || !IS_ALIVE(ch))
+				return;
+
+			target_continues = false;
+			if (ch->in_room == actor_room && ch->specials.z_cord == actor_height &&
+			    after_stun.can_continue())
+			{
+				ch = after_stun.actor;
+				victim = after_stun.target;
+				target_continues = true;
+				if (IS_AFFECTED2(victim, AFF2_STUNNED))
+				{
+					act("Your final move stuns $N!", FALSE, ch, 0, victim,
+					    TO_CHAR);
+					act("$N is stunned by $n's vicious combination!", FALSE, ch,
+					    0, victim, TO_NOTVICT);
+				}
 			}
 		}
 		stage++;
-	} while (stage < 7 && result == DAM_NONEDEAD && skill >= skill_req &&
+	} while (stage < 7 && result == DAM_NONEDEAD && skill >= skill_req && target_continues &&
 		 percent > number(0, 100));
 
+	ch = find_character_by_runtime_id(actor_runtime_id);
+	if (!ch || !IS_ALIVE(ch))
+		return;
 	notch_skill(ch, SKILL_COMBINATION, get_property("skill.notch.offensive", 7));
 
 	CharWait(ch, 2 * PULSE_VIOLENCE);
@@ -3015,11 +3126,21 @@ void event_barrage(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int percent, skill, stage, skill_req = 0;
 
+	if (!char_in_list(ch) || !IS_ALIVE(ch))
+		return;
+
 	victim = GET_OPPONENT(ch);
+	if (!char_in_list(victim) || !IS_ALIVE(victim))
+	{
+		affect_from_char(ch, SKILL_BLADE_BARRAGE);
+		send_to_char("&+cYour opponent has escaped your deadly blade barrage.\n", ch);
+		return;
+	}
+
 	victim = guard_check(ch, victim);
 	affect_from_char(ch, SKILL_BLADE_BARRAGE);
 
-	if (!IS_ALIVE(victim))
+	if (!char_in_list(victim) || !IS_ALIVE(victim))
 	{
 		send_to_char("&+cYour opponent has escaped your deadly blade barrage.\n", ch);
 		return;
@@ -3033,7 +3154,7 @@ void event_barrage(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 		return;
 	}
 
-	if (ch->in_room != victim->in_room)
+	if (ch->in_room != victim->in_room || ch->specials.z_cord != victim->specials.z_cord)
 	{
 		send_to_char("&+cYour victim has escaped...\r\n", ch);
 		return;
@@ -3071,70 +3192,55 @@ void event_barrage(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 	stage = 0;
 	do
 	{
+		int weapon_slot = PRIMARY_WEAPON;
+		int percent_decrease = 0;
+
 		switch (stage)
 		{
 		case 0:
-			hit(ch, victim, ch->equipment[PRIMARY_WEAPON]);
-			if (!(IS_ALIVE(ch) && IS_ALIVE(victim)))
-			{
-				return;
-			}
-			if (GET_LEVEL(ch) < 50)
-				percent -= 10;
+			percent_decrease = GET_LEVEL(ch) < 50 ? 10 : 0;
 			skill_req = 25;
 			break;
 		case 1:
-			hit(ch, victim, ch->equipment[SECONDARY_WEAPON]);
-			if (!(IS_ALIVE(ch) && IS_ALIVE(victim)))
-			{
-				return;
-			}
-			if (GET_LEVEL(ch) < 50)
-				percent -= 5;
+			weapon_slot = SECONDARY_WEAPON;
+			percent_decrease = GET_LEVEL(ch) < 50 ? 5 : 0;
 			skill_req = 35;
 			break;
 		case 2:
-			hit(ch, victim, ch->equipment[PRIMARY_WEAPON]);
-			if (!(IS_ALIVE(ch) && IS_ALIVE(victim)))
-			{
-				return;
-			}
-			if (GET_LEVEL(ch) < 50)
-				percent -= 5;
+			percent_decrease = GET_LEVEL(ch) < 50 ? 5 : 0;
 			skill_req = 40;
 			break;
 		case 3:
-			hit(ch, victim, ch->equipment[SECONDARY_WEAPON]);
-			if (!(IS_ALIVE(ch) && IS_ALIVE(victim)))
-			{
-				return;
-			}
-			percent -= 5;
+			weapon_slot = SECONDARY_WEAPON;
+			percent_decrease = 5;
 			skill_req = 55;
 			break;
 		case 4:
-			hit(ch, victim, ch->equipment[PRIMARY_WEAPON]);
-			if (!(IS_ALIVE(ch) && IS_ALIVE(victim)))
-			{
-				return;
-			}
-			percent -= 5;
+			percent_decrease = 5;
 			skill_req = 70;
 			break;
 		case 5:
-			hit(ch, victim, ch->equipment[SECONDARY_WEAPON]);
-			if (!(IS_ALIVE(ch) && IS_ALIVE(victim)))
-			{
-				return;
-			}
+			weapon_slot = SECONDARY_WEAPON;
 			skill_req = 85;
 			break;
 		case 6:
-			hit(ch, victim, ch->equipment[PRIMARY_WEAPON]);
 			break;
 		default:
 			break;
 		}
+
+		const attack_continuation continuation = begin_attack_continuation(
+			ch, victim, ch->equipment[weapon_slot], weapon_slot);
+		hit(ch, victim, continuation.weapon);
+
+		const attack_continuation_result after_hit =
+			check_attack_continuation(continuation);
+		if (!after_hit.can_continue())
+			return;
+		ch = after_hit.actor;
+		victim = after_hit.target;
+		percent -= percent_decrease;
+
 		stage++;
 	} while (stage < 7 && skill >= skill_req && percent >= number(1, 100));
 
@@ -3312,12 +3418,14 @@ void do_buck(P_char ch, char * /*argument*/, int /*cmd*/)
 
 void rush(P_char ch, P_char victim)
 {
-	if (!IS_ALIVE(ch))
+	if (!ch || !char_in_list(ch) || !IS_ALIVE(ch))
 	{
-		if (ch)
+		if (ch && char_in_list(ch))
 			send_to_char("Lay still, you seem to be dead.\r\n", ch);
 		return;
 	}
+	if (!victim || !char_in_list(victim) || !IS_ALIVE(victim))
+		return;
 
 	if (!CanDoFightMove(ch, victim))
 	{
@@ -3355,10 +3463,24 @@ void rush(P_char ch, P_char victim)
 		act("&+rA red haze fills your vision as you madly rush at $N.", FALSE, ch, 0,
 		    victim, TO_CHAR);
 
-		if (GET_OPPONENT(ch))
+		if (P_char opponent = GET_OPPONENT(ch))
 		{
-			// The person you are rushing away from gets a free attack.
-			hit(GET_OPPONENT(ch), ch, GET_OPPONENT(ch)->equipment[PRIMARY_WEAPON]);
+			if (char_in_list(opponent) && IS_ALIVE(opponent))
+			{
+				const attack_continuation continuation =
+					begin_attack_continuation(ch, victim);
+				// The person you are rushing away from gets a free attack.
+				hit(opponent, ch, opponent->equipment[PRIMARY_WEAPON]);
+
+				const attack_continuation_result checked =
+					check_attack_continuation(continuation);
+				if (!checked.can_continue() ||
+				    checked.target->specials.z_cord != continuation.height)
+					return;
+				ch = checked.actor;
+				victim = checked.target;
+			}
+
 			stop_fighting(ch);
 			set_fighting(ch, victim);
 		}
@@ -3374,9 +3496,9 @@ void do_rush(P_char ch, char *argument, int /*cmd*/)
 	P_char target = NULL;
 	char target_name[MAX_INPUT_LENGTH];
 
-	if (!IS_ALIVE(ch))
+	if (!ch || !char_in_list(ch) || !IS_ALIVE(ch))
 	{
-		if (ch)
+		if (ch && char_in_list(ch))
 			send_to_char("Lay still, you seem to be dead.\r\n", ch);
 		return;
 	}
@@ -5094,12 +5216,14 @@ void do_assist_core(P_char ch, P_char victim)
 	act("$n assists you heroically.", FALSE, ch, 0, victim, TO_VICT);
 	act("$n assists $N heroically.", FALSE, ch, 0, victim, TO_NOTVICT);
 
+	const uint64_t actor_runtime_id = ch->runtime_id;
 	if (IS_NPC(ch))
 		MobStartFight(ch, GET_OPPONENT(victim));
 	else
 		hit(ch, GET_OPPONENT(victim), ch->equipment[PRIMARY_WEAPON]);
 
-	if (char_in_list(ch))
+	ch = find_character_by_runtime_id(actor_runtime_id);
+	if (ch && IS_ALIVE(ch))
 		CharWait(ch, (int)(PULSE_VIOLENCE * 0.5));
 }
 
@@ -5582,10 +5706,20 @@ void event_garroteproc(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 
 void event_bleedproc(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 {
+	if (!ch || !victim || !data)
+		return;
+
+	const uint64_t actor_runtime_id = ch->runtime_id;
+	const uint64_t victim_runtime_id = victim->runtime_id;
 	int count = *((int *)data);
 
 	// Deliver damage with no reductions or messages.
 	if (raw_damage(ch, victim, dice(3, 6), PHSDAM_NOREDUCE, NULL) != DAM_NONEDEAD)
+		return;
+
+	ch = find_character_by_runtime_id(actor_runtime_id);
+	victim = find_character_by_runtime_id(victim_runtime_id);
+	if (!ch || !victim || !IS_ALIVE(ch) || !IS_ALIVE(victim))
 		return;
 
 	// Show messages..
@@ -5964,7 +6098,7 @@ bool single_stab(P_char ch, P_char victim, P_obj weapon)
 	// Note: This DEBUG should always match the one in bool backstab(...).
 	static bool DEBUG = TRUE;
 
-	int room = ch->in_room, skill, dice_mult, dam = 0;
+	int room, skill, dice_mult, dam = 0;
 	float dice_mod, level_mult, final_mult, damroll_mult, strdex_mod, spinal_tap, critical_stab,
 		critical_stab_mult;
 	bool spinal = FALSE, quarter = FALSE, crit = FALSE;
@@ -5980,18 +6114,36 @@ bool single_stab(P_char ch, P_char victim, P_obj weapon)
 	};
 
 	// I know.. the hack here..
-	if (ch && IS_TRUSTED(ch) && victim == NULL && weapon == NULL)
+	if (ch && char_in_list(ch) && IS_TRUSTED(ch) && victim == NULL && weapon == NULL)
 	{
 		DEBUG = !DEBUG;
 		debug("backstab: DEBUG display turned %s.", DEBUG ? "ON" : "OFF");
 		return TRUE;
 	}
 
-	if (!ch || !victim || !IS_ALIVE(ch) || !IS_ALIVE(victim))
+	if (!ch || !victim || !weapon || !char_in_list(ch) || !IS_ALIVE(ch) ||
+	    !char_in_list(victim) || !IS_ALIVE(victim))
 	{
 		debug("single_stab: ch/victim missing or already dead.");
 		return TRUE;
 	}
+	room = ch->in_room;
+	auto refresh_stab_participants = [&](const attack_continuation &continuation)
+	{
+		const attack_continuation_result after_callback =
+			check_attack_continuation(continuation);
+		if (!after_callback.can_continue())
+			return false;
+
+		ch = after_callback.actor;
+		victim = after_callback.target;
+		weapon = after_callback.weapon;
+		return true;
+	};
+	const attack_continuation initial_continuation =
+		begin_attack_continuation(ch, victim, weapon);
+	if (!refresh_stab_participants(initial_continuation))
+		return TRUE;
 
 	if ((skill = GET_CHAR_SKILL(ch, SKILL_BACKSTAB)) < 1)
 	{
@@ -6151,8 +6303,10 @@ bool single_stab(P_char ch, P_char victim, P_obj weapon)
 			      GET_NAME(ch), GET_NAME(victim), dam, weapon->value[1],
 			      weapon->value[2], skill);
 		}
+		const attack_continuation continuation =
+			begin_attack_continuation(ch, victim, weapon);
 		if (melee_damage(ch, victim, dam, PHSDAM_NOREDUCE | PHSDAM_NOPOSITION, &messages) ||
-		    !is_char_in_room(ch, room))
+		    !refresh_stab_participants(continuation))
 		{
 			return TRUE;
 		}
@@ -6175,8 +6329,10 @@ bool single_stab(P_char ch, P_char victim, P_obj weapon)
 			      GET_NAME(ch), GET_NAME(victim), dam, weapon->value[1],
 			      weapon->value[2], skill);
 		}
+		const attack_continuation continuation =
+			begin_attack_continuation(ch, victim, weapon);
 		if (melee_damage(ch, victim, dam, PHSDAM_NOREDUCE | PHSDAM_NOPOSITION, &messages) ||
-		    !is_char_in_room(ch, room))
+		    !refresh_stab_participants(continuation))
 		{
 			return TRUE;
 		}
@@ -6190,8 +6346,10 @@ bool single_stab(P_char ch, P_char victim, P_obj weapon)
 			      GET_NAME(ch), GET_NAME(victim), dam, weapon->value[1],
 			      weapon->value[2], skill);
 		}
+		const attack_continuation continuation =
+			begin_attack_continuation(ch, victim, weapon);
 		if (melee_damage(ch, victim, dam, PHSDAM_NOREDUCE | PHSDAM_NOPOSITION, &messages) ||
-		    (room < 1) || !is_char_in_room(ch, room))
+		    (room < 1) || !refresh_stab_participants(continuation))
 		{
 			return TRUE;
 		}
@@ -6205,9 +6363,11 @@ bool single_stab(P_char ch, P_char victim, P_obj weapon)
 		    FALSE, ch, 0, victim, TO_VICT);
 		act("With a swift tug $n wrenches the weapon free, ramming it into $N's spine!",
 		    FALSE, ch, 0, victim, TO_NOTVICTROOM);
+		const attack_continuation continuation =
+			begin_attack_continuation(ch, victim, weapon);
 		if (melee_damage(ch, victim, (number(-12, 12) + GET_LEVEL(ch)) / (quarter ? 4 : 1),
 				 PHSDAM_NOREDUCE | PHSDAM_NOPOSITION, &messages) ||
-		    !char_in_list(ch))
+		    !refresh_stab_participants(continuation))
 		{
 			return TRUE;
 		}
@@ -6216,19 +6376,28 @@ bool single_stab(P_char ch, P_char victim, P_obj weapon)
 	//  Yes weapon procs on backstabs - Drannak
 	if (obj_index[weapon->R_num].func.obj)
 	{
-		(*obj_index[weapon->R_num].func.obj)(weapon, ch, CMD_MELEE_HIT, (char *)victim);
+		const attack_continuation continuation =
+			begin_attack_continuation(ch, victim, weapon);
+		invoke_object_special(weapon, ch, CMD_MELEE_HIT, (char *)victim);
+		if (!refresh_stab_participants(continuation))
+			return TRUE;
 	}
 
 	if (weapon->value[4])
 	{
-		if (IS_POISON(weapon->value[4]))
+		const int poison = weapon->value[4];
+		const attack_continuation continuation =
+			begin_attack_continuation(ch, victim, weapon);
+		if (IS_POISON(poison))
 		{
-			(skills[weapon->value[4]].spell_pointer)(10, ch, 0, 0, victim, 0);
+			(skills[poison].spell_pointer)(10, ch, 0, 0, victim, 0);
 		}
 		else
 		{
 			poison_lifeleak(10, ch, 0, 0, victim, 0);
 		}
+		if (!refresh_stab_participants(continuation))
+			return TRUE;
 		weapon->value[4] = 0; /* remove on success */
 	}
 
@@ -6236,7 +6405,7 @@ bool single_stab(P_char ch, P_char victim, P_obj weapon)
 	//   weapon_proc(weapon, ch, victim);
 	//  No weapon procs on backstab - Jexni 3/24/11
 
-	return !(is_char_in_room(ch, room) && is_char_in_room(victim, room));
+	return !(ch->in_room == room && victim->in_room == room);
 }
 
 /*
@@ -6343,6 +6512,20 @@ bool backstab(P_char ch, P_char victim)
 	}
 
 	victim = misfire_check(ch, victim, DISALLOW_SELF | DISALLOW_BACKRANK);
+	if (!char_in_list(ch) || !IS_ALIVE(ch) || !char_in_list(victim) || !IS_ALIVE(victim))
+		return FALSE;
+
+	const uint64_t actor_runtime_id = ch->runtime_id;
+	const uint64_t victim_runtime_id = victim->runtime_id;
+	const int original_room = ch->in_room;
+	auto revalidate_backstab_participants = [&]()
+	{
+		ch = find_character_by_runtime_id(actor_runtime_id);
+		victim = find_character_by_runtime_id(victim_runtime_id);
+		if (!ch || !IS_ALIVE(ch) || !victim || !IS_ALIVE(victim))
+			return false;
+		return ch->in_room == original_room && victim->in_room == original_room;
+	};
 
 	percent_chance = (int)(0.95 * GET_CHAR_SKILL(ch, SKILL_BACKSTAB));
 
@@ -6477,10 +6660,10 @@ bool backstab(P_char ch, P_char victim)
 		}
 	}
 
-	if (!char_in_list(victim) || (!IS_ALIVE(victim)) || (ch->in_room != victim->in_room))
-	{
+	if (!revalidate_backstab_participants())
 		return TRUE;
-	}
+	first_w = ch->equipment[WIELD];
+	second_w = ch->equipment[SECONDARY_WEAPON];
 
 	if ((!stabbed || GET_CLASS(ch, CLASS_ASSASSIN) ||
 	     GET_SPEC(ch, CLASS_ROGUE, SPEC_ASSASSIN)) &&
@@ -6509,8 +6692,11 @@ bool backstab(P_char ch, P_char victim)
 		}
 	}
 
+	if (!revalidate_backstab_participants())
+		return TRUE;
+
 	// Victim's timer resets each stab.. don't bother clearing it as it will auto-clear in a few sec anyway.
-	if (victim && IS_ALIVE(victim) && IS_PC(victim))
+	if (IS_PC(victim))
 	{
 		set_short_affected_by(victim, SKILL_BACKSTAB, 3 * WAIT_SEC);
 		/* Making this a short duration instead of PULSE_VIOLENCE ticks (like 20 min).
@@ -6535,8 +6721,19 @@ int surprise(P_char ch, P_char victim)
 		send_to_char(
 			"&+GAmidst your opponents unpreparedness, you leap forth and deliver a surprise attack!&n\n",
 			ch);
-		hit(ch, victim, ch->equipment[PRIMARY_WEAPON]);
-		if (IS_ALIVE(victim) && ch->equipment[WIELD2])
+		P_obj primary_weapon = ch->equipment[PRIMARY_WEAPON];
+		const attack_continuation continuation =
+			begin_attack_continuation(ch, victim, primary_weapon, PRIMARY_WEAPON);
+		hit(ch, victim, primary_weapon);
+
+		const attack_continuation_result after_hit =
+			check_attack_continuation(continuation);
+		if (!after_hit.can_continue())
+			return 1;
+
+		ch = after_hit.actor;
+		victim = after_hit.target;
+		if (ch->equipment[WIELD2])
 		{
 			hit(ch, victim, ch->equipment[SECONDARY_WEAPON]);
 		}
@@ -8667,6 +8864,21 @@ void do_sweeping_thrust(P_char ch, char *argument, int /*cmd*/)
 	}
 
 	victim = guard_check(ch, victim);
+	auto hit_and_engage = [&](int weapon_slot)
+	{
+		const attack_continuation continuation = begin_attack_continuation(ch, victim);
+		P_obj weapon = ch->equipment[weapon_slot];
+		hit(ch, victim, weapon);
+
+		const attack_continuation_result after_hit =
+			check_attack_continuation(continuation);
+		if (!after_hit.can_continue())
+			return;
+
+		ch = after_hit.actor;
+		victim = after_hit.target;
+		engage(ch, victim);
+	};
 
 	vict_size = get_takedown_size(victim);
 	ch_size = get_takedown_size(ch);
@@ -8752,8 +8964,7 @@ void do_sweeping_thrust(P_char ch, char *argument, int /*cmd*/)
 		act("$n leans forward and &+cswipes&n $N who is powerless to stop the attack!",
 		    FALSE, ch, 0, victim, TO_NOTVICT);
 
-		hit(ch, victim, ch->equipment[PRIMARY_WEAPON]);
-		engage(ch, victim);
+		hit_and_engage(PRIMARY_WEAPON);
 
 		return;
 	}
@@ -8808,14 +9019,12 @@ void do_sweeping_thrust(P_char ch, char *argument, int /*cmd*/)
 
 			if (ch->equipment[WIELD])
 			{
-				hit(ch, victim, ch->equipment[PRIMARY_WEAPON]);
+				hit_and_engage(PRIMARY_WEAPON);
 			}
 			else
 			{
-				hit(ch, victim, ch->equipment[SECONDARY_WEAPON]);
+				hit_and_engage(SECONDARY_WEAPON);
 			}
-
-			engage(ch, victim);
 		}
 		return;
 	}

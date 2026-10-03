@@ -14,6 +14,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <limits>
+#include <new>
 #include <string>
 #include <time.h>
 
@@ -187,6 +188,25 @@ bool persist(std::string *error)
 	return ready() && save_persisted_state(error);
 }
 
+bool refresh_after_erasure(std::string *error)
+try
+{
+	tracker_ready = false;
+	const auto policy = tracker.get_daily_policy();
+	tracker = zone_story_quest_feature::service(tracker.catalog());
+	tracker.set_daily_policy(policy);
+	if (!load_persisted_state(error))
+		return false;
+	tracker_ready = zone_story_quest_production::ready();
+	return tracker_ready;
+}
+catch (const std::bad_alloc &)
+{
+	tracker_ready = false;
+	errno = ENOMEM;
+	return false;
+}
+
 bool remember_character(P_char player, std::string *error)
 {
 	if (!ready() || !player || IS_NPC(player))
@@ -289,7 +309,8 @@ bool record_authoritative_completion(std::string_view definition_id, int32_t zon
 }
 
 bool record_legacy_completion(struct char_data *player, const quest_complete_data *completion,
-			      int32_t room_vnum, int64_t completed_at, std::string *error)
+			      int32_t room_vnum, int64_t completed_at, std::string *error,
+			      std::string_view transaction_id)
 {
 	if (!player || IS_NPC(player) || !completion)
 		return fail(error, "legacy zone-story completion requires a player and Q block");
@@ -338,6 +359,7 @@ bool record_legacy_completion(struct char_data *player, const quest_complete_dat
 	return record_authoritative_completion(*definition_id, zone_number, pid, credited_pids,
 					       room_vnum, completed_at, GET_NAME(player),
 					       GET_LEVEL(player), GET_RACEWAR(player), true,
-					       party_size, strongest_party_level, error);
+					       party_size, strongest_party_level, error,
+					       transaction_id);
 }
 } // namespace zone_story_quest_runtime

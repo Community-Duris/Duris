@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 COMMON = ['src/item/locker_receipt.c', 'src/flatfile/flatfile_store.c',
           'src/economy/currency_command.c', 'src/persistence/critical_command.c',
           'src/world/epic_command.c', 'src/combat/combat_outcome_command.c']
-SQL = ['src/item/item_transfer_command.c', 'src/item/item_transfer_repository.c',
+SQL = ['src/item/item_transfer_command.c', "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", 'src/item/item_transfer_repository.c',
        'src/economy/auction_command.c', 'src/economy/auction_repository.c',
        'src/combat/combat_outcome_repository.c', 'src/guild/artifact_guild_command.c',
        'src/guild/artifact_guild_repository.c', 'src/economy/boon_reward_command.c',
@@ -27,9 +27,14 @@ SQL = ['src/item/item_transfer_command.c', 'src/item/item_transfer_repository.c'
        'src/economy/collector_policy.c', 'src/economy/collector_repository.c',
        'src/persistence/corpse_lifecycle_command.c',
        'src/persistence/corpse_lifecycle_repository.c',
+       'src/persistence/player_death_restitution_command.c',
+       'src/persistence/player_death_restitution_repository.c',
        'src/player/player_snapshot_codec.c', 'src/player/player_load_repository.c',
+       'src/player/player_save_journal.c',
+       'src/persistence/quest_reward_obligation_repository.c',
+       'src/player/player_death_recovery_query.c', 'src/player/player_death_conflict_repository.c',
        'src/player/player_load_topology.c', 'src/persistence/persistence_observability.c',
-       'src/persistence/critical_command_repository.c']
+       'src/persistence/economic_accounting_repository.c','src/persistence/economic_sql_bank_transaction.c','src/economy/economic_currency_adapter.c','src/economy/economic_accounting_types.c','src/economy/economic_accounting_plan.c','src/economy/economic_accounting_intent.c','src/persistence/economic_sql_lifecycle_guard.c','src/persistence/critical_command_repository.c']
 
 
 def run_backend(temp, mysql=False):
@@ -43,7 +48,9 @@ def run_backend(temp, mysql=False):
     libraries = shlex.split(subprocess.check_output(['mysql_config', '--libs'], text=True)) if mysql else []
     sources = SQL if mysql else ['src/flatfile/flatfile_player_domain_repository.c', 'src/flatfile/flatfile_authority_transaction.c']
     binary = directory / 'harness'
-    subprocess.run(['g++', '-std=c++20', '-Wall', '-Wextra', '-Werror', '-Isrc', *flags,
+    section_flags = ['-ffunction-sections', '-fdata-sections', '-Wl,--gc-sections']
+    subprocess.run(['g++', '-std=c++20', '-Wall', '-Wextra', '-Werror',
+                    *section_flags, '-Isrc', *flags,
                     str(source), *COMMON, *sources, *libraries, '-lcrypto', '-pthread', '-o', str(binary)], cwd=ROOT, check=True)
     for purse in ('wallet', 'bank'):
         subprocess.run([str(binary), str(directory / ('normal-'+purse)), 'normal', purse], check=True, timeout=30)
@@ -57,8 +64,9 @@ def run_backend(temp, mysql=False):
                 subprocess.run([str(binary), state, prefix+'delivered', purse], check=True, timeout=30)
 
 
-(ROOT / 'bin/tests').mkdir(parents=True, exist_ok=True)
-with tempfile.TemporaryDirectory(prefix='locker-recovery-', dir=ROOT / 'bin/tests') as temporary:
+# Authority fixtures require native private-directory permissions; a Windows-backed
+# checkout can ignore chmod(0700). Use the host's disposable temporary filesystem.
+with tempfile.TemporaryDirectory(prefix='locker-recovery-') as temporary:
     temp = Path(temporary)
     run_backend(temp)
     if os.getenv('TEST_DB_HOST'):
@@ -78,4 +86,4 @@ with tempfile.TemporaryDirectory(prefix='locker-recovery-', dir=ROOT / 'bin/test
         finally:
             sql('DROP DATABASE ' + database)
     else:
-        print('MariaDB receipt recovery skipped: TEST_DB_HOST is not set')
+        print('SKIP: MariaDB receipt recovery requires TEST_DB_HOST for a disposable fixture')

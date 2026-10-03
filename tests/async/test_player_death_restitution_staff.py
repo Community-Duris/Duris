@@ -51,6 +51,11 @@ HARNESS = r'''
 #include <openssl/sha.h>
 
 P_desc descriptor_list = nullptr;
+P_char character_list = nullptr;
+uint64_t persistence_observability_now_usec() { return 100; }
+int recovery_reads = 0;
+size_t critical_command_coordinator_recovery_copy(critical_recovery_case *, size_t, size_t *total, size_t)
+{ ++recovery_reads; *total = 0; return 0; }
 std::string last_message;
 
 char *one_argument(const char *argument, char *first_arg)
@@ -230,6 +235,12 @@ int main()
         do_restitution(&staff, input.data(), CMD_RESTITUTION);
     };
 
+    staff.player.level = FORGER - 1;
+    invoke_command("recovery");
+    assert(recovery_reads == 0 && last_message.find("authorization") != std::string::npos);
+    staff.player.level = FORGER;
+    invoke_command("recovery");
+    assert(recovery_reads == 1 && last_message.find("protected") != std::string::npos);
     invoke_command("");
     assert(last_message.find("inspect") != std::string::npos);
     invoke_command("chunk aa");

@@ -36,6 +36,7 @@ capture = (SRC / "player_snapshot_capture.c").read_text()
 fight = (SRC / "fight.c").read_text()
 account_reward = (SRC / "account_reward.c").read_text()
 magic = (SRC / "magic.c").read_text()
+lifecycle = (SRC / "spell_item_lifecycle.c").read_text()
 mail = (SRC / "mail.c").read_text()
 shop = (SRC / "shop.c").read_text()
 
@@ -161,7 +162,7 @@ check("transfer serialization does not masquerade as an unowned player save",
       and "true, true);" in capture)
 
 # Every remaining direct grant is fenced at the low-level player publication boundary.
-to_char = handler[handler.index("void obj_to_char("):]
+to_char = handler[handler.index("obj_to_char_result obj_to_char_checked("):]
 to_char = to_char[:to_char.index("void obj_from_char(")]
 ownership_guard = condition_after(to_char, "// A persisted generic item")
 ownership_guard_body = braced_block_after(to_char, "// A persisted generic item")
@@ -173,7 +174,8 @@ check("obj_to_char defers missing or mismatched ownership including transient ge
         IS_SET(object->value[CORPSE_FLAGS], PC_CORPSE))""")
       and "item_ownership_runtime_lookup(object->obj_uid, &ownership)" in ownership_guard_body
       and "item_owner_identity_equal(ownership.owner, player)" in ownership_guard_body
-      and "item_creation_grant_submit_to_player(ch, object, ch)" in ownership_guard_body)
+      and normalize_cxx("item_creation_grant_submit_to_player(ch, object, ch, NULL, economic_source_kind::world_generation)")
+      in normalize_cxx(ownership_guard_body))
 check("new characters initialize their item-owner revision before receiving equipment",
       "item_ownership_runtime_hydrate_owner(" in nanny
       and "item_owner_type::player" in nanny[nanny.index("void init_char("):])
@@ -212,8 +214,8 @@ check("newbie item keywords are captured before asynchronous grants",
       newbie.count("add_newbie_keyword(") == 1
       and newbie.index("add_newbie_keyword(obj);") < newbie.index("return obj;")
       and newbie.index("add_newbie_keyword(obj);") < newbie.index("obj_to_char(obj, ch);"))
-soulbind = magic[magic.index("void load_soulbind("):]
-soulbind = soulbind[:soulbind.index("void spell_contain_being(")]
+soulbind = lifecycle[lifecycle.index("void load_soulbind("):]
+soulbind = soulbind[:soulbind.index("/* ---- DRAGOON SPELLS ----*/")]
 check("soulbind flags are captured before asynchronous publication",
       soulbind.index("SET_BIT(obj->extra_flags, ITEM_NOSELL);") <
       soulbind.index("obj_to_char(obj, ch);"))
@@ -225,7 +227,7 @@ summon = account_reward[account_reward.index("static bool summon_one("):]
 summon = summon[:summon.index("static bool parse_positive")]
 check("divine claims reserve cooldown before submitting an asynchronous grant",
       summon.index("account_bound_reward_summons") <
-      summon.index("item_creation_grant_submit_to_player(ch, obj, ch)")
+      summon.index("item_creation_grant_submit_to_player(ch, obj, ch, NULL,")
       and "OBJ_CARRIED(obj)" not in summon)
 shop_completion = shop[shop.index("static void shop_trade_completion("):]
 shop_completion = shop_completion[:shop_completion.index("void push(")]
@@ -236,7 +238,7 @@ check("committed shop container placement does not rerun fallible put checks",
 # Minimal-world death must remain valid when the optional corpse portal prototype
 # is absent. This was found while exercising the player-corpse transfer boundary.
 death_portal = fight[fight.index("P_obj portal = read_object(400220, VIRTUAL);"):]
-death_portal = death_portal[:death_portal.index("if (victim && killer")]
+death_portal = death_portal[:death_portal.index("if (messages && victim && killer")]
 check("death skips the optional corpse portal when its prototype is unavailable",
       "if (portal)" in death_portal
       and death_portal.index("if (portal)") < death_portal.index("portal->value[0]"))

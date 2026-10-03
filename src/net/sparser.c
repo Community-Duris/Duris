@@ -8,6 +8,7 @@
 */
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "telemetry/telemetry_runtime.h"
 #include "item/item_actions.h"
 #include "world/difficulty.h"
@@ -751,6 +752,8 @@ void add_follower(P_char ch, P_char leader)
 	k->follower = ch;
 	k->next = leader->followers;
 	leader->followers = k;
+
+	item_restrict_player_pet_equipment(ch);
 
 	// Login stages pet links before placing either character in the world.
 	// Visibility and room broadcasts are only valid after placement.
@@ -1935,15 +1938,25 @@ bool parse_spell(P_char ch, char *argument, struct spell_target_data *target_dat
 bool check_mob_retaliate(P_char ch, P_char tar_char, int spl)
 {
 	P_char tch, tch2;
+	uint64_t caster_runtime_id;
+	const bool aggro_spell = IS_SET(skills[spl].targets, TAR_AGGRO);
+	const bool caster_in_list = ch && char_in_list(ch);
+	const bool caster_alive = caster_in_list && IS_ALIVE(ch);
 
 	// This should never be the case, but just to be careful..
-	if (!IS_SET(skills[spl].targets, TAR_AGGRO) || !IS_ALIVE(ch))
+	if (!aggro_spell || !caster_alive)
 	{
+		const char *caster_name = !ch		 ? "NULL" :
+					  caster_in_list ? J_NAME(ch) :
+							   "not in char_list";
+		const char *caster_state = !caster_in_list ? "UNKNOWN" :
+					   caster_alive	   ? "ALIVE" :
+							     "DEAD";
 		debug("check_mob_retaliate: Non-aggro (%s) or dead/missing ch: %s is %s.",
-		      YESNO(!IS_SET(skills[spl].targets, TAR_AGGRO)), !ch ? "NULL" : J_NAME(ch),
-		      IS_ALIVE(ch) ? "ALIVE" : "DEAD");
+		      YESNO(!aggro_spell), caster_name, caster_state);
 		return TRUE;
 	}
+	caster_runtime_id = ch->runtime_id;
 
 	// If TAR_IGNORE: Unknown target type(?), but aggro, ie area-only aggro like earthquake/nova/etc.
 	//   TAR_OFFAREA: A correctly identified area offensive spell.
@@ -1960,9 +1973,12 @@ bool check_mob_retaliate(P_char ch, P_char tar_char, int spl)
 		 *  other aggro kick-ass spell. all unoccupied mobsters which would get hit
 		 *  by spl do automagical tackle at fellow! - they better be occupied, OR...
 		 */
-		for (tch = world[ch->in_room].people; tch; tch = tch2)
+		const int room = ch->in_room;
+		const int caster_height = ch->specials.z_cord;
+		for (tch = world[room].people; tch; tch = tch2)
 		{
 			tch2 = tch->next_in_room;
+			const uint64_t tch2_runtime_id = tch2 ? tch2->runtime_id : 0;
 
 			if (tch == ch)
 			{
@@ -2003,9 +2019,22 @@ bool check_mob_retaliate(P_char ch, P_char tar_char, int spl)
 			{
 				hit(tch, ch, tch->equipment[PRIMARY_WEAPON]);
 			}
-			if (!IS_ALIVE(ch) || !char_in_list(ch))
+			P_char live_caster = find_character_by_runtime_id(caster_runtime_id);
+			if (!live_caster || !IS_ALIVE(live_caster))
 			{
 				return TRUE;
+			}
+			ch = live_caster;
+			if (ch->in_room != room || ch->specials.z_cord != caster_height)
+				break;
+
+			if (tch2_runtime_id)
+			{
+				P_char live_next_target =
+					find_character_by_runtime_id(tch2_runtime_id);
+				if (!live_next_target || live_next_target->in_room != room)
+					break;
+				tch2 = live_next_target;
 			}
 		}
 	}
@@ -2038,10 +2067,13 @@ bool check_mob_retaliate(P_char ch, P_char tar_char, int spl)
 				{
 					MobStartFight(tar_char, ch);
 
-					if (!IS_ALIVE(ch) || !char_in_list(ch))
+					P_char live_caster =
+						find_character_by_runtime_id(caster_runtime_id);
+					if (!live_caster || !IS_ALIVE(live_caster))
 					{
 						return TRUE;
 					}
+					ch = live_caster;
 				}
 			}
 		}

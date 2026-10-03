@@ -12,11 +12,11 @@ FIGHT = (SRC / "fight.c").read_text()
 ACTOBJ = (SRC / "actobj.c").read_text()
 HANDLER = (SRC / "world/handler.c").read_text()
 ACCOUNT = (SRC / "account/account.c").read_text()
-MOBILE_SPECS = (SRC / "specs.mobile.c").read_text()
+MONSTER_ATTACKS = (SRC / "specs.monster_attacks.c").read_text()
 UNDERMOUNTAIN_SPECS = (SRC / "specs.undermountain.c").read_text()
 VERZANAN_SPECS = (SRC / "specs.verzanan.c").read_text()
 LOHRR_SPECS = (SRC / "specs.lohrr.c").read_text()
-MAGIC = (SRC / "magic.c").read_text()
+CORPSE = (SRC / "spell_corpse_lifecycle.c").read_text()
 NECROMANCY = (SRC / "necromancy.c").read_text()
 
 
@@ -47,11 +47,11 @@ deferred_compaction = body(HANDLER, "bool persistence_defer_corpse_compaction(",
                            "bool persistence_defer_corpse_destruction(")
 durable_lifecycle = body(HANDLER, "bool durable_corpse_lifecycle_enabled()",
                          "} // namespace")
-get_item = body(ACTOBJ, "void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)",
-                "int fight_in_room")
-put_item = body(ACTOBJ, "bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)",
-                "void do_give")
-devour = body(MOBILE_SPECS, "int devour(", "void event_tentacles")
+get_item = body(ACTOBJ, "static get_outcome get_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showit,",
+                "void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)")
+put_item = body(ACTOBJ, "static bool put_with_phase(P_char ch, P_obj o_obj, P_obj s_obj, int showit,",
+                "bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)")
+devour = body(MONSTER_ATTACKS, "int devour(", "void event_tentacles")
 dog_one = body(VERZANAN_SPECS, "int dog_one(", "int dog_two(")
 dog_two = body(VERZANAN_SPECS, "int dog_two(", "int drunk_one(")
 lightning_sword = body(UNDERMOUNTAIN_SPECS, "int lightning_sword(",
@@ -59,13 +59,15 @@ lightning_sword = body(UNDERMOUNTAIN_SPECS, "int lightning_sword(",
 flying_dagger = body(UNDERMOUNTAIN_SPECS, "int flying_dagger(", "int ochre_jelly(")
 ochre_jelly = body(UNDERMOUNTAIN_SPECS, "int ochre_jelly(", "int animated_sword(")
 very_angry = LOHRR_SPECS[LOHRR_SPECS.index("int very_angry_npc("):]
-unmaking = body(MAGIC, "void spell_unmaking(", "void spell_enchant_weapon(")
+unmaking = body(
+    CORPSE, "void spell_unmaking(", "void complete_player_resurrection_after_commit("
+)
 wall_of_bones = body(NECROMANCY, "void spell_wall_of_bones(",
                      "void spell_compact_corpse(")
 compact_corpse = NECROMANCY[NECROMANCY.index("void spell_compact_corpse("):]
-resurrect = body(MAGIC, "void spell_resurrect(", "void spell_preserve(")
-lesser_resurrect = body(MAGIC, "void spell_lesser_resurrect(",
-                        "void spell_mass_invisibility(")
+resurrect = body(CORPSE, "void spell_resurrect(", "void spell_preserve(")
+lesser_resurrect = body(CORPSE, "void spell_lesser_resurrect(",
+                        "void spell_mass_embalm(")
 resurrection_publication = body(HANDLER, "void publish_corpse_resurrection(",
                                 "void continue_corpse_resurrection(")
 resurrection_item_publication = body(HANDLER, "void publish_corpse_resurrection_item(",

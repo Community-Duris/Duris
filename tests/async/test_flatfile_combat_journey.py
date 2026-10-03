@@ -32,7 +32,20 @@ PASSWORD = "Qz7!mN4@"
 CHARACTER = "Taverek"
 EMAIL = "journey@example.invalid"
 INSPECTOR = ROOT / "bin/tests/coin-death-inspector"
+INSPECTOR_BUILD_TIMEOUT = 600
 ANSI = re.compile(rb"\x1b\[[0-?]*[ -/]*[@-~]")
+
+
+def build_inspector(destination: pathlib.Path = INSPECTOR) -> None:
+    # This compiles the native repository and its authority owners, not a small
+    # inspection shim. Use the server build's budget; gameplay keeps its own
+    # much shorter deadlines. A 180-second limit expired before gameplay in the
+    # frozen 63309643c regression run.
+    started = time.monotonic()
+    subprocess.run(["python3", "tests/async/test_flatfile_player_repository.py",
+                    "--build-inspector", str(destination)], cwd=ROOT, check=True,
+                   timeout=INSPECTOR_BUILD_TIMEOUT)
+    print(f"INSPECTOR_BUILD elapsed={time.monotonic() - started:.3f}s", flush=True)
 
 
 def require(condition: bool, message: str) -> None:
@@ -218,10 +231,11 @@ def add_death_conflict(state_root: pathlib.Path, parent_uid: int) -> int:
         data = bytearray(path.read_bytes())
         require(data[:8] == b"DUROWN\0\0", "custody fixture magic changed")
         version, size, _ = struct.unpack_from("<IIQ", data, 8)
-        require(version == 4 and size == len(data) - 56, "custody fixture format changed")
+        require(version == 8 and size == len(data) - 56, "custody fixture format changed")
         require(hashlib.sha256(data[56:]).digest() == data[24:56], "invalid custody fixture")
-        # Version 4 keeps the owner/item rows unchanged; its new collector
-        # flag lives in operation rows, which this insertion preserves verbatim.
+        # Current accounting format 8 keeps owner rows and item fields through
+        # the coin payload stable. Since version 5, each item also ends with a
+        # uint16 equipment slot. Preserve all operation/receipt rows verbatim.
         owners, items, _ = struct.unpack_from("<III", data, 56)
         at = 68 + owners * 25
         last_uid = 0
@@ -231,11 +245,12 @@ def add_death_conflict(state_root: pathlib.Path, parent_uid: int) -> int:
             last_uid = row[0]
             if row[0] == parent_uid:
                 parent = row
-            at += 58 + row[-1]
+            at += 58 + row[-1] + 2
         require(parent is not None and parent[3:6] == (1, 1, 0), "fixture root is not player-owned")
         ghost_uid = last_uid + 10000
         ghost = struct.pack("<QQQBQQQiBI", ghost_uid, parent_uid, parent_uid,
                             1, 1, 0, 1, 15, 1, 0)
+        ghost += struct.pack("<H", 0)
         data[at:at] = ghost
         struct.pack_into("<I", data, 12, size + len(ghost))
         struct.pack_into("<I", data, 60, items + 1)
@@ -515,6 +530,7 @@ def reconnect_character(
     *,
     account: str = ACCOUNT,
     character: str = CHARACTER,
+    allow_linkdead: bool = False,
 ) -> MudClient:
     client = MudClient(port)
     try:
@@ -531,7 +547,12 @@ def reconnect_character(
         client.send("1")
         client.expect(character)
         client.send("1")
-        client.expect("Play as")
+        if allow_linkdead:
+            entry, _ = client.expect_any(("Play as", "Reconnecting..."))
+            if entry == "Reconnecting...":
+                return client
+        else:
+            client.expect("Play as")
         client.send("y")
         if return_message:
             client.expect(return_message, timeout=30)
@@ -831,8 +852,7 @@ def run_journey(binary: pathlib.Path, reset_coins: bool = False,
 
 
 if __name__ == "__main__":
-    subprocess.run(["python3", "tests/async/test_flatfile_player_repository.py",
-                    "--build-inspector", str(INSPECTOR)], cwd=ROOT, check=True, timeout=180)
+    build_inspector()
     # Private temporary roots retain standalone build cleanup. The regression
     # runner shares a verified executable across journeys; runtime fixtures
     # remain isolated and are removed on both success and failure.

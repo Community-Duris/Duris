@@ -44,9 +44,13 @@ def main():
             if process.wait(timeout=30) != 0:
                 raise RuntimeError("service_shutdown_failed")
             content = log_path.read_bytes().lower()
+            status_log = runtime / "logs/log/status"
+            if status_log.is_file():
+                content += status_log.read_bytes().lower()
             if b"normal termination of game." not in content or any(token in content for token in (
                 b"player save pipeline unavailable", b"player load pipeline unavailable",
                 b"critical command pipeline unavailable", b"start_failed",
+                b"player recovery revalidation incomplete",
             )):
                 raise RuntimeError("persistence_pipeline_failed")
         finally:

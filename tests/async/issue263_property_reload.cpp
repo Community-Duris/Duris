@@ -41,6 +41,7 @@ void update_misfire_properties()
 	++completed_applies;
 }
 void collector_config_reload() {}
+void world_activity_reload() {}
 void item_actions_reload() {}
 void debug(const char *, ...) {}
 void logit(const char *, const char *, ...) {}
@@ -89,6 +90,8 @@ static bool native_property_read(void *, const char *key, float *value) noexcept
 {
 	if (std::strcmp(key, "exp.zoneTrophy.observe") == 0)
 		*value = get_property(key, 0.0);
+	else if (std::strcmp(key, "exp.rested.enabled") == 0)
+		*value = get_property(key, 1.0);
 	else if (std::strcmp(key, "epic.touch.maxPayoutFactor") == 0)
 		*value = get_property(key, 10.0);
 	else if (std::strcmp(key, "epic.touch.PayoutFactor") == 0)
@@ -133,6 +136,9 @@ int main()
 	observations seen{}, other{};
 	property_file(1.0F);
 	initialize_properties(); // No observer: existing native behavior.
+	const auto initial_content = divine_refusal_content_registry().snapshot();
+	assert(initial_content && initial_content->revision() == 1);
+	assert(initial_content->find(66026) && initial_content->find(66031));
 	assert(get_property("epic.touch.PayoutFactor", 1.0) == 1.0F);
 	telemetry_config_property_capture capture{};
 	capture.reader = { native_property_read, nullptr };
@@ -186,6 +192,30 @@ int main()
 	telemetry_config_reload_request_clear(&owner);
 	assert(!telemetry_config_reload_requested(&owner));
 	assert(telemetry_config_reload_unregister(telemetry_config_reload_observer, &owner));
+	// The real admin reload must retain good content after a malformed file,
+	// then publish a complete valid replacement for subsequent orders.
+	actor.player.level = FORGER;
+	const auto before_invalid_content = divine_refusal_content_registry().snapshot();
+	{
+		std::ofstream content(DIVINE_REFUSAL_CONTENT_FILE);
+		content << "{malformed";
+	}
+	command(&actor, "reload");
+	assert(divine_refusal_content_registry().snapshot() == before_invalid_content);
+	{
+		std::ofstream content(DIVINE_REFUSAL_CONTENT_FILE);
+		content << R"({"version":1,"revision":2,"entries":{"66026":{"patron":"Garl","message":"{patron} declines."}}})";
+	}
+	command(&actor, "reload");
+	const auto replacement_content = divine_refusal_content_registry().snapshot();
+	assert(replacement_content && replacement_content->revision() == 2);
+	assert(!replacement_content->find(66031));
+	char rendered[128]{};
+	assert(divine_refusal_content_render(replacement_content->find(66026), rendered,
+					     sizeof(rendered)));
+	assert(std::strcmp(rendered, "Garl declines.") == 0);
+	// Existing borrowers still see their original immutable content.
+	assert(initial_content->revision() == 1 && initial_content->find(66031));
 	std::cout
 		<< "ISSUE263_PROPERTY_JOURNEY_OK: initialize/set/revert/save/reload; "
 		   "post-cache notification; absent observer; ownership; malformed/unauthorized refusal\n";

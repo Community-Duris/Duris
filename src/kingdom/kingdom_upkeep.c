@@ -181,7 +181,7 @@
 #include "core/prototypes.h"
 #include "core/utility.h"
 #include "guild/assocs.h"
-#include "sql/sql_player.h" /* transaction helpers; stubs under __NO_MYSQL__ */
+#include "sql/sql_transaction.h"
 
 #include <climits>
 #include <cstdio>

@@ -188,10 +188,14 @@ metadata_validation_outcome valid_item_metadata(const player_item_snapshot &item
 	if ((identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_TYPE) &&
 	    (item.type < ITEM_LOWEST || item.type > ITEM_LAST))
 		return metadata_validation_outcome::invalid;
-	if (complete_snapshot_state)
+	if (complete_snapshot_state ||
+	    (identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS))
 		for (const auto &affect : item.dynamic_affects)
 			if (affect.extra2 > ULONG_MAX)
 				return metadata_validation_outcome::invalid;
+	if ((identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS) &&
+	    !(identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_EXTRA2_FLAGS))
+		return metadata_validation_outcome::invalid;
 	for (const auto &affect : item.affects)
 		if ((identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_AFFECTS) &&
 		    (affect[0] < 0 || affect[0] > APPLY_LAST || affect[1] < INT8_MIN ||
@@ -325,7 +329,11 @@ void attach_loaded_inventory(P_char character, const std::vector<P_obj> &objects
 	for (size_t index : roots)
 	{
 		P_obj object = objects[index];
-		const int slot = items[index].equipment_slot;
+		// Pet hydration precedes the owner link. Keep hidden helper roots in
+		// this NPC's inventory instead of reactivating legacy worn snapshots.
+		const int slot = IS_NPC(character) && (object->extra_flags & ITEM_NOSHOW) ?
+					 0 :
+					 items[index].equipment_slot;
 		if (slot > 0)
 		{
 			character->equipment[slot - 1] = object;
@@ -432,6 +440,10 @@ bool materialize_item_graph(P_char character, std::vector<P_obj> *detached_roots
 			item.extra_descriptions.size() +
 			((identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_AFFECTS) ?
 				 item.affects.size() :
+				 0) +
+			((complete_snapshot_state ||
+			  (identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS)) ?
+				 item.dynamic_affects.size() :
 				 0);
 		if (!count_operation(metrics, item_count, 2 + metadata_operations) ||
 		    !identity.database_id || !identity.item_uid ||
@@ -439,7 +451,8 @@ bool materialize_item_graph(P_char character, std::vector<P_obj> *detached_roots
 		    identity.quantity != 1 || identity.state != item_custody_state::active ||
 		    !item_owner_identity_equal(identity.owner, expected_owner) ||
 		    identity.owner_revision != owner_revision ||
-		    identity.override_mask & ~PLAYER_LOAD_ITEM_OVERRIDE_ALL)
+		    identity.override_mask &
+			    ~(PLAYER_LOAD_ITEM_OVERRIDE_ALL | PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME))
 			return fail(metrics,
 				    player_load_item_materialize_outcome::invalid_snapshot);
 		try
@@ -454,8 +467,10 @@ bool materialize_item_graph(P_char character, std::vector<P_obj> *detached_roots
 			return fail(metrics,
 				    player_load_item_materialize_outcome::allocation_failure);
 		}
-		const metadata_validation_outcome metadata =
-			valid_item_metadata(item, identity, complete_snapshot_state);
+		const metadata_validation_outcome metadata = valid_item_metadata(
+			item, identity,
+			complete_snapshot_state ||
+				(identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME));
 		if (metadata != metadata_validation_outcome::valid)
 			return fail(
 				metrics,
@@ -576,18 +591,34 @@ bool materialize_item_graph(P_char character, std::vector<P_obj> *detached_roots
 		object->g_key = item.generated_key;
 		object->weight = item.weight;
 		object->cost = item.cost;
-		if (complete_snapshot_state)
+		if (complete_snapshot_state ||
+		    (identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME))
 			for (size_t timer = 0; timer < item.timers.size(); ++timer)
 				object->timer[timer] = static_cast<time_t>(item.timers[timer]);
 		else
 			object->timer[0] = static_cast<time_t>(item.timers[0]);
 		object->extra_flags = item.extra_flags;
-		if (complete_snapshot_state)
+		if (complete_snapshot_state ||
+		    (identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME))
 		{
 			object->anti_flags = item.anti_flags;
 			object->anti2_flags = item.anti2_flags;
-			object->extra2_flags = item.extra2_flags;
 			object->craftsmanship = item.craftsmanship;
+		}
+		if (complete_snapshot_state ||
+		    (identity.override_mask &
+		     (PLAYER_LOAD_ITEM_OVERRIDE_EXTRA2_FLAGS | PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME)))
+			object->extra2_flags = item.extra2_flags;
+		if (complete_snapshot_state ||
+		    (identity.override_mask & (PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS |
+					       PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME)))
+		{
+			const auto baseline =
+				std::find_if(item.dynamic_affects.begin(),
+					     item.dynamic_affects.end(), [](const auto &affect)
+					     { return affect.type == TAG_ALTERED_EXTRA2; });
+			if (baseline != item.dynamic_affects.end())
+				object->extra2_flags = static_cast<ulong>(baseline->extra2);
 			for (auto affect = item.dynamic_affects.rbegin();
 			     affect != item.dynamic_affects.rend(); ++affect)
 			{
@@ -840,6 +871,30 @@ bool player_load_item_graph_materialize(P_char character,
 		character, items, identities,
 		{ item_owner_type::player, static_cast<uint64_t>(pid), 0 }, owner_revision,
 		hydrate_ownership, false, metrics);
+}
+
+void player_load_item_runtime_state_apply(P_obj object, const player_item_snapshot &item)
+{
+	object->g_key = item.generated_key;
+	for (size_t timer = 1; timer < item.timers.size(); ++timer)
+		object->timer[timer] = static_cast<time_t>(item.timers[timer]);
+	object->anti_flags = item.anti_flags;
+	object->anti2_flags = item.anti2_flags;
+	object->extra2_flags = item.extra2_flags;
+	object->craftsmanship = item.craftsmanship;
+	for (auto affect = item.dynamic_affects.rbegin(); affect != item.dynamic_affects.rend();
+	     ++affect)
+	{
+		if (affect->type == TAG_ALTERED_EXTRA2)
+			continue;
+		if (affect->extra2)
+			set_obj_affected_extra(object, -1, static_cast<sh_int>(affect->type),
+					       static_cast<sh_int>(affect->data),
+					       static_cast<ulong>(affect->extra2));
+		else
+			set_obj_affected(object, -1, static_cast<sh_int>(affect->type),
+					 static_cast<sh_int>(affect->data));
+	}
 }
 
 bool player_load_items_materialize(P_char character, const player_load_result &result,

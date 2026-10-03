@@ -23,7 +23,10 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
             "-Wpedantic",
             "-Werror",
             "-D__NO_MYSQL__",
+            "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
             "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
+            "-DDURIS_FLATFILE_PLAYER_READ_FAULT_TEST",
+            "-DDURIS_FLATFILE_ACCOUNTING_TEST",
             "-Isrc",
             "-Isrc/no_mysql",
             "tests/async/flatfile_player_repository_harness.cpp",
@@ -48,9 +51,25 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
             rel("flatfile_boon_repository.c"),
             rel("flatfile_player_domain_repository.c"),
             rel("flatfile_authority_transaction.c"),
+            rel("flatfile_item_accounting_reference.c"),
+            rel("flatfile_accounting_authority.c"),
+            rel("flatfile_accounting_store.c"),
+            rel("economic_accounting_types.c"),
+            rel("economic_accounting_plan.c"),
+            rel("auction_listing_accounting.c"),
+            rel("auction_accounting.c"),
+            rel("auction_settlement_accounting.c"),
+            rel("auction_money_claim_accounting.c"),
+            rel("auction_item_claim_accounting.c"),
+            rel("collector_accounting.c"),
+            rel("economic_accounting_intent.c"),
+            rel("economic_accounting_item_reference.c"),
+            rel("item_transfer_accounting.c"),
             rel("player_snapshot_codec.c"),
+            rel("player_save_journal.c"),
+            rel("player_quarantine_recovery.c"),
             rel("flatfile_store.c"),
-            rel("item_transfer_command.c"),
+            rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
             rel("corpse_lifecycle_command.c"),
             rel("shop_trade_command.c"),
             rel("critical_command.c"),
@@ -65,6 +84,7 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
             rel("flatfile_ip_activity_repository.c"),
             "-lcrypto",
             "-pthread",
+            "-Wl,--wrap=openat",
             "-o",
             str(binary),
         ],
@@ -84,22 +104,57 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
         shutil.copy2(binary, destination)
         raise SystemExit(0)
 
-    state_root = temporary_path / "state"
-    run_result = subprocess.run(
-        [str(binary), str(state_root)],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
-    if run_result.returncode:
-        raise SystemExit(run_result.stdout)
+    # The authority lock requires native POSIX ownership/mode metadata. Keep
+    # runtime state on the local filesystem when the checkout is on DrvFS.
+    with tempfile.TemporaryDirectory(prefix="flat-player-state-") as state_temporary:
+        run_result = subprocess.run(
+            [str(binary), state_temporary],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        if run_result.returncode:
+            raise SystemExit(run_result.stdout)
+
+    with tempfile.TemporaryDirectory(prefix="flat-recovery-state-") as recovery_temporary:
+        recovery_result = subprocess.run([str(binary), recovery_temporary, "quarantine-recovery"],
+                                         cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        if recovery_result.returncode:
+            raise SystemExit(recovery_result.stdout)
+        print(recovery_result.stdout.strip())
+
+    recovery_root = temporary_path / "recovery"
+    subprocess.run([str(binary), str(recovery_root), "seed-recovery"], cwd=ROOT, check=True)
+    import json
+    import os
+    recovery_artifact = temporary_path / "recovery-status.json"
+    status_command = [sys.executable, str(ROOT / "scripts/player_death_restitution.py"),
+                      "status", "--flatfile-root", str(recovery_root), "--artifact", str(recovery_artifact)]
+    subprocess.run(status_command, cwd=ROOT, check=True)
+    first = json.loads(recovery_artifact.read_text())
+    case = first["cases"][0]
+    assert case["terminal_custody"] == "quarantine" and case["recovery_owner"] == "reviewed_restitution"
+    assert case["counts"]["quarantine"] == 2 and case["unmatched_count"] == 1
+    assert case["captured_count"] == 1 and case["authority_count"] == 2
+    assert {item["item_uid"] for item in case["items"]} == {100, 101}
+    assert recovery_artifact.stat().st_mode & 0o077 == 0
+    subprocess.run(status_command + ["--overwrite"], cwd=ROOT, check=True)
+    second = json.loads(recovery_artifact.read_text())
+    assert second["cases"][0]["correlation"] == case["correlation"]
+    assert second["cases"][0]["items"] == case["items"]
+    pending = recovery_root / "domains/.critical-authority-transaction"
+    pending.write_bytes(b"synthetic interruption")
+    refused = subprocess.run(status_command + ["--overwrite"], cwd=ROOT, capture_output=True, text=True)
+    assert refused.returncode != 0 and "authority replay is pending" in refused.stderr
+    pending.unlink()
+    print("[PASS] cold-load durable-only descendant, disputed batch, authority interruption, restart and protected custody query")
 
     domain_source = (SRC / "flatfile_player_domain_repository.c").read_text()
     player_source = (SRC / "flatfile_player_repository.c").read_text()
     materialize_source = (SRC / "player_load_materialize.c").read_text()
     for token in (
-        "constexpr uint32_t domain_format_version = 3",
+        "constexpr uint32_t domain_format_version = 4",
         "base_stat_revision",
         "record.domains.base_stats",
         "format_version >= 3",

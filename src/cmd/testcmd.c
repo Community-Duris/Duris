@@ -1204,3 +1204,44 @@ void do_test_radiate(P_char ch, char *arg, int /*cmd*/)
 					       RMFR_PASS_DOOR | RMFR_CROSS_ZONE_BARRIER),
 				  100);
 }
+
+void test_load_all_chars(P_char ch)
+{
+#ifdef TEST_MUD
+	FILE *flist;
+	size_t i;
+	char filename[MAX_STRING_LENGTH];
+	char name[MAX_STRING_LENGTH];
+	const char *alphabet[] = { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+				   "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z" };
+
+	for (i = 0; i < 26; i++)
+	{
+		snprintf(filename, MAX_STRING_LENGTH, "/bin/ls Players/%s > %s", alphabet[i],
+			 "temp_letterfile");
+		if (system(filename) != 0)
+		{
+			logit(LOG_FILE, "test_load_all_chars: failed to list Players/%s",
+			      alphabet[i]);
+			return;
+		}
+		flist = fopen("temp_letterfile", "r");
+		if (!flist)
+			return;
+
+		while (fscanf(flist, " %s \n", name) != EOF)
+		{
+			if (!isname(name, GET_NAME(ch))) // &&
+				//! strstr(name, ".locker"))
+				do_read_player(ch, name, 0);
+			// else if(strstr(name, ".locker"))
+			//{
+			// locker = load_locker_char(ch, name, 0);
+			// }
+		}
+		fclose(flist);
+	}
+#else
+	send_to_char("This command is not to be used in live mud enviornment.", ch);
+#endif
+}

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Regression contracts for spell level bounds and combined affect flags."""
-from _paths import SRC
+from _paths import SRC, extract_function
 from pathlib import Path
 
 from contract_text import contains, index
@@ -22,9 +22,7 @@ agitation = psionics[agitation_start:agitation_end]
 assert contains(agitation, "level = MIN(level, static_cast<int>(ARRAY_SIZE(dam_each)) - 1);")
 assert not contains(agitation, "sizeof(dam_each[0] - 1)")
 
-shadow_start = index(magic, "void spell_shadow_projection(")
-shadow_end = index(magic, "void spell_concealment(", shadow_start)
-shadow = magic[shadow_start:shadow_end]
+shadow = extract_function("spell_visibility.c", "void spell_shadow_projection(")
 assert contains(shadow, "af.bitvector = AFF_SNEAK;")
 assert contains(shadow, "af.bitvector |= AFF_HIDE;")
 assert not contains(shadow, "af.bitvector = AFF_HIDE;")

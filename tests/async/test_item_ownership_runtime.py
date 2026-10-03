@@ -11,6 +11,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 HARNESS = r'''
 #include "item/item_ownership_runtime.h"
+#include "player/player_snapshot_codec.h"
+#include <algorithm>
 #include "economy/collector_command.h"
 
 #include <cassert>
@@ -723,6 +725,37 @@ int main()
 	       item_owner_identity_equal(absent.owner, retained_player));
 	assert(item_ownership_runtime_owner_revision(retained_player, &owner_revision) &&
 	       owner_revision == 4);
+
+ item_transfer_payload craft = {};
+ craft.from_owner = {item_owner_type::player, 990, 0};
+ craft.to_owner = craft.from_owner;
+ craft.reason = item_transfer_reason::craft;
+ craft.selected_item_uid = 9902;
+ craft.multi_root = true;
+ craft.item_count = 1;
+ craft.items[0] = {9901, 9901, 0, 1, 101, item_custody_state::active};
+ item_ownership_runtime_entry ingredient = {9901, 9901, 0, craft.from_owner, 1, 1, 101, item_custody_state::active};
+ assert(item_ownership_runtime_hydrate_batch(&ingredient, 1));
+ player_item_snapshot output = {};
+ output.object_uid = 9902;
+ output.vnum = 102;
+ output.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+ std::vector<uint8_t> bytes;
+ assert(player_item_snapshot_list_encode({output}, &bytes) == player_snapshot_codec_result::ok);
+ craft.item_blob_size = bytes.size();
+ std::copy(bytes.begin(), bytes.end(), craft.item_blob.begin());
+ item_transfer_result craft_result = {};
+ craft_result.root_item_uid = 9902;
+ craft_result.item_count = 1;
+ craft_result.from_owner_revision = craft_result.to_owner_revision = 2;
+ assert(item_ownership_runtime_apply(craft, craft_result));
+ assert(item_ownership_runtime_apply(craft, craft_result));
+ assert(item_ownership_runtime_lookup(9901, &absent) && absent.state == item_custody_state::destroyed && absent.item_revision == 2);
+ assert(item_ownership_runtime_lookup(9902, &absent) && absent.state == item_custody_state::active && absent.item_revision == 1);
+ // A fresh process has no input rows: the committed result may hydrate the
+ // recorded destruction and output again without fabricating another UID.
+ item_ownership_runtime_reset();
+ assert(item_ownership_runtime_apply(craft, craft_result));
 	return 0;
 }
 '''
@@ -743,7 +776,8 @@ with tempfile.TemporaryDirectory(prefix="duris-item-ownership-runtime-") as temp
 			"-Isrc",
 			str(source),
 			rel("item_ownership_runtime.c"),
-			rel("item_transfer_command.c"),
+			rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
+			rel("player_snapshot_codec.c"),
 			rel("critical_command.c"),
 			"-lcrypto",
 			"-o",

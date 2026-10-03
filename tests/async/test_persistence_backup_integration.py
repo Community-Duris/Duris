@@ -5,7 +5,7 @@ Build bin/server/dms_new with make -C src, and bin/server/dms_restore_flatfile
 with PERSISTENCE_BACKEND=flatfile and an explicit DMS_BINARY path. Then run
 DURIS_RUN_BACKUP_INTEGRATION=1 python3 tests/async/test_persistence_backup_integration.py.
 Requires g++, libcrypto,
-MariaDB server/client tools, bash, openssl and unshare permission (CAP_SYS_ADMIN
+MariaDB server/client tools, bash, openssl, iproute2 and unshare permission (CAP_SYS_ADMIN
 in the validation container). Uses no existing DB, runtime .env, Redis or game.
 Every daemon has its own new datadir and Unix socket with TCP disabled; candidate
 game processes boot in their own network namespaces and are terminated afterward.
@@ -30,6 +30,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import persistence_backup as backup
 import persistence_restore as restore
 import build_restore_qualifier as native
+from _restore_fixture import build as build_fixture
 import migration_runner as migrations
 from test_persistence_backup import policy
 
@@ -47,7 +48,7 @@ def sql(env, query=None, payload=None):
 class PersistenceRecoveryIntegration(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        for command in ("g++", "mysql", "mysqldump", "mariadbd", "mariadb-install-db", "unshare", "openssl"):
+        for command in ("g++", "mysql", "mysqldump", "mariadbd", "mariadb-install-db", "unshare", "openssl", "ip"):
             if not shutil.which(command):
                 raise RuntimeError("integration prerequisite unavailable: " + command)
         for name in ("dms_new", "dms_restore_flatfile"):
@@ -62,18 +63,7 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
         if cls.native_built:
             return
         native.build()
-        sources = []
-        for name in native.SOURCES:
-            found = list((ROOT / "src").rglob(name + ".c"))
-            if len(found) != 1:
-                raise RuntimeError("ambiguous fixture source")
-            sources.append(str(found[0]))
-        subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
-                        "-D__NO_MYSQL__", "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
-                        "-DDURIS_FLATFILE_TRANSACTION_FAULT_TEST", "-Isrc", "-Isrc/no_mysql",
-                        "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
-                        "tests/async/persistence_restore_fixture.cpp", *sources, "-lcrypto", "-lz", "-pthread",
-                        "-o", str(cls.fixture)], cwd=ROOT, check=True)
+        build_fixture(cls.fixture)
         cls.native_built = True
 
     @classmethod
@@ -167,6 +157,65 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
         self.assertEqual(backup.inventory(live, exclude_locks=True), before)
         self.assertEqual(backup.inventory(generation), captured)
         self.assertIn(b"Entering game loop.", (candidate / "service.log").read_bytes())
+
+    def test_spell_receipt_state_qualification(self):
+        self.build_native_fixture()
+        for case in ("valid", "corrupt", "wrong-operation", "wrong-pid", "public-file",
+                     "hardlink", "future-receipt", "missing-player", "retired-owner"):
+            with self.subTest(case=case):
+                candidate = self.p["restore_root"] / ("spell-" + case)
+                candidate.mkdir(mode=0o700)
+                backup.write_json(candidate / "ISOLATED_RESTORE", {"synthetic": True})
+                state = candidate / "state"
+                backup.run([str(self.fixture), "seed", str(state)])
+                player = state / "players/42.snapshot"
+                prior_player = player.read_bytes()
+                backup.run([str(self.fixture), "seed-spell-receipt", str(state)])
+                receipt = state / "players/42-a5000000000000000000000000000000.spell"
+                self.assertTrue(receipt.is_file())
+                if case == "corrupt":
+                    receipt.write_bytes(b"corrupt")
+                elif case == "wrong-operation":
+                    receipt.rename(receipt.with_name("42-b6000000000000000000000000000000.spell"))
+                elif case == "wrong-pid":
+                    receipt.rename(receipt.with_name("43-a5000000000000000000000000000000.spell"))
+                elif case == "public-file":
+                    receipt.chmod(0o644)
+                elif case == "hardlink":
+                    os.link(receipt, candidate / "alias")
+                elif case == "future-receipt":
+                    player.write_bytes(prior_player)
+                elif case == "missing-player":
+                    player.unlink()
+                elif case == "retired-owner":
+                    backup.run([str(self.fixture), "retire-spell-owner", str(state)])
+                for phase in ("--state-preflight", None):
+                    command = [str(ROOT / "bin/tools/qualify_flatfile_restore")]
+                    if phase:
+                        command.append(phase)
+                    command.append(str(state))
+                    if case in ("valid", "retired-owner"):
+                        backup.run(command)
+                    else:
+                        with self.assertRaises(backup.BackupError):
+                            backup.run(command)
+
+                if case == "valid":
+                    live = self.base / "spell-live"
+                    shutil.copytree(state, live)
+                    self.p["live_roots"] = [live]
+                    before = backup.inventory(live, exclude_locks=True)
+                    with mock.patch.dict(os.environ, {"FLATFILE_STATE_DIR": str(live)}):
+                        captured = backup.backup(self.p, "flatfile-primary")
+                    generation = self.p["root"] / captured["generation"]
+                    relative = receipt.relative_to(state)
+                    expected = receipt.read_bytes()
+                    self.assertEqual((generation / "state" / relative).read_bytes(), expected)
+                    restored = restore.restore(self.p, captured["generation"], self.ledger())
+                    self.assertEqual(restored["result"], "qualified")
+                    restored_candidate = self.p["restore_root"] / restored["candidate"]
+                    self.assertEqual((restored_candidate / "state" / relative).read_bytes(), expected)
+                    self.assertEqual(backup.inventory(live, exclude_locks=True), before)
 
     def test_locker_receipt_qualification_rejects_corruption_and_unexpected_entries(self):
         self.build_native_fixture()
@@ -273,7 +322,7 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
         self.assertEqual(backup.inventory(live, exclude_locks=True), before)
         self.assertEqual(backup.inventory(journals), journal_before)
         self.assertEqual(backup.inventory(generation), captured)
-    def test_corrupt_or_unreplayable_nonempty_wal_never_qualifies(self):
+    def test_corrupt_wal_is_refused_and_unreplayable_player_is_quarantined(self):
         self.build_native_fixture()
         actual_service = restore.service_load
         for case, relative in (("player-corrupt", "players/player-save.journal"),
@@ -285,6 +334,7 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
                 live = case_root / "live"
                 backup.run([str(self.fixture), "seed", str(live)])
                 journals = self.seed_wal(live, blocked=relative is None)
+                player_wal = (journals / "players/player-save.journal").read_bytes()
                 # Prove both native records are structurally valid first. The
                 # blocked record is a partial update for a missing player PID.
                 proof = case_root / "preflight-proof"
@@ -306,13 +356,20 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
                 captured = backup.inventory(generation)
                 backup.verify(generation)
                 with mock.patch.object(restore, "service_load", wraps=actual_service) as service:
-                    with self.assertRaises(backup.BackupError):
-                        restore.restore(self.p, result["generation"], self.ledger())
                     if relative is None:
+                        receipt = restore.restore(self.p, result["generation"], self.ledger())
+                        self.assertEqual(receipt["result"], "qualified")
                         service.assert_called_once()
+                        candidate = self.p["restore_root"] / receipt["candidate"]
+                        archive = candidate / "journals/players/player-save.journal.quarantine.archive"
+                        self.assertIn(player_wal, archive.read_bytes())
+                        self.assertEqual((candidate / "journals/players/player-save.journal").stat().st_size, 0)
+                        backup.run([str(self.fixture), "verify-quarantined-wal", str(candidate / "state")])
                     else:
+                        with self.assertRaises(backup.BackupError):
+                            restore.restore(self.p, result["generation"], self.ledger())
                         service.assert_not_called()
-                self.assertFalse(list(self.p["restore_root"].glob("candidate-*/QUALIFIED.json")))
+                        self.assertFalse(list(self.p["restore_root"].glob("candidate-*/QUALIFIED.json")))
                 self.assertEqual(backup.inventory(live, exclude_locks=True), live_before)
                 self.assertEqual(backup.inventory(journals), journal_before)
                 self.assertEqual(backup.inventory(generation), captured)
@@ -363,10 +420,27 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
                 else:
                     corrupt.write_bytes(original)
     def test_mariadb_full_dump_schema_history_values_and_isolated_service_boot(self):
+        self.sql_full_dump_restore("mariadb")
+
+    @unittest.skipUnless(os.environ.get("DURIS_RUN_MYSQL_BACKUP_INTEGRATION") == "1",
+                         "requires explicit disposable MySQL 8.0 integration invocation")
+    def test_mysql_full_dump_schema_history_values_and_isolated_service_boot(self):
+        self.sql_full_dump_restore("mysql")
+
+    def sql_full_dump_restore(self, engine):
+        self.p["restore_database_engine"] = engine
         self.build_native_fixture()
         source = self.base / "live"
         source.mkdir(mode=0o700)
-        with restore.private_database(source) as env:
+        def require_selected_engine(env):
+            version = sql(env, "SELECT VERSION();")
+            if engine == "mysql":
+                self.assertTrue(version.startswith("8.0.") and "MariaDB" not in version, version)
+            else:
+                self.assertIn("MariaDB", version)
+            return version
+        with restore.private_database(source, engine) as env:
+            source_version = require_selected_engine(env)
             self.p["journal_roots"] = {"players": Path(env["PLAYER_SAVE_JOURNAL_DIR"]),
                                        "critical": Path(env["CRITICAL_COMMAND_JOURNAL_DIR"])}
             for journal in self.p["journal_roots"].values():
@@ -375,7 +449,6 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
             with mock.patch.dict(os.environ, env, clear=True):
                 manifest = migrations.load_manifest()
                 executor = migrations.MysqlExecutor(manifest)
-                executor.command.insert(1, "--no-defaults")
                 executor.adopt("fresh_bootstrap")
                 migrations.run_pending(manifest, executor)
             sql(env, "INSERT INTO accounts(account_name,email,confirmed) VALUES('SyntheticRestore','fixture@example.test',1);"
@@ -404,6 +477,7 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
             actual_service_load = restore.service_load
             checked = []
             def check_values_then_boot(candidate, mode, restored_env):
+                self.assertEqual(require_selected_engine(restored_env), source_version)
                 self.assertNotEqual(restored_env["DB_SOCKET"], env["DB_SOCKET"])
                 self.assertEqual(sql(restored_env, query), expected)
                 checked.append(mode)
@@ -412,6 +486,7 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
                 receipt = restore.restore(self.p, result["generation"], self.ledger())
             self.assertEqual(checked, ["mariadb-primary"])
             self.assertEqual(receipt["result"], "qualified")
+            self.assertEqual(receipt["checks"]["database_engine"], engine)
             self.assertEqual(sql(env, query), expected)
             self.assertEqual(backup.inventory(generation), captured)
             candidate = self.p["restore_root"] / receipt["candidate"]
@@ -423,6 +498,92 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
             with self.assertRaises(backup.BackupError):
                 restore.database_qualify(env)
             sql(env, "UPDATE player_data SET account_name='SyntheticRestore' WHERE pid=42;")
+            # Money authority also needs a witnessed revision, independently
+            # of unchanged denomination totals.
+            for table, key, identity, column in (
+                    ("player_data", "pid", 42, "wallet_revision"),
+                    ("account_banks", "id", 1, "bank_revision")):
+                sql(env, f"UPDATE {table} SET {column}=9 WHERE {key}={identity};")
+                with self.assertRaises(backup.BackupError):
+                    restore.database_qualify(env)
+                sql(env, f"UPDATE {table} SET {column}=0 WHERE {key}={identity};")
+                restore.database_qualify(env)
+            # Removing a cancelling money pair preserves every aggregate and
+            # the latest after-image, but loses two recoverable native revisions.
+            currency_rows = ((1, 1, 12, 20), (2, 2, 14, 18),
+                             (3, -2, 12, 20), (4, -1, 11, 21))
+            def currency_event(revision, delta, wallet_copper, bank_copper):
+                identity = "f1" + f"{revision:030x}"
+                sql(env, "INSERT IGNORE INTO critical_operation_inbox(operation_id,command_hash,"
+                         "keys_hash,command_type,schema_version,payload_version,status,result_code,"
+                         "result_payload,committed_at) VALUES(UNHEX('" + identity + "'),"
+                         "UNHEX(REPEAT('11',32)),UNHEX(REPEAT('22',32)),1,1,1,1,0,X'',CURRENT_TIMESTAMP);")
+                sql(env, "INSERT INTO currency_ledger(operation_id,pid,bank_id,"
+                         "wallet_delta_copper,wallet_delta_silver,wallet_delta_gold,wallet_delta_platinum,"
+                         "bank_delta_copper,bank_delta_silver,bank_delta_gold,bank_delta_platinum,"
+                         "wallet_after_copper,wallet_after_silver,wallet_after_gold,wallet_after_platinum,"
+                         "bank_after_copper,bank_after_silver,bank_after_gold,bank_after_platinum,"
+                         "wallet_revision,bank_revision,reason_type,source_site) VALUES(UNHEX('" +
+                         identity + "'),42,1," + str(delta) + ",0,0,0," + str(-delta) + ",0,0,0," +
+                         str(wallet_copper) + ",12,13,14," + str(bank_copper) + ",22,23,24," +
+                         str(revision) + "," + str(revision) + ",1,1);")
+            for row in currency_rows:
+                currency_event(*row)
+            sql(env, "UPDATE player_data SET wallet_revision=4 WHERE pid=42;"
+                     "UPDATE account_banks SET bank_revision=4 WHERE id=1;")
+            restore.database_qualify(env)
+            sql(env, "DELETE FROM currency_ledger WHERE pid=42 AND wallet_revision IN(2,3);")
+            self.assertEqual(sql(env, query), expected)
+            with self.assertRaises(backup.BackupError):
+                restore.database_qualify(env)
+            for row in currency_rows[1:3]:
+                currency_event(*row)
+            restore.database_qualify(env)
+            sql(env, "DELETE FROM currency_ledger WHERE pid=42;"
+                     "DELETE FROM critical_operation_inbox WHERE LEFT(HEX(operation_id),2)='F1';"
+                     "UPDATE player_data SET wallet_revision=0 WHERE pid=42;"
+                     "UPDATE account_banks SET bank_revision=0 WHERE id=1;")
+            restore.database_qualify(env)
+            # A balance alone cannot establish recoverable authority: a future
+            # revision without an immutable event would fence legitimate retry.
+            sql(env, "UPDATE player_data SET epic_revision=9 WHERE pid=42;")
+            with self.assertRaises(backup.BackupError):
+                restore.database_qualify(env)
+            sql(env, "UPDATE player_data SET epic_revision=0 WHERE pid=42;")
+            restore.database_qualify(env)
+            # Remove a cancelling pair from an otherwise contiguous history:
+            # aggregate value and the latest event remain exactly unchanged.
+            event_rows = ((1, 1, 16), (2, 2, 18), (3, -2, 16), (4, 3, 19))
+            def epic_event(revision, delta, balance):
+                identity = f"{revision:032x}"
+                sql(env, "INSERT INTO epic_ledger(operation_id,pid,delta,balance_after,"
+                         "epic_revision,reason_type,reason_id,source_site) VALUES(UNHEX('" +
+                         identity + "'),42," + str(delta) + "," + str(balance) + "," +
+                         str(revision) + ",1,0,1);")
+            for revision, delta, balance in event_rows:
+                identity = f"{revision:032x}"
+                sql(env, "INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,"
+                         "command_type,schema_version,payload_version,status,result_payload,committed_at) "
+                         "VALUES(UNHEX('" + identity + "'),UNHEX(REPEAT('11',32)),"
+                         "UNHEX(REPEAT('22',32)),1,1,1,1,'',CURRENT_TIMESTAMP(6));")
+                epic_event(revision, delta, balance)
+            sql(env, "UPDATE player_data SET epics=19,epic_revision=4 WHERE pid=42;")
+            restore.database_qualify(env)
+            sql(env, "DELETE FROM epic_ledger WHERE pid=42 AND epic_revision IN(2,3);")
+            with self.assertRaises(backup.BackupError):
+                restore.database_qualify(env)
+            for revision, delta, balance in event_rows[1:3]:
+                epic_event(revision, delta, balance)
+            restore.database_qualify(env)
+            sql(env, "DELETE FROM epic_ledger WHERE pid=42;"
+                     "DELETE FROM critical_operation_inbox WHERE operation_id IN("
+                     "UNHEX('00000000000000000000000000000001'),"
+                     "UNHEX('00000000000000000000000000000002'),"
+                     "UNHEX('00000000000000000000000000000003'),"
+                     "UNHEX('00000000000000000000000000000004'));"
+                     "UPDATE player_data SET epics=15,epic_revision=0 WHERE pid=42;")
+            restore.database_qualify(env)
+            self.assertEqual(sql(env, query), expected)
             # Corrupt only the disposable source baseline: the same qualifier
             # that accepted restored values must now reject reconciliation.
             sql(env, "UPDATE currency_wallet_baseline SET opening_copper=999 WHERE pid=42;")

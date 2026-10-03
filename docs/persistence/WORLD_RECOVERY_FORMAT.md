@@ -49,7 +49,7 @@ A generation is not stored as one Redis value. The season-scoped generation key 
 an exact 120-byte `WRG2` manifest with version 2, total byte length, chunk count, the fixed
 1 MiB chunk size, a 32-byte lowercase hexadecimal upload token, a SHA-256 payload digest,
 and an HMAC-SHA256 tag bound to deployment, season, and sequence. The generation bytes are
-split across at most 64 keys qualified by sequence, upload token, and zero-based chunk
+split across at most 128 keys qualified by sequence, upload token, and zero-based chunk
 index. Every manifest and chunk expires with the configured generation TTL.
 
 The publisher writes one chunk per command on the recovery worker, then uses the writer
@@ -66,14 +66,22 @@ the loader requires equal hash/index counts, accepts at most 32,768 records, and
 
 Accepted recovery payload has these application-level ceilings:
 
-- generation bytes: 64 MiB;
+- generation bytes: 128 MiB;
 - floor object payload: 16 MiB;
-- generation plus floor payload: 64 MiB;
+- generation plus floor payload: 128 MiB;
 - floor records: 32,768;
 - individual generation Redis command/reply: 1 MiB plus protocol/key overhead.
 
 Generation publication, floor encoding/indexing, and Redis socket work remain background
 operations. Durable reads and recovery planning occur only during boot.
+
+The manifest remains version 2 and the world wire schema is unchanged. New readers accept
+both existing generations (up to 64 MiB / 64 chunks) and the expanded limit. An older
+reader still rejects a generation above 64 MiB or 64 chunks and follows the existing
+fail-closed boot path instead of restoring it; if rollback is needed after a larger
+generation has been published, expect normal zone boot until a compatible reader is
+deployed or the current generation is replaced. Do not assume rollback restores the
+larger snapshot.
 
 ## Runtime and compatibility policy
 

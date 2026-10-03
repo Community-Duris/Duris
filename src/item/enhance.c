@@ -9,6 +9,9 @@
 #include <math.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <climits>
+#include <cmath>
+#include <cstdint>
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
@@ -20,6 +23,7 @@
 #include "core/utils.h"
 #include "item/enhance.h"
 #include "economy/tradeskill.h"
+#include "economy/economic_gameplay_authority.h"
 #include "item/objmisc.h"
 #include "combat/chaos_materials.h"
 
@@ -63,13 +67,20 @@ extern P_room world;
 extern struct zone_data *zone_table;
 extern int top_of_zone_table;
 
+static int enhance_maximum_item_value(int level)
+{
+	if (level <= 0 || enhance_level_gate_multiplier <= 0)
+		return 0;
+	const int64_t limit = static_cast<int64_t>(level) * enhance_level_gate_multiplier;
+	return limit > INT_MAX ? INT_MAX : static_cast<int>(limit);
+}
+
 void enhance(P_char ch, P_obj source, P_obj material)
 {
 	char buf[MAX_STRING_LENGTH];
 	P_obj robj;
-	int cost, searchcount, maxsearch, sval;
-	int newval, minval, chluck, wearflags;
-	int cascade_dir, cascade_step, cascade_ival;
+	int cost, sval, chluck, wearflags, cascade_dir;
+	int64_t searchcount, maxsearch, newval, minval, cascade_step, cascade_ival;
 	struct enhance_index_entry *entry;
 
 	if (!ch || !source || !material)
@@ -93,7 +104,7 @@ void enhance(P_char ch, P_obj source, P_obj material)
 
 	chluck = (GET_C_LUK(ch));
 	sval = itemvalue(source);
-	minval = itemvalue(source) - enhance_material_ival_delta;
+	minval = static_cast<int64_t>(sval) - enhance_material_ival_delta;
 	searchcount = 0;
 	maxsearch = enhance_search_max_attempts;
 	// Only search matching wear flags unless none matching, then just search source wear flags.
@@ -115,12 +126,12 @@ void enhance(P_char ch, P_obj source, P_obj material)
 	}
 
 	// Can enhance up to 3x level, same as forge/craft. --Eikel
-	if (sval > GET_LEVEL(ch) * enhance_level_gate_multiplier)
+	if (sval > enhance_maximum_item_value(GET_LEVEL(ch)))
 	{
 		snprintf(
 			buf, MAX_STRING_LENGTH,
 			"This item has ival %d; at your level you can enhance items up to ival %d.\r\n",
-			sval, GET_LEVEL(ch) * enhance_level_gate_multiplier);
+			sval, enhance_maximum_item_value(GET_LEVEL(ch)));
 		send_to_char(buf, ch);
 		return;
 	}
@@ -134,8 +145,8 @@ void enhance(P_char ch, P_obj source, P_obj material)
 		snprintf(source_description, MAX_STRING_LENGTH, "%s", source->short_description);
 		checked_snprintf(
 			buf, MAX_STRING_LENGTH,
-			"&+REnhancing %s requires an item with at least an &+Witem value of: %d&n\r\n",
-			source_description, minval);
+			"&+REnhancing %s requires an item with at least an &+Witem value of: %lld&n\r\n",
+			source_description, static_cast<long long>(minval));
 		send_to_char(buf, ch);
 		return;
 	}
@@ -149,6 +160,12 @@ void enhance(P_char ch, P_obj source, P_obj material)
 		cost = enhance_cost_high_amount;
 	}
 
+	if (cost < 0)
+	{
+		send_to_char("The enhancement price is outside the supported range.\r\n", ch);
+		return;
+	}
+
 	if (GET_MONEY(ch) < cost)
 	{
 		snprintf(buf, MAX_STRING_LENGTH,
@@ -160,25 +177,25 @@ void enhance(P_char ch, P_obj source, P_obj material)
 
 	if (number(1, enhance_luck_extreme_range) < chluck)
 	{
-		newval = sval + enhance_ival_gain_extreme;
+		newval = static_cast<int64_t>(sval) + enhance_ival_gain_extreme;
 		maxsearch *= 4;
 		send_to_char("&+YYou feel &+MEXTREMELY Lucky&+Y!\r\n", ch);
 	}
 	else if (number(1, enhance_luck_very_range) < chluck)
 	{
-		newval = sval + enhance_ival_gain_very;
+		newval = static_cast<int64_t>(sval) + enhance_ival_gain_very;
 		maxsearch *= 3;
 		send_to_char("&+YYou feel &+MVery Lucky&+Y!\r\n", ch);
 	}
 	else if (number(1, enhance_luck_lucky_range) < chluck)
 	{
-		newval = sval + enhance_ival_gain_lucky;
+		newval = static_cast<int64_t>(sval) + enhance_ival_gain_lucky;
 		maxsearch *= 2;
 		send_to_char("&+YYou feel &+MLucky&+Y!\r\n", ch);
 	}
 	else
 	{
-		newval = sval + enhance_ival_gain_normal;
+		newval = static_cast<int64_t>(sval) + enhance_ival_gain_normal;
 	}
 
 	/* Cascade search through the ival hash table.
@@ -211,13 +228,15 @@ void enhance(P_char ch, P_obj source, P_obj material)
 								    (newval - cascade_step);
 			}
 
-			if (cascade_ival < 1 ||
-			    cascade_ival > enhance_ival_cap + enhance_original_max_roll)
+			if (cascade_ival < 1 || cascade_ival > INT_MAX ||
+			    cascade_ival > static_cast<int64_t>(enhance_ival_cap) +
+						   enhance_original_max_roll)
 				continue;
 
 			/* Look up in hash table */
-			for (entry = enhance_ival_table[enhance_hash(cascade_ival)]; entry;
-			     entry = entry->next)
+			for (entry = enhance_ival_table[enhance_hash(
+				     static_cast<int>(cascade_ival))];
+			     entry; entry = entry->next)
 			{
 				if (entry->ival != cascade_ival)
 					continue;
@@ -256,6 +275,13 @@ void enhance(P_char ch, P_obj source, P_obj material)
 		return;
 	}
 
+	if (cost > 0 && SUB_MONEY(ch, cost, 0) != 0)
+	{
+		extract_obj(robj);
+		send_to_char("The enhancement payment could not be accepted.\r\n", ch);
+		return;
+	}
+
 	// Remove Curse, Secret, add Invis
 	if (IS_SET(robj->extra_flags, ITEM_SECRET))
 	{
@@ -271,7 +297,6 @@ void enhance(P_char ch, P_obj source, P_obj material)
 		REMOVE_BIT(robj->extra_flags, ITEM_INVISIBLE);
 	}
 	SET_BIT(robj->extra_flags, ITEM_NOREPAIR);
-	SUB_MONEY(ch, cost, 0);
 	send_to_char("Your pockets feel &+Wlighter&n.\r\n", ch);
 
 	act("&+BYour enhancement is a success! You now have &n$p&+B!", FALSE, ch, robj, 0, TO_CHAR);
@@ -380,10 +405,14 @@ static int enhance_entry_modifier(const struct enhance_index_entry *entry, int a
 	return 0;
 }
 
-/* A superior stat may reach floor(1.5 * its positive prototype modifier). */
+/* A superior stat must fit its persisted signed-byte modifier. */
 static int enhance_stat_cap(int base_modifier)
 {
-	return base_modifier > 0 ? (int)(base_modifier * enhance_stat_cap_multiplier) : 0;
+	if (base_modifier <= 0 || !std::isfinite(enhance_stat_cap_multiplier) ||
+	    enhance_stat_cap_multiplier <= 0.0)
+		return 0;
+	const double cap = base_modifier * enhance_stat_cap_multiplier;
+	return cap >= SCHAR_MAX ? SCHAR_MAX : static_cast<int>(cap);
 }
 
 /* Find the deterministic next template: exact stat value, compatible wear slot, lowest vnum. */
@@ -446,6 +475,19 @@ static bool is_superior_stat_apply(int apply_loc)
 	return FALSE;
 }
 
+/* Validate the whole tribute quote before narrowing or consuming materials. */
+static bool scale_superior_material_count(int count, int *scaled)
+{
+	if (count < 0 || !std::isfinite(enhance_stat_material_quantity_multiplier) ||
+	    enhance_stat_material_quantity_multiplier <= 0.0)
+		return FALSE;
+	const double quote = count * enhance_stat_material_quantity_multiplier + 0.999999;
+	if (!std::isfinite(quote) || quote >= static_cast<double>(INT_MAX) + 1.0)
+		return FALSE;
+	*scaled = static_cast<int>(quote);
+	return TRUE;
+}
+
 static bool superior_plan_add_material(struct superior_enhancement_plan *plan, int vnum, int count)
 {
 	int i;
@@ -456,6 +498,8 @@ static bool superior_plan_add_material(struct superior_enhancement_plan *plan, i
 	{
 		if (plan->materials[i].vnum == vnum)
 		{
+			if (plan->materials[i].count > INT_MAX - count)
+				return FALSE;
 			plan->materials[i].count += count;
 			return TRUE;
 		}
@@ -516,11 +560,14 @@ static bool build_superior_enhancement_plan(P_obj item, struct superior_enhancem
 		low_vnum = get_matstart(target_obj);
 		extract_obj(target_obj);
 		high_vnum = low_vnum + 4;
-		high_count = (target->ival + 4) / 5;
-		low_count = (target->ival + 4) - high_count * 5;
-		low_count = (int)(low_count * enhance_stat_material_quantity_multiplier + 0.999999);
-		high_count =
-			(int)(high_count * enhance_stat_material_quantity_multiplier + 0.999999);
+		if (target->ival < 0)
+			return FALSE;
+		const int64_t material_value = static_cast<int64_t>(target->ival) + 4;
+		high_count = static_cast<int>(material_value / 5);
+		low_count = static_cast<int>(material_value % 5);
+		if (!scale_superior_material_count(low_count, &low_count) ||
+		    !scale_superior_material_count(high_count, &high_count))
+			return FALSE;
 		if (!superior_plan_add_material(plan, low_vnum, low_count) ||
 		    !superior_plan_add_material(plan, high_vnum, high_count))
 			return FALSE;
@@ -581,7 +628,15 @@ static bool perform_superior_enhancement(P_char ch, P_obj source, P_obj pouch,
 {
 	char buf[MAX_STRING_LENGTH];
 	int i;
-	int cost = enhance_stat_platinum_base + itemvalue(source) * enhance_stat_platinum_per_ival;
+	const int64_t quoted_cost =
+		static_cast<int64_t>(enhance_stat_platinum_base) +
+		static_cast<int64_t>(itemvalue(source)) * enhance_stat_platinum_per_ival;
+	if (quoted_cost < 0 || quoted_cost > INT_MAX)
+	{
+		send_to_char("The enhancement price is outside the supported range.\r\n", ch);
+		return FALSE;
+	}
+	const int cost = static_cast<int>(quoted_cost);
 
 	if (!superior_plan_has_materials(ch, pouch, plan))
 		return FALSE;
@@ -606,8 +661,12 @@ static bool perform_superior_enhancement(P_char ch, P_obj source, P_obj pouch,
 		}
 	}
 
-	/* All availability checks precede every state mutation, preserving atomicity. */
-	SUB_MONEY(ch, cost, 0);
+	/* Refused wallet admission must precede material or item mutation. */
+	if (cost > 0 && SUB_MONEY(ch, cost, 0) != 0)
+	{
+		send_to_char("The enhancement payment could not be accepted.\r\n", ch);
+		return FALSE;
+	}
 	if (!pouch)
 		for (i = 0; i < plan->material_count; i++)
 			vnum_from_inv(ch, plan->materials[i].vnum, plan->materials[i].count);
@@ -663,6 +722,12 @@ void do_enhance(P_char ch, char *argument, int /*cmd*/)
 			     ch);
 		return;
 	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("Enhancement is unavailable while economic accounting is active.\r\n",
+			     ch);
+		return;
+	}
 
 	half_chop(argument, first, rest);
 	half_chop(rest, second, rest);
@@ -697,12 +762,12 @@ void do_enhance(P_char ch, char *argument, int /*cmd*/)
 			    FALSE, ch, source, 0, TO_CHAR);
 			return;
 		}
-		if (itemvalue(source) > GET_LEVEL(ch) * enhance_level_gate_multiplier)
+		if (itemvalue(source) > enhance_maximum_item_value(GET_LEVEL(ch)))
 		{
 			snprintf(
 				rest, sizeof(rest),
 				"&+yThis item has ival %d; at your level you can enhance items up to ival %d.\r\n",
-				itemvalue(source), GET_LEVEL(ch) * enhance_level_gate_multiplier);
+				itemvalue(source), enhance_maximum_item_value(GET_LEVEL(ch)));
 			send_to_char(rest, ch);
 			return;
 		}
@@ -986,8 +1051,6 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 
 	if (source->affected[2].location == loc)
 		loctype = 1;
-	else
-		source->affected[2].location = loc;
 	modstring = modenhance_names[loc];
 
 	switch (loc)
@@ -1001,23 +1064,44 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 		mod = 1;
 	}
 
+	int next_modifier = mod;
 	if (loctype == 1)
 	{
 		// IF they've been modified less than 3 times.
 		if (source->affected[2].modifier / mod < enhance_mod_max_steps)
-			source->affected[2].modifier += mod;
+			next_modifier += source->affected[2].modifier;
 		else
 		{
 			send_to_char("Your enhancement was a failure.  Too much magic.\n", ch);
 			return;
 		}
 	}
-	else
-		source->affected[2].modifier = mod;
+	if (next_modifier < SCHAR_MIN || next_modifier > SCHAR_MAX)
+	{
+		send_to_char("Your enhancement was a failure.  Too much magic.\n", ch);
+		return;
+	}
+	P_obj tempobj = NULL;
+	if (!IS_ENCRUSTED(source))
+	{
+		tempobj = read_object(OBJ_VNUM(source), VIRTUAL);
+		if (!tempobj)
+		{
+			send_to_char("The enhancement template is unavailable.\r\n", ch);
+			return;
+		}
+	}
+	if (SUB_MONEY(ch, cost, 0) != 0)
+	{
+		if (tempobj)
+			extract_obj(tempobj);
+		send_to_char("The enhancement payment could not be accepted.\r\n", ch);
+		return;
+	}
 
+	source->affected[2].location = loc;
+	source->affected[2].modifier = static_cast<sbyte>(next_modifier);
 	SET_BIT(source->extra2_flags, ITEM2_ENHANCED);
-
-	SUB_MONEY(ch, cost, 0);
 	send_to_char("Your pockets feel &+Wlighter&n.\r\n", ch);
 
 	act("&+BYour enhancement is a success! Your &n$p&+B now feels slightly more powerful!\r\n",
@@ -1032,7 +1116,6 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 	if (IS_ENCRUSTED(source))
 		return describe_encrusted_enhanced(source);
 
-	P_obj tempobj = read_object(OBJ_VNUM(source), VIRTUAL);
 	char tempdesc[MAX_STRING_LENGTH], short_desc[MAX_STRING_LENGTH],
 		keywords[MAX_STRING_LENGTH];
 
@@ -1098,7 +1181,7 @@ void thanksgiving_proc(P_char ch)
 static void enhance_load_essence_drop(P_char ch, P_char killer)
 {
 	int reward = 0;
-	int moblvl = GET_LEVEL(ch);
+	int64_t moblvl = GET_LEVEL(ch);
 
 	if (!enhance_essence_drop_enabled)
 		return;
@@ -1131,8 +1214,9 @@ static void enhance_load_essence_drop(P_char ch, P_char killer)
 		}
 		if (number(1, primary_roll_max) < moblvl)
 		{
-			debug("enhancematload: mob: '%s' (%d) moblvl %d%s", J_NAME(ch),
-			      GET_VNUM(ch), moblvl, IS_ELITE(ch) ? " ELITE." : ".");
+			debug("enhancematload: mob: '%s' (%d) moblvl %lld%s", J_NAME(ch),
+			      GET_VNUM(ch), static_cast<long long>(moblvl),
+			      IS_ELITE(ch) ? " ELITE." : ".");
 			if (number(1, max_roll_max) < moblvl)
 			{
 				switch (number(1, 8))

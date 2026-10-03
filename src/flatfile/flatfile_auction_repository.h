@@ -90,4 +90,37 @@ flatfile_auction_check_player_unreferenced(const std::string &root,
 critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 							const critical_command &command);
 
+// Inactive schema-2 item claim owner. Its native custody and EAP1 record share
+// the auction authority journal.
+critical_apply_result
+flatfile_auction_repository_apply_accounted_item_claim(const std::string &root,
+						       const critical_command &command);
+
+// Inactive schema-2 listing owner. Native listing, new escrow lifetime, and
+// EAP1 evidence share the auction authority journal.
+critical_apply_result
+flatfile_auction_repository_apply_accounted_listing(const std::string &root,
+						    const critical_command &command);
+
+// Inactive schema-2 bid owner. Native bid, escrow, pending claims, and EAP1
+// evidence share the auction authority journal.
+critical_apply_result
+flatfile_auction_repository_apply_accounted_bid(const std::string &root,
+						const critical_command &command);
+
+// Inactive schema-2 auction closure owners. Native claim rights and EAP1
+// settlement evidence share the auction authority journal.
+critical_apply_result
+flatfile_auction_repository_apply_accounted_finalize(const std::string &root,
+						     const critical_command &command);
+critical_apply_result
+flatfile_auction_repository_apply_accounted_remove(const std::string &root,
+						   const critical_command &command);
+
+// Inactive schema-2 collection owner. Every source allocation is consumed in
+// the same journal as the native pickup, wallet credit, and EAP1 evidence.
+critical_apply_result
+flatfile_auction_repository_apply_accounted_money_claim(const std::string &root,
+							const critical_command &command);
+
 #endif

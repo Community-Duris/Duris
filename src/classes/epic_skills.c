@@ -2,6 +2,7 @@
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
+#include "world/specs.prototypes.h"
 #include "cmd/interp.h"
 #include "core/utility.h"
 #include "core/utils.h"
@@ -10,6 +11,7 @@
 #include "combat/damage.h"
 #include "world/epic.h"
 #include "world/epic_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "classes/skills.h"
 #include "magic/spells.h"
 
@@ -17,6 +19,8 @@ extern P_index mob_index;
 extern P_index obj_index;
 extern Skill skills[];
 extern P_room world;
+extern struct zone_data *zone_table;
+extern P_obj object_list;
 extern struct race_names race_names_table[];
 
 namespace
@@ -48,7 +52,15 @@ void epic_skill_purchase_committed(P_char pl, bool committed, const epic_command
 					critical_deadline_class::recovery, nullptr, nullptr, 0);
 		return;
 	}
-	SUB_MONEY(pl, context.coins_cost, 0);
+	if (SUB_MONEY(pl, context.coins_cost, 0) != 0)
+	{
+		send_to_char("Your coin payment was declined; your epics are being refunded.\n",
+			     pl);
+		epic_transaction_submit(pl, context.epic_cost, epic_reason_type::epic_skill_refund,
+					context.skill, 0, critical_source_site::recovery,
+					critical_deadline_class::recovery, nullptr, nullptr, 0);
+		return;
+	}
 	const int learned = MIN(100, context.expected_skill + get_property("epic.skillGain", 10));
 	pl->only.pc->skills[context.skill].taught = learned;
 	pl->only.pc->skills[context.skill].learned = learned;
@@ -409,6 +421,35 @@ void do_epic_skills(P_char ch, char * /*arg*/, int /*cmd*/)
 	send_to_char("\n", ch);
 }
 
+int teacher(P_char ch, P_char pl, int cmd, char *arg)
+{
+	P_obj t_obj;
+	char buf[512];
+
+	if (cmd != CMD_ASK || !arg || !strstr(arg, "level") || !pl ||
+	    !GET_CLASS(pl, ch->player.m_class))
+		return FALSE;
+
+	snprintf(buf, 512,
+		 "For your further path of development it is crucial that you visit\n"
+		 "%s of the magical runestones locates in the following lands:\n",
+		 GET_LEVEL(pl) >= get_property("exp.levelForAllRunestones", 51) - 1 ? "all" :
+										      "one");
+
+	for (t_obj = object_list; t_obj; t_obj = t_obj->next)
+	{
+		if (obj_index[t_obj->R_num].func.obj == epic_stone &&
+		    t_obj->value[3] == GET_LEVEL(pl) + 1)
+		{
+			strcat(buf, zone_table[real_zone0(t_obj->value[2])].name);
+			strcat(buf, "\n");
+		}
+	}
+
+	send_to_char(buf, pl);
+	return TRUE;
+}
+
 int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 {
 	int skl, epics_cost, coins_cost;
@@ -637,6 +678,13 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 	{
 		send_to_char(
 			"Unfortunately, I cannot teach you anything more, you have already mastered this skill!\n",
+			pl);
+		return TRUE;
+	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char(
+			"Epic skill purchases are unavailable while economic accounting is active.\n",
 			pl);
 		return TRUE;
 	}

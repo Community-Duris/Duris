@@ -9,6 +9,7 @@
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include "economy/cardgames.h"
+#include "economy/economic_gameplay_authority.h"
 #include <stdio.h>
 #include <string.h>
 #include "world/vnum.obj.h"
@@ -339,6 +340,17 @@ int blackjack_table(P_obj obj, P_char ch, int cmd, char *argument)
 	char arg2[MAX_INPUT_LENGTH];
 	int betamt, bettype;
 	static bool lock_game = FALSE;
+	if (economic_gameplay_authority::active())
+	{
+		if (cmd == CMD_OFFER && ch)
+		{
+			send_to_char(
+				"Blackjack is unavailable while active accounting is enabled.\r\n",
+				ch);
+			return TRUE;
+		}
+		return FALSE;
+	}
 
 	if (cmd == CMD_SET_PERIODIC)
 	{

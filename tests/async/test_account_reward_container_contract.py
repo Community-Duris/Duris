@@ -29,7 +29,7 @@ summon = reward[summon_start:summon_end]
 assert contains(summon, "obj->type==ITEM_CONTAINER")
 assert contains(summon, "REMOVE_BIT(obj->value[1],CONT_CLOSED)")
 assert index(summon, "REMOVE_BIT(obj->value[1],CONT_CLOSED)") < index(
-    summon, "item_creation_grant_submit_to_player(ch,obj,ch)"
+    summon, "item_creation_grant_submit_to_player(ch,obj,ch,NULL,"
 )
 
 # Account rewards use explicit lifecycle rules and must not also opt into the
@@ -53,13 +53,16 @@ assert index(make_corpse, hook) < index(make_corpse, "writeCorpse(corpse);")
 assert "item_transfer_reason::corpse_create" in fight
 assert index(make_corpse, "if (IS_NPC(ch))") < index(make_corpse, "corpse->contains = ch->carrying;")
 
-# Forced disappearance promotes direct children to the same parent, traverses
-# nested containers first, and extracts only after the reward container is empty.
+# Forced disappearance promotes direct children to the same parent after its
+# safety preflight and extracts only after the reward container is empty.
 assert contains(reward, "promote_reward_contents")
 promote_start = index(reward, "static bool promote_reward_contents")
 promote_end = index(reward, "static std::string human_duration", promote_start)
 promote = reward[promote_start:promote_end]
-assert contains(promote, "ITEM2_CRUMBLELOOT")
+assert index(promote, "reward_contents_can_promote(container)") < index(promote, "obj_from_obj(child)")
+preflight_start = index(reward, "static bool reward_contents_can_promote(P_obj container)\n{")
+preflight_end = index(reward, "static P_obj reward_item_by_uid", preflight_start)
+assert contains(reward[preflight_start:preflight_end], "ITEM2_CRUMBLELOOT")
 assert contains(promote, "VOBJ_COINS")
 assert contains(promote, "room_coin_merge")
 assert contains(reward, "dissolve_reward_containers")
@@ -77,20 +80,20 @@ assert contains(corpse_hook, "marker.account") and contains(corpse_hook, "strcas
 prepare_start = corpse_end
 prepare_end = index(reward, "void account_bound_reward_on_login", prepare_start)
 assert contains(reward[prepare_start:prepare_end], "reward_account(ch)")
-assert index(corpse_hook, "promote_reward_contents") < index(corpse_hook, "recovery_ready=1") < index(corpse_hook, "extract_obj")
+assert index(corpse_hook, "promote_reward_contents") < index(corpse_hook, "recovery_ready=1", literal=True) < index(corpse_hook, "extract_obj")
 
 # Death recovery is distinct from last-summoned history.
 for text in (migration, bootstrap):
     assert "recovery_ready" in text
-assert contains(reward, "recovery_ready<>0") or contains(reward, "recovery_ready != 0")
-assert contains(reward, "recovery_ready=0")
-assert contains(reward, "recovery_ready=1")
-assert contains(reward, "last_summoned_at=NOW()")
+assert contains(reward, "recovery_ready<>0", literal=True) or contains(reward, "recovery_ready != 0")
+assert contains(reward, "recovery_ready=0", literal=True)
+assert contains(reward, "recovery_ready=1", literal=True)
+assert contains(reward, "last_summoned_at=NOW()", literal=True)
 
 # Saved forced removals reparent children before deleting marker-matching bags;
 # live forced removals use the same promotion helper before extraction.
 assert contains(reward, "UPDATE player_items child JOIN player_items reward")
-assert contains(reward, "SET child.container_id=reward.container_id")
+assert contains(reward, "SET child.container_id=reward.container_id", literal=True)
 clear_start = index(reward, "static bool clear_saved_grant")
 clear_end = index(reward, "static void revoke_live_grant", clear_start)
 clear_saved = reward[clear_start:clear_end]

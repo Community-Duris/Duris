@@ -2,6 +2,7 @@
 // account migration for pfile migration tool
 
 #include "migrate_common.h"
+#include "../../src/sql/sql_account.h"
 
 static void read_unique_ip_file(struct acct_entry *acct, FILE *f)
 {

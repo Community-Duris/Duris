@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SQL_PLAYER = (SRC / "sql_player.c").read_text()
-SQL_HEADER = (SRC / "sql_player.h").read_text()
+SQL_HEADER = (SRC / "sql_spellbook.h").read_text()
 DRANNAK = (SRC / "drannak.c").read_text()
 MAKEFILE = (SRC / "Makefile").read_text()
 

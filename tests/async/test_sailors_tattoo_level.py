@@ -1,4 +1,5 @@
 from pathlib import Path
+from contract_text import contains
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -7,7 +8,7 @@ ACHIEVEMENTS = (ROOT / "src/world/achievements.c").read_text(encoding="utf-8")
 
 assert "if (lvlachi >= 20)" in ACHIEVEMENTS
 assert '"&+BGain level 20"' in ACHIEVEMENTS
-assert "if (GET_LEVEL(ch) >= 20 && (!paf || paf->modifier < 20))" in ACHIEVEMENTS
+assert contains(ACHIEVEMENTS, "if (!economic_gameplay_authority::active() && GET_LEVEL(ch) >= 20 && (!paf || paf->modifier < 20))")
 assert ACHIEVEMENTS.count("paf->modifier = 20;") == 1
 
 # The ordinary Sailor's Tattoo path should no longer use level 30 as its

@@ -726,9 +726,10 @@ bool apply_world_transfer_topology(std::vector<physical_item> *items,
 	return true;
 }
 
-bool execute_world_item_transfer(MYSQL *connection, const critical_command &outer,
-				 item_transfer_payload *transfer, uint16_t event_offset,
-				 item_transfer_result *result, unsigned int *result_code)
+bool execute_world_item_transfer(
+	MYSQL *connection, const critical_command &outer, item_transfer_payload *transfer,
+	uint16_t event_offset, item_transfer_result *result, unsigned int *result_code,
+	const item_transfer_accounting_context *accounting_context = nullptr)
 {
 	critical_command item_command = {};
 	if (!item_transfer_command_build(&item_command, outer.operation_id, *transfer,
@@ -740,7 +741,8 @@ bool execute_world_item_transfer(MYSQL *connection, const critical_command &oute
 	item_command.accepted_at_usec = outer.accepted_at_usec;
 	bool mutation = false;
 	if (!item_transfer_repository_execute_at_offset(connection, item_command, event_offset,
-							result, result_code, &mutation))
+							result, result_code, &mutation, nullptr,
+							accounting_context))
 		return false;
 	if (!*result_code && !mutation)
 	{
@@ -2159,6 +2161,12 @@ bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_comma
 					 bool *mutation_applied, uint64_t *collector_revision,
 					 std::vector<collector_command_result> *collector_events)
 {
+	if (!critical_command_legacy_execution_supported(command))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+
 	if (!connection || !result || !result_code || !mutation_applied || !collector_revision ||
 	    !collector_events)
 	{
@@ -2287,6 +2295,7 @@ bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_comma
 		}
 		transient_command.accepted_at_usec = command.accepted_at_usec;
 		bool transient_mutation = false;
+		// A legacy corpse inbox is not an admitted accounting operation.
 		if (!item_transfer_repository_execute(connection, transient_command,
 						      &transient_result, result_code,
 						      &transient_mutation))

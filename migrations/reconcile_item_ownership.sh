@@ -12,8 +12,9 @@ export MYSQL_PWD="$DB_PASSWD"
 if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then MYSQL_SSL=(--ssl-mode=PREFERRED); else MYSQL_SSL=(--skip-ssl); fi
 MYSQL=(mysql "${MYSQL_SSL[@]}" -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" -N -B "$DB_NAME")
 
-missing_baseline=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM item_current_owner current_item LEFT JOIN item_ownership_baseline baseline ON baseline.item_uid=current_item.item_uid WHERE baseline.item_uid IS NULL AND current_item.item_revision=0;")
-item_revision_mismatch=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM item_current_owner current_item JOIN item_ownership_baseline baseline ON baseline.item_uid=current_item.item_uid LEFT JOIN (SELECT item_uid,COUNT(*) event_count FROM item_ownership_ledger GROUP BY item_uid) ledger ON ledger.item_uid=current_item.item_uid WHERE current_item.item_revision<>baseline.opening_item_revision+COALESCE(ledger.event_count,0);")
+missing_baseline=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM item_current_owner current_item LEFT JOIN item_ownership_baseline baseline ON baseline.item_uid=current_item.item_uid LEFT JOIN (SELECT DISTINCT item_uid FROM item_ownership_ledger) ledger ON ledger.item_uid=current_item.item_uid WHERE baseline.item_uid IS NULL AND ledger.item_uid IS NULL;")
+item_revision_mismatch=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM item_current_owner current_item LEFT JOIN item_ownership_baseline baseline ON baseline.item_uid=current_item.item_uid LEFT JOIN (SELECT item_uid,COUNT(*) event_count FROM item_ownership_ledger GROUP BY item_uid) ledger ON ledger.item_uid=current_item.item_uid WHERE (baseline.item_uid IS NOT NULL OR ledger.item_uid IS NOT NULL) AND current_item.item_revision<>COALESCE(baseline.opening_item_revision,0)+COALESCE(ledger.event_count,0);")
+ledger_revision_gap=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM (SELECT ledger.item_uid FROM item_ownership_ledger ledger LEFT JOIN item_ownership_baseline baseline ON baseline.item_uid=ledger.item_uid GROUP BY ledger.item_uid,baseline.opening_item_revision HAVING MIN(ledger.item_revision)<>COALESCE(baseline.opening_item_revision,0)+1 OR MAX(ledger.item_revision)<>COALESCE(baseline.opening_item_revision,0)+COUNT(*)) broken;")
 owner_revision_mismatch=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM item_owner_revision owner LEFT JOIN (SELECT owner_type,owner_id,owner_context_id,COUNT(DISTINCT operation_id) event_count FROM (SELECT operation_id,from_owner_type owner_type,from_owner_id owner_id,from_owner_context_id owner_context_id FROM item_ownership_ledger UNION ALL SELECT operation_id,to_owner_type,to_owner_id,to_owner_context_id FROM item_ownership_ledger) touched GROUP BY owner_type,owner_id,owner_context_id) ledger ON ledger.owner_type=owner.owner_type AND ledger.owner_id=owner.owner_id AND ledger.owner_context_id=owner.owner_context_id WHERE owner.revision<>COALESCE(ledger.event_count,0);")
 latest_owner_mismatch=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM item_current_owner current_item JOIN item_ownership_ledger ledger ON ledger.item_uid=current_item.item_uid AND ledger.item_revision=current_item.item_revision WHERE current_item.owner_type<>ledger.to_owner_type OR current_item.owner_id<>ledger.to_owner_id OR current_item.owner_context_id<>ledger.to_owner_context_id;")
 
@@ -43,6 +44,6 @@ if (( (nesting_status == 0 && nesting_mismatch != 0) ||
   exit 1
 fi
 
-printf 'missing_baseline=%s\nitem_revision_mismatch=%s\nowner_revision_mismatch=%s\nlatest_owner_mismatch=%s\nnesting_mismatch=%s\n' \
-    "$missing_baseline" "$item_revision_mismatch" "$owner_revision_mismatch" "$latest_owner_mismatch" "$nesting_mismatch"
-[[ "$missing_baseline" == 0 && "$item_revision_mismatch" == 0 && "$owner_revision_mismatch" == 0 && "$latest_owner_mismatch" == 0 && "$nesting_mismatch" == 0 ]]
+printf 'missing_baseline=%s\nitem_revision_mismatch=%s\nledger_revision_gap=%s\nowner_revision_mismatch=%s\nlatest_owner_mismatch=%s\nnesting_mismatch=%s\n' \
+    "$missing_baseline" "$item_revision_mismatch" "$ledger_revision_gap" "$owner_revision_mismatch" "$latest_owner_mismatch" "$nesting_mismatch"
+[[ "$missing_baseline" == 0 && "$item_revision_mismatch" == 0 && "$ledger_revision_gap" == 0 && "$owner_revision_mismatch" == 0 && "$latest_owner_mismatch" == 0 && "$nesting_mismatch" == 0 ]]

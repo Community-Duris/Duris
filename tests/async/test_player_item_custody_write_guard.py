@@ -28,8 +28,10 @@ def function(text: str, signature: str) -> str:
     raise AssertionError(f"unterminated function: {signature}")
 
 
-verify = function(repository, "query_result verify_player_item_custody(")
+verify = function(repository, "query_result reconcile_player_item_custody(")
 apply_items = function(repository, "query_result apply_items(")
+apply_pets = function(repository, "query_result apply_pets(")
+orphan_guard = function(repository, "query_result reject_orphaned_saved_items(")
 
 # The proof uses the sealed replacement graph, reconstructs every root/parent,
 # and locks the authoritative rows in the same transaction as replacement.
@@ -40,25 +42,41 @@ for token in (
     "parent_item_uid",
     "item.vnum",
     "item_current_owner",
-    "owner_type=",
-    "owner_id=",
-    "owner_context_id=0",
-    "state=",
     "ORDER BY item_uid FOR UPDATE",
 ):
     assert contains(verify, token), token
-assert contains(verify, "PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH")
+for sql_fragment in ("owner_type=", "owner_id=", "owner_context_id=0", "state="):
+    assert contains(verify, sql_fragment, literal=True), sql_fragment
+assert contains(function(repository, "query_result custody_payload_mismatch("),
+                "PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH")
 assert contains(verify, "coin_payload IS NOT NULL")
 assert contains(verify, "inline_coin_payload")
-assert contains(verify, "expected.empty()")
+assert contains(verify, "matched.size() != expected.size()")
+assert contains(verify, "topology_mismatch")
+assert contains(verify, "item.root_item_uid = root_item_uid")
+assert contains(verify, "item.parent_item_uid = parent_item_uid")
+assert contains(verify, "parent->second.root_item_uid != item->second.root_item_uid")
+assert contains(verify, "PLAYER_SNAPSHOT_MAX_DEPTH")
+assert contains(verify, "order.size() != snapshot.items.size()")
+assert contains(verify, "reconciled_items->push_back")
 
 # Verification precedes the destructive projection; a rejection therefore
 # rolls back with every old payload row untouched.
-assert index(apply_items, "verify_player_item_custody") < index(
+assert index(apply_items, "reconcile_player_item_custody") < index(
     apply_items, '"DELETE FROM player_items WHERE pid="'
 )
 assert not contains(verify, "DELETE FROM")
 assert not contains(verify, "UPDATE item_current_owner")
+assert contains(orphan_guard, "LEFT JOIN item_current_owner")
+assert contains(orphan_guard, "own.item_uid IS NULL LIMIT 1 FOR UPDATE")
+assert contains(orphan_guard, "orphaned_saved_item")
+assert contains(orphan_guard, "orphaned_saved_pet_item")
+assert index(apply_items, "reject_orphaned_saved_items") < index(
+    apply_items, '"DELETE FROM player_items WHERE pid="'
+)
+assert index(apply_pets, "reject_orphaned_saved_items") < index(
+    apply_pets, '"DELETE FROM player_pet_items WHERE pet_id="'
+)
 
 # New item dirtiness is always a complete equipment+inventory graph. This also
 # prevents equip-root children (stored with equip_slot=0) from being mistaken
@@ -86,9 +104,9 @@ assert contains(worker_header, "custody_payload_mismatches")
 assert contains(worker, "health.custody_payload_mismatches")
 assert contains(diagnostics, '"custody_payload_mismatch=%llu')
 assert contains(pipeline, '"custody_payload_mismatch_rejected"')
-assert contains(pipeline, "destructive_write=0")
+assert contains(pipeline, "destructive_write=0", literal=True)
 assert contains(pipeline, '"custody-mismatch-recapture"')
-assert contains(pipeline, "recapture_scheduled=%d")
+assert contains(pipeline, "recapture_scheduled=%d", literal=True)
 assert contains(pipeline, "custody_recapture_armed.insert")
 assert contains(pipeline, "custody_recapture_armed.erase")
 assert contains(pipeline, "custody_recapture_allowed")

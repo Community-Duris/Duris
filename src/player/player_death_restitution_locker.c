@@ -9,7 +9,6 @@
 
 #ifndef __NO_MYSQL__
 #include "sql/sql.h"
-#include "sql/sql_player.h"
 #endif
 
 #include <cctype>

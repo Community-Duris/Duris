@@ -2,11 +2,15 @@
 
 #include "economy/collector_custody_boundary.h"
 #include "economy/collector_eligibility.h"
+#include "economy/collector_accounting.h"
+#include "flatfile/flatfile_accounting_authority.h"
+#include "flatfile/flatfile_accounting_store.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_shop_trade_materialization.h"
 #include "flatfile/flatfile_store.h"
 #include "flatfile/flatfile_world_item_repository.h"
+#include "flatfile/flatfile_item_accounting_reference.h"
 #include "player/player_snapshot_codec.h"
 
 #include <algorithm>
@@ -1191,17 +1195,100 @@ flatfile_collector_repository_result world_prepare_failure(flatfile_world_item_r
 		       flatfile_collector_repository_result::io_error :
 		       flatfile_collector_repository_result::invalid;
 }
+
+critical_apply_result accounted_completion(const flatfile_accounting_record &record)
+{
+	critical_apply_result result = { record.result_code ?
+						 critical_apply_outcome::terminal_failure :
+						 critical_apply_outcome::already_applied,
+					 record.durable_revision, record.result_code };
+	result.failure_stage = record.failure_stage;
+	result.result_size = record.result.size();
+	std::copy(record.result.begin(), record.result.end(), result.result_payload.begin());
+	return result;
+}
+
+bool canonical_account_name(const char *name, std::string *canonical)
+{
+	if (!name || !canonical)
+		return false;
+	const std::string input(name);
+	if (input.empty() || input.size() > CURRENCY_ACCOUNT_NAME_MAX_BYTES)
+		return false;
+	std::string result;
+	result.reserve(input.size());
+	for (char c : input)
+	{
+		if (c >= 'A' && c <= 'Z')
+			c += 'a' - 'A';
+		if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-'))
+			return false;
+		result.push_back(c);
+	}
+	*canonical = std::move(result);
+	return true;
+}
 } // namespace
 
-critical_apply_result flatfile_collector_repository_apply(const std::string &root,
-							  const critical_command &command)
+class flatfile_accounting_collector_transaction
+{
+    public:
+	static critical_apply_result apply(const std::string &root, const critical_command &command,
+					   bool accounted);
+};
+
+critical_apply_result
+flatfile_accounting_collector_transaction::apply(const std::string &root,
+						 const critical_command &command, bool accounted)
+try
 {
 	collector_command_payload payload = {};
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
-	if (root.empty() || !critical_command_valid(command) ||
+	if (root.empty() ||
+	    !(accounted ? critical_command_envelope_valid(command) :
+			  critical_command_valid(command)) ||
 	    !collector_command_decode_payload(command, &payload) ||
 	    !command_digest(command, &digest))
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+	economic_frozen_intent intent;
+	economic_account_key wallet_account, bank_account;
+	collector::record frozen_listing;
+	const bool accounted_purchase = accounted && payload.action == collector_action::purchase;
+	const bool accounted_held = accounted && (payload.action == collector_action::expire ||
+						  payload.action == collector_action::cancel);
+	if (accounted && !(accounted_purchase || accounted_held))
+		return { critical_apply_outcome::terminal_failure, 0, EPROTONOSUPPORT };
+	if (accounted &&
+	    (accounted_purchase ? collector_purchase_accounting_decode(
+					  command, &intent, &payload, &frozen_listing,
+					  &wallet_account, &bank_account) :
+				  collector_held_accounting_decode(command, &intent, &payload,
+								   &frozen_listing)) !=
+		    economic_accounting_error::ok)
+		return { critical_apply_outcome::terminal_failure, 0, EPROTONOSUPPORT };
+	std::vector<economic_accounting_item_reference> references;
+	try
+	{
+		references.reserve(payload.item_count);
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			economic_accounting_item_reference ref = {};
+			ref.operation_id = command.operation_id;
+			ref.line_index = static_cast<uint16_t>(index);
+			ref.event_index = ref.line_index;
+			ref.child_index = accounted ? 0 : 1;
+			ref.item_uid = payload.items[index].item_uid;
+			ref.before_revision = payload.items[index].expected_item_revision;
+			ref.after_revision = ref.before_revision + 1;
+			ref.legacy_operation_id = command.operation_id;
+			ref.legacy_event_index = static_cast<uint16_t>(index);
+			references.push_back(ref);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { critical_apply_outcome::retryable_failure, 0, ENOMEM };
+	}
 	flatfile_authority_lock lock;
 	std::string error;
 	if (!lock.acquire(root, &error))
@@ -1228,6 +1315,69 @@ critical_apply_result flatfile_collector_repository_apply(const std::string &roo
 				 loaded == flatfile_collector_repository_result::io_error ?
 					 EIO :
 					 EILSEQ) };
+	if (accounted)
+	{
+		flatfile_accounting_record retained;
+		const auto found =
+			flatfile_accounting_lookup(root, lock, command, &retained, &error);
+		if (found == flatfile_accounting_status::ok)
+		{
+			const auto native = std::find_if(
+				catalog.operations.begin(), catalog.operations.end(),
+				[&](const operation_state &operation) {
+					return critical_operation_id_equal(operation.operation_id,
+									   command.operation_id);
+				});
+			std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> encoded = {};
+			if (native == catalog.operations.end() ||
+			    CRYPTO_memcmp(native->command_digest.data(), digest.data(),
+					  digest.size()) ||
+			    !collector_command_encode_result(native->result, &encoded) ||
+			    retained.result_code != native->result_code ||
+			    retained.result.size() != encoded.size() ||
+			    !std::equal(retained.result.begin(), retained.result.end(),
+					encoded.begin()) ||
+			    (native->result_code == 0 &&
+			     retained.durable_revision !=
+				     durable_revision(native->result,
+						      native->result.catalog_revision)) ||
+			    (native->result_code != 0 &&
+			     (retained.durable_revision < durable_revision(native->result, 0) ||
+			      retained.durable_revision >
+				      durable_revision(native->result, catalog.catalog_revision))) ||
+			    (retained.result_code == 0) != !retained.plan.empty())
+				return { critical_apply_outcome::terminal_failure,
+					 catalog.catalog_revision, EILSEQ };
+			if (!retained.result_code && !references.empty())
+			{
+				const auto verified =
+					flatfile_item_accounting_reference_verify_operation(
+						root, command.operation_id, references, &error);
+				if (verified != flatfile_item_accounting_status::ok)
+					return {
+						verified == flatfile_item_accounting_status::io_error ?
+							critical_apply_outcome::retryable_failure :
+							critical_apply_outcome::terminal_failure,
+						catalog.catalog_revision,
+						static_cast<unsigned int>(
+							verified == flatfile_item_accounting_status::
+										io_error ?
+								EIO :
+								EILSEQ)
+					};
+			}
+			return accounted_completion(retained);
+		}
+		if (found != flatfile_accounting_status::not_found)
+			return { found == flatfile_accounting_status::io_error ?
+					 critical_apply_outcome::retryable_failure :
+					 critical_apply_outcome::terminal_failure,
+				 catalog.catalog_revision,
+				 static_cast<unsigned int>(
+					 found == flatfile_accounting_status::io_error ? EIO :
+					 found == flatfile_accounting_status::conflict ? EEXIST :
+											 EILSEQ) };
+	}
 	for (const operation_state &operation : catalog.operations)
 		if (critical_operation_id_equal(operation.operation_id, command.operation_id))
 		{
@@ -1235,13 +1385,67 @@ critical_apply_result flatfile_collector_repository_apply(const std::string &roo
 					  digest.size()))
 				return { critical_apply_outcome::terminal_failure,
 					 catalog.catalog_revision, EEXIST };
+			if (accounted)
+				return { critical_apply_outcome::terminal_failure,
+					 catalog.catalog_revision, EEXIST };
+			if (!operation.result_code && !references.empty())
+			{
+				const auto verified =
+					flatfile_item_accounting_reference_verify_operation(
+						root, command.operation_id, references, &error);
+				if (verified != flatfile_item_accounting_status::ok)
+					return {
+						verified == flatfile_item_accounting_status::io_error ?
+							critical_apply_outcome::retryable_failure :
+							critical_apply_outcome::terminal_failure,
+						catalog.catalog_revision,
+						static_cast<unsigned int>(
+							verified == flatfile_item_accounting_status::
+										io_error ?
+								EIO :
+								EILSEQ)
+					};
+			}
 			return make_result(operation, catalog.catalog_revision,
 					   critical_apply_outcome::already_applied);
 		}
+	if (const auto gate = accounted ? 0 :
+					  flatfile_economic_legacy_domain_gate(root, lock, &error))
+		return { critical_apply_outcome::retryable_failure, catalog.catalog_revision,
+			 gate };
 	if (catalog.operations.size() >= catalog_maximum_operations ||
 	    catalog.file_revision == UINT64_MAX)
 		return { critical_apply_outcome::terminal_failure, catalog.catalog_revision,
 			 ENOSPC };
+	if (accounted)
+	{
+		flatfile_economic_authority_snapshot authority;
+		unsigned int gate = 0;
+		if (accounted_purchase)
+		{
+			std::string account;
+			if (!canonical_account_name(payload.account_name.data(), &account))
+				return { critical_apply_outcome::terminal_failure,
+					 catalog.catalog_revision, EINVAL };
+			const flatfile_economic_mapping_request requests[] = {
+				{ wallet_account, { 1, payload.actor_pid, {} } },
+				{ bank_account, { 2, bank_account.authority_id, account } }
+			};
+			gate = economic_flatfile_lock_authority(root, lock, wallet_account.lineage,
+								intent.admission.metadata.epoch,
+								requests, &authority, &error);
+		}
+		else
+			gate = economic_flatfile_lock_authority(root, lock,
+								intent.admission.metadata.lineage,
+								intent.admission.metadata.epoch, {},
+								&authority, &error);
+		if (gate)
+			return { gate == EIO || gate == ENOMEM ?
+					 critical_apply_outcome::retryable_failure :
+					 critical_apply_outcome::terminal_failure,
+				 catalog.catalog_revision, gate };
+	}
 
 	collector_catalog candidate;
 	try
@@ -1264,6 +1468,28 @@ critical_apply_result flatfile_collector_repository_apply(const std::string &roo
 		result_code = ESTALE;
 
 	flatfile_wallet_mutation wallet_read;
+	collector_purchase_accounting_authority accounting_before;
+	collector_held_accounting_authority held_before;
+	if (accounted)
+	{
+		if (accounted_purchase)
+		{
+			accounting_before.epoch = intent.admission.metadata.epoch;
+			accounting_before.wallet_account = wallet_account;
+			accounting_before.bank_account = bank_account;
+			accounting_before.catalog_revision_before = catalog.catalog_revision;
+			if (listing)
+				accounting_before.listing_before = listing->entry;
+		}
+		else
+		{
+			held_before.lineage = intent.admission.metadata.lineage;
+			held_before.epoch = intent.admission.metadata.epoch;
+			held_before.catalog_revision_before = catalog.catalog_revision;
+			if (listing)
+				held_before.listing_before = listing->entry;
+		}
+	}
 	if (!result_code && payload.action == collector_action::purchase)
 	{
 		const auto prepared = flatfile_player_domain_prepare_wallet(
@@ -1288,6 +1514,64 @@ critical_apply_result flatfile_collector_repository_apply(const std::string &roo
 		result.bank = wallet_read.bank;
 		result.wallet_revision = wallet_read.wallet_revision;
 		result.bank_revision = wallet_read.bank_revision;
+		if (accounted && !result_code)
+		{
+			accounting_before.balances_before.wallet = wallet_read.wallet;
+			accounting_before.balances_before.bank = wallet_read.bank;
+			accounting_before.balances_before.wallet_revision =
+				wallet_read.wallet_revision;
+			accounting_before.balances_before.bank_revision = wallet_read.bank_revision;
+		}
+	}
+	if (accounted && !result_code)
+	{
+		uint64_t from_revision = 0, to_revision = 0;
+		std::vector<flatfile_item_ownership_record> from_items, to_items;
+		const auto from = flatfile_item_repository_load_owner_locked(
+			root, lock, payload.from_owner, &from_revision, &from_items, &error);
+		const auto to = flatfile_item_repository_load_owner_locked(
+			root, lock, payload.to_owner, &to_revision, &to_items, &error);
+		if ((from != flatfile_item_repository_result::ok &&
+		     from != flatfile_item_repository_result::not_found) ||
+		    (to != flatfile_item_repository_result::ok &&
+		     to != flatfile_item_repository_result::not_found))
+			return { from == flatfile_item_repository_result::io_error ||
+						 to == flatfile_item_repository_result::io_error ?
+					 critical_apply_outcome::retryable_failure :
+					 critical_apply_outcome::terminal_failure,
+				 catalog.catalog_revision,
+				 static_cast<unsigned int>(
+					 from == flatfile_item_repository_result::io_error ||
+							 to == flatfile_item_repository_result::
+									 io_error ?
+						 EIO :
+						 EILSEQ) };
+		const auto selected =
+			std::find_if(from_items.begin(), from_items.end(), [&](const auto &item)
+				     { return item.item_uid == payload.selected_item_uid; });
+		if (accounted_purchase)
+		{
+			accounting_before.from_owner_revision_before = from_revision;
+			accounting_before.to_owner_revision_before = to_revision;
+		}
+		else
+		{
+			held_before.from_owner_revision_before = from_revision;
+			held_before.to_owner_revision_before = to_revision;
+		}
+		if (selected != from_items.end())
+		{
+			const economic_item_snapshot snapshot = {
+				selected->item_uid,
+				{ selected->owner, selected->root_item_uid,
+				  selected->parent_item_uid, selected->item_revision,
+				  selected->state }
+			};
+			if (accounted_purchase)
+				accounting_before.item_before = snapshot;
+			else
+				held_before.item_before = snapshot;
+		}
 	}
 
 	player_item_snapshot exact;
@@ -1536,6 +1820,59 @@ critical_apply_result flatfile_collector_repository_apply(const std::string &roo
 		result.wallet_revision = wallet_revision;
 		result.bank_revision = bank_revision;
 	}
+	flatfile_accounting_record accounting_record;
+	if (accounted)
+	{
+		accounting_record.command = command;
+		accounting_record.result_code = result_code;
+		accounting_record.durable_revision =
+			durable_revision(result, candidate.catalog_revision);
+		std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> encoded = {};
+		if (!collector_command_encode_result(result, &encoded))
+			return { critical_apply_outcome::terminal_failure, catalog.catalog_revision,
+				 EILSEQ };
+		try
+		{
+			accounting_record.result.assign(encoded.begin(), encoded.end());
+		}
+		catch (const std::bad_alloc &)
+		{
+			return { critical_apply_outcome::retryable_failure,
+				 catalog.catalog_revision, ENOMEM };
+		}
+		if (mutation_applied)
+		{
+			economic_accounting_plan plan;
+			const auto planned =
+				accounted_purchase ?
+					collector_purchase_accounting_plan(
+						command, intent, accounting_before, result, &plan) :
+					collector_held_accounting_plan(command, intent, held_before,
+								       result, &plan);
+			if (planned != economic_accounting_error::ok ||
+			    plan.item_events.size() != 1 || !plan.children.empty() ||
+			    (accounted_held && (!plan.accounts.empty() || !plan.postings.empty())))
+				return { planned == economic_accounting_error::capacity ?
+						 critical_apply_outcome::retryable_failure :
+						 critical_apply_outcome::terminal_failure,
+					 catalog.catalog_revision,
+					 static_cast<unsigned int>(
+						 planned == economic_accounting_error::capacity ?
+							 ENOMEM :
+							 EILSEQ) };
+			const auto encoded_plan =
+				economic_plan_encode(plan, &accounting_record.plan);
+			if (encoded_plan != economic_accounting_error::ok)
+				return { encoded_plan == economic_accounting_error::capacity ?
+						 critical_apply_outcome::retryable_failure :
+						 critical_apply_outcome::terminal_failure,
+					 catalog.catalog_revision,
+					 static_cast<unsigned int>(
+						 encoded_plan == economic_accounting_error::capacity ?
+							 ENOMEM :
+							 EILSEQ) };
+		}
+	}
 	try
 	{
 		candidate.operations.push_back(
@@ -1570,7 +1907,60 @@ critical_apply_result flatfile_collector_repository_apply(const std::string &roo
 		return { critical_apply_outcome::retryable_failure, catalog.catalog_revision,
 			 ENOMEM };
 	}
-	const auto committed = flatfile_authority_transaction_commit(root, lock, images, &error);
+	std::vector<flatfile_authority_operation> operations;
+	try
+	{
+		operations.reserve(images.size() +
+				   (mutation_applied && payload.item_count ? 1 : 0) +
+				   (accounted ? 1 : 0));
+		for (auto &image : images)
+			operations.push_back({ flatfile_authority_store::domains,
+					       flatfile_authority_operation_kind::write,
+					       std::move(image.filename), std::move(image.bytes) });
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { critical_apply_outcome::retryable_failure, catalog.catalog_revision,
+			 ENOMEM };
+	}
+	if (mutation_applied && payload.item_count > 0)
+	{
+		const auto staged = flatfile_item_accounting_reference_stage(
+			root, lock, command.operation_id, references, &operations, &error);
+		if (staged != flatfile_item_accounting_status::ok)
+			return { staged == flatfile_item_accounting_status::io_error ?
+					 critical_apply_outcome::retryable_failure :
+					 critical_apply_outcome::terminal_failure,
+				 catalog.catalog_revision,
+				 static_cast<unsigned int>(
+					 staged == flatfile_item_accounting_status::io_error ?
+						 EIO :
+					 staged == flatfile_item_accounting_status::capacity ?
+						 ENOSPC :
+					 staged == flatfile_item_accounting_status::already_exists ?
+						 EEXIST :
+						 EILSEQ) };
+	}
+	if (accounted)
+	{
+		const auto staged = flatfile_accounting_storage::stage(
+			root, lock, accounting_record, &operations, &error);
+		if (staged != flatfile_accounting_status::ok)
+			return { staged == flatfile_accounting_status::io_error ?
+					 critical_apply_outcome::retryable_failure :
+					 critical_apply_outcome::terminal_failure,
+				 catalog.catalog_revision,
+				 static_cast<unsigned int>(
+					 staged == flatfile_accounting_status::io_error ? EIO :
+					 staged == flatfile_accounting_status::capacity ? ENOSPC :
+					 staged == flatfile_accounting_status::already_exists ?
+											  EEXIST :
+											  EILSEQ) };
+	}
+	const auto committed =
+		accounted ? flatfile_accounting_storage::commit(root, lock, operations, &error) :
+			    flatfile_authority_transaction_commit_operations(root, lock, operations,
+									     &error);
 	if (committed != flatfile_authority_transaction_result::ok)
 		return { committed == flatfile_authority_transaction_result::io_error ?
 				 critical_apply_outcome::retryable_failure :
@@ -1580,6 +1970,36 @@ critical_apply_result flatfile_collector_repository_apply(const std::string &roo
 				 committed == flatfile_authority_transaction_result::io_error ?
 					 EIO :
 					 EILSEQ) };
+	if (mutation_applied && !references.empty())
+	{
+		const auto verified = flatfile_item_accounting_reference_verify_operation(
+			root, command.operation_id, references, &error);
+		if (verified != flatfile_item_accounting_status::ok)
+			return { verified == flatfile_item_accounting_status::io_error ?
+					 critical_apply_outcome::retryable_failure :
+					 critical_apply_outcome::terminal_failure,
+				 candidate.catalog_revision,
+				 static_cast<unsigned int>(
+					 verified == flatfile_item_accounting_status::io_error ?
+						 EIO :
+						 EILSEQ) };
+	}
 	return make_result(candidate.operations.back(), candidate.catalog_revision,
 			   critical_apply_outcome::applied);
+}
+catch (const std::bad_alloc &)
+{
+	return { critical_apply_outcome::retryable_failure, 0, ENOMEM };
+}
+
+critical_apply_result flatfile_collector_repository_apply(const std::string &root,
+							  const critical_command &command)
+{
+	return flatfile_accounting_collector_transaction::apply(root, command, false);
+}
+
+critical_apply_result flatfile_collector_repository_apply_accounted(const std::string &root,
+								    const critical_command &command)
+{
+	return flatfile_accounting_collector_transaction::apply(root, command, true);
 }

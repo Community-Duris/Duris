@@ -83,7 +83,7 @@ check(
 #    are purpose-built stock, priced by their own tiers.  enhance() keeps it.
 check(
     "enhance() still computes and enforces the material floor",
-    "minval = itemvalue(source) - enhance_material_ival_delta;" in enhance
+    "minval = static_cast<int64_t>(sval) - enhance_material_ival_delta;" in enhance
     and "if (!pouch_material && itemvalue(material) < minval)" in enhance,
 )
 check(

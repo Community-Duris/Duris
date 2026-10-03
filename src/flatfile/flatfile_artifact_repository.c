@@ -1193,7 +1193,8 @@ flatfile_artifact_result flatfile_artifact_prepare_room_transfer(
 	*mutation = {};
 	const bool deposit = payload.from_owner.type == item_owner_type::player &&
 			     payload.to_owner.type == item_owner_type::room &&
-			     ((payload.reason == item_transfer_reason::player_drop &&
+			     (((payload.reason == item_transfer_reason::player_drop ||
+				item_transfer_forced_weapon_drop(payload.reason)) &&
 			       !payload.target_parent_item_uid) ||
 			      (payload.reason == item_transfer_reason::player_put &&
 			       payload.target_parent_item_uid));

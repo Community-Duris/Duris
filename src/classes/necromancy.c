@@ -7,6 +7,7 @@
 #include "core/files.h"
 #include "core/utils.h"
 #include "classes/necromancy.h"
+#include "item/objmisc.h"
 #include "economy/collector_presence.h"
 #include "player/pet_restore_runtime.h"
 #include <cstdint>
@@ -22,6 +23,8 @@
 #include "combat/justice.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
+#include "magic/spell_item_lifecycle.h"
+#include "economy/economic_gameplay_authority.h"
 #include "world/vnum.obj.h"
 
 extern P_room world;
@@ -37,8 +40,6 @@ extern bool exit_wallable(int room, int dir, P_char ch);
 extern bool create_walls(int room, int exit, P_char ch, int level, int type, int power, int decay,
 			 const char *short_desc, const char *desc, ulong flags);
 P_obj get_object_from_char(P_char owner, int vnum);
-
-bool isCarved(P_obj corpse);
 
 /* Legacy raise paths do not have a corpse transaction to publish an NPC-side
  * inventory. A player caster is the durable recipient, so keep recovered
@@ -246,6 +247,9 @@ int setup_pet(P_char mob, P_char ch, int duration, int flag)
 	}
 
 	linked_affect_to_char(mob, &af, ch, LNK_PET);
+	// Charm may add the follower before this owner link exists. Normalize only
+	// after ownership is established, retaining hidden items in this pet's custody.
+	item_restrict_player_pet_equipment(mob);
 
 	if (flag & PET_NOCASH)
 	{
@@ -3256,10 +3260,65 @@ bool complete_corpse_wall_of_bones(P_char caster, P_obj corpse, int level, int e
 	return true;
 }
 
+struct wall_of_bones_scales_context
+{
+	int32_t level;
+	int32_t exit_dir;
+	int32_t room;
+	int32_t multiplier;
+};
+
+static bool create_wall_of_bones_from_scales(P_char ch, int level, int exit_dir, int scales)
+{
+	if (!create_walls(ch->in_room, exit_dir, ch, level, WALL_OF_BONES, scales, 1000,
+			  "&+La thin wall of &+gscales&n",
+			  "&+LA thin wall of &+gscales&+L is here to the %s.&n", 0))
+		return false;
+	SET_BIT(EXIT(ch, exit_dir)->exit_info, EX_BREAKABLE);
+	SET_BIT(VIRTUAL_EXIT((world[ch->in_room].dir_option[exit_dir])->to_room, rev_dir[exit_dir])
+			->exit_info,
+		EX_BREAKABLE);
+	char message[MAX_STRING_LENGTH];
+	snprintf(
+		message, sizeof(message),
+		"&+LInfused by powerful sorcery, some &+gdragonscales &+Lmagically transform into a delicate yet solid curtain, blocking exit to the %s!&n\r\n",
+		dirs[exit_dir]);
+	send_to_room(message, ch->in_room);
+	snprintf(message, sizeof(message),
+		 "&+LA thin &+gdragonscale&+L curtain magically assembles to the %s!&n\r\n",
+		 dirs[rev_dir[exit_dir]]);
+	send_to_room(message, (world[ch->in_room].dir_option[exit_dir])->to_room);
+	return true;
+}
+
+spell_component_effect_status
+spell_wall_of_bones_scales_completed(const critical_operation_id & /*operation_id*/, P_char ch,
+				     bool committed, const item_transfer_result &result,
+				     unsigned int /*error_code*/, const uint8_t *encoded,
+				     size_t encoded_size)
+{
+	spell_component_context_reader reader(encoded, encoded_size);
+	wall_of_bones_scales_context context = {};
+	if (!ch || !reader.get_i32(&context.level) || !reader.get_i32(&context.exit_dir) ||
+	    !reader.get_i32(&context.room) || !reader.get_i32(&context.multiplier) ||
+	    !reader.finished())
+		return spell_component_effect_status::retry;
+	if (!committed || ch->in_room != context.room)
+	{
+		send_to_char("The dragon scales remain intact as your spell fizzles.\r\n", ch);
+		return spell_component_effect_status::complete;
+	}
+	if (!create_wall_of_bones_from_scales(ch, context.level, context.exit_dir,
+					      static_cast<int>(result.item_count) *
+						      context.multiplier))
+		send_to_char("Something prevents you from making a wall there.\n", ch);
+	return spell_component_effect_status::complete;
+}
+
 void spell_wall_of_bones(int level, P_char ch, char *arg, [[maybe_unused]] int type,
 			 P_char /*tar_ch*/, P_obj /*tar_obj*/)
 {
-	char arg1[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], *arg2;
+	char arg1[MAX_STRING_LENGTH], *arg2;
 	int exit_dir, clevel, scales;
 	P_obj corpse, obj_in_corpse, next_obj;
 
@@ -3349,7 +3408,30 @@ void spell_wall_of_bones(int level, P_char ch, char *arg, [[maybe_unused]] int t
 	if (!corpse)
 	{
 		if ((corpse = get_object_from_char(ch, VOBJ_PILE_BONES)) == NULL)
-			scales = get_spell_component(ch, VOBJ_DRAGON_SCALE, 4) * number(1, 2);
+		{
+			if (economic_gameplay_authority::active() && IS_PC(ch))
+			{
+				const wall_of_bones_scales_context values = { level, exit_dir,
+									      ch->in_room,
+									      number(1, 2) };
+				spell_component_context_writer context;
+				if (!context.put_i32(values.level) ||
+				    !context.put_i32(values.exit_dir) ||
+				    !context.put_i32(values.room) ||
+				    !context.put_i32(values.multiplier))
+					return;
+				if (spell_consume_components(
+					    ch, VOBJ_DRAGON_SCALE, 4, SPELL_WALL_OF_BONES,
+					    item_spell_component_effect::wall_of_bones,
+					    spell_wall_of_bones_scales_completed, context.data(),
+					    context.size))
+					return;
+				scales = 0;
+			}
+			else
+				scales = get_spell_component(ch, VOBJ_DRAGON_SCALE, 4) *
+					 number(1, 2);
+		}
 		else
 		{
 			clevel = corpse->value[CORPSE_LEVEL];
@@ -3380,26 +3462,8 @@ void spell_wall_of_bones(int level, P_char ch, char *arg, [[maybe_unused]] int t
 
 		extract_obj(corpse, TRUE); // Empty corpse, but 'in game.'
 	}
-	else if (scales && create_walls(ch->in_room, exit_dir, ch, level, WALL_OF_BONES, scales,
-					1000, "&+La thin wall of &+gscales&n",
-					"&+LA thin wall of &+gscales&+L is here to the %s.&n", 0))
+	else if (scales && create_wall_of_bones_from_scales(ch, level, exit_dir, scales))
 	{
-		SET_BIT(EXIT(ch, exit_dir)->exit_info, EX_BREAKABLE);
-		SET_BIT(VIRTUAL_EXIT((world[ch->in_room].dir_option[exit_dir])->to_room,
-				     rev_dir[exit_dir])
-				->exit_info,
-			EX_BREAKABLE);
-
-		snprintf(
-			buf1, MAX_STRING_LENGTH,
-			"&+LInfused by powerful sorcery, some &+gdragonscales &+Lmagically transform into a delicate yet solid curtain, blocking exit to the %s!&n\r\n",
-			dirs[exit_dir]);
-		send_to_room(buf1, ch->in_room);
-		snprintf(buf1, MAX_STRING_LENGTH,
-			 "&+LA thin &+gdragonscale&+L curtain magically assembles to the %s!&n\r\n",
-			 dirs[rev_dir[exit_dir]]);
-		send_to_room(buf1, (world[ch->in_room].dir_option[exit_dir])->to_room);
-
 		if (corpse)
 			extract_obj(corpse, TRUE); // Dragon scales.
 	}

@@ -347,7 +347,7 @@ assert not contains(reporting, "statuslog(")
 assert contains(comm, "if (!report->length) prepare_command_latency_log_buffer(report);")
 assert contains(comm, "collect_command_latency_log, &command_report")
 assert contains(comm, "continuation_prefix")
-assert contains(comm, "timestamp-unavailable::")
+assert contains(comm, "timestamp-unavailable::", literal=True)
 assert contains(
     (SRC / "net" / "command_latency.h").read_text(),
     "COMMAND_LATENCY_REPORT_INTERVAL_PULSES",

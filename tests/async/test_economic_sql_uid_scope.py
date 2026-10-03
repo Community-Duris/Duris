@@ -1,0 +1,285 @@
+#!/usr/bin/env python3
+"""Keep SQL ownership UID coverage scoped to known accounting lineages."""
+
+from pathlib import Path
+from decimal import Decimal
+import json
+import sys
+import unittest
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "scripts"))
+from economic_sql_audit_snapshot import (ExportError, infer_created_mapping_origins,
+                                         auction_escrow_balance,
+                                         auction_escrow_mapping_is_live,
+                                         native_source_count,
+                                         native_mapping_identity_valid,
+                                         append_committed_item_creation_origin,
+                                         read_pending_claim_consumers,
+                                         read_mapping_creations,
+                                         read_uid_event_census)  # noqa: E402
+
+
+class Cursor:
+    def __init__(self):
+        self.sql = ""
+
+    def execute(self, sql, _params):
+        self.sql = sql
+
+    def fetchall(self):
+        if "WHERE o.operation_id IS NULL" in self.sql:
+            return [{"operation_id": b"z" * 16, "event_index": 0, "item_uid": 3,
+                     "root_item_uid": 3, "parent_item_uid": None, "to_owner_type": 1,
+                     "to_owner_id": 8, "to_owner_context_id": 0, "item_revision": 1,
+                     "from_owner_revision": 0, "reason_type": 2}]
+        if "SELECT l.operation_id,l.event_index,l.item_uid" in self.sql:
+            return [{
+                "operation_id": bytes([uid + 96]) * 16, "event_index": 0, "item_uid": uid,
+                "root_item_uid": uid, "parent_item_uid": None, "to_owner_type": 1,
+                "to_owner_id": 7, "to_owner_context_id": 0, "item_revision": 1,
+                "from_owner_revision": 0, "reason_type": 2, "operation_outcome": 1,
+                "operation_epoch": b"e" * 16,
+            } for uid in (1, 5)]
+        if "SELECT DISTINCT l.item_uid,o.lineage" in self.sql:
+            return [
+                {"item_uid": 1, "lineage": b"l" * 16},
+                {"item_uid": 5, "lineage": b"l" * 16},
+                {"item_uid": 2, "lineage": b"x" * 16},
+                {"item_uid": 3, "lineage": None},
+                {"item_uid": 4, "lineage": b"l" * 16},
+                {"item_uid": 4, "lineage": b"x" * 16},
+            ]
+        raise AssertionError(f"unexpected audit query: {self.sql}")
+
+
+class UidScopeTests(unittest.TestCase):
+    def test_native_mapping_coverage_requires_the_account_locator(self):
+        class NativeCursor:
+            sql = ""
+            params = ()
+
+            def execute(self, sql, params):
+                self.sql = sql
+                self.params = params
+
+            def fetchone(self):
+                return {"source_rows": 2, "unmapped_rows": 1}
+
+        cursor = NativeCursor()
+        self.assertEqual(native_source_count(
+            cursor, b"l" * 16, "item_current_owner", "item_uid", 3,
+            "vnum=3 AND state=1"), (2, 1))
+        self.assertIn("AND m.locator_kind=3", cursor.sql)
+        self.assertEqual(cursor.params, (b"l" * 16,))
+
+    def test_mapping_identity_policy_covers_active_and_retired_rows(self):
+        self.assertTrue(native_mapping_identity_valid(5, 5, 71, 71))
+        self.assertTrue(native_mapping_identity_valid(5, 5, 71, None))
+        self.assertFalse(native_mapping_identity_valid(5, 4, 71, 71))
+        self.assertFalse(native_mapping_identity_valid(5, 5, 71, 72))
+        self.assertFalse(native_mapping_identity_valid(5, 5, True, None))
+        self.assertFalse(native_mapping_identity_valid(7, 7, 71, None))
+
+    def test_only_funded_removed_auctions_keep_an_active_escrow_mapping(self):
+        self.assertTrue(auction_escrow_mapping_is_live("OPEN", None))
+        self.assertTrue(auction_escrow_mapping_is_live("REMOVED", 7))
+        self.assertFalse(auction_escrow_mapping_is_live("REMOVED", 0))
+        self.assertFalse(auction_escrow_mapping_is_live("REMOVED", None))
+
+    def test_open_auction_without_bid_cannot_report_funded_escrow(self):
+        self.assertEqual(auction_escrow_balance("OPEN", 0, 0), [0, 0, 0, 0])
+        self.assertEqual(auction_escrow_balance("OPEN", 25, 7), [25, 0, 0, 0])
+        self.assertIsNone(auction_escrow_balance("OPEN", 25, 0))
+        self.assertIsNone(auction_escrow_balance("OPEN", -1, 7))
+
+    def test_creation_origins_require_committed_zero_revision_create(self):
+        origins = []
+        known = set()
+        self.assertFalse(append_committed_item_creation_origin(
+            origins, known, 9001, "create", 0, "rejected"))
+        self.assertFalse(append_committed_item_creation_origin(
+            origins, known, 9001, "create", 0, "unknown"))
+        self.assertFalse(append_committed_item_creation_origin(
+            origins, known, 9001, "move", 0, "committed"))
+        self.assertFalse(append_committed_item_creation_origin(
+            origins, known, 9001, "create", 1, "committed"))
+        self.assertTrue(append_committed_item_creation_origin(
+            origins, known, 9001, "create", 0, "committed"))
+        self.assertFalse(append_committed_item_creation_origin(
+            origins, known, 9001, "create", 0, "committed"))
+        self.assertEqual(origins, [{"uid": 9001, "origin": "creation", "revision": 0,
+                                   "root": 9001, "parent": None, "owner": [0, 0, 0],
+                                   "state": "absent"}])
+
+    def test_global_ownership_census_is_partitioned_by_lineage(self):
+        operation = b"a" * 16
+        lineage = b"l" * 16
+        result = read_uid_event_census(
+            Cursor(), lineage,
+            [{"uid": 1, "revision": 0}],
+            {"item_references": [{
+                "legacy_operation_id": operation.hex(),
+                "legacy_event_index": 0, "uid": 1,
+            }]},
+            [], [],
+        )
+        (events, unreferenced, event_coverage, unanchored, ambiguous, scope,
+         unattributed, unattributed_coverage) = result
+        self.assertEqual(len(events), 2)
+        self.assertEqual(events[0]["operation_outcome"], "committed")
+        self.assertEqual({row["uid"] for row in unreferenced}, {5})
+        self.assertEqual(event_coverage["referenced_events"], 1)
+        self.assertEqual(unanchored, [5])
+        self.assertEqual(ambiguous, [4])
+        self.assertEqual([(row["uid"], row["action"]) for row in unattributed], [(3, "create")])
+        self.assertEqual(unattributed_coverage, {"uids": 1, "events": 1})
+        self.assertEqual(scope, {
+            "ownership_uid_count": 2, "anchored_ownership_uid_count": 1,
+            "unanchored_ownership_uid_count": 1,
+            "other_lineage_ownership_uid_count": 1,
+            "unattributed_ownership_uid_count": 1,
+            "ambiguous_lineage_ownership_uid_count": 1,
+        })
+
+    def test_mapping_creator_root_exports_cross_epoch_origin_evidence(self):
+        lineage = b"l" * 16
+        operation = b"a" * 16
+
+        class MappingCursor:
+            sql = ""
+
+            def execute(self, sql, _params):
+                self.sql = sql
+
+            def fetchall(self):
+                if "FROM economic_account_mapping WHERE lineage" in self.sql:
+                    return [{"mapping_id": 7, "account_kind": 1, "context_id": 0,
+                             "native_id": 7, "active_native_id": 7,
+                             "creating_operation_id": operation}]
+                if "FROM economic_accounting_operation o" in self.sql:
+                    return [{"operation_id": operation, "lineage": lineage,
+                             "epoch": b"e" * 16, "reason": 3, "outcome": 1,
+                             "result_code": 0, "creator_inbox_status": 1,
+                             "creator_inbox_result_code": 0,
+                             "creator_inbox_failure_stage": 0,
+                             "creator_inbox_committed_at_present": 1,
+                             "source_event": None, "account_count": 1,
+                             "posting_count": 0, "child_count": 0, "item_event_count": 0,
+                             "account_index": 0,
+                             "account_key": lineage + bytes.fromhex("01000100") +
+                             (7).to_bytes(8, "little") + bytes(12),
+                             "before_copper": 0, "before_silver": 0, "before_gold": 0,
+                             "before_platinum": 0, "after_copper": 2, "after_silver": 0,
+                             "after_gold": 0, "after_platinum": 0,
+                             "before_revision": 0, "after_revision": 1}]
+                raise AssertionError(f"unexpected query: {self.sql}")
+
+        mappings, coverage, roots = read_mapping_creations(MappingCursor(), lineage)
+        self.assertEqual(coverage, {"rows": 1, "creator_rows": 1,
+                                    "root_rows": 1, "missing_roots": 0})
+        inferred = infer_created_mapping_origins(lineage.hex(), mappings, roots, [])
+        self.assertEqual(inferred, [{"account_key": mappings[0]["account_key"],
+                                     "origin": "creation", "balance": [0, 0, 0, 0],
+                                     "revision": 0}])
+
+    def test_baseline_install_creator_exports_selected_epoch_receipt(self):
+        lineage, epoch = b"l" * 16, b"e" * 16
+        installation, baseline = b"i" * 16, b"b" * 16
+
+        class InstallationCursor:
+            sql = ""
+            selected_epoch = epoch
+            revision = 1
+            failure_stage = 0
+            committed_at_present = 1
+
+            def execute(self, sql, _params):
+                self.sql = sql
+
+            def fetchall(self):
+                if "FROM economic_account_mapping WHERE lineage" in self.sql:
+                    return [{"mapping_id": 7, "account_kind": 1, "context_id": 0,
+                             "native_id": 7, "active_native_id": 7,
+                             "creating_operation_id": installation}]
+                if "FROM economic_accounting_operation o" in self.sql:
+                    return []
+                if "FROM economic_sql_lifecycle_installation l" in self.sql:
+                    return [{"operation_id": installation, "lineage": lineage,
+                             "epoch": epoch, "baseline_operation_id": baseline,
+                             "phase": 2, "selected_epoch": self.selected_epoch,
+                             "revision": self.revision, "install_status": 1,
+                             "install_result_code": 0,
+                             "install_failure_stage": self.failure_stage,
+                             "install_committed_at_present": self.committed_at_present,
+                             "baseline_lineage": lineage,
+                             "baseline_epoch": epoch, "baseline_reason": 38,
+                             "baseline_outcome": 1, "baseline_result_code": 0}]
+                raise AssertionError(f"unexpected query: {self.sql}")
+
+        cursor = InstallationCursor()
+        _, _, roots = read_mapping_creations(cursor, lineage)
+        self.assertEqual(roots[0]["outcome"], "committed")
+        self.assertEqual(roots[0]["installation_selected_epoch"], epoch.hex())
+        self.assertEqual(roots[0]["installation_revision"], 1)
+        cursor.selected_epoch = b"x" * 16
+        _, _, roots = read_mapping_creations(cursor, lineage)
+        self.assertEqual(roots[0]["outcome"], "unknown")
+        cursor.selected_epoch = epoch
+        cursor.committed_at_present = 0
+        _, _, roots = read_mapping_creations(cursor, lineage)
+        self.assertEqual(roots[0]["outcome"], "unknown")
+
+    def test_pending_claim_consumer_reverse_query_finds_the_copper_debit(self):
+        lineage = b"l" * 16
+        operation = b"a" * 16
+
+        class ConsumerCursor:
+            sql = ""
+            source_amount = Decimal("100")
+
+            def execute(self, sql, _params):
+                self.sql = sql
+
+            def fetchall(self):
+                if "FROM economic_accounting_operation o" not in self.sql or \
+                        "economic_pending_claim_source" not in self.sql or \
+                        "critical_operation_inbox" not in self.sql:
+                    raise AssertionError(f"unexpected query: {self.sql}")
+                return [{"operation_id": operation, "epoch": b"e" * 16,
+                         "outcome": 1, "result_code": 0, "inbox_status": 1,
+                         "inbox_result_code": 0, "inbox_failure_stage": 0,
+                         "inbox_committed_at_present": 1,
+                         "account_key": lineage + bytes.fromhex("01000500") +
+                         (21).to_bytes(8, "little") + bytes(12),
+                         "before_copper": 140, "before_silver": 0,
+                         "before_gold": 0, "before_platinum": 0,
+                         "after_copper": 40, "after_silver": 0,
+                         "after_gold": 0, "after_platinum": 0,
+                         "source_rows": 1, "source_amount": self.source_amount}]
+
+        rows, coverage = read_pending_claim_consumers(ConsumerCursor(), lineage)
+        self.assertIs(type(rows[0]["source_amount"]), int)
+        self.assertEqual(json.loads(json.dumps(rows))[0]["source_amount"], 100)
+        self.assertEqual(coverage, {"rows": 1, "missing_source_rows": 0,
+                                    "mismatched_source_amounts": 0})
+        self.assertEqual(rows[0]["pending_claim_debits"], [{
+            "account_key": (lineage + bytes.fromhex("01000500") +
+                            (21).to_bytes(8, "little") + bytes(12)).hex(),
+            "amount": 100, "before": [140, 0, 0, 0], "after": [40, 0, 0, 0]}])
+        self.assertEqual(rows[0]["inbox_receipt"], {
+            "status": 1, "result_code": 0, "failure_stage": 0,
+            "committed_at_present": True})
+
+        cursor = ConsumerCursor()
+        cursor.source_amount = Decimal("9007199254740993")
+        rows, coverage = read_pending_claim_consumers(cursor, lineage)
+        self.assertEqual(json.loads(json.dumps(rows))[0]["source_amount"], 9007199254740993)
+        self.assertEqual(coverage["mismatched_source_amounts"], 1)
+        cursor.source_amount = Decimal("100.5")
+        with self.assertRaises(ExportError):
+            read_pending_claim_consumers(cursor, lineage)
+
+
+if __name__ == "__main__":
+    unittest.main()

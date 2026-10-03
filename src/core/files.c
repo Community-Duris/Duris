@@ -36,8 +36,10 @@
 #endif
 #include "core/mm.h"
 #include "classes/necromancy.h"
+#include "economy/account_bank_balances.h"
 #include "economy/collector_service.h"
 #include "player/player_save_pipeline.h"
+#include "player/player_save_journal.h"
 #include "player/player_revision_state.h"
 #include "persistence/persistence_mode.h"
 #include "world/handler.h"
@@ -49,7 +51,16 @@
 #include "magic/spells.h"
 #include "sql/item_extra_descr_codec.h"
 #include "sql/sql.h"
+#include "sql/sql_corpse.h"
+#include "sql/sql_locker.h"
+#include "sql/sql_player_deletion.h"
+#include "persistence/economic_sql_lifecycle_guard.h"
 #include "sql/sql_player.h"
+#include "sql/sql_player_identity.h"
+#include "sql/sql_saved_item.h"
+#include "sql/sql_shopkeeper.h"
+#include "sql/sql_ship.h"
+#include "sql/sql_transaction.h"
 #include "item/storage_lockers.h"
 #include "item/trophy.h"
 #include "world/vnum.obj.h"
@@ -621,7 +632,8 @@ int writeAffects(char *buf, struct affected_type *af)
 		if (IS_SET(af->flags, AFFTYPE_SHORT))
 		{
 			// af->duration updated with updateShortAffects(ch), but we want secs to save not pulses.
-			ADD_INT(buf, af->duration / WAIT_SEC);
+			ADD_INT(buf,
+				spell_ward_is_managed(af) ? af->duration : af->duration / WAIT_SEC);
 		}
 		else
 		{
@@ -641,9 +653,11 @@ int writeAffects(char *buf, struct affected_type *af)
 		ADD_ULL(buf, af->ward_source_uid);
 		ADD_INT(buf, af->ward_full_duration);
 		ADD_ULL(buf, af->ward_capacity > 0 ?
-				static_cast<unsigned long long>(af->ward_capacity) : 0);
+				     static_cast<unsigned long long>(af->ward_capacity) :
+				     0);
 		ADD_ULL(buf, af->ward_capacity_max > 0 ?
-				static_cast<unsigned long long>(af->ward_capacity_max) : 0);
+				     static_cast<unsigned long long>(af->ward_capacity_max) :
+				     0);
 		ADD_INT(buf, af->ward_refresh_remaining);
 		ADD_BYTE(buf, af->ward_source_type);
 		ADD_BYTE(buf, af->ward_source_worn);
@@ -1621,15 +1635,6 @@ void delete_knownShapes(P_char ch)
 	ch->only.pc->knownShapes = NULL;
 }
 
-void writeShapechangeData(P_char ch)
-{
-	if (IS_PC(ch) && has_innate(ch, INNATE_SHAPECHANGE))
-	{
-		if (!sql_save_player_shapechanges(ch))
-			logit(LOG_FILE, "writeShapechangeData: shapechange save failed");
-	}
-}
-
 void readShapechangeData(P_char ch)
 {
 	if (IS_PC(ch) && has_innate(ch, INNATE_SHAPECHANGE))
@@ -1704,9 +1709,71 @@ int calculate_save_room(P_char ch, int type, int room)
 	return room;
 }
 
+enum class character_save_admission
+{
+	proceed,
+	deferred,
+	rejected,
+};
+
+static character_save_admission admit_character_save(P_char ch, bool is_locker_char)
+{
+	if (GET_PID(ch) > 0 && player_save_journal_pid_quarantined(GET_PID(ch)))
+		return character_save_admission::rejected;
+	if (!is_locker_char && IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+	{
+		// A degraded load may have omitted durable inventory or sidecar state. Treat
+		// save as a safe no-op until a clean cold load can hydrate every component;
+		// publishing the partial runtime snapshot would destroy the unresolved rows.
+		logit(LOG_DEBUG,
+		      "writeCharacter: deferred degraded player save pid=%d components=0x%x",
+		      GET_PID(ch), ch->only.pc->load_degraded_components);
+		return character_save_admission::deferred;
+	}
+	if (!is_locker_char && GET_PID(ch) > 0 && !player_save_pipeline_save_admitted(GET_PID(ch)))
+		return character_save_admission::rejected;
+	const bool corpse_raise_save_pending = corpse_raise_player_save_fenced(ch);
+	const bool collector_save_pending = !collector_service_recover_player(ch);
+	if (!is_locker_char && GET_PID(ch) > 0 &&
+	    (corpse_raise_save_pending || collector_save_pending))
+	{
+		persistence_alert(AVATAR, corpse_raise_save_pending ? "corpse" : "collector",
+				  "player", "redacted",
+				  corpse_raise_save_pending ? "durable_raise" : "purchase_publish",
+				  "save_deferred", "live_materialization_pending=1");
+		return character_save_admission::rejected;
+	}
+	return character_save_admission::proceed;
+}
+
+static void finish_saved_character_inventory(P_char ch, bool save_succeeded, bool terminal_type)
+{
+	if (!persistence_should_extract_terminal_inventory(save_succeeded, terminal_type))
+	{
+		for (int i = 0; i < MAX_WEAR; ++i)
+			if (save_equip[i])
+				equip_char(ch, save_equip[i], i, 9);
+		for (int i = 0; i < MAX_WEAR; ++i)
+			save_equip[i] = NULL;
+		return;
+	}
+
+	for (int i = 0; i < MAX_WEAR; ++i)
+		if (save_equip[i])
+		{
+			extract_obj(save_equip[i]);
+			save_equip[i] = NULL;
+		}
+	for (P_obj obj = ch->carrying; obj;)
+	{
+		P_obj next = obj->next_content;
+		extract_obj(obj);
+		obj = next;
+	}
+}
+
 int writeCharacter(P_char ch, int type, int room)
 {
-	P_obj obj, obj2;
 	int i;
 	int result = 1;
 
@@ -1728,29 +1795,9 @@ int writeCharacter(P_char ch, int type, int room)
 				    type == RENT_CAMPED || type == RENT_DEATH ||
 				    type == RENT_POOFARTI || type == RENT_SWAPARTI ||
 				    type == RENT_FIGHTARTI);
-	if (!is_locker_char && IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
-	{
-		// A degraded load may have omitted durable inventory or sidecar state. Treat
-		// save as a safe no-op until a clean cold load can hydrate every component;
-		// publishing the partial runtime snapshot would destroy the unresolved rows.
-		logit(LOG_DEBUG,
-		      "writeCharacter: deferred degraded player save pid=%d components=0x%x",
-		      GET_PID(ch), ch->only.pc->load_degraded_components);
-		return 1;
-	}
-	if (!is_locker_char && GET_PID(ch) > 0 && !player_save_pipeline_save_admitted(GET_PID(ch)))
-		return 0;
-	const bool corpse_raise_save_pending = corpse_raise_player_save_fenced(ch);
-	const bool collector_save_pending = !collector_service_recover_player(ch);
-	if (!is_locker_char && GET_PID(ch) > 0 &&
-	    (corpse_raise_save_pending || collector_save_pending))
-	{
-		persistence_alert(AVATAR, corpse_raise_save_pending ? "corpse" : "collector",
-				  "player", "redacted",
-				  corpse_raise_save_pending ? "durable_raise" : "purchase_publish",
-				  "save_deferred", "live_materialization_pending=1");
-		return 0;
-	}
+	const character_save_admission admission = admit_character_save(ch, is_locker_char);
+	if (admission != character_save_admission::proceed)
+		return admission == character_save_admission::deferred;
 
 	// locker hook (pre-save)
 	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
@@ -1872,17 +1919,7 @@ int writeCharacter(P_char ch, int type, int room)
 				save_equip[i] = ch->equipment[i] ? unequip_char(ch, i, TRUE) : NULL;
 			all_affects(ch, FALSE);
 			updateShortAffects(ch);
-			for (i = 0; i < MAX_WEAR; ++i)
-				if (save_equip[i])
-				{
-					extract_obj(save_equip[i]);
-					save_equip[i] = NULL;
-				}
-			for (obj = ch->carrying; obj; obj = obj2)
-			{
-				obj2 = obj->next_content;
-				extract_obj(obj);
-			}
+			finish_saved_character_inventory(ch, true, terminal_type);
 			all_affects(ch, TRUE);
 		}
 		if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
@@ -1894,11 +1931,6 @@ int writeCharacter(P_char ch, int type, int room)
 
 	if (!is_locker_char)
 	{
-		if (!sql_save_player_shapechanges(ch))
-		{
-			logit(LOG_FILE, "sql_save_player_shapechanges failed");
-			result = 0;
-		}
 		room = calculate_save_room(ch, type, room);
 
 		// skip locker characters for sql operations
@@ -1981,32 +2013,9 @@ int writeCharacter(P_char ch, int type, int room)
 		}
 	}
 
-	// Failed saves always restore the live recovery source. Terminal inventory may
-	// be extracted only after the database save has succeeded; a flat fallback is
-	// recovery evidence, not authorization to destroy live state.
-	if (!persistence_should_extract_terminal_inventory(result != 0, terminal_type))
-	{
-		for (i = 0; i < MAX_WEAR; i++)
-			if (save_equip[i])
-				equip_char(ch, save_equip[i], i, 9);
-		for (i = 0; i < MAX_WEAR; i++)
-			save_equip[i] = NULL;
-	}
-	else
-	{
-		for (i = 0; i < MAX_WEAR; i++)
-			if (save_equip[i])
-			{
-				extract_obj(save_equip[i]);
-				save_equip[i] = NULL;
-			}
-		for (obj = ch->carrying; obj; obj = obj2)
-		{
-			obj2 = obj->next_content;
-			extract_obj(obj);
-			obj = NULL;
-		}
-	}
+	// Failed saves restore the live recovery source. Inventory is released only
+	// after a durable terminal save; a flat fallback is recovery evidence.
+	finish_saved_character_inventory(ch, result != 0, terminal_type);
 
 	// reapply affects
 	all_affects(ch, TRUE);
@@ -2051,14 +2060,19 @@ character_delete_result delete_character_result(P_char ch, bool bDeleteLocker)
 		// Own the transaction: a later cleanup failure must leave the mapping and
 		// player loadable for retry. Never publish or kick/save the live character
 		// while this transaction can still roll back.
-		if (sql_in_transaction() || !sql_begin_transaction())
+		economic_sql_currency_writer_guard deletion_writer;
+		if (sql_in_transaction() ||
+		    economic_sql_currency_writer_guard::acquire(DB, &deletion_writer) ||
+		    !sql_begin_transaction())
 			return character_delete_result::refused;
-		const bool prepared =
-			sql_soft_delete_character(GET_PID(ch)) && remove_all_artifacts_sql(ch) &&
-			remove_all_locker_access(ch) &&
-			(!GET_ASSOC(ch) || GET_ASSOC(ch)->save_without_member(ch)) &&
-			(!bDeleteLocker || sql_delete_locker(GET_PID(ch), 0)) &&
-			sql_delete_ship(GET_NAME(ch)) && sql_delete_player(GET_PID(ch), false);
+		const bool prepared = sql_player_deletion_guard(GET_PID(ch), deletion_writer) &&
+				      sql_soft_delete_character(GET_PID(ch)) &&
+				      remove_all_artifacts_sql(ch) &&
+				      remove_all_locker_access(ch) &&
+				      (!GET_ASSOC(ch) || GET_ASSOC(ch)->save_without_member(ch)) &&
+				      (!bDeleteLocker || sql_delete_locker(GET_PID(ch), 0)) &&
+				      sql_delete_ship(GET_NAME(ch)) &&
+				      sql_delete_player(GET_PID(ch), false, &deletion_writer);
 		if (!prepared)
 		{
 			const bool rolled_back = sql_rollback();
@@ -2697,7 +2711,8 @@ int restoreAffects(char *buf, P_char ch)
 			}
 
 			// Duration saved as seconds for short affects, but we want to store duration as pulses in game.
-			if (aff_vers > 6 && IS_SET(af.flags, AFFTYPE_SHORT))
+			if (aff_vers > 6 && IS_SET(af.flags, AFFTYPE_SHORT) &&
+			    !spell_ward_is_managed(&af))
 			{
 				af.duration *= WAIT_SEC;
 			}
@@ -3074,7 +3089,7 @@ int restoreCharOnly(P_char ch, char *name)
 		{
 			sql_load_player_skills(ch);
 			sql_load_player_affects(ch);
-			//sql_load_player_items(ch);
+			// Item payload is loaded by the ownership-aware player-load pipeline.
 			sql_load_player_shapechanges(ch);
 			return 0;
 		}

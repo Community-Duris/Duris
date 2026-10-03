@@ -12,6 +12,8 @@
 #include <time.h>
 #include "combat/damage.h"
 #include "combat/justice.h"
+#include "economy/economic_gameplay_authority.h"
+#include "item/item_command_policy.h"
 #include "item/objmisc.h"
 #include "magic/spells.h"
 #include "world/weather.h"
@@ -85,6 +87,8 @@ int DamageOneItem(P_char ch, int dam_type, P_obj obj, bool destroy)
 	{
 		return 0;
 	}
+	if (economic_gameplay_authority::active() && item_command_uses_durable_ownership(obj))
+		return 0;
 
 	num = number(1, 2);
 
@@ -136,6 +140,8 @@ void MakeScrap(P_char ch, P_obj obj)
 	int pos;
 
 	if (!ch || !obj || (ch->in_room == NOWHERE))
+		return;
+	if (economic_gameplay_authority::active() && item_command_uses_durable_ownership(obj))
 		return;
 
 	act("$p falls to the ground in scraps.", TRUE, ch, obj, 0, TO_CHAR);
