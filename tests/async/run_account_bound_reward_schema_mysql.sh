@@ -6,10 +6,13 @@ NAME="duris-account-reward-schema-$$"
 PASSWORD=$(printf 'account-reward-%s-%s' "$$" "$RANDOM")
 LEGACY_DB="account_reward_legacy"
 FRESH_DB="account_reward_fresh"
-cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
+SQL_FIXTURE_CONTAINER_ID=
+cleanup() { [[ "${SQL_FIXTURE_CONTAINER_ID:-}" =~ ^[0-9a-f]{64}$ ]] && docker rm -f "$SQL_FIXTURE_CONTAINER_ID" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
 
-docker run -d --name "$NAME" -e MYSQL_ROOT_PASSWORD="$PASSWORD" mysql:8.0 >/dev/null
+IMAGE="${DURIS_TEST_DB_IMAGE:-mysql:8.0}"
+if [[ "$IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PASSWORD_ENV=MYSQL_ROOT_PASSWORD; fi
+SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$NAME" -e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" --innodb-use-native-aio=OFF)
 for _ in $(seq 1 60); do
     if docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -N -e 'SELECT 1' >/dev/null 2>&1; then break; fi
     sleep 1

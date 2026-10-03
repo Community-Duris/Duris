@@ -30,7 +30,7 @@ def run(binary):
                MYSQL_PWD=os.environ['TEST_DB_PASSWORD'], DB_NAME=database,
                DB_ALLOWED_TARGETS=host+'/'+database, PERSISTENCE_MODE='mariadb-primary',
                DB_TLS='FALSE', REDIS='FALSE', CHAOS_MUD='FALSE', LISTEN_ADDRESS='127.0.0.1',
-               DURIS_WEBSOCKET_LISTEN_ADDRESS='127.0.0.1')
+                   DURIS_WEBSOCKET_LISTEN_ADDRESS='127.0.0.1', DURIS_NEVENT_TRACE_PLAYER='1')
     if os.environ.get('LD_LIBRARY_PATH'):
         env['LD_LIBRARY_PATH'] = os.environ['LD_LIBRARY_PATH']
     mysql = ['mysql', '--protocol=tcp', '-h', host, '-P', env['DB_PORT'],
@@ -135,7 +135,11 @@ def run(binary):
                     if client:
                         client.close(); client = None
                     if process and process.poll() is None:
-                        process.terminate(); process.wait(timeout=30)
+                        process.terminate()
+                        try:
+                            process.wait(timeout=30)
+                        except subprocess.TimeoutExpired:
+                            process.kill(); process.wait(timeout=10)
     finally:
         sql('DROP DATABASE '+database, False)
 

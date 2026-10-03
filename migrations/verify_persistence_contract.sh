@@ -41,8 +41,21 @@ WHERE table_schema=DATABASE() AND
  ('id','event_type','event_key','boot_time','touched_at','zone_number','toucher_pid','group_size','epic_value','alignment_delta','dedupe_key','created_at')));")
 
 
+# MariaDB reports integer display widths and quoted defaults; normalize those
+# representations while retaining type, signedness, NULL and literal defaults.
 exact_columns=$(read_scalar "
-SELECT COUNT(*) FROM information_schema.columns
+SELECT COUNT(*) FROM (
+  SELECT table_schema,table_name,ordinal_position,column_name,is_nullable,extra,
+    CASE WHEN data_type IN ('int','bigint') THEN
+      CONCAT(data_type,IF(column_type LIKE '%unsigned%',' unsigned',''),
+             IF(column_type LIKE '%zerofill%',' zerofill',''))
+      ELSE column_type END AS column_type,
+    CASE WHEN column_default IS NULL OR
+      (VERSION() LIKE '%MariaDB%' AND column_default='NULL') THEN NULL
+      WHEN UPPER(column_default) LIKE 'CURRENT_TIMESTAMP%' THEN 'CURRENT_TIMESTAMP'
+      ELSE TRIM(BOTH '\\'' FROM column_default) END AS column_default
+  FROM information_schema.columns
+) AS normalized_columns
 WHERE table_schema=DATABASE() AND (
   (table_name='persistence_item_events' AND ordinal_position=1 AND column_name='id' AND column_type='bigint unsigned' AND is_nullable='NO' AND column_default IS NULL AND extra LIKE '%auto_increment%')
   OR (table_name='persistence_item_events' AND ordinal_position=2 AND column_name='ts_usec' AND column_type='bigint unsigned' AND is_nullable='NO' AND column_default IS NULL)

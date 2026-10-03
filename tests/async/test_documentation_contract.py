@@ -83,7 +83,7 @@ def github_anchors(markdown: str) -> set[str]:
 
 class DocumentationContractTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.text = {path: path.read_text() for path in GUIDES}
+        self.text = {path: path.read_text(encoding="utf-8") for path in GUIDES}
 
     def test_anchor_documents_exist_and_are_discovered(self) -> None:
         for path in ANCHORS:
@@ -98,7 +98,7 @@ class DocumentationContractTest(unittest.TestCase):
         version = (ROOT / "VERSION").read_text(encoding="ascii").strip()
         versioning = self.text[ROOT / "docs/guides/VERSIONING.md"]
         immutable = self.text[ROOT / "docs/persistence/IMMUTABLE_MIGRATIONS.md"]
-        migration_runner = (ROOT / "migrations/run_migration.sh").read_text()
+        migration_runner = (ROOT / "migrations/run_migration.sh").read_text(encoding="utf-8")
         total_match = re.search(r"^TOTAL=(\d+)$", migration_runner, re.MULTILINE)
 
         self.assertIn(f"**Version: {version}**", readme)
@@ -141,13 +141,13 @@ class DocumentationContractTest(unittest.TestCase):
                     continue
                 fragment = unquote(fragment).lower()
                 if target.suffix.lower() == ".md":
-                    if fragment not in github_anchors(target.read_text()):
+                    if fragment not in github_anchors(target.read_text(encoding="utf-8")):
                         failures.append(
                             f"{source.relative_to(ROOT)} -> {raw_target} (missing anchor)"
                         )
                 elif target.suffix.lower() in {".html", ".svg"}:
                     if not re.search(rf'\bid=["\']{re.escape(fragment)}["\']',
-                                     target.read_text(), re.I):
+                                     target.read_text(encoding="utf-8"), re.I):
                         failures.append(
                             f"{source.relative_to(ROOT)} -> {raw_target} (missing id)"
                         )
@@ -185,14 +185,14 @@ class DocumentationContractTest(unittest.TestCase):
             self.assertTrue((ROOT / relative).is_file(), relative)
             self.assertIn(relative, runbook_and_testing, relative)
 
-        makefile = (ROOT / "Makefile").read_text()
+        makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
         for target in ("test-all", "test-db", "test-list"):
             self.assertRegex(makefile, rf"(?m)^{re.escape(target)}:")
 
     def test_configuration_names_match_runtime_surface(self) -> None:
         configuration = self.text[ROOT / "docs/operations/CONFIGURATION.md"]
-        example = (ROOT / ".env.example").read_text()
-        runtime = (SRC / "sql.c").read_text() + (SRC / "comm.c").read_text()
+        example = (ROOT / ".env.example").read_text(encoding="utf-8")
+        runtime = (SRC / "sql.c").read_text(encoding="utf-8") + (SRC / "comm.c").read_text(encoding="utf-8")
         required = (
             "ENVIRONMENT",
             "DB_HOST",
@@ -228,7 +228,7 @@ class DocumentationContractTest(unittest.TestCase):
             self.assertIn(token, configuration, token)
 
     def test_redis_example_enables_all_local_subsystems(self) -> None:
-        example = (ROOT / ".env.example").read_text()
+        example = (ROOT / ".env.example").read_text(encoding="utf-8")
         assignments = dict(
             match.groups()
             for match in re.finditer(
@@ -316,8 +316,8 @@ class DocumentationContractTest(unittest.TestCase):
 
     def test_named_authority_tables_exist_in_schema_sources(self) -> None:
         database = self.text[ROOT / "docs/reference/DATABASE.md"]
-        schema = (ROOT / "migrations/bootstrap_multithread_safe.sql").read_text()
-        immutable = (ROOT / "migrations/immutable/0001_lookup_dataset_state.sql").read_text()
+        schema = (ROOT / "migrations/bootstrap_multithread_safe.sql").read_text(encoding="utf-8")
+        immutable = (ROOT / "migrations/immutable/0001_lookup_dataset_state.sql").read_text(encoding="utf-8")
         required = (
             "critical_operation_inbox",
             "critical_outbox",
@@ -381,7 +381,7 @@ class DocumentationContractTest(unittest.TestCase):
             self.assertNotIn("dirty saves", text.lower())
             self.assertNotIn("persistence_item_events", text)
 
-        server = DIAGRAMS[0].read_text()
+        server = DIAGRAMS[0].read_text(encoding="utf-8")
         for token in (
             "Boot Compatibility Gate",
             "Consistent Player Load",
@@ -391,7 +391,7 @@ class DocumentationContractTest(unittest.TestCase):
             "Optional Redis",
         ):
             self.assertIn(token, server)
-        database = DIAGRAMS[1].read_text()
+        database = DIAGRAMS[1].read_text(encoding="utf-8")
         for token in (
             "Player Revision",
             "Critical Inbox/Outbox",

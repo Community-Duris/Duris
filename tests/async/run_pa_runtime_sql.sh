@@ -221,19 +221,25 @@ run_image() {
         password_env=MYSQL_ROOT_PASSWORD
         client=mysql
     fi
+    source "$ROOT/tests/async/_sql_fixture_network.sh"
+    sql_fixture_network
     export "$password_env=$PASSWORD"
     CONTAINER_ID="$(docker_bounded run --pull=never --cpus=2 --memory=2g -d --rm \
-        --name "$CONTAINER_NAME" --label duris.task=pa-runtime-sql --label "duris.run_id=$CONTAINER_NAME" -p 127.0.0.1::3306 -e "$password_env" "$image")"
+        --name "$CONTAINER_NAME" --label duris.task=pa-runtime-sql --label "duris.run_id=$CONTAINER_NAME" "${SQL_FIXTURE_NETWORK[@]}" -e "$password_env" "$image" "${SQL_FIXTURE_SERVER[@]}")"
     unset "$password_env"
     export MYSQL_PWD="$PASSWORD"
-    mapping="$(docker_bounded port "$CONTAINER_ID" 3306/tcp)"
+    if [[ -n "$SQL_FIXTURE_PRIVATE_PORT" ]]; then
+        mapping="$(sql_fixture_mapping "$CONTAINER_ID")"
+    else
+        mapping="$(docker_bounded port "$CONTAINER_ID" 3306/tcp)"
+    fi
     [[ "$mapping" =~ ^127\.0\.0\.1:([0-9]+)$ ]]
     DB_PORT="${BASH_REMATCH[1]}"
     ready=0
     deadline=$((SECONDS + 120))
     while ((SECONDS < deadline)); do
         if docker_probe exec -e MYSQL_PWD "$CONTAINER_ID" "$client" --protocol=tcp \
-            -h 127.0.0.1 -uroot -N -B -e 'SELECT 1' >/dev/null 2>&1; then
+            -h 127.0.0.1 -P"${SQL_FIXTURE_PRIVATE_PORT:-3306}" -uroot -N -B -e 'SELECT 1' >/dev/null 2>&1; then
             ready=1
             break
         fi
@@ -241,7 +247,7 @@ run_image() {
     done
     [[ "$ready" == 1 ]]
     version="$(docker_bounded exec -e MYSQL_PWD "$CONTAINER_ID" "$client" --protocol=tcp \
-        -h 127.0.0.1 -uroot -N -B -e 'SELECT VERSION()')"
+        -h 127.0.0.1 -P"${SQL_FIXTURE_PRIVATE_PORT:-3306}" -uroot -N -B -e 'SELECT VERSION()')"
     if [[ "$engine" == mariadb ]]; then
         [[ "$version" == *MariaDB* && "$version" == 10.11.* ]]
     else
@@ -253,9 +259,9 @@ run_image() {
     schema="pa_runtime_sql_test_$(python3 -c 'import secrets; print(secrets.token_hex(6))')"
     [[ "$schema" =~ ^pa_runtime_sql_test_[a-f0-9]{12}$ && ${#schema} -le 33 ]]
     docker_bounded exec -e MYSQL_PWD "$CONTAINER_ID" "$client" --protocol=tcp \
-        -h 127.0.0.1 -uroot -e "CREATE DATABASE \`$schema\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci" >/dev/null
+        -h 127.0.0.1 -P"${SQL_FIXTURE_PRIVATE_PORT:-3306}" -uroot -e "CREATE DATABASE \`$schema\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci" >/dev/null
     verify_schema() {
-        DB_HOST=127.0.0.1 DB_PORT=3306 DB_NAME="$schema" DB_USER=root DB_PASSWD="$PASSWORD" \
+        DB_HOST=127.0.0.1 DB_PORT="${SQL_FIXTURE_PRIVATE_PORT:-3306}" DB_NAME="$schema" DB_USER=root DB_PASSWD="$PASSWORD" \
             docker_bounded exec -i -e DB_HOST -e DB_PORT -e DB_NAME -e DB_USER -e DB_PASSWD \
             "$CONTAINER_ID" bash -s < migrations/immutable/0033_economic_sql_lifecycle_owner.sh
     }
@@ -276,7 +282,7 @@ run_image() {
         < migrations/immutable/0040_economic_sql_global_activation.sql
 
     db_host=127.0.0.1
-    if python3 -c 'import socket; socket.gethostbyname("host.docker.internal")' >/dev/null 2>&1; then
+    if [[ -z "$SQL_FIXTURE_PRIVATE_PORT" ]] && python3 -c 'import socket; socket.gethostbyname("host.docker.internal")' >/dev/null 2>&1; then
         db_host=host.docker.internal
     fi
     export DB_HOST="$db_host" DB_PORT DB_NAME="$schema" DB_USER=root DB_PASSWD="$PASSWORD"
@@ -290,7 +296,7 @@ run_image() {
     compile_bounded "$cxx" -std=c++20 -w -ffunction-sections -fdata-sections "${sanitizer_flags[@]}" \
         -Isrc "${mysql_cflags[@]}" -c src/sql/sql.c -o "$TEMP/sql.o"
     compile_bounded "$cxx" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread \
-        "${sanitizer_flags[@]}" -Isrc "${mysql_cflags[@]}" \
+        -ffunction-sections -fdata-sections "${sanitizer_flags[@]}" -Isrc "${mysql_cflags[@]}" \
         -Dsql_open_configured_connection=pa_runtime_sql_test_open_connection \
         -c src/sql/sql_economic_runtime.c -o "$TEMP/runtime-owner.o"
     compile_bounded "$cxx" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread \
@@ -302,9 +308,37 @@ run_image() {
     compile_bounded "$cxx" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread \
         "${sanitizer_flags[@]}" -Isrc "${mysql_cflags[@]}" \
         -c tests/async/pa_runtime_sql_harness.cpp -o "$TEMP/harness.o"
+    # Startup now recovers the actual accounting lifecycle and gameplay
+    # authority. Keep those owners linked instead of replacing them with stubs.
+    local -a runtime_sources=(
+        src/persistence/economic_sql_accounting_lifecycle_transaction.c
+        src/persistence/economic_sql_source_snapshot.c
+        src/economy/economic_sql_source_normalize.c
+        src/economy/economic_gameplay_authority.c
+        src/persistence/economic_sql_baseline_transaction.c
+        src/economy/economic_baseline_command.c
+        src/economy/economic_baseline_adapter.c
+        src/economy/economic_baseline_codec.c
+        src/economy/economic_accounting_intent.c
+        src/economy/economic_accounting_plan.c
+        src/economy/economic_accounting_types.c
+        src/economy/currency_command.c
+        src/persistence/critical_command.c
+        src/item/item_transfer_command.c
+        src/player/player_snapshot_codec.c
+    )
+    local -a runtime_objects=()
+    local source object
+    for source in "${runtime_sources[@]}"; do
+        object="$TEMP/$(basename "$source").o"
+        compile_bounded "$cxx" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread \
+            -ffunction-sections -fdata-sections "${sanitizer_flags[@]}" \
+            -Isrc "${mysql_cflags[@]}" -c "$source" -o "$object"
+        runtime_objects+=("$object")
+    done
     compile_bounded "$cxx" "${sanitizer_flags[@]}" -pthread -Wl,--gc-sections -no-pie \
         "$TEMP/harness.o" "$TEMP/runtime-owner.o" "$TEMP/lifecycle-guard.o" \
-        "$TEMP/observability.o" "$TEMP/sql.o" "${mysql_libs[@]}" \
+        "$TEMP/observability.o" "$TEMP/sql.o" "${runtime_objects[@]}" "${mysql_libs[@]}" \
         -lcrypto -lz -o "$TEMP/pa-runtime-sql"
     ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 \
     UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \

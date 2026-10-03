@@ -590,10 +590,12 @@ static void death_recovery_report(P_char ch, persistence_severity severity, cons
 	const uint64_t elapsed = now >= ch->only.pc->death_recovery_since_usec ?
 					 (now - ch->only.pc->death_recovery_since_usec) / 1000000 :
 					 0;
+	char summary[640] = {};
+	snprintf(summary, sizeof(summary), "correlation=%s count=%llu elapsed_sec=%llu %s",
+		 correlation, (unsigned long long)ch->only.pc->death_recovery_reports,
+		 (unsigned long long)elapsed, details);
 	persistence_report(severity, AVATAR, "player_save", "death", "none", "none", action,
-			   "correlation=%s count=%llu elapsed_sec=%llu %s", correlation,
-			   (unsigned long long)ch->only.pc->death_recovery_reports,
-			   (unsigned long long)elapsed, details);
+			   death_recovery_literal_detail(summary));
 }
 
 namespace
