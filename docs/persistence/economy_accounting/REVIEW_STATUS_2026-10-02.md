@@ -1576,3 +1576,76 @@ Local ignored evidence SHA-256:
 The separate committed-fence acknowledgement RED remains open. These focused
 results do not complete full R1-R8, captured-generation, full-world or current
 broad qualification. coverage_complete=False; release BLOCKED.
+
+## Committed-fence acknowledgement repair and open alias defect
+
+Published prefix: 0be1cdf30aa604aec12df5e32b4aa5ab552de330. The acknowledgement
+repair distinguishes pre-publication refusal, uncertain journal rename/directory
+sync, and a durable journal awaiting apply. Pending publication keeps the live
+fence and accurate recovery feedback. Exact retry recovers before preparing
+account/membership authority, reads the recovered fence revision and does not
+republish it. Ordinary account-save callers and the original four-argument
+store, transaction and private storage interfaces remain compatible through
+separate outcome-reporting entry points. The superseded a2 candidate changed a
+function-pointer signature; the current candidate preserves that interface.
+
+Native tree: dcd6dbd38cb14be09e1ded02625762a45aa280f4. All 1,220 tracked native
+files match the built candidate. Strict SQL, flatfile and pfile builds pass.
+SQL executable SHA-256:
+8839789e46b44d41a519d29f0ea536de7da21c151584369ffe1e4d515137c76e.
+Flatfile executable SHA-256:
+204072ce4c69284a6bc2d51729a7dff811326fd2f15504664503603904dc6d48.
+QA: /opt/duris-accounting-flat-fence-ack-review/source.
+
+Actual adapter ASan/UBSan cases pass unchanged pre-commit refusal, durable and
+uncertain publication, after-image interruptions, persistent native apply
+refusal, repair, exactly one acknowledged revision and fresh load. The existing
+baseline owner passes. Both real SQL engine deletion journeys pass. All ten
+native recovery cases pass (458.453 seconds), including both SQL engines' full
+restore and isolated service boot, flatfile pending replay, WAL recovery,
+interrupted transactions, private foreign-owned checkout and corrupt catalogs.
+Normal 14-fixture validation, matrix --check, 54 writer contracts, site contracts
+and full formatting contract pass.
+
+The published binary reproduces false pre-commit acknowledgement after a real
+journal-directory sync failure. The revised native binary passes pending
+recovery feedback, refusal to cancel, persistent apply refusal, SIGKILL while
+the journal is pending, cold recovery, fenced login and exactly-once account
+credential/player deletion for BOTH uncertain and durable publication faults.
+These private fixtures inject faults through a test-only preload library; no
+production fault switch was added. Both complete journeys nevertheless FAIL
+because the zone-story quest alias survives whole-account deletion. Account
+deletion bypasses the post-character runtime alias-erasure call in core/files.c.
+This is a separate R8 defect; its assertion remains enabled. The ordinary
+character-deletion/refusal/repair/alias-erasure/cold-restart journey passes.
+The complete account-erasure and second-restart gates are not qualified.
+
+Existing bank, shop and UID owners pass. Bank includes 610 allocation failures,
+exact replay, concurrency, source/tamper and crash checks. The bank fixture's
+unavailable default g++-12 is selected through its existing CXX setting as the
+supported native g++; no deadline or source policy changed. Both deletion menu
+and safety source contracts pass. New remote commits through 16ce1f2fb add
+character indexing, portable copyover and network readiness; combined-source
+qualification after integration remains pending. Earlier hashes remain pinned
+to the qualified dcd tree and must not be relabeled as the integrated binary.
+
+The integrated make test-all run is pinned to published 0be1cdf30 and native
+35a497a2fa1fcd3904fe298c3c49f5de241cab02. It discovers 848 automatic tests and
+is still running. Its initial server build compiled fresh; later acknowledgement
+changes are outside that run. No broad result is inferred from progress.
+Full R1-R8, full-world, captured-generation and measured workload gates remain
+open. coverage_complete=False; release BLOCKED. The declined inactive spell
+path and production activation/data boundaries remain unchanged.
+
+Local ignored evidence SHA-256:
+
+- tmp/flat-fence-ack-compatible-build.local.log: 50843d59d2bbfa4667a7531434f98e7639fe05dc4f70816815d041152172f7f5
+- tmp/flat-fence-ack-compatible-pin.local.log: 22f865b7537ae1fec58c62b391a166e44db7157a828fd5f73e5b29157bb187e9
+- tmp/flat-fence-ack-legacy-owners.local.log: a5b35cd936fba8f6c09bb13eccc96e340fe6b65b19d27114ae503eaf66286bb3
+- tmp/flat-fence-ack-compatible-sql-journeys.local.log: 6c03c25129a06215380a803154f18af5cc07f88bf5923cbc2c3685dfe80bea9a
+- tmp/flat-fence-ack-compatible-recovery.local.log: cfe51faffb8062fd5875261edf89ffe5eb65e5136ecf23b505ecb31afd6b03d0
+- tmp/flat-fence-ack-compatible-menu-journeys.local.log: f4f4b16da04f7799452a3a156e4b484864d19cf6159429bf53377dc71972d7e1
+- tmp/flat-fence-ack-durable-and-character.local.log: 38d8065b00fcc925677f06c9bb5ec63c59f8d34ef7dae2dbb4014a05caaea1fa
+- tmp/flat-fence-ack-compatible-formatter.local.log: f2efc2eb69dda6ceacbfd2534a79f615c4760f829f5ca75ab436cab8f61cb646
+- tmp/flat-fence-ack-compatible-writer-checks.local.log: f5d08e4d59548ed5729d316b7b054052762293c2e7441d9e9ef04062259807c4
+- tmp/flat-fence-ack-compatible-existing-owners.local.log: 4687d4d94fc90c3bc04913690aa527907a53eb96e5d306701aa0f3af5764ae67
