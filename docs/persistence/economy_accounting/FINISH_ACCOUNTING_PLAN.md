@@ -10,6 +10,47 @@ The damaged production database requires the separate
 [ownership repair and accounting opening procedure](../../operations/PRODUCTION_RELEASE_AND_OWNERSHIP_REPAIR.md)
 before any production cutover.
 
+## Current issue tracking (2026-10-03)
+
+[#490](https://github.com/Community-Duris/Duris/issues/490) is the single
+remaining implementation and qualification tracker. It retains all R1-R8 and
+domain-plan acceptance, including the outstanding scope consolidated from
+#487, #488, #489, #568 and #661. Those issue closures are supersession records;
+they do not complete or remove the remaining requirements.
+
+| #490 section | Remaining acceptance owner |
+| --- | --- |
+| 1. Ordinary money and item routes | Native authority, sources, UID custody, publication/replay and executable writer coverage |
+| 2. Compound gameplay and recovery | Commerce, remaining crafts/enhancements, quest/spell rewards, death and corpse recovery |
+| 3. Initialization and sourced NPC issuance | Former #568 baseline/starter grants and #661 active-accounting vial source/decision/replay |
+| 4. Independent audit and reward projection | Former #487 reconciliation, protected bounded queries and canonical reward compatibility |
+| 5. Audited corrections | Former #488 preview/apply, authorization, expected-state guards and linked recovery evidence |
+| 6. Lifecycle, retention and verified restore | Former #489 deletion/reset, retained history, scoped exports and coherent restore |
+| 7. Baseline, activation and safe pause | Consistent openings, guarded admission, observation/enforcement and reversible pause |
+| 8. Integrated candidate and measured budgets | Current candidate, all supported backends, gameplay/fault matrix and declared workload budgets |
+
+[#664](https://github.com/Community-Duris/Duris/issues/664) remains separately
+open for historical quarantined-case reconciliation. Grant/save prevention and
+restricted stopped recovery tooling are delivered; historical case eligibility
+and authorized resolution require retained private evidence. Technical feature
+completion does not establish historical recovery or production reopening.
+
+[#551](https://github.com/Community-Duris/Duris/issues/551) is completed through
+PR #693. Preserve the scoped active-accounting poison, Encrust and Harvester
+[qualification evidence](ALCHEMY_ACTIVE_RECOVERY_2026-10-03.md). Older dated
+statements about those routes being unfinished remain historical, not new work.
+
+SQL is the first delivery target; MySQL, MariaDB and flatfile remain required
+for full completion. Technical acceptance uses disposable databases and a
+personal local server. Production repair, opening, migration, deployment and
+restitution retain their separate evidence and authorization requirements.
+Historical phase IDs in writer metadata continue to identify requirement slices;
+their closed state is not evidence of qualified coverage. Link focused PRs and
+current proof to the appropriate #490 section, preserving file-owner handoffs,
+backend limitations and the tested revision before checking off acceptance.
+
+## Current implementation and qualification
+
 Current integration and native qualification are recorded in the
 [October 3 review status](REVIEW_STATUS_2026-10-03.md), with earlier results in the
 [October 2 review status](REVIEW_STATUS_2026-10-02.md) and
