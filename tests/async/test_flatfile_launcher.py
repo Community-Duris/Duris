@@ -41,6 +41,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-launcher-") as temporary
     scripts.mkdir()
     script = scripts / "cycle_mud.sh"
     shutil.copy2(SOURCE, script)
+    shutil.copy2(ROOT / "scripts/game_loop_watchdog.py", scripts / "game_loop_watchdog.py")
     shutil.copy2(ROOT / "scripts/backup_pfiles.sh", scripts / "backup_pfiles.sh")
 
     shutil.copy2(ROOT / "scripts/persistence_backup.py", scripts / "persistence_backup.py")
