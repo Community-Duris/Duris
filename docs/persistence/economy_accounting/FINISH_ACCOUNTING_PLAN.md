@@ -105,6 +105,19 @@ the same gate before its transaction; that change has build/source-order proof,
 not whole-account runtime qualification. Account-menu pre-fence admission,
 typed erasure and full R1-R8 qualification remain open. See the October 2 status.
 
+SQL account confirmation now acquires native admission before the irreversible
+deletion fence, retains the lease through that write, then releases it before
+worker-save draining. An unavailable lifecycle table reproduced permanent
+fencing before backend refusal on both real SQL engines. Both engines now pass
+unfenced refusal, unchanged character/mapping/items, playable reconnect/save,
+and the subsequent character-deletion fault/retry/cold-restart journey.
+ASan/UBSan confirmation-owner tests cover unavailable authority, outer
+transaction, fence-write failure, retained fenced retry/cancel and successful
+publication. Both strict server profiles and pfile pass; all ten native recovery
+cases pass in 275.327 seconds at native source `30d8b4b4...`. Flatfile's existing
+inactive deletion journey passes, but its pre-fence admission remains open.
+Whole-account typed erasure/runtime cleanup and full R1-R8 gates remain open.
+
 The later frozen `79540e65d` broad run also finished: 826 passed, 11 skipped
 and two stale source-contract assertions failed in 6,127.39 seconds. NPC cash
 assignments still match the classified registry; their expected locations in

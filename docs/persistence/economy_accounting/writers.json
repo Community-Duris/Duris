@@ -36,22 +36,22 @@
       "sites": [
         [
           "src/account/account.c",
-          1919,
+          1922,
           "item_publication"
         ],
         [
           "src/account/account.c",
-          1920,
+          1923,
           "item_lifecycle"
         ],
         [
           "src/account/account.c",
-          1928,
+          1931,
           "item_publication"
         ],
         [
           "src/account/account.c",
-          1929,
+          1932,
           "item_lifecycle"
         ]
       ],
@@ -21717,7 +21717,7 @@
       "coverage": "legacy",
       "classification": "Account and character authorities removal.",
       "authority_boundary": "SQL transaction, nested transaction refused; full statement census pending",
-      "current_support": "Whole-account SQL cleanup now acquires native legacy admission before BEGIN and retains it through commit/rollback. Strict production builds and source-order contracts pass. Whole-account runtime refusal, account-menu pre-fence admission, typed erasure, full statement census and complete accounting qualification remain open; character-deletion journeys do not certify whole-account deletion.",
+      "current_support": "SQL confirmation acquires native admission before writing a new irreversible account fence and retains it through that write, releasing before worker-save draining. Native schema-read-error refusal leaves the account unfenced and its character playable on both real inactive SQL server journeys. The actual confirmation-owner ASan/UBSan harness passes admission/transaction/write failure, retained fenced retry/cancel and publication. Whole-account cleanup separately acquires admission pre-BEGIN, with source/build proof only. Flatfile pre-fence admission, whole-account runtime cleanup, typed erasure, full statement census and complete accounting qualification remain open.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -21736,7 +21736,9 @@
       "sites": [],
       "evidence": [],
       "refusal_source_evidence": [
-        "src/sql/sql_player.c:sql_delete_account acquires economic_sql_currency_writer_guard before BEGIN, account row locks and cleanup; tests/async/test_account_deletion_contract.py checks source ordering only."
+        "src/sql/sql_player.c:sql_delete_account acquires economic_sql_currency_writer_guard before BEGIN, account row locks and cleanup; tests/async/test_account_deletion_contract.py checks source ordering only.",
+        "src/account/account.c:verify_delete_account acquires economic_sql_currency_writer_guard before a new deletion fence, holds it through write_account, then releases before worker drains and backend admission.",
+        "tests/async/test_account_delete_admission_runtime.py (actual production confirmation body with injected authority failures, ASan/UBSan); tests/async/run_mysql_deletion_journey.py (both inactive real SQL engines, native missing-lifecycle-table refusal before new account fence)."
       ]
     },
     {
@@ -45872,25 +45874,25 @@
   "census": [
     {
       "path": "src/account/account.c",
-      "line": 1920,
+      "line": 1923,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/account/account.c",
-      "line": 1929,
+      "line": 1932,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/account/account.c",
-      "line": 1919,
+      "line": 1922,
       "family": "item_publication",
       "excerpt": "P_obj obj = unequip_char(ch, i);"
     },
     {
       "path": "src/account/account.c",
-      "line": 1928,
+      "line": 1931,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj);"
     },

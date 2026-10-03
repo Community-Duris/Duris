@@ -1229,3 +1229,76 @@ After refresh, all 54 writer-contract tests pass (52 matrix tests plus two route
 - tmp/sql-delete-writer-checks.local.log: a7800d0f6d6e0c690809912bbbd35c859fb654363d11e32f2b8c74753a0a238e
 - tmp/sql-delete-writer-checks-reanchored.local.log: 9e34262bda18c10c5f86fdb122abeb14ca43ac444acd32de1d55250ea58d6dce
 - tmp/deletion-accounting-admission-sql-green-final.local.log: 0f05d6deb9a0683e308785d97ebce59a5efb55808e85583e337478dfab0dcb10
+
+## SQL account confirmation before the durable deletion fence
+
+On both actual inactive SQL server profiles, confirming whole-account deletion
+while lifecycle metadata was unavailable wrote blocked=2 before backend refusal.
+The character/item rows survived, but the account was permanently fenced and
+normal login could not remain usable. The production confirmation body also
+reproduced fence writing without held native admission in a sanitizer fixture.
+The first local runtime dispatch lacked the configured linker wrapper; its
+subsequent native RED is retained separately. The first real RED driver could
+not find rg in the controlled WSL PATH; the available fallback confirmed the
+expected defect on both fresh owned engines.
+
+New SQL confirmation acquires the existing native writer lease before changing
+the in-memory account flag or invoking write_account. Outer transactions and
+native admission failure return an accurate no-fence refusal and usable account
+menu. The lease spans the durable fence write and ends before worker-save drains;
+physical account cleanup establishes its own previously repaired admission.
+Already-fenced requests retain their existing irreversible retry/cancel policy.
+This does not remove or roll back a previously accepted deletion fence.
+
+ASan/UBSan execution of the actual SQL confirmation owner passes unavailable
+admission, outer transaction refusal, failed fence-write restoration, no session
+closing/runtime cleanup on early refusal, lease release before worker draining,
+already-fenced retry/cancel and exactly-once successful publication. The real
+canonical 53-migration journey passes on MySQL and MariaDB: unavailable native
+lifecycle metadata leaves the account flag, character, mapping and original
+item rows unchanged; metadata repair permits normal login/inventory/save;
+existing character admission/soft-delete/late-cleanup faults and deletion once/
+usable-account cold restart still pass. This is native read-error refusal on
+inactive synthetic accounts, not active-epoch or whole-account erasure proof.
+The flatfile inactive deletion journey also passes, without certifying its
+still-open pre-fence admission.
+
+The first strict SQL build caught missing explicit SQL session/transaction
+headers in account.c; they are now included. Both strict production server
+profiles and the offline pfile build pass. All ten native recovery/restore cases
+pass in 275.327 seconds with both SQL engines, exact legacy replay and isolated
+service boot. Normal 14-fixture validation, matrix --check, all 54 writer-contract
+tests, the standalone writer-site check and deletion source contracts pass.
+
+Native source tree: 30d8b4b453e956455e77773c58201d98fce93954.
+SQL binary SHA-256: 9eca90409074ace4ade5387941e628c4968b65809f67644d772e539b534f7214.
+Flatfile binary SHA-256: 5f7356d2d6c1ad9378e3a3ddef42db8180b3a24c9a4ff73bd71616da0d8057d2.
+QA: /opt/duris-accounting-account-fence-build-review/source.
+
+Local ignored evidence SHA-256:
+
+- tmp/account-fence-admission-runtime-red.local.log: 121b70ad53634568d31591ce5ff29f75132c5cac36ba2a1b63f5ce8eaf0f93ef
+- tmp/account-fence-admission-runtime-red-native.local.log: 42be6ca13cd3cbcf62862d84f800f2258f2fc74bb405a17797fb41b2fb6a9a3e
+- tmp/account-fence-admission-runtime-green.local.log: aa9a3a0c0153ca71e0df4c66f946ae2ac8c53a8e867b85a5a55f077de248fbb9
+- tmp/account-fence-admission-red.local.log: 29b7cf2a146b5fe04010837d382ce9b7b6ad99c37eb334210a9d007b44489082
+- tmp/account-fence-admission-red-native.local.log: 097b2f8712b10304bb6049f78fb1399edd51acbd04603ab9b82664305411e1ef
+- tmp/account-fence-build-checks.local.log: d27a0cb12485a08e4b26c8ea1d566416f9836c9a31e630be7f5288185749def0
+- tmp/account-fence-build-retry.local.log: 2d41835b1252e9b3dbdc2b7f12164a7e960d41d4b9e59c318418599c5ac751f2
+- tmp/account-fence-current-journeys.local.log: 6c03c25129a06215380a803154f18af5cc07f88bf5923cbc2c3685dfe80bea9a
+- tmp/account-fence-current-flatfile-journey.local.log: 8c854b3ad1417d59b836a42fd81eb1ae4637112ca12792be7df502e591f325f4
+- tmp/account-fence-native-recovery.local.log: 89dfb8890fa0d3ddd682b862518b8b4ef9ab9928a109315f4a4ae60c99522c98
+- tmp/account-fence-source-contracts.local.log: 649de28fc9aaa64fbc7eea93b7831b90ae6487e142bd986216a5496a63855a66
+- tmp/account-fence-writer-checks.local.log: d72889b2fd73969d39278c5de6de9908940427b5a9c2a2ec2ee321653f1e08a0
+
+The frozen 88d3b364c broad run hit a 180-second native inspector compilation
+timeout before reaching its full-world journey. A separate unchanged-source
+native inspector build passes in 98.804 seconds; this is consistent with
+resource contention but does not establish the cause or replace the failed
+full test. No timeout was increased or failure waived. That broad run remains
+in progress, is frozen at its original source, and contains none of the later
+repair milestones. Current-head broad, captured full-world/rollback generation,
+complete native source and measured workload gates remain open.
+coverage_complete=False; release BLOCKED; all full R1-R8 gates remain open.
+Flatfile pre-fence admission and whole-account typed erasure/cleanup are next
+lifecycle boundaries. The captured-generation path remains pending. No
+production activation/data or declined inactive spell-path changes occurred.

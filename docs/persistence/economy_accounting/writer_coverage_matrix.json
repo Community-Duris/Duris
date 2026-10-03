@@ -117,7 +117,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1907
+          1910
         ],
         "file": "src/account/account.c",
         "function": "cleanup_temp_char",
@@ -24697,7 +24697,9 @@
       },
       "reason": "lifecycle_retirement",
       "refusal_source_evidence": [
-        "src/sql/sql_player.c:sql_delete_account acquires economic_sql_currency_writer_guard before BEGIN, account row locks and cleanup; tests/async/test_account_deletion_contract.py checks source ordering only."
+        "src/sql/sql_player.c:sql_delete_account acquires economic_sql_currency_writer_guard before BEGIN, account row locks and cleanup; tests/async/test_account_deletion_contract.py checks source ordering only.",
+        "src/account/account.c:verify_delete_account acquires economic_sql_currency_writer_guard before a new deletion fence, holds it through write_account, then releases before worker drains and backend admission.",
+        "tests/async/test_account_delete_admission_runtime.py (actual production confirmation body with injected authority failures, ASan/UBSan); tests/async/run_mysql_deletion_journey.py (both inactive real SQL engines, native missing-lifecycle-table refusal before new account fence)."
       ],
       "source": {
         "anchor_status": "function_definition_verified",

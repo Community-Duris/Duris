@@ -62,6 +62,7 @@ assert "strcasecmp(arg, d->account->acct_name)" not in confirm_delete
 
 # The durable, non-cancellable fence precedes disconnection, drains, and backend mutation.
 fence = confirm_delete.index("d->account->acct_blocked = ACCOUNT_BLOCK_DELETION")
+assert confirm_delete.index("economic_sql_currency_writer_guard::acquire") < fence
 fence_write = confirm_delete.index("write_account(d->account)", fence)
 disconnect = confirm_delete.index("close_other_account_sessions(d)")
 backend = confirm_delete.index("sql_delete_account(")
