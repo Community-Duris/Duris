@@ -25,6 +25,7 @@ def summarize(decoded: dict, owners: list[dict], *, loss_epoch: int = 0) -> dict
     current = {row["item_uid"]: row for row in owners}
     counts = dict.fromkeys(("durable", "restored", "quarantine", "unresolved", "safely_retired"), 0)
     items = []
+    verification_pending = 0
     for uid in sorted(evidence | current.keys()):
         row = current.get(uid, {})
         custody = "unresolved"
@@ -38,30 +39,40 @@ def summarize(decoded: dict, owners: list[dict], *, loss_epoch: int = 0) -> dict
             # custody. Restitution must also retain its delivery relationship.
             if row.get("delivery_matches"):
                 custody, owner = "restored", "none"
+                if not row.get("delivery_verified"):
+                    owner = "restitution_verification"
+                    verification_pending += 1
             else:
                 custody, owner = "durable", "none"
         counts[custody] += 1
         items.append({"item_uid": uid, "captured": uid in captured,
                       "custody": custody, "recovery_owner": owner,
                       "authority": row or None})
-    required = counts["quarantine"] + counts["unresolved"]
+    required = counts["quarantine"] + counts["unresolved"] + verification_pending
     terminal = ("unresolved" if counts["unresolved"] else
                 "quarantine" if counts["quarantine"] else
                 "restored" if counts["restored"] else
                 "durable" if counts["durable"] else "safely_retired")
+    if verification_pending:
+        terminal = "unresolved"
     # Missing/inconsistent immutable evidence cannot be certified as an empty retirement.
     if death.get("unresolved_operations") or any(death.get("wallet_before", [])):
         required += 1
         terminal = "unresolved"
+    verification_only = verification_pending and not (
+        counts["unresolved"] or death.get("unresolved_operations") or
+        any(death.get("wallet_before", [])))
     return {"pid": pid, "death_revision": revision,
             "operation_id_hex": death["operation_id_hex"],
             "correlation": correlation(pid, death["corpse"][0]["values"][6]),
             "death_disposition": "completed", "terminal_custody": terminal,
             "exact_delivery_verification": "use_protected_restitution_verify",
+            "verification_requires_review": bool(verification_pending),
             "wallet_requires_review": any(death.get("wallet_before", [])),
             "unresolved_operations": death.get("unresolved_operations", []),
             "recovery_required": bool(required),
-            "recovery_owner": "custody_reconciliation" if terminal == "unresolved" else
+            "recovery_owner": "restitution_verification" if verification_only else
+                              "custody_reconciliation" if terminal == "unresolved" else
                               "reviewed_restitution" if terminal == "quarantine" else "none",
             "scope": "batch", "item_uid": 0, "captured_count": len(captured),
             "authority_count": len(current), "unmatched_count": len(current.keys() - captured),
@@ -98,19 +109,20 @@ def sql_owners(api, db, pid: int, decoded: dict) -> list[dict]:
         "own.item_revision>=d.delivered_item_revision AND receipt.recipient_pid=d.recipient_pid AND "
         "receipt.source_pid=" + str(pid) + " AND receipt.death_revision=" + str(decoded["revision"]) + " AND "
         "own.owner_type=1 AND own.owner_id=d.recipient_pid),"
-        "COALESCE(HEX(d.restitution_id),'') FROM item_current_owner own "
+        "COALESCE(receipt.status=3,0),COALESCE(HEX(d.restitution_id),'') FROM item_current_owner own "
         "LEFT JOIN player_death_restitution_delivery d ON d.item_uid=own.item_uid "
         "LEFT JOIN player_death_restitution_receipt receipt ON receipt.restitution_id=d.restitution_id "
         "WHERE " + selected + " ORDER BY own.item_uid"
     )
     fields = ("item_uid", "root_item_uid", "parent_item_uid", "owner_type", "owner_id",
-              "owner_context_id", "item_revision", "vnum", "state", "materialized", "delivery_matches")
+              "owner_context_id", "item_revision", "vnum", "state", "materialized", "delivery_matches",
+              "delivery_verified")
     result = []
     for row in rows:
-        if len(row) != 12:
+        if len(row) != 13:
             raise api.ToolError("recovery authority row has an unexpected shape")
         item = {field: api.row_int(row, i, field, 0) for i, field in enumerate(fields)}
-        item["restitution_id_hex"] = row[11].lower() or None
+        item["restitution_id_hex"] = row[12].lower() or None
         result.append(item)
     return result
 
