@@ -1375,7 +1375,6 @@ std::string service::render_daily_score(uint32_t season_id, uint32_t pid, int le
 
 std::string service::serialize_state(std::string *error) const
 {
-	(void)error;
 	std::ostringstream output;
 	output << "ZSQF|1\n";
 	for (const auto &[id, stored] : transactions_)
@@ -1433,6 +1432,12 @@ std::string service::serialize_state(std::string *error) const
 		if (!deleted_pid)
 			output << "E|" << hex_encode(id) << "|"
 			       << hex_encode(serialize_observation(observation)) << "\n";
+	}
+	if (!output.good())
+	{
+		if (error)
+			*error = "zone-story state serialization failed";
+		return {};
 	}
 	return output.str();
 }

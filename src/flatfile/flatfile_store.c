@@ -85,6 +85,15 @@ bool read_all(int fd, uint8_t *data, size_t size)
 bool flatfile_atomic_write(const std::string &directory, const std::string &name,
 			   const std::vector<uint8_t> &bytes, std::string *error)
 {
+	return flatfile_atomic_write_with_publication(directory, name, bytes, error, nullptr);
+}
+
+bool flatfile_atomic_write_with_publication(const std::string &directory, const std::string &name,
+					    const std::vector<uint8_t> &bytes, std::string *error,
+					    bool *published)
+{
+	if (published)
+		*published = false;
 	if (!valid_name(name))
 	{
 		if (error)
@@ -149,6 +158,8 @@ bool flatfile_atomic_write(const std::string &directory, const std::string &name
 		close(directory_fd);
 		return false;
 	}
+	if (published)
+		*published = true;
 	if (fsync(directory_fd) < 0)
 	{
 		set_error(error, "sync authority directory");
