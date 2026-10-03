@@ -39,7 +39,7 @@ tombstone, one ownership-ledger entry and no reappearance after restart/replay.
 Active-accounting food acceptance and interrupted effect publication remain outside
 this qualification.
 
-The inventory now contains 890 Python entries: 865 automatic and 25 manual.
+The inventory now contains 891 Python entries: 866 automatic and 25 manual.
 The 25 manual entries have explicit providers in the integration matrix. Automatic entries
 with optional SQL checks remain in core, and their skips remain visible.
 
