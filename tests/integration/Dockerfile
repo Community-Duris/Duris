@@ -6,7 +6,7 @@ FROM ubuntu:24.04@sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae
 COPY --from=mysql_restore /usr/sbin/mysqld /opt/mysql8/sbin/mysqld
 COPY --from=mysql_restore /usr/lib64/mysql/private /opt/mysql8/lib64/mysql/private
 COPY --from=mysql_restore /usr/lib64/mysql/plugin /opt/mysql8/lib/plugin
-COPY --from=mysql_restore /usr/share/mysql-8.0 /opt/mysql8/share
+COPY --from=mysql_restore /usr/share/mysql-8.0 /opt/mysql8/share/mysql-8.0
 COPY --from=mysql_restore /lib64/libaio.so.1 /usr/local/lib/libaio.so.1
 
 # Compiler and recovery dependencies have the same maintained owner as local
