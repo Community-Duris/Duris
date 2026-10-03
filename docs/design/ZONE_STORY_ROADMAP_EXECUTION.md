@@ -1083,10 +1083,10 @@ have been reviewed: 495 distinct contracts across 82 recipients and 466 M/MA
 blocks, including 296 nonambient addressed families. The conservative topic
 inventory retains 291; five apostrophe-bearing families still have usable
 aliases. All fifteen shops, 425 mobiles, 952 rooms and 602 objects were
-reviewed, including every local switch/teleport prototype. All 352 D resets
-are reviewed. The other 1,469 of 1,821 reset families still need complete
-review, along with selected source/handler paths. The draft lists exact ranges
-and remaining boundaries.
+reviewed, including every local switch/teleport prototype. All 3,596 reset
+commands/1,821 families are now reviewed, completing the other 1,469 non-D
+families. Selected foreign supply and shared-handler qualification remain.
+The draft lists exact ranges and remaining boundaries.
 
 The proposed progression separates kitchens/royal dishes, collecting and
 professional commendations, army/brewery proofs, arcanums/random attribute
@@ -1124,6 +1124,19 @@ candidates. Copied Mundorno sabaton prose and identified names are separate
 display/content decisions. No world data or accounting implementation was
 changed by this audit checkpoint.
 
+The reset continuation confirms declarations for all 82 native recipients,
+while separating rare forced/initial-only M rows from normal chance-100
+admission. Mishanen's four chance-2 flower entries, two chance-10 books and
+nested lion/signets/letters are optional sources. Prepared collecting tokens
+compete with assembly from fragments. P placement selects a live container
+by kind, so a durable adapter must freeze its actual parent UID and generation.
+Mobile 93183 at tavern 83761 and object 57744 on shopkeeper 83359 have no
+prototype in the loaded data or other prototype files; the loader disables
+their three stale declarations. Record targeted builder-selected repairs,
+without fabricating an encounter or breaking the rest of the location's story.
+Blank paper 5 remains a real administrative prototype. Custom-source review
+still precedes a final classification of tinker's-token/prison-key orphans.
+
 New plan detail covers exact any-of recipe readiness instead of summed mixed
 materials, bounded district/family presentation, NPC-held staged smelting and
 fee publication, random scroll and timed osquip lineage, interior/outer-city
@@ -1145,7 +1158,7 @@ Validation passed: the production-catalog coverage regression; exact native
 block/recipient/paid-offering and reviewed-range metrics; source digest,
 selected recipe shapes, current mechanism commands, shrine reciprocal/D edges,
 invalid wall target, key break values, typed money rewards and slot flags,
-selected return edges; whitespace; and local links across the five changed
-documents. All 2,668 native definitions and all 48 maps remain unchanged;
-328 local links resolve.
+selected return edges, complete reset-family coverage and selected sources;
+whitespace; and local links across the five changed documents. All 2,668 native
+definitions and all 48 maps remain unchanged; 331 local links resolve.
 This addition changes documentation only; no C++ build was required.

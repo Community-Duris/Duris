@@ -289,8 +289,8 @@ Implement and qualify the remaining additions in this order:
 
 Alatorin's [interim district review](zone-stories/ALATORIN.md) adds concrete
 requirements to these steps. Its 495 contracts include 93 paid offerings;
-all 952 rooms and 602 objects have now been reviewed. Publication awaits the
-remaining non-D reset families and source/handler qualification.
+all 952 rooms, 602 objects and 1,821 reset families have now been reviewed.
+Publication awaits selected foreign supply and shared-handler qualification.
 
 - **Exact recipe alternatives.** Current `carried_item` checks sum all listed
   kinds. That is suitable when mixed kinds really qualify, but not for two
@@ -365,6 +365,19 @@ remaining non-D reset families and source/handler qualification.
   arms flag and silver-sleeve head flag need targeted builder-selected slot
   repairs. Current names, identified names and static clue pages affect guidance;
   they do not change native receipt identity or establish historical progress.
+- **Actual reset policy and selected parent identity.** All 3,596 reset rows
+  are reviewed, including every non-D family. Brek, the prisoner, Locke, Baron
+  Helgrim and Debmawr have only non-100 M declarations; ordinary M/O admission
+  requires chance 100 unless forced/initial population is requested. Do not
+  describe every raw percentage as a new normal-reset roll. Mishanen's four
+  separate chance-2 flower entries and the two chance-10 books need source and
+  appearance guidance. Nested lion/signets/letters and preloaded collecting
+  tokens offer alternative preparation, without personal sourcing proof.
+  P placement resolves a live container by kind; durable issuance must freeze
+  the actual parent UID, row/generation, cap decision and random result. Two
+  tavern M declarations for absent 93183 and a merchant G for absent 57744 need
+  builder-selected stale-reference repairs. Keep loaded administrative paper
+  distinct from those absent prototypes, and qualify custom token/key orphans.
 
 Client updates should follow committed events and live inventory/equipment
 changes; reconnect sends a fresh projection. Unsupported facts must be marked
@@ -565,6 +578,12 @@ store failure, reconnect, replay, and cold restart.
   encounter exits, vine `grab` travel and descent without a direct reverse edge.
   Separate a traversable route, a current available NPC and accepted personal
   arrival/rescue history. Signs and static clue pages do not create predicates.
+- [ ] Qualify actual reset chance and parent policy before advertising sources:
+  separate M/O normal versus forced/initial population, G/E/P/F/R rules, caps,
+  artifact chance modifiers and live source availability. Freeze the exact row,
+  generation, random result and container/carrier UID/slot in durable issuance.
+  Alatorin's rare recipients, books/flowers, nested proofs and stale 93183/57744
+  references provide bounded cases; resolve builder intent without guessed IDs.
 - [ ] Project current access separately from previous receipt history: supplied
   keys, already-open doors, equivalent routes and access provided by another
   actor must not demand replay of an unrelated recipe. A live key count alone
@@ -799,14 +818,15 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
 - [ ] Complete comprehensive source dossiers for the other 195 roadmap areas.
-- [ ] Finish Alatorin's remaining reset/source/handler audit, then publish
+- [ ] Finish Alatorin's selected foreign supply/shared-handler qualification, then publish
   its district journal and evidence index. The interim draft covers all native
   contracts/topics and fifteen shops, with 93 paid-offering and custom-service
   dependencies; it is not a completed twenty-sixth dossier.
-  All 952 rooms, 425 mobiles, 602 objects, fifteen shops and 352 D resets are
-  now reviewed. Complete the other 1,469 reset families and selected source
+  All 952 rooms, 425 mobiles, 602 objects, fifteen shops and 1,821 reset
+  families are now reviewed. Complete selected foreign supply and shared-handler
   paths before comprehensive publication. Qualify two typed money-pile I
-  rewards and targeted slot/prose repairs alongside the access findings.
+  rewards, actual reset/parent policy, stale stock references and targeted
+  slot/prose repairs alongside the access findings.
 - [ ] Add typed native reward qualification before journal availability claims:
   distinguish ordinary I items, I money piles and explicit C wallet rewards.
   Preflight unsupported outputs before offering consumption; retain committed

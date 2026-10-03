@@ -2,10 +2,9 @@
 
 Priority 26, source area `alatorin`, canonical zone 831. **This is an interim
 source review, not a comprehensive dossier or a deployed journal.** All native
-Q/M blocks, all room/mobile/object prototypes and the shop file have been
-reviewed. The remaining reset families, shared handlers and foreign supply
-paths must be reviewed before publishing the sidecar and marking this zone
-complete.
+Q/M blocks, all room/mobile/object prototypes, the shop file and every reset
+family have been reviewed. Shared-handler qualification and selected foreign
+supply paths remain before publishing the sidecar and marking this zone complete.
 
 Player discovery, encounters, journals, achievements and new daily eligibility
 require active, ready economic accounting. Several prerequisites deliberately
@@ -28,8 +27,10 @@ adapter before it can be historical progress.
 
 The local files contain 952 rooms, 425 mobile prototypes, 602 object prototypes,
 3,596 reset commands and fifteen shops. Resets comprise 1,085 M, 856 E,
-511 G, 352 D, 342 O, 270 F, 164 P and sixteen R. Their complete review remains
-pending; raw inventory counts are not reviewed family coverage.
+511 G, 352 D, 342 O, 270 F, 164 P and sixteen R. All 1,821 reset families
+are reviewed, retaining exact parents, destinations/slots, caps, conditional
+flags, chance fields, duplicate counts and reserved fields. This is source
+coverage, not proof of live availability or accounting admission.
 
 Completed additional reads at this checkpoint:
 
@@ -55,13 +56,14 @@ Completed additional reads at this checkpoint:
   the `connectorzones` roc-cave connection, low-numbered blank paper in the
   loaded `limbo` file, and selected global stock declarations. Every boundary
   room listed below was read in full. This does not complete the source map of
-  those foreign areas or the local non-D reset families.
-- All 352 D reset commands, including their exact state and probability fields.
-  There are 1,821 reset families in the existing evidence grouping, with 352 D
-  families. The other 1,469 families still need a complete review; selected
-  O/G stock reads alone do not complete them. Shared switch dispatch, current
-  command IDs, door unlock and accepted key-destruction publication were also
-  reviewed for the access findings below.
+  those foreign areas.
+- All [3,596 reset commands](../../../areas/zon/alatorin.zon), grouped as
+  436 M, 352 D, 341 E, 311 G, 189 O, 123 P, 66 F and three R families.
+  The 1,469 non-D families complete the earlier D review. Every raw row has
+  three trailing reserved zero fields; the boot parser does not use those
+  fields as quest predicates. The loader and relevant probability helper were
+  read for the distinctions below. Shared switch dispatch, current command
+  IDs, door unlock and accepted key-destruction publication were also reviewed.
 
 The five literal local assignments are miner's helmet 83457, quarterstaff
 83605, wondrous ring 83698, ship yard 83786 and doctor 83414. The computed
@@ -145,6 +147,42 @@ inventory omits it. Do not describe that as a missing prototype or replace it
 with another paper kind. Build inventory/prototype resolution from loaded data,
 while keeping administrative areas ineligible for player achievements.
 
+### Declared supplies and reset episodes
+
+All 82 native recipients have local M/F declarations, but a declaration is not
+an available appearance. In [the reset loader](../../../src/world/db.c), an
+ordinary M/O row passes its initial eligibility check only with chance 100
+and room/global conditions, unless `force_item_repop` is nonzero. The force
+path then rolls the configured chance. G/E/P and F/R have different cap and
+chance rules; [item load checks](../../../src/core/utility.c) also halve the
+chance for artifact items. Keep these actual rules when estimating readiness;
+do not promise an independent roll of every declaration at each normal reset.
+
+| Supply or recipient | Reviewed declaration | Journal consequence |
+| --- | --- | --- |
+| Rare court and port appearances | Brek 83341 has M chance 50; the grey elf prisoner 83355 has 85; Locke 83425 and Debmawr 83524 have 30; Baron Helgrim 83494 has 20. Each has only that non-100 local M row. The two High Old Ones priests instead have F declarations at chance 100. | Distinguish forced/initial population, live appearance, retiring native exchange and later repopulation. Neither elapsed time nor discovering the room proves the recipient will return. |
+| Gardener's four flowers | Mishanen 83185 is an M chance-30 court visitor. She has four separate G chance-2 declarations: 83282, 83283, 83284 and foreign rose 32627. The gardener consumes all four together. The rose also has O stock in the loaded ethereal source. | These are optional sources with separate draws and shared caps, not a guaranteed four-flower bundle or a local belt prerequisite. Qualify the selected ethereal source before publishing that foreign route. Supplied flowers still meet the exact native request. |
+| Three library books | Miboli 83140 and the summoner 83146 have E chance-10 book declarations 83268/83269 in slot 18; Jedd 83144 carries book 83270 at G chance 100. Jedd's book also has a competing Baron consumer. | Explain the exact books and carrier/slot state. A book's low load chance is not quest failure, and a library receipt does not establish personally collecting every book. |
+| Nested proofs | Lion cub 83129 is P stock in nest 83128; royal signet 83242 is in box 83241 inside coffer 83139. Wedding band 83249 is in skeleton 83248. Military letter 83272 and clue notebook 83385 are separate P entries in coffer 83139. | Show container preparation and require the offered proof to be directly carried. Do not count the container itself, a same-named outer object or a reused historical receipt as the proof. |
+| Prepared tokens and ore | A collecting token 83246 can be P stock at chance 55 in sacred chest 83254, competing with crafting the token from fragments. Chests and sacks also have separate ore/treasure declarations and shared kind caps. | These are alternate supplies, not personal collecting/mining history. A P command searches a live container by kind through `get_obj_num`; freeze the actual parent UID and placement in a future durable reset adapter. An adjacent O/G row alone does not prove which container received the item. |
+| Missing reset prototypes | Two M rows at lines 3745–3746 reference mobile 93183 at tavern 83761. G line 3800 references object 57744 on shopkeeper 83359. Neither prototype was found in loaded data or other area prototype files; the renumbering loader disables unresolved arg1 commands. Blank paper 5 is a different case with a real loaded `limbo` prototype. | Record these as targeted stale-reference repair candidates. A builder must select an intended replacement or remove the obsolete declaration; do not guess a VNUM or award a fictional encounter/stock item. The rest of the tavern/shop stock remains separately declared. |
+
+Fresh O/P/G/E issuance is deliberately refused during active accounting until
+it has a durable reset-generation identity. This covers stationary switches,
+teleporters, keys, clue pages, nested ingredients and NPC equipment as well as
+ordinary loot. A previously recovered, admitted object is a separate source
+case. The universal adapter must freeze the exact row/generation, random result,
+cap decision, object UID and parent/carrier/slot before publication, then qualify
+replay, replacement, multiple same-kind parents and restart. Restore source
+availability through that adapter before claiming a fresh journal route works;
+do not weaken the mandatory accounting gate.
+
+There is no declared local reset or native-output producer for Shanat prison
+key 83294 or tinker's token 83458. The global literal search for the token finds
+its prototype and Dweefniggle's ten-token input, while same-numbered slime-slug
+mobiles are unrelated. Custom-source execution still needs qualification before
+classifying the token request as unfinished or choosing a source repair.
+
 ### Mechanisms, key routes and the First Mountain
 
 The [object properties](../../../areas/obj/alatorin.obj), exact D resets and
@@ -211,7 +249,7 @@ the route personally.
 
 | Route | Exact source relationship | Journal and qualification consequence |
 | --- | --- | --- |
-| Helgor's cells and commander | Cell key 83354 fits 83597 east to 83601 and 83600 east/west to 83602/83603. Runed key 83365 fits 83594 north to General Helgor's 83614. The blocked south wall of 83600 leads to torture room 83616 through switches 83359/83360. | The prison-key delivery, actual cell unlock and prisoner escape are separate facts. Keys have selected G stock; complete parent/generation availability remains pending. The commander door and torture wall use different access mechanisms. |
+| Helgor's cells and commander | Cell key 83354 fits 83597 east to 83601 and 83600 east/west to 83602/83603. Runed key 83365 fits 83594 north to General Helgor's 83614. The blocked south wall of 83600 leads to torture room 83616 through switches 83359/83360. | The prison-key delivery, actual cell unlock and prisoner escape are separate facts. Declared G parents are reviewed; generation and live availability remain unqualified. The commander door and torture wall use different access mechanisms. |
 | Khoralator and the city brig | Large mithril key 83386 fits 83670 north to lord's room 83679. Brig key 83472 fits 83627 south to 83880 and its reverse door; it is G stock on Ulster 83348. | A bounty receipt does not prove jail release or entry to an opposed fort. Signage saying “dwarves only” is not sufficient evidence of a race predicate. |
 | Deramuth and Xamora | Etched key 83427 fits 83796 south to manor 83797. Rusty gate key 83431 fits 83821 north to tower base 83826. Elemental key 83430 is declared on Xamora and another carrier; some of its tower doors are locked, others merely closed. | Keep each exact key and live D state distinct. Xamora's prototype and some room descriptions disagree about race/gender; resolve that prose without guessing an admission condition. |
 | Sealed encounter rooms | Opening casket 83425 at 83699 unblocks 83814 north to 83699. Opening crate 83478 at 83941 unblocks 83942 down to 83941. Touching handprint 83512 at 83876 unblocks 83923 up to 83874. | The mechanism opens an exit from a load room. It does not itself prove the occupant appeared, reached the player, was defeated or supplied a quest proof. Track the effect and actual encounter separately. |
@@ -295,6 +333,7 @@ a qualified learned-clue adapter exists.
 | ZSQ-ALA-CITY: ownership and map visibility | Resolve interior/outer-city membership deliberately. Keep contract owner, current recipient room, visited area and authored district separate. Test movement across both directions, discovered/undiscovered neighboring areas, hidden room-number client behavior and duplicate receipt projection. |
 | ZSQ-ALA-ACCESS: actual commands and mechanism effects | Extract typed candidates from loaded object properties, current command IDs, exact D states, stock parents and reciprocal edges. Record accepted reveal/open separately from unlock, key destruction, confirmed travel and encounter. Add eight shrine targets, the remote treasury controls and malformed wall 83368 to target-safe switch qualification. Builders select the ritual command and intended wall target/placement; metadata alone cannot repair either. |
 | ZSQ-ALA-TYPED: reward kinds and live item presentation | Preflight native I outputs against loaded prototype types before consuming offerings or publishing recovery. Qualify money-pile issuance, denomination/custody settlement and conversion separately from explicit C rewards; retain unsupported entitlement. Audit actual wear slots, current identified names, copied descriptions and static clue pages without treating cosmetic markers as native quest eligibility or progress. Add focused tests for the two divine money outputs, copper-leg/silver-sleeve slots, supplied items and restart. |
+| ZSQ-ALA-RESET: supplies, appearance and parent identity | Implement durable reset issuance before promising fresh keys, controls, equipment or nested supplies under active accounting. Preserve actual M/O forced-versus-normal chance rules, G/E/P/F/R policy, caps, random draws, exact generation and live parent/slot. Preflight loaded references including administrative paper; repair stale 93183/57744 declarations only after a builder selects intent. Test low-chance recipients/books/flowers, multiple same-kind containers, admitted recovered stock and restart without duplicates. |
 | ZSQ-ALA-CONTENT: builder decisions | Decide the intended librarian gift, five-versus-six badges, attendant/banquet rewards, Xamora prose and Mundorno's overlapping paid breastplate recipes from actual outputs. Quantify supply paths before selecting a source repair for tinker's tokens or foreign proofs. Existing dialogue could be stale rather than gameplay broken; preserve rewards and balance until that decision. |
 | ZSQ-ALA-PILGRIMAGE / ALLOCATION | Specify all-stage pilgrimage/banquet/profession campaigns separately from independent terminals. Confirm exact competing item use, replacement shards, retiring Jenk/proof recipients and reset generations. A final gifted item can complete its request while leaving personal journey history unearned. |
 
@@ -306,7 +345,7 @@ deliveries do not implement the world transformations described in dialogue.
 
 ## Next audit checkpoint
 
-Complete the 1,469 non-D reset-family review and selected source/handler paths;
+Complete selected foreign supply and shared-handler qualification;
 resolve every gate, timed/random effect and quest-like orphan. Then classify
 all 495 contracts into faithful story/request/service/exclusion rows, author
 all usable contacts, publish the sidecar and reproducible index, and add

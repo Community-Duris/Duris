@@ -245,6 +245,21 @@ Treat static X marks, clue notebook pages and copied extra descriptions as
 authored text. They are not live journal progress, and `_noquest_` in an item name
 does not erase a separately authored native contract.
 
+Read reset eligibility as well as its numeric chance. Ordinary M/O declarations
+with a non-100 chance use different admission from forced/initial population;
+G/E/P/F/R and artifact checks have their own rules. Alatorin's rare recipients,
+chance-2 flowers and chance-10 books illustrate why a source declaration is not
+a promise of stock at every reset. Resolve loaded references before proposing
+a repair: administrative paper 5 is valid, while stale 93183/57744 declarations
+have no prototype. Builders choose an intended replacement or removal.
+
+For nested supplies, record the actual parent. P placement searches a live
+container by kind; the neighboring reset row alone does not identify its UID.
+Require directly carried turn-in proofs, allow supplied/prepared alternatives,
+and keep personal acquisition optional until accepted source events exist.
+Fresh controls, keys and equipment also need durable reset-generation issuance
+under active accounting; a recovered admitted object is a separate case.
+
 ## Later schema capabilities
 
 All three versions reject dialogue milestones, personal recovery, kills, arbitrary scripted events,
