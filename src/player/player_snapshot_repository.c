@@ -556,12 +556,13 @@ query_result insert_item_rows(MYSQL *connection, const std::vector<player_item_s
 
 query_result sync_restitution_runtime_state(MYSQL *connection,
 					    const std::vector<player_item_snapshot> &items,
-					    int owner_id)
+					    int owner_id,
+					    const std::vector<uint64_t> *selected_roots = nullptr)
+try
 {
 	if (!connection)
 		return { false, EINVAL };
 
-	MYSQL_RES *availability = nullptr;
 	query_result available = execute(
 		connection,
 		"SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() "
@@ -569,17 +570,17 @@ query_result sync_restitution_runtime_state(MYSQL *connection,
 		"'player_death_restitution_runtime') ORDER BY table_name");
 	if (!available.ok)
 		return available;
-	availability = mysql_store_result(connection);
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> availability(
+		mysql_store_result(connection), mysql_free_result);
 	if (!availability)
 		return { false, mysql_errno(connection) };
 	bool delivery_present = false;
 	bool runtime_present = false;
 	MYSQL_ROW availability_row;
-	while ((availability_row = mysql_fetch_row(availability)) != nullptr)
+	while ((availability_row = mysql_fetch_row(availability.get())) != nullptr)
 	{
 		if (!availability_row[0])
 		{
-			mysql_free_result(availability);
 			return { false, EINVAL };
 		}
 		if (!std::strcmp(availability_row[0], "player_death_restitution_delivery"))
@@ -587,15 +588,26 @@ query_result sync_restitution_runtime_state(MYSQL *connection,
 		else if (!std::strcmp(availability_row[0], "player_death_restitution_runtime"))
 			runtime_present = true;
 	}
-	mysql_free_result(availability);
+	availability.reset();
 	if (!delivery_present)
 		return { true, 0 };
 
-	const std::string owner_filter =
-		"own.owner_type=1 AND own.owner_id=" + std::to_string(owner_id) +
-		" AND own.owner_context_id=0 AND own.state=1";
+	std::string owner_filter = "own.owner_type=1 AND own.owner_id=" + std::to_string(owner_id) +
+				   " AND own.owner_context_id=0 AND own.state=1";
+	if (selected_roots)
+	{
+		std::ostringstream roots;
+		roots.exceptions(std::ios::badbit | std::ios::failbit);
+		for (size_t index = 0; index < selected_roots->size(); ++index)
+			roots << (index ? "," : "") << (*selected_roots)[index];
+		owner_filter += selected_roots->empty() ?
+					" AND 0" :
+					" AND own.root_item_uid IN (" + roots.str() + ")";
+	}
 	std::unordered_set<uint64_t> requested;
 	std::ostringstream uid_list;
+	if (selected_roots)
+		uid_list.exceptions(std::ios::badbit | std::ios::failbit);
 	try
 	{
 		requested.reserve(items.size());
@@ -634,13 +646,21 @@ query_result sync_restitution_runtime_state(MYSQL *connection,
 		"AND ri.item_uid=d.item_uid LEFT JOIN item_current_owner own ON "
 		"own.item_uid=d.item_uid" +
 		runtime_join + " WHERE (" + requested_filter + " OR (" + owner_filter +
-		")) ORDER BY d.item_uid FOR UPDATE";
+		")) ORDER BY d.item_uid" +
+		(selected_roots ? " LIMIT " + std::to_string(PLAYER_SNAPSHOT_MAX_OBJECTS + 1) :
+				  "") +
+		" FOR UPDATE";
 	query_result scoped_query = execute(connection, scoped_sql);
 	if (!scoped_query.ok)
 		return scoped_query;
-	MYSQL_RES *scoped = mysql_store_result(connection);
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> scoped(
+		mysql_store_result(connection), mysql_free_result);
 	if (!scoped)
 		return { false, mysql_errno(connection) };
+	if (selected_roots && mysql_num_rows(scoped.get()) > PLAYER_SNAPSHOT_MAX_OBJECTS)
+	{
+		return { false, E2BIG };
+	}
 	std::unordered_set<uint64_t> restored;
 	try
 	{
@@ -648,7 +668,6 @@ query_result sync_restitution_runtime_state(MYSQL *connection,
 	}
 	catch (const std::bad_alloc &)
 	{
-		mysql_free_result(scoped);
 		return { false, ENOMEM };
 	}
 	MYSQL_ROW row;
@@ -656,12 +675,11 @@ query_result sync_restitution_runtime_state(MYSQL *connection,
 	const std::string player_owner_type =
 		std::to_string(static_cast<unsigned>(item_owner_type::player));
 	const std::string expected_owner_id = std::to_string(owner_id);
-	while ((row = mysql_fetch_row(scoped)) != nullptr)
+	while ((row = mysql_fetch_row(scoped.get())) != nullptr)
 	{
 		uint64_t item_uid = 0;
 		if (!row[0])
 		{
-			mysql_free_result(scoped);
 			return { false, EINVAL };
 		}
 		char *end = nullptr;
@@ -674,18 +692,15 @@ query_result sync_restitution_runtime_state(MYSQL *connection,
 		    std::strcmp(row[5], "0") != 0 || std::strcmp(row[7], "1") != 0 ||
 		    requested.find(item_uid) == requested.end())
 		{
-			mysql_free_result(scoped);
 			return { false, ENOENT };
 		}
 		++scoped_delivery_count;
 		if (!runtime_present)
 		{
-			mysql_free_result(scoped);
 			return { false, ENOENT };
 		}
 		if (!row[8] || !row[9] || strcasecmp(row[8], row[9]) != 0)
 		{
-			mysql_free_result(scoped);
 			return { false, ENOENT };
 		}
 		const auto source = std::find_if(items.begin(), items.end(),
@@ -694,7 +709,6 @@ query_result sync_restitution_runtime_state(MYSQL *connection,
 		if (source == items.end() || std::to_string(source->vnum) != row[1] ||
 		    std::to_string(source->vnum) != row[6])
 		{
-			mysql_free_result(scoped);
 			return { false, EINVAL };
 		}
 		try
@@ -703,11 +717,10 @@ query_result sync_restitution_runtime_state(MYSQL *connection,
 		}
 		catch (const std::bad_alloc &)
 		{
-			mysql_free_result(scoped);
 			return { false, ENOMEM };
 		}
 	}
-	mysql_free_result(scoped);
+	scoped.reset();
 	// Every active delivery owned by this player must be represented exactly
 	// once in the requested snapshot.
 	if (restored.size() != scoped_delivery_count)
@@ -744,6 +757,14 @@ query_result sync_restitution_runtime_state(MYSQL *connection,
 			return result;
 	}
 	return { true, 0 };
+}
+catch (const std::bad_alloc &)
+{
+	// Partial SQL preparation must return through the transaction owner's
+	// rollback path. Preserve the existing full-call exception behavior.
+	if (!selected_roots)
+		throw;
+	return { false, ENOMEM };
 }
 
 struct expected_player_item_custody
@@ -1191,6 +1212,354 @@ query_result reject_orphaned_saved_items(MYSQL *connection, int pid, bool pets)
 			  query_result{ true, 0 };
 }
 
+struct partial_player_item_plan
+{
+	std::vector<player_item_snapshot> items;
+	std::vector<uint64_t> delete_roots;
+	std::vector<uint64_t> selected_roots;
+	std::string deletion;
+};
+
+// This plans only the supplied component. Neither the absent component nor
+// custody is rewritten. Fixed-width identity queries are bounded before their
+// results are buffered; physical closure is proved separately from placement.
+query_result plan_partial_player_items(MYSQL *connection, const player_snapshot &snapshot,
+				       bool equipment, partial_player_item_plan *plan)
+try
+{
+	if (!plan || snapshot.items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
+		return { false, E2BIG };
+	struct node
+	{
+		uint64_t id = 0, uid = 0, root = 0, parent = 0;
+		int32_t vnum = 0;
+		uint16_t slot = 0;
+		bool inline_coin = false, authoritative_slot = false;
+	};
+	std::vector<node> custody, physical;
+	std::unordered_map<uint64_t, size_t> custody_index, physical_index, physical_uid;
+	std::unordered_map<uint64_t, size_t> captured;
+	std::vector<size_t> captured_depth;
+	captured.reserve(snapshot.items.size());
+	captured_depth.reserve(snapshot.items.size());
+	for (size_t index = 0; index < snapshot.items.size(); ++index)
+	{
+		const auto &item = snapshot.items[index];
+		persistence_custody_witness witness;
+		witness.item_uid = item.object_uid;
+		witness.expected_present = true;
+		witness.expected_vnum = item.vnum;
+		if (!item.object_uid || item.vnum <= 0 || item.equipment_slot < 0 ||
+		    item.equipment_slot > MAX_WEAR ||
+		    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+		    item.parent_index >= static_cast<int32_t>(index) ||
+		    (item.parent_index >= 0 && item.equipment_slot))
+			return custody_payload_mismatch(
+				player_save_custody_diagnosis::invalid_snapshot_item, witness);
+		if (!captured.emplace(item.object_uid, index).second)
+			return custody_payload_mismatch(
+				player_save_custody_diagnosis::duplicate_snapshot_uid, witness);
+		const size_t depth = item.parent_index < 0 ? 1 :
+							     captured_depth[item.parent_index] + 1;
+		if (depth > PLAYER_SNAPSHOT_MAX_DEPTH)
+			return custody_payload_mismatch(
+				player_save_custody_diagnosis::invalid_snapshot_parent, witness);
+		captured_depth.push_back(depth);
+	}
+	const std::string pid = std::to_string(snapshot.pid);
+	const std::string bounded =
+		" LIMIT " + std::to_string(PLAYER_SNAPSHOT_MAX_OBJECTS + 1) + " FOR UPDATE";
+	auto load = [&](const std::string &sql, auto consume) -> query_result
+	{
+		const auto query = execute(connection, sql);
+		if (!query.ok)
+			return query;
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+			mysql_store_result(connection), mysql_free_result);
+		if (!rows)
+			return { false, mysql_errno(connection) };
+		if (mysql_num_rows(rows.get()) > PLAYER_SNAPSHOT_MAX_OBJECTS)
+			return { false, E2BIG };
+		while (MYSQL_ROW row = mysql_fetch_row(rows.get()))
+		{
+			const auto parsed = consume(row);
+			if (!parsed.ok)
+				return parsed;
+		}
+		return { true, 0 };
+	};
+	auto invalid = [](uint64_t uid) -> query_result
+	{
+		persistence_custody_witness witness;
+		witness.item_uid = uid;
+		witness.observed_present = true;
+		return custody_payload_mismatch(
+			player_save_custody_diagnosis::invalid_custody_topology, witness);
+	};
+	query_result query = load(
+		"SELECT own.item_uid,own.root_item_uid,COALESCE(own.parent_item_uid,0),own.vnum,"
+		"own.equipment_slot,own.coin_payload IS NOT NULL,EXISTS(SELECT 1 FROM "
+		"economic_accounting_item_reference reference WHERE reference.item_uid=own.item_uid "
+		"AND reference.after_revision=own.item_revision) FROM item_current_owner own WHERE "
+		"own.owner_type=1 AND own.owner_id=" +
+			pid + " AND own.owner_context_id=0 AND own.state=1 ORDER BY own.item_uid" +
+			bounded,
+		[&](MYSQL_ROW row) -> query_result
+		{
+			node item;
+			uint64_t vnum = 0, slot = 0, coin = 0, evidence = 0;
+			if (!parse_custody_uint64(row[0], &item.uid) || !item.uid ||
+			    !parse_custody_uint64(row[1], &item.root) || !item.root ||
+			    !parse_custody_uint64(row[2], &item.parent) ||
+			    !parse_custody_uint64(row[3], &vnum) || !vnum || vnum > INT32_MAX ||
+			    !parse_custody_uint64(row[4], &slot) || slot > MAX_WEAR ||
+			    !parse_custody_uint64(row[5], &coin) || coin > 1 ||
+			    !parse_custody_uint64(row[6], &evidence) || evidence > 1 ||
+			    (item.parent && slot))
+				return invalid(item.uid);
+			item.id = item.uid;
+			item.vnum = static_cast<int32_t>(vnum);
+			item.slot = static_cast<uint16_t>(slot);
+			item.inline_coin = coin;
+			item.authoritative_slot = evidence || slot;
+			if (!custody_index.emplace(item.uid, custody.size()).second)
+				return invalid(item.uid);
+			custody.push_back(item);
+			return { true, 0 };
+		});
+	if (!query.ok)
+		return query;
+	// Diagnose stale/foreign/destroyed captured UIDs before secondary physical
+	// anomalies. A partial frame cannot reacquire an item that custody retired.
+	uint64_t missing = 0;
+	for (const auto &[uid, index] : captured)
+		if (!custody_index.count(uid) && (!missing || uid < missing))
+			missing = uid;
+	if (missing)
+	{
+		persistence_custody_witness witness;
+		witness.item_uid = missing;
+		witness.expected_present = true;
+		witness.expected_vnum = snapshot.items[captured.at(missing)].vnum;
+		return custody_payload_mismatch(
+			player_save_custody_diagnosis::snapshot_item_absent_from_custody, witness);
+	}
+	for (const auto &[uid, index] : captured)
+		if (custody[custody_index.at(uid)].vnum != snapshot.items[index].vnum)
+		{
+			persistence_custody_witness witness;
+			witness.item_uid = uid;
+			witness.expected_vnum = snapshot.items[index].vnum;
+			witness.observed_vnum = custody[custody_index.at(uid)].vnum;
+			return custody_payload_mismatch(
+				player_save_custody_diagnosis::custody_vnum_mismatch, witness);
+		}
+	query = load("SELECT pi.id,pi.obj_uid,pi.vnum,pi.equip_slot,COALESCE(pi.container_id,0),"
+		     "parent.pid FROM player_items pi LEFT JOIN player_items parent ON "
+		     "parent.id=pi.container_id WHERE pi.pid=" +
+			     pid + " ORDER BY pi.id" + bounded,
+		     [&](MYSQL_ROW row) -> query_result
+		     {
+			     node item;
+			     uint64_t vnum = 0, slot = 0, parent_pid = 0;
+			     if (!parse_custody_uint64(row[0], &item.id) || !item.id ||
+				 !parse_custody_uint64(row[1], &item.uid) || !item.uid ||
+				 !parse_custody_uint64(row[2], &vnum) || !vnum ||
+				 vnum > INT32_MAX || !parse_custody_uint64(row[3], &slot) ||
+				 slot > MAX_WEAR || !parse_custody_uint64(row[4], &item.parent) ||
+				 (item.parent &&
+				  (slot || !parse_custody_uint64(row[5], &parent_pid) ||
+				   parent_pid != static_cast<uint64_t>(snapshot.pid))))
+				     return invalid(item.uid);
+			     item.vnum = static_cast<int32_t>(vnum);
+			     item.slot = static_cast<uint16_t>(slot);
+			     if (!physical_index.emplace(item.id, physical.size()).second ||
+				 !physical_uid.emplace(item.uid, physical.size()).second)
+				     return invalid(item.uid);
+			     physical.push_back(item);
+			     return { true, 0 };
+		     });
+	if (!query.ok)
+		return query;
+	query = load("SELECT child.obj_uid FROM player_items child JOIN player_items parent ON "
+		     "parent.id=child.container_id WHERE parent.pid=" +
+			     pid + " AND child.pid<>" + pid + " ORDER BY child.id" + bounded,
+		     [&](MYSQL_ROW row) -> query_result
+		     {
+			     uint64_t uid = 0;
+			     parse_custody_uint64(row[0], &uid);
+			     return invalid(uid);
+		     });
+	if (!query.ok)
+		return query;
+	auto validate_graph = [&](const std::vector<node> &nodes,
+				  const std::unordered_map<uint64_t, size_t> &indices,
+				  bool authoritative) -> query_result
+	{
+		for (size_t start = 0; start < nodes.size(); ++start)
+		{
+			size_t current = start, depth = 1;
+			while (nodes[current].parent)
+			{
+				const auto parent = indices.find(nodes[current].parent);
+				if (parent == indices.end() || parent->second == current ||
+				    ++depth > PLAYER_SNAPSHOT_MAX_DEPTH ||
+				    (authoritative &&
+				     nodes[parent->second].root != nodes[start].root))
+					return invalid(nodes[start].uid);
+				current = parent->second;
+			}
+			if (authoritative && (nodes[current].uid != nodes[current].root ||
+					      nodes[start].root != nodes[current].uid))
+				return invalid(nodes[start].uid);
+		}
+		return { true, 0 };
+	};
+	query = validate_graph(custody, custody_index, true);
+	if (query.ok)
+		query = validate_graph(physical, physical_index, false);
+	if (!query.ok)
+		return query;
+	std::unordered_set<uint64_t> selected;
+	std::unordered_map<uint64_t, uint16_t> root_slots;
+	std::array<bool, MAX_WEAR + 1> occupied = {};
+	partial_player_item_plan candidate;
+	for (const auto &root : custody)
+	{
+		if (root.parent)
+			continue;
+		uint16_t slot = root.slot;
+		const auto incoming = captured.find(root.uid);
+		const auto stored = physical_uid.find(root.uid);
+		if (!root.authoritative_slot)
+		{
+			if (incoming != captured.end())
+				slot = static_cast<uint16_t>(
+					snapshot.items[incoming->second].equipment_slot);
+			else if (stored != physical_uid.end() && !physical[stored->second].parent &&
+				 physical[stored->second].vnum == root.vnum)
+				slot = physical[stored->second].slot;
+			else if (!root.inline_coin)
+				return invalid(root.uid);
+		}
+		if (slot && occupied[slot])
+		{
+			persistence_custody_witness witness;
+			witness.item_uid = root.uid;
+			witness.observed_slot = slot;
+			return custody_payload_mismatch(
+				player_save_custody_diagnosis::duplicate_equipment_slot, witness);
+		}
+		if (slot)
+			occupied[slot] = true;
+		root_slots.emplace(root.uid, slot);
+		if ((slot != 0) == equipment && (!root.inline_coin || incoming != captured.end()))
+			candidate.selected_roots.push_back(root.uid);
+	}
+	for (const auto &item : custody)
+	{
+		const auto slot = root_slots.find(item.root);
+		if (slot == root_slots.end())
+			return invalid(item.uid);
+		if ((slot->second != 0) != equipment ||
+		    (item.inline_coin && !captured.count(item.uid)))
+			continue;
+		if (!captured.count(item.uid))
+		{
+			persistence_custody_witness witness;
+			witness.item_uid = item.uid;
+			witness.observed_present = true;
+			witness.observed_root = item.root;
+			witness.observed_parent = item.parent;
+			witness.observed_vnum = item.vnum;
+			return custody_payload_mismatch(
+				player_save_custody_diagnosis::active_custody_absent_from_snapshot,
+				witness);
+		}
+		selected.insert(item.uid);
+	}
+	for (const auto &[uid, index] : captured)
+	{
+		(void)index;
+		if (!selected.count(uid))
+			return invalid(uid);
+	}
+	// A delete boundary may itself be nested in an unselected physical parent.
+	// Its entire physical descendant closure must nevertheless remain selected.
+	for (const auto &item : physical)
+	{
+		if (selected.count(item.uid))
+		{
+			if (item.vnum != custody[custody_index.at(item.uid)].vnum)
+				return invalid(item.uid);
+			if (!item.parent ||
+			    !selected.count(physical[physical_index.at(item.parent)].uid))
+				candidate.delete_roots.push_back(item.id);
+		}
+		else if (item.parent &&
+			 selected.count(physical[physical_index.at(item.parent)].uid))
+			return invalid(item.uid);
+	}
+	std::unordered_map<uint64_t, int32_t> projected;
+	std::vector<std::vector<size_t>> children(snapshot.items.size());
+	std::vector<size_t> roots, stack;
+	for (size_t index = 0; index < snapshot.items.size(); ++index)
+	{
+		const auto &own = custody[custody_index.at(snapshot.items[index].object_uid)];
+		if (!own.parent)
+			roots.push_back(index);
+		else
+		{
+			const auto parent = captured.find(own.parent);
+			if (parent == captured.end())
+				return invalid(own.uid);
+			children[parent->second].push_back(index);
+		}
+	}
+	for (auto root = roots.rbegin(); root != roots.rend(); ++root)
+		stack.push_back(*root);
+	while (!stack.empty())
+	{
+		const size_t index = stack.back();
+		stack.pop_back();
+		auto item = snapshot.items[index];
+		const auto &own = custody[custody_index.at(item.object_uid)];
+		if (own.parent)
+		{
+			const auto parent = projected.find(own.parent);
+			if (parent == projected.end())
+				return invalid(item.object_uid);
+			item.parent_index = parent->second;
+			item.equipment_slot = 0;
+		}
+		else
+		{
+			item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+			item.equipment_slot = static_cast<int16_t>(root_slots.at(own.uid));
+		}
+		projected.emplace(item.object_uid, static_cast<int32_t>(candidate.items.size()));
+		candidate.items.push_back(std::move(item));
+		for (auto child = children[index].rbegin(); child != children[index].rend();
+		     ++child)
+			stack.push_back(*child);
+	}
+	if (candidate.items.size() != snapshot.items.size())
+		return invalid(snapshot.items.empty() ? 0 : snapshot.items[0].object_uid);
+	std::ostringstream ids;
+	ids.exceptions(std::ios::badbit | std::ios::failbit);
+	for (size_t index = 0; index < candidate.delete_roots.size(); ++index)
+		ids << (index ? "," : "") << candidate.delete_roots[index];
+	candidate.deletion =
+		"DELETE FROM player_items WHERE pid=" + pid +
+		(candidate.delete_roots.empty() ? " AND 0" : " AND id IN (" + ids.str() + ")");
+	*plan = std::move(candidate);
+	return { true, 0 };
+}
+catch (const std::bad_alloc &)
+{
+	return { false, ENOMEM };
+}
+
 query_result apply_items(MYSQL *connection, const player_snapshot &snapshot)
 {
 	query_result orphan_check = reject_orphaned_saved_items(connection, snapshot.pid, false);
@@ -1203,6 +1572,7 @@ query_result apply_items(MYSQL *connection, const player_snapshot &snapshot)
 	 * to locked custody before the destructive projection. UID/vnum conflicts,
 	 * missing payloads and invalid authoritative graphs still fail closed. */
 	std::vector<player_item_snapshot> reconciled_items;
+	partial_player_item_plan partial;
 	const std::vector<player_item_snapshot> *projection_items = &snapshot.items;
 	if (equipment && inventory)
 	{
@@ -1220,16 +1590,26 @@ query_result apply_items(MYSQL *connection, const player_snapshot &snapshot)
 		if (!verified.ok)
 			return verified;
 	}
-	std::string deletion = "DELETE FROM player_items WHERE pid=" + std::to_string(snapshot.pid);
-	if (equipment != inventory)
-		deletion += equipment ? " AND equip_slot>0" : " AND equip_slot=0";
-	query_result result = execute(connection, deletion);
+	else
+	{
+		const auto verified =
+			plan_partial_player_items(connection, snapshot, equipment, &partial);
+		if (!verified.ok)
+			return verified;
+		projection_items = &partial.items;
+	}
+	query_result result = equipment != inventory ?
+				      execute(connection, partial.deletion) :
+				      execute(connection, "DELETE FROM player_items WHERE pid=" +
+								  std::to_string(snapshot.pid));
 	if (!result.ok)
 		return result;
 	result = insert_item_rows(connection, *projection_items, snapshot.pid, false);
 	if (!result.ok)
 		return result;
-	return sync_restitution_runtime_state(connection, *projection_items, snapshot.pid);
+	return sync_restitution_runtime_state(connection, *projection_items, snapshot.pid,
+					      equipment != inventory ? &partial.selected_roots :
+								       nullptr);
 }
 
 query_result verify_pet_custody(MYSQL *connection, int pid, const player_pet_snapshot &pet)

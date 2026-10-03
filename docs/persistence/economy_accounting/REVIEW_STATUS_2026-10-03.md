@@ -1727,3 +1727,159 @@ The primary performed the required notebook-only fallback after the curator
 agent could not start at the thread limit. Both scoped owning notes stay below
 20KB; existing unrelated oversized code-research and derived index drift remain
 reported by the read-only overlay validators.
+
+### Partial SQL item-save replacement: measured failure, fix in progress
+
+Both fresh disposable MariaDB10.11.14 and MySQL8.0.46 targets reproduce eight
+semantic failures using the same immutable16-unit native fixture and exact31bf
+binary above. Valid inventory-only replacement loses equipped-container children;
+stale room/foreign/destroyed inventory payloads reinsert; omitted selected children
+and cross-PID cascade closure are accepted instead of guarded. Valid equipment
+replacement and both scoped after-DELETE/after-root-INSERT rollback faults pass.
+Existing full-save and legacy controls pass. Each refused-frame test requires
+preceding victim STATUS rollback, exact quarantine evidence and unrelated PID
+STATUS/revision progress through same-journal replay and cold connection/restarts.
+There are16 measured semantic failures and6 passing partial controls total.
+
+The independently verified declaration
+`tmp/partial-save-before-both-engines-qualified.local.json` has SHA-256
+14c16d281bb297563c1005927b24e3901623ee1c28be1729d3d4270287b813c9.
+It checks immutable1232 native source pins, exact fixture/harness/16-unit closure,
+binary/metadata/log hashes and whole owned-schema/server teardown. The v1 strict
+fixture enum failure and v2 MySQL trigger setup exit remain separately preserved;
+v2 MySQL's eight valid failures are not counted as a complete11-case run. V3
+adds SUPER only to the synthetic user on its fresh owned MySQL server because
+binary logging requires it for fault triggers. Binary logging is unchanged; no
+production-account permission qualification is implied. All55 migration SQL
+scripts run through maintained bootstrap; this does not qualify migration receipt
+history. The private300/120 limits remain newly supervised, not maintained gates.
+
+The production fix is in progress: bounded complete custody/native forest and
+cascade verification, approved legacy root-position compatibility, selected
+physical boundary deletion and partial-only restitution scope. Additional valid
+legacy/inline-coin/restored-leaf/restitution and malformed/bounds controls remain
+required. The synthetic room after-state used here is not a real pooled schema2
+drop. An independent opt-in native room fixture is being extended for real
+coordinator/journal/pool drop compatibility, READ COMMITTED save/drop orders,
+actual lock-timeout witnesses, foreign-child FK order and independent PID progress.
+No GREEN, gameplay route, current-remote integration or full R1-R8 gate is claimed.
+
+The independent partial-path review found two newly introduced allocation escapes:
+the selected native deletion-ID SQL and restitution root-filter assembly were
+outside allocation guards. An escaping allocation could retain the ordinary
+borrowed SQL connection and transaction. The fix now being prepared must return
+a failed query result through the existing rollback path, preserve result
+ownership, and exercise actual native allocation failures in these scoped SQL
+preparation windows. The earlier f810/0df candidate remains unqualified and
+preserved; no passing source review alone closes this issue.
+
+The immutable expanded32 BEFORE fixture compiles with strict warnings and
+ASan/UBSan in58.020 seconds; binary SHA-256
+f5aa0dbb29ba2012a187d3a855fd76f4b180855a462c90ac2a2ee9eb5fdaa840.
+Both engines reproduce the original8 RED/3 passing controls, then exit2 while
+seeding the first additional case. None of the21 added cases executed. The
+MariaDB043b3ad9 and MySQL3002b7ec logs and receipts retain this setup failure;
+whole owned-schema/server teardown succeeds on both targets. The fixture seed
+failure must be diagnosed before those additional contracts can be qualified.
+
+Independent source review of the opt-in six-case pooled drop/direct save race
+fixture e24801d4 finds no remaining concrete blocker. It uses READ COMMITTED,
+actual pool/coordinator drops, independent direct repository saves, precise
+lock/FK witnesses, and raw-byte protected-state comparisons. Its explicit ACK
+helper is not native gameplay publication. The first private source preparation
+omitted the maintained codec SQL escape stub and failed before compilation;
+that incomplete snapshot remains preserved. A new snapshot includes the exact
+68-unit maintained source collector closure. Native compilation and both-engine
+execution remain pending; no race or route acceptance is promoted.
+
+The same e248 room fixture now has actual paired pooled qualification. The
+before-source68-unit strict ASan/UBSan build passes its original300-second gate
+in172.830 seconds (binary768bb4bf). Both MySQL8.0.46 and MariaDB10.11.14 measure
+the same five RED cases and one passing parent-lock/FK control. The reviewed
+8b989 repository candidate compiles in201.214 seconds (binary59242c69), then
+all six cases pass on each engine under the original120-second runtime gate.
+This qualifies those READ COMMITTED pool/direct-save orders and retained drop
+receipt compatibility, not native gameplay publication or production activation.
+The first driver's overlong advisory-lock schema names, second driver's port
+precheck exit, and incomplete source collector are separately preserved setup
+failures. No assertion or native runtime limit was weakened.
+
+The34-case allocation fixture against the preserved f810 pre-allocation-guard
+candidate passes all11 original and21 additional item-tree contracts on MariaDB,
+then both allocation cases fail across51 injected ordinals. Fifteen native
+bad_alloc exceptions escape with transactions held; two other faults return
+non-ENOMEM results without escaping. This baseline is distinct from the original
+ec366 pre-forest implementation. MySQL passes those32 contracts but the first
+allocation oracle used an unavailable system variable and exits2; that run is
+not full allocation qualification. The new af2b7ee fixture uses successful
+native SELECT1 result/status observations, proves actual begin/rollback0-1-0
+transitions and requires an active transaction at every allocation window.
+Independent source review passes; exact before/after native builds pass strict
+warnings/sanitizers. Both-engine allocation execution remains pending. A later
+driver preparation exceeded the Unix socket path bound; both failed server
+starts and owned teardown are retained, and only the private directory prefix
+is shortened for the next runs. Source8b989 remains unchanged throughout.
+
+### Partial SQL item-save component: final native qualification
+
+The reviewed source8b989b3c1c2a3ee0e34f7f4ff82b7830607703e23702ce9c4037fe39dff911cd
+and portable fixtureaf2b7ee5288540805bf0852bd8c4161316fa7ed3fe4bfe8c86ed6f8dd0e717b1
+now pass all34 direct repository cases on each engine, including both bounded
+allocation sweeps. Each engine checks51 actual injected ordinals: observed active
+transaction before the fault, no escaping exception, terminal ENOMEM, unchanged
+durable revision/status/protected rows and actual transaction closure afterward.
+The same fixture against f810 passes32 item-tree contracts then both allocation
+cases fail on both engines. Original pre-forest ec366 failure evidence remains
+separate. Six pooled-drop/direct-save cases per engine also pass on the final
+source; drops use the real pool/coordinator, saves use independent direct SQL
+connections, and fixture ACK is separate from gameplay publication.
+
+The immutable primary declaration
+`tmp/partial-save-qualified-component.local.json` SHA-256
+71055b7b37da7546043217d559a6992c3c110f0900f41127a8de4c837b1a2cc1
+rechecks exact source/fixture/harness/metadata/binary pins, paired engine results,
+portable transaction witnesses, owned teardown, and all1232 native source entries.
+It records68 passing direct cases,102 allocation ordinals and12 pool cases.
+Both strict production builds pass their original600-second/-j2 gates with the
+changed repository unit actually recompiled: SQL20 seconds, binary SHA-256
+2b1e5e09a7ddf6b0340950d33b5dceed91cd15ccbc856baf76c2cd1037274482;
+flatfile19 seconds, binary SHA-256
+15a5daa3274ca69737f566a4ec1ce1a0e060731e538c6887a6d3566000100374.
+The verifier's original make-relative source-path mismatch remains a failed
+verification attempt; its corrected exact compiler-command matcher passes.
+
+The maintained actual inactive SQL gameplay journey passes on fresh MySQL8.0.46
+and MariaDB10.11.14: elapsed/quiet/repeated saves, link loss, quit/restart,
+death/reload, crash recovery and preserved-connection copyover, followed by the
+complete34-case native reconciliation and spell-receipt checks. V1 fails before
+boot because the journey's restricted environment drops TASK_LINKER_DIR and the
+old shim's empty -L consumes -std=c++20. V2 uses a new private compiler adapter
+with a fixed linker path; source/assertions/flags remain intact. Both original
+failed attempts are preserved. No declined inactive spell-path change occurred.
+
+Nine targeted maintained source/native owners pass: custody write guard,
+synchronous item-state contract, pet loading, restitution accounting, dynamic
+item hydration, death selector, save worker, save pipeline, and journal lifecycle.
+The captured-journal quarantine owner exits at its required four private input
+arguments; it is unrun, not passing or a semantic production failure. Current
+accounting30, writer54, evidence-linking2 and root-harness7 checks pass; the
+Windows evidence check's missing python3 App Execution Alias failure is preserved
+separately from its passing Linux run. The one moved census identity is reanchored
+after exact identity/multiplicity checks:868 routes/2817 occurrences/2758 unique
+sites/0 unmapped, evidence unchanged, coverage false/release BLOCKED. Actual
+inactive flatfile creation/save/cold restart/relog qualification passes in130.849
+seconds with the current1232 source and strict binary pins preserved.
+The immutable final milestone declaration
+`tmp/partial-save-final-milestone.local.json` SHA-256
+ca67238afe36893277dabb1580b4688fe9bd2ba5b652e7e5ed3de6889a8ead14
+links the component proof, both completed SQL gameplay logs/owned teardown, the
+flatfile journey and nine maintained owners, with the captured-input limitation
+explicit. Final clang-format18/source-fixture pins and generated matrix check
+pass; the broader release remains BLOCKED.
+
+This closes a partial-save prerequisite only. Whole-save exception safety,
+pool-lease allocation sweeps, captured staging/backup qualification, native
+ordinary-drop producer/replay/restored-save/copyover, active accounting, combined
+remote source and current-head broad qualification remain open. No R1-R8 route
+or release gate is promoted; publication still awaits the pending explicit local
+Git integration decision under the retained no-merge restriction.

@@ -618,3 +618,23 @@ creation/network follow-ups pass with unchanged runtime/build assertions and
 verified artifact reuse. The failed broad report remains unchanged, intermittent
 starter-kit readiness and current-head integrated qualification remain open,
 and no R1-R8 release gate is promoted. See October 3 status for exact proof pins.
+
+The legacy partial SQL item-save dependency now has measured before-source proof
+on both supported engines: eight semantic failures per engine, with existing
+full/legacy, valid equipment replacement and two true postwrite rollback controls
+passing. The complete partial forest/deletion-boundary/restitution guard is being
+implemented and remains unqualified. Real pooled ordinary-drop and barrier-driven
+save/drop/FK serialization checks are separate from the direct-client fixture;
+none of these partial results completes a route or opens accounting. October3
+review pins actual before evidence and preserved fixture/permission setup failures.
+
+The partial-save prerequisite now has paired actual native qualification on both
+engines:34 direct contracts/51 allocation ordinals and six real pooled-drop/direct
+save serialization cases per engine pass. Selected-root custody/native closure,
+guarded physical deletion and partial restitution scope preserve opposite payload
+and legacy placement; new allocation failures roll back through query results.
+Both strict production builds and the maintained inactive SQL save/death/crash/
+restart/copyover journey pass. Exact declaration71055b7b and source/test pins are
+in October3 review. Captured-journal inputs, full-save/pool-allocation coverage,
+ordinary-drop native publication/replay/restored-save integration, broad current
+source and full R1-R8 acceptance remain open. Inventory evidence is not promoted.

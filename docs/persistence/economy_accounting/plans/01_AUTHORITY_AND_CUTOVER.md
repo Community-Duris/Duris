@@ -357,3 +357,22 @@ revision/no-op, rollback, inline-coin and inactive legacy equipment rules. New
 actual-repository/direct-SQL regression preparation is separate from a genuine
 pooled schema-2 drop and two-session lock-order proof. Both engines, journal
 exact-frame quarantine/restart and unrelated-PID controls remain required.
+
+Actual before-source partial-save qualification now reproduces all eight semantic
+failures on both MySQL8.0.46 and MariaDB10.11.14. Existing full/legacy and three
+partial controls pass per engine; true postwrite faults prove STATUS/projection
+rollback and unrelated-PID replay progress. Exact declaration/log/source/binary
+pins and preserved setup failures are recorded in October3 review. Production
+implementation and all after-source checks remain in progress. Direct synthetic
+room after-state cannot establish real economic drop/pool serialization; a separate
+opt-in real-pool/barrier matrix retains original budgets and awaits execution.
+
+The complete partial replacement prerequisite now passes actual paired engines:
+34 direct contracts and51 allocation ordinals each, plus six READ COMMITTED
+pooled-drop/direct-save cases each with real1205/1452 witnesses. Strict SQL/flat
+builds and inactive SQL save/death/crash/restart/copyover journeys pass. Selected
+root forest/cascade bounds, legacy position proof and partial restitution scope
+preserve opposite rows; allocation failures return through rollback. See October3
+review/declaration71055b7b. This does not connect ordinary-drop native publication,
+first-boot/replay/hydration or restored-save deferral, qualify every SQL isolation
+or allocation boundary, or complete cutover/activation/R1-R8.
