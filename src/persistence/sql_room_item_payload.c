@@ -3,6 +3,7 @@
 #include "core/defines.h"
 
 #include <algorithm>
+#include <array>
 #include <cerrno>
 #include <charconv>
 #include <cctype>
@@ -623,6 +624,217 @@ bool sql_room_item_payload_available(MYSQL *connection, bool *available)
 		return false;
 	*available = count == 1;
 	return true;
+#endif
+}
+
+// Caller owns a successful schema-2 accounting receipt and its transaction.
+// Check immutable original-operation evidence without consulting later custody.
+bool sql_room_item_payload_verify_retained(MYSQL *connection, const critical_command &command,
+					   const item_transfer_result &result)
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	(void)result;
+	return refuse(ENOTSUP);
+#else
+	try
+	{
+		if (!transaction(connection))
+			return false;
+		if (command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+		    !critical_command_envelope_valid(command))
+			return refuse(EINVAL);
+		const unsigned long session = mysql_thread_id(connection);
+		item_transfer_payload payload = {};
+		sql_room_item_payload_batch expected;
+		if (!item_transfer_command_decode_payload(command, &payload))
+			return refuse(EILSEQ);
+		if (!sql_room_item_payload_capture(payload, &expected))
+			return false;
+		if (payload.expected_from_revision == UINT64_MAX ||
+		    payload.expected_to_revision == UINT64_MAX ||
+		    result.root_item_uid != payload.selected_item_uid ||
+		    result.item_count != payload.item_count ||
+		    result.from_owner_revision != payload.expected_from_revision + 1 ||
+		    result.to_owner_revision != payload.expected_to_revision + 1 ||
+		    result.corpse_revision || result.collector_catalog_changed)
+			return refuse(EILSEQ);
+		if (!schema(connection))
+			return false;
+		std::unordered_map<uint64_t, size_t> indices;
+		std::unordered_map<uint64_t, uint64_t> revisions;
+		indices.reserve(expected.items.size());
+		revisions.reserve(payload.item_count);
+		uint64_t max_revision = 0;
+		for (size_t index = 0; index < expected.items.size(); ++index)
+			indices.emplace(expected.items[index].object_uid, index);
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const auto &item = payload.items[index];
+			revisions.emplace(item.item_uid, item.expected_item_revision + 1);
+			max_revision = std::max(max_revision, item.expected_item_revision + 1);
+		}
+		if (result.max_item_revision != max_revision)
+			return refuse(EILSEQ);
+		const std::string operation =
+			hex(command.operation_id.bytes.data(), command.operation_id.bytes.size());
+		const std::string limit = std::to_string(payload.item_count + 1);
+		uint64_t season = 0;
+		size_t count = 0, total_bytes = 0;
+		std::set<uint64_t> seen;
+		// Lock metadata before fetching any blobs. Early stream disposal may
+		// drain unread rows, so establish the aggregate byte bound first.
+		{
+			auto rows = stream(
+				connection,
+				"SELECT item_uid,item_revision,payload_version,season_epoch,OCTET_LENGTH(payload) "
+				"FROM sql_room_item_payload WHERE operation_id=" +
+					operation + " ORDER BY item_uid,item_revision LIMIT " +
+					limit + " LOCK IN SHARE MODE");
+			if (!rows)
+				return false;
+			while (MYSQL_ROW row = mysql_fetch_row(rows.get()))
+			{
+				uint64_t uid = 0, revision = 0, version = 0, row_season = 0,
+					 bytes = 0;
+				if (++count > payload.item_count || !number(row[0], &uid) ||
+				    !number(row[1], &revision) || !number(row[2], &version) ||
+				    version != 1 || !number(row[3], &row_season) || !row_season ||
+				    (season && season != row_season) || !number(row[4], &bytes) ||
+				    !bytes || bytes > ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES ||
+				    total_bytes > SQL_ROOM_ITEM_GRAPH_MAX_BYTES - bytes ||
+				    !seen.insert(uid).second)
+					return refuse(EILSEQ);
+				const auto found = indices.find(uid);
+				const auto expected_revision = revisions.find(uid);
+				if (found == indices.end() ||
+				    expected_revision == revisions.end() ||
+				    revision != expected_revision->second ||
+				    expected.payloads[found->second].size() != bytes)
+					return refuse(EILSEQ);
+				season = row_season;
+				total_bytes += bytes;
+			}
+			if (mysql_errno(connection))
+				return refuse(static_cast<int>(mysql_errno(connection)));
+		}
+		if (count != payload.item_count || !transaction(connection, session))
+			return count != payload.item_count ? refuse(EILSEQ) : false;
+		count = total_bytes = 0;
+		seen.clear();
+		{
+			auto rows = stream(
+				connection,
+				"SELECT item_uid,item_revision,payload_version,season_epoch,OCTET_LENGTH(payload),"
+				"SUBSTRING(payload,1,131073) FROM sql_room_item_payload WHERE operation_id=" +
+					operation + " ORDER BY item_uid,item_revision LIMIT " +
+					limit + " LOCK IN SHARE MODE");
+			if (!rows)
+				return false;
+			while (MYSQL_ROW row = mysql_fetch_row(rows.get()))
+			{
+				unsigned long *lengths = mysql_fetch_lengths(rows.get());
+				uint64_t uid = 0, revision = 0, version = 0, row_season = 0,
+					 bytes = 0;
+				if (++count > payload.item_count || !lengths ||
+				    !number(row[0], &uid) || !number(row[1], &revision) ||
+				    !number(row[2], &version) || version != 1 ||
+				    !number(row[3], &row_season) || !row_season ||
+				    (season && season != row_season) || !number(row[4], &bytes) ||
+				    !bytes || bytes > ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES ||
+				    !row[5] || lengths[5] != bytes ||
+				    total_bytes > SQL_ROOM_ITEM_GRAPH_MAX_BYTES - bytes ||
+				    !seen.insert(uid).second)
+					return refuse(EILSEQ);
+				const auto found = indices.find(uid);
+				if (found == indices.end())
+					return refuse(EILSEQ);
+				const auto entry = revisions.find(uid);
+				const auto &expected_bytes = expected.payloads[found->second];
+				if (entry == revisions.end() || revision != entry->second ||
+				    expected_bytes.size() != bytes ||
+				    std::memcmp(row[5], expected_bytes.data(),
+						expected_bytes.size()))
+					return refuse(EILSEQ);
+				season = row_season;
+				total_bytes += bytes;
+			}
+			if (mysql_errno(connection))
+				return refuse(static_cast<int>(mysql_errno(connection)));
+		}
+		if (count != payload.item_count)
+			return refuse(EILSEQ);
+		{
+			auto rows = stream(
+				connection,
+				"SELECT l.event_index,l.item_uid,l.root_item_uid,COALESCE(l.parent_item_uid,0),"
+				"l.from_owner_type,l.from_owner_id,l.from_owner_context_id,l.to_owner_type,l.to_owner_id,"
+				"l.to_owner_context_id,l.item_revision,l.from_owner_revision,l.to_owner_revision,"
+				"l.reason_type,l.reason_id,l.source_site,l.from_equipment_slot,l.to_equipment_slot,"
+				"r.operation_id,r.line_index,r.event_index,r.child_index,r.item_uid,r.before_revision,r.after_revision "
+				"FROM item_ownership_ledger l LEFT JOIN economic_accounting_item_reference r "
+				"ON r.legacy_operation_id=l.operation_id AND r.legacy_event_index=l.event_index "
+				"WHERE l.operation_id=" +
+					operation + " ORDER BY l.event_index LIMIT " + limit);
+			if (!rows)
+				return false;
+			count = 0;
+			while (MYSQL_ROW row = mysql_fetch_row(rows.get()))
+			{
+				unsigned long *lengths = mysql_fetch_lengths(rows.get());
+				if (count >= payload.item_count || !lengths || !row[18] ||
+				    lengths[18] != command.operation_id.bytes.size() ||
+				    std::memcmp(row[18], command.operation_id.bytes.data(),
+						lengths[18]))
+					return refuse(EILSEQ);
+				const auto &item = payload.items[count];
+				const std::array<uint64_t, 24> values = {
+					count,
+					item.item_uid,
+					payload.selected_item_uid,
+					item.parent_item_uid,
+					static_cast<uint64_t>(payload.from_owner.type),
+					payload.from_owner.id,
+					0,
+					static_cast<uint64_t>(payload.to_owner.type),
+					payload.to_owner.id,
+					0,
+					item.expected_item_revision + 1,
+					result.from_owner_revision,
+					result.to_owner_revision,
+					static_cast<uint64_t>(payload.reason),
+					static_cast<uint64_t>(payload.reason_id),
+					static_cast<uint64_t>(command.source_site),
+					0,
+					0,
+					count,
+					count,
+					0,
+					item.item_uid,
+					item.expected_item_revision,
+					item.expected_item_revision + 1
+				};
+				for (size_t index = 0; index < values.size(); ++index)
+				{
+					uint64_t actual = 0;
+					if (!number(row[index < 18 ? index : index + 1], &actual) ||
+					    actual != values[index])
+						return refuse(EILSEQ);
+				}
+				++count;
+			}
+			if (mysql_errno(connection))
+				return refuse(static_cast<int>(mysql_errno(connection)));
+		}
+		if (count != payload.item_count)
+			return refuse(EILSEQ);
+		return transaction(connection, session);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return refuse(ENOMEM);
+	}
 #endif
 }
 
