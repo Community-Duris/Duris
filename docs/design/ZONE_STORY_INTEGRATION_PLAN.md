@@ -291,6 +291,9 @@ Alatorin's [interim district review](zone-stories/ALATORIN.md) adds concrete
 requirements to these steps. Its 495 contracts include 93 paid offerings;
 all 952 rooms, 602 objects and 1,821 reset families have now been reviewed.
 Publication awaits selected foreign supply and shared-handler qualification.
+All 336 foreign item prototypes named by local native offerings/rewards have
+also been reviewed. That resolves their identity and types; it does not complete
+their source routes or enable guarded material preparation.
 
 - **Exact recipe alternatives.** Current `carried_item` checks sum all listed
   kinds. That is suitable when mixed kinds really qualify, but not for two
@@ -318,6 +321,31 @@ Publication awaits selected foreign supply and shared-handler qualification.
   random draws do not guarantee all nine pairs. Osquip death/expiry requires
   accepted birth, clock and replacement evidence before personal/fresh cooking
   objectives. Test donation, nested storage, failed grants and reconnect.
+- **Material preparation and released inputs.** Preserve active refusal for
+  salvage and refining, including the salvage guard ahead of material downgrade.
+  Reuse the existing one-input/two-output craft submission where sufficient;
+  qualify the full random salvage outcome, essence/recipe, dynamic price and
+  tool use together before enabling it. Authority/allocation refusal must not
+  become an intentional destructive skill failure. Legacy refining reads object
+  fields and failure-display data after extraction releases its inputs to the
+  pool. Capture stable identity, bonus and display before retirement, and test
+  both inventory orders with invalidated released storage/descriptions.
+  The old-ore catalyst range, exactly-one versus cash fee and consumption of
+  multiple ores need explicit policy qualification. Freeze the two exact roots,
+  catalyst/fee, roll and output obligation for accounting recovery. Correct the
+  salvage two-material comment to match the one-of-three branch; a probability
+  change is a separate balance decision. Native supplied materials remain valid
+  without fabricated personal preparation history.
+- **Distinct ingredient sources.** Alatorin's ethereal rose has foreign ground
+  stock and a local rare carrier alternative. Psychomia is a one-object
+  same-VNUM treant-death birth, despite two-ingredient dispersal prose; its
+  duration field has no matching animal-decay assignment. Pike/clam come from
+  delayed random fishing or supplied routes, without a current fish timer.
+  Qualify the fishing grant before catch prose/XP/history, which currently
+  precede publication. Forage refuses active accounting; its port needs loaded
+  template preflight, actual terrain/random kind/poison and output identity.
+  Neither an item's name nor its source-file owner establishes personal
+  acquisition. Keep supported supplied ingredients and independent terminals.
 - **City membership and actual loaded sources.** Alatorin's interiors connect
   through loaded `surfacekeeps` roads. Keep discovered area, authored district,
   recipient location and contract owner separate; qualify wilderness map
@@ -823,10 +851,17 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   contracts/topics and fifteen shops, with 93 paid-offering and custom-service
   dependencies; it is not a completed twenty-sixth dossier.
   All 952 rooms, 425 mobiles, 602 objects, fifteen shops and 1,821 reset
-  families are now reviewed. Complete selected foreign supply and shared-handler
-  paths before comprehensive publication. Qualify two typed money-pile I
+  families and all 336 foreign item prototypes are now reviewed. Complete
+  selected foreign supply and shared-handler paths before comprehensive
+  publication. Qualify two typed money-pile I
   rewards, actual reset/parent policy, stale stock references and targeted
   slot/prose repairs alongside the access findings.
+- [ ] Qualify salvage/refining before publishing them as active preparation:
+  retain both guards; capture refining data before extraction; test invalidated
+  released objects, catalyst count/order, fee admission, missing output and
+  rejected grants. Port frozen inputs/tools, random success/failure and the whole
+  output set with recoverable settlement. Fix the stale probability explanation
+  separately from balance. Supplied materials remain a distinct supported route.
 - [ ] Add typed native reward qualification before journal availability claims:
   distinguish ordinary I items, I money piles and explicit C wallet rewards.
   Preflight unsupported outputs before offering consumption; retain committed

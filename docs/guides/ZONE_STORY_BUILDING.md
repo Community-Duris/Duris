@@ -260,6 +260,16 @@ and keep personal acquisition optional until accepted source events exist.
 Fresh controls, keys and equipment also need durable reset-generation issuance
 under active accounting; a recovered admitted object is a separate case.
 
+Check the command's outer admission guard before advertising a preparation
+route. Alatorin's material review confirms salvage and refining refuse active
+accounting; even the transactional downgrade helper is behind salvage's guard.
+Keep supplied/admitted ingredients distinct from personally preparing them.
+Random quantities, recipe targets, prices and tool use need one accepted,
+recoverable outcome; success prose or a detached output alone is not a receipt.
+Do not describe an allocation/authority refusal as an intended failed skill roll.
+The [material repair plan](../design/zone-stories/ALATORIN.md) covers refining's
+released-input reads, catalyst/fee ambiguity and partial-grant qualification.
+
 ## Later schema capabilities
 
 All three versions reject dialogue milestones, personal recovery, kills, arbitrary scripted events,

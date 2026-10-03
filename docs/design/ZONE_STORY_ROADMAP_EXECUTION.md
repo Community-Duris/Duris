@@ -1087,13 +1087,18 @@ reviewed, including every local switch/teleport prototype. All 3,596 reset
 commands/1,821 families are now reviewed, completing the other 1,469 non-D
 families. Selected foreign supply and shared-handler qualification remain.
 The draft lists exact ranges and remaining boundaries.
+The foreign-item review covers all 336 foreign native-item prototype
+reads: 220 tradeskill kinds and 116 others, including loaded paper 5. Exact
+types, fields and descriptions are reviewed; selected foreign supply routes
+and custom dispatch remain separate qualification work.
 
 The proposed progression separates kitchens/royal dishes, collecting and
 professional commendations, army/brewery proofs, arcanums/random attribute
 scrolls/nine rings, mining/master crafting, libraries/gardens, independently
 owned rogue/outpost requests, port supply and seven divine gifts. Ninety-three
-native offerings include coins. Smelting, mining and paid cleric service
-deliberately refuse active accounting; these remain explicit adapter work.
+native offerings include coins. Salvage, refining, smelting, mining and paid
+cleric service deliberately refuse active accounting; these remain explicit
+adapter work.
 
 The access continuation identifies eight shrine controls using actual command
 70 (`hit`), remote treasury mechanisms, consumable honour/kings keys and the
@@ -1137,6 +1142,28 @@ without fabricating an encounter or breaking the rest of the location's story.
 Blank paper 5 remains a real administrative prototype. Custom-source review
 still precedes a final classification of tinker's-token/prison-key orphans.
 
+The material-preparation continuation confirms the outer active salvage guard
+also blocks its existing transactional downgrade helper. Legacy salvage grants
+its varied outputs independently before retiring the source; its adapter needs
+the whole frozen outcome, including tools, recipe/essence and dynamic prices.
+Refining reads object fields and failure-message data after extraction releases
+its inputs to the pool. This confirmed source lifecycle defect has a focused
+repair/invalidated-storage test proposal; no player crash was reproduced.
+Its old-ore catalyst and zero/one/multiple-ore fee/consumption policy require
+qualification, as do output preflight and recoverable failed grants. The stale
+two-material “67%” comment should match the one-of-three branch without changing
+balance. Both commands remain unavailable with active accounting.
+
+Selected supply reads now distinguish the rose's ethereal ground stock from
+Mishanen's rare flower declaration; psychomia's one-object treant-death birth
+from stock and stale two-ingredient prose; and fishing from supplied pike/clam.
+Neither the plant's duration field nor the disabled fish timer establishes a
+freshness deadline. Fishing catch prose/XP precede the unchecked grant result;
+accepted publication needs qualification before personal catch history.
+Foraging also refuses active accounting and needs preflight plus frozen
+terrain/kind/poison issuance. These bounded foreign reads do not complete the
+remaining remote source/dispatch audit or foreign-area dossiers.
+
 New plan detail covers exact any-of recipe readiness instead of summed mixed
 materials, bounded district/family presentation, NPC-held staged smelting and
 fee publication, random scroll and timed osquip lineage, interior/outer-city
@@ -1159,6 +1186,10 @@ block/recipient/paid-offering and reviewed-range metrics; source digest,
 selected recipe shapes, current mechanism commands, shrine reciprocal/D edges,
 invalid wall target, key break values, typed money rewards and slot flags,
 selected return edges, complete reset-family coverage and selected sources;
+all 336 loaded foreign item prototypes, material types, active preparation
+guards, inclusive random branch, refining catalyst/fee and released-input paths;
+selected rose stock, four treant declarations/one-object birth, the plant's
+missing animal-decay assignment, forage guard and fishing publication order;
 whitespace; and local links across the five changed documents. All 2,668 native
-definitions and all 48 maps remain unchanged; 331 local links resolve.
+definitions and all 48 maps remain unchanged; 345 local links resolve.
 This addition changes documentation only; no C++ build was required.

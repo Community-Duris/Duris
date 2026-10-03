@@ -64,6 +64,14 @@ Completed additional reads at this checkpoint:
   fields as quest predicates. The loader and relevant probability helper were
   read for the distinctions below. Shared switch dispatch, current command
   IDs, door unlock and accepted key-destruction publication were also reviewed.
+- All 336 foreign item prototypes named by local native I offerings/rewards:
+  220 in [tradeskills](../../../areas/obj/tradeskills.obj) and 116 in the
+  other loaded sources, including paper 5. Every field and description was
+  reviewed, preserving exact repeated fields. This completes their prototype
+  review, not every foreign supply route or the dossiers for those areas.
+  The full [salvage module](../../../src/item/salvage.c), `get_matstart` and
+  `do_refine` in [tradeskills](../../../src/economy/tradeskill.c) were also
+  reviewed for the material preparation findings below.
 
 The five literal local assignments are miner's helmet 83457, quarterstaff
 83605, wondrous ring 83698, ship yard 83786 and doctor 83414. The computed
@@ -321,6 +329,92 @@ progress from VNUM/UID and accepted events, display the actual current item
 name and slot, and treat source descriptions or examination as guidance until
 a qualified learned-clue adapter exists.
 
+### Material preparation and foreign item identity
+
+The foreign prototype review confirms 210 sequential material kinds
+400000–400209, vellum recipe 400210, three treasure/experience rewards
+400233–400235 and six large ore kinds used by Alatorin's native deliveries.
+The other 116 kinds include ordinary supplies, remote trophies, crafting outputs
+and quest rewards. Their source-file owner does not establish where the item
+was obtained: an Alatorin exchange can create a Winterhaven-defined output.
+Physical adamantite coins 44509 are type-8 treasure, whereas the divine coins
+83308 are type-20 money. Use loaded types and exact bindings, not names, when
+choosing accounting and journal semantics. A valid foreign prototype without
+a reset declaration may still have a native or custom producer.
+
+Selected supply routes have additional source-backed distinctions:
+
+| Preparation | Reviewed source | Journal and qualification consequence |
+| --- | --- | --- |
+| Gardener's ethereal rose | `eth2.zon` line 133 declares O 32627, cap one, room 32685, chance 100. Rooms 32683–32687 in [the ethereal forest](../../../areas/wld/eth2.wld) were read in full; the source room has ordinary north/east/south edges. Mishanen's local G entry is another supply declaration for the same kind. | Show the selected ground and carrier alternatives with live generation/cap state. These local edges do not establish a complete journey to the plane or a mandatory belt. Mobile 32627 is a separately typed lost girl with a replacement-mob death special; matching VNUMs alone do not make it the rose's producer. |
+| Psychomia plant | [Winterhaven](../../../areas/zon/wh.zon) declares four M 55246 rows, cap four/chance 100, in dispersal rooms 55402 and 55614. Both rooms and the treant prototype were read in full. `wh_corpse_to_object` loads one same-VNUM object in the death room and sets value[0]; it is not declared O/G plant stock. | Bind the actual treant death, room and output UID before optional personal recovery. Dispersal-room prose says two of each ingredient, but the reviewed handler creates one. As the [Winterhaven dossier](WINTERHAVEN.md) explains, this plant lacks the animal decay assignment; a duration-valued field alone is not proof of expiry. Do not invent a timed plant objective. |
+| Pike and clam | `get_pole`, `do_fish` and the full fishing callback in [tradeskills](../../../src/economy/tradeskill.c) include 318/334 among twelve random kinds. Fishing needs a recognized directly carried pole, water, skill and a successful delayed check; interruption and exhaustion stop it. Its former fish timer is commented out. | Supplied fish satisfy the exact kitchen request without fishing history or a freshness deadline. Catch prose and XP precede the grant, whose boolean result is ignored. Qualify successful publication and accepted catch evidence before personal-fishing milestones; a cast or failed grant is insufficient. |
+| Brew and kitchen forage | [Foraging](../../../src/cmd/actoth.c) uses terrain-specific random tables for 822–827, with race/class/luck and poison rules. `do_forage` explicitly refuses active accounting. Its helper places the selected output directly and requires template preflight during a port. | Treat forage as a guarded optional source, alongside supported supplied/shop/reset alternatives. Freeze actual terrain, random kind, poison and output identity, then publish the accepted result. A `_frg_` keyword or an ethereal garden description does not authorize foraging every ingredient there. |
+
+These are bounded supply reads, not full foreign-zone audits. Complete the
+remaining remote trophies, source dispatch and guarded preparations before
+publishing a comprehensive Alatorin map. The supplied/native terminal policy
+remains independent of optional personal routes.
+
+**Confirmed active prerequisites:** both `do_salvage` and `do_refine` explicitly
+refuse active accounting. The salvage guard also precedes material downgrading,
+although its helper already submits one input and two outputs through a craft
+transaction. Its presence does not make that command available in active play.
+Keep collecting fragments, arcanum ingredients and armor materials available as
+supplied/admitted inputs where the native exchange supports them, while clearly
+marking personal salvage/refining routes as awaiting an accounting adapter.
+This does not prove that every material or all Alatorin requests are unavailable.
+
+Legacy salvage chooses its material grade from item value and material, can
+produce one or two copies, and may add magical essence and a recipe. It varies
+output prices using skill, level, luck and random draws; the recipe records a
+particular target. Its existing preflight checks the material and eligible recipe
+templates. The ordinary reward path grants outputs separately and finally
+extracts the source even if an output grant was refused; two essence branches
+also send success prose without checking their grant result. Port the entire
+outcome, source and applicable tools together, freezing random choices, price,
+recipe target and all outputs before publication. Preserve intentional skill-roll
+failure as a distinct accepted destructive outcome, rather than treating an
+authority/allocation failure as gameplay failure. Reuse the downgrade craft
+transaction where it covers the selected outcome, without removing the outer
+guard ahead of qualification.
+
+The “67% chance” comment for two materials disagrees with the actual
+`!number(0, 2)` condition. The current
+[inclusive number helper](../../../src/core/random.c) gives that branch one
+of three outcomes. Correct the explanation as a narrow source/comment repair;
+changing the probability would be a separate balance decision.
+
+**Confirmed legacy refining lifecycle defect:** the consumption loop calls
+`OBJ_VNUM(t_obj)` after `extract_obj(t_obj)`, including computing the ore bonus
+after extraction. Its failure messages also retain the selected material pointer
+after consuming that material. [Extraction](../../../src/world/handler.c)
+calls [free_obj](../../../src/world/db.c), which frees changed descriptions and
+releases the object to [the pool](../../../src/core/mm.c); the
+[VNUM/display macros](../../../src/core/utils.h) still dereference it. This is
+an invalid object-lifetime dependency confirmed in source, not a reproduced
+player crash. Active accounting currently blocks the function before it runs.
+
+Plan a focused repair that captures the kind/bonus and stable display data
+before retirement, with no subsequent access to released inputs. Exercise both
+inventory orders and failure messages using a harness that invalidates released
+objects/descriptions; pooled storage alone may hide the problem from a sanitizer.
+Refining consumes two equal materials and raises their kind by one on success.
+Its catalyst test recognizes old ore kinds 194–233, not large ore 400262 etc.
+With exactly one old ore it avoids the 50,000-copper fee; with zero or multiple
+ores it charges that fee, yet the loop still consumes counted ores. Preserve and
+test that observed policy while a builder decides whether the multiple-ore
+behavior is intended. Preflight the output and freeze the selected roots, fee or
+catalyst, roll and outcome in a recoverable accounting operation before enabling
+it. A rejected grant must not silently lose paid inputs or an earned output.
+
+Qualification must cover zero/one/multiple catalysts, both inventory orders,
+highest-grade rejection, missing templates, failed skill rolls, rejected/partial
+grants, tool use, donated inputs, replay and restart. A committed preparation
+receipt is different from merely holding a supplied material. Selected foreign
+source/dispatch review still remains; all 336 prototype reads alone do not
+establish their active availability or personal acquisition history.
+
 ## Required universal capabilities and repair proposals
 
 | Finding | Required implementation and qualification |
@@ -328,6 +422,8 @@ a qualified learned-clue adapter exists.
 | ZSQ-ALA-RECIPES: exact alternatives | Add a versioned recipe predicate with explicit any-of complete recipes and all-of exact per-kind counts. Allocate concrete unused root UIDs; never let the same root satisfy two slots. Tests must reject one of each alternative when two/six/eight identical kinds are required, yet preserve legitimate gifted supplies and any supported terminal alternative. Until then use exact single-kind checks or text guidance without aggregate readiness. |
 | ZSQ-ALA-DISTRICTS: bounded large journals | Preserve the 256-row, 32-step, 64-item-check and 512-KiB bounds. Inventory safe equivalences before choosing rows; the 209 ordinary one-item fragment trades are an example, while differing rewards, recipients and retirement are not automatically equivalent. Add family/district expansion and pagination to a shared terminal/client projection; encounter visibility and receipt identity remain authoritative. Increase a bound only if a faithful final map actually requires it. |
 | ZSQ-ALA-SERVICES: settlement and staged stock | Keep smelting, mining and paid-cleric refusal. A smelter adapter must admit two exact NPC/player-held ores, frozen price, actor, payment ownership and output together, with recoverable refund/publication and no mixing between helpers. Qualify both pay-first and ore-first sequences. Review detached consumed ore cleanup and unchecked output allocation before any re-enable. Cleric purchase and actual spell/resurrection outcome need separate settlement/effect proof. |
+| ZSQ-ALA-MATERIALS: salvage and refining | Keep both active-mode guards, including the guarded downgrade path. Port exact inputs/tools, random grade/count/essence/recipe, dynamic prices and intentional failed outcomes as one recoverable preparation. Fix legacy refining's post-extraction reads and failure display using stable pre-retirement data; test invalidated pooled objects. Qualify the old-ore catalyst/fee policy and rejected grants, and correct the two-material probability comment without an unreviewed balance change. Supplied materials do not prove personal preparation. |
+| ZSQ-ALA-SUPPLY: ground, death, fishing and forage | Keep exact source kinds and foreign ownership. Admit ground/reset issuance and death-born plants with source episode/output UID, without inferred timers or personal kills from delivery. Qualify fishing publication before catch prose/XP/history; retain forage refusal until preflight and frozen terrain/kind/poison issuance exist. Test authority rejection, movement/interruption, competing caps, gifts and restart. Dispersal-room quantities are content decisions, not creation receipts. |
 | ZSQ-ALA-RANDOM: scroll and power publication | Freeze one random attribute result and consume its exact source scroll only with a recoverable output grant. Gifted outputs need custody, not invented recitation history. Wondrous-ring power changes and helmet `paydirt` use are separate effects; a timer or utterance alone proves no successful power. Test failures, replay, restart, donation and changed equipment. |
 | ZSQ-ALA-DECAY: osquip preparation | The osquip death special creates item 120051 in its room, then initializes decay; the periodic consumer replaces expired remains with a generic corpse. Add accepted birth/expiry/replacement lineage and a precise episode clock before optional personal/fresh cooking objectives. Test donation, nested storage, expiry during delivery and reconnect. Retain native exact item acceptance. |
 | ZSQ-ALA-CITY: ownership and map visibility | Resolve interior/outer-city membership deliberately. Keep contract owner, current recipient room, visited area and authored district separate. Test movement across both directions, discovered/undiscovered neighboring areas, hidden room-number client behavior and duplicate receipt projection. |
