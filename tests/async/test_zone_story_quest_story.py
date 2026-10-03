@@ -15,7 +15,7 @@ catalog = module.production_catalog(ROOT)
 mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin_towers_forest")
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
-assert report["daily_unit_count"] == 1913
+assert report["daily_unit_count"] == 1905
 assert mapping["schema_version"] == 3 and mapping["stories"][0]["steps"][0]["optional"]
 assert sum(s["category"] == "service" for s in mapping["stories"]) == 12
 assert len(mapping["exclusions"]) == 1 and len(mapping["exclusions"][0]["contracts"]) == 40
@@ -135,6 +135,23 @@ assert pearl_stories["warthehrs-letter-to-lyle"]["steps"][1]["item_vnums"] == [1
 assert pearl_stories["abals-reply-for-lyles-fragment"]["steps"][1]["item_vnums"] == [142219]
 assert all(s["steps"][-1]["contracts"] == s["contracts"] for s in pearl["stories"])
 assert all(s["category"] == "service" for s in pearl["stories"] if s["contracts"][0]["giver_vnum"] in (142232, 142233, 142234))
+raven = next(m for m in catalog["story_mappings"] if m["source_area"] == "ravenloft2")
+assert raven["schema_version"] == 3 and raven["revision"] == 1
+assert len(raven["stories"]) == 33 and not raven["exclusions"]
+assert {category: sum(s["category"] == category for s in raven["stories"]) for category in ("story", "request", "service")} == {"story": 12, "request": 13, "service": 8}
+assert report["eligible_by_zone"]["590"] == 25
+assert sum(t.get("optional", False) for s in raven["stories"] for t in s["steps"]) == 14
+raven_stories = {s["id"]: s for s in raven["stories"]}
+roles = [raven_stories[id] for id in ("the-chaplains-favor", "the-whispering-blades-favor", "the-archmages-favor", "the-dread-guards-favor")]
+assert [s["steps"][2]["item_vnums"] for s in roles] == [[59281], [59289], [59300], [59282]]
+assert all(s["steps"][0]["optional"] and len(s["steps"][0]["contracts"]) == 8 for s in roles)
+assert all(s["steps"][1]["item_vnums"] == [59202] and s["steps"][1]["count"] == 5 for s in roles)
+blinsky = raven_stories["blinskys-clockwork-recovery"]
+assert len(blinsky["contracts"]) == 5 and blinsky["steps"][0]["item_vnums"] == [59093, 59126, 59255, 59254, 59283]
+assert blinsky["steps"][0]["count"] == 1
+assert all(s["steps"][-1]["contracts"] == s["contracts"] for s in raven["stories"])
+assert all(raven_stories[id]["category"] == "service" for id in ("ezmereldas-paid-reading", "izeks-paid-dues", "janders-ant-meat", "rahadins-spectral-key"))
+assert sum(u["daily_candidate"] for u in module.story_units(catalog) if u["zone_number"] == 590) == 18
 new_mappings = {m["source_area"]: m for m in catalog["story_mappings"] if m["source_area"] in new_areas}
 assert set(new_mappings) == new_areas and all(m["coverage"] == "complete" for m in new_mappings.values())
 assert sum(d["source_area"] in new_areas for d in catalog["definitions"]) == 86

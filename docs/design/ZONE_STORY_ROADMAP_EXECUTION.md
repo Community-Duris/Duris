@@ -45,13 +45,13 @@ neither every branch nor every historical prerequisite.
 | 18 | The Clawed Caverns | [Comprehensive source dossier](zone-stories/THE_CLAWED_CAVERNS.md): twenty Q/eight M, 89 rooms, forty mobiles, 55 objects, 171 resets/all 106 grouped families; all five specials, 26 mobile/one object binding including computed range | Revision 1: one rainbow-delivery story, six services/thirteen excluded returns, ten contacts/all topics; optional keys and complete custom switch/death/mage/access guidance | Active stock, target-safe damage/recipient parsing, committed death-container and key/output/recipient retirement, confirmed travel and paid-clue wallet settlement |
 | 19 | Defense of Longhollow | [Comprehensive source dossier](zone-stories/DEFENSE_OF_LONGHOLLOW.md): fifteen Q/63 M, 100 rooms, 77 mobiles, 74 objects, one shop, 213 resets/all 150 grouped families; zero literal assignments, one computed epic teacher and shared execution reviewed | Revision 1: four stories/five requests, five clothing services/one empty exclusion, forty-one contacts/all sixty addressed families and six optional producer receipts; exact source/access/quantity/reward guidance | Active reset supply; three cap/quantity conflicts; four mixed payments and epic teaching; fixed powers versus prose; absent rescue/healing/siege/title outcomes; confirmed source/gift and all-stage history |
 | 20 | The Black Pearl | [Comprehensive source dossier](zone-stories/THE_BLACK_PEARL.md): 31 Q/QA and fourteen M, 84 rooms, 63 mobs, 98 objects, 391 resets/all 187 families, no local shops/literal specials; disabled ship and foreign keys/procedures/topology reviewed | Revision 1: two stories/twelve requests, seventeen services, 26 contacts/all topics and 25 optional checks; complete exact fragment/courier/hilt/skin/gem guidance | All campaign NPCs and entrance-key spirits held; missing invitation/sewer/scepter/chests; no reciprocal entry/disabled mobile ship; paid gadget and active generation; owned campaign discovery/reveal, replacement lineage and fixed party reward terms |
-| 21–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 21 | The Ravenloft Catacombs | [Comprehensive source dossier](zone-stories/THE_RAVENLOFT_CATACOMBS.md): 37 Q/QA and 162 M/MA, 400 rooms, 98 mobs, 327 objects, two shops, 1,457 resets/all 665 families; computed shared roles and bounded foreign sources/routes reviewed | Revision 1: twelve stories/thirteen requests/eight services, one five-artifact family, 25 contacts/all 135 addressed blocks and fourteen optional checks; exact five-coin roles and three distinct skull finales | Active sources/shopping; exact repeated-container parent; key/switch/travel/source evidence; stateful cards; narrated resurrection/forms/key promises and selected mechanism repair |
+| 22–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is the Ravenloft Catacombs, followed by the Realm of Barovia.
-Their earlier native bindings do not establish comprehensive
-source review. Do not advance a zone's status
-merely because the map parses, the Q denominator matches, or a candidate item
-graph was extracted.
+The next area is the Realm of Barovia, followed by the Lost Temple of Tikitzopl.
+Source and gameplay qualification remain distinct throughout the full queue.
+Do not advance a zone's status merely because the map parses, the Q denominator
+matches, or a candidate item graph was extracted.
 
 ## Findings that expand or reorder the implementation plan
 
@@ -822,3 +822,60 @@ migration, DB/server operation or merge occurred. Twenty of 220 roadmap areas
 are source-comprehensive, with 200 pending. Continue with Ravenloft Catacombs,
 then the Realm of Barovia. Active source, access, foreign campaign reveal and
 full player-journey qualification remain open.
+
+## Ravenloft Catacombs checkpoint
+
+Priority 21 is source-comprehensive with
+[its dossier](zone-stories/THE_RAVENLOFT_CATACOMBS.md) and
+[reproducible index](../reference/zone-story-audits/ravenloft2.md).
+Reviewed all 199 native blocks: 37 exchanges, 135 addressed responses and
+27 ambient actions; 400 rooms, 98 mobs, 327 objects, both shops and 1,457 resets
+across all 665 grouped families. Computed shop/switch/teleport roles, shared
+dispatch and container placement, temporary vampire spells, brittle keys and
+bounded foreign sources/routes are included. No local Strahd form-transition
+routine or checked-in world trigger binding was found.
+
+Revision 1 adds twelve stories, thirteen requests and eight services: 25
+achievements and eighteen potential daily groups, 25 contacts and fourteen
+optional checks. Five clockwork artifacts share one Blinsky recovery achievement.
+Four Rahadin favor commissions require five physical coin items and a distinct
+scroll, with optional earlier proof history. Three Strahd-skull recipients have
+different rewards and retire independently. Two ash recipients remain independent;
+neither one delivery nor supplied stock invents another delivery or a full campaign.
+The eight services and mode-zero disappearing contacts earn no daily credit.
+
+The source findings expand the universal plan as follows:
+
+| Capability / repair | Evidence and qualification proposal |
+| --- | --- |
+| ZSQ-RAVEN-CONTAINER-PARENT | P population resolves a matching container globally, including repeated marble slabs and mummified remains. Bind source evidence to an exact parent generation; explicitly decide population compatibility. Test distinct rooms, skipped parents, caps and recovery before promising exact crypt contents. |
+| ZSQ-RAVEN-SHOP-STOCK | Blinsky's toy woman is real carried stock and the shared shop can sell it despite its absence from the replenishing product list. Favor scrolls are carried by Rahadin's following cloak, also a shop. Preserve sources; qualify active creation and atomic existing-stock purchase, roaming/fixed-room behavior and merchant retirement separately. |
+| ZSQ-RAVEN-FORTUNE / WALLET-SERVICES | Favor coins are five physical objects, not wallet money. Their native item-only rewards and Izek's wine cash rewards use supported recovery. Paid reading/dues use unsupported wallet offerings; add frozen atomic fee/outcome settlement without charging failed or duplicate attempts. |
+| ZSQ-RAVEN-READING / LORE | Twelve card faces are stateless addressed responses, accessible without payment or a selected session. Define accepted paid session, choices and terminal policy if intended; add accepted topic/examination events without per-alias achievement inflation. Sasha's Dayheart/Sunsword journal remains optional history. |
+| ZSQ-RAVEN-FORMS / RESURRECTION / FACTION | Wolf/human/bat/gas are independent reset mobs; the Kasimir corpse and Patrina banshee are already stocked. Vampire potion effect is temporary, with a Theurgist alternative. Define committed actual outcomes and generations before claiming personal kills, resurrection, permanent race/faction or healed sunlight. |
+| ZSQ-RAVEN-ACCESS / OWNERSHIP | Old and spectral keys have 100 break chances; returned old key has a new identity. Carried versus ground switches differ, and foreign gateways are not direct reciprocal entrances. Qualify actual key/switch/travel with exact source/destination and consumption recovery; foreign encounters must not fabricate owned-area discovery. |
+| ZSQ-RAVEN-SKELETON / EPITAPH | Search switch 59301 targets nonexistent room-59145 direction 8; apparent reciprocal is direction 9. Builder confirms intended target, then tests both sides and safe failure. Alternate Sasha epitaph 59132 has no ordinary placement; choose restoration with a clue or retirement. |
+| ZSQ-RAVEN-TERMS / REVEAL | Phylactery and Izek key lack confirmed access targets; Ezmerelda/Rictavio promise keys absent from actual outputs. Preserve IDs/balance while deciding ceremonial reward versus destination or prose repair. Stage future personal-source and Dayheart campaign clues by accepted evidence. |
+
+Source-comprehensive and gameplay-qualified remain separate. Active stock,
+shopping, exact crypt contents, real traversal/key fracture, chosen repairs and
+full committed player journeys are still open. The updated catalog has 44 journals,
+2,265 achievement units, 1,905 potential daily units and 2,485 projected rows;
+all 2,668 native receipt identities and the source fingerprint are preserved.
+Twenty-one of 220 roadmap areas are source-comprehensive, with 199 pending.
+Continue with the Realm of Barovia, then the Lost Temple of Tikitzopl. Accounting
+remains mandatory throughout this work.
+
+Validation for the Ravenloft checkpoint:
+
+- Windows production-catalog/source regression and the native all-map schema/
+  journal regression passed, including exact quantities/roles, supplied preparation,
+  Blinsky alternatives, independent skull/ash recipients, service exclusion,
+  foreign encounter ownership, read-only readiness and saved receipt recovery.
+- Runtime production and actual arrival/accounting-gate regressions passed.
+  The cached SQL server build, authoritative harness format/check and whitespace
+  passed; all 682 reviewed local document links resolve.
+- All 2,668 raw definitions, native reward terms, receipt IDs, registry, revision/
+  fingerprint and the other 43 sidecars remain unchanged. No active-world source
+  qualification, accounting activation, migration, DB/server operation or merge
+  was performed.

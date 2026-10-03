@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 43 authored journals, accounting-gated player surfaces, starter/town
+**Status: 44 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -9,8 +9,20 @@ The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
 source dossiers, shipped changes, newly found dependencies, and verification.
 Twin Towers, Plains of Life, Ailvio, Braddistock, Breale, Abandoned Elven
 Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus, Torg, Vast Hidden
-Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter Woods, the Clawed Caverns, Defense of Longhollow and the Black Pearl now have complete source story maps;
-their active-world journeys remain unqualified. Schema 3 adds
+Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl and Ravenloft Catacombs now have complete source story maps;
+their active-world journeys remain unqualified. Ravenloft projects all 37 native
+exchanges into twelve stories, thirteen requests and eight services, with eighteen
+potential daily groups. Its 25 contacts and fourteen optional checks explain
+exact physical fortune coins, four role scrolls, competing proof recipients,
+one five-artifact recovery family and three distinct skull finales.
+The [Ravenloft dossier](zone-stories/THE_RAVENLOFT_CATACOMBS.md) expands shared
+qualification for exact repeated-container parents, active existing-stock/shop
+purchase, brittle-key replacement, confirmed switch/travel, optional examined
+lore and stateful paid-card sessions. Independently reset Strahd forms, the
+pre-existing Kasimir corpse and temporary vampire spell cannot establish personal
+kill, resurrection or permanent faction/race history. Selected skeleton-switch,
+unplaced epitaph and missing-key/prose repairs require explicit builder choices;
+native reward identities and balance remain preserved. Schema 3 adds
 optional preparation. Ailvio's 78 pair recipes project one family-feeding story;
 Braddistock's pet rescue is displayed as an intermediate service. Breale preserves
 its deliberate drawing riddle and five independent Triad stages. The Homestead

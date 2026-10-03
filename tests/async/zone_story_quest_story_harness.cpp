@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 43 &&
-				tracker.summary_for(7, 42).total == 2277,
+		require(catalog.story_mappings.size() == 44 &&
+				tracker.summary_for(7, 42).total == 2265,
 			"native story projection disagreed with the complete source audit");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -1457,6 +1457,124 @@ int main(int argc, char **argv)
 					std::string::npos &&
 				prepared_pearl.progress_for_zone(7, 42, 1422).completed == 7,
 			"producer receipts replaced spent physical pieces or completed reconstruction");
+		const auto &chaplain = story_for("ravenloft2", "the-chaplains-favor");
+		const auto &blinsky = story_for("ravenloft2", "blinskys-clockwork-recovery");
+		const auto &rictavio = story_for("ravenloft2", "rictavios-strahd-finale");
+		const auto &ezmerelda = story_for("ravenloft2", "ezmereldas-strahd-finale");
+		const auto &jander = story_for("ravenloft2", "janders-strahd-finale");
+		const auto &lich = story_for("ravenloft2", "exethanters-lost-memory");
+		const auto &witch = story_for("ravenloft2", "thredras-rejuvenation");
+		const auto &wine = story_for("ravenloft2", "izeks-elven-wine");
+		const auto &reading = story_for("ravenloft2", "ezmereldas-paid-reading");
+		const auto &raven_map =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "ravenloft2"; });
+		service supplied_raven(catalog);
+		require(supplied_raven.discover_zone(7, 42, 910, 91121, 100, "arrival") ==
+					result::applied &&
+				supplied_raven.meet_npc(7, 42, 59081, 91121, 101) ==
+					result::applied &&
+				!supplied_raven.has_discovered(7, 42, 590),
+			"foreign toyshop encounter falsely discovered the catacombs");
+		require(supplied_raven.discover_zone(7, 42, 590, 59057, 102, "arrival") ==
+				result::applied,
+			"Ravenloft synthetic discovery failed");
+		for (const auto &contact : raven_map.contacts)
+		{
+			const auto met =
+				supplied_raven.meet_npc(7, 42, contact.mob_vnum, 59057, 103);
+			require(met == result::applied || met == result::already_applied,
+				"Ravenloft synthetic encounter failed");
+		}
+		const auto raven_section = [&](const auto &story)
+		{
+			const auto at = journal.find("] " + story.title + "\r\n");
+			require(at != std::string::npos, "Ravenloft journal row missing");
+			const auto next = journal.find("\r\n  [", at);
+			return journal.substr(at, next == std::string::npos ? next : next - at);
+		};
+		// Synthetic receipts test projection; unsupported paid journeys remain unqualified.
+		for (const auto &trade : raven_map.stories)
+			if (trade.category == "service")
+				record(supplied_raven, trade.contracts.front(), trade.id.c_str(),
+				       590, 59057);
+		require(supplied_raven.progress_for_zone(7, 42, 590).completed == 0 &&
+				supplied_raven.progress_for_zone(7, 42, 590).total == 25,
+			"fortune, key, food or paid services added quest achievements");
+		supplies.carried.clear();
+		supplies.carried[59202] = 4;
+		supplies.carried[59300] = 1;
+		journal = supplied_raven.render_journal(7, 42, 590, 10, 1, 121, false, false,
+							&supplies);
+		require(raven_section(chaplain).find("Next: " + chaplain.steps[1].text) !=
+				std::string::npos,
+			"four physical coins satisfied the five-coin commission");
+		supplies.carried[59202] = 5;
+		supplies.equipped[16] = 59281;
+		journal = supplied_raven.render_journal(7, 42, 590, 10, 1, 122, false, false,
+							&supplies);
+		require(raven_section(chaplain).find("Next: " + chaplain.steps[2].text) !=
+				std::string::npos,
+			"wrong-role or equipped scroll satisfied the carried Chaplain scroll");
+		supplies.carried[59281] = 1;
+		supplies.carried[59269] = 1;
+		supplies.carried[59255] = 1;
+		supplies.carried[59150] = 1;
+		const auto before_raven_read = supplied_raven.serialize_state();
+		journal = supplied_raven.render_journal(7, 42, 590, 10, 1, 123, false, false,
+							&supplies);
+		for (const auto *story :
+		     { &chaplain, &blinsky, &rictavio, &ezmerelda, &jander, &lich, &witch })
+			require(raven_section(*story).find("Next: " + story->steps.back().text) !=
+					std::string::npos,
+				"supplied Ravenloft materials required personal history or all alternatives");
+		require(supplied_raven.serialize_state() == before_raven_read,
+			"Ravenloft inventory readiness awarded history");
+		require(raven_section(wine).find("250,000 copper") != std::string::npos &&
+				raven_section(wine).find("Turn-in currently unavailable:") ==
+					std::string::npos &&
+				raven_section(reading).find(
+					"unavailable under active accounting") != std::string::npos,
+			"supported cash reward and unsupported wallet offering were confused");
+		record(supplied_raven, blinsky.contracts.front(), "raven-blinsky-one", 590, 59355);
+		record(supplied_raven, blinsky.contracts.back(), "raven-blinsky-two", 590, 59355);
+		require(supplied_raven.progress_for_zone(7, 42, 590).completed == 1,
+			"two clockwork alternatives awarded two recovery achievements");
+		record(supplied_raven, rictavio.contracts.front(), "raven-rictavio", 590, 59356);
+		journal = supplied_raven.render_journal(7, 42, 590, 10, 1, 124, false, false,
+							&supplies);
+		require(supplied_raven.progress_for_zone(7, 42, 590).completed == 2 &&
+				raven_section(ezmerelda).find("Next: " +
+							      ezmerelda.steps.back().text) !=
+					std::string::npos &&
+				raven_section(jander).find("Next: " + jander.steps.back().text) !=
+					std::string::npos,
+			"one skull recipient completed the other distinct finales");
+		record(supplied_raven, lich.contracts.front(), "raven-lich", 590, 59334);
+		record(supplied_raven, witch.contracts.front(), "raven-witch", 590, 59050);
+		record(supplied_raven, chaplain.contracts.front(), "raven-chaplain", 590, 59000);
+		service restored_raven(catalog);
+		require(restored_raven.deserialize_state(supplied_raven.serialize_state(),
+							 &error) &&
+				restored_raven.progress_for_zone(7, 42, 590).completed == 5 &&
+				restored_raven.progress_for_zone(7, 42, 590).total == 25,
+			"Ravenloft recovery changed alternative, recipient or service credit");
+		service prepared_raven(catalog);
+		require(prepared_raven.discover_zone(7, 42, 590, 59057, 100, "arrival") ==
+					result::applied &&
+				prepared_raven.meet_npc(7, 42, 59070, 59057, 101) ==
+					result::applied,
+			"Ravenloft optional proof fixture failed");
+		record(prepared_raven, chaplain.steps[0].contracts.front(), "raven-one-proof", 590,
+		       59000);
+		supplies.carried.clear();
+		supplies.carried[59281] = 1;
+		journal = prepared_raven.render_journal(7, 42, 590, 10, 1, 125, false, false,
+							&supplies);
+		require(raven_section(chaplain).find("Next: " + chaplain.steps[1].text) !=
+					std::string::npos &&
+				prepared_raven.progress_for_zone(7, 42, 590).completed == 1,
+			"one historical proof replaced five current coins or completed a favor");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

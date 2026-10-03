@@ -395,7 +395,36 @@ assert len(pearl_candidates) == 13
 assert all(not r["definition"]["repeatable"] for r in pearl["requests"] if r["block"]["disappear"])
 travel = next(r for r in pearl["requests"] if ("I", 142207) in r["block"]["give"])
 assert ("C", 100000) in travel["block"]["receive"] and travel["definition"]["daily_eligible"]
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl"):
+raven = inventory_module.area_evidence(ROOT, "ravenloft2")
+assert len(raven["requests"]) == 37 and len(raven["dialogue"]) == 135
+assert len(raven["mobs"]) == 98 and len(raven["items"]) == 327 and len(raven["reset_commands"]) == 1457
+assert raven["zone"]["reset_mode"] == 0 and not raven["special_assignments"]
+raven_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "ravenloft2")
+raven_contacts = {c["mob_vnum"]: c for c in raven_mapping["contacts"]}
+assert len(raven_contacts) == 25
+for response in raven["dialogue"]:
+    assert set(response["body"][0].rstrip("~").split()) & set(raven_contacts[response["giver_vnum"]]["topics"])
+for vnum, contact in raven_contacts.items():
+    assert contact["keyword"] in raven["mobs"][vnum]["keywords"]
+assert sum(r["definition"]["daily_eligible"] for r in raven["requests"]) == 26
+assert all(not r["definition"]["repeatable"] and not r["definition"]["daily_eligible"] for r in raven["requests"] if r["block"]["disappear"])
+raven_stories = {s["id"]: s for s in raven_mapping["stories"]}
+assert raven_stories["the-chaplains-favor"]["contracts"] == [{"giver_vnum": 59070, "completion_key": "give=I:59202,I:59202,I:59202,I:59202,I:59202,I:59281;receive=I:59294,I:59314,I:59315;disappear=0"}]
+assert raven_stories["izeks-elven-wine"]["contracts"] == [{"giver_vnum": 59084, "completion_key": "give=I:59035;receive=C:250000;disappear=0"}]
+assert raven_stories["ezmereldas-paid-reading"]["contracts"] == [{"giver_vnum": 59060, "completion_key": "give=C:10000;receive=;disappear=0"}]
+# Existing toy stock is real even though the replenishing shop list differs.
+parent = None
+toy_sources = []
+for reset in raven["reset_commands"]:
+    if reset["command"] in ("M", "F"):
+        parent = reset["arguments"][1]
+    if reset["command"] == "G" and reset["arguments"][1] == 59252:
+        toy_sources.append(parent)
+assert toy_sources == [59081]
+shop_source = (ROOT / "areas/shp/ravenloft2.shp").read_text()
+assert "#59081~" in shop_source and "#59097~" in shop_source
+assert "59252" not in shop_source
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:
