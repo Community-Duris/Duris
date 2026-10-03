@@ -919,6 +919,11 @@ void display_gain(P_char ch, int gain, int type)
 		snprintf(buffer, MAX_STRING_LENGTH, "&+CEXP:&+G %d \r\n", gain);
 		send_to_char(buffer, ch);
 	}
+	else if (IS_SET(ch->specials.act2, PLR2_EXP) && type == EXP_WORLD_QUEST && gain > 0)
+	{
+		snprintf(buffer, MAX_STRING_LENGTH, "&+CQuest EXP:&+G %d \r\n", gain);
+		send_to_char(buffer, ch);
+	}
 }
 
 void update_exp_table()
@@ -1576,7 +1581,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 			static_cast<std::int64_t>(before_exp), static_cast<std::int64_t>(after_exp),
 			static_cast<std::uint16_t>(GET_LEVEL(ch)), progression_modifier_flags,
 			TELEMETRY_QUALITY_NONE));
-	display_gain(ch, (int)XP_final, type);
+	display_gain(ch, type == EXP_WORLD_QUEST ? after_exp - before_exp : (int)XP_final, type);
 	if (GET_LEVEL(ch) >= MINLVLIMMORTAL)
 	{
 		return 0;
