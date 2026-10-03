@@ -1,6 +1,7 @@
 #include "persistence/latency_trace.h"
 #include "core/clock_utils.h"
 
+#include <algorithm>
 #include <pthread.h>
 #include <stdbool.h>
 #include <string.h>
@@ -16,6 +17,9 @@ static uint64_t latency_window_sample_count = 0;
 static uint64_t latency_window_dropped_section_samples = 0;
 static uint64_t latency_window_invalid_clock_samples = 0;
 static uint64_t latency_window_dropped_contended_samples = 0;
+static uint64_t latency_loop_samples[LATENCY_LOOP_SAMPLE_CAPACITY];
+static unsigned int latency_loop_sample_count = 0;
+static uint64_t latency_dropped_loop_samples = 0;
 static uint64_t latency_window_start_utc_us = 0;
 static uint64_t latency_window_start_mono_us = 0;
 static char latency_boot_id[LATENCY_TRACE_BOOT_ID_LENGTH] = "uninitialized";
@@ -171,6 +175,13 @@ static void latency_trace_record_locked(const char *name, uint64_t duration_us, 
 	}
 	if (latency_update_section(name, duration_us))
 		latency_update_top(name, duration_us, tick);
+	if (!strcmp(name, "total_tick"))
+	{
+		if (latency_loop_sample_count < LATENCY_LOOP_SAMPLE_CAPACITY)
+			latency_loop_samples[latency_loop_sample_count++] = duration_us;
+		else
+			++latency_dropped_loop_samples;
+	}
 }
 
 void latency_trace_record(const char *name, uint64_t duration_us, uint64_t tick)
@@ -216,6 +227,8 @@ static void latency_reset_locked(uint64_t utc_us, uint64_t mono_us)
 	latency_window_sample_count = 0;
 	latency_window_dropped_section_samples = 0;
 	latency_window_invalid_clock_samples = 0;
+	latency_loop_sample_count = 0;
+	latency_dropped_loop_samples = 0;
 	latency_window_start_utc_us = utc_us;
 	latency_window_start_mono_us = mono_us;
 }
@@ -246,6 +259,10 @@ void latency_trace_snapshot_take_and_reset(latency_trace_snapshot *snapshot)
 	memcpy(snapshot->sections, latency_sections,
 	       (size_t)latency_section_count * sizeof snapshot->sections[0]);
 	snapshot->section_count = latency_section_count;
+	memcpy(snapshot->loop_samples, latency_loop_samples,
+	       latency_loop_sample_count * sizeof snapshot->loop_samples[0]);
+	snapshot->loop_sample_count = latency_loop_sample_count;
+	snapshot->dropped_loop_samples = latency_dropped_loop_samples;
 	memcpy(snapshot->top, latency_window_top,
 	       (size_t)latency_window_top_count * sizeof snapshot->top[0]);
 	snapshot->top_count = latency_window_top_count;
@@ -307,6 +324,23 @@ void latency_trace_snapshot_dump(FILE *output, const latency_trace_snapshot *sna
 		fprintf(output, "%-30s %12" PRIu64 " %12" PRIu64 " %12" PRIu64 " %12" PRIu64 "\n",
 			section->name, section->min_us, section->max_us, average, section->count);
 	}
+	if (snapshot->loop_sample_count && !snapshot->dropped_loop_samples)
+	{
+		uint64_t samples[LATENCY_LOOP_SAMPLE_CAPACITY];
+		const unsigned int count = snapshot->loop_sample_count;
+		memcpy(samples, snapshot->loop_samples, count * sizeof samples[0]);
+		std::sort(samples, samples + count);
+		/* Nearest-rank quantiles; every loop in the window contributes once. */
+		fprintf(output,
+			"LOOP QUANTILES: samples=%u p95_us=%" PRIu64 " p99_us=%" PRIu64
+			" dropped=0\n",
+			count, samples[(count * 95 + 99) / 100 - 1],
+			samples[(count * 99 + 99) / 100 - 1]);
+	}
+	else
+		fprintf(output,
+			"LOOP QUANTILES: samples=%u p95_us=- p99_us=- dropped=%" PRIu64 "\n",
+			snapshot->loop_sample_count, snapshot->dropped_loop_samples);
 
 	fprintf(output, "\n--- Top-10 worst individual samples ---\n");
 	fprintf(output, "%-30s %12s %20s\n", "Section", "us", "tick");

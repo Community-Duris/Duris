@@ -120,6 +120,7 @@
 #include <vector>
 
 #include "core/prototypes.h"
+#include "world/world_activity.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "combat/damage.h"
@@ -1311,7 +1312,10 @@ static int sp_execute(struct sp_trig *t, struct sp_ctx *cx)
 				int to = real_room(a->num2);
 
 				if (to >= 0)
+				{
 					world[rr].dir_option[a->slot]->to_room = to;
+					world_activity_room_exits_changed(rr);
+				}
 			}
 			if (a->state >= 0)
 			{

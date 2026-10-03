@@ -1,4 +1,5 @@
 #include "core/prototypes.h"
+#include "world/world_activity.h"
 #include "core/utils.h"
 #include "world/makeexit.h"
 #include <string.h>
@@ -104,6 +105,7 @@ int link_room(int from_r, int to_r, int dir)
 	dir_data->to_room = to_r;
 
 	world[from_r].dir_option[dir] = dir_data;
+	world_activity_room_exits_changed(from_r);
 
 	return TRUE;
 }
