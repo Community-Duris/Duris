@@ -7,6 +7,7 @@
 #include "player/player_snapshot.h"
 #include "player/player_snapshot_codec.h"
 #include "world/events.h"
+#include "world/falling.h"
 
 #include <algorithm>
 #include <cassert>
@@ -22,6 +23,74 @@ P_nevent current_nevent = nullptr;
 index_data indexes[2] = {};
 P_index obj_index = indexes;
 int top_of_objt = 1;
+P_char character_list = nullptr;
+P_room world = nullptr;
+extern const int rev_dir[] = { 0, 0, 0, 0, 0, 0 };
+extern const racial_data_type racial_data[LAST_RACE + 1] = {};
+time_info_data age(P_char)
+{
+	return {};
+}
+void StartRegen(P_char, regen_resource) {}
+void remove_disguise(P_char, bool) {}
+int IS_MORPH(P_char)
+{
+	return 0;
+}
+P_char un_morph(P_char ch)
+{
+	return ch;
+}
+bool char_falling(P_char)
+{
+	return false;
+}
+falling_start_result falling_start(P_char)
+{
+	std::abort();
+}
+bool is_linked_to(P_char, P_char, ush_int)
+{
+	return true;
+}
+bool NewSaves(P_char, int, int)
+{
+	return false;
+}
+bool resists_spell(P_char, P_char)
+{
+	return false;
+}
+void logit(const char *, const char *, ...) {}
+[[noreturn]] int panic_corruption_int(const char *, const char *, ...)
+{
+	std::abort();
+}
+void add_tag_to_char(P_char, int, int, int, int)
+{
+	std::abort();
+}
+void appear(P_char, bool) {}
+void remember(P_char, P_char) {}
+void MobStartFight(P_char, P_char) {}
+void balance_affects(P_char) {}
+bool ac_can_see(P_char, P_char, bool)
+{
+	return true;
+}
+int invoke_object_special(P_obj, P_char, int, char *)
+{
+	return 0;
+}
+int real_object(int)
+{
+	return 0;
+}
+int number(int low, int)
+{
+	return low;
+}
+void Decay(P_obj) {}
 static int spirit_item_ticks = 0;
 int get_property(const char *key, int fallback)
 {
@@ -262,6 +331,75 @@ int main()
 	}
 	clear(&victim);
 	victim.equipment[WEAR_BODY] = nullptr;
+
+	// Ordinary affect ticks must retain an expired equipment pool until its
+	// original renewal deadline, and leave an unequipped pool's lifetime paused.
+	victim.equipment[WEAR_BODY] = &gear;
+	spell_ward_equipment_sync(&victim);
+	equipment = find(&victim, SPELL_GLOBE, SPELL_WARD_SOURCE_EQUIPMENT);
+	const auto renewal = ne_event_tick + equipment->ward_refresh_remaining;
+	spell_ward_absorb(&attacker, &victim, 3199, SPLDAM_GLOBE);
+	advance(&victim, ne_event_tick + equipment->duration);
+	assert(equipment->duration == 0 && equipment->ward_capacity == 0);
+	character_list = &victim;
+	affect_update();
+	assert(find(&victim, SPELL_GLOBE, SPELL_WARD_SOURCE_EQUIPMENT) == equipment);
+	spell_ward_equipment_sync(&victim);
+	assert(!spell_ward_is_active(equipment));
+	advance(&victim, renewal);
+	assert(spell_ward_is_active(equipment));
+	victim.equipment[WEAR_BODY] = nullptr;
+	spell_ward_equipment_sync(&victim);
+	const int paused_duration = equipment->duration;
+	const int paused_refresh = equipment->ward_refresh_remaining;
+	for (int tick = 0; tick < 10; ++tick)
+	{
+		advance(&victim, ne_event_tick + PULSES_IN_TICK);
+		affect_update();
+	}
+	assert(equipment->duration == paused_duration);
+	assert(equipment->ward_refresh_remaining == paused_refresh);
+	character_list = nullptr;
+	clear(&victim);
+
+	// Equipment can precede or follow a cast in the affect list. In either
+	// order, a successful dispel removes only the cast and preserves the cycle.
+	attacker.specials.position = victim.specials.position = POS_STANDING | STAT_NORMAL;
+	for (bool equipment_first : { false, true })
+	{
+		if (!equipment_first)
+			cast(&victim, SPELL_GLOBE, 8);
+		victim.equipment[WEAR_BODY] = &gear;
+		spell_ward_equipment_sync(&victim);
+		equipment = find(&victim, SPELL_GLOBE, SPELL_WARD_SOURCE_EQUIPMENT);
+		if (equipment_first)
+			cast(&victim, SPELL_GLOBE, 8);
+		const auto capacity = equipment->ward_capacity;
+		const int refresh = equipment->ward_refresh_remaining;
+		spell_dispel_magic(60, &attacker, nullptr, SPELL_TYPE_SPELL, &victim, nullptr);
+		assert(!find(&victim, SPELL_GLOBE, SPELL_WARD_SOURCE_CAST));
+		assert(find(&victim, SPELL_GLOBE, SPELL_WARD_SOURCE_EQUIPMENT) == equipment);
+		assert(equipment->ward_capacity == capacity &&
+		       equipment->ward_refresh_remaining == refresh);
+		clear(&victim);
+		victim.equipment[WEAR_BODY] = nullptr;
+	}
+
+	// Score identifies both sources even if the broken equipment pool is first.
+	cast(&victim, SPELL_GLOBE, 8);
+	victim.equipment[WEAR_BODY] = &gear;
+	spell_ward_equipment_sync(&victim);
+	equipment = find(&victim, SPELL_GLOBE, SPELL_WARD_SOURCE_EQUIPMENT);
+	spell_ward_expire(&victim, equipment);
+	char status[1024];
+	spell_ward_status(&victim, status, sizeof(status));
+	assert(std::strstr(status, "Globe cast:") &&
+	       std::strstr(status, "Globe equipment: broken"));
+	victim.equipment[WEAR_BODY] = nullptr;
+	spell_ward_equipment_sync(&victim);
+	spell_ward_status(&victim, status, sizeof(status));
+	assert(std::strstr(status, "Globe equipment: paused"));
+	clear(&victim);
 
 	// An odd source duration schedules a fractional-tick half interval.
 	spirit_item_ticks = 15;

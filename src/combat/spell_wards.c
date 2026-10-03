@@ -776,30 +776,33 @@ void spell_ward_status(P_char ch, char *buffer, size_t buffer_size)
 	size_t used = 0;
 	for (int kind = 0; kind < WARD_KIND_COUNT; ++kind)
 	{
-		struct affected_type *af =
-			find_ward_affect(ch, ward_spells[kind], SPELL_WARD_SOURCE_NONE);
-		if (!af)
-			continue;
-		const bool active = spell_ward_is_active(af);
-		if (used > 0)
-			append_status(buffer, buffer_size, &used, "; ");
-		if (active)
+		for (int source : { SPELL_WARD_SOURCE_CAST, SPELL_WARD_SOURCE_EQUIPMENT })
 		{
-			append_status(buffer, buffer_size, &used, "%s %.2f/%.2f damage, %ds",
-				      ward_names[kind],
-				      double(af->ward_capacity) / SPELL_WARD_CAPACITY_SCALE,
-				      double(af->ward_capacity_max) / SPELL_WARD_CAPACITY_SCALE,
-				      std::max(0, af->duration / WAIT_SEC));
-		}
-		else if (spell_ward_is_equipment(af))
-		{
-			append_status(buffer, buffer_size, &used,
-				      "%s equipment ward broken, refresh %ds", ward_names[kind],
-				      std::max(0, af->ward_refresh_remaining / WAIT_SEC));
-		}
-		else
-		{
-			append_status(buffer, buffer_size, &used, "%s inactive", ward_names[kind]);
+			struct affected_type *af = find_ward_affect(ch, ward_spells[kind], source);
+			if (!af)
+				continue;
+			const bool equipment = spell_ward_is_equipment(af);
+			if (used > 0)
+				append_status(buffer, buffer_size, &used, "; ");
+			append_status(buffer, buffer_size, &used, "%s %s: ", ward_names[kind],
+				      equipment ? "equipment" : "cast");
+			if (equipment && !af->ward_source_worn)
+				append_status(buffer, buffer_size, &used, "paused, ");
+			if (spell_ward_is_active(af) || (equipment && !af->ward_source_worn))
+			{
+				append_status(buffer, buffer_size, &used, "%.2f/%.2f damage, %ds",
+					      double(af->ward_capacity) / SPELL_WARD_CAPACITY_SCALE,
+					      double(af->ward_capacity_max) /
+						      SPELL_WARD_CAPACITY_SCALE,
+					      std::max(0, af->duration / WAIT_SEC));
+			}
+			else
+				append_status(buffer, buffer_size, &used,
+					      equipment ? "broken" : "inactive");
+			if (equipment)
+				append_status(buffer, buffer_size, &used, ", refresh %s%ds",
+					      af->ward_source_worn ? "" : "paused at ",
+					      std::max(0, af->ward_refresh_remaining / WAIT_SEC));
 		}
 	}
 }
