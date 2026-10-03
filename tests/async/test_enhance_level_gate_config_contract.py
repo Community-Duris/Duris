@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Legacy enhancement level gate is a documented live configuration control."""
-from _paths import SRC
+from _paths import SRC, extract_function
 from pathlib import Path
 src = (SRC / "enhance.c").read_text()
 cfg = (Path(__file__).resolve().parents[2] / "lib/enhance.cfg").read_text()
 assert "enhance_level_gate_multiplier" in src
 assert '"enhance.level.gate.multiplier"' in src
-assert "GET_LEVEL(ch) * enhance_level_gate_multiplier" in src
+gate = extract_function("enhance.c", "static int enhance_maximum_item_value(")
+assert "static_cast<int64_t>(level) * enhance_level_gate_multiplier" in gate
+assert "enhance_maximum_item_value(GET_LEVEL(ch))" in src
+assert "GET_LEVEL(ch) * enhance_level_gate_multiplier" not in src
 assert "enhance.level.gate.multiplier=3" in cfg
 for obsolete in ("enhance_level_gate_a", "enhance_level_gate_b", "enhance_level_gate_c", '"enhance.level.gate.a"', '"enhance.level.gate.b"', '"enhance.level.gate.c"'):
     assert obsolete not in src, obsolete

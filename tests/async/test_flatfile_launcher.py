@@ -41,6 +41,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-launcher-") as temporary
     scripts.mkdir()
     script = scripts / "cycle_mud.sh"
     shutil.copy2(SOURCE, script)
+    shutil.copy2(ROOT / "scripts/game_loop_watchdog.py", scripts / "game_loop_watchdog.py")
     shutil.copy2(ROOT / "scripts/backup_pfiles.sh", scripts / "backup_pfiles.sh")
 
     shutil.copy2(ROOT / "scripts/persistence_backup.py", scripts / "persistence_backup.py")
@@ -70,6 +71,11 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-launcher-") as temporary
     checked = run(script, flat_env, "--check-config")
     if checked.returncode != 0 or "database-independent configuration" not in checked.stdout:
         raise AssertionError("flat-file config check required a database:\n" + checked.stdout)
+
+    invalid_watchdog_env = dict(flat_env, DURIS_WATCHDOG_STALL_SECONDS="nan")
+    rejected = run(script, invalid_watchdog_env, "--check-config")
+    if rejected.returncode != 78 or "DURIS_WATCHDOG_STALL_SECONDS must be finite" not in rejected.stdout:
+        raise AssertionError("launcher bypassed the real watchdog configuration check")
 
     alternate_port_env = dict(flat_env)
     alternate_port_env["DURIS_DEV_PORT"] = "14000"

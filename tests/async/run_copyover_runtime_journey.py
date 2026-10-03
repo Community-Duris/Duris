@@ -79,6 +79,8 @@ def run(binary, compressed, nonroot=False):
                    COPYOVER_STATE_FILE=str(path), LISTEN_ADDRESS='127.0.0.1',
                    DURIS_TLS_PORT=str(tls), DURIS_WEBSOCKET_LISTEN_ADDRESS='127.0.0.1',
                    DURIS_WEBSOCKET_PORT=str(websocket), REDIS='FALSE', CHAOS_MUD='FALSE')
+        if os.environ.get('LD_LIBRARY_PATH'):
+            env['LD_LIBRARY_PATH'] = os.environ['LD_LIBRARY_PATH']
         subprocess.run([str(journey.INSPECTOR), str(state), 'seed-combat'], check=True)
         process = output = client = None
         fixture_user = None

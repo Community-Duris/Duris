@@ -32,6 +32,7 @@ publication = utility[start:utility.index("{", start)] + block(utility, start)
 PRELUDE = r'''
 #include "core/utils.h"
 #include "account/account.h"
+#include "economy/account_bank_balances.h"
 #include "sql/sql_player.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_item_repository.h"
@@ -45,6 +46,10 @@ PRELUDE = r'''
 #include <filesystem>
 #include <iostream>
 P_desc descriptor_list = nullptr;
+int IS_MORPH(P_char character)
+{
+    return character && IS_NPC(character) && character->only.npc->orig_char;
+}
 static std::string root;
 static std::string last_status;
 static bool item_read_ok = true, item_hydrate_ok = true;
@@ -200,7 +205,7 @@ with tempfile.TemporaryDirectory(prefix="duris-bank-hydration-") as temporary:
     source.write_text("\n".join((PRELUDE, publication, hydrate, MAIN)))
     binary = temporary / "harness"
     subprocess.run([
-        "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-D__NO_MYSQL__",
+        "g++", "-std=c++20", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wall", "-Wextra", "-Werror", "-D__NO_MYSQL__",
         "-Isrc", "-Isrc/no_mysql", str(source),
         "src/flatfile/flatfile_player_domain_repository.c",
         "src/flatfile/flatfile_authority_transaction.c", "src/flatfile/flatfile_store.c",

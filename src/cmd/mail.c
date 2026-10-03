@@ -16,6 +16,7 @@
 #include "cmd/interp.h"
 #include "core/utility.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -683,6 +684,12 @@ void postmaster_send_mail(P_char ch, P_char mailman, char *arg)
 		snprintf(buf, 200, "Sorry, you have to be level %d to send mail!\r\n",
 			 MIN_MAIL_LEVEL);
 		send_to_char(buf, ch);
+		return;
+	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("Sending mail is unavailable while economic accounting is active.\r\n",
+			     ch);
 		return;
 	}
 	if (GET_MONEY(ch) < STAMP_PRICE)

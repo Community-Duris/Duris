@@ -1,10 +1,12 @@
 #include "flatfile/flatfile_shop_trade_repository.h"
 
+#include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_shopkeeper_repository.h"
 #include "flatfile/flatfile_shop_trade_materialization.h"
+#include "flatfile/flatfile_item_accounting_reference.h"
 #include "flatfile/flatfile_store.h"
 #include "economy/shop_trade_command.h"
 
@@ -24,7 +26,7 @@
 namespace
 {
 constexpr std::array<uint8_t, 8> catalog_magic = { 'D', 'U', 'R', 'S', 'H', 'T', 'X', 0 };
-constexpr uint32_t catalog_version = 1;
+constexpr uint32_t catalog_version = 2;
 constexpr size_t catalog_maximum_operations = 262144;
 constexpr size_t catalog_maximum_bytes = 128 * 1024 * 1024;
 constexpr const char *catalog_filename = "shop_trade_operations";
@@ -35,6 +37,7 @@ struct operation_record
 	critical_operation_id operation_id = {};
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_digest = {};
 	unsigned int result_code = 0;
+	uint16_t result_size = SHOP_TRADE_RESULT_BYTES;
 	std::array<uint8_t, SHOP_TRADE_RESULT_BYTES> result = {};
 };
 
@@ -131,14 +134,17 @@ bool encode_catalog(const operation_catalog &catalog, std::vector<uint8_t> *byte
 	{
 		shop_trade_result decoded = {};
 		if (critical_operation_id_is_zero(operation.operation_id) ||
+		    (operation.result_size != SHOP_TRADE_PREVIOUS_RESULT_BYTES &&
+		     operation.result_size != SHOP_TRADE_RESULT_BYTES) ||
 		    !shop_trade_command_decode_result(operation.result.data(),
-						      operation.result.size(), &decoded))
+						      operation.result_size, &decoded))
 			return false;
 		payload.raw(operation.operation_id.bytes.data(),
 			    operation.operation_id.bytes.size());
 		payload.raw(operation.command_digest.data(), operation.command_digest.size());
 		payload.number<uint32_t>(operation.result_code);
-		payload.raw(operation.result.data(), operation.result.size());
+		payload.number(operation.result_size);
+		payload.raw(operation.result.data(), operation.result_size);
 	}
 	if (!payload.valid || payload.bytes.size() > catalog_maximum_bytes)
 		return false;
@@ -167,8 +173,8 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, operation_catalog *catalo
 	uint32_t version = 0, payload_size = 0;
 	uint64_t revision = 0;
 	if (!header.number(&version) || !header.number(&payload_size) ||
-	    !header.number(&revision) || version != catalog_version || !revision ||
-	    payload_size != bytes.size() - header_size)
+	    !header.number(&revision) || (version != 1 && version != catalog_version) ||
+	    !revision || payload_size != bytes.size() - header_size)
 		return false;
 	const uint8_t *payload_bytes = bytes.data() + header_size;
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
@@ -193,15 +199,19 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, operation_catalog *catalo
 	{
 		shop_trade_result result = {};
 		uint32_t result_code = 0;
+		operation.result_size = version == 1 ? SHOP_TRADE_PREVIOUS_RESULT_BYTES : 0;
 		if (!payload.raw(operation.operation_id.bytes.data(),
 				 operation.operation_id.bytes.size()) ||
 		    !payload.raw(operation.command_digest.data(),
 				 operation.command_digest.size()) ||
 		    !payload.number(&result_code) ||
-		    !payload.raw(operation.result.data(), operation.result.size()) ||
+		    (version == catalog_version && !payload.number(&operation.result_size)) ||
+		    (operation.result_size != SHOP_TRADE_PREVIOUS_RESULT_BYTES &&
+		     operation.result_size != SHOP_TRADE_RESULT_BYTES) ||
+		    !payload.raw(operation.result.data(), operation.result_size) ||
 		    critical_operation_id_is_zero(operation.operation_id) ||
 		    !shop_trade_command_decode_result(operation.result.data(),
-						      operation.result.size(), &result))
+						      operation.result_size, &result))
 			return false;
 		operation.result_code = result_code;
 	}
@@ -239,8 +249,9 @@ critical_apply_result make_result(const operation_record &operation, uint64_t re
 						  critical_apply_outcome::terminal_failure :
 						  success,
 					  revision, operation.result_code };
-	applied.result_size = operation.result.size();
-	std::copy(operation.result.begin(), operation.result.end(), applied.result_payload.begin());
+	applied.result_size = operation.result_size;
+	std::copy_n(operation.result.begin(), operation.result_size,
+		    applied.result_payload.begin());
 	return applied;
 }
 
@@ -293,6 +304,10 @@ critical_apply_result flatfile_shop_trade_repository_apply(const std::string &ro
 			return make_result(operation, catalog.revision,
 					   critical_apply_outcome::already_applied);
 		}
+	if (const auto gate = flatfile_economic_legacy_domain_gate(root, lock, &error))
+		return { critical_apply_outcome::retryable_failure, catalog.revision, gate };
+	if (command.payload_version == SHOP_TRADE_PAYLOAD_VERSION && !payload.keeper_vnum)
+		return { critical_apply_outcome::terminal_failure, catalog.revision, EINVAL };
 	if (catalog.operations.size() >= catalog_maximum_operations ||
 	    catalog.revision == std::numeric_limits<uint64_t>::max())
 		return { critical_apply_outcome::terminal_failure, catalog.revision, ENOSPC };
@@ -368,6 +383,11 @@ critical_apply_result flatfile_shop_trade_repository_apply(const std::string &ro
 	if (!result_code)
 	{
 		result.shop_revision = shop.shop_revision;
+		if (command.payload_version == SHOP_TRADE_PAYLOAD_VERSION)
+		{
+			result.keeper_cash = shop.keeper_cash;
+			result.keeper_cash_recorded = true;
+		}
 		result.player_owner_revision = items.player_owner_revision;
 		result.counterparty_owner_revision = items.counterparty_owner_revision;
 		result.item_count = items.item_count;
@@ -412,7 +432,58 @@ critical_apply_result flatfile_shop_trade_repository_apply(const std::string &ro
 	{
 		return { critical_apply_outcome::retryable_failure, catalog.revision - 1, ENOMEM };
 	}
-	const auto committed = flatfile_authority_transaction_commit(root, lock, images, &error);
+	std::vector<flatfile_authority_operation> operations;
+	try
+	{
+		operations.reserve(images.size() + (result_code || !items.item_count ? 0 : 1));
+		for (auto &image : images)
+			operations.push_back({ flatfile_authority_store::domains,
+					       flatfile_authority_operation_kind::write,
+					       std::move(image.filename), std::move(image.bytes) });
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { critical_apply_outcome::retryable_failure, catalog.revision - 1, ENOMEM };
+	}
+	if (!result_code && items.item_count)
+	{
+		std::vector<economic_accounting_item_reference> references;
+		try
+		{
+			references.reserve(items.item_count);
+			for (size_t index = 0; index < items.item_count; ++index)
+			{
+				economic_accounting_item_reference ref = {};
+				ref.operation_id = command.operation_id;
+				ref.line_index = static_cast<uint16_t>(index);
+				ref.event_index = ref.line_index;
+				ref.child_index = 1;
+				ref.item_uid = items.item_uids[index];
+				ref.before_revision =
+					payload.action == shop_trade_action::buy_produced ?
+						0 :
+						payload.items[index].expected_item_revision;
+				ref.after_revision = items.item_revisions[index];
+				ref.legacy_operation_id = command.operation_id;
+				ref.legacy_event_index = static_cast<uint16_t>(index);
+				references.push_back(ref);
+			}
+		}
+		catch (const std::bad_alloc &)
+		{
+			return { critical_apply_outcome::retryable_failure, catalog.revision - 1,
+				 ENOMEM };
+		}
+		const auto staged = flatfile_item_accounting_reference_stage(
+			root, lock, command.operation_id, references, &operations, &error);
+		if (staged != flatfile_item_accounting_status::ok)
+			return repository_failure(
+				staged == flatfile_item_accounting_status::io_error,
+				staged == flatfile_item_accounting_status::capacity ? ENOSPC :
+										      EILSEQ);
+	}
+	const auto committed =
+		flatfile_authority_transaction_commit_operations(root, lock, operations, &error);
 	if (committed != flatfile_authority_transaction_result::ok)
 		return repository_failure(
 			committed == flatfile_authority_transaction_result::io_error, EILSEQ);

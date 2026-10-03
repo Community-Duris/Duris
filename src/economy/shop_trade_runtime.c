@@ -7,6 +7,7 @@
 #include "core/utils.h"
 
 #include <algorithm>
+#include <climits>
 #include <cstring>
 #include <limits>
 #include <new>
@@ -27,6 +28,9 @@ bool shop_owned(shop_trade_action action)
 	return is_buy(action) || action == shop_trade_action::discard_invalid;
 }
 } // namespace
+
+extern struct shop_data *shop_index;
+extern int number_of_shops;
 
 bool shop_trade_runtime_replace_revisions(const std::vector<flatfile_shopkeeper_record> &records)
 {
@@ -81,12 +85,15 @@ void shop_trade_runtime_reset_for_tests(void)
 }
 
 shop_trade_payload_build_result
-shop_trade_runtime_build_payload(P_char player, P_obj selected, P_obj stock, P_obj destination,
-				 uint32_t shop_id, shop_trade_action action, int64_t price,
-				 shop_trade_payload *payload)
+shop_trade_runtime_build_payload(P_char player, P_char keeper, P_obj selected, P_obj stock,
+				 P_obj destination, uint32_t shop_id, shop_trade_action action,
+				 int64_t price, shop_trade_payload *payload)
 {
-	if (!player || IS_NPC(player) || !player->only.pc || GET_PID(player) <= 0 || !selected ||
-	    !selected->obj_uid || !payload || price < 0 || price > INT_MAX ||
+	if (!player || IS_NPC(player) || !player->only.pc || GET_PID(player) <= 0 || !keeper ||
+	    !IS_NPC(keeper) || GET_VNUM(keeper) <= 0 || !shop_index || number_of_shops < 0 ||
+	    shop_id >= static_cast<uint32_t>(number_of_shops) ||
+	    GET_RNUM(keeper) != shop_index[shop_id].keeper || !selected || !selected->obj_uid ||
+	    !payload || price < 0 || price > INT_MAX ||
 	    (action == shop_trade_action::discard_invalid ? price != 0 :
 							    (!is_buy(action) && price == 0)) ||
 	    action <= shop_trade_action::unknown || action > shop_trade_action::discard_invalid ||
@@ -126,6 +133,13 @@ shop_trade_runtime_build_payload(P_char player, P_obj selected, P_obj stock, P_o
 	built.racewar = static_cast<uint8_t>(GET_RACEWAR(player));
 	strcpy(built.account_name.data(), account_name);
 	built.price = price;
+	built.keeper_vnum = GET_VNUM(keeper);
+	built.keeper_roaming = shop_index[shop_id].shop_is_roaming != 0;
+	built.expected_keeper_cash = static_cast<int64_t>(GET_COPPER(keeper)) +
+				     10LL * GET_SILVER(keeper) + 100LL * GET_GOLD(keeper) +
+				     1000LL * GET_PLATINUM(keeper);
+	if (built.expected_keeper_cash < 0 || built.expected_keeper_cash > INT_MAX)
+		return shop_trade_payload_build_result::unavailable;
 	built.expected_wallet_revision = player->only.pc->wallet_revision;
 	built.expected_bank_revision = player->only.pc->bank_revision;
 	built.expected_shop_revision = shop_revision;

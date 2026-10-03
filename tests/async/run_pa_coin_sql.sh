@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$ROOT"
+
+# Slot 0 owns this bounded disposable SQL fixture. The shared heavy lock is a
+# read lease; validate configured lock files rather than creating new lock names.
+RESOURCE_ROOT="${DURIS_ACCOUNTING_RESOURCE_ROOT:-}"
+HEAVY_LOCK="${DURIS_ACCOUNTING_DOCKER_HEAVY_LOCK:-}"
+if [[ -z "$RESOURCE_ROOT" || "$RESOURCE_ROOT" != /* || -z "$HEAVY_LOCK" || "$HEAVY_LOCK" != /* ]]; then
+    printf 'Set DURIS_ACCOUNTING_RESOURCE_ROOT and DURIS_ACCOUNTING_DOCKER_HEAVY_LOCK to the assigned absolute lock paths.\n' >&2
+    exit 2
+fi
+for lock in "$RESOURCE_ROOT/test-slot-0.lock" "$HEAVY_LOCK"; do
+    if [[ ! -f "$lock" || -L "$lock" ]]; then
+        printf 'Required assigned resource lock is absent or unsafe: %s\n' "$lock" >&2
+        exit 2
+    fi
+done
+python3 "$ROOT/tests/async/pa_accounting_batch_artifact.py" --component S07-coin
+
+exec 9>>"$RESOURCE_ROOT/test-slot-0.lock"
+flock -w 900 -x 9
+exec 8>>"$HEAVY_LOCK"
+flock -w 900 -s 8
+export DURIS_PARALLEL_DB_TEST_SLOT=0
+
+NAME="duris-pa-coin-$$-${RANDOM}"
+PASSWORD="pa-coin-$$-${RANDOM}"
+IMAGE="mariadb:10.11"
+TMPDIR="$(mktemp -d -t pa-coin-sql.XXXXXX)"
+cleanup() {
+    local status=$?
+    if [[ -n "${NAME:-}" ]]; then
+        docker rm -fv "$NAME" >/dev/null 2>&1 || true
+        if docker inspect "$NAME" >/dev/null 2>&1; then
+            printf 'Disposable SQL container cleanup failed: %s\n' "$NAME" >&2
+            status=1
+        else
+            printf 'Disposable SQL container absent after cleanup.\n'
+        fi
+    fi
+    rm -rf "$TMPDIR"
+    exit "$status"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+# Pass the generated fixture password in the environment, not in Docker's argv.
+export MARIADB_ROOT_PASSWORD="$PASSWORD"
+docker run -d --name "$NAME" --cpus=2 --memory=2g \
+    -p 127.0.0.1::3306 -e MARIADB_ROOT_PASSWORD mariadb:10.11 >/dev/null
+unset MARIADB_ROOT_PASSWORD
+mapping="$(docker port "$NAME" 3306/tcp)"
+published_port="${mapping##*:}"
+container_host="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$NAME")"
+export ENVIRONMENT=test DB_USER=root DB_PASSWD="$PASSWORD" MYSQL_PWD="$PASSWORD"
+export DB_NAME=pa_coin_sql_test CURRENCY_TEST_DB_NAME=pa_coin_sql_test
+if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then MYSQL_SSL=(--ssl-mode=PREFERRED); else MYSQL_SSL=(--skip-ssl); fi
+ready=0
+for candidate in "127.0.0.1:$published_port" "host.docker.internal:$published_port" "$container_host:3306"; do
+    [[ "$candidate" == :3306 ]] && continue
+    export DB_HOST="${candidate%:*}" DB_PORT="${candidate##*:}"
+    MYSQL=(mysql "${MYSQL_SSL[@]}" --protocol=tcp --connect-timeout=3 -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -N -B)
+    for _ in $(seq 1 10); do
+        if "${MYSQL[@]}" -e 'SELECT 1' >/dev/null 2>&1; then ready=1; break 2; fi
+        sleep 1
+    done
+done
+if [[ "$ready" != 1 ]]; then
+    printf 'Disposable coin SQL readiness failed on bounded loopback/bridge endpoints.\n' >&2
+    "${MYSQL[@]}" --connect-timeout=3 -e 'SELECT 1' >/dev/null
+    exit 1
+fi
+
+"${MYSQL[@]}" -e "CREATE DATABASE $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+"${MYSQL[@]}" "$DB_NAME" < migrations/bootstrap_multithread_safe.sql
+"${MYSQL[@]}" "$DB_NAME" < migrations/critical_command_inbox_outbox.sql
+for migration in migrations/immutable/*.sql; do
+    "${MYSQL[@]}" "$DB_NAME" < "$migration"
+done
+"${MYSQL[@]}" "$DB_NAME" < migrations/currency_ledger.sql
+
+read -r -a MYSQL_CFLAGS <<< "$(mysql_config --cflags)"
+read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
+read -r -a CXX_CMD <<< "${CXX:-g++}"
+"${CXX_CMD[@]}" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,--wrap=mysql_real_query,--wrap=mysql_errno -Isrc \
+    "${MYSQL_CFLAGS[@]}" tests/async/pa_coin_sql_harness.cpp \
+    src/persistence/critical_command.c src/economy/currency_command.c src/world/epic_command.c \
+    src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/item/item_transfer_repository.c src/economy/auction_command.c \
+    src/economy/auction_repository.c src/combat/combat_outcome_command.c src/combat/combat_outcome_repository.c \
+    src/guild/artifact_guild_command.c src/guild/artifact_guild_repository.c \
+    src/economy/boon_reward_command.c src/economy/boon_reward_repository.c \
+    src/world/zone_touch_command.c src/world/zone_touch_repository.c \
+    src/account/session_audit_command.c src/account/session_audit_repository.c \
+    src/economy/coin_transfer_command.c src/player/player_snapshot_codec.c \
+    src/economy/collector_command.c src/economy/collector_codec.c \
+    src/economy/collector_policy.c src/economy/collector_repository.c \
+    src/economy/collector_accounting.c \
+    src/persistence/corpse_lifecycle_command.c src/persistence/corpse_lifecycle_repository.c \
+    src/persistence/player_death_restitution_command.c src/persistence/player_death_restitution_repository.c \
+    src/player/player_load_repository.c src/player/player_load_topology.c src/player/player_death_recovery_query.c src/player/player_death_conflict_repository.c src/persistence/persistence_observability.c \
+    src/player/player_save_journal.c src/persistence/quest_reward_obligation_repository.c \
+    src/persistence/economic_accounting_repository.c \
+    src/persistence/economic_sql_bank_transaction.c \
+    src/persistence/economic_sql_item_transfer_transaction.c \
+    src/persistence/economic_sql_collector_transaction.c src/persistence/economic_sql_shop_trade_transaction.c \
+    src/economy/economic_currency_adapter.c \
+    src/economy/economic_command_admission.c src/economy/item_transfer_accounting.c \
+    src/economy/coin_transfer_accounting.c src/item/economic_accounting_item_reference.c \
+    src/economy/shop_trade_command.c src/economy/shop_trade_accounting.c \
+    src/economy/economic_accounting_intent.c \
+    src/economy/economic_accounting_types.c \
+    src/economy/economic_accounting_plan.c \
+    src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
+    src/persistence/critical_command_journal.c src/persistence/critical_command_coordinator.c \
+    "${MYSQL_LIBS[@]}" -lcrypto -lz \
+    -o "$TMPDIR/pa_coin_sql_harness"
+"$TMPDIR/pa_coin_sql_harness"

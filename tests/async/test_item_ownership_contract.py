@@ -29,10 +29,13 @@ class ItemOwnershipContractTests(unittest.TestCase):
             "item_current_owner must exist before artifact_domain_state adds its foreign key",
         )
         shopkeeper_owner = (ROOT / "migrations/shopkeeper_item_owner.sql").read_text()
-        self.assertEqual(shopkeeper_owner.count("CHECK (owner_type BETWEEN 1 AND 10)"), 3)
+        self.assertEqual(shopkeeper_owner.count("CHECK (owner_type BETWEEN 1 AND 10)"), 6)
         self.assertIn("can never narrow", shopkeeper_owner)
         collector_owner = (ROOT / "migrations/collector_item_owner.sql").read_text()
         self.assertEqual(collector_owner.count("CHECK (owner_type BETWEEN 1 AND 10)"), 6)
+        for owner_migration in (shopkeeper_owner, collector_owner):
+            self.assertEqual(owner_migration.count("IF wider_constraint=0 THEN"), 3)
+            self.assertEqual(owner_migration.count("information_schema.check_constraints"), 3)
         self.assertEqual(bootstrap.count("owner_type` between 1 and 10"), 3)
         for script in ("baseline_item_ownership.sh", "reconcile_item_ownership.sh",
                        "verify_item_ownership_schema.sh", "verify_collector_item_owner.sh"):
@@ -56,7 +59,9 @@ class ItemOwnershipContractTests(unittest.TestCase):
         self.assertIn("ITEM_TRANSFER_LEGACY_MAX_ITEMS = 12", header)
         self.assertIn("ITEM_TRANSFER_MAX_ITEMS = 3000", header)
         self.assertIn("ITEM_TRANSFER_PAYLOAD_BYTES", header)
-        self.assertIn("ITEM_TRANSFER_PAYLOAD_VERSION = 7", header)
+        self.assertIn("ITEM_TRANSFER_PAYLOAD_VERSION = 10", header)
+        self.assertIn("ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION = 9", header)
+        self.assertIn("ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION = 7", header)
         self.assertIn("ITEM_TRANSFER_BATCH_PAYLOAD_VERSION = 6", header)
         self.assertIn("ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION = 5", header)
         self.assertIn("ITEM_TRANSFER_EXACT_PAYLOAD_VERSION = 4", header)

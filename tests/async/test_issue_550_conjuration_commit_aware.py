@@ -4,7 +4,7 @@
 from _paths import extract_function, source
 
 
-MAGIC = source("magic.c").read_text(encoding="utf-8", errors="replace")
+LIFECYCLE = source("spell_item_lifecycle.c").read_text(encoding="utf-8", errors="replace")
 SKILLS = source("classes/new_skills.c").read_text(encoding="utf-8", errors="replace")
 
 
@@ -22,18 +22,18 @@ def function_body(text: str, signature: str) -> str:
     raise AssertionError(f"unterminated function: {signature}")
 
 
-assert '"item/item_movement_transaction.h"' in MAGIC
+assert '"item/item_movement_transaction.h"' in LIFECYCLE
 assert '"item/item_movement_transaction.h"' in SKILLS
 
-weapon_submit = function_body(MAGIC, "static bool submit_conjured_weapon(")
-weapon_callback = function_body(MAGIC, "static void conjured_weapon_grant_completed(")
-weapon_effect = function_body(MAGIC, "static void conjured_weapon_publish_effect(")
+weapon_submit = function_body(LIFECYCLE, "static bool submit_conjured_weapon(")
+weapon_callback = function_body(LIFECYCLE, "static void conjured_weapon_grant_completed(")
+weapon_effect = function_body(LIFECYCLE, "static void conjured_weapon_publish_effect(")
 for signature in (
     "void spell_ensis_unguis(",
     "void spell_lancea_cineralae(",
     "void spell_simulacrum_anguis(",
 ):
-    spell = function_body(MAGIC, signature)
+    spell = function_body(LIFECYCLE, signature)
     assert "submit_conjured_weapon" in spell
     assert "obj_to_char" not in spell
     assert "spell_damage" not in spell
@@ -56,8 +56,9 @@ assert weapon_callback.index("magic_find_object_by_uid") < weapon_callback.index
 assert "spell_damage" in weapon_effect
 assert "no health was spent" in weapon_callback
 
-reload = function_body(MAGIC, "\nvoid load_soulbind(P_char ch)\n{")
-reload_callback = function_body(MAGIC, "static void soulbind_reload_completed(")
+reload = function_body(LIFECYCLE, "\nvoid load_soulbind(P_char ch)\n{")
+assert reload.index("economic_gameplay_authority::active()") < reload.index("read_object(")
+reload_callback = function_body(LIFECYCLE, "static void soulbind_reload_completed(")
 assert "item_creation_grant_submit_to_player_with_completion" in reload
 assert "soulbind_reload_completed" in reload
 assert "existing soulbound item was kept" in reload
@@ -71,7 +72,7 @@ assert reload_callback.index("if (!committed)") < reload_callback.index(
     "remove_soulbind_except"
 )
 
-soulbind_command = function_body(MAGIC, "void do_soulbind(")
+soulbind_command = function_body(LIFECYCLE, "void do_soulbind(")
 reload_block_start = soulbind_command.index(
     "if (has_soulbind(victim) != 0 && !replace_existing)"
 )

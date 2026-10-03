@@ -24,8 +24,10 @@
 #include <utility>
 #include "account/account.h"
 #include "cmd/mail.h"
+#include "core/random.h"
 #include "core/safe_format.h"
 #include "core/safe_io.h"
+#include "net/comm.h"
 using namespace std;
 
 struct AccountBankBalances;
@@ -669,10 +671,6 @@ void do_zreset(P_char, char *, int);
 void read_wizconnect_file(void);
 void read_ban_file(void);
 void roll_basic_attributes(P_char, int);
-void sa_ageCopy(P_char, ulong, int);
-void sa_byteCopy(P_char, ulong, int);
-void sa_intCopy(P_char, ulong, int);
-void sa_shortCopy(P_char, ulong, int);
 void save_ban_file(void);
 void save_wizconnect_file(void);
 void do_terminate(P_char, char *, int);
@@ -697,6 +695,7 @@ void do_account(P_char ch, char *arg, int cmd);
 #endif
 void do_newchar(P_char ch, char *arg, int cmd);
 void do_protocol(P_char ch, char *arg, int cmd);
+void do_audit(P_char ch, char *arg, int cmd);
 char *food_modifiers(P_obj food);
 
 /* artifact.c */
@@ -789,8 +788,6 @@ int process_output(P_desc);
 void write_to_pc_log(P_char, const char *, int);
 void initialize_logs(P_char ch, bool reset_logs);
 void clear_logs(P_char);
-void act(const char *, int, P_char, P_obj, void *, int);
-void act(const char *, int, P_char, P_obj, void *, int, const OutputContext &);
 void close_socket(P_desc);
 void close_sockets(int);
 int is_desc_valid(P_desc);
@@ -810,7 +807,6 @@ bool send_to_pid(const char *, int);
 void send_to_except(const char *, P_char);
 void send_to_outdoor(const char *);
 void send_to_room_f(int room, const char *fmt, ...);
-void send_to_room(const char *, int);
 void send_to_room_except(const char *, int, P_char);
 void send_to_room_except_two(const char *, int, P_char, P_char);
 void send_to_zone(int, const char *);
@@ -857,6 +853,10 @@ void boot_zones(int);
 void clear_char(P_char);
 uint64_t allocate_character_runtime_id();
 P_char find_character_by_runtime_id(uint64_t);
+// Publish only after initialization/list insertion; retire before teardown.
+void register_character_runtime_id(P_char);
+void unregister_character_runtime_id(P_char);
+bool character_runtime_index_is_consistent();
 void clear_object(P_obj);
 void ensure_pconly_pool(void);
 void free_char(P_char);
@@ -902,6 +902,7 @@ void create_alias_name(char *name);
 int equipped_value(P_char ch);
 void newbie_reincarnate(P_char ch);
 void random_recipe(P_char ch, P_char victim);
+bool in_their_zone(P_char mob);
 P_obj random_zone_item(P_char ch);
 void do_conjure(P_char ch, char *argument, int cmd);
 void create_spellbook_file(P_char ch);
@@ -1034,7 +1035,7 @@ bool nevent_periodic_event_is_valid(P_nevent);
 
 /* new_events.c */
 
-bool check_nevents();
+bool check_nevents(bool check_character_index = true);
 
 // epic.c
 void refund_epic_skills(P_char ch);
@@ -1044,13 +1045,10 @@ bool is_ferry_object(P_obj);
 void ferry_forget_object(P_obj);
 
 /* fight.c */
-bool rapier_dirk(P_char, P_char);
 int calculate_thac_zero(P_char, int);
-bool opposite_racewar(P_char ch, P_char victim);
 void displayHardCore(P_char ch, char *arg, int cmd);
 void displayLeader(P_char ch, char *arg, int cmd);
 void displayRelic(P_char ch, char *arg, int cmd);
-int leapSucceed(P_char, P_char);
 int damage_modifier(P_char, P_char, int);
 #ifdef REALTIME_COMBAT
 int CharNumberOfAttacks(P_char);
@@ -1060,30 +1058,28 @@ void SingleCombatCall(P_char);
 P_char ForceReturn(P_char);
 bool AdjacentInRoom(P_char, P_char);
 bool PhasedAttack(P_char, int);
-bool damage(P_char, P_char, double, int);
-int raw_damage(P_char ch, P_char vict, double dam, uint flags, struct damage_messages *messages,
-	       int *damAccumulator = NULL);
-int spell_damage(P_char ch, P_char vict, double dam, int type, uint flags,
-		 struct damage_messages *messages, int *damAccumulator = NULL);
-int melee_damage(P_char ch, P_char vict, double dam, int type, struct damage_messages *messages,
-		 int *damAccumulator = NULL);
 int PartySizeMod(int, int, int, int);
 int TryRiposte(P_char, P_char);
 int vamp(P_char, double, double);
+void check_vamp(P_char, P_char, double, uint);
+bool soul_trap(P_char, P_char);
 void heal(P_char, P_char, int, int);
+bool decrease_skin_counter(P_char, unsigned int);
 bool blind(P_char, P_char, int);
 void retarget_event(P_char ch, P_char victim, P_obj obj, void *data);
 void MoveAllAttackers(P_char, P_char);
 void StopAllAttackers(P_char);
 void StopMercifulAttackers(P_char);
 void appear(P_char ch, bool removeHide = TRUE);
+int wearing_invis(P_char ch);
 int attack_back(P_char, P_char, int);
 void change_alignment(P_char, P_char);
 void check_killer(P_char, P_char);
-void death_cry(P_char);
-void death_rattle(P_char);
 void die(P_char, P_char);
 void death_extract_retry_pulse(void);
+bool death_extract_retry_pending(P_char ch);
+bool death_extract_retry_copy_state(P_char ch, uint64_t *corpse_uid, int *delay);
+bool death_extract_retry_restore(P_char ch, uint64_t corpse_uid, int delay);
 void do_trophy(P_char, char *, int);
 void group_gain(P_char, P_char);
 float group_exp_modifier(P_char ch);
@@ -1094,8 +1090,6 @@ bool weapon_proc(P_obj, P_char, P_char);
 int calculate_ac(P_char);
 void load_messages(void);
 P_obj make_corpse(P_char, int);
-void make_bloodstain(P_char);
-void perform_violence(void);
 void set_fighting(P_char, P_char);
 bool set_fighting(P_char, P_char, bool);
 void stop_fighting(P_char);
@@ -1103,11 +1097,14 @@ void engage(P_char, P_char);
 void soul_taking_check(P_char, P_char);
 struct affected_type *get_ward_from_char(P_char ch);
 int check_damage_ward(P_char ch, int dam);
+int check_damage_ward(P_char attacker, P_char victim, int dam);
+void dam_message(double, P_char, P_char, struct damage_messages *messages);
 int required_weapon_skill(P_obj wpn);
 /*
 void swapWeapon(P_char);
 */
 void update_pos(P_char);
+unsigned int calculate_ch_state(P_char);
 bool can_damage(P_char, P_char); /* TASFALEN */
 /*
 void swapWeapon2(P_char, int, int);
@@ -1119,7 +1116,6 @@ bool can_hit_target(P_char, P_char);
 void moveToBackup(char *name);
 int writeCharacter(P_char, int, int);
 void restore_houses();
-void writeShapechangeData(P_char ch);
 int register_ship(int);
 int ship_registered(int);
 bool writeObjectlist(P_obj, int);
@@ -1518,7 +1514,6 @@ void spell_mielikki_vitality(int, P_char, char *, int, P_char, P_obj);
 void do_nothing_spell(int, P_char, char *, int, P_char, P_obj);
 bool can_relocate_to(P_char, P_char);
 void cure_arrow_wound(P_char);
-void set_up_portals(P_char, P_obj, P_obj, int);
 bool can_do_general_portal(int level, P_char ch, P_char victim, struct portal_settings *settings,
 			   struct portal_create_messages *messages);
 bool spell_general_portal(int level, P_char ch, P_char victim, struct portal_settings *settings,
@@ -1530,6 +1525,10 @@ int can_call_woodland_beings(P_char, int);
 int can_raise_undead(P_char, int);
 int can_raise_draco(P_char, int, bool);
 bool should_area_hit(P_char, P_char);
+int cast_as_damage_area(P_char, void (*)(int, P_char, char *, int, P_char, P_obj), int, P_char,
+			float, float);
+int cast_as_damage_area(P_char, void (*)(int, P_char, char *, int, P_char, P_obj), int, P_char,
+			float, float, bool (*)(P_char, P_char));
 /* True while cast_as_damage_area() is inside its victim loop (core/utility.c).
  * The damage pipeline is never told which spell it is scaling, so this is how a
  * modifier learns that the damage in front of it came from an area spell. */
@@ -1782,7 +1781,6 @@ void spell_indomitability(int, P_char, char *, int, P_char, P_obj);
 void spell_spirit_walk(int, P_char, char *, int, P_char, P_obj);
 void spell_essence_of_the_wolf(int, P_char, char *, int, P_char, P_obj);
 void spell_firebrand(int, P_char, char *, int, P_char, P_obj);
-bool fear_check(P_char ch, bool force = false);
 bool critical_disarm(P_char ch, P_char victim);
 bool critical_attack(P_char ch, P_char victim, int msg);
 void spell_cascading_elemental_beam(int, P_char, char *, int, P_char, P_obj);
@@ -2646,6 +2644,7 @@ void spell_relocate(int, P_char, char *, int, P_char, P_obj);
 void spell_dark_compact(int, P_char, char *, int, P_char, P_obj);
 void spell_remove_curse(int, P_char, char *, int, P_char, P_obj);
 void spell_remove_poison(int, P_char, char *, int, P_char, P_obj);
+bool isCarved(P_obj);
 void spell_resurrect(int, P_char, char *, int, P_char, P_obj);
 void spell_lesser_resurrect(int, P_char, char *, int, P_char, P_obj);
 bool persistence_defer_corpse_resurrection(P_obj, P_char, P_char, bool);
@@ -2789,7 +2788,6 @@ void cast_vines(int, P_char, char *, int, P_char, P_obj);
 void event_spike_growth(P_char, P_char, P_obj, void *);
 void cast_spike_growth(int, P_char, char *, int, P_char, P_obj);
 void event_awaken_forest(P_char, P_char, P_obj, void *);
-void event_spore_burst(P_char, P_char, P_obj, void *);
 void cast_awaken_forest(int, P_char, char *, int, P_char, P_obj);
 void cast_hurricane(int, P_char, char *, int, P_char, P_obj);
 void cast_storm_shield(int, P_char, char *, int, P_char, P_obj);
@@ -2922,16 +2920,6 @@ void spell_edictum_cineris(int, P_char, char *, int, P_char, P_obj);
 void spell_sigillum_negati(int, P_char, char *, int, P_char, P_obj);
 void spell_draconic_apotheosis(int, P_char, char *, int, P_char, P_obj);
 
-/* track.c */
-
-char *sickprocess(const char *);
-int MaxTrackDist(P_char);
-void track_move(P_char);
-void add_track(P_char, int);
-void do_track(P_char, char *, int);
-void show_tracks(P_char ch, int room);
-void show_tracking_map(P_char);
-
 /* trap.c */
 
 void do_trapremove(P_char ch, char *argument, int cmd);
@@ -3058,7 +3046,6 @@ int IS_MORPH(P_char);
 int can_exec_cmd(P_char, int);
 int is_granted(P_char, int);
 int move_cost(P_char, int);
-int number(int, int);
 int maproom_of_zone(int);
 /* int str_cmp(const char *, const char *); */
 int strn_cmp(const char *, const char *, uint);
@@ -3068,7 +3055,8 @@ struct time_info_data age(P_char);
 struct time_info_data mud_time_passed(time_t, time_t);
 struct time_info_data real_time_passed(time_t, time_t);
 struct time_info_data real_time_countdown(time_t, time_t, int);
-void ADD_MONEY(P_char, int);
+// Optional success text is copied into the currency continuation (at most 64 bytes, including NUL).
+void ADD_MONEY(P_char, int, const char *committed_message = nullptr);
 void CAP(char *);
 void DECAP(char *);
 void InitGrantFastLookup(void);
@@ -3212,13 +3200,8 @@ void do_specialize(P_char, char *, int);
 void event_enchant(P_char ch, P_char victim, P_obj obj, void *data);
 void do_encrust(P_char, char *, int);
 void do_spellbind(P_char, char *, int);
-void do_mix(P_char, char *, int);
 void do_fix(P_char, char *, int);
 void do_forge(P_char, char *, int);
-P_obj get_bottle(P_char);
-int spl2potion(int);
-P_obj get_potion(P_char);
-bool MobAlchemistGetPotions(P_char, int, int);
 bool randomize_potion_non_damage(P_obj, int);
 void do_enchant(P_char, char *, int);
 P_obj check_furnace(P_char);

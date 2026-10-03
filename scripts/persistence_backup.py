@@ -25,6 +25,7 @@ import threading
 import shlex
 import signal
 import uuid
+from typing import NoReturn
 
 if __name__ == "__main__":
     sys.modules["persistence_backup"] = sys.modules[__name__]
@@ -36,6 +37,17 @@ LOCKS = {".identity.lock", ".critical-authority.lock", ".accounts.lock", ".artif
 JOURNAL_FILES = {"players": "player-save.journal", "critical": "critical-command.journal"}
 LOCK_WAIT_SECONDS = 120
 CAPACITY_CHECK_INTERVAL = 32 * 1024 * 1024
+BLOCKED_RETRY_FILE = ".blocked-retry.json"
+BLOCKED_RETRY_CODES = {
+    "unknown_backup_root_entry", "symlink_rejected", "unexpected_owner",
+    "require_owner_only", "unexpected_file_type", "invalid_generation_name",
+    "invalid_generation_manifest", "generation_checksum_mismatch",
+    "schema_manifest_mismatch", "dump_missing_required_tables",
+    "interrupted_job_requires_inspection", "interrupted_prune_requires_inspection",
+    "new_generation_not_newest", "prior_backup_requires_finalization",
+    "published_generation_requires_finalize_command", "published_generation_rpo_exceeded",
+    "backup_or_rotation_incomplete",
+}
 
 
 class BackupError(Exception):
@@ -132,7 +144,17 @@ def policy_load(path):
     fields = {"journal_roots", "version", "approved", "custodian", "schedule_seconds", "rpo_seconds",
               "hourly", "daily", "weekly", "max_bytes", "min_free_bytes",
               "drill_seconds", "root", "restore_root", "live_roots", "replica_root"}
-    require(set(p) == fields and p["version"] == 1, "invalid_policy_fields")
+    optional = {"resume_published", "blocked_retry_seconds", "restore_database_engine"}
+    require(fields <= set(p) and set(p) <= fields | optional and p["version"] == 1,
+            "invalid_policy_fields")
+    require(type(p.get("restore_database_engine", "mariadb")) is str and
+            p.get("restore_database_engine", "mariadb") in ("mariadb", "mysql"),
+            "invalid_restore_database_engine")
+    p.setdefault("resume_published", False)
+    p.setdefault("blocked_retry_seconds", 3600)
+    require(type(p["resume_published"]) is bool, "invalid_policy_recovery")
+    require(type(p["blocked_retry_seconds"]) is int and
+            60 <= p["blocked_retry_seconds"] <= 604800, "invalid_policy_recovery")
     require(p["approved"] is True and isinstance(p["custodian"], str) and
             p["custodian"] and p["custodian"] != "SET_BY_OPERATOR", "policy_not_approved")
     for key in ("schedule_seconds", "rpo_seconds", "hourly", "daily", "weekly",
@@ -225,7 +247,11 @@ def journal_capture(stage, p, capacity_base=None):
         require(name in JOURNAL_FILES, "invalid_journal_roots")
         allowed = {JOURNAL_FILES[name]}
         if name == "players":
-            allowed.add("player-save.journal.quarantine")
+            # Preserve native quarantine evidence and its persistent PID fence.
+            # Backup copies/checksums opaque bytes; native restore validates them.
+            allowed.update({"player-save.journal.quarantine",
+                            "player-save.journal.quarantine.archive",
+                            "player-save.quarantine-pids"})
         for relative, metadata in snapshots[name].items():
             receipt = re.fullmatch(r"locker-identification/([1-9][0-9]{0,9})\.receipt", relative)
             service_lock = name == "critical" and relative == "locker-identification/.service-lock"
@@ -434,7 +460,8 @@ def generations(root):
         if GENERATION.fullmatch(path.name):
             result.append((path, verify(path)))
         else:
-            require(path.name in {".job.lock", ".schedule.lock", "schedule.json", "status.json", "drill.json"} or
+            require(path.name in {".job.lock", ".schedule.lock", "schedule.json", "status.json", "drill.json",
+                                  BLOCKED_RETRY_FILE} or
                     path.name.startswith((".staging-", ".trash-", ".metadata-")),
                     "unknown_backup_root_entry")
             secure_path(path)
@@ -540,15 +567,145 @@ def write_generation_status(root, generation, replica, result, replica_error=Non
     if replica_error:
         value["replica_error"] = replica_error
     write_json(root / "status.json", value)
+    clear_blocked_retry(root)
+
+
+def require_no_interrupted_work(root, p=None):
+    interrupted = any(path.name.startswith((".staging-", ".trash-"))
+                      for path in root.iterdir())
+    if interrupted and p is not None:
+        remember_blocked(root, p, "interrupted_job_requires_inspection")
+    require(not interrupted, "interrupted_job_requires_inspection")
+
+
+def protected_refusal(root, p, code) -> NoReturn:
+    remember_blocked(root, p, code)
+    raise BackupError(code)
+
+
+def _state_fingerprint(root):
+    """Hash stat metadata only; this fingerprint can only defer a refusal, never approve data."""
+    root_info = root.lstat()
+    digest_value = hashlib.sha256()
+    digest_value.update(json.dumps(["root", root_info.st_dev, root_info.st_ino,
+                                   root_info.st_mode, root_info.st_uid, root_info.st_gid],
+                                  separators=(",", ":")).encode())
+    pending = [(root, "")]
+    while pending:
+        directory, relative = pending.pop()
+        entries = sorted(os.scandir(directory), key=lambda item: item.name)
+        directories = []
+        for entry in entries:
+            if not relative and entry.name == BLOCKED_RETRY_FILE:
+                continue
+            info = entry.stat(follow_symlinks=False)
+            child = f"{relative}/{entry.name}" if relative else entry.name
+            digest_value.update(json.dumps(
+                [child, info.st_dev, info.st_ino, info.st_mode, info.st_nlink,
+                 info.st_uid, info.st_gid, info.st_size, info.st_mtime_ns, info.st_ctime_ns],
+                separators=(",", ":")).encode())
+            if stat.S_ISDIR(info.st_mode):
+                directories.append((Path(entry.path), child))
+        pending.extend(reversed(directories))
+    return digest_value.hexdigest()
+
+
+def _retry_policy_fingerprint(p):
+    relevant = {key: (str(p[key]) if key == "replica_root" and p.get(key) is not None else p.get(key))
+                for key in ("resume_published", "blocked_retry_seconds", "rpo_seconds",
+                            "hourly", "daily", "weekly", "max_bytes", "min_free_bytes",
+                            "replica_root")}
+    return hashlib.sha256(json.dumps(relevant, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def blocked_retry(root, p):
+    marker_path = root / BLOCKED_RETRY_FILE
+    if not marker_path.exists() and not marker_path.is_symlink():
+        return None
+    try:
+        secure_path(marker_path, False)
+        marker = read_json(marker_path)
+        if (set(marker) != {"version", "code", "state_sha256", "policy_sha256", "retry_after"} or
+                marker.get("version") != 1 or marker.get("code") not in BLOCKED_RETRY_CODES or
+                type(marker.get("retry_after")) is not int or
+                not re.fullmatch(r"[0-9a-f]{64}", marker.get("state_sha256", "")) or
+                not re.fullmatch(r"[0-9a-f]{64}", marker.get("policy_sha256", ""))):
+            return None
+        if marker["state_sha256"] != _state_fingerprint(root):
+            return None
+        if marker["policy_sha256"] != _retry_policy_fingerprint(p):
+            return None
+        if int(time.time()) < marker["retry_after"]:
+            return marker["code"]
+    except (BackupError, OSError, ValueError, TypeError, KeyError):
+        return None
+    return None
+
+
+def remember_blocked(root, p, code):
+    if code not in BLOCKED_RETRY_CODES:
+        return
+    try:
+        marker = root / BLOCKED_RETRY_FILE
+        if marker.exists() or marker.is_symlink():
+            secure_path(marker, False)
+        fingerprint = _state_fingerprint(root)
+        write_json(marker, {
+            "version": 1,
+            "code": code,
+            "state_sha256": fingerprint,
+            "policy_sha256": _retry_policy_fingerprint(p),
+            "retry_after": int(time.time()) + p.get("blocked_retry_seconds", 3600),
+        })
+    except (BackupError, OSError, ValueError, TypeError, KeyError):
+        # Failure to persist the optimization must not mask the protected refusal.
+        pass
+
+
+def clear_blocked_retry(root):
+    marker = root / BLOCKED_RETRY_FILE
+    if marker.exists() or marker.is_symlink():
+        secure_path(marker, False)
+        marker.unlink()
+        sync_dir(root)
+
+
+def previous_completion_matches(items, receipt, p):
+    if not isinstance(receipt, dict) or len(items) < 2:
+        return False
+    completed = receipt.get("completed")
+    replica = receipt.get("replica")
+    return (type(receipt.get("version")) is int and receipt["version"] == 1 and
+            type(completed) is int and
+            items[1][1]["created"] <= completed <= items[0][1]["created"] + 300 and
+            receipt.get("result") == "ok" and
+            receipt.get("generation") == items[1][0].name and
+            isinstance(replica, str) and
+            replica in {"not_configured", "transport_and_readback_verified"} and
+            (p.get("replica_root") is None or
+             replica == "transport_and_readback_verified"))
+
+
+def require_within_rpo(generation, p):
+    age = int(time.time()) - generation[1]["created"]
+    if not 0 <= age <= p["rpo_seconds"]:
+        protected_refusal(generation[0].parent, p, "published_generation_rpo_exceeded")
 
 
 def complete_generation(root, p, destination, event):
+    manifest = read_json(destination / "manifest.json")
+    if event in {"backup", "finalize"}:
+        require_within_rpo((destination, manifest), p)
     replica, replica_error = replication_result(destination, p)
     if replica_error:
         write_generation_status(root, destination.name, replica, "replication_pending", replica_error)
         return {"event": event, "result": "replication_pending",
                 "generation": destination.name, "replica": replica}
+    if event in {"backup", "finalize"}:
+        require_within_rpo((destination, manifest), p)
     rotate(root, p, destination)
+    if event in {"backup", "finalize"}:
+        require_within_rpo((destination, manifest), p)
     write_generation_status(root, destination.name, replica, "ok")
     return {"event": event, "result": "ok", "generation": destination.name,
             "replica": replica}
@@ -561,21 +718,40 @@ def backup(p, mode):
     root = p["root"]
     mkdir(root)
     with lock(root / ".job.lock", wait=LOCK_WAIT_SECONDS):
-        items = generations(root)
+        deferred_code = blocked_retry(root, p)
+        if deferred_code:
+            raise BackupError(deferred_code)
+        try:
+            items = generations(root)
+        except BackupError as error:
+            remember_blocked(root, p, str(error))
+            raise
         if mode == "flatfile-primary":
             source = secure_path(Path(os.environ.get("FLATFILE_STATE_DIR", "")), True)
             require(source in p["live_roots"], "flatfile_authority_not_configured")
             if not source.exists() and not items:
                 return {"event": "backup", "result": "authority_not_initialized"}
-        require(not any(x.name.startswith((".staging-", ".trash-")) for x in root.iterdir()),
-                "interrupted_job_requires_inspection")
+        require_no_interrupted_work(root, p)
         if items:
-            receipt = read_json(root / "status.json")
-            require(receipt.get("generation") == items[0][0].name,
-                    "prior_backup_requires_finalization")
+            try:
+                receipt = read_json(root / "status.json")
+            except FileNotFoundError:
+                protected_refusal(root, p, "published_generation_requires_finalize_command")
+            if not isinstance(receipt, dict):
+                protected_refusal(root, p, "prior_backup_requires_finalization")
+            if receipt.get("generation") != items[0][0].name:
+                if p.get("resume_published", False):
+                    if not previous_completion_matches(items, receipt, p):
+                        protected_refusal(root, p, "published_generation_requires_finalize_command")
+                    require_within_rpo(items[0], p)
+                    require(shutil.disk_usage(root).free >= p["min_free_bytes"], "low_free_capacity")
+                    return complete_generation(root, p, items[0][0], "backup")
+                protected_refusal(root, p, "published_generation_requires_finalize_command")
             if receipt.get("result") == "replication_pending":
+                require_within_rpo(items[0], p)
                 return complete_generation(root, p, items[0][0], "backup")
-            require(receipt.get("result") == "ok", "prior_backup_requires_finalization")
+            if receipt.get("result") != "ok":
+                protected_refusal(root, p, "prior_backup_requires_finalization")
         keep = retained(items, p, int(time.time())) if items else set()
         capacity_base = sum(total_size(path) for path, _ in items if path.name in keep)
         require(capacity_base <= p["max_bytes"], "capacity_headroom_required")
@@ -629,18 +805,36 @@ def status(p, require_drill=False):
     secure_path(root, True)
     require(root.is_dir(), "no_verified_generation")
     with lock(root / ".job.lock", wait=LOCK_WAIT_SECONDS):
-        items = generations(root)
+        deferred_code = blocked_retry(root, p)
+        if deferred_code:
+            raise BackupError(deferred_code)
+        try:
+            items = generations(root)
+        except BackupError as error:
+            remember_blocked(root, p, str(error))
+            raise
         require(items, "no_verified_generation")
         age = int(time.time()) - items[0][1]["created"]
         size = sum(total_size(path) for path, _ in items)
         free = shutil.disk_usage(root).free
         require(age <= p["rpo_seconds"], "rpo_exceeded")
         require(size <= p["max_bytes"] and free >= p["min_free_bytes"], "capacity_exceeded")
-        require(not any(x.name.startswith((".trash-", ".staging-")) for x in root.iterdir()),
-                "interrupted_job_requires_inspection")
-        receipt = read_json(root / "status.json")
-        require(receipt.get("generation") == items[0][0].name and receipt.get("result") == "ok",
-                "backup_or_rotation_incomplete")
+        require_no_interrupted_work(root, p)
+        try:
+            receipt = read_json(root / "status.json")
+        except FileNotFoundError:
+            protected_refusal(root, p, "published_generation_requires_finalize_command")
+        if not isinstance(receipt, dict):
+            protected_refusal(root, p, "backup_or_rotation_incomplete")
+        if receipt.get("generation") != items[0][0].name:
+            if previous_completion_matches(items, receipt, p):
+                protected_refusal(root, p, "published_generation_requires_finalize_command")
+            protected_refusal(root, p, "backup_or_rotation_incomplete")
+        if receipt.get("result") == "replication_pending":
+            require(p["replica_root"] is not None, "backup_or_rotation_incomplete")
+            require(False, "replica_not_verified")
+        if receipt.get("result") != "ok":
+            protected_refusal(root, p, "backup_or_rotation_incomplete")
         if p["replica_root"] is not None:
             require(receipt.get("replica") == "transport_and_readback_verified", "replica_not_verified")
         drill_path = root / "drill.json"
@@ -708,6 +902,7 @@ def main():
             with lock(p["root"] / ".job.lock", wait=LOCK_WAIT_SECONDS):
                 items = generations(p["root"])
                 require(items, "no_verified_generation")
+                require_no_interrupted_work(p["root"])
                 destination = items[0][0]
                 result = complete_generation(p["root"], p, destination, "finalize")
         elif args.command == "schedule":
@@ -719,6 +914,8 @@ def main():
                 last = read_json(receipt_path).get("completed", 0) if receipt_path.exists() else 0
                 if time.time() - last >= p["schedule_seconds"]:
                     result = backup(p, os.environ.get("PERSISTENCE_MODE", "mariadb-primary"))
+                    if result.get("result") == "replication_pending":
+                        raise BackupError("replication_pending")
                     require(result.get("result") == "ok", "authority_not_initialized")
                     write_json(receipt_path, {"completed": int(time.time())})
                 else:

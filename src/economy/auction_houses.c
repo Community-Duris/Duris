@@ -29,7 +29,7 @@
 #include "core/files.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_transaction.h"
 #include "net/ws_handlers.h"
 using namespace std;
 
@@ -1586,8 +1586,17 @@ void auction_bid_completed(P_char ch, bool committed, const auction_command_resu
 		send_to_char("Your bid did not commit; your money is unchanged.\r\n", ch);
 		return;
 	}
-	send_to_char_f(ch, "&+WYour bid of &n%s&+W on auction %u committed.&n\r\n",
-		       coin_stringv(static_cast<int>(result.final_price)), result.auction_id);
+	if (result.claim_credit_used > 0)
+		send_to_char_f(
+			ch,
+			"&+WYour bid of &n%s&+W on auction %u committed. It used &n%s&+W in pending auction credit and &n%s&+W from your wallet.&n\r\n",
+			coin_stringv(static_cast<int>(result.final_price)), result.auction_id,
+			coin_stringv(static_cast<int>(result.claim_credit_used)),
+			coin_stringv(static_cast<int>(-result.wallet_value_delta)));
+	else
+		send_to_char_f(ch, "&+WYour bid of &n%s&+W on auction %u committed.&n\r\n",
+			       coin_stringv(static_cast<int>(result.final_price)),
+			       result.auction_id);
 }
 
 void auction_finalize_completed(P_char, bool, const auction_command_result &, unsigned int,

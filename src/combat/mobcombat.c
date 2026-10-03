@@ -11,6 +11,7 @@
 #undef RILDEBUG
 
 #include "core/prototypes.h"
+#include "combat/defense_resolution.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"

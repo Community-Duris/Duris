@@ -10,21 +10,26 @@ from _paths import ROOT, SRC, extract_function, rel
 
 makefile = (SRC / "Makefile").read_text(encoding="utf-8")
 fight = (SRC / "fight.c").read_text(encoding="utf-8")
-specs = (SRC / "specs.object.c").read_text(encoding="utf-8")
+specs = (SRC / "specs.heavens.c").read_text(encoding="utf-8")
 
 assert "item/forced_weapon_drop.o" in makefile
 fumble = fight[fight.index("if (sic == 1") : fight.index("if (IS_GRAPPLED", fight.index("if (sic == 1"))]
-critical = extract_function("fight.c", "bool critical_disarm(P_char ch, P_char victim)")
-gauntlets = extract_function("specs.object.c", "int fumblegaunts(P_obj obj, P_char ch, int cmd")
+critical = extract_function("attack_effects.c", "bool critical_disarm(P_char ch, P_char victim)")
+gauntlets = extract_function("specs.heavens.c", "int fumblegaunts(P_obj obj, P_char ch, int cmd")
 for body in (fumble, critical, gauntlets):
     assert "forced_weapon_drop(" in body
 assert "obj_to_room(weap" not in fumble
 assert "obj_to_room(obj, victim->in_room)" not in critical
 assert "obj_to_room(weap" not in gauntlets
+assert "bIsQuickStepMiss && economic_gameplay_authority::active()" in fumble
+assert critical.index("economic_gameplay_authority::active() && IS_PC(victim)") < critical.index(
+    "obj = unequip_char(victim, pos)"
+)
 
 
 harness = r'''
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include "item/forced_weapon_drop.h"
 #include "item/item_command_policy.h"
 #include "item/item_movement_transaction.h"
@@ -53,6 +58,7 @@ P_obj object_list = nullptr;
 static bool durable = true;
 static bool submit_ok = true;
 static bool runtime_found = true;
+static bool accounting_active = false;
 static bool locker_destination = false;
 static int submit_calls = 0;
 static int floor_calls = 0;
@@ -64,10 +70,14 @@ static item_ownership_runtime_entry runtime_entry = {};
 static item_owner_identity submitted_source = {};
 static item_owner_identity submitted_destination = {};
 static item_transfer_reason submitted_reason = item_transfer_reason::unknown;
+static int64_t submitted_reason_id = 0;
+static bool submitted_worn = false;
 static item_movement_publication_fn submitted_publication = nullptr;
 static std::array<uint8_t, ITEM_MOVEMENT_CONTEXT_MAX_BYTES> submitted_context = {};
 static size_t submitted_context_size = 0;
 static std::vector<std::string> recorded_messages;
+
+bool economic_gameplay_authority::active() { return accounting_active; }
 
 bool item_command_uses_durable_ownership(P_obj)
 {
@@ -116,15 +126,18 @@ const char *item_movement_reject_name(item_movement_reject)
 }
 
 bool item_movement_transaction_submit(
-    P_char, P_obj, P_obj, const item_owner_identity &from_owner,
-    const item_owner_identity &to_owner, item_transfer_reason reason, int64_t,
+    P_char actor, P_obj object, P_obj, const item_owner_identity &from_owner,
+    const item_owner_identity &to_owner, item_transfer_reason reason, int64_t reason_id,
     item_movement_completion_fn, const void *context, size_t context_size, P_obj,
-    item_movement_reject *reject, item_movement_publication_fn publication)
+    item_movement_reject *reject, item_movement_publication_fn publication,
+    economic_source_kind, uint64_t, const item_transfer_continuation &)
 {
     ++submit_calls;
+    submitted_worn = OBJ_WORN_BY(object, actor) && actor->equipment[WIELD] == object;
     submitted_source = from_owner;
     submitted_destination = to_owner;
     submitted_reason = reason;
+    submitted_reason_id = reason_id;
     submitted_publication = publication;
     submitted_context_size = context_size;
     assert(context && context_size <= submitted_context.size());
@@ -217,6 +230,7 @@ static void reset(bool actor_is_npc = false)
     durable = true;
     submit_ok = true;
     runtime_found = true;
+    accounting_active = false;
     locker_destination = false;
     submit_calls = 0;
     floor_calls = 0;
@@ -227,6 +241,8 @@ static void reset(bool actor_is_npc = false)
     submitted_source = {};
     submitted_destination = {};
     submitted_reason = item_transfer_reason::unknown;
+    submitted_reason_id = 0;
+    submitted_worn = false;
     submitted_publication = nullptr;
     submitted_context_size = 0;
     submitted_context.fill(0);
@@ -262,7 +278,8 @@ static bool publish(bool committed)
 {
     assert(submitted_publication && submitted_context_size);
     item_transfer_result result = {};
-    return submitted_publication(&actor, committed, result, 0,
+    critical_operation_id operation_id = {};
+    return submitted_publication(operation_id, &actor, committed, result, 0,
                                  submitted_context.data(), submitted_context_size);
 }
 
@@ -272,26 +289,27 @@ int main()
     assert(forced_weapon_drop(&actor, &weapon,
                               forced_weapon_drop_cause::combat_fumble) ==
            forced_weapon_drop_result::pending);
-    assert(submit_calls == 1 && OBJ_CARRIED_BY(&weapon, &actor));
+    assert(submit_calls == 1 && submitted_worn && OBJ_WORN_BY(&weapon, &actor));
     assert(submitted_source.type == item_owner_type::player && submitted_source.id == 42);
     assert(submitted_destination.type == item_owner_type::room &&
            submitted_destination.id == 100);
-    assert(submitted_reason == item_transfer_reason::player_drop);
+    assert(submitted_reason == item_transfer_reason::combat_fumble &&
+           submitted_reason_id == WIELD + 1);
     assert(act_calls == 0 && floor_calls == 0);
     assert(publish(true));
     assert(OBJ_ROOM(&weapon) && weapon.loc.room == 0);
     assert(floor_calls == 1 && dirty_calls == 1 && act_calls == 2);
     const int published_acts = act_calls;
     weapon.loc.room = 1;
-    assert(publish(true));
+    assert(!publish(true));
     assert(act_calls == published_acts && floor_calls == 1 && dirty_calls == 1);
 
     reset();
     submit_ok = false;
     assert(forced_weapon_drop(&actor, &weapon,
                               forced_weapon_drop_cause::combat_fumble) ==
-           forced_weapon_drop_result::retained);
-    assert(OBJ_CARRIED_BY(&weapon, &actor) && submit_calls == 1);
+           forced_weapon_drop_result::rejected);
+    assert(OBJ_WORN_BY(&weapon, &actor) && submit_calls == 1);
     assert(act_calls == 2 && floor_calls == 0);
 
     reset();
@@ -299,7 +317,7 @@ int main()
                               forced_weapon_drop_cause::combat_fumble) ==
            forced_weapon_drop_result::pending);
     assert(publish(false));
-    assert(OBJ_CARRIED_BY(&weapon, &actor));
+    assert(OBJ_WORN_BY(&weapon, &actor));
     assert(act_calls == 2 && floor_calls == 0 && dirty_calls == 0);
 
     reset();
@@ -313,7 +331,8 @@ int main()
     assert(forced_weapon_drop(&actor, &weapon,
                               forced_weapon_drop_cause::critical_disarm) ==
            forced_weapon_drop_result::pending);
-    assert(OBJ_CARRIED_BY(&weapon, &actor) && act_calls == 0);
+    assert(OBJ_WORN_BY(&weapon, &actor) && act_calls == 0 &&
+           submitted_reason == item_transfer_reason::critical_disarm);
     assert(publish(true));
     assert(OBJ_ROOM(&weapon) && act_calls == 0);
 
@@ -321,9 +340,30 @@ int main()
     locker_destination = true;
     assert(forced_weapon_drop(&actor, &weapon,
                               forced_weapon_drop_cause::combat_fumble) ==
-           forced_weapon_drop_result::pending);
-    assert(publish(true));
-    assert(OBJ_ROOM(&weapon) && floor_calls == 0);
+           forced_weapon_drop_result::rejected);
+    assert(OBJ_WORN_BY(&weapon, &actor) && submit_calls == 0 && floor_calls == 0);
+
+    reset();
+    rooms[0].chance_fall = 1;
+    assert(forced_weapon_drop(&actor, &weapon,
+                              forced_weapon_drop_cause::combat_fumble) ==
+           forced_weapon_drop_result::rejected);
+    assert(OBJ_WORN_BY(&weapon, &actor) && submit_calls == 0);
+
+    reset();
+    rooms[0].sector_type = SECT_NO_GROUND;
+    assert(forced_weapon_drop(&actor, &weapon,
+                              forced_weapon_drop_cause::critical_disarm) ==
+           forced_weapon_drop_result::rejected);
+    assert(OBJ_WORN_BY(&weapon, &actor) && submit_calls == 0);
+
+    reset();
+    durable = false;
+    accounting_active = true;
+    assert(forced_weapon_drop(&actor, &weapon,
+                              forced_weapon_drop_cause::combat_fumble) ==
+           forced_weapon_drop_result::rejected);
+    assert(OBJ_WORN_BY(&weapon, &actor) && submit_calls == 0);
 
     reset();
     durable = false;

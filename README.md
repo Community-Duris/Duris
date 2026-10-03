@@ -56,14 +56,21 @@ flowchart LR
     class Loop focal;
 ```
 
-The C-style sources under `src/` are compiled as C++20. Network I/O and mutable game
-state remain on one `select()`-driven pulse loop. Immutable revisioned snapshots and
+The C-style sources under `src/` are compiled as C++20. By default, network I/O and
+mutable game state share one readiness/deadline loop using `poll()`, with commands
+and world phases retaining their 250 ms simulation boundaries. Immutable revisioned snapshots and
 non-coalescing operation-ID commands cross typed worker boundaries; the older item,
 scalar, and large-payload queues retain only bounded compatibility roles. MySQL or
 MariaDB is the durable authority for snapshots, ledgers, current rows, inbox/results,
 outbox state, migration history, and lifecycle evidence. Redis is optional and limited
 to reconstructible caches plus validated world-recovery generations. See the full
 [architecture guide](docs/reference/ARCHITECTURE.md) and [database guide](docs/reference/DATABASE.md).
+
+An opt-in `--persistent-transport` mode keeps client sockets and their TLS,
+Telnet/MCCP and WebSocket/compression state in a persistent parent while the
+single world process is replaced through authenticated durable copyover. See
+[Persistent transport](docs/network/PERSISTENT_TRANSPORT.md) for eligibility,
+launching, protocol bounds and recovery procedures.
 
 ## Quick start
 
@@ -88,7 +95,8 @@ nc 127.0.0.1 4000
 The generated `.env.docker` is ignored, mode `0600`, and contains random
 database credentials. The database, filesystem-backed player state, recovery
 journals, backups, certificate, and logs live in named Docker volumes and
-survive ordinary container rebuilds.
+survive ordinary container rebuilds. The initializer asks you to approve the
+local-only backup volume before creating that configuration.
 This stack is a local/development alternative to the native setup below; it is
 not the production deployment model. See the [Docker deployment guide](docs/operations/DOCKER.md)
 for lifecycle, configuration, upgrades, logs, and data-reset commands.
@@ -227,6 +235,14 @@ rm -f "$migration_env"
 unset migration_env
 ```
 
+The legacy command converges the schema to the immutable manifest head and
+checks the pinned structural contract. **It does not certify imported players
+for login:** opening currency, epic, and combat baselines must be established
+by the guarded importer below before its default (non-`--schema-only`)
+`verify_runtime_compatibility.sh` check can pass. Do not boot a populated clone
+or live game on the schema-only result, and do not manufacture opening rows from
+nonzero-revision or ambiguous ledger history.
+
 To replace an allow-listed local/development database directly from a private
 MySQL dump, use the guarded importer. It refuses active database connections,
 creates an owner-only backup before mutation, translates MySQL 8's `0900`
@@ -279,7 +295,7 @@ quick-start listener is port 4000 and cannot select the production runtime role.
 
 Production deployments use the checked-in systemd service rather than the local
 user service. Its installer requires an explicit production configuration check,
-enables boot startup, and supervises every exit with an unlimited restart policy.
+enables boot startup, and provides completed-game-loop watchdog and exited-process recovery.
 See [Production systemd service](docs/operations/RUNBOOK.md#production-systemd-service)
 for installation and cutover instructions.
 
@@ -302,6 +318,25 @@ dataset, skips full `areas/world.*` generation and full-world runtime systems,
 but keeps the player load/save and critical-command pipelines available so a
 configured test character can log in, play, and disconnect cleanly. Use
 `./scripts/start_mud.sh --minimal` for the corresponding background launcher.
+
+To keep eligible playing sessions connected through a planned world replacement,
+enable persistent transport when starting the server:
+
+```bash
+./scripts/cycle_mud.sh --dev --persistent-transport
+```
+
+The option also works with `--minimal` and through `start_mud.sh`. It starts one
+transport parent and one world child. After building `bin/server/dms_new`, use the
+existing in-game copyover command or send `SIGUSR1` to the transport parent;
+authenticated Telnet, TLS and WebSocket players retain their connection, protocol
+state and restored gameplay. Any live session still logging in, editing, paging
+or otherwise ineligible cancels the handoff and leaves the server running.
+
+This mode is opt-in and Linux-only. A frontend failure or an unplanned world
+failure requires clients to reconnect; networking or TLS library upgrades require
+a cold restart of both processes. See the [persistent transport operating guide](docs/network/PERSISTENT_TRANSPORT.md)
+for eligibility, watchdog behavior, limits and recovery steps.
 
 ## Troubleshooting
 

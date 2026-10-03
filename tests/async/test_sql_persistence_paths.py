@@ -24,7 +24,7 @@ checks.append(("account-character upsert reuses an existing mapping row",
                "ON DUPLICATE KEY UPDATE" in sql_c))
 checks.append(("frag leaderboard upsert uses boolean query executor", "if (!qry(\"INSERT INTO frag_leaderboard \"" in sql_c))
 checks.append(("IP row creation is idempotent", "INSERT IGNORE INTO ip_info (pid) VALUES (%d)" in sql_c))
-checks.append(("sql_player.c uses the canonical validated connector", "sql_open_configured_connection(CLIENT_MULTI_STATEMENTS)" in sql_player_c and "mysql_real_connect" not in sql_player_c))
+checks.append(("sql_player.c never bypasses the configured connection owner", "mysql_real_connect" not in sql_player_c and "mysql_init(" not in sql_player_c))
 checks.append(("sql_pool.c uses the canonical validated connector", "sql_open_configured_connection(CLIENT_MULTI_STATEMENTS)" in sql_pool_c and "mysql_real_connect" not in sql_pool_c))
 checks.append(("only sql.c constructs raw MySQL connections", "mysql_real_connect" in sql_c))
 checks.append(("sql_save_account wraps account/ips/characters in a transaction", "bool own_txn = false;" in sql_player_c and "sql_save_account: component=characters outcome=failure" in sql_player_c and "if (own_txn && !sql_commit())" in sql_player_c))

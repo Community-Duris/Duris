@@ -33,7 +33,7 @@ all_ok &= check("do_assimilate checks dragoon mount status before scheduling eve
 	"if (IS_DRAGOON(ch) && !is_dragoon_mounted(ch))" in mem)
 
 # 4. Verify actwiz.c do_restore handles USES_SPELL_SLOTS for PCs
-actwiz = (SRC / "actwiz.c").read_text()
+actwiz = (SRC / "staff_character_recovery.c").read_text()
 restore_matches = re.findall(r'if\s*\(USES_SPELL_SLOTS\(victim\)\)', actwiz) + re.findall(r'else\s+if\s*\(USES_SPELL_SLOTS\(victim\)\)', actwiz)
 all_ok &= check("do_restore includes USES_SPELL_SLOTS handling (both all and single target)",
 	len(restore_matches) >= 2)

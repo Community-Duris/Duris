@@ -1,3 +1,4 @@
+#include "magic/spells.h"
 #include "player/player_snapshot_codec.h"
 #include "core/files.h"
 #include "core/defines.h"
@@ -129,15 +130,46 @@ player_snapshot death_snapshot(uint64_t revision, uint8_t operation_base, bool f
 }
 }
 
-int main()
+int main(int argc, char **argv)
 {
 	for (const auto &case_data :
 	     { std::pair<uint64_t, std::pair<uint8_t, bool>>{ 7, { 0xa0, true } },
 	       { 8, { 0xb0, false } } })
 	{
 		std::vector<uint8_t> encoded;
-		const auto snapshot = death_snapshot(case_data.first, case_data.second.first,
-						     case_data.second.second);
+		auto snapshot = death_snapshot(case_data.first, case_data.second.first,
+					       case_data.second.second);
+		if (argc >= 2 && (std::string(argv[1]) == "--spell-receipt" ||
+				  std::string(argv[1]) == "--quest-receipt"))
+		{
+			snapshot.schema_version =
+				PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION;
+			player_spell_effect_receipt_snapshot receipt = {};
+			receipt.operation_id.bytes[0] = 77;
+			receipt.effect_id = 6;
+			snapshot.spell_effect_receipts.push_back(receipt);
+			if (std::string(argv[1]) == "--quest-receipt")
+			{
+				snapshot.schema_version =
+					PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION;
+				player_quest_xp_receipt_snapshot xp = {};
+				xp.offering_operation.bytes[0] = 88;
+				xp.amount = 75;
+				snapshot.quest_xp_receipts.push_back(xp);
+			}
+		}
+		if (argc >= 2 && std::string(argv[argc - 1]) == "--wards")
+		{
+			player_affect_snapshot af = {};
+			af.type = SPELL_GLOBE;
+			af.duration = 321;
+			af.ward_source_uid = 111;
+			af.ward_source_type = 2;
+			af.ward_full_duration = 2400;
+			af.ward_capacity_max = 3200000000LL;
+			af.ward_refresh_remaining = 123;
+			snapshot.affects.push_back(af);
+		}
 		if (player_snapshot_encode(snapshot, &encoded) != player_snapshot_codec_result::ok)
 		{
 			std::cerr << "encode failed "

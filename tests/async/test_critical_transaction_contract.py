@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import shlex
 from pathlib import Path
+from contract_text import contains
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -51,8 +52,35 @@ assert "critical_command_repository_reconcile(connection, command)" in REPOSITOR
 # The per-thread setup goes through the shared helper so the client library
 # is initialised first; MySQL 8 fails mysql_thread_init() without it.
 assert "sql_worker_thread_init()" in REPOSITORY and "mysql_thread_end()" in REPOSITORY
-assert "read_operation(connection, command.operation_id, false" in REPOSITORY
-assert "error == 1205 || error == 1213" in REPOSITORY
+reconcile = REPOSITORY[REPOSITORY.index("critical_apply_result critical_command_repository_reconcile("):
+                       REPOSITORY.index("// Public narrow wrappers")]
+assert "const bool accounted_bank = accounted_bank_envelope(command);" in reconcile
+assert "coin_transfer_accounting_command_supported(command)" in reconcile
+assert "item_transfer_accounting_command_supported(command)" in reconcile
+assert contains(reconcile, "const bool accounted_root = accounted_bank || accounted_coin || accounted_item || accounted_collector || accounted_shop;")
+locked_lookup = "read_operation(connection, command.operation_id, accounted_root"
+assert locked_lookup in reconcile
+assert reconcile.index('execute(connection, "START TRANSACTION")') < reconcile.index(locked_lookup)
+for retained_verifier in (
+    "economic_sql_bank_verify_retained(",
+    "coin_transfer_accounting_verify_retained(",
+    "economic_sql_item_transfer_verify_retained(",
+):
+    assert locked_lookup in reconcile and retained_verifier in reconcile
+    assert reconcile.index(locked_lookup) < reconcile.index(retained_verifier) < reconcile.index(
+        "return stored_result("
+    )
+pooled_apply = REPOSITORY[
+    REPOSITORY.index("critical_apply_result critical_command_repository_apply_from_pool("):
+    REPOSITORY.index("critical_apply_result critical_command_repository_reconcile(")
+]
+assert "accounted_coin_envelope(command)" in pooled_apply
+assert "coin_transfer_accounting_command_supported(command)" in pooled_apply
+assert "item_transfer_accounting_command_supported(command)" in pooled_apply
+assert "!accounted_bank_envelope(command) && !accounted_coin && !accounted_item" in pooled_apply
+retryable = REPOSITORY[REPOSITORY.index("bool retryable_error(unsigned int error)"):
+                       REPOSITORY.index("critical_apply_result failure(unsigned int error)")]
+assert all(f"error == {code}" in retryable for code in ("ENOMEM", "1205", "1213"))
 assert "EEXIST" in REPOSITORY and "ERANGE" in REPOSITORY
 assert "command.payload.data()" not in REPOSITORY
 assert "PREPARE " not in REPOSITORY
@@ -115,7 +143,7 @@ with tempfile.TemporaryDirectory(prefix="duris-critical-outbox-") as temporary:
         [
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
             "-pthread", "-Isrc", str(source), rel("critical_outbox.c"),
-            rel("corpse_lifecycle_command.c"), rel("item_transfer_command.c"),
+            rel("corpse_lifecycle_command.c"), rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"), rel("player_snapshot_codec.c"),
             rel("critical_command.c"), "-lcrypto",
             "-o", str(binary),
         ] + mysql_flags,

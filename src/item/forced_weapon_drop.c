@@ -2,6 +2,7 @@
 
 #include "core/prototypes.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include "item/item_command_policy.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
@@ -23,7 +24,8 @@ struct forced_weapon_drop_context
 	int32_t room;
 	uint8_t cause;
 	uint8_t floor_hint;
-	uint8_t reserved[2];
+	uint8_t slot;
+	uint8_t reserved;
 };
 
 static_assert(sizeof(forced_weapon_drop_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
@@ -49,6 +51,14 @@ P_obj find_live_weapon(uint64_t item_uid)
 bool valid_room(int room)
 {
 	return room >= 0 && room <= top_of_world;
+}
+
+bool stable_drop_room(P_obj weapon, int room)
+{
+	return weapon && valid_room(room) && !IS_WATER_ROOM(room) &&
+	       world[room].sector_type != SECT_NO_GROUND &&
+	       world[room].sector_type != SECT_UNDRWLD_NOGROUND && world[room].chance_fall <= 0 &&
+	       weapon->z_cord <= 0;
 }
 
 void announce_recovery(P_char actor, P_obj weapon, int room, forced_weapon_drop_cause cause)
@@ -81,27 +91,6 @@ void announce_drop(P_char actor, P_obj weapon, int room, forced_weapon_drop_caus
 	act("$p clatters to the ground after being sent flying!", TRUE, 0, weapon, 0, TO_ROOM);
 }
 
-bool stage_in_inventory(P_char actor, P_obj weapon, int slot)
-{
-	P_obj removed = unequip_char(actor, slot);
-	if (removed != weapon)
-	{
-		logit(LOG_FILE,
-		      "forced_weapon_drop: outcome=stage_failed cause=unequip actor_pid=%d "
-		      "item_uid=%llu",
-		      IS_PC(actor) ? GET_PID(actor) : 0, (unsigned long long)weapon->obj_uid);
-		return false;
-	}
-	obj_to_char(weapon, actor);
-	if (OBJ_CARRIED_BY(weapon, actor))
-		return true;
-	logit(LOG_FILE,
-	      "forced_weapon_drop: outcome=stage_failed cause=inventory actor_pid=%d "
-	      "item_uid=%llu",
-	      IS_PC(actor) ? GET_PID(actor) : 0, (unsigned long long)weapon->obj_uid);
-	return false;
-}
-
 bool player_owns_root(P_char actor, P_obj weapon, item_owner_identity *owner)
 {
 	if (!actor || !weapon || !owner || !IS_PC(actor) || GET_PID(actor) <= 0)
@@ -114,15 +103,17 @@ bool player_owns_root(P_char actor, P_obj weapon, item_owner_identity *owner)
 	       runtime.root_item_uid == weapon->obj_uid && runtime.parent_item_uid == 0;
 }
 
-bool forced_weapon_drop_publication(P_char actor, bool committed, const item_transfer_result &,
-				    unsigned int, const uint8_t *encoded, size_t encoded_size)
+bool forced_weapon_drop_publication(const critical_operation_id & /*operation_id*/, P_char actor,
+				    bool committed, const item_transfer_result &, unsigned int,
+				    const uint8_t *encoded, size_t encoded_size)
 {
 	forced_weapon_drop_context context = {};
 	if (!actor || !encoded || encoded_size != sizeof(context))
 		return false;
 	memcpy(&context, encoded, sizeof(context));
 	if (!valid_room(context.room) ||
-	    context.cause > static_cast<uint8_t>(forced_weapon_drop_cause::critical_disarm))
+	    context.cause > static_cast<uint8_t>(forced_weapon_drop_cause::critical_disarm) ||
+	    context.slot >= MAX_WEAR)
 		return false;
 
 	P_obj weapon = find_live_weapon(context.item_uid);
@@ -131,23 +122,21 @@ bool forced_weapon_drop_publication(P_char actor, bool committed, const item_tra
 	const auto cause = static_cast<forced_weapon_drop_cause>(context.cause);
 	if (!committed)
 	{
-		if (!OBJ_CARRIED_BY(weapon, actor))
+		if (!OBJ_WORN_BY(weapon, actor) || actor->equipment[context.slot] != weapon)
 			return false;
 		announce_recovery(actor, weapon, context.room, cause);
 		return true;
 	}
 
-	// A failed publication acknowledgement retries this callback. Environmental
-	// room logic may already have redirected or started dropping the weapon, so
-	// any floor placement is the idempotent post-publication state.
 	if (OBJ_ROOM(weapon))
-		return true;
-	if (!OBJ_CARRIED_BY(weapon, actor))
+		return weapon->loc.room == context.room;
+	if (!OBJ_WORN_BY(weapon, actor) || actor->equipment[context.slot] != weapon)
 		return false;
 
-	obj_from_char(weapon);
+	if (unequip_char(actor, context.slot) != weapon)
+		return false;
 	obj_to_room(weapon, context.room);
-	if (!OBJ_ROOM(weapon))
+	if (!OBJ_ROOM(weapon) || weapon->loc.room != context.room)
 		return false;
 
 	const int landing_room = weapon->loc.room;
@@ -181,6 +170,11 @@ forced_weapon_drop_result forced_weapon_drop(P_char actor, P_obj weapon,
 					   item_command_uses_durable_ownership(weapon);
 	if (!durable_player_weapon)
 	{
+		if (economic_gameplay_authority::active() && IS_PC(actor))
+		{
+			announce_recovery(actor, weapon, room, cause);
+			return forced_weapon_drop_result::rejected;
+		}
 		P_obj removed = unequip_char(actor, slot);
 		if (removed != weapon)
 		{
@@ -204,6 +198,11 @@ forced_weapon_drop_result forced_weapon_drop(P_char actor, P_obj weapon,
 		announce_recovery(actor, weapon, room, cause);
 		return forced_weapon_drop_result::rejected;
 	}
+	if (!stable_drop_room(weapon, room))
+	{
+		announce_recovery(actor, weapon, room, cause);
+		return forced_weapon_drop_result::rejected;
+	}
 	if (IS_OBJ_STAT2(weapon, ITEM2_CRUMBLELOOT) && !IS_TRUSTED(actor))
 	{
 		logit(LOG_FILE,
@@ -214,27 +213,29 @@ forced_weapon_drop_result forced_weapon_drop(P_char actor, P_obj weapon,
 		return forced_weapon_drop_result::rejected;
 	}
 
-	if (!stage_in_inventory(actor, weapon, slot))
-	{
-		announce_recovery(actor, weapon, room, cause);
-		return forced_weapon_drop_result::rejected;
-	}
-
 	item_owner_identity destination = {};
 	item_transfer_reason reason = item_transfer_reason::unknown;
 	int64_t reason_id = 0;
 	item_movement_reject reject = item_movement_reject::none;
-	if (!item_command_resolve_drop_destination(actor, &destination, &reason, &reason_id))
+	if (!item_command_resolve_drop_destination(actor, &destination, &reason, &reason_id) ||
+	    reason != item_transfer_reason::player_drop ||
+	    destination.type != item_owner_type::room ||
+	    destination.id != static_cast<uint64_t>(world[room].number))
 	{
 		announce_recovery(actor, weapon, room, cause);
-		return forced_weapon_drop_result::retained;
+		return forced_weapon_drop_result::rejected;
 	}
+	reason = cause == forced_weapon_drop_cause::combat_fumble ?
+			 item_transfer_reason::combat_fumble :
+			 item_transfer_reason::critical_disarm;
+	reason_id = slot + 1;
 	const forced_weapon_drop_context context = {
 		weapon->obj_uid,
 		room,
 		static_cast<uint8_t>(cause),
-		static_cast<uint8_t>(reason == item_transfer_reason::player_drop),
-		{},
+		1,
+		static_cast<uint8_t>(slot),
+		0,
 	};
 	if (!item_movement_transaction_submit(actor, weapon, NULL, source, destination, reason,
 					      reason_id, NULL, &context, sizeof(context), NULL,
@@ -244,7 +245,7 @@ forced_weapon_drop_result forced_weapon_drop(P_char actor, P_obj weapon,
 		      item_movement_reject_name(reject), GET_PID(actor),
 		      (unsigned long long)weapon->obj_uid);
 		announce_recovery(actor, weapon, room, cause);
-		return forced_weapon_drop_result::retained;
+		return forced_weapon_drop_result::rejected;
 	}
 	return forced_weapon_drop_result::pending;
 }

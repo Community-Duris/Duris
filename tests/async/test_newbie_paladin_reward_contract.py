@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = (SRC / "specs.mobile.c").read_text()
+SOURCE = (SRC / "specs.newbie2.c").read_text()
 
 paladin = SOURCE.split("int newbie_paladin(", 1)[1]
 paladin = paladin.split("int Malevolence(", 1)[0]

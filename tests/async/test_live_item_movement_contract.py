@@ -41,7 +41,7 @@ class LiveItemMovementContractTests(unittest.TestCase):
                         movement.index("item_ownership_runtime_apply"))
 
     def test_transfer_captures_exact_snapshot_before_submission(self):
-        movement = (SRC / "item_movement_transaction.c").read_text()
+        movement = extract_function("item_movement_transaction.c", "bool item_movement_transaction_submit(")
         capture = movement.index("player_item_snapshot_tree_capture")
         encode = movement.index("player_item_snapshot_list_encode")
         build = movement.index("item_transfer_command_build")
@@ -57,8 +57,11 @@ class LiveItemMovementContractTests(unittest.TestCase):
                        "corpse_loot"):
             self.assertIn(f"item_transfer_reason::{reason}", actobj)
         self.assertIn("item_movement_transaction_submit", actobj)
-        self.assertIn("item_get_ack_publication", actobj)
-        self.assertIn("item_put_ack_publication", actobj)
+        self.assertNotIn("item_get_ack_publication", actobj)
+        self.assertIn("get_phase::publication", actobj)
+        self.assertNotIn("item_put_ack_publication", actobj)
+        self.assertIn("put_with_phase(actor, object, container, context.showit,", actobj)
+        self.assertIn("put_phase::publication", actobj)
         self.assertIn("start_container_bulk_get", actobj)
         self.assertIn("bulk_get_completion", actobj)
         self.assertIn("start_bulk_drop", actobj)
@@ -72,6 +75,88 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertNotIn("Durable items must be dropped one at a time", actobj)
         self.assertNotIn("Durable items must be put away one at a time", actobj)
 
+    def test_destroyed_placement_stops_give_and_remove_continuations(self):
+        placement = extract_function(
+            "world/handler.c", "obj_to_char_result obj_to_char_checked("
+        )
+        self.assertIn("return obj_to_char_result::destroyed;", placement)
+        self.assertLess(
+            placement.index("extract_obj(object, TRUE)"),
+            placement.index("return obj_to_char_result::destroyed;"),
+        )
+
+        give = extract_function("cmd/actobj.c", "void do_give(")
+        give_guard = give.index("if (placement != obj_to_char_result::placed)")
+        self.assertLess(give_guard, give.index("if (IS_ARTIFACT(obj))", give_guard))
+        self.assertLess(give_guard, give.index("studioproc_give(vict, obj, ch)"))
+
+        remove = (SRC / "actobj.c").read_text()
+        remove = remove[remove.rindex("int remove_item(") :]
+        destroyed_guard = remove.index("if (placement == obj_to_char_result::destroyed)")
+        self.assertLess(destroyed_guard, remove.index("get_obj_affect(obj, SKILL_ENCHANT)", destroyed_guard))
+
+        for callback in ("void item_give_completion(", "void pet_give_completion("):
+            body = extract_function("cmd/actobj.c", callback)
+            self.assertLess(
+                body.index("if (placement != obj_to_char_result::placed)"),
+                body.index("studioproc_give(")
+            )
+
+    def test_put_publication_phase_is_local_to_each_call(self):
+        actobj = (SRC / "actobj.c").read_text()
+        admission = extract_function("cmd/actobj.c", "bool put(P_char ch,")
+        deferred = extract_function("cmd/actobj.c", "bool defer_durable_put(")
+        self.assertIn("put_phase::admission", admission)
+        self.assertIn("phase == put_phase::publication", deferred)
+        self.assertNotIn("item_put_ack_publication", actobj)
+        self.assertIn(
+            "put_with_phase(actor, object, container, FALSE, put_phase::publication)",
+            extract_function("cmd/actobj.c", "void bulk_put_completion("),
+        )
+
+    def test_get_publication_phase_is_local_to_each_call(self):
+        actobj = (SRC / "actobj.c").read_text()
+        admission = extract_function("cmd/actobj.c", "void get(P_char ch,")
+        completion = extract_function("cmd/actobj.c", "void item_get_completion(")
+        self.assertIn("get_phase::admission", admission)
+        self.assertIn("get_phase::publication", completion)
+        self.assertNotIn("item_get_ack_publication", actobj)
+
+    def test_get_finalizers_use_pickup_outcome_before_accessing_item(self):
+        pickup = extract_function(
+            "cmd/actobj.c", "static get_outcome get_with_phase(P_char ch, P_obj o_obj"
+        )
+        container = extract_function(
+            "cmd/actobj.c", "static get_outcome do_get_finalize_container_item("
+        )
+        count = extract_function(
+            "cmd/actobj.c", "static get_outcome do_get_finalize_pickup_core("
+        )
+        room = extract_function(
+            "cmd/actobj.c", "static get_outcome do_get_finalize_room_item("
+        )
+        self.assertIn("obj_to_char_checked(o_obj, ch)", pickup)
+        self.assertIn("return get_outcome::consumed;", pickup)
+        self.assertIn("outcome != get_outcome::placed", container)
+        self.assertLess(
+            container.index("outcome != get_outcome::placed"),
+            container.index("GETDBG_LOG("),
+        )
+        self.assertLess(
+            count.index("outcome != get_outcome::placed && outcome != get_outcome::consumed"),
+            count.index("++total"),
+        )
+        self.assertIn("!money && outcome == get_outcome::placed", room)
+
+        completion = extract_function("cmd/actobj.c", "void item_get_completion(")
+        bulk = extract_function("cmd/actobj.c", "static void bulk_get_completion(")
+        self.assertLess(
+            completion.index("publication != get_outcome::placed"),
+            completion.index("CheckEqWorthUsing(actor, claimed)"),
+        )
+        self.assertIn("P_obj delivered = find_live_item_uid(item_uid);", bulk)
+        self.assertIn("state.failed = true;", bulk)
+
     def test_pc_corpse_roots_bypass_generic_ownership_transfers(self):
         actobj = (SRC / "actobj.c").read_text()
         policy = (SRC / "item/item_command_policy.c").read_text()
@@ -80,7 +165,7 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertGreaterEqual(
             actobj.count("item_command_uses_durable_ownership("), 10
         )
-        get_body = actobj[actobj.index("void get(P_char ch") :]
+        get_body = actobj[actobj.index("static get_outcome get_with_phase(P_char ch, P_obj o_obj") :]
         get_body = get_body[: get_body.index("int fight_in_room")]
         self.assertIn(
             "IS_PC(ch) && item_command_uses_durable_ownership(o_obj)", get_body

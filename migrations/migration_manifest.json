@@ -478,6 +478,266 @@
       "verify": "immutable/0030_telemetry_quarantine.sh",
       "verify_checksum": "5c85232132f1e1e0d05e469f5d752454e07361e50360b387635d200cc060e1cf",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0031_economy_accounting",
+      "sequence": 31,
+      "description": "Add economic evidence and retained epoch and account lifetime identities",
+      "apply": "immutable/0031_economy_accounting.sql",
+      "apply_checksum": "f19f74eecbb63b7986613a0eb1ad79f96c3f9e7ab5c654afb69a18430a1f4e95",
+      "verify": "immutable/0031_economy_accounting.sh",
+      "verify_checksum": "674b39f13915320eeddc158cc47ad88128ec38fb8ba05afb619972d4af8ad911",
+      "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0032_economic_baseline",
+      "sequence": 32,
+      "description": "Add baseline witness retention and per-epoch opening reservations",
+      "apply": "immutable/0032_economic_baseline.sql",
+      "verify": "immutable/0032_economic_baseline.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "97f27800708a4492bd157b353010988811de10486c0f06ae14df370995ed5ee3",
+      "verify_checksum": "6cb06fc24dc98b3e14151fdf9676aece96e3501cd7cafe7896201dd8f1dde602"
+    },
+    {
+      "id": "0033_economic_sql_lifecycle_owner",
+      "sequence": 33,
+      "description": "Add durable SQL economic lifecycle installation receipts",
+      "apply": "immutable/0033_economic_sql_lifecycle_owner.sql",
+      "verify": "immutable/0033_economic_sql_lifecycle_owner.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "375182015d29d9969f97a2696f6a49415f192e113fb9a2ea84de5b290ac10675",
+      "verify_checksum": "f16a044fa69f35f6a54a5a6aad37d717d1626085c07b98fa101fa4b62b994f9f"
+    },
+    {
+      "id": "0034_player_death_conflict_evidence",
+      "sequence": 34,
+      "description": "Add immutable evidence for rejected player death-save conflicts",
+      "apply": "immutable/0034_player_death_conflict_evidence.sql",
+      "verify": "immutable/0034_player_death_conflict_evidence.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "35489b02df08627f9c03cd9cd4538f646205ee595328adced4ce2144c35ca646",
+      "verify_checksum": "6b11f5702e3c26103052c99affb5317e296de535af1813527b5bdda826d722f6"
+    },
+    {
+      "id": "0035_player_item_dynamic_state",
+      "sequence": 35,
+      "description": "Persist secondary item flags and complete dynamic-affect state",
+      "apply": "immutable/0035_player_item_dynamic_state.sql",
+      "verify": "immutable/0035_player_item_dynamic_state.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "94567314ffc8e3152c4534ef072cf87da2c4094493e43ea76f5287538b53fbe5",
+      "verify_checksum": "53236964fa334e6bc25b67b738f5d39e2ad7ab04873d26f87f0aaca479cade27"
+    },
+    {
+      "id": "0036_economic_sql_activation_receipt",
+      "sequence": 36,
+      "description": "Add durable scoped SQL economic activation receipts",
+      "apply": "immutable/0036_economic_sql_activation_receipt.sql",
+      "verify": "immutable/0036_economic_sql_activation_receipt.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "636f84e3bd147b32331c50ba95c86b01ad70e654859934b397af03a7e4d15988",
+      "verify_checksum": "5dede4d54e394d630713b8256c457989c800f1bdf9b75ff37b73541470614615"
+    },
+    {
+      "id": "0037_saved_item_handoff_payload",
+      "sequence": 37,
+      "description": "Bind saved item recovery handoffs to both payload snapshots",
+      "apply": "immutable/0037_saved_item_handoff_payload.sql",
+      "verify": "immutable/0037_saved_item_handoff_payload.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "ed8171fd2b30ce866ef0eeae8a55249f0df9f061aab9677706ca1e3b81012ea1",
+      "verify_checksum": "cac78b627eb9b70ed10f208ba2ade8a80d01067b72b33dd34926aa5937273506"
+    },
+    {
+      "id": "0038_item_equipment_slot",
+      "sequence": 38,
+      "description": "Record equipment slots in item custody and event evidence",
+      "apply": "immutable/0038_item_equipment_slot.sql",
+      "verify": "immutable/0038_item_equipment_slot.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "8e41e32f25b8027fdc149fc692b96db0a1ec1076a20223e740310c3f1f993feb",
+      "verify_checksum": "015978cb36a4e33e2aac4452a77eba4b9a0984e92d25e26e347739cc5720d28b"
+    },
+    {
+      "id": "0039_economic_pending_claim_source",
+      "sequence": 39,
+      "description": "Register retained source allocation for pending money claims",
+      "apply": "immutable/0039_economic_pending_claim_source.sql",
+      "verify": "immutable/0039_economic_pending_claim_source.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "a066739e50371e0a19af5953e78fdc8300413c64a9598d45464d49f3268d3fb4",
+      "verify_checksum": "d34b1e98c3ba471b0e9b2de21fc862fd008bd9646aac7e8d91bc6ff803705cbd"
+    },
+    {
+      "id": "0040_economic_sql_global_activation",
+      "sequence": 40,
+      "description": "Add separate durable global SQL economic cutover decisions",
+      "apply": "immutable/0040_economic_sql_global_activation.sql",
+      "verify": "immutable/0040_economic_sql_global_activation.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "c98496695b3440cea9a48ed90019e82400adce20491069ee61768d1616cb7d21",
+      "verify_checksum": "69a793e258bad19514dccbba6a937695f3f640c5c667cb0283a19f24b2f6f37f"
+    },
+    {
+      "id": "0041_shopkeeper_cash_identity",
+      "sequence": 41,
+      "description": "Capture SQL shopkeeper cash and retain stable shop revisions",
+      "apply": "immutable/0041_shopkeeper_cash_identity.sql",
+      "verify": "immutable/0041_shopkeeper_cash_identity.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "b1e68b30cd4a58eb500f574154fb23def2a0e919cc51f3c559e7c44f3cd1b95f",
+      "verify_checksum": "1e3187f0563854513b014129bf3e2a8bfc1a4b0a5ac0b6e196d7c0ca616a696d"
+    },
+    {
+      "id": "0042_shopkeeper_roaming_witness",
+      "sequence": 42,
+      "description": "Capture nullable durable shopkeeper roaming configuration",
+      "apply": "immutable/0042_shopkeeper_roaming_witness.sql",
+      "verify": "immutable/0042_shopkeeper_roaming_witness.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "100057903820eb762051bd96e16816eadd0f8fafdc3e91088f447f64131792ec",
+      "verify_checksum": "483b53886b10a198809fec277a4f708b9c738c7b21ad9c27320fcf8e135f073c"
+    },
+    {
+      "id": "0043_shopkeeper_item_condition",
+      "sequence": 43,
+      "description": "Capture nullable SQL shopkeeper item condition at checkpoint",
+      "apply": "immutable/0043_shopkeeper_item_condition.sql",
+      "verify": "immutable/0043_shopkeeper_item_condition.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "0556c34357f6a6c1f69d1989bf3f7eede4767481f2e63157ed21e8f30c5f666f",
+      "verify_checksum": "64bd5d61c3c012858f4381cb0794ff53d4424531c437a1b58fa12dff493a4f3c"
+    },
+    {
+      "id": "0044_shopkeeper_item_properties",
+      "sequence": 44,
+      "description": "Preserve dynamic state of items in SQL shopkeeper custody",
+      "apply": "immutable/0044_shopkeeper_item_properties.sql",
+      "verify": "immutable/0044_shopkeeper_item_properties.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "dc28ae7a11669974c52b764406c8f4362c7f75c713a2c7df92da2991a613bdcd",
+      "verify_checksum": "14315e7cd18adfe3c203edbec6c071d83a782ff35d93429a6bf3031f05e5cd72"
+    },
+    {
+      "id": "0045_quest_reward_obligation",
+      "sequence": 45,
+      "description": "Retain quest reward obligations with committed item offerings",
+      "apply": "immutable/0045_quest_reward_obligation.sql",
+      "verify": "immutable/0045_quest_reward_obligation.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "9a77ff94121c29537eeec3e618d695cddb8fccf5108f5247ec6a643d02109ac4",
+      "verify_checksum": "354c8babceb51b3e7b448e5e7eccd0eabad1e1d54a42ef4ffcb50c2c84b2495a"
+    },
+    {
+      "id": "0046_economic_realized_trade_price",
+      "sequence": 46,
+      "description": "Record committed realized copper prices for shop trades",
+      "apply": "immutable/0046_economic_realized_trade_price.sql",
+      "verify": "immutable/0046_economic_realized_trade_price.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "2d0d950ccfce78738f3f0794daa3e6406aaaf90ac0b6c4f50e1eae663e9d68ca",
+      "verify_checksum": "0a3375ad88390c19c192ce0a79cdf24274e2102da74bc2b7a3965447feac8f3b"
+    },
+    {
+      "id": "0047_quest_xp_receipt",
+      "sequence": 47,
+      "description": "Make quest XP reward application idempotent across player save recovery",
+      "apply": "immutable/0047_quest_xp_receipt.sql",
+      "verify": "immutable/0047_quest_xp_receipt.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "635a95927956b2b0667c4411758b8dd287722fe4445153606e0d697ecef6aef8",
+      "verify_checksum": "0552f7ee49eaf08762f6aa4453150d13a946940d4d9511b0ab4bf51d0af3664b"
+    },
+    {
+      "id": "0048_quest_xp_entitlement",
+      "sequence": 48,
+      "description": "Persist recoverable quest XP entitlements for every credited player",
+      "apply": "immutable/0048_quest_xp_entitlement.sql",
+      "verify": "immutable/0048_quest_xp_entitlement.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "ed93976ddb651024c3c4ec55a4b2d0becb318c18ce8ad8e930defb0530182b49",
+      "verify_checksum": "8c1d98ffb08292d4b10143a7f414902da3ecb93b63ec8d13fd7fe9fc7b263175"
+    },
+    {
+      "id": "0049_player_spell_effect_receipt",
+      "sequence": 49,
+      "description": "Persist operation-scoped player spell effect receipts with saved affects",
+      "apply": "immutable/0049_player_spell_effect_receipt.sql",
+      "verify": "immutable/0049_player_spell_effect_receipt.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "46779e7b1cf8a12af6828f263a4842ddfed21303719f693224ac130a76371f5b",
+      "verify_checksum": "ff9b0757b6534750d40c26d04212ff4856bee3b835061d1d7a5803e74e590c3a"
+    },
+    {
+      "id": "0050_item_extra_description_fulltext_unique",
+      "sequence": 50,
+      "description": "Enforce full-value uniqueness for player and pet item descriptions",
+      "apply": "immutable/0050_item_extra_description_fulltext_unique.sql",
+      "verify": "immutable/0050_item_extra_description_fulltext_unique.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "63fe76a88f9b4f95b5b14caeaca00188bb82d3ab4516ee19d47fb9f3db7191b8",
+      "verify_checksum": "d97c1b1b46e1d2ec0875e34664296ae34048e6bb24e140b1d241c81f40209d78"
+    },
+    {
+      "id": "0051_player_item_runtime_state",
+      "sequence": 51,
+      "description": "Preserve complete runtime state for carried player items",
+      "apply": "immutable/0051_player_item_runtime_state.sql",
+      "verify": "immutable/0051_player_item_runtime_state.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "ab0e11959207cca0579dcc5635f9c124c655d07635a14c62334a8a2d02c3c7d8",
+      "verify_checksum": "c523d56f74862735f6aef0c831cbe662bed49c64fa6cbdf05bac82f81c1225e5"
+    },
+    {
+      "id": "0052_quest_item_witness_lookup",
+      "sequence": 52,
+      "description": "Index immutable item creation witnesses by quest source identity",
+      "apply": "immutable/0052_quest_item_witness_lookup.sql",
+      "verify": "immutable/0052_quest_item_witness_lookup.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "e2de795797aeaf2ad2a268dffc65e1fb9195fb5e8fa1c6720a39608e153ebe0a",
+      "verify_checksum": "ae28a2787322dc5cf7e7b76d635289fed03e93fc3d59c5983c4e75e8c931327f"
+    },
+    {
+      "id": "0053_craft_progression",
+      "sequence": 53,
+      "description": "Commit frozen recipe progression and player application revisions",
+      "apply": "immutable/0053_craft_progression.sql",
+      "verify": "immutable/0053_craft_progression.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "4b17920b26cad6762637a1f3e0d7cb13d997e2f163b550c56b24363efa45aff1",
+      "verify_checksum": "aacc5516aed02ca8b8b3115a2e8c22ef3f113b299723ea249034971ceb50417a"
+    },
+    {
+      "id": "0054_alchemy_publication",
+      "sequence": 54,
+      "description": "Retain poison Encrust and Harvester publication through player saves",
+      "apply": "immutable/0054_alchemy_publication.sql",
+      "verify": "immutable/0054_alchemy_publication.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "da69352e3ac62cdece4bcce661caa2fa98ad0c8ba3a487e1eed8211fb2629692",
+      "verify_checksum": "2bac3a0afe31dcc4468f525297a708b30ec05dfaa2e5e94832e1205e506a9b31"
+    },
+    {
+      "id": "0055_sql_room_item_payload",
+      "sequence": 55,
+      "description": "Retain exact immutable payload and season provenance for admitted ordinary room drops",
+      "apply": "immutable/0055_sql_room_item_payload.sql",
+      "verify": "immutable/0055_sql_room_item_payload.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "47608d67ec12401d2de2f74174b7739cbce7d942153618f0dbc4b6287769b877",
+      "verify_checksum": "bf2a03adde513bd954ac07e552ceb0329d4c98a056a7e30d05868b96fa07ac67"
+    },
+    {
+      "id": "0056_spell_ward_durability",
+      "sequence": 56,
+      "description": "Persist finite spell ward capacity and equipment renewal deadlines",
+      "apply": "immutable/0056_spell_ward_durability.sql",
+      "verify": "immutable/0056_spell_ward_durability.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "e53e06ca7a5b482b6efee950a4db69fdb7d796b7ff71ed495e67bd3194133bb1",
+      "verify_checksum": "e3fbff0b062da55fc7231411beefe8be216341755df7fa088ba64b1f86653551"
     }
   ]
 }

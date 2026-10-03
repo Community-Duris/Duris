@@ -521,7 +521,8 @@ bool room_transfer_deposit(const item_transfer_payload &payload)
 {
 	return payload.from_owner.type == item_owner_type::player &&
 	       payload.to_owner.type == item_owner_type::room &&
-	       ((payload.reason == item_transfer_reason::player_drop &&
+	       (((payload.reason == item_transfer_reason::player_drop ||
+		  item_transfer_forced_weapon_drop(payload.reason)) &&
 		 !payload.target_parent_item_uid) ||
 		(payload.reason == item_transfer_reason::player_put &&
 		 payload.target_parent_item_uid));
@@ -759,6 +760,22 @@ flatfile_world_item_list_rooms(const std::string &root,
 	const auto loaded = load_catalog(root, &catalog, error);
 	if (loaded != flatfile_world_item_result::ok)
 		return loaded;
+	*rooms = std::move(catalog.rooms);
+	return flatfile_world_item_result::ok;
+}
+
+flatfile_world_item_result flatfile_world_item_recovery_list_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	std::vector<flatfile_corpse_record> *corpses, std::vector<flatfile_room_item_record> *rooms,
+	std::string *error)
+{
+	if (!lock.matches(root) || !corpses || !rooms)
+		return flatfile_world_item_result::invalid;
+	world_item_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_world_item_result::ok)
+		return loaded;
+	*corpses = std::move(catalog.corpses);
 	*rooms = std::move(catalog.rooms);
 	return flatfile_world_item_result::ok;
 }

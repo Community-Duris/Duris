@@ -28,6 +28,7 @@
 #include <string.h>
 #include "core/config.h"
 #include "combat/damage.h"
+#include "combat/death_messages.h"
 #include "combat/guard.h"
 #include "combat/training_dummy.h"
 #include "economy/collector_presence.h"
@@ -1552,10 +1553,25 @@ void vampire_bite(P_char ch, P_char victim)
 	affect_to_char(victim, &af);
 }
 
+static bool refresh_bite_pair(P_char &ch, P_char &victim, uint64_t ch_runtime_id,
+			      uint64_t victim_runtime_id)
+{
+	ch = find_character_by_runtime_id(ch_runtime_id);
+	victim = find_character_by_runtime_id(victim_runtime_id);
+	return ch && IS_ALIVE(ch) && victim && IS_ALIVE(victim);
+}
+
 /* replaces spell_poison() in insect and snake bites, to prevent magical shrug working on physical bites/poisons */
 int bite_poison(P_char ch, P_char victim, int mod)
 {
 	int was_poisoned;
+	uint64_t ch_runtime_id;
+	uint64_t victim_runtime_id;
+
+	if (!char_in_list(ch) || !IS_ALIVE(ch) || !char_in_list(victim) || !IS_ALIVE(victim))
+		return TRUE;
+	ch_runtime_id = ch->runtime_id;
+	victim_runtime_id = victim->runtime_id;
 
 	if (NewSaves(victim, SAVING_SPELL, mod))
 		return FALSE;
@@ -1565,6 +1581,8 @@ int bite_poison(P_char ch, P_char victim, int mod)
 	if (!IS_TRUSTED(victim) && !IS_UNDEADRACE(victim))
 	{
 		(skills[POISON_LIFELEAK].spell_pointer)(GET_LEVEL(ch), ch, 0, 0, victim, 0);
+		if (!refresh_bite_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+			return TRUE;
 		act("&+G$n shivers slightly.", TRUE, victim, 0, 0, TO_ROOM);
 		if (was_poisoned)
 			send_to_char("&+GYou feel even more ill.\n", victim);
@@ -1586,6 +1604,13 @@ void insectbite(P_char ch, P_char victim)
 		"$n leaps towards $N and sinks $s jaws dripping with venom deep in $S flesh."
 	};
 	int i;
+	uint64_t ch_runtime_id;
+	uint64_t victim_runtime_id;
+
+	if (!char_in_list(ch) || !IS_ALIVE(ch) || !char_in_list(victim) || !IS_ALIVE(victim))
+		return;
+	ch_runtime_id = ch->runtime_id;
+	victim_runtime_id = victim->runtime_id;
 
 	if ((GET_LEVEL(ch) + STAT_INDEX(GET_C_AGI(ch))) <
 	    number(1, GET_LEVEL(victim) + 2 * STAT_INDEX(GET_C_AGI(victim))))
@@ -1599,13 +1624,16 @@ void insectbite(P_char ch, P_char victim)
 	if (raw_damage(ch, victim, number(GET_LEVEL(ch), GET_LEVEL(ch) * 3), RAWDAM_DEFAULT,
 		       &messages) == DAM_NONEDEAD)
 	{
+		if (!refresh_bite_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+			return;
 		i = 1 + GET_LEVEL(ch) / 12;
 		while (i-- && !bite_poison(ch, victim, i))
 			;
 		/*	replaced by the above statement, to prevent magical shrug working on non-magical innate */
 		/*    while (i-- && !IS_AFFECTED2(victim, AFF2_POISONED))
 		      spell_poison(GET_LEVEL(ch), ch, 0, 0, victim, 0);*/
-		if (IS_ALIVE(ch))
+		ch = find_character_by_runtime_id(ch_runtime_id);
+		if (ch && IS_ALIVE(ch))
 		{
 			CharWait(ch, PULSE_VIOLENCE);
 		}
@@ -1623,6 +1651,13 @@ void event_snakebite(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 		"$n's shape blurs as $e lashes towards $N and sinks $s fangs in $S flesh.",
 	};
 	int i;
+	uint64_t ch_runtime_id;
+	uint64_t victim_runtime_id;
+
+	if (!char_in_list(ch) || !IS_ALIVE(ch) || !char_in_list(victim) || !IS_ALIVE(victim))
+		return;
+	ch_runtime_id = ch->runtime_id;
+	victim_runtime_id = victim->runtime_id;
 
 	if (GET_STAT(ch) <= STAT_INCAP)
 		return;
@@ -1642,13 +1677,16 @@ void event_snakebite(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 	if (raw_damage(ch, victim, number(GET_LEVEL(ch), GET_LEVEL(ch) * 3), RAWDAM_DEFAULT,
 		       &messages) == DAM_NONEDEAD)
 	{
+		if (!refresh_bite_pair(ch, victim, ch_runtime_id, victim_runtime_id))
+			return;
 		i = 1 + GET_LEVEL(ch) / 12;
 		while (i-- && !bite_poison(ch, victim, i))
 			;
 		/*	replaced by the above statement, to prevent magical shrug working on non-magical innate */
 		/*    while (i-- && !IS_AFFECTED2(victim, AFF2_POISONED))
 		      spell_poison(GET_LEVEL(ch), ch, 0, 0, victim, 0);*/
-		if (IS_ALIVE(ch))
+		ch = find_character_by_runtime_id(ch_runtime_id);
+		if (ch && IS_ALIVE(ch))
 		{
 			CharWait(ch, PULSE_VIOLENCE);
 		}

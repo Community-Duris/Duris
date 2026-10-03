@@ -1,6 +1,7 @@
 #include "economy/boon_reward_transaction.h"
 
 #include "economy/boon.h"
+#include "economy/economic_gameplay_authority.h"
 #include "flatfile/flatfile_boon_repository.h"
 #include "persistence/persistence_mode.h"
 #include "core/prototypes.h"
@@ -57,6 +58,10 @@ bool boon_reward_transaction_submit(P_char character, P_char victim, double data
 {
 	if (!character || IS_NPC(character) || GET_PID(character) <= 0 || option < 0 ||
 	    option >= MAX_BOPT || pending.size() >= BOON_REWARD_PENDING_MAX)
+		return false;
+	// A completed boon can publish a separate cash grant. Until that grant and
+	// the completion share one source-backed root, admit neither in an active epoch.
+	if (economic_gameplay_authority::active())
 		return false;
 	boon_reward_payload payload = {
 		.pid = static_cast<uint32_t>(GET_PID(character)),

@@ -87,7 +87,10 @@ container_reparent = CHECK_EQ_WORTH_USING.index(
 assert equip_check < authoritative_root_guard < container_reparent
 
 PRELUDE = r'''
+#define DURIS_CHARACTER_IDENTITY_TEST_PANIC_STUB
+#include "character_identity_test_fixture.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "item/item_transfer_command.h"
@@ -206,6 +209,13 @@ static uint64_t pending_coin_uid = 0;
 static uint64_t fenced_item_uid = 0;
 static uint64_t collector_pending_uid = 0;
 static unsigned collector_invalidations = 0;
+bool economic_gameplay_authority::active() { return false; }
+economic_accounting_error economic_gameplay_authority::prepare_item_transfer(
+    critical_command *, uint32_t, economic_source_kind)
+{
+    assert(false && "inactive queue fixture prepared active accounting");
+    return economic_accounting_error::unauthorized;
+}
 bool currency_transaction_coin_item_busy(uint64_t uid)
 {
 	return uid && uid == pending_coin_uid;
@@ -256,6 +266,8 @@ bool player_load_item_graph_materialize_creation(const item_transfer_payload &,
     roots->push_back(&recovered_grant_second);
     return true;
 }
+struct craft_pouch_mutation;
+bool chaos_pouch_publish_committed(P_obj, const craft_pouch_mutation &) { assert(false); return false; }
 void __free(void *memory, const char *, int) { free(memory); }
 void send_to_char(const char *text, P_char) { grant_messages += text; }
 void send_to_char(const char *, P_char, int) {}
@@ -315,6 +327,8 @@ void process_with_paging(P_char character, char *input);
 static bool bulk_get_pending = false;
 bool bulk_get_player_busy(P_char) { return bulk_get_pending; }
 bool currency_transaction_player_busy(P_char) { return false; }
+bool player_save_pipeline_sealed_save_pending(int) { return false; }
+bool spell_component_retirement_waiting_for_effect(const critical_operation_id &) { return false; }
 bool input_allowed_while_item_moving(const char *input);
 bool input_allowed_while_currency_pending(const char *) { return true; }
 bool input_allowed_while_item_and_currency_pending(const char *input)
@@ -337,6 +351,8 @@ static void push(struct txt_q *q, const char *text)
 	else
 		q->head = block;
 	q->tail = block;
+	q->bytes += strlen(text) + 1;
+	++q->entries;
 }
 
 static void drain(struct txt_q *q)
@@ -349,6 +365,8 @@ static void drain(struct txt_q *q)
 		q->head = next;
 	}
 	q->tail = NULL;
+	q->bytes = 0;
+	q->entries = 0;
 }
 
 static void expect_text(const char *got, const char *want, const char *label)
@@ -582,6 +600,7 @@ void command_interpreter(P_char actor, char *input)
 
 int main()
 {
+    fixture_check_runtime_identity_retirement();
 	pc_only_data player = {};
 	player.pid = 42;
 	char_data actor = {};
@@ -973,6 +992,7 @@ int main()
 	char_data mobile = {};
 	SET_BIT(mobile.specials.act, ACT_ISNPC);
 	mobile.runtime_id = 9001;
+	fixture_register_character(&mobile);
 	mobile.in_room = 0;
 	character_list = &mobile;
 	obj_data mobile_loot = {};
@@ -1053,13 +1073,20 @@ int main()
 	mobile_completion.result_size = mobile_encoded.size();
 	std::copy(mobile_encoded.begin(), mobile_encoded.end(),
 		  mobile_completion.result_payload.begin());
-	character_list = NULL;
+	fixture_retire_character(&mobile);
+	const auto retired_mobile_id = mobile.runtime_id;
+	// Reuse the same storage while the old command remains outstanding.
+	mobile.runtime_id = allocate_character_runtime_id();
+	fixture_register_character(&mobile);
+	assert(find_character_by_runtime_id(retired_mobile_id) == nullptr);
+	character_list = &mobile;
 	command_submitted = false;
 	item_movement_transaction_handle_completions(&mobile_completion, 1);
 	assert(vanished_mobile_callbacks == 1 && OBJ_ROOM(&abandoned_loot));
 	assert(item_movement_transaction_health_copy().pending == 0);
 	assert(item_ownership_runtime_lookup(106, &mobile_after));
 	assert(mobile_after.item_revision == 2 && mobile_after.owner_revision == 10);
+	fixture_retire_character(&mobile);
 	character_list = &actor;
 	// A vanished scavenger never becomes an aggregate owner: the durable claim
 	// advances the room revision in place, so the same live object remains
@@ -1103,6 +1130,10 @@ int main()
     assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 1025, &actor));
     assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, duplicates, 2, &actor));
     assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, invalid_tail, 2, &actor));
+    assert(!item_creation_grant_submit_batch_to_player_before_entry(
+        &actor, grants, 2, &actor, economic_source_kind{}, 90001));
+    assert(!item_creation_grant_submit_batch_to_player_before_entry(
+        &actor, grants, 2, &actor, economic_source_kind::quest_completion, 90001));
     grant_second.loc_p = LOC_ROOM;
     assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
     grant_second.loc_p = LOC_NOWHERE;
@@ -1118,8 +1149,14 @@ int main()
     assert(!item_creation_grant_blocks_commands(&actor));
     assert(!item_creation_grant_batches_pending());
     assert(extracted_count == 0 && OBJ_NOWHERE(&grant_first) && OBJ_NOWHERE(&grant_second));
-    assert(item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
+    assert(item_creation_grant_submit_batch_to_player_before_entry(
+        &actor, grants, 2, &actor, economic_source_kind::world_generation, 90001));
     assert(command_submitted && item_creation_grant_blocks_commands(&actor));
+    item_transfer_payload sourced_batch = {};
+    assert(item_transfer_command_decode_payload(submitted_command, &sourced_batch));
+    assert(sourced_batch.reason == item_transfer_reason::creation &&
+           sourced_batch.multi_root && sourced_batch.item_count == 2 &&
+           sourced_batch.logical_source_id == 90001);
     assert(item_creation_grant_batches_pending());
     assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
     push(&q, "wear grant");
@@ -1580,10 +1617,12 @@ def main() -> int:
             [
                 "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-g",
                 "-O1", "-ffunction-sections", "-fdata-sections",
-                "-fsanitize=address,undefined", "-Isrc", str(source),
+                "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
+                "-pthread", "-Isrc", "-Itests/async", str(source),
+                rel("account/character_identity.c"),
                 rel("item_movement_transaction.c"),
                 rel("item_ownership_runtime.c"),
-                rel("item_transfer_command.c"),
+                rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
                 rel("critical_command.c"),
                 rel("player_snapshot_capture.c"),
                 rel("player_snapshot_codec.c"),

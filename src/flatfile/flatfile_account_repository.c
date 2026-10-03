@@ -292,6 +292,17 @@ flatfile_account_result flatfile_account_load(const std::string &root, const std
 	return load_unlocked(root, name, record, error);
 }
 
+flatfile_account_result flatfile_account_load_locked(const std::string &root,
+						     const flatfile_account_lock &lock,
+						     const std::string &name,
+						     flatfile_account_record *record,
+						     std::string *error)
+{
+	if (!lock.matches(root))
+		return flatfile_account_result::invalid;
+	return load_unlocked(root, name, record, error);
+}
+
 flatfile_account_result flatfile_account_save(const std::string &root,
 					      const flatfile_account_record &record,
 					      uint64_t expected_revision,

@@ -25,7 +25,7 @@ def function(source, signature):
 
 
 def main():
-    source = (ROOT / 'src/combat/fight.c').read_text()
+    source = (ROOT / 'src/combat/fight_state.c').read_text()
     helper = function(source, 'static void telemetry_combat_context_changed(')
     start = function(source, 'void set_fighting(P_char ch, P_char vict)')
     stop = function(source, 'void stop_fighting(P_char ch)')
@@ -78,6 +78,8 @@ void gmcp_mark_room_dirty(int) {}
 void gmcp_combat_end(P_char) {}
 void update_pos(P_char) {}
 std::vector<bool> observed;
+std::vector<P_char> promoted;
+void world_activity_promote_character(P_char ch) { promoted.push_back(ch); }
 telemetry_capture_result telemetry_runtime_game_context(char_data *ch, descriptor_data *) {
     observed.push_back(ch->specials.fighting != nullptr);
     return {};
@@ -93,6 +95,7 @@ int main() {
     player.desc = &descriptor;
     accepted_start(&player, &target);
     assert(combat_list == &player && IS_FIGHTING(&player));
+    assert(promoted.size() == 2 && promoted[0] == &player && promoted[1] == &target);
     assert(observed.size() == 1 && observed.back());
     stop_fighting(&player);
     assert(!combat_list && !IS_FIGHTING(&player));

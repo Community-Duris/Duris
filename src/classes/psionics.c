@@ -3018,6 +3018,17 @@ void spell_thought_beacon(int level, P_char ch, char * /*arg*/, [[maybe_unused]]
 	obj_to_room(beacon, ch->in_room);
 }
 
+int thought_beacon(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
+{
+	if (cmd != CMD_DISPEL || !OBJ_ROOM(obj))
+		return FALSE;
+
+	send_to_room("&+LThe fog quickly disperses, leaving only a trace of it ever existing.\n",
+		     obj->loc.room);
+	extract_obj(obj, FALSE); // Not an arti, but 'in game.'
+	return TRUE;
+}
+
 void spell_wormhole(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
 		    P_obj /*obj*/)
 {

@@ -73,6 +73,18 @@ def check(ok: bool, label: str, extra: str = "") -> None:
         print(f"FAIL: {label}" + (f"\n      {extra}" if extra else ""))
 
 
+def removal_invalidation_safe(body: str, next_work: str, retire_identity: bool) -> bool:
+    """Pin the exact non-null prelude before maintenance or nested callbacks."""
+    code = strip_comments(body)
+    retirement = r"\s*unregister_character_runtime_id\s*\(ch\);" if retire_identity else ""
+    prelude = re.search(r"if\s*\(!ch\)\s*\{[^{}]*return;\s*\}"
+                        + retirement + r"\s*\+\+character_removal_generation;", code)
+    if prelude is None or code.count("++character_removal_generation;") != 1:
+        return False
+    return (prelude.end() <= code.find(next_work)
+            and (not retire_identity or prelude.end() <= code.find("character_maintenance_leave(ch)")))
+
+
 
 def statement_present(text: str, call: str) -> bool:
     """True when `call` (a regex for the call expression, no trailing ';')
@@ -1752,10 +1764,24 @@ def test_garrison_identity_and_hunts_survive_extraction() -> None:
         check(len(bodies) == 1, f"{signature} has one invalidation hook owner")
         if bodies:
             code = strip_comments(bodies[0])
-            check(re.search(r"if\s*\(!ch\)\s*\{[^{}]*return;\s*\}"
-                            r"\s*\+\+character_removal_generation;", code) is not None
-                  and code.find("++character_removal_generation;") < code.find(next_work),
-                  f"{path} invalidates immediately after its null guard before nested work")
+            retire_identity = path == "src/world/db.c"
+            check(removal_invalidation_safe(code, next_work, retire_identity),
+                  f"{path} invalidates after its null guard and identity retirement before nested work")
+            for label, changed in (
+                ("missing generation", code.replace("++character_removal_generation;", "")),
+                ("callback before invalidation", code.replace("++character_removal_generation;",
+                                                             next_work + "; ++character_removal_generation;")),
+            ):
+                check(not removal_invalidation_safe(changed, next_work, retire_identity),
+                      f"{path} rejects {label}")
+            if retire_identity:
+                for label, changed in (
+                    ("missing retirement", code.replace("unregister_character_runtime_id(ch);", "")),
+                    ("maintenance before invalidation", code.replace("++character_removal_generation;",
+                             "character_maintenance_leave(ch); ++character_removal_generation;")),
+                ):
+                    check(not removal_invalidation_safe(changed, next_work, True),
+                          f"{path} rejects {label}")
 
     hunt_check = function_bodies(read("src/mob/mobact.c"), r"\bvoid\s+MobHuntCheck\s*\(")
     check(len(hunt_check) == 1, "MobHuntCheck is defined once", f"{len(hunt_check)}")
@@ -2500,7 +2526,7 @@ def test_store_mark_is_the_buyers_player_id_not_a_name() -> None:
         f"slot test {slot_test}, silent call {silent[0] if silent else -1}",
     )
     # remove_soulbind() delegates to remove_soulbind_except(), which owns the loop.
-    magic = read("src/magic/magic.c")
+    magic = read("src/magic/spell_item_lifecycle.c")
     remove = function_bodies(magic, r"\bvoid\s+remove_soulbind\s*\(")
     remove_except = function_bodies(magic, r"\bstatic\s+void\s+remove_soulbind_except\s*\(")
     check(

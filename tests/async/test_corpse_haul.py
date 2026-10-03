@@ -96,17 +96,21 @@ static std::unordered_map<int, std::string> rooms;
 static std::string output;
 static int submissions=0, alerts=0, coin_attempts=0;
 static bool admitted=true, owned=true, fail_delivery=false, pile_ok=true;
-static bool item_get_ack_publication=false, item_get_deferred=false, item_get_rejected=false;
+enum class get_phase { admission, publication };
+enum class get_outcome { rejected, deferred, placed, consumed, destroyed };
+enum class obj_to_char_result { rejected, deferred, placed, destroyed };
 static P_obj find_live_item_uid(uint64_t uid) { auto i=objects.find(uid); return i==objects.end()?nullptr:i->second; }
 static void send_to_char(const char *s,P_char) { output+=s; }
 static void act(const char *s,int,P_char ch,P_obj,void *,int target) {
  if(target==TO_ROOM) rooms[ch->in_room]+=s; else output+=s;
 }
 static void obj_from_obj(P_obj o) { o->location=0; }
-static void obj_to_char(P_obj o,P_char ch) {
- if(fail_delivery) { objects.erase(o->obj_uid); return; }
+static obj_to_char_result obj_to_char_checked(P_obj o,P_char ch) {
+ if(fail_delivery) { objects.erase(o->obj_uid); return obj_to_char_result::destroyed; }
  o->location=3; o->carrier=ch;
+ return obj_to_char_result::placed;
 }
+static void obj_to_char(P_obj o,P_char ch) { (void)obj_to_char_checked(o,ch); }
 static bool item_owner_identity_equal(item_owner_identity a,item_owner_identity b) { return a.type==b.type && a.id==b.id; }
 static bool item_owner_identity_valid(item_owner_identity a) { return a.id != 0; }
 static bool item_ownership_runtime_lookup(uint64_t,item_ownership_runtime_entry *r) { r->owner={}; return owned; }
@@ -154,18 +158,20 @@ static const char *coins_to_string(int p,int g,int s,int c,const char *) {
 finalizers = r'''
 static bool coin_options_seen=false;
 static coin_get_submission_options last_coin_options = {};
-static void do_get_finalize_container_success(P_char ch,P_char,P_obj container,P_obj object,
- int &total,bool &found,bool,const char *,const coin_get_submission_options *options=nullptr) {
- item_get_deferred=false; item_get_rejected=false;
+static get_outcome do_get_finalize_container_success(P_char ch,P_char,P_obj container,P_obj object,
+ int &total,bool &found,bool,const char *,const coin_get_submission_options *options=nullptr,
+ get_phase phase=get_phase::admission) {
  if(object->type==ITEM_MONEY) {
   ++coin_attempts; coin_options_seen=options!=nullptr;
   if(options) last_coin_options=*options;
-  item_get_deferred=admitted; item_get_rejected=!admitted; return;
+  return admitted ? get_outcome::deferred : get_outcome::rejected;
  }
- publish_container_get(ch,object,container,TRUE,false); ++total; found=true;
+ get_outcome outcome=publish_container_get(ch,object,container,TRUE,false,phase);
+ if(outcome==get_outcome::placed) { ++total; found=true; }
+ return outcome;
 }
-static void do_get_finalize_room_item(P_char ch,P_obj o,bool &found,int &total) {
- obj_to_char(o,ch); ++total; found=true;
+static get_outcome do_get_finalize_room_item(P_char ch,P_obj o,bool &found,int &total,get_phase=get_phase::admission) {
+ obj_to_char(o,ch); ++total; found=true; return get_outcome::placed;
 }
 '''
 
@@ -306,7 +312,9 @@ int main() {
  acknowledge(nullptr); assert(bulk_gets.empty());
  // A failed live delivery is never listed in the haul.
  reset(); setup(&actor,&corpse,&dagger,nullptr); start_bulk_get(&actor,&corpse,nullptr,false);
- fail_delivery=true; acknowledge(&actor); assert(output.find("  a dagger")==std::string::npos);
+ fail_delivery=true; acknowledge(&actor);
+ assert(output.find("  a dagger")==std::string::npos);
+ assert(output.find("Some contents were not acquired")!=std::string::npos);
  // Coin-only and mixed operations hold output across acknowledgements. The
  // actual committed denominations are copied before shared formatter reuse.
  for(bool mixed : {false,true}) {
@@ -342,9 +350,7 @@ int main() {
  setup(&scavenger,&npc_bag,&npc_loot,nullptr);
  assert(corpse_bulk_get(nullptr,npc_bag.obj_uid)==nullptr);
  assert(corpse_bulk_get(&scavenger,npc_bag.obj_uid)==nullptr);
- item_get_ack_publication=true;
- publish_container_get(&scavenger,&npc_loot,&npc_bag,TRUE,false);
- item_get_ack_publication=false;
+ publish_container_get(&scavenger,&npc_loot,&npc_bag,TRUE,false,get_phase::publication);
  assert(OBJ_CARRIED_BY(&npc_loot,&scavenger) && bulk_gets.empty());
  puts("corpse haul: held transfer/adoption/coins, movement, rejection, stale source, disconnect and strict NPC publication passed");
 }
@@ -355,7 +361,9 @@ parts = [prelude, take('struct synchronous_get_item')+';', take('struct bulk_get
          take('struct bulk_movement_context')+';',
          'static std::unordered_map<uint32_t,bulk_get_state> bulk_gets;',
          take('static bulk_get_state *corpse_bulk_get('),
-         take('static void announce_corpse_bulk_get('), take('static void publish_container_get('), finalizers]
+         take('static void announce_corpse_bulk_get('),
+         take('static get_outcome get_placement_outcome('),
+         take('static get_outcome publish_container_get('), finalizers]
 for name in ['static bool bulk_get_source_matches(', 'static bool bulk_get_source_for_roots(',
              'static bool bulk_get_source_available(',
              'static bool bulk_get_corpse_source_available(',

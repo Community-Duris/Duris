@@ -1,4 +1,5 @@
 #include "account/password_async.h"
+#include "account/account_async.h"
 #include <string>
 #include <memory>
 /*
@@ -13,6 +14,7 @@
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
+#include "world/rested.h"
 #include "core/utils.h"
 #include "net/ws_handlers.h"
 #include <ctype.h>
@@ -39,10 +41,11 @@
 #include "core/mm.h"
 #include "net/poll.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_player_identity.h"
 #include "player/player_name.h"
 #include "account/password_hash.h"
 #include "persistence/presence_policy.h"
+#include "persistence/persistence_mode.h"
 #include "net/websocket.h"
 #include "net/ws_auth.h"
 #include "core/utility.h"
@@ -65,6 +68,19 @@ extern const int avail_hometowns[][LAST_RACE + 1];
 static const char *ws_get_race_name(int race);
 static const char *ws_get_class_name(unsigned int m_class);
 static int ws_durisweb_auth_limited(struct descriptor_data *d);
+
+static void ws_add_account_capabilities(cJSON *data)
+{
+	cJSON *capabilities;
+
+	if (!data)
+		return;
+	capabilities = cJSON_CreateObject();
+	if (!capabilities)
+		return;
+	cJSON_AddBoolToObject(capabilities, "restedBonus", rested_bonus_enabled());
+	cJSON_AddItemToObject(data, "capabilities", capabilities);
+}
 
 #define WS_IP_RATE_SLOTS 256
 
@@ -1038,6 +1054,7 @@ void ws_send_auth_success(struct descriptor_data *d, const char *account_name)
 	cJSON_AddStringToObject(root, "status", "success");
 
 	cJSON_AddStringToObject(data, "account", account_name);
+	ws_add_account_capabilities(data);
 
 	/* build character list */
 	cJSON_AddItemToObject(data, "characters", ws_build_character_list(d));
@@ -1235,14 +1252,17 @@ void ws_cmd_login(struct descriptor_data *d, cJSON *data)
 		tmp_name[i] = tolower(tmp_name[i]);
 	}
 
-	/* check if account exists */
+	/* Flat-file login keeps its existing account-store semantics. */
+#ifdef __NO_MYSQL__
 	if (!account_exists("Accounts", tmp_name))
 	{
 		ws_send_auth_failed(d, "Invalid account or password");
 		return;
 	}
+#endif
 
 	/* allocate and load account - if one exists, free it first */
+	account_async_cancel(d);
 	if (d->account)
 	{
 		d->account = free_account(d->account);
@@ -1256,6 +1276,47 @@ void ws_cmd_login(struct descriptor_data *d, cJSON *data)
 
 	d->account->acct_name = str_dup(tmp_name);
 
+#ifndef __NO_MYSQL__
+	// Keep the web password only in the game-thread continuation. The account
+	// worker receives the account name alone; cancellation cleanses this copy.
+	if (strnlen(password, 4096) >= 4096)
+	{
+		ws_send_auth_failed(d, "Login is busy; try again later");
+		d->account = free_account(d->account);
+		return;
+	}
+	std::shared_ptr<char> secret(new char[4096](),
+				     [](char *saved)
+				     {
+					     OPENSSL_cleanse(saved, 4096);
+					     delete[] saved;
+				     });
+	strlcpy(secret.get(), password, 4096);
+	if (!account_async_start(
+		    d,
+		    [secret](P_desc completed, account_load_outcome outcome)
+		    {
+			    if (outcome != account_load_outcome::loaded)
+			    {
+				    ws_send_auth_failed(completed, "Invalid account or password");
+				    completed->account = free_account(completed->account);
+				    return;
+			    }
+			    completed->login_password_websocket = true;
+			    completed->login_password_job = password_login_submit(
+				    secret.get(), completed->account->acct_password, 0);
+			    if (!completed->login_password_job)
+			    {
+				    ws_send_auth_failed(completed,
+							"Login is busy; try again later");
+				    completed->account = free_account(completed->account);
+			    }
+		    }))
+	{
+		ws_send_auth_failed(d, "Login is busy; try again later");
+		d->account = free_account(d->account);
+	}
+#else
 	if (read_account(d->account) == -1)
 	{
 		ws_send_auth_failed(d, "Invalid account or password");
@@ -1271,6 +1332,7 @@ void ws_cmd_login(struct descriptor_data *d, cJSON *data)
 		ws_send_auth_failed(d, "Login is busy; try again later");
 		d->account = free_account(d->account);
 	}
+#endif
 }
 
 void ws_finish_login(struct descriptor_data *d, int password_valid)
@@ -1544,7 +1606,7 @@ void ws_cmd_game(struct descriptor_data *d, cJSON *data)
 
 	if (cmd && *cmd)
 	{
-		write_to_q(cmd, &d->input, 0);
+		queue_websocket_input(d, cmd);
 	}
 }
 
@@ -3345,6 +3407,33 @@ static void ws_send_admin_delete_response(struct descriptor_data *d, int success
 	cJSON_Delete(result);
 }
 
+static void ws_free_admin_delete_temp_character(P_char ch)
+{
+	if (!ch)
+		return;
+	if (ch->player.name)
+		str_free(ch->player.name);
+	if (ch->player.title)
+		str_free(ch->player.title);
+	if (ch->player.short_descr)
+		str_free(ch->player.short_descr);
+	if (ch->player.long_descr)
+		str_free(ch->player.long_descr);
+	if (ch->player.description)
+		str_free(ch->player.description);
+	if (ch->only.pc)
+	{
+		if (ch->only.pc->poofIn)
+			str_free(ch->only.pc->poofIn);
+		if (ch->only.pc->poofOut)
+			str_free(ch->only.pc->poofOut);
+		if (ch->only.pc->gcmd_arr)
+			FREE(ch->only.pc->gcmd_arr);
+		free(ch->only.pc);
+	}
+	free(ch);
+}
+
 /* admin delete a character (durisweb service only) */
 void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 {
@@ -3509,7 +3598,7 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 	int restore_result = restoreCharOnly(ch, (char *)char_name);
 	if (restore_result < 0)
 	{
-		/* pfile doesn't exist or is corrupted - still clean up account and database */
+		/* A failed restore is not authority to delete SQL-backed account data. */
 		if (restore_result == -1)
 		{
 			ws_send_admin_delete_progress(
@@ -3521,8 +3610,23 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 			ws_send_admin_delete_progress(d, request_id,
 						      "Character save file corrupted", "info");
 		}
-		free(ch->only.pc);
-		free(ch);
+
+		/* In SQL-primary operation, a failed restore does not prove
+		   that the player or recoverable evidence is absent. Defer cleanup. */
+		if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		{
+			ws_free_admin_delete_temp_character(ch);
+			ws_send_admin_delete_progress(
+				d, request_id,
+				"Character deletion deferred because save data could not be loaded",
+				"error");
+			ws_send_admin_delete_response(
+				d, 0, account_name, char_name, request_id,
+				"Character save data could not be loaded; deletion was deferred");
+			free_account(target_acct);
+			return;
+		}
+		ws_free_admin_delete_temp_character(ch);
 
 		ws_send_admin_delete_progress(d, request_id,
 					      "Cleaning up orphaned character data...", "info");
@@ -3582,35 +3686,29 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 
 	ws_send_admin_delete_progress(d, request_id, "Character save file loaded", "success");
 
+	/* The core deletion result is authoritative for account-list mutation. */
+	ws_send_admin_delete_progress(d, request_id, "Deleting character save file...", "info");
+	const character_delete_result delete_result = delete_character_result(ch);
+	if (delete_result != character_delete_result::deleted)
+	{
+		const char *error =
+			delete_result == character_delete_result::refused ?
+				"Character deletion was refused; account data was not changed" :
+				"Character deletion requires reconciliation; no further account cleanup was attempted";
+		ws_free_admin_delete_temp_character(ch);
+		ws_send_admin_delete_progress(d, request_id, error, "error");
+		free_account(target_acct);
+		ws_send_admin_delete_response(d, 0, account_name, char_name, request_id, error);
+		return;
+	}
+
 	/* log the deletion - audit trail */
 	logit(LOG_PLAYER, "ADMIN: %s deleted character %s from account %s via web admin",
 	      deleted_by, char_name, account_name);
-
-	/* delete character file and free temp character */
-	ws_send_admin_delete_progress(d, request_id, "Deleting character save file...", "info");
-	deleteCharacter(ch);
 	ws_send_admin_delete_progress(d, request_id, "Character save file deleted", "success");
 
 	/* free strings allocated by restoreCharOnly */
-	if (ch->player.name)
-		str_free(ch->player.name);
-	if (ch->player.title)
-		str_free(ch->player.title);
-	if (ch->player.short_descr)
-		str_free(ch->player.short_descr);
-	if (ch->player.long_descr)
-		str_free(ch->player.long_descr);
-	if (ch->player.description)
-		str_free(ch->player.description);
-	if (ch->only.pc->poofIn)
-		str_free(ch->only.pc->poofIn);
-	if (ch->only.pc->poofOut)
-		str_free(ch->only.pc->poofOut);
-	if (ch->only.pc->gcmd_arr)
-		FREE(ch->only.pc->gcmd_arr);
-
-	free(ch->only.pc);
-	free(ch);
+	ws_free_admin_delete_temp_character(ch);
 
 	/* remove from account character list */
 	ws_send_admin_delete_progress(d, request_id, "Removing from account character list...",
@@ -3654,6 +3752,7 @@ void ws_cmd_rested_bonus(struct descriptor_data *d, cJSON * /*data*/)
 	struct acct_chars *c;
 	P_char temp_ch;
 	time_t current_time;
+	bool enabled;
 
 	if (!d->account)
 	{
@@ -3661,54 +3760,62 @@ void ws_cmd_rested_bonus(struct descriptor_data *d, cJSON * /*data*/)
 		return;
 	}
 
+	enabled = rested_bonus_enabled();
 	result_data = cJSON_CreateObject();
 	characters = cJSON_CreateArray();
-	current_time = time(0);
+	cJSON_AddBoolToObject(result_data, "enabled", enabled);
 
-	c = d->account->acct_character_list;
-	while (c)
+	if (enabled)
 	{
-		temp_ch = (struct char_data *)malloc(sizeof(struct char_data));
-		if (temp_ch)
+		current_time = time(0);
+		c = d->account->acct_character_list;
+		while (c)
 		{
-			memset(temp_ch, 0, sizeof(struct char_data));
-			temp_ch->only.pc =
-				(struct pc_only_data *)malloc(sizeof(struct pc_only_data));
-			if (temp_ch->only.pc)
+			temp_ch = (struct char_data *)malloc(sizeof(struct char_data));
+			if (temp_ch)
 			{
-				memset(temp_ch->only.pc, 0, sizeof(struct pc_only_data));
-				if (restoreCharOnly(temp_ch, c->charname) >= 0)
+				memset(temp_ch, 0, sizeof(struct char_data));
+				temp_ch->only.pc =
+					(struct pc_only_data *)malloc(sizeof(struct pc_only_data));
+				if (temp_ch->only.pc)
 				{
-					time_t offline_seconds =
-						current_time - temp_ch->player.time.saved;
-					int offline_hours = offline_seconds / 3600;
-					int max_hours = 20; /* well-rested threshold */
-					int percent = (offline_hours * 100) / max_hours;
-					if (percent > 100)
-						percent = 100;
+					memset(temp_ch->only.pc, 0, sizeof(struct pc_only_data));
+					if (restoreCharOnly(temp_ch, c->charname) >= 0)
+					{
+						time_t offline_seconds =
+							current_time - temp_ch->player.time.saved;
+						int offline_hours = offline_seconds / 3600;
+						int max_hours = 20; /* well-rested threshold */
+						int percent = (offline_hours * 100) / max_hours;
+						if (percent > 100)
+							percent = 100;
 
-					/* capitalize name */
-					char name_cap[32];
-					strlcpy(name_cap, GET_NAME(temp_ch), sizeof name_cap);
-					if (name_cap[0])
-						name_cap[0] = toupper(name_cap[0]);
+						/* capitalize name */
+						char name_cap[32];
+						strlcpy(name_cap, GET_NAME(temp_ch),
+							sizeof name_cap);
+						if (name_cap[0])
+							name_cap[0] = toupper(name_cap[0]);
 
-					char_obj = cJSON_CreateObject();
-					cJSON_AddStringToObject(char_obj, "name", name_cap);
-					cJSON_AddNumberToObject(char_obj, "restedPercent", percent);
-					cJSON_AddNumberToObject(char_obj, "restedHours",
-								offline_hours > max_hours ?
-									max_hours :
-									offline_hours);
-					cJSON_AddNumberToObject(char_obj, "maxHours", max_hours);
-					cJSON_AddItemToArray(characters, char_obj);
+						char_obj = cJSON_CreateObject();
+						cJSON_AddStringToObject(char_obj, "name", name_cap);
+						cJSON_AddNumberToObject(char_obj, "restedPercent",
+									percent);
+						cJSON_AddNumberToObject(char_obj, "restedHours",
+									offline_hours > max_hours ?
+										max_hours :
+										offline_hours);
+						cJSON_AddNumberToObject(char_obj, "maxHours",
+									max_hours);
+						cJSON_AddItemToArray(characters, char_obj);
+					}
+					cleanup_temp_char(temp_ch);
+					free(temp_ch->only.pc);
 				}
-				cleanup_temp_char(temp_ch);
-				free(temp_ch->only.pc);
+				free(temp_ch);
 			}
-			free(temp_ch);
+			c = c->next;
 		}
-		c = c->next;
 	}
 
 	cJSON_AddItemToObject(result_data, "characters", characters);
@@ -3741,6 +3848,7 @@ void ws_send_return_to_menu(struct descriptor_data *d, const char *reason)
 		return;
 
 	data_obj = cJSON_CreateObject();
+	ws_add_account_capabilities(data_obj);
 	cJSON_AddItemToObject(data_obj, "characters", ws_build_character_list(d));
 
 	cJSON *root = cJSON_CreateObject();
@@ -3994,8 +4102,8 @@ void ws_cmd_poll_vote(struct descriptor_data *d, cJSON *data)
 /* dispatch */
 void ws_handle_command(struct descriptor_data *d, const char *cmd, cJSON *data)
 {
-	/* No account mutation or entry may overtake password verification. */
-	if (d && (d->login_password_job || d->password_request))
+	/* No account mutation or entry may overtake account/password loading. */
+	if (d && (d->login_password_job || d->password_request || d->account_request))
 		return;
 	static const struct
 	{
@@ -4046,7 +4154,7 @@ void ws_handle_command(struct descriptor_data *d, const char *cmd, cJSON *data)
 
 	/* Unknown messages remain raw game commands for authenticated players. */
 	if (d && d->connected == CON_PLAYING)
-		write_to_q(cmd, &d->input, 0);
+		queue_websocket_input(d, cmd);
 }
 
 /* initialize websocket handlers */

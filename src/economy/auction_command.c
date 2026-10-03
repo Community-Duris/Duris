@@ -243,6 +243,7 @@ bool auction_command_encode_result(const auction_command_result &result,
 			append_le<uint64_t>(&bytes, result.item_uids[index]);
 			append_le<uint64_t>(&bytes, result.item_revisions[index]);
 		}
+		append_le<int64_t>(&bytes, result.claim_credit_used);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -292,7 +293,9 @@ bool auction_command_decode_result(const uint8_t *encoded, size_t size,
 		if (!read_le(&cursor, end, &result->item_uids[index]) ||
 		    !read_le(&cursor, end, &result->item_revisions[index]))
 			return false;
-	return result->action > auction_action::unknown && result->action <= auction_action::remove;
+	return read_le(&cursor, end, &result->claim_credit_used) &&
+	       result->claim_credit_used >= 0 && result->action > auction_action::unknown &&
+	       result->action <= auction_action::remove;
 }
 
 bool auction_command_build(critical_command *command, critical_operation_id operation_id,

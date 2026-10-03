@@ -28,7 +28,7 @@ int main()
 {
     static_assert(std::is_move_constructible_v<player_snapshot>);
     static_assert(std::is_move_assignable_v<player_snapshot>);
-    static_assert(PLAYER_SNAPSHOT_SCHEMA_VERSION == 9);
+    static_assert(PLAYER_SNAPSHOT_SCHEMA_VERSION == 7);
     static_assert(PLAYER_SNAPSHOT_MAX_BYTES == 4 * 1024 * 1024);
     static_assert(PLAYER_SNAPSHOT_MAX_OBJECTS < PLAYER_SNAPSHOT_MAX_ROWS);
     static_assert(PLAYER_SNAPSHOT_MAX_DEPTH > 0);
@@ -463,7 +463,7 @@ subprocess.run([
     "-Isrc", str(source), "src/player/player_snapshot_capture.c",
     "src/player/player_snapshot_codec.c", "src/player/pet_restore_state.c",
     "src/player/pet_restore_runtime.c", "src/item/item_ownership_runtime.c",
-    "src/item/item_transfer_command.c", "src/persistence/critical_command.c",
+    "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", "src/persistence/critical_command.c",
     "-Wl,--gc-sections", "-lcrypto", "-o", str(binary),
 ], cwd=ROOT, check=True)
 subprocess.run([str(binary)], check=True)

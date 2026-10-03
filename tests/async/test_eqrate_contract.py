@@ -13,7 +13,7 @@ from pathlib import Path
 from contract_text import contains, find, index
 
 ROOT = Path(__file__).resolve().parents[2]
-ACTWIZ_C = (SRC / "actwiz.c").read_text()
+ACTWIZ_C = (SRC / "staff_eqrate.c").read_text()
 INTERP_C = (SRC / "interp.c").read_text()
 INTERP_H = (SRC / "interp.h").read_text()
 CONFIG_H = (SRC / "config.h").read_text()

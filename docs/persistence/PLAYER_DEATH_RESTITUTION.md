@@ -2,7 +2,7 @@
 
 `player_death_restitution.py` prepares SQL-derived item recovery for the native
 staff command or the separately guarded offline SQL application path. It
-restores only original item UIDs whose normalized schema-10 death payload and retained
+restores only original item UIDs whose validated death payload and retained
 custody row agree. It never mints an item from a vnum, clears a corpse, refunds
 currency, or rewrites artifact authority without either an identity-bound
 canonical row or the separately approved exact-evidence reconciliation path.
@@ -12,8 +12,16 @@ canonical row or the separately approved exact-evidence reconciliation path.
 - Backend: MySQL 8 or MariaDB 10 with the ownership/death schema and immutable
   migration `0020_player_death_restitution` applied. File/flat-file authority
   is refused. The native bridge exposes the raw wire version separately from
-  the normalized schema: death schema 10 is accepted for historical wire
-  versions 2, 4, 6, and 8, and for the current writer's wire version 10. Exact
+  the normalized schema: death schema 8 is accepted for historical wire
+  versions 2, 4, and 6, and for wire version 8. Death frames carrying spell
+  application receipts use matching wire and normalized schema 13. Death frames
+  carrying quest XP receipts, with optional spell receipts, use matching wire and
+  normalized schema 15. Craft receipts use schema 18. Ward-bearing wires 21, 26,
+  28, and 31 normalize to these same death request schemas and retain finite ward
+  state. Evidence envelopes 10, 14, 16, and 19, including ward-bearing variants,
+  remain excluded from
+  ordinary restitution. Retained XP receipts are progression evidence and do not
+  authorize an item grant or an XP adjustment by restitution. Exact
   item encoding is validated by the native codec; unknown or corrupt encodings
   are refused rather than relabeled.
 - Target: `ENVIRONMENT=test`, `dev`, `development`, or `local` remains the

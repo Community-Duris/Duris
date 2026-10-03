@@ -3,12 +3,16 @@
 
 #include "item/item_transfer_command.h"
 #include "persistence/gameplay_read_state.h"
+#include "player/player_death_recovery_query.h"
 #include "player/player_snapshot.h"
+#include "item/quest_reward_continuation.h"
+#include "persistence/quest_reward_obligation_repository.h"
 
 #include <array>
 #include <cstdint>
 #include <mysql/mysql.h>
 #include <string>
+#include <vector>
 
 constexpr uint32_t PLAYER_LOAD_SCHEMA_VERSION = 1;
 constexpr size_t PLAYER_LOAD_ACCOUNT_MAX = 50;
@@ -17,9 +21,26 @@ constexpr size_t PLAYER_LOAD_BASE_QUERY_MAX = 24;
 // Fixed-cost restitution table discovery and exact-state overlay, not per-item queries.
 constexpr size_t PLAYER_LOAD_RESTITUTION_QUERY_MAX = 2;
 constexpr size_t PLAYER_LOAD_PET_CUSTODY_QUERY_MAX = 1;
-constexpr size_t PLAYER_LOAD_QUERY_MAX = PLAYER_LOAD_BASE_QUERY_MAX +
-					 PLAYER_LOAD_RESTITUTION_QUERY_MAX +
-					 PLAYER_LOAD_PET_CUSTODY_QUERY_MAX;
+constexpr size_t PLAYER_LOAD_DEATH_GATE_QUERY_MAX = 1;
+// Obligation recovery has its SELECT and two fixed, set-based economic witness
+// reads. Retained XP entitlements use one additional SELECT.
+constexpr size_t PLAYER_LOAD_QUEST_REWARD_QUERY_MAX = QUEST_REWARD_PENDING_QUERY_MAX + 1;
+// The primary-key lock precedes the consistent view. Name-based requests also
+// resolve the PID before starting that transaction, then revalidate under lock.
+constexpr size_t PLAYER_LOAD_IDENTITY_LOCK_QUERY_MAX = 1;
+constexpr size_t PLAYER_LOAD_NAME_LOOKUP_QUERY_MAX = 1;
+// Optional pending spell operations share one bounded receipt SELECT.
+constexpr size_t PLAYER_LOAD_SPELL_EFFECT_QUERY_MAX = 1;
+constexpr size_t PLAYER_LOAD_CRAFT_PROGRESSION_QUERY_MAX = 1;
+constexpr size_t PLAYER_LOAD_PID_QUERY_MAX =
+	PLAYER_LOAD_BASE_QUERY_MAX + PLAYER_LOAD_RESTITUTION_QUERY_MAX +
+	PLAYER_LOAD_PET_CUSTODY_QUERY_MAX + PLAYER_LOAD_DEATH_GATE_QUERY_MAX +
+	PLAYER_LOAD_IDENTITY_LOCK_QUERY_MAX + PLAYER_LOAD_QUEST_REWARD_QUERY_MAX;
+constexpr size_t PLAYER_LOAD_NAME_QUERY_MAX =
+	PLAYER_LOAD_PID_QUERY_MAX + PLAYER_LOAD_NAME_LOOKUP_QUERY_MAX;
+constexpr size_t PLAYER_LOAD_QUERY_MAX = PLAYER_LOAD_NAME_QUERY_MAX +
+					 PLAYER_LOAD_SPELL_EFFECT_QUERY_MAX +
+					 PLAYER_LOAD_CRAFT_PROGRESSION_QUERY_MAX;
 constexpr uint64_t PLAYER_LOAD_TIMEOUT_USEC = UINT64_C(3000000);
 constexpr size_t PLAYER_LOAD_ITEM_MAX = PLAYER_SNAPSHOT_MAX_OBJECTS;
 // A payload row the ownership ledger no longer backs is skipped rather than refusing the
@@ -62,6 +83,9 @@ enum player_load_item_override : uint16_t
 	PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR4 = UINT16_C(1) << 6,
 	PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR5 = UINT16_C(1) << 7,
 	PLAYER_LOAD_ITEM_OVERRIDE_AFFECTS = UINT16_C(1) << 8,
+	PLAYER_LOAD_ITEM_OVERRIDE_EXTRA2_FLAGS = UINT16_C(1) << 9,
+	PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS = UINT16_C(1) << 10,
+	PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME = UINT16_C(1) << 11,
 };
 
 constexpr uint16_t PLAYER_LOAD_ITEM_OVERRIDE_ALL =
@@ -69,7 +93,8 @@ constexpr uint16_t PLAYER_LOAD_ITEM_OVERRIDE_ALL =
 	PLAYER_LOAD_ITEM_OVERRIDE_MATERIAL | PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR1 |
 	PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR2 | PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR3 |
 	PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR4 | PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR5 |
-	PLAYER_LOAD_ITEM_OVERRIDE_AFFECTS;
+	PLAYER_LOAD_ITEM_OVERRIDE_AFFECTS | PLAYER_LOAD_ITEM_OVERRIDE_EXTRA2_FLAGS |
+	PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS;
 
 struct player_load_item_identity
 {
@@ -107,6 +132,14 @@ enum class player_load_outcome : uint8_t
 	stale,
 };
 
+enum class player_load_recovery_gate : uint8_t
+{
+	not_checked,
+	clear,
+	retained_conflict,
+	unavailable,
+};
+
 // Secondary load domains may be unavailable or malformed without making the core player
 // identity unplayable. These bits travel with an admitted degraded result so the game thread
 // can quarantine the affected runtime state and prevent a partial save from overwriting the
@@ -129,6 +162,9 @@ struct player_load_request
 	std::string player_name;
 	bool include_items = true;
 	bool include_pets = true;
+	std::vector<critical_operation_id> pending_spell_effect_operations;
+	std::vector<critical_operation_id> pending_craft_operations = {};
+	player_death_recovery_query_request death_recovery_query = {};
 };
 
 struct player_load_domain_state
@@ -154,11 +190,39 @@ struct player_load_metrics
 	uint64_t transaction_usec = 0;
 };
 
+struct player_load_quest_reward
+{
+	critical_operation_id offering_operation = {};
+	std::vector<uint8_t> continuation;
+	quest_reward_continuation terms;
+	uint64_t xp_applied_mask = 0;
+	uint64_t economic_applied_mask = 0;
+	bool economic_history_verified = true;
+};
+
+struct player_load_quest_xp_entitlement
+{
+	critical_operation_id offering_operation = {};
+	quest_reward_continuation terms;
+	uint32_t reward_index = 0;
+	uint32_t amount = 0;
+};
+
+struct player_load_spell_effect_receipt
+{
+	critical_operation_id operation_id = {};
+	uint32_t effect_id = 0;
+};
+
 struct player_load_result
 {
 	uint64_t request_id = 0;
 	int32_t pid = 0;
 	player_load_outcome outcome = player_load_outcome::component_failure;
+	player_load_recovery_gate recovery_gate = player_load_recovery_gate::not_checked;
+	player_death_recovery_query_result death_recovery_query = {};
+	std::string request_account_name;
+	std::string request_player_name;
 	uint32_t degraded_components = 0;
 	unsigned int error_code = 0;
 	player_snapshot snapshot = {};
@@ -178,6 +242,10 @@ struct player_load_result
 	size_t repaired_item_rows = 0;
 	std::vector<player_load_item_identity> item_identities;
 	std::vector<player_load_pet_identity> pet_identities;
+	std::vector<player_load_quest_reward> pending_quest_rewards;
+	std::vector<player_load_quest_xp_entitlement> pending_quest_xp_entitlements;
+	std::vector<player_load_spell_effect_receipt> spell_effect_receipts;
+	std::vector<player_craft_receipt_snapshot> craft_receipts = {};
 	player_load_read_mask_t read_components = 0;
 	std::vector<int64_t> recent_pvp_deaths;
 	std::vector<int32_t> completed_epic_zones;
@@ -197,5 +265,13 @@ bool player_load_reconcile_item_topology(std::vector<player_item_snapshot> *item
 bool player_load_request_valid(const player_load_request &request, uint64_t now_usec);
 player_load_result player_load_repository_execute(MYSQL *connection,
 						  const player_load_request &request);
+
+struct player_save_recovery_record;
+// Read-only inspection for the isolated recovery owner. A supplied durable
+// record permits joining that owner's existing transaction; normal loads keep
+// their admission fence and their own read transaction.
+player_load_result
+player_load_repository_quarantine_inspect(MYSQL *connection, const player_load_request &request,
+					  const player_save_recovery_record *owner = nullptr);
 
 #endif

@@ -83,6 +83,7 @@ struct auction_command_result
 	uint32_t previous_bidder_pid;
 	int64_t final_price;
 	int64_t wallet_value_delta;
+	int64_t claim_credit_used;
 	currency_vector wallet;
 	currency_vector bank;
 	uint64_t wallet_revision;

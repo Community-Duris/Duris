@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/rested.h"
 #include "core/profile.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -17,6 +18,7 @@
 #include "world/falling.h"
 #include "cmd/interp.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
@@ -34,8 +36,11 @@
 #include "world/hardcore_config.h"
 #include "combat/justice.h"
 #include "combat/spell_wards.h"
+
+extern unsigned long long ne_event_tick;
 #include "core/mm.h"
 #include "item/objmisc.h"
+#include "item/item_command_policy.h"
 #include "kingdom/kingdom_store_piece.h"
 #include "classes/paladins.h"
 #include "combat/racewar_stat_mods.h"
@@ -1562,18 +1567,17 @@ void all_affects(P_char ch, int mode)
 			continue;
 		}
 		// Below commented code is to hunt bad object affects.
-		unsigned long equipment_bits[5] = {ch->equipment[i]->bitvector,
-							   ch->equipment[i]->bitvector2,
-							   ch->equipment[i]->bitvector3,
-							   ch->equipment[i]->bitvector4,
-							   ch->equipment[i]->bitvector5};
+		unsigned long equipment_bits[5] = { ch->equipment[i]->bitvector,
+						    ch->equipment[i]->bitvector2,
+						    ch->equipment[i]->bitvector3,
+						    ch->equipment[i]->bitvector4,
+						    ch->equipment[i]->bitvector5 };
 		if (IS_PC(ch))
 			spell_ward_mask_equipment_bits(equipment_bits);
 		for (j = 0; j < MAX_OBJ_AFFECT; j++)
 		{
 			affect_modify(ch->equipment[i]->affected[j].location,
-				      ch->equipment[i]->affected[j].modifier,
-				      equipment_bits, TRUE);
+				      ch->equipment[i]->affected[j].modifier, equipment_bits, TRUE);
 		}
 		affect_modify(APPLY_AC, -(apply_ac(ch, i)), NULL, FALSE);
 	}
@@ -1879,6 +1883,8 @@ struct affected_type *affect_to_char(P_char ch, struct affected_type *af)
 
 	affected_alloc = (struct affected_type *)mm_get(dead_affect_pool);
 	*affected_alloc = *af;
+	if (spell_ward_is_managed(affected_alloc))
+		affected_alloc->ward_last_tick = ne_event_tick;
 
 	affected_alloc->next = ch->affected;
 	ch->affected = affected_alloc;
@@ -2260,8 +2266,24 @@ void affect_join(P_char ch, struct affected_type *af, int avg_dur, int avg_mod)
 }
 
 //---------------------------------------------------------------------------------
+bool rested_bonus_effect_active(const affected_type *affect)
+{
+	return affect && (rested_bonus_enabled() || (affect->flags & AFFTYPE_CUSTOM1));
+}
+
+bool has_active_rested_bonus(P_char ch, int tag)
+{
+	if (rested_bonus_enabled())
+		return affected_by_spell(ch, tag);
+	return get_spell_from_char(ch, tag, nullptr, AFFTYPE_CUSTOM1) != nullptr;
+}
+
 void wear_off_message(P_char ch, struct affected_type *af)
 {
+	if ((af->type == TAG_RESTED || af->type == TAG_WELLRESTED) &&
+	    !rested_bonus_effect_active(af))
+		return;
+
 	if ((af->flags & AFFTYPE_NOMSG)) //|| (af->flags & AFFTYPE_SUBAFFECT))
 		return;
 
@@ -3464,6 +3486,8 @@ bool make_wet(P_char ch, int duration)
 void poo(P_char ch)
 {
 	P_obj load;
+	if (economic_gameplay_authority::active())
+		return;
 
 	if (IS_PC(ch) && (IS_CENTAUR(ch) || IS_MINOTAUR(ch) || IS_GOBLIN(ch)) &&
 	    (number(0, 1000) == 42) && (load = read_object(51, VIRTUAL)))
@@ -3707,6 +3731,8 @@ bool falling_obj(P_obj obj, int speed, bool caller_is_event)
 		// May have to do the damage here, but more likely in get()
 		return FALSE;
 	}
+	if (economic_gameplay_authority::active() && item_command_uses_durable_ownership(obj))
+		return FALSE;
 
 	/* Not for underwater use, or noshow objects. */
 	if (obj->z_cord < 0 || already_falling || IS_NOSHOW(obj))
@@ -4083,4 +4109,41 @@ void strip_holy_sword(P_char ch)
 		send_to_char("&+wYour weapon abruptly ceases to &+Cglow&+w with holy power.\n&n",
 			     ch);
 	}
+}
+
+/*
+ * this is utility function for area spells
+ * it checks if the room character is in is affected
+ * by the given spell cast by character or someone grouped
+ * with him. if so, it returns the P_char pointing to
+ * the original caster, otherwise it return NULL and
+ * sets affect on the room for the given duration in seconds
+ */
+P_char stack_area(P_char ch, int spell, int duration)
+{
+	struct room_affect af, *afp;
+	P_room room = &world[ch->in_room];
+
+	for (afp = room->affected; afp; afp = afp->next)
+	{
+		if (afp->type == spell && char_in_list(afp->ch) &&
+		    ((ch->group && ch->group == afp->ch->group) || ch == afp->ch))
+			return afp->ch;
+	}
+
+	memset(&af, 0, sizeof(struct room_affect));
+	af.duration = duration * WAIT_SEC;
+	af.type = spell;
+	af.ch = ch;
+	affect_to_room(ch->in_room, &af);
+
+	return NULL;
+}
+
+int KludgeDuration(P_char ch, int baselevel, int baseduration)
+{
+	/* return baseduration;
+	   this isn't really what was originally intended, but it's based on caster's
+	   level */
+	return MAX(1, (GET_LEVEL(ch) / baselevel) * baseduration);
 }

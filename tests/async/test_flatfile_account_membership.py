@@ -5,6 +5,8 @@ import pathlib
 import subprocess
 import tempfile
 
+from test_flatfile_accounting_store import SOURCES
+
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 ACCOUNT = (SRC / "account.c").read_text()
@@ -34,13 +36,14 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-membership-test-") as tempor
             "-Wpedantic",
             "-Werror",
             "-D__NO_MYSQL__",
+            "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
             "-Isrc",
             "tests/async/flatfile_account_membership_harness.cpp",
             rel("flatfile_account_adapter.c"),
             rel("flatfile_account_repository.c"),
             rel("flatfile_identity_repository.c"),
-            rel("flatfile_authority_transaction.c"),
-            rel("flatfile_store.c"),
+            rel("flatfile_accounting_authority.c"),
+            *SOURCES[1:],
             rel("persistence_mode.c"),
             rel("flatfile_ip_activity_repository.c"),
             "-lcrypto",

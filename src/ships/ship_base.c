@@ -108,7 +108,8 @@
 #include "ships/ship_npc_ai.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_ship.h"
+#include "sql/sql_transaction.h"
 #include "redis/redis_ship_legacy.h"
 #include "redis/redis_world_runtime.h"
 #ifdef __NO_MYSQL__

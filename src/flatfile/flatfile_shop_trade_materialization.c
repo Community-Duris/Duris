@@ -1,6 +1,10 @@
 #include "flatfile/flatfile_shop_trade_materialization.h"
 
+#include "flatfile/flatfile_item_accounting_reference.h"
 #include "flatfile/flatfile_store.h"
+#include "flatfile/flatfile_player_snapshot_file.h"
+#include "item/craft_pouch_mutation.h"
+#include "world/vnum.obj.h"
 #include "player/player_snapshot_codec.h"
 #include "player/pet_restore_state.h"
 #include "player/player_load_repository.h"
@@ -28,6 +32,7 @@ constexpr size_t catalog_maximum_bytes = 128 * 1024 * 1024;
 constexpr const char *catalog_filename = "shop_trade_materializations";
 constexpr shop_trade_action pet_raise_action = static_cast<shop_trade_action>(6);
 constexpr shop_trade_action pet_receive_action = static_cast<shop_trade_action>(7);
+constexpr shop_trade_action pouch_update_action = static_cast<shop_trade_action>(8);
 constexpr std::array<uint8_t, 4> pet_blob_magic = { 'P', 'E', 'T', '1' };
 
 struct materialization_event
@@ -142,7 +147,7 @@ bool inbound(shop_trade_action action)
 {
 	return action == shop_trade_action::buy_existing ||
 	       action == shop_trade_action::buy_produced || action == pet_raise_action ||
-	       action == pet_receive_action;
+	       action == pet_receive_action || action == pouch_update_action;
 }
 
 bool valid_action(shop_trade_action action)
@@ -195,10 +200,15 @@ bool decode_items(const materialization_event &event, std::vector<player_item_sn
 		player_pet_snapshot pet = {};
 		return decode_pet_event(event, &pet, items);
 	}
-	return !event.item_blob.empty() &&
-	       player_item_snapshot_list_decode(event.item_blob.data(), event.item_blob.size(),
-						items) == player_snapshot_codec_result::ok &&
-	       !items->empty() && items->size() <= ITEM_TRANSFER_MAX_ITEMS;
+	const bool decoded = !event.item_blob.empty() &&
+			     player_item_snapshot_list_decode(event.item_blob.data(),
+							      event.item_blob.size(), items) ==
+				     player_snapshot_codec_result::ok &&
+			     !items->empty() && items->size() <= ITEM_TRANSFER_MAX_ITEMS;
+	return decoded &&
+	       (event.action != pouch_update_action ||
+		(items->size() == 1 && items->front().parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+		 chaos_pouch_ledger_counters_equal(items->front(), items->front())));
 }
 
 bool encode_catalog(const materialization_catalog &catalog, std::vector<uint8_t> *bytes)
@@ -442,6 +452,33 @@ bool payload_items_match(const shop_trade_payload &payload,
 bool payload_items_match(const item_transfer_payload &payload,
 			 const std::vector<player_item_snapshot> &items)
 {
+	if (payload.reason == item_transfer_reason::craft)
+	{
+		if (items.empty() || items.front().object_uid != payload.selected_item_uid)
+			return false;
+		std::unordered_set<uint64_t> output_uids;
+		try
+		{
+			output_uids.reserve(items.size());
+			for (size_t index = 0; index < items.size(); ++index)
+			{
+				const auto &item = items[index];
+				if (!item.object_uid || item.vnum <= 0 ||
+				    !output_uids.insert(item.object_uid).second ||
+				    item.parent_index >= static_cast<int32_t>(index) ||
+				    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT)
+					return false;
+				for (size_t input = 0; input < payload.item_count; ++input)
+					if (payload.items[input].item_uid == item.object_uid)
+						return false;
+			}
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+		return true;
+	}
 	if (items.empty() || items.size() != payload.item_count ||
 	    items.front().object_uid != item_transfer_result_root(payload))
 		return false;
@@ -470,6 +507,7 @@ struct snapshot_node
 bool normalize_items(const std::vector<player_item_snapshot> &original,
 		     const std::vector<player_item_snapshot> &additions,
 		     const std::unordered_set<uint64_t> &mentioned,
+		     const std::unordered_set<uint64_t> &accounted,
 		     const std::unordered_map<uint64_t, flatfile_item_ownership_record> &owned,
 		     const item_owner_identity &expected_owner,
 		     std::vector<player_item_snapshot> *normalized)
@@ -495,7 +533,8 @@ bool normalize_items(const std::vector<player_item_snapshot> &original,
 					original[static_cast<size_t>(item.parent_index)].object_uid;
 			}
 			const auto owner = owned.find(item.object_uid);
-			if (mentioned.contains(item.object_uid))
+			if (mentioned.contains(item.object_uid) ||
+			    accounted.contains(item.object_uid))
 			{
 				if (owner == owned.end() ||
 				    !item_owner_identity_equal(owner->second.owner, expected_owner))
@@ -517,6 +556,15 @@ bool normalize_items(const std::vector<player_item_snapshot> &original,
 					return false;
 				nodes.back().item = std::move(coins[0]);
 			}
+			if ((mentioned.contains(item.object_uid) ||
+			     accounted.contains(item.object_uid)) &&
+			    owner != owned.end() &&
+			    (owner->second.equipment_slot || owner->second.parent_item_uid ||
+			     accounted.contains(item.object_uid)))
+				// Creation's initial zero slot predates ordinary wear. Keep the
+				// saved slot unless custody has an explicit position or a receipt
+				// for a later movement, including removal back to inventory.
+				nodes.back().item.equipment_slot = owner->second.equipment_slot;
 		}
 		for (const auto &item : additions)
 		{
@@ -526,6 +574,7 @@ bool normalize_items(const std::vector<player_item_snapshot> &original,
 			    !positions.emplace(item.object_uid, nodes.size()).second)
 				return false;
 			nodes.push_back({ item, owner->second.parent_item_uid });
+			nodes.back().item.equipment_slot = owner->second.equipment_slot;
 		}
 	}
 	catch (const std::bad_alloc &)
@@ -656,10 +705,19 @@ flatfile_shop_trade_materialization_result flatfile_item_transfer_materializatio
 	const critical_operation_id &operation_id, const item_transfer_payload &payload,
 	flatfile_shop_trade_materialization_mutation *mutation, std::string *error)
 {
-	if (root.empty() || !lock.matches(root) || critical_operation_id_is_zero(operation_id) ||
-	    !mutation || !payload.item_blob_size ||
-	    payload.item_blob_size > payload.item_blob.size())
+	craft_pouch_mutation pouch;
+	if (payload.reason == item_transfer_reason::craft &&
+	    !craft_pouch_mutation_from_payload(payload, &pouch))
 		return flatfile_shop_trade_materialization_result::invalid;
+	if (root.empty() || !lock.matches(root) || critical_operation_id_is_zero(operation_id) ||
+	    !mutation || payload.item_blob_size > payload.item_blob.size())
+		return flatfile_shop_trade_materialization_result::invalid;
+	// An intended failed craft can retain a publication receipt while creating
+	// no item or pouch after-image. Input retirement remains in the custody root.
+	if (!payload.item_blob_size && !pouch.before.object_uid)
+		return payload.reason == item_transfer_reason::craft ?
+			       flatfile_shop_trade_materialization_result::unchanged :
+			       flatfile_shop_trade_materialization_result::invalid;
 	std::vector<uint8_t> item_blob;
 	std::vector<player_item_snapshot> items;
 	try
@@ -673,9 +731,69 @@ flatfile_shop_trade_materialization_result flatfile_item_transfer_materializatio
 	}
 	materialization_event decoded_event;
 	decoded_event.item_blob = item_blob;
-	if (!decode_items(decoded_event, &items) || !payload_items_match(payload, items))
+	if (payload.item_blob_size &&
+	    (!decode_items(decoded_event, &items) || !payload_items_match(payload, items)))
 		return flatfile_shop_trade_materialization_result::invalid;
 	std::vector<materialization_event> additions;
+	materialization_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_shop_trade_materialization_result::ok)
+		return loaded;
+	if (pouch.before.object_uid)
+	{
+		player_snapshot saved;
+		const auto read = flatfile_player_snapshot_read(
+			root, static_cast<int32_t>(payload.from_owner.id), &saved, error);
+		if (read != flatfile_player_load_result::ok &&
+		    read != flatfile_player_load_result::not_found)
+			return read == flatfile_player_load_result::io_error ?
+				       flatfile_shop_trade_materialization_result::io_error :
+				       flatfile_shop_trade_materialization_result::invalid;
+		player_item_snapshot native;
+		bool found = false;
+		for (const auto &item : saved.items)
+			if (item.object_uid == pouch.before.object_uid)
+			{
+				if (found)
+					return flatfile_shop_trade_materialization_result::invalid;
+				native = item;
+				found = true;
+			}
+		for (const auto &event : catalog.events)
+		{
+			if (event.player_pid != payload.from_owner.id || !inbound(event.action))
+				continue;
+			std::vector<player_item_snapshot> inbound_items;
+			if (!decode_items(event, &inbound_items))
+				return flatfile_shop_trade_materialization_result::invalid;
+			for (const auto &item : inbound_items)
+				if (item.object_uid == pouch.before.object_uid)
+				{
+					if (!found)
+						native = item;
+					else if (chaos_pouch_ledger_overlay(item, native,
+									    &native) !=
+						 chaos_pouch_ledger_result::ok)
+						return flatfile_shop_trade_materialization_result::
+							invalid;
+					found = true;
+				}
+		}
+		if (!found)
+			return flatfile_shop_trade_materialization_result::invalid;
+		native.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		player_item_snapshot after;
+		std::vector<uint8_t> pouch_blob;
+		if (chaos_pouch_ledger_apply_native(pouch.before, pouch.after, pouch.usage,
+						    pouch.mode, native,
+						    &after) != chaos_pouch_ledger_result::ok ||
+		    player_item_snapshot_list_encode({ after }, &pouch_blob) !=
+			    player_snapshot_codec_result::ok)
+			return flatfile_shop_trade_materialization_result::invalid;
+		additions.push_back({ operation_id, pouch_update_action,
+				      static_cast<uint32_t>(payload.from_owner.id),
+				      std::move(pouch_blob) });
+	}
 	auto add = [&](uint64_t owner_id, shop_trade_action action) -> bool
 	{
 		if (!owner_id || owner_id > std::numeric_limits<uint32_t>::max())
@@ -702,7 +820,8 @@ flatfile_shop_trade_materialization_result flatfile_item_transfer_materializatio
 		return flatfile_shop_trade_materialization_result::invalid;
 	if (from_player && to_player && payload.from_owner.id == payload.to_owner.id)
 	{
-		if (!add(payload.to_owner.id, shop_trade_action::buy_existing))
+		if (payload.item_blob_size &&
+		    !add(payload.to_owner.id, shop_trade_action::buy_existing))
 			return flatfile_shop_trade_materialization_result::io_error;
 	}
 	else
@@ -716,10 +835,6 @@ flatfile_shop_trade_materialization_result flatfile_item_transfer_materializatio
 	}
 	if (additions.empty())
 		return flatfile_shop_trade_materialization_result::unchanged;
-	materialization_catalog catalog;
-	const auto loaded = load_catalog(root, &catalog, error);
-	if (loaded != flatfile_shop_trade_materialization_result::ok)
-		return loaded;
 	if (from_pet || to_pet)
 	{
 		const uint64_t pet_uid = from_pet ? payload.from_owner.id : payload.to_owner.id;
@@ -1049,9 +1164,84 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 	{
 		return flatfile_shop_trade_materialization_result::io_error;
 	}
+	std::unordered_set<uint64_t> accounted;
+	try
+	{
+		std::unordered_set<uint64_t> candidates;
+		candidates.reserve(reconciled.items.size());
+		auto collect_stale = [&](const std::vector<player_item_snapshot> &items,
+					 const item_owner_identity &expected_owner)
+		{
+			for (size_t index = 0; index < items.size(); ++index)
+			{
+				const auto &item = items[index];
+				if (!item.object_uid)
+					continue;
+				const auto stored = owner_records.find(item.object_uid);
+				if (stored == owner_records.end())
+					continue;
+				uint64_t parent_uid = 0;
+				if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				{
+					if (item.parent_index < 0 ||
+					    static_cast<size_t>(item.parent_index) >= index)
+						continue;
+					parent_uid = items[item.parent_index].object_uid;
+				}
+				if (!item_owner_identity_equal(stored->second.owner,
+							       expected_owner) ||
+				    stored->second.parent_item_uid != parent_uid ||
+				    (item.equipment_slot >= 0 &&
+				     stored->second.equipment_slot !=
+					     static_cast<uint16_t>(item.equipment_slot)))
+					candidates.insert(item.object_uid);
+			}
+		};
+		const item_owner_identity player_owner = { item_owner_type::player, player_pid, 0 };
+		collect_stale(reconciled.items, player_owner);
+		for (const auto &pet : reconciled.pets)
+		{
+			const item_owner_identity pet_owner =
+				pet.pet_uid ? item_owner_identity{ item_owner_type::pet,
+								   pet.pet_uid, player_pid } :
+					      player_owner;
+			collect_stale(pet.items, pet_owner);
+		}
+		accounted.reserve(candidates.size());
+		for (uint64_t uid : candidates)
+		{
+			const auto &record = owner_records.at(uid);
+			economic_accounting_item_reference reference = {};
+			const auto found = flatfile_item_accounting_reference_find_by_item(
+				root, uid, record.item_revision, &reference, error);
+			if (found == flatfile_item_accounting_status::ok)
+			{
+				if (reference.before_revision != 0)
+					accounted.insert(uid);
+			}
+			else if (found != flatfile_item_accounting_status::not_found)
+				return found == flatfile_item_accounting_status::io_error ?
+					       flatfile_shop_trade_materialization_result::io_error :
+					       flatfile_shop_trade_materialization_result::invalid;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_shop_trade_materialization_result::io_error;
+	}
 	const item_owner_identity player_owner = { item_owner_type::player, player_pid, 0 };
-	if (!normalize_items(reconciled.items, additions, mentioned, owner_records, player_owner,
-			     &reconciled.items))
+	for (auto &item : reconciled.items)
+	{
+		if (item.vnum != VOBJ_CHAOS_CRAFT_POUCH)
+			continue;
+		const auto latest = latest_inbound.find(item.object_uid);
+		if (latest != latest_inbound.end() &&
+		    chaos_pouch_ledger_overlay(latest->second, item, &item) !=
+			    chaos_pouch_ledger_result::ok)
+			return flatfile_shop_trade_materialization_result::invalid;
+	}
+	if (!normalize_items(reconciled.items, additions, mentioned, accounted, owner_records,
+			     player_owner, &reconciled.items))
 		return flatfile_shop_trade_materialization_result::invalid;
 	for (size_t index = 0; index < reconciled.pets.size(); ++index)
 	{
@@ -1061,11 +1251,12 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 				  player_owner;
 		const auto additions_for_pet = pet_additions.find(pet_uid);
 		const std::vector<player_item_snapshot> empty;
-		if (!normalize_items(
-			    reconciled.pets[index].items,
-			    additions_for_pet == pet_additions.end() ? empty :
-								       additions_for_pet->second,
-			    mentioned, owner_records, pet_owner, &reconciled.pets[index].items))
+		if (!normalize_items(reconciled.pets[index].items,
+				     additions_for_pet == pet_additions.end() ?
+					     empty :
+					     additions_for_pet->second,
+				     mentioned, accounted, owner_records, pet_owner,
+				     &reconciled.pets[index].items))
 			return flatfile_shop_trade_materialization_result::invalid;
 	}
 	size_t total_items = reconciled.items.size();

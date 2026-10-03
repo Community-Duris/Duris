@@ -128,28 +128,37 @@ class RestitutionCliTests(unittest.TestCase):
         self, run: mock.Mock, _codec: mock.Mock
     ) -> None:
         # This tests the Python acceptance boundary, not native byte decoding.
-        # The native codec bridge emits both values: historical raw wires 2/4/6/8
-        # and the current writer's raw wire 10 all normalize to death schema 10.
-        self.assertEqual(cli.DEATH_NORMALIZED_SCHEMA_VERSION, 10)
-        self.assertEqual(cli.DEATH_SCHEMA_VERSION, 10)
-        for wire in (2, 4, 6, 8, 10):
+        # The native codec bridge emits both values: historical raw wires 2/4/6
+        # and the current writer's raw wire 8 all normalize to death schema 8.
+        self.assertEqual(cli.DEATH_NORMALIZED_SCHEMA_VERSION, 8)
+        self.assertEqual(cli.DEATH_SCHEMA_VERSION, 8)
+        for wire in (2, 4, 6, 8, 21):
             with self.subTest(wire=wire):
                 run.return_value = mock.Mock(returncode=0, stdout=json.dumps({
-                    "wire_version": wire, "schema_version": 10,
+                    "wire_version": wire, "schema_version": 8,
                 }).encode())
                 decoded = cli.decode_payload(b"fixture")
                 self.assertEqual(decoded["wire_version"], wire)
-                self.assertEqual(decoded["schema_version"], 10)
+                self.assertEqual(decoded["schema_version"], 8)
         for wire, schema in (
             (1, 8), (3, 8), (5, 8), (7, 8), (99, 8),
             (2, 7), (6, 7), (8, 7),
+            (13, 8), (8, 13), (10, 10), (14, 14), (15, 8), (15, 13), (16, 16),
         ):
             with self.subTest(wire=wire, schema=schema):
                 run.return_value = mock.Mock(returncode=0, stdout=json.dumps({
                     "wire_version": wire, "schema_version": schema,
                 }).encode())
-                with self.assertRaisesRegex(cli.ToolError, "raw-wire.*schema-10"):
+                with self.assertRaisesRegex(cli.ToolError, "raw-wire.*schema-8"):
                     cli.decode_payload(b"fixture")
+        run.return_value = mock.Mock(returncode=0, stdout=json.dumps({
+            "wire_version": 13, "schema_version": 13,
+        }).encode())
+        self.assertEqual(cli.decode_payload(b"fixture")["schema_version"], 13)
+        run.return_value = mock.Mock(returncode=0, stdout=json.dumps({
+            "wire_version": 15, "schema_version": 15,
+        }).encode())
+        self.assertEqual(cli.decode_payload(b"fixture")["schema_version"], 15)
 
     def test_normalized_related_payload_is_reused_and_deduplicated(self) -> None:
         selected = [payload_item(900, -1)]
@@ -174,8 +183,8 @@ class RestitutionCliTests(unittest.TestCase):
     def test_current_native_writer_reaches_python_inspection_gate(self) -> None:
         # Compile the tracked native fixture and the actual bridge in a private
         # temporary directory.  This catches the production mismatch where the
-        # bridge returned raw wire 10 / normalized schema 10 but Python still
-        # required the retired schema-8 label.
+        # bridge returned raw wire 8 / normalized schema 8 but Python still
+        # required the retired schema-6 label.
         fixture_source = ROOT / "tests" / "async" / "player_death_restitution_fixture.cpp"
         codec_source = ROOT / "src" / "player" / "player_snapshot_codec.c"
         bridge_source = ROOT / "scripts" / "player_death_restitution_codec.cpp"
@@ -199,10 +208,29 @@ class RestitutionCliTests(unittest.TestCase):
             with mock.patch.object(cli, "ensure_codec", return_value=bridge):
                 for payload in payloads:
                     decoded = cli.decode_payload(payload)
-                    self.assertEqual(int.from_bytes(payload[:4], "little"), 10)
-                    self.assertEqual(decoded["wire_version"], 10)
-                    self.assertEqual(decoded["schema_version"], 10)
+                    self.assertEqual(int.from_bytes(payload[:4], "little"), 8)
+                    self.assertEqual(decoded["wire_version"], 8)
+                    self.assertEqual(decoded["schema_version"], 8)
                     self.assertIsInstance(decoded["death"], dict)
+                extended = subprocess.run([str(fixture), "--spell-receipt"], capture_output=True, check=True).stdout.decode("ascii")
+                for line in extended.splitlines():
+                    decoded = cli.decode_payload(bytes.fromhex(line))
+                    self.assertEqual(decoded["wire_version"], 13)
+                    self.assertEqual(decoded["schema_version"], 13)
+                    self.assertIsInstance(decoded["death"], dict)
+                extended = subprocess.run([str(fixture), "--quest-receipt"], capture_output=True, check=True).stdout.decode("ascii")
+                for line in extended.splitlines():
+                    decoded = cli.decode_payload(bytes.fromhex(line))
+                    self.assertEqual(decoded["wire_version"], 15)
+                    self.assertEqual(decoded["schema_version"], 15)
+                    self.assertIsInstance(decoded["death"], dict)
+                for option, schema in ((None, 8), ("--spell-receipt", 13), ("--quest-receipt", 15)):
+                    command = [str(fixture)] + ([option] if option else []) + ["--wards"]
+                    for line in subprocess.check_output(command).decode("ascii").splitlines():
+                        decoded = cli.decode_payload(bytes.fromhex(line))
+                        self.assertEqual(decoded["wire_version"], schema + 13)
+                        self.assertEqual(decoded["schema_version"], schema)
+                        self.assertIsInstance(decoded["death"], dict)
             for bad_wire in (7, 99):
                 corrupted = bytearray(payloads[0])
                 corrupted[:4] = bad_wire.to_bytes(4, "little")

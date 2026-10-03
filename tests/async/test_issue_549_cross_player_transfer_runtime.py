@@ -15,6 +15,8 @@ PRELUDE = r'''
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
+#include "item/item_command_policy.h"
 #include "item/item_movement_transaction.h"
 #include "net/comm.h"
 #include "persistence/persistence_checkpoint.h"
@@ -38,6 +40,12 @@ static int act_count = 0;
 static int notch_count = 0;
 static int save_count = 0;
 static bool save_succeeds = true;
+static bool active_epoch = false;
+
+bool economic_gameplay_authority::active() { return active_epoch; }
+bool item_command_uses_durable_ownership(P_obj object) {
+    return object && object->obj_uid && !IS_SET(object->extra_flags, ITEM_TRANSIENT);
+}
 
 #undef IS_TRUSTED
 #define IS_TRUSTED(ch) true
@@ -133,7 +141,7 @@ void obj_to_char(P_obj object, P_char owner) {
 
 '''
 
-MAGIC = source("magic.c").read_text(encoding="utf-8")
+MAGIC = source("spell_item_lifecycle.c").read_text(encoding="utf-8")
 ROGUES = source("classes/rogues.c").read_text(encoding="utf-8")
 
 FUNCTIONS = "\n".join(
@@ -155,14 +163,14 @@ struct slip_movement_context {
     int32_t victim_room;
 };
 ''',
-        extract_function("magic.c", "int has_soulbind("),
-        extract_function("magic.c", "static void remove_soulbind_except("),
-        extract_function("magic.c", "void remove_soulbind("),
-        extract_function("magic.c", "static P_char find_soulbind_player("),
-        extract_function("magic.c", "static P_obj find_soulbind_item("),
-        extract_function("magic.c", "static bool soulbind_metadata_applied("),
-        extract_function("magic.c", "static bool apply_soulbind_metadata("),
-        extract_function("magic.c", "static bool soulbind_transfer_publication("),
+        extract_function("spell_item_lifecycle.c", "int has_soulbind("),
+        extract_function("spell_item_lifecycle.c", "static void remove_soulbind_except("),
+        extract_function("spell_item_lifecycle.c", "void remove_soulbind("),
+        extract_function("spell_item_lifecycle.c", "static P_char find_soulbind_player("),
+        extract_function("spell_item_lifecycle.c", "static P_obj find_soulbind_item("),
+        extract_function("spell_item_lifecycle.c", "static bool soulbind_metadata_applied("),
+        extract_function("spell_item_lifecycle.c", "static bool apply_soulbind_metadata("),
+        extract_function("spell_item_lifecycle.c", "static bool soulbind_transfer_publication("),
         extract_function("classes/rogues.c", "static P_char find_slip_player("),
         extract_function("classes/rogues.c", "static P_obj find_slip_item("),
         extract_function("classes/rogues.c", "static bool slip_transfer_publication("),
@@ -222,7 +230,7 @@ int main() {
     soulbind_result.root_item_uid = object.obj_uid;
     output.clear();
     act_count = alert_count = save_count = 0;
-    assert(soulbind_transfer_publication(&source, false, {}, 5,
+    assert(soulbind_transfer_publication({}, &source, false, {}, 5,
         reinterpret_cast<const uint8_t *>(&soulbind), sizeof(soulbind)));
     assert(source.carrying == &object);
     assert(victim.carrying == nullptr);
@@ -234,7 +242,7 @@ int main() {
     mismatched.root_item_uid = object.obj_uid + 1;
     output.clear();
     act_count = alert_count = save_count = 0;
-    assert(!soulbind_transfer_publication(&source, true, mismatched, 0,
+    assert(!soulbind_transfer_publication({}, &source, true, mismatched, 0,
         reinterpret_cast<const uint8_t *>(&soulbind), sizeof(soulbind)));
     assert(source.carrying == &object && victim.carrying == nullptr);
     assert(has_soulbind(&victim) == 0);
@@ -247,7 +255,7 @@ int main() {
     output.clear();
     act_count = alert_count = save_count = 0;
     save_succeeds = false;
-    assert(!soulbind_transfer_publication(&source, true, soulbind_result, 0,
+    assert(!soulbind_transfer_publication({}, &source, true, soulbind_result, 0,
         reinterpret_cast<const uint8_t *>(&soulbind), sizeof(soulbind)));
     assert(source.carrying == nullptr);
     assert(victim.carrying == &object);
@@ -256,7 +264,7 @@ int main() {
     assert(act_count == 2 && save_count >= 1);
     const auto soulbind_output = output;
     save_succeeds = true;
-    assert(soulbind_transfer_publication(&source, true, soulbind_result, 0,
+    assert(soulbind_transfer_publication({}, &source, true, soulbind_result, 0,
         reinterpret_cast<const uint8_t *>(&soulbind), sizeof(soulbind)));
     assert(output == soulbind_output);
     assert(has_soulbind(&victim) == 9001);
@@ -269,7 +277,7 @@ int main() {
     slip_result.root_item_uid = object.obj_uid;
     output.clear();
     act_count = alert_count = notch_count = save_count = 0;
-    assert(slip_transfer_publication(&source, false, {}, 5,
+    assert(slip_transfer_publication({}, &source, false, {}, 5,
         reinterpret_cast<const uint8_t *>(&slip), sizeof(slip)));
     assert(source.carrying == &object && victim.carrying == nullptr);
     assert(notch_count == 0 && act_count == 0 && save_count == 0);
@@ -277,14 +285,14 @@ int main() {
 	// the Slip attempt to its intended victim.
 	character_list = &victim;
 	output.clear();
-	assert(slip_transfer_publication(&victim, false, {}, 5,
+	assert(slip_transfer_publication({}, &victim, false, {}, 5,
 		reinterpret_cast<const uint8_t *>(&slip), sizeof(slip)));
 	assert(output.empty());
 	character_list = &source;
 
     mismatched = {};
     mismatched.root_item_uid = object.obj_uid + 1;
-    assert(!slip_transfer_publication(&source, true, mismatched, 0,
+    assert(!slip_transfer_publication({}, &source, true, mismatched, 0,
         reinterpret_cast<const uint8_t *>(&slip), sizeof(slip)));
     assert(source.carrying == &object && victim.carrying == nullptr);
     assert(notch_count == 0 && act_count == 0 && save_count == 0);
@@ -293,13 +301,13 @@ int main() {
 	victim.in_room = 10;
     output.clear();
     act_count = alert_count = notch_count = save_count = 0;
-    assert(slip_transfer_publication(&source, true, slip_result, 0,
+    assert(slip_transfer_publication({}, &source, true, slip_result, 0,
         reinterpret_cast<const uint8_t *>(&slip), sizeof(slip)));
     assert(source.carrying == nullptr && victim.carrying == &object);
     assert(notch_count == 1 && save_count == 2);
     assert(act_count == 1);
     const auto slip_output = output;
-    assert(slip_transfer_publication(&source, true, slip_result, 0,
+    assert(slip_transfer_publication({}, &source, true, slip_result, 0,
         reinterpret_cast<const uint8_t *>(&slip), sizeof(slip)));
     assert(output == slip_output);
     assert(notch_count == 1 && act_count == 1);

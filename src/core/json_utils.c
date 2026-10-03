@@ -1010,22 +1010,33 @@ char *json_build_char_affects(struct char_data *ch)
 			if (managed_ward)
 			{
 				const bool active = spell_ward_is_active(aff);
-				const char *state = active ? "active" :
-					(spell_ward_is_equipment(aff) && aff->ward_source_worn ? "broken" :
-					 "inactive");
+				const char *state =
+					active ? (aff->ward_capacity < aff->ward_capacity_max ?
+							  "weakened" :
+							  "active") :
+						 (spell_ward_is_equipment(aff) &&
+								  aff->ward_source_worn ?
+							  "broken" :
+							  "inactive");
 				cJSON_AddNumberToObject(affect_obj, "duration",
 							active ? aff->duration / WAIT_SEC : 0);
 				cJSON_AddStringToObject(affect_obj, "state", state);
-				cJSON_AddStringToObject(affect_obj, "source",
-							aff->ward_source_type == SPELL_WARD_SOURCE_EQUIPMENT ?
-								"equipment" : "cast");
+				cJSON_AddStringToObject(
+					affect_obj, "source",
+					aff->ward_source_type == SPELL_WARD_SOURCE_EQUIPMENT ?
+						"equipment" :
+						"cast");
 				cJSON_AddNumberToObject(affect_obj, "remaining_damage",
-							(double)MAX(0, aff->ward_capacity));
+							(double)MAX(0, aff->ward_capacity) /
+								SPELL_WARD_CAPACITY_SCALE);
 				cJSON_AddNumberToObject(affect_obj, "capacity",
-							(double)MAX(0, aff->ward_capacity_max));
+							(double)MAX(0, aff->ward_capacity_max) /
+								SPELL_WARD_CAPACITY_SCALE);
 				cJSON_AddNumberToObject(affect_obj, "refresh_seconds",
 							spell_ward_is_equipment(aff) ?
-								aff->ward_refresh_remaining / WAIT_SEC : 0);
+								aff->ward_refresh_remaining /
+									WAIT_SEC :
+								0);
 			}
 			else
 			{

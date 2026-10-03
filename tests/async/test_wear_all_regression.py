@@ -148,6 +148,8 @@ def tokens(text):
 assert tokens(hand_wear_source(wear_source)) == tokens(hand_wear_source(variant))
 
 production = '\n'.join([
+    extract_function('affects.c', 'P_char get_linked_char('),
+    extract_function('objmisc.c', 'bool item_restricted_for_player_pet('),
     extract_function('actobj.c', 'int wield_item_size('),
     extract_function('actobj.c', 'int get_numb_free_hands('),
     extract_function('actobj.c', 'static int free_hand_slot('),

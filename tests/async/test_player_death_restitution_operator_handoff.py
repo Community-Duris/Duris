@@ -203,6 +203,10 @@ HARNESS = r'''
 #include <vector>
 
 P_desc descriptor_list = nullptr;
+P_char character_list = nullptr;
+uint64_t persistence_observability_now_usec() { return 100; }
+size_t critical_command_coordinator_recovery_copy(critical_recovery_case *, size_t, size_t *total, size_t)
+{ *total = 0; return 0; }
 std::string last_message;
 
 char *one_argument(const char *argument, char *first_arg)

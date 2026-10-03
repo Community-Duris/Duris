@@ -16,7 +16,9 @@
 #include "core/utility.h"
 #include "core/utils.h"
 #include "combat/chaos_config.h"
+#include "economy/economic_gameplay_authority.h"
 #include "guild/guild.h"
+#include "guild/skill_notch.h"
 #include "world/hardcore_config.h"
 #include <stdio.h>
 #include "classes/epic_skills.h"
@@ -165,19 +167,19 @@ void update_skills(P_char ch)
 	}
 }
 
-bool notch_skill(P_char ch, int skill, float chance)
+skill_notch_outcome skill_notch_prepare(P_char ch, int skill, float chance)
 {
-	int t, l, i;
-	char buf[MAX_STRING_LENGTH];
+	int t, l;
+	skill_notch_outcome outcome;
 
 	if (!IS_ALIVE(ch))
-		return FALSE;
+		return outcome;
 
 	if (IS_NPC(ch))
-		return FALSE;
+		return outcome;
 
 	if (IS_ROOM(ch->in_room, ROOM_GUILD | ROOM_SAFE))
-		return FALSE;
+		return outcome;
 
 	if (IS_FIGHTING(ch))
 	{
@@ -185,17 +187,18 @@ bool notch_skill(P_char ch, int skill, float chance)
 		//   summoned pets such as elementals. Jan08 -Lucrot
 		if (IS_PC_PET(GET_OPPONENT(ch)) || (GET_LEVEL(GET_OPPONENT(ch)) < 2))
 		{
-			return FALSE;
+			return outcome;
 		}
 	}
 
 	l = ch->only.pc->skills[skill].learned;
 	t = ch->only.pc->skills[skill].taught;
+	outcome.learned_before = outcome.learned_after = l;
 
 	if (l >= t)
 	{
-		ch->only.pc->skills[skill].learned = t;
-		return FALSE;
+		outcome.learned_after = t;
+		return outcome;
 	}
 
 #if defined(wipe2011) && wipe2011
@@ -215,13 +218,13 @@ bool notch_skill(P_char ch, int skill, float chance)
 
 	if (l >= slvl)
 	{
-		ch->only.pc->skills[skill].learned = MAX(20, slvl);
-		return 0;
+		outcome.learned_after = MAX(20, slvl);
+		return outcome;
 	}
 
 	if (ch->only.pc->skills[skill].learned > 99)
 	{
-		return 0;
+		return outcome;
 	}
 
 	//  Wipe2011 - The above code causes several issues.
@@ -258,49 +261,62 @@ bool notch_skill(P_char ch, int skill, float chance)
 		// Actual check here.
 		if (number(1, 10000) > chance * 100)
 		{
-			return FALSE;
+			return outcome;
 		}
 
-		// These will fail if ch is already affected by TAG_..._SKILL_NOTCH.
-		if (IS_SET(skills[skill].targets, TAR_PHYS))
-		{
-			if (!affect_timer(ch,
-					  get_property("timer.mins.physicalNotch", 5) * WAIT_MIN,
-					  TAG_PHYS_SKILL_NOTCH))
-			{
-				//      debug( "notch_skill: failed affect_timer on '%s' TAG_PHYS_SKILL_NOTCH", J_NAME(ch) );
-			}
-		}
-		else if (!affect_timer(ch, get_property("timer.mins.mentalNotch", 10) * WAIT_MIN,
-				       TAG_MENTAL_SKILL_NOTCH))
-		{
-			//    debug( "notch_skill: failed affect_timer on '%s' TAG_MENTAL_SKILL_NOTCH", J_NAME(ch) );
-		}
+		const bool physical = IS_SET(skills[skill].targets, TAR_PHYS);
+		outcome.timer_tag = physical ? TAG_PHYS_SKILL_NOTCH : TAG_MENTAL_SKILL_NOTCH;
+		outcome.timer_duration = get_property(physical ? "timer.mins.physicalNotch" :
+								 "timer.mins.mentalNotch",
+						      physical ? 5 : 10) *
+					 WAIT_MIN;
 	}
-
-again:
-	snprintf(buf, MAX_STRING_LENGTH, "&+cYou feel your skill in %s improving.\n",
-		 skills[skill].name);
-	send_to_char(buf, ch);
-	// If skill is maxxed, check it vs. the epic skill list to see if an epic skill has opened up.
-	l = ++(ch->only.pc->skills[skill].learned);
-
-	for (i = 0; epic_teachers[i].vnum; i++)
+	do
 	{
-		// If they've just opened up the new skill.
-		if (epic_teachers[i].pre_requisite == skill && epic_teachers[i].pre_req_lvl == l)
-		{
-			snprintf(buf, MAX_STRING_LENGTH,
-				 "&+WYou can now learn the epic skill '%s'.&n\n\r",
-				 skills[epic_teachers[i].skill].name);
-			send_to_char(buf, ch);
-		}
+		++l;
+	} while (l < t && number(0, 1) && affected_by_spell(ch, SPELL_LEARNING));
+	outcome.learned_after = l;
+	return outcome;
+}
+
+bool skill_notch_apply(P_char ch, int skill, const skill_notch_outcome &outcome)
+{
+	if (!ch || IS_NPC(ch))
+		return FALSE;
+	int current = ch->only.pc->skills[skill].learned;
+	if (outcome.learned_after <= outcome.learned_before)
+	{
+		if (current == static_cast<int>(outcome.learned_before))
+			ch->only.pc->skills[skill].learned = outcome.learned_after;
+		return FALSE;
 	}
-
-	if (l < t && number(0, 1) && affected_by_spell(ch, SPELL_LEARNING))
-		goto again; // 2 notches on average
-
+	if (current >= static_cast<int>(outcome.learned_after))
+		return FALSE;
+	if (outcome.timer_tag)
+		affect_timer(ch, outcome.timer_duration, outcome.timer_tag);
+	char buf[MAX_STRING_LENGTH];
+	while (current < static_cast<int>(outcome.learned_after))
+	{
+		snprintf(buf, sizeof(buf), "&+cYou feel your skill in %s improving.\n",
+			 skills[skill].name);
+		send_to_char(buf, ch);
+		current = ++ch->only.pc->skills[skill].learned;
+		for (int i = 0; epic_teachers[i].vnum; ++i)
+			if (epic_teachers[i].pre_requisite == skill &&
+			    epic_teachers[i].pre_req_lvl == current)
+			{
+				snprintf(buf, sizeof(buf),
+					 "&+WYou can now learn the epic skill '%s'.&n\n\r",
+					 skills[epic_teachers[i].skill].name);
+				send_to_char(buf, ch);
+			}
+	}
 	return TRUE;
+}
+
+bool notch_skill(P_char ch, int skill, float chance)
+{
+	return skill_notch_apply(ch, skill, skill_notch_prepare(ch, skill, chance));
 }
 
 void spell_learning(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
@@ -992,6 +1008,22 @@ void prac_all_spells(P_char ch)
 		mobsay(teacher, "You have everything I will teach you scribed!");
 }
 
+static bool practice_fee_paid(P_char ch, int cost)
+{
+	if (cost < 0)
+		return false;
+	if (cost == 0)
+		return true;
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char(
+			"Paid skill practice is unavailable while active accounting is enabled.\r\n",
+			ch);
+		return false;
+	}
+	return SUB_MONEY(ch, cost, 0) == 0;
+}
+
 void do_practice(P_char ch, char *arg, int cmd)
 {
 	char buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], obuf[MAX_STRING_LENGTH];
@@ -1246,7 +1278,8 @@ void do_practice(P_char ch, char *arg, int cmd)
 		/*** Can practice skill now ***/
 		if (!meming_cl || !IS_SPELL(skl))
 		{
-			SUB_MONEY(ch, SkillRaiseCost(ch, skl), 0);
+			if (!practice_fee_paid(ch, cost))
+				return;
 			/*      ch->only.pc->skills[i].taught += 3; */
 			ch->only.pc->skills[i].learned += 1;
 			if (ch->only.pc->skills[i].learned > 100)

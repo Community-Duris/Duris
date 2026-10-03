@@ -44,8 +44,8 @@ grab = actobj[grab_start:grab_end]
 assert contains(grab, "can_equip_soulbound_item")
 assert not contains(grab, "!isname(GET_NAME(ch),obj_object->name)")
 
-get_start = index(actobj, "void get(P_char")
-get_end = index(actobj, "int fight_in_room", get_start)
+get_start = index(actobj, "static get_outcome get_with_phase(P_char ch, P_obj o_obj")
+get_end = index(actobj, "void get(P_char", get_start)
 get_body = actobj[get_start:get_end]
 assert get_body.count("ITEM2_NOLOOT") == 3
 assert count(get_body, "account_bound_reward_owner(ch,o_obj)") == 4

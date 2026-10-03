@@ -258,6 +258,30 @@ done
 "${MYSQL[@]}" -e "ALTER TABLE imported_extension_probe ADD COLUMN pid INT UNSIGNED NULL, ADD CONSTRAINT imported_extension_probe_pid_fk FOREIGN KEY (pid) REFERENCES player_data(pid);"
 expect_reject inbound-foreign-key
 "${MYSQL[@]}" -e "ALTER TABLE imported_extension_probe DROP FOREIGN KEY imported_extension_probe_pid_fk, DROP COLUMN pid;"
+"${MYSQL[@]}" -e "CREATE TABLE user_profile_stats (account_name VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL PRIMARY KEY, CONSTRAINT user_profile_stats_ibfk_1 FOREIGN KEY (account_name) REFERENCES accounts(account_name) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+verify >/dev/null || { echo 'known archived website-account FK was rejected' >&2; exit 1; }
+"${MYSQL[@]}" -e "ALTER TABLE user_profile_stats DROP FOREIGN KEY user_profile_stats_ibfk_1;"
+"${MYSQL[@]}" -e "ALTER TABLE user_profile_stats ADD CONSTRAINT user_profile_stats_ibfk_1 FOREIGN KEY (account_name) REFERENCES accounts(account_name) ON DELETE RESTRICT;"
+expect_reject changed-website-account-FK-delete-action
+"${MYSQL[@]}" -e "ALTER TABLE user_profile_stats DROP FOREIGN KEY user_profile_stats_ibfk_1;"
+"${MYSQL[@]}" -e "ALTER TABLE user_profile_stats ADD CONSTRAINT user_profile_stats_ibfk_1 FOREIGN KEY (account_name) REFERENCES accounts(account_name) ON DELETE CASCADE ON UPDATE CASCADE;"
+expect_reject changed-website-account-FK-update-action
+# A same-named accounts table outside the runtime schema must not hide behind
+# the archive website-FK exception.
+"${MYSQL[@]}" -e "CREATE DATABASE runtime_contract_cross_ref CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE TABLE runtime_contract_cross_ref.accounts LIKE $DB_NAME.accounts; ALTER TABLE user_profile_stats DROP FOREIGN KEY user_profile_stats_ibfk_1; ALTER TABLE user_profile_stats ADD CONSTRAINT user_profile_stats_ibfk_1 FOREIGN KEY (account_name) REFERENCES runtime_contract_cross_ref.accounts(account_name) ON DELETE CASCADE;"
+expect_reject changed-website-account-FK-reference-schema
+"${MYSQL[@]}" -e "DROP TABLE user_profile_stats; DROP DATABASE runtime_contract_cross_ref;"
+# Redirect an actual MUD-owned FK to a same-named table outside this schema.
+# Its old serialized fingerprint row is otherwise unchanged.
+"${MYSQL[@]}" -e "CREATE DATABASE runtime_contract_cross_ref CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE TABLE runtime_contract_cross_ref.accounts LIKE $DB_NAME.accounts; ALTER TABLE account_lockers DROP FOREIGN KEY account_lockers_ibfk_1; ALTER TABLE account_lockers ADD CONSTRAINT account_lockers_ibfk_1 FOREIGN KEY (account_name) REFERENCES runtime_contract_cross_ref.accounts(account_name) ON DELETE CASCADE;"
+expect_reject runtime-cross-schema-account-FK
+"${MYSQL[@]}" -e "ALTER TABLE account_lockers DROP FOREIGN KEY account_lockers_ibfk_1; ALTER TABLE account_lockers ADD CONSTRAINT account_lockers_ibfk_1 FOREIGN KEY (account_name) REFERENCES accounts(account_name) ON DELETE CASCADE; DROP DATABASE runtime_contract_cross_ref;"
+verify >/dev/null
+# Identifier metadata uses a case-insensitive collation even on engines where
+# table names are distinct. Only the exact lowercase website table is exempt.
+"${MYSQL[@]}" -e "CREATE TABLE User_Profile_Stats (account_name VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL PRIMARY KEY, CONSTRAINT User_Profile_Stats_ibfk_1 FOREIGN KEY (account_name) REFERENCES accounts(account_name) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+expect_reject mixed-case-website-FK
+"${MYSQL[@]}" -e "DROP TABLE User_Profile_Stats;"
 "${MYSQL[@]}" -e "START TRANSACTION; SELECT season_epoch FROM season_reset_state WHERE state_id=1 FOR UPDATE; UPDATE season_reset_state SET season_epoch=season_epoch+1,reset_status='resetting',reset_started_at=UTC_TIMESTAMP(6),reset_completed_at=NULL WHERE state_id=1 AND reset_status='active'; COMMIT;" >/dev/null
 season_fenced=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM season_reset_state WHERE state_id=1 AND season_epoch=2 AND reset_status='resetting' AND reset_started_at IS NOT NULL AND reset_completed_at IS NULL;")
 [[ "$season_fenced" == 1 ]]

@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/character_maintenance.h"
 #include "world/world_singletons.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
@@ -17,6 +18,7 @@
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/world_activity.h"
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include <ctype.h>
@@ -47,7 +49,10 @@
 #include <unordered_set>
 #include <unordered_map>
 #include "world/object_template.h"
+#include "classes/npc_alchemist.h"
 #include "account/newbie_kit_plan.h"
+#include "economy/economic_gameplay_authority.h"
+#include "world/zone_story_quest_runtime.h"
 
 /*
  * external variables
@@ -88,6 +93,21 @@ void recalc_zone_numbers();
 void ne_init_events();
 void ne_init_event_pool();
 extern void event_reset_zone(P_char, P_char, P_obj, void *);
+
+static void boot_zone_story_quest_state()
+{
+	// Retained character state needs its catalog even when mobile procedures
+	// are disabled. Normal boots already load quests in assign_mobiles().
+	if (no_specials)
+		boot_the_quests();
+	std::string error;
+	if (!zone_story_quest_runtime::bootstrap(&error))
+		logit(LOG_DEBUG, "Zone-story quest catalog disabled at boot: %s", error.c_str());
+	else
+		logit(LOG_STATUS, "Zone-story quest catalog ready: %zu definitions, revision %u",
+		      zone_story_quest_runtime::service()->catalog().definitions.size(),
+		      zone_story_quest_runtime::content_revision());
+}
 
 /**************************************************************************
  *  declarations of most of the 'global' variables                         *
@@ -633,6 +653,7 @@ void boot_db(int mini_mode)
 		fprintf(stderr, "-- Room special procedures.\r\n");
 		assign_rooms();
 	}
+	boot_zone_story_quest_state();
 
 	fprintf(stderr, "Assigning command pointers from interpreter.\r\n");
 
@@ -643,6 +664,8 @@ void boot_db(int mini_mode)
 	fprintf(stderr, "-- Spells.\n");
 	logit(LOG_STATUS, "   Spells.");
 	assign_spell_pointers();
+
+	npc_alchemist_cache_templates();
 
 	// Parse starter prototypes before any descriptors can request a kit.
 	for (int vnum : newbie_kit_template_vnums())
@@ -2750,7 +2773,7 @@ P_char read_mobile(int nr, int type, bool apply_mob_gold)
 	if (!mobile_probe_mode)
 	{
 		// All mobs do mundane things.
-		add_event(event_mob_mundane, PULSE_MOBILE + number(-4, 4), mob, 0, 0, 0, 0, 0);
+		world_activity_schedule_mundane(mob, false, true);
 		// ACT_SPEC mobs with specials proc check CMD_SET_PERIODIC.
 		if (IS_SET(mob->specials.act, ACT_SPEC))
 		{
@@ -2768,6 +2791,10 @@ P_char read_mobile(int nr, int type, bool apply_mob_gold)
 	if (!mobile_probe_mode && IS_AFFECTED(mob, AFF_STONE_SKIN | AFF_BIOFEEDBACK))
 		add_event(event_mob_skin_spell, number(1, 5), mob, 0, 0, 0, 0, 0);
 
+	// The legacy list is linked early; publish identity only after initialization.
+	register_character_runtime_id(mob);
+	if (!mobile_probe_mode)
+		character_maintenance_enter(mob);
 	return (mob);
 }
 
@@ -2796,7 +2823,7 @@ P_char read_mobile_probe(int nr, int type)
 void event_object_proc(P_char /*ch*/, P_char /*victim*/, P_obj obj, void * /*data*/)
 {
 	if (obj_index[obj->R_num].func.obj)
-		(*obj_index[obj->R_num].func.obj)(obj, 0, CMD_PERIODIC, 0);
+		invoke_object_special(obj, 0, CMD_PERIODIC, 0);
 
 	/* Object procs may extract their owner, which detaches this event before freeing it. */
 	if (!current_nevent || current_nevent->obj != obj)
@@ -3140,7 +3167,7 @@ P_obj instantiate_object_template(const object_template &prototype)
 
 	if (obj_index[nr].func.obj)
 	{
-		if ((*obj_index[nr].func.obj)(obj, 0, CMD_SET_PERIODIC, 0))
+		if (invoke_object_special(obj, 0, CMD_SET_PERIODIC, 0))
 			add_event(event_object_proc, PULSE_MOBILE + number(-4, 4), 0, 0, obj, 0, 0,
 				  0);
 	}
@@ -3265,6 +3292,23 @@ static bool live_shopkeeper_for_identity(int shop)
 	return false;
 }
 
+static bool reset_command_issues_item(char command)
+{
+	switch (command)
+	{
+	case 'B':
+	case 'C':
+	case 'A':
+	case 'O':
+	case 'P':
+	case 'G':
+	case 'E':
+		return true;
+	default:
+		return false;
+	}
+}
+
 /* execute the reset command table of a given zone */
 /* force_item_repop : 2 means this is a boot-time initial reset of zone. */
 void reset_zone(int zone, int force_item_repop)
@@ -3283,6 +3327,14 @@ void reset_zone(int zone, int force_item_repop)
 	{
 		if (ZCMD.command == 'S')
 			break;
+		// Zone item commands lack a durable reset-generation identity. Refuse
+		// before read_object or any live placement during an accounting epoch.
+		if (economic_gameplay_authority::active() &&
+		    reset_command_issues_item(ZCMD.command))
+		{
+			last_cmd = 0;
+			continue;
+		}
 
 		/* last_mob_load added in case an equipment load fails due to a random
 		   roll..  we want the rest of the stuff on the mob to happen (followers,
@@ -3324,6 +3376,7 @@ void reset_zone(int zone, int force_item_repop)
 					GET_BIRTHPLACE(mob) = world[ZCMD.arg3].number;
 					apply_zone_modifier(mob);
 					char_to_room(mob, ZCMD.arg3, -2);
+					npc_alchemist_world_spawn(mob);
 					last_cmd = 1;
 				}
 				else
@@ -3582,6 +3635,7 @@ void reset_zone(int zone, int force_item_repop)
 				if (configured_shop >= 0)
 					bind_shopkeeper(mob, configured_shop);
 				char_to_room(mob, ZCMD.arg3, -2);
+				npc_alchemist_world_spawn(mob);
 				last_cmd = last_mob_load = 1;
 				break;
 
@@ -3928,6 +3982,7 @@ void reset_zone(int zone, int force_item_repop)
 					GET_BIRTHPLACE(mob) = world[ZCMD.arg3].number;
 					apply_zone_modifier(mob);
 					char_to_room(mob, ZCMD.arg3, -2);
+					npc_alchemist_world_spawn(mob);
 					add_follower(mob, last_mob_followable);
 					strcpy(buf, "group all");
 					command_interpreter(last_mob, buf);
@@ -3976,6 +4031,7 @@ void reset_zone(int zone, int force_item_repop)
 					GET_BIRTHPLACE(mob) = world[ZCMD.arg3].number;
 					apply_zone_modifier(mob);
 					char_to_room(mob, ZCMD.arg3, -2);
+					npc_alchemist_world_spawn(mob);
 					snprintf(buf, MAX_STRING_LENGTH, "%s",
 						 FirstWord(GET_NAME(mob)));
 					if (!IS_SET(mob->specials.act, ACT_SENTINEL))
@@ -4220,7 +4276,9 @@ void free_char(P_char ch)
 		logit(LOG_DEBUG, "free_char called with no char!");
 		return;
 	}
+	unregister_character_runtime_id(ch);
 	++character_removal_generation;
+	character_maintenance_leave(ch);
 	if ((GET_OPPONENT(ch)))
 	{
 		logit(LOG_EXIT, "free_char: called with a non-extracted char");

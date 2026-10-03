@@ -15,6 +15,7 @@ typedef bool my_bool;
 struct MYSQL
 {
 	int unavailable;
+	unsigned int server_status;
 };
 
 struct MYSQL_RES
@@ -70,8 +71,13 @@ enum mysql_option
 
 #define CLIENT_SSL (1UL << 11)
 #define CLIENT_MULTI_STATEMENTS (1UL << 16)
+#define SERVER_STATUS_IN_TRANS 1U
+#define SERVER_STATUS_AUTOCOMMIT 2U
 #define SSL_MODE_VERIFY_IDENTITY 5U
 #define MYSQL_NO_DATA 100
+#define MYSQL_DATA_TRUNCATED 101
+#define SERVER_STATUS_IN_TRANS 1U
+#define SERVER_STATUS_AUTOCOMMIT 2U
 
 static inline int mysql_library_init(int, char **, char **)
 {

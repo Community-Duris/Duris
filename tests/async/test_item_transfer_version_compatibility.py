@@ -14,6 +14,7 @@ COMMAND_SOURCE = (ROOT / "src/item/item_transfer_command.c").read_text(
 
 HARNESS = r'''
 #include "item/item_transfer_command.h"
+#include "item/quest_reward_continuation.h"
 
 #include <algorithm>
 #include <cassert>
@@ -39,6 +40,11 @@ void set_reason(critical_command *command, item_transfer_reason reason)
 void put_u32(std::vector<uint8_t> *bytes, size_t offset, uint32_t value)
 {
 	for (unsigned int byte = 0; byte < 4; ++byte)
+		(*bytes)[offset + byte] = static_cast<uint8_t>(value >> (byte * 8));
+}
+void put_u64(std::vector<uint8_t> *bytes, size_t offset, uint64_t value)
+{
+	for (unsigned int byte = 0; byte < 8; ++byte)
 		(*bytes)[offset + byte] = static_cast<uint8_t>(value >> (byte * 8));
 }
 } // namespace
@@ -183,12 +189,15 @@ int main()
 	payload.items[0] = { 200, 200, 0, ITEM_TRANSFER_ABSENT_REVISION, 501,
 			     item_custody_state::absent };
 	payload.corpse = {};
+	payload.logical_source_id = UINT64_C(0x123456789abcdef0);
 	assert(item_transfer_command_build(&command, operation(), payload,
 					   critical_source_site::command,
 					   critical_deadline_class::interactive));
 	assert(item_transfer_command_decode_payload(command, &decoded));
 	assert(decoded.target_root_item_uid == 700 && decoded.target_parent_item_uid == 700 &&
-	       decoded.expected_target_parent_revision == 4);
+	       decoded.expected_target_parent_revision == 4 &&
+	       decoded.logical_source_id == payload.logical_source_id);
+	payload.logical_source_id = 0;
 
 	item_transfer_payload batch = {};
 	batch.from_owner = { item_owner_type::room, 50, 0 };
@@ -300,6 +309,32 @@ int main()
 	assert(!item_transfer_command_build(&command, operation(), invalid_trusted_steal,
 					    critical_source_site::command,
 					    critical_deadline_class::interactive));
+
+	// Soulbind replay retains the replacement policy in the item command so a
+	// recipient-side metadata update can resume after the source process exits.
+	auto soulbind = trusted_steal;
+	soulbind.reason = item_transfer_reason::soulbind;
+	soulbind.continuation.kind = item_transfer_continuation_kind::soulbind_transfer;
+	soulbind.continuation.data = { 1 };
+	assert(item_transfer_command_build(&command, operation(), soulbind,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_command_decode_payload(command, &decoded));
+	assert(decoded.reason == item_transfer_reason::soulbind &&
+	       decoded.continuation.kind ==
+		       item_transfer_continuation_kind::soulbind_transfer &&
+	       decoded.continuation.data == std::vector<uint8_t>({ 1 }));
+	auto invalid_soulbind = soulbind;
+	invalid_soulbind.continuation.data = { 2 };
+	assert(!item_transfer_command_build(&command, operation(), invalid_soulbind,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+	invalid_soulbind = soulbind;
+	invalid_soulbind.continuation.kind = item_transfer_continuation_kind::none;
+	invalid_soulbind.continuation.data.clear();
+	assert(item_transfer_command_build(&command, operation(), invalid_soulbind,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
 	invalid_trusted_steal = trusted_steal;
 	invalid_trusted_steal.reason_id = 77;
 	assert(!item_transfer_command_build(&command, operation(), invalid_trusted_steal,
@@ -310,14 +345,185 @@ int main()
 	assert(!item_transfer_command_build(&command, operation(), invalid_trusted_steal,
 					    critical_source_site::command,
 					    critical_deadline_class::interactive));
+	invalid_trusted_steal = trusted_steal;
+	invalid_trusted_steal.logical_source_id = 90001;
+	assert(!item_transfer_command_build(&command, operation(), invalid_trusted_steal,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
 
-	// Version 6 batch commands remain replayable: v7 adds one trailing collector
-	// context length, which is absent from the older wire contract.
-	auto version_six = batch_command;
+	// Older batch commands remain replayable: v9 adds a typed continuation,
+	// v8 adds a source ID, and v7 adds the collector context length.
+	auto version_eight = batch_command;
+	version_eight.payload_version = ITEM_TRANSFER_SOURCE_PAYLOAD_VERSION;
+	version_eight.payload.resize(version_eight.payload.size() - sizeof(uint32_t) * 2);
+	assert(item_transfer_command_decode_payload(version_eight, &decoded));
+	assert(decoded.multi_root && decoded.continuation.data.empty());
+	auto version_seven = version_eight;
+	version_seven.payload_version = ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION;
+	version_seven.payload.resize(version_seven.payload.size() - sizeof(uint64_t));
+	assert(item_transfer_command_decode_payload(version_seven, &decoded));
+	assert(decoded.multi_root && decoded.item_count == 2 && !decoded.logical_source_id);
+	auto version_six = version_seven;
 	version_six.payload_version = ITEM_TRANSFER_BATCH_PAYLOAD_VERSION;
 	version_six.payload.resize(version_six.payload.size() - sizeof(uint32_t));
 	assert(item_transfer_command_decode_payload(version_six, &decoded));
 	assert(decoded.multi_root && decoded.item_count == 2 && !decoded.collector.present);
+
+	auto quest_offering = batch;
+	quest_offering.from_owner = { item_owner_type::player, 42, 0 };
+	quest_offering.to_owner = { item_owner_type::destruction, 0, 0 };
+	quest_offering.reason = item_transfer_reason::quest_turnin;
+	quest_offering.reason_id = 711;
+	quest_offering.continuation.kind = item_transfer_continuation_kind::quest_offering;
+	quest_offering.continuation.data.assign(64, 0);
+	put_u32(&quest_offering.continuation.data, 0, 1);
+	put_u32(&quest_offering.continuation.data, 4, 42);
+	put_u32(&quest_offering.continuation.data, 16, 711);
+	put_u32(&quest_offering.continuation.data, 20, 500);
+	put_u64(&quest_offering.continuation.data, 24, 1700000000);
+	put_u32(&quest_offering.continuation.data, 32, 2);
+	put_u64(&quest_offering.continuation.data, 36, 100);
+	put_u64(&quest_offering.continuation.data, 44, 200);
+	put_u32(&quest_offering.continuation.data, 52, 1);
+	put_u32(&quest_offering.continuation.data, 56, 1);
+	put_u32(&quest_offering.continuation.data, 60, 777);
+	quest_reward_continuation terms = {};
+	assert(quest_reward_continuation_decode(quest_offering.continuation.data.data(),
+					       quest_offering.continuation.data.size(), &terms));
+	assert(terms.player_pid == 42 && terms.mobile_vnum == 711 && terms.room_vnum == 500 &&
+	       terms.completed_at == 1700000000 && terms.root_count == 2 &&
+	       terms.roots[0] == 100 && terms.roots[1] == 200 &&
+	       terms.reward_count == 1 && terms.rewards[0].number == 777);
+	auto frozen_credit = quest_offering.continuation.data;
+	put_u32(&frozen_credit, 0, 2);
+	frozen_credit.resize(100);
+	put_u32(&frozen_credit, 64, 4);  // zone
+	put_u32(&frozen_credit, 68, 15); // completing player's level
+	put_u32(&frozen_credit, 72, 2);  // racewar
+	put_u32(&frozen_credit, 76, 2);  // party size
+	put_u32(&frozen_credit, 80, 20); // strongest party level
+	put_u32(&frozen_credit, 84, 2);  // credited players
+	put_u32(&frozen_credit, 88, 42);
+	put_u32(&frozen_credit, 92, 43);
+	put_u32(&frozen_credit, 96, 3);
+	frozen_credit.insert(frozen_credit.end(), {'A', 'd', 'a'});
+	const size_t definition_length_offset = frozen_credit.size();
+	frozen_credit.resize(frozen_credit.size() + sizeof(uint32_t));
+	put_u32(&frozen_credit, definition_length_offset, 3);
+	frozen_credit.insert(frozen_credit.end(), {'q', 's', 't'});
+	assert(quest_reward_continuation_decode(frozen_credit.data(), frozen_credit.size(),
+						&terms));
+	assert(terms.version == 2 && terms.zone_number == 4 && terms.player_level == 15 &&
+	       terms.player_racewar == 2 && terms.party_size == 2 &&
+	       terms.strongest_party_level == 20 && terms.credited_count == 2 &&
+	       terms.credited_pids[0] == 42 && terms.credited_pids[1] == 43 &&
+	       terms.character_name == "Ada" && terms.definition_id == "qst");
+	auto frozen_skill = frozen_credit;
+	put_u32(&frozen_skill, 0, 3);
+	put_u32(&frozen_skill, 56, 4);
+	put_u32(&frozen_skill, 60, 12);
+	frozen_skill.insert(frozen_skill.begin() + 64, sizeof(uint32_t), 0);
+	put_u32(&frozen_skill, 64, QUEST_REWARD_FLAG_SKILL_ELIGIBLE_AT_ADMISSION);
+	assert(quest_reward_continuation_decode(frozen_skill.data(), frozen_skill.size(), &terms));
+	assert(terms.version == 3 && terms.rewards[0].type == 4 &&
+	       terms.rewards[0].number == 12 &&
+	       terms.rewards[0].flags == QUEST_REWARD_FLAG_SKILL_ELIGIBLE_AT_ADMISSION);
+	auto invalid_skill_flags = frozen_skill;
+	put_u32(&invalid_skill_flags, 56, 1);
+	assert(!quest_reward_continuation_decode(invalid_skill_flags.data(),
+							invalid_skill_flags.size(), &terms));
+	auto frozen_xp = frozen_skill;
+	put_u32(&frozen_xp, 0, 4);
+	put_u32(&frozen_xp, 56, 5);
+	put_u32(&frozen_xp, 60, 100);
+	put_u32(&frozen_xp, 64, 0);
+	frozen_xp.insert(frozen_xp.begin() + 68, sizeof(uint32_t), 0);
+	put_u32(&frozen_xp, 68, 75);
+	assert(quest_reward_continuation_decode(frozen_xp.data(), frozen_xp.size(), &terms));
+	assert(terms.version == 4 && terms.rewards[0].type == 5 &&
+	       terms.rewards[0].number == 100 && terms.rewards[0].frozen_amount == 75);
+	auto frozen_group_xp = frozen_xp;
+	put_u32(&frozen_group_xp, 0, 5);
+	const size_t xp_award_count_offset = frozen_group_xp.size();
+	frozen_group_xp.resize(frozen_group_xp.size() + 7 * sizeof(uint32_t));
+	put_u32(&frozen_group_xp, xp_award_count_offset, 2);
+	put_u32(&frozen_group_xp, xp_award_count_offset + 4, 42);
+	put_u32(&frozen_group_xp, xp_award_count_offset + 8, 0);
+	put_u32(&frozen_group_xp, xp_award_count_offset + 12, 75);
+	put_u32(&frozen_group_xp, xp_award_count_offset + 16, 43);
+	put_u32(&frozen_group_xp, xp_award_count_offset + 20, 0);
+	put_u32(&frozen_group_xp, xp_award_count_offset + 24, 100);
+	assert(quest_reward_continuation_decode(frozen_group_xp.data(), frozen_group_xp.size(),
+						&terms));
+	assert(terms.version == 5 && terms.xp_award_count == 2 &&
+	       terms.xp_awards[0].recipient_pid == 42 && terms.xp_awards[0].amount == 75 &&
+	       terms.xp_awards[1].recipient_pid == 43 && terms.xp_awards[1].amount == 100);
+	auto inconsistent_completer_xp = frozen_group_xp;
+	put_u32(&inconsistent_completer_xp, xp_award_count_offset + 12, 74);
+	assert(!quest_reward_continuation_decode(inconsistent_completer_xp.data(),
+							 inconsistent_completer_xp.size(), &terms));
+	auto missing_group_xp = frozen_group_xp;
+	put_u32(&missing_group_xp, xp_award_count_offset, 1);
+	missing_group_xp.resize(missing_group_xp.size() - 3 * sizeof(uint32_t));
+	assert(!quest_reward_continuation_decode(missing_group_xp.data(), missing_group_xp.size(),
+						 &terms));
+	auto invalid_group_xp = frozen_group_xp;
+	put_u32(&invalid_group_xp, xp_award_count_offset + 24, 101);
+	assert(!quest_reward_continuation_decode(invalid_group_xp.data(), invalid_group_xp.size(),
+						 &terms));
+	auto invalid_frozen_xp = frozen_xp;
+	put_u32(&invalid_frozen_xp, 68, 101);
+	assert(!quest_reward_continuation_decode(invalid_frozen_xp.data(),
+						invalid_frozen_xp.size(), &terms));
+	auto quest_v2 = quest_offering;
+	quest_v2.continuation.data = frozen_credit;
+	critical_command version_two_command = {};
+	assert(item_transfer_command_build(&version_two_command, operation(), quest_v2,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_command_decode_payload(version_two_command, &decoded));
+	assert(decoded.continuation.data == frozen_credit);
+	auto duplicate_credit = frozen_credit;
+	put_u32(&duplicate_credit, 92, 42);
+	assert(!quest_reward_continuation_decode(duplicate_credit.data(),
+						 duplicate_credit.size(), &terms));
+	auto invalid_reward = quest_offering.continuation.data;
+	put_u32(&invalid_reward, 60, 0);
+	assert(!quest_reward_continuation_decode(invalid_reward.data(), invalid_reward.size(),
+						  &terms));
+	assert(item_transfer_command_build(&command, operation(), quest_offering,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_command_decode_payload(command, &decoded));
+	assert(decoded.continuation.kind == item_transfer_continuation_kind::quest_offering &&
+	       decoded.continuation.data == quest_offering.continuation.data);
+	auto truncated_continuation = command;
+	truncated_continuation.payload.pop_back();
+	assert(!item_transfer_command_decode_payload(truncated_continuation, &decoded));
+	auto oversized_continuation = command;
+	put_u32(&oversized_continuation.payload,
+		oversized_continuation.payload.size() - quest_offering.continuation.data.size() -
+			sizeof(uint32_t),
+		ITEM_TRANSFER_CONTINUATION_MAX_BYTES + 1);
+	assert(!item_transfer_command_decode_payload(oversized_continuation, &decoded));
+	auto wrong_root = command;
+	put_u64(&wrong_root.payload, wrong_root.payload.size() -
+		quest_offering.continuation.data.size() + 36, 999);
+	assert(!item_transfer_command_decode_payload(wrong_root, &decoded));
+	auto wrong_player = command;
+	put_u32(&wrong_player.payload, wrong_player.payload.size() -
+		quest_offering.continuation.data.size() + 4, 77);
+	assert(!item_transfer_command_decode_payload(wrong_player, &decoded));
+	quest_offering.continuation.data.clear();
+	assert(!item_transfer_command_build(&command, operation(), quest_offering,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+	quest_offering.continuation.data = { 1 };
+	quest_offering.reason = item_transfer_reason::player_drop;
+	quest_offering.to_owner = { item_owner_type::room, 50, 0 };
+	assert(!item_transfer_command_build(&command, operation(), quest_offering,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
 
 	item_transfer_payload death = {};
 	death.from_owner = { item_owner_type::player, 42, 0 };
@@ -380,6 +586,168 @@ int main()
 	assert(!item_transfer_command_build(&command, operation(), invalid_death,
 					    critical_source_site::combat,
 					    critical_deadline_class::interactive));
+
+	item_transfer_payload spell_components = {};
+	spell_components.from_owner = { item_owner_type::player, 42, 0 };
+	spell_components.to_owner = { item_owner_type::destruction, 0, 0 };
+	spell_components.reason = item_transfer_reason::destruction;
+	spell_components.reason_id = 200;
+	spell_components.expected_from_revision = 12;
+	spell_components.expected_to_revision = 4;
+	spell_components.multi_root = true;
+	spell_components.item_count = 1;
+	spell_components.items[0] = { 100, 100, 0, 7, 500, item_custody_state::active };
+	spell_components.continuation.kind =
+		item_transfer_continuation_kind::spell_component_retirement;
+	item_transfer_payload legacy_spell_components = spell_components;
+	legacy_spell_components.continuation.data = { 6, 0, 0, 0, 9, 8, 7 };
+	assert(item_transfer_command_build(&command, operation(), legacy_spell_components,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_command_decode_payload(command, &decoded));
+	assert(decoded.continuation.data == legacy_spell_components.continuation.data);
+	spell_components.continuation.data = {
+		1, static_cast<uint8_t>(item_spell_component_effect::vines), 0, 0, 0, 3, 9, 8, 7 };
+	assert(item_transfer_command_build(&command, operation(), spell_components,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_command_decode_payload(command, &decoded));
+	assert(decoded.continuation.kind ==
+	       item_transfer_continuation_kind::spell_component_retirement);
+	assert(decoded.continuation.data == spell_components.continuation.data);
+	spell_components.continuation.data[1] = 99;
+	assert(!item_transfer_command_build(&command, operation(), spell_components,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+	spell_components.continuation.data[1] =
+		static_cast<uint8_t>(item_spell_component_effect::vines);
+	spell_components.continuation.data[5] = 2;
+	assert(!item_transfer_command_build(&command, operation(), spell_components,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+
+	item_transfer_payload reward_retirement = {};
+	reward_retirement.from_owner = { item_owner_type::player, 42, 0 };
+	reward_retirement.to_owner = { item_owner_type::destruction, 0, 0 };
+	reward_retirement.reason = item_transfer_reason::destruction;
+	reward_retirement.expected_from_revision = 12;
+	reward_retirement.expected_to_revision = 4;
+	reward_retirement.selected_item_uid = 100;
+	reward_retirement.item_count = 1;
+	reward_retirement.items[0] = { 100, 800, 900, 7, 500, item_custody_state::active };
+	reward_retirement.continuation.kind =
+		item_transfer_continuation_kind::account_reward_retirement;
+	reward_retirement.continuation.data.resize(28);
+	reward_retirement.continuation.data[0] = 2;
+	put_u64(&reward_retirement.continuation.data, 8, 991);
+	put_u32(&reward_retirement.continuation.data, 16, 500);
+	put_u64(&reward_retirement.continuation.data, 20, 100);
+	assert(item_transfer_command_build(&command, operation(), reward_retirement,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_command_decode_payload(command, &decoded));
+	assert(decoded.continuation.kind ==
+	       item_transfer_continuation_kind::account_reward_retirement &&
+	       decoded.continuation.data == reward_retirement.continuation.data);
+	put_u64(&reward_retirement.continuation.data, 20, 101);
+	assert(!item_transfer_command_build(&command, operation(), reward_retirement,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+	put_u64(&reward_retirement.continuation.data, 20, 100);
+	put_u32(&reward_retirement.continuation.data, 4, 2);
+	assert(item_transfer_command_build(&command, operation(), reward_retirement,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	put_u32(&reward_retirement.continuation.data, 4, 0);
+	reward_retirement.continuation.data[16] = 1;
+	assert(!item_transfer_command_build(&command, operation(), reward_retirement,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+	reward_retirement.continuation.data.resize(20);
+	reward_retirement.continuation.data[0] = 1;
+	put_u32(&reward_retirement.continuation.data, 16, 500);
+	reward_retirement.items[0] = { 100, 100, 0, 7, 500, item_custody_state::active };
+	assert(item_transfer_command_build(&command, operation(), reward_retirement,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	put_u32(&reward_retirement.continuation.data, 16, 500);
+	put_u64(&reward_retirement.continuation.data, 8, 0);
+	assert(!item_transfer_command_build(&command, operation(), reward_retirement,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+	put_u64(&reward_retirement.continuation.data, 8, 991);
+	reward_retirement.multi_root = true;
+	assert(!item_transfer_command_build(&command, operation(), reward_retirement,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+
+	item_transfer_payload reward_promotion = {};
+	reward_promotion.from_owner = { item_owner_type::player, 42, 0 };
+	reward_promotion.to_owner = { item_owner_type::player, 42, 0 };
+	reward_promotion.reason = item_transfer_reason::player_get;
+	reward_promotion.reason_id = 100;
+	reward_promotion.expected_from_revision = 12;
+	reward_promotion.expected_to_revision = 12;
+	reward_promotion.multi_root = true;
+	reward_promotion.item_count = 1;
+	reward_promotion.items[0] = { 100, 800, 900, 7, 500, item_custody_state::active };
+	reward_promotion.continuation.kind =
+		item_transfer_continuation_kind::account_reward_duplicate_promotion;
+	reward_promotion.continuation.data.resize(48);
+	put_u32(&reward_promotion.continuation.data, 0, 1);
+	put_u64(&reward_promotion.continuation.data, 8, 991);
+	put_u32(&reward_promotion.continuation.data, 16, 500);
+	put_u64(&reward_promotion.continuation.data, 20, 900);
+	put_u32(&reward_promotion.continuation.data, 36, 1);
+	put_u64(&reward_promotion.continuation.data, 40, 100);
+	assert(item_transfer_command_build(&command, operation(), reward_promotion,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_command_decode_payload(command, &decoded));
+	assert(decoded.continuation.kind ==
+	       item_transfer_continuation_kind::account_reward_duplicate_promotion);
+	put_u64(&reward_promotion.continuation.data, 40, 101);
+	assert(!item_transfer_command_build(&command, operation(), reward_promotion,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+ {
+ static_assert(static_cast<uint16_t>(item_transfer_reason::trusted_steal) == 26);
+ static_assert(static_cast<uint16_t>(item_transfer_reason::soulbind) == 27);
+ static_assert(static_cast<uint16_t>(item_transfer_reason::slip) == 28);
+ static_assert(static_cast<uint16_t>(item_transfer_reason::craft) == 34);
+ item_transfer_payload craft = {};
+ craft.from_owner = {item_owner_type::player, 42, 0};
+ craft.to_owner = craft.from_owner;
+ craft.reason = item_transfer_reason::craft;
+ craft.multi_root = true;
+ craft.item_count = 1;
+ craft.items[0] = {900, 900, 0, 1, 500, item_custody_state::active};
+ craft.selected_item_uid = 900;
+ craft.expected_from_revision = craft.expected_to_revision = 1;
+ assert(item_transfer_command_build(&command, operation(), craft, critical_source_site::command, critical_deadline_class::interactive));
+ assert(item_transfer_command_decode_payload(command, &decoded) && decoded.reason == item_transfer_reason::craft);
+ // Current v9 same-player soulbind is not a craft compatibility alias.
+ set_reason(&command, item_transfer_reason::soulbind);
+ assert(!item_transfer_command_decode_payload(command, &decoded));
+ // Exact master/draft v7 shape remains replayable without consuming wear's ID.
+ command.payload_version = ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION;
+ command.payload.resize(command.payload.size() - sizeof(uint32_t) * 2 - sizeof(uint64_t));
+ assert(item_transfer_command_decode_payload(command, &decoded) && decoded.reason == item_transfer_reason::craft);
+ set_reason(&command, item_transfer_reason::player_wear);
+ assert(item_transfer_command_decode_payload(command, &decoded) && decoded.reason == item_transfer_reason::craft);
+ static_assert(static_cast<uint16_t>(item_transfer_reason::player_wear) == 29);
+ static_assert(static_cast<uint16_t>(item_transfer_reason::quest_turnin) == 33);
+ item_transfer_payload soulbind = {};
+ soulbind.from_owner = {item_owner_type::player, 42, 0};
+ soulbind.to_owner = {item_owner_type::player, 43, 0};
+ soulbind.reason = item_transfer_reason::soulbind;
+ soulbind.reason_id = 42;
+ soulbind.item_count = 1;
+ soulbind.items[0] = {901, 901, 0, 1, 500, item_custody_state::active};
+ soulbind.selected_item_uid = soulbind.target_root_item_uid = 901;
+ assert(item_transfer_command_build(&command, operation(), soulbind, critical_source_site::command, critical_deadline_class::interactive));
+ assert(item_transfer_command_decode_payload(command, &decoded) && decoded.reason == item_transfer_reason::soulbind);
+ }
 	return 0;
 }
 '''
@@ -387,7 +755,7 @@ int main()
 assert (
     "command.payload.size() < item_section_size + sizeof(uint32_t)"
     in COMMAND_SOURCE
-), "v4-v7 item blob length reads must be bounds-checked"
+), "v4-v9 item blob length reads must be bounds-checked"
 
 
 with tempfile.TemporaryDirectory(prefix="duris-item-transfer-version-") as temp_dir:
@@ -404,7 +772,8 @@ with tempfile.TemporaryDirectory(prefix="duris-item-transfer-version-") as temp_
             "-Werror",
             "-Isrc",
             str(source),
-            rel("item_transfer_command.c"),
+            rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
+            rel("player_snapshot_codec.c"),
             rel("critical_command.c"),
             "-lcrypto",
             "-o",
@@ -412,9 +781,9 @@ with tempfile.TemporaryDirectory(prefix="duris-item-transfer-version-") as temp_
         ],
         cwd=ROOT,
         check=True,
-        capture_output=True,
+        capture_output=False,
         text=True,
     )
     subprocess.run([str(binary)], check=True)
 
-print("[PASS] item-transfer v2-v7 compatibility, corpse and collector contexts")
+print("[PASS] item-transfer v2-v9 compatibility, source, soulbind, corpse and collector contexts")

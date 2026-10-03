@@ -20,6 +20,8 @@ void obj_to_obj(P_obj obj, P_obj container) {
     container->weight += obj->weight;
 }
 ''')
+# The imported prompt fixture's publication callback is replaced by corpse callbacks.
+prelude = prelude.replace('static void publish(', '[[maybe_unused]] static void publish(', 1)
 completion_fixture = r'''
 #include "classes/necromancy.h"
 static unsigned corpse_writes, retry_wakes, collector_refreshes, collector_enrollment_ends;
@@ -38,6 +40,7 @@ static void wake_death_extract_retry(P_char) { ++retry_wakes; }
 ''' + extract_function('fight.c', 'void corpse_item_completion(')
 
 driver = r'''
+#include "character_identity_test_fixture.h"
 #include "classes/necromancy.h"
 static unsigned callbacks;
 static bool expected_commit;
@@ -62,6 +65,7 @@ static void run(int count, int scenario) {
         collector_enrollment_ends = 0;
     busy_coin_uid = 0; expected_commit = scenario != 1;
     char_data actor{}; pc_only_data pc{}; actor.only.pc = &pc; pc.pid = 42;
+    fixture_character_registration identity(&actor);
     character_list = &actor; actor.in_room = 0;
     indexes[0].virtual_number = 100;
     const item_owner_identity source{item_owner_type::player,42,0};
@@ -135,6 +139,7 @@ static void run(int count, int scenario) {
     assert(callbacks == 1); // duplicate completion cannot move or finalize twice
 }
 int main() {
+    fixture_check_runtime_identity_retirement();
     for (int count : {1,15,100}) for (int scenario : {0,1,2,3,4}) run(count,scenario);
     puts("corpse batches: nested topology, one command, refusal, pending coins, retention and replay passed");
 }
@@ -143,10 +148,11 @@ int main() {
 with tempfile.TemporaryDirectory(prefix='corpse-batch-', dir=ROOT/'bin/tests') as tmp:
     source=Path(tmp)/'harness.cpp'; binary=Path(tmp)/'harness'
     source.write_text(prelude+'\n'+completion_fixture+'\n'+driver)
-    subprocess.run(['g++','-std=c++20','-g','-O1','-ffunction-sections','-fdata-sections',
-        '-fsanitize=address,undefined','-Isrc',str(source),
+    subprocess.run(['g++','-std=c++20','-Wall','-Wextra','-Werror','-g','-O1','-ffunction-sections','-fdata-sections',
+        '-fsanitize=address,undefined','-fno-omit-frame-pointer','-fno-pie','-no-pie','-pthread','-Isrc','-Itests/async',str(source),
+        str(SRC/'account/character_identity.c'),
         *[str(SRC/name) for name in ['item_movement_transaction.c','item_ownership_runtime.c',
-        'item_transfer_command.c','critical_command.c','player_snapshot_capture.c','player_snapshot_codec.c']],
+        'item_transfer_command.c', "craft_pouch_mutation.c", "chaos_pouch_ledger.c",'critical_command.c','player_snapshot_capture.c','player_snapshot_codec.c']],
         '-Wl,--gc-sections','-lcrypto','-o',str(binary)],cwd=ROOT,check=True,timeout=180)
     subprocess.run([str(binary)],check=True,timeout=30)
 

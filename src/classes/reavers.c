@@ -7,6 +7,7 @@
 #include "core/utils.h"
 #include "classes/reavers.h"
 #include <string.h>
+#include "combat/attack_continuation.h"
 #include "combat/damage.h"
 #include "item/objmisc.h"
 #include "magic/spells.h"
@@ -293,10 +294,15 @@ void event_blood_alliance(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*
 	struct affected_type *af;
 	int sdam;
 
+	if (!ch || !char_in_list(ch) || !IS_ALIVE(ch))
+		return;
+
 	linked = get_linking_char(ch, LNK_BLOOD_ALLIANCE);
 
 	if (!linked)
 		linked = get_linked_char(ch, LNK_BLOOD_ALLIANCE);
+	if (!linked || !char_in_list(linked) || !IS_ALIVE(linked))
+		return;
 
 	if (linked->in_room != ch->in_room)
 		return;
@@ -1288,9 +1294,42 @@ bool stormcallers_fury(P_char ch, P_char victim, P_obj wpn)
 				    FALSE, ch, wpn, victim, TO_NOTVICT);
 
 				int num_hits = number(3, 6);
+				const uint64_t actor_runtime_id = ch->runtime_id;
+				const int actor_room = ch->in_room;
+				const int actor_height = ch->specials.z_cord;
 
-				for (int i = 0; i < num_hits && IS_ALIVE(victim); i++)
+				for (int i = 0; i < num_hits; i++)
+				{
+					const attack_continuation continuation =
+						begin_attack_continuation(ch, victim, wpn);
 					hit(ch, victim, wpn);
+
+					const attack_continuation_result after_hit =
+						check_attack_continuation(continuation);
+					P_char live_actor =
+						find_character_by_runtime_id(actor_runtime_id);
+					if (!live_actor || !IS_ALIVE(live_actor) ||
+					    live_actor->in_room != actor_room ||
+					    live_actor->specials.z_cord != actor_height)
+						return TRUE;
+
+					ch = live_actor;
+					struct affected_type *live_afp =
+						get_spell_from_char(ch, SPELL_STORMCALLERS_FURY);
+					if (!live_afp)
+						return TRUE;
+					afp = live_afp;
+
+					if (!after_hit.can_continue())
+					{
+						afp->modifier = 0;
+						return TRUE;
+					}
+
+					ch = after_hit.actor;
+					victim = after_hit.target;
+					wpn = after_hit.weapon;
+				}
 
 				afp->modifier = 0;
 

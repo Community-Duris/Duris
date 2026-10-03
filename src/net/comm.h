@@ -25,6 +25,17 @@
 #define ACT_NOEOL 128
 #define ACT_PRIVATE 256
 
+/* Application budgets are independent of the bounded wire transport buffers. */
+static constexpr size_t SESSION_INPUT_MAX_BYTES = 64 * 1024;
+static constexpr size_t SESSION_INPUT_MAX_ENTRIES = 256;
+static constexpr size_t SESSION_OUTPUT_MAX_BYTES = 1024 * 1024;
+static constexpr size_t SESSION_OUTPUT_MAX_ENTRIES = 1024;
+static constexpr size_t SESSION_OOB_MAX_BYTES = 1024 * 1024;
+static constexpr size_t SESSION_OOB_MAX_ENTRIES = 128;
+
+void queue_websocket_input(P_desc descriptor, const char *text);
+bool admit_session_oob(P_desc descriptor, size_t bytes);
+
 #define SEND_TO_Q(messg, desc) write_to_q((messg), &(desc)->output, 1)
 
 /* following was io.h, for asych I/O operations, not used currently.  If we
@@ -33,6 +44,7 @@
 extern long sentbytes;
 
 struct sockaddr_in6;
+struct OutputContext;
 bool runtime_listener_address(struct sockaddr_in6 *address);
 
 /* Resolve a client address without blocking the select() game loop. */
@@ -225,6 +237,12 @@ int io_processFDS(fd_set * rfds, fd_set * wfds, fd_set * efds);
   */
 
 #endif /* 0 */
+
+void act(const char *message, int hide_invisible, P_char actor, P_obj object, void *victim,
+	 int type);
+void act(const char *message, int hide_invisible, P_char actor, P_obj object, void *victim,
+	 int type, const OutputContext &context);
+void send_to_room(const char *message, int room);
 
 /* Escapes all '$' characters in player-controlled text to '$$' so that
  * act() interprets them as literal '$' rather than $-directives ($n, $p,
