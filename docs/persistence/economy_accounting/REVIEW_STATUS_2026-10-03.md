@@ -1555,3 +1555,26 @@ normal ACK retry. Ordinary-drop producer/native publication/replay/save/copyover
 independent complete audit, route/backend/workload and all full R1-R8 gates stay
 open. Accounting remains inactive, SQL wallet-root item-endpoint exclusion and
 all safety gates remain, and the declined inactive spell-path change is untouched.
+
+
+### Live publication contract boundary correction
+
+The 19-case live movement source-contract suite exposed an obsolete text slice:
+it searched for an ACK guard without the explicit never-admitted condition,
+which 3ad1f91bb intentionally added. Its failure was a missing substring rather
+than a runtime failure. The contract now extracts the actual nested failed-
+publication block with the existing brace-aware helper and still requires
+retention with no owner erasure. All 19 cases pass. This is a separate fixture
+repair; no production code, route qualification or accounting activation follows.
+The original failure log and corrected source-contract log remain protected in
+`tmp/craft-ack-test_live_item_movement_contract.py.local.log` and
+`tmp/craft-ack-test_live_item_movement_contract-corrected.local.log`.
+
+The craft ACK-retry implementation is separately in progress: actual native
+before evidence now executes all 19 valid scenarios and reproduces duplicate
+completion, skipped real progression-map cleanup and unsafe notification owner
+boundaries. Attempt1/2 recipe fixture admission errors are preserved separately,
+not counted as production failures. Source review additionally requires immutable
+receipt binding before physical/progression effects. Final native/production/
+gameplay qualification of that fix is not yet claimed. Local publication remains
+blocked by the pending local Git integration decision under the no-merge rule.
