@@ -950,3 +950,12 @@ void player_load_items_discard(P_char character)
 	GET_CARRYING_W(character) = 0;
 	IS_CARRYING_N(character) = 0;
 }
+
+bool player_load_item_snapshot_metadata_valid(const player_item_snapshot &item)
+{
+	player_load_item_identity identity = {};
+	identity.database_id = 1;
+	identity.item_uid = item.object_uid;
+	identity.override_mask = PLAYER_LOAD_ITEM_OVERRIDE_ALL;
+	return valid_item_metadata(item, identity, true) == metadata_validation_outcome::valid;
+}

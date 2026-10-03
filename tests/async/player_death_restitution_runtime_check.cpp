@@ -801,7 +801,143 @@ void check_full_materialization(const player_load_result &loaded)
 }
 }
 
-int main()
+namespace
+{
+player_snapshot repair_fixture_snapshot()
+{
+	player_snapshot snapshot = {};
+	snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+	snapshot.pid = 43;
+	snapshot.revision = 2;
+	snapshot.components = PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY;
+	snapshot.encoded_size_bound = PLAYER_SNAPSHOT_MAX_BYTES;
+	for (uint64_t uid : { 52601, 52602, 52603 })
+	{
+		player_item_snapshot item = {};
+		item.object_uid = uid;
+		item.vnum = static_cast<int32_t>(uid);
+		item.parent_index = uid == 52603 ? 1 : -1;
+		item.equipment_slot = 0;
+		item.generated_key = static_cast<int64_t>(uid * 77);
+		item.type = uid == 52602 ? ITEM_CONTAINER : ITEM_WEAPON;
+		item.string_mask = 15;
+		item.name = "synthetic generated item";
+		item.short_description = "a generated synthetic fixture";
+		item.description = "Fixture description with 'quotes' and a newline.\n";
+		item.action_description = "Fixture action";
+		item.values = { 200, 2, 3, 4, 5, 6, 7, 8 };
+		item.timers = { -1, 123, 456, 789, 1011, 1213 };
+		item.wear_flags = 1;
+		item.extra_flags = 22;
+		item.anti_flags = 23;
+		item.anti2_flags = 24;
+		item.extra2_flags = 25;
+		item.weight = 4;
+		item.material = 7;
+		item.cost = 9876;
+		item.condition = 87;
+		item.craftsmanship = 29;
+		item.bitvectors = { 31, 32, 33, 34, 35 };
+		item.affects = { { { 1, 37 }, { 2, -4 }, { 0, 0 }, { 0, 0 } } };
+		item.dynamic_affects.push_back({ 38, 39, 40 });
+		item.extra_descriptions.push_back({ "runes", "glowing", false, {} });
+		item.extra_descriptions.push_back({ "SPELLBOOK", "", true, { 1, 7, 9 } });
+		snapshot.items.push_back(std::move(item));
+	}
+	return snapshot;
+}
+
+void check_repair_fixture(const player_load_result &loaded)
+{
+	if (loaded.outcome != player_load_outcome::applied || loaded.snapshot.items.size() != 3 ||
+	    loaded.missing_payload_rows || loaded.repaired_item_rows || loaded.promoted_item_rows)
+		fail("payload repair production load refused or changed topology: component=" +
+		     std::string(loaded.failed_component ? loaded.failed_component : "none") +
+		     " error=" + std::to_string(loaded.error_code));
+	for (auto expected : repair_fixture_snapshot().items)
+	{
+		auto actual = item_by_uid(loaded.snapshot, expected.object_uid);
+		if (expected.object_uid == 52603 &&
+		    (actual.parent_index < 0 ||
+		     loaded.snapshot.items[actual.parent_index].object_uid != 52602))
+			fail("payload repair nested custody changed");
+		expected.parent_index = actual.parent_index = -1;
+		check_exact_item_payload(expected, actual);
+		std::vector<uint8_t> expected_bytes, actual_bytes;
+		if (player_item_snapshot_list_encode({ expected }, &expected_bytes) !=
+			    player_snapshot_codec_result::ok ||
+		    player_item_snapshot_list_encode({ actual }, &actual_bytes) !=
+			    player_snapshot_codec_result::ok ||
+		    expected_bytes != actual_bytes)
+			fail("payload repair production codec byte fidelity failed");
+	}
+	std::vector<player_item_snapshot> items = loaded.snapshot.items;
+	for (auto &item : items)
+		item.equipment_slot = -1;
+	std::vector<P_obj> roots;
+	player_load_item_materialize_metrics metrics = {};
+	const item_owner_identity owner = { item_owner_type::player, 43, 0 };
+	if (!player_load_item_graph_materialize_detached(items, loaded.item_identities, owner,
+							 loaded.item_owner_revision, false, true,
+							 &roots, &metrics) ||
+	    roots.size() != 2)
+		fail("payload repair production materialization failed");
+	P_obj nested = nullptr;
+	for (P_obj root : roots)
+		if ((nested = find_materialized(root, 52603)) != nullptr)
+			break;
+	if (!nested || nested->g_key != 52603 * 77 || nested->timer[5] != 1213 ||
+	    nested->anti_flags != 23 || !nested->affects || nested->affects->extra2 != 40)
+		fail("payload repair materialization lost generated/runtime state");
+	for (P_obj root : roots)
+		extract_obj(root, FALSE);
+}
+
+void run_repair_fixture(MYSQL *connection, const std::string &mode)
+{
+	if (mode == "--repair-seed")
+	{
+		ensure_loader_tables(connection);
+		exec_sql(
+			connection,
+			"INSERT INTO item_owner_revision(owner_type,owner_id,owner_context_id,revision) VALUES(1,43,0,20)");
+		for (uint64_t uid : { 52601, 52602, 52603 })
+			exec_sql(
+				connection,
+				"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,"
+				"owner_type,owner_id,owner_context_id,vnum,item_revision,state) VALUES(" +
+					std::to_string(uid) + "," +
+					std::to_string(uid == 52603 ? 52602 : uid) + "," +
+					(uid == 52603 ? "52602" : "NULL") + ",1,43,0," +
+					std::to_string(uid) + ",8,1)");
+		player_snapshot snapshot = repair_fixture_snapshot();
+		if (apply_snapshot(connection, snapshot, 2).outcome !=
+		    player_save_apply_outcome::applied)
+			fail("production save could not seed synthetic repair fixture");
+		std::vector<uint8_t> encoded;
+		if (player_snapshot_encode(snapshot, &encoded) != player_snapshot_codec_result::ok)
+			fail("production codec could not encode synthetic evidence");
+		static constexpr char digits[] = "0123456789abcdef";
+		for (uint8_t byte : encoded)
+			std::cout << digits[byte >> 4] << digits[byte & 15];
+		std::cout << '\n';
+		return;
+	}
+	player_load_result loaded = load_player(connection, 526);
+	check_repair_fixture(loaded);
+	if (mode == "--repair-save")
+	{
+		const uint64_t next = loaded.snapshot.revision + 1;
+		if (apply_snapshot(connection, loaded.snapshot, next).outcome !=
+		    player_save_apply_outcome::applied)
+			fail("production repair fixture save failed");
+		check_repair_fixture(load_player(connection, 527));
+	}
+	std::cout << "repair production load/save and exact codec fidelity passed\n";
+}
+} // namespace
+
+int main(int argc, char **argv)
 {
 	MYSQL *connection = mysql_init(nullptr);
 	if (!connection)
@@ -817,6 +953,14 @@ int main()
 					port_from_environment(), nullptr, 0))
 			fail("database connection failed", connection);
 
+		if (argc == 2 && (std::string(argv[1]) == "--repair-seed" ||
+				  std::string(argv[1]) == "--repair-check" ||
+				  std::string(argv[1]) == "--repair-save"))
+		{
+			run_repair_fixture(connection, argv[1]);
+			mysql_close(connection);
+			return 0;
+		}
 		ensure_loader_tables(connection);
 		prepare_runtime_owner_fixture(connection);
 		player_load_result loaded = load_player(connection, 331);
