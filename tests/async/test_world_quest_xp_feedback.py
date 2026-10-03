@@ -122,7 +122,7 @@ void act(const char *text, int, P_char, P_obj, void *, int target) {
 void mobsay(P_char, const char *) {}
 char *coin_stringv(int, int) { static char text[] = "coins"; return text; }
 int number(int low, int) { return low; }
-void ADD_MONEY(P_char, int) { assert(false); }
+void ADD_MONEY(P_char, int, const char *) { assert(false); }
 P_obj quest_item_reward(P_char) { return &reward; }
 static bool grant_world_quest_reward(P_char, P_obj, int = 0, bool = false) {
     return grant_allowed;
