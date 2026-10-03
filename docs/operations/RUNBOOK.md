@@ -65,6 +65,16 @@ Graceful shutdown from inside the game: immortal `shutdown` command
 and then removes. Copyover (`copyover` command) execs a fresh binary while
 keeping player connections alive via `copyover.dat`.
 
+With the opt-in `--persistent-transport` launcher option, a parent keeps client
+sockets, TLS and compression alive while only the world child is replaced.
+Signal the parent or its watchdog once for lifecycle operations; do not signal
+both executable PIDs. Non-playing or otherwise ineligible sessions veto planned
+copyover. The watchdog still measures completed world loops. See the
+[persistent transport guide](../network/PERSISTENT_TRANSPORT.md) for enabling the
+mode, authenticated restoration, bounded queues and recovery after either process
+fails. Default single-process copyover retains its all-or-nothing plain-Telnet
+eligibility guard.
+
 ### Executable rollback and callback labels
 
 Before an authorized clean build or rollout, identify the actual supervisor,

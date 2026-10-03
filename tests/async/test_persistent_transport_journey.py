@@ -300,7 +300,8 @@ def run_protocol(binary, injector, protocol):
         client.expect("a connection cannot survive this handoff", timeout=30)
         idle.send(journey.ACCOUNT); idle.expect("enter your password", timeout=10)
         idle.close(); fixture.clients.remove(idle)
-        time.sleep(0.2)
+        # Cross a world boundary so orderly link-loss teardown has settled.
+        client.send("look"); client.expect("The Regression Arena")
         # A rejected exec must roll the quiescence barrier back onto the live world.
         staged = fixture.runtime / "bin/server/dms_new"
         staged.write_bytes(b"invalid executable\n"); staged.chmod(0o755)
@@ -412,6 +413,79 @@ def run_frontend_failure(binary, injector):
     except Exception:
         fixture.diagnostics(client); raise
     finally: fixture.close()
+
+
+def run_invalid_client_input(binary, injector):
+    fixture = Fixture(binary, injector); client = None
+    try:
+        fixture.seed_player(); client = fixture.login("tls")
+        world = fixture.world_pid()
+        for protocol in ("websocket", "gmcp"):
+            if protocol == "websocket":
+                invalid = WebClient(fixture.ports[2]); fixture.clients.append(invalid)
+                invalid.expect("Welcome")
+                invalid.socket.sendall(invalid.frame(b'{"type":"cmd"}\x00'))
+            else:
+                invalid = TelnetClient(fixture.ports[0]); fixture.clients.append(invalid)
+                invalid.expect_any(("term type", "account name"))
+                invalid.socket.sendall(b"\xff\xfa\xc9Core.Hello {}\x00\xff\xf0")
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                try:
+                    if not invalid.socket.recv(65536): break
+                except ConnectionError: break
+                except socket.timeout: continue
+            else: raise AssertionError(f"invalid {protocol} client was not retired")
+            invalid.close(); fixture.clients.remove(invalid)
+            client.send("look"); client.expect("The Regression Arena")
+            client.send("save"); client.expect(f"Save complete for {journey.CHARACTER}.")
+            assert fixture.world_pid() == world, "client input failed the private world channel"
+            assert not client.inflater.eof
+        print("invalid client input: NUL in WebSocket/GMCP retired only the offender; authenticated TLS gameplay continued", flush=True)
+    except Exception:
+        fixture.diagnostics(client); raise
+    finally: fixture.close()
+
+
+def run_orderly_close(binary, injector):
+    for protocol in ("telnet", "websocket"):
+        fixture = Fixture(binary, injector); client = None; stopped_world = None
+        try:
+            fixture.env["DURIS_TEST_TRANSPORT_FAULT"] += ",trace-close"
+            fixture.seed_player()
+            client = fixture.login(protocol)
+            client.send("inventory"); client.expect("a small wooden mace")
+            before = (fixture.runtime / "server.out").read_text().count("frontend close sent")
+            stopped_world = fixture.world_pid()
+            os.kill(stopped_world, signal.SIGSTOP)
+            if protocol == "telnet":
+                client.send("wield mace")
+                client.socket.shutdown(socket.SHUT_WR)
+            else:
+                command = json.dumps(dict(type="cmd", cmd="game", data=dict(command="wield mace"))).encode()
+                client.socket.sendall(client.frame(command) + client.frame(struct.pack("!H", 1000), 8))
+            deadline = time.monotonic() + 5
+            while (fixture.runtime / "server.out").read_text().count("frontend close sent") == before:
+                assert time.monotonic() < deadline, "frontend did not observe orderly close"
+                time.sleep(0.01)
+            time.sleep(0.3)  # A stalled world must not cause repeated CLOSE frames.
+            closes = (fixture.runtime / "server.out").read_text().count("frontend close sent") - before
+            os.kill(stopped_world, signal.SIGCONT); stopped_world = None
+            client.close(); fixture.clients.remove(client)
+            time.sleep(0.5)
+            client = WebClient(fixture.ports[2]); fixture.clients.append(client)
+            client.expect("Welcome")
+            client.message("login", dict(account=journey.ACCOUNT, password=journey.PASSWORD))
+            assert client.expect_type("auth")["status"] == "reconnected"
+            client.send("equipment"); client.expect("a small wooden mace")
+            assert closes == 1, f"frontend queued {closes} copies of one CLOSE"
+            client.send("save"); client.expect(f"Save complete for {journey.CHARACTER}.")
+        except Exception:
+            fixture.diagnostics(client); raise
+        finally:
+            if stopped_world is not None: os.kill(stopped_world, signal.SIGCONT)
+            fixture.close()
+    print("orderly close: final Telnet/WebSocket input received one world pulse and CLOSE was sent once", flush=True)
 
 
 def run_disconnect_race(binary, injector):
@@ -716,6 +790,7 @@ def run_watchdog(binary, injector):
 def main():
     cases = dict(startup=run_startup, lifecycle_exit=run_lifecycle_exit,
                  lifecycle_failure=run_lifecycle_failure, mixed=run_mixed_sessions,
+                 orderly_close=run_orderly_close, invalid_client_input=run_invalid_client_input,
                  disconnect_race=run_disconnect_race, frontend_failure=run_frontend_failure,
                  invalid_handoff=run_invalid_handoff, application_barrier=run_application_barrier,
                  bounds=run_bounds, watchdog=run_watchdog)

@@ -84,7 +84,7 @@ struct session
 	P_desc descriptor = nullptr;
 	unsigned slot = 0;
 	uint64_t id = 0, input_sequence = 0, ack = 0, output_sequence = 0;
-	bool opened = false;
+	bool opened = false, close_sent = false, orderly_close = false;
 	metadata meta;
 	session_binding binding;
 	std::deque<input_event> inputs;
@@ -433,7 +433,14 @@ bool consume_world_frame(const message &m)
 		return m.kind == type::close || m.kind == type::input || m.kind == type::metadata;
 	if (m.kind == type::close)
 	{
-		close_socket(d);
+		if (m.detail > 1)
+			return false;
+		if (m.detail)
+			// An orderly close follows any final input on this ordered channel.
+			// Offer that input for one world pulse, as in the native network loop.
+			d->network_close_pending = 1;
+		else
+			close_socket(d);
 		return true;
 	}
 	if (m.kind == type::metadata)
@@ -570,6 +577,7 @@ bool consume_frontend_frame(const message &m)
 			for (auto &[id, s] : sessions)
 			{
 				(void)id;
+				s.close_sent = false;
 				for (auto &event : s.inputs)
 					event.sent = false;
 			}
@@ -737,6 +745,23 @@ bool consume_frontend(const message &m)
 	return false;
 }
 
+bool frontend_deliver_input(session &s)
+{
+	if (s.inputs.empty() || s.inputs.front().sent)
+		return true;
+	input_event &event = s.inputs.front();
+	if (!send_message(type::input, s.id, event.sequence, event.kind, event.payload))
+		return false;
+	event.sent = true;
+	return true;
+}
+
+void frontend_deliver_close(session &s)
+{
+	if (s.opened && !s.close_sent && backend_ready && !paused && !ipc_link.failed)
+		s.close_sent = send_message(type::close, s.id, 0, s.orderly_close ? 1 : 0);
+}
+
 void frontend_deliver()
 {
 	if (!backend_ready || paused || ipc_link.failed)
@@ -745,8 +770,7 @@ void frontend_deliver()
 	{
 		if (!s.descriptor)
 		{
-			if (s.opened)
-				send_message(type::close, id);
+			frontend_deliver_close(s);
 			continue;
 		}
 		P_desc d = s.descriptor;
@@ -760,14 +784,8 @@ void frontend_deliver()
 				return;
 			s.opened = true;
 		}
-		if (!s.inputs.empty() && !s.inputs.front().sent && d->connected != CON_FLUSH)
-		{
-			input_event &event = s.inputs.front();
-			if (!send_message(type::input, id, event.sequence, event.kind,
-					  event.payload))
-				return;
-			event.sent = true;
-		}
+		if (d->connected != CON_FLUSH && !frontend_deliver_input(s))
+			return;
 	}
 }
 
@@ -863,11 +881,13 @@ bool transport_world_configure()
 	if (!fd_text || !pid_text)
 		return false;
 	char *end = nullptr;
+	errno = 0;
 	const long fd = strtol(fd_text, &end, 10);
-	if (!*fd_text || *end || fd < 3 || fd >= FD_SETSIZE)
+	if (errno == ERANGE || !*fd_text || *end || fd < 3 || fd > INT_MAX)
 		return false;
+	errno = 0;
 	const long pid = strtol(pid_text, &end, 10);
-	if (!*pid_text || *end || pid != getppid() || !ipc_link.attach(fd, pid))
+	if (errno == ERANGE || !*pid_text || *end || pid != getppid() || !ipc_link.attach(fd, pid))
 		return false;
 	nonblock(fd);
 	is_world = true;
@@ -905,6 +925,12 @@ void transport_world_pump()
 {
 	if (!is_world)
 		return;
+	for (P_desc d = descriptor_list, next; d; d = next)
+	{
+		next = d->next;
+		if (d->network_close_pending)
+			close_socket(d);
+	}
 	ipc_link.flush();
 	ipc_link.receive(consume_world);
 	for (auto it = world_pending_inputs.begin();
@@ -958,8 +984,9 @@ bool transport_descriptor_eligible(P_desc d)
 	return d && d->transport_session && is_world && d->connected == CON_PLAYING &&
 	       d->character && IS_PC(d->character) && !d->original && !d->str && !d->editor &&
 	       !d->showstr_count && !d->login_password_job && !d->password_request &&
-	       !d->account_request && !d->player_load_request_id && d->account &&
-	       d->account->acct_name && GET_ID(d->character) > 0 && GET_NAME(d->character) &&
+	       !d->account_request && !d->player_load_request_id && !d->network_close_pending &&
+	       d->account && d->account->acct_name && GET_ID(d->character) > 0 &&
+	       GET_NAME(d->character) &&
 	       (CAN_ACT(d->character) ||
 		d->character->specials.wait_until_pulse <= ne_event_tick + INT_MAX) &&
 	       !(d->input.head && (!d->transport_command || d->transport_command_started));
@@ -1122,6 +1149,13 @@ bool transport_frontend_input(P_desc d, unsigned kind, const char *data, size_t 
 {
 	if (!frontend)
 		return false;
+	// Malformed application text belongs to this client, not the shared IPC
+	// channel. The world rejects NUL-bearing strings as a protocol violation.
+	if (size && memchr(data, '\0', size))
+	{
+		d->write_failed = 1;
+		return true;
+	}
 	transport_frontend_metadata(d);
 	const auto found = sessions.find(d->transport_session);
 	if (found == sessions.end())
@@ -1197,14 +1231,19 @@ void transport_descriptor_closed(P_desc d)
 		if (found == sessions.end())
 			return;
 		session &s = found->second;
+		s.orderly_close = d->network_close_pending && !d->write_failed;
+		// A WebSocket message and CLOSE can arrive in the same socket read.
+		// Forward at most the one outstanding event before the ordered close.
+		if (s.orderly_close && s.opened && backend_ready && !paused && !ipc_link.failed)
+			frontend_deliver_input(s);
 		s.descriptor = nullptr;
 		frontend_input_bytes -= s.input_bytes;
 		s.inputs.clear();
 		s.input_bytes = 0;
 		if (!s.opened)
 			sessions.erase(found);
-		else if (backend_ready && !paused)
-			send_message(type::close, d->transport_session);
+		else
+			frontend_deliver_close(s);
 	}
 }
 
@@ -1356,9 +1395,14 @@ int transport_frontend_main(int argc, char **argv, int port, int tls_port)
 				    frontend_input_bytes < frontend_input_limit / 2 &&
 				    found->second.inputs.size() < session_input_count / 2 &&
 				    ((d->network_revents & (network_read_interest(d) | POLLHUP)) ||
-				     network_buffered_input(d)) &&
-				    process_input(d) < 0)
-					d->write_failed = 1;
+				     network_buffered_input(d)))
+				{
+					const int result = process_input(d);
+					if (result == NETWORK_INPUT_EOF)
+						d->network_close_pending = 1;
+					else if (result < 0)
+						d->write_failed = 1;
+				}
 				if ((d->network_revents & POLLHUP) && !network_read_interest(d))
 					d->write_failed = 1;
 			}
@@ -1394,7 +1438,9 @@ int transport_frontend_main(int argc, char **argv, int port, int tls_port)
 			if (d->websocket && !d->ws_handshake_done &&
 			    time(nullptr) - d->ws_handshake_started > WS_HANDSHAKE_TIMEOUT)
 				d->write_failed = 1;
-			if (d->write_failed ||
+			if (d->ws_state == WS_STATE_CLOSING && !d->write_failed)
+				d->network_close_pending = 1;
+			if (d->write_failed || d->network_close_pending ||
 			    (d->connected == CON_FLUSH && !d->telnet_output_len &&
 			     !d->ws_output_len && !d->ws_control_output_len) ||
 			    d->ws_state == WS_STATE_CLOSING)

@@ -56,6 +56,8 @@ Integers are big endian; bounded length-prefixed strings carry metadata and
 identities. No pointers or native structure layouts cross IPC. Login credentials
 travel as client input over this private authenticated channel to the world's
 existing authentication code; the transport never logs them.
+The inherited IPC descriptor is polled and may exceed `FD_SETSIZE`; it is never
+placed in a `select()` descriptor set.
 Unsupported versions, inconsistent sequences, invalid peer credentials and
 oversize frames fail the channel closed. Frontend/world protocol versions must
 match; a protocol upgrade requires a cold restart of both processes.
@@ -141,6 +143,17 @@ logical close after restoration, allowing the existing linkdead/reconnect rules
 to reconcile the body. The original single-process mode retains its complete
 refusal whenever any descriptor cannot survive the legacy plain-Telnet handoff.
 
+During ordinary operation, a complete final input followed by Telnet EOF or an
+orderly WebSocket close receives one world-pulse opportunity before link-loss
+teardown, matching the native network boundary. This is not a drain of all queued
+commands: at most one outstanding input is forwarded, and command delay or other
+world prerequisites still apply. Transport/protocol failures retire the session
+immediately. Close notifications are sent once, including when the world is slow;
+a committed replacement reconciles any surviving close after restoration.
+The frontend-to-world `CLOSE` detail is `0` for immediate retirement or `1` for
+that one-pulse opportunity. A descriptor awaiting teardown is ineligible for
+copyover until the world finishes closing it.
+
 ## Bounds and failure behavior
 
 | Boundary | Hard bound / behavior |
@@ -159,6 +172,8 @@ There are no unbounded command histories or persistent reconnect tokens. TCP
 backpressure holds data in bounded OS buffers when application reads pause.
 Oversize events and clients exceeding output bounds disconnect explicitly;
 application output is not silently dropped while leaving the session usable.
+Client application text containing embedded NUL bytes is rejected on that
+client's transport before IPC admission; it cannot fail the shared channel.
 Frontend ping/pong and TLS progress continue independently of world ticks.
 HTTP health reports unavailable while the world boots or is quiesced.
 
@@ -171,8 +186,9 @@ start a fresh world after a normal reboot or crash; ordinary durable player and
 Redis world recovery rules apply. This mode does not promise transparent
 continuation after arbitrary world crashes.
 
-The supervisor stops after three consecutive failed cold starts and returns a
-failure status to its launcher. Ordinary shutdown and the existing intentional
+The supervisor allows three cold retries after a failed world. Reaching readiness
+resets that budget; exhausting it returns a failure status to the launcher.
+Ordinary shutdown and the existing intentional
 stop status are preserved; the supervisor never turns them into a cold reboot.
 Transport-side diagnostics keep numeric trusted client addresses; reverse DNS
 workers remain outside the frontend so it can safely fork a fresh world.
@@ -239,6 +255,13 @@ The mixed-session journey carries all three client protocols through two
 successive execs. Separate cases test a completed account mutation at the pause
 barrier, a changed handoff file rejected before authenticated restoration, and
 the real launcher watchdog across exec and cold world restart.
+The `orderly_close` case holds the world while final input and EOF/close arrive,
+then verifies gameplay after authenticated reconnect and exactly one close
+notification. The sanitizer protocol harness also exercises inherited IPC fds
+above `FD_SETSIZE` and excludes sessions with pending teardown from handoff.
+The `invalid_client_input` case sends NUL-bearing WebSocket and GMCP text from
+separate clients while an authenticated TLS player continues playing and saving
+on the original world and compression stream.
 
 The architectural references are [DikuMUD2 Mplex](https://github.com/Seifert69/DikuMUD2/blob/master/dm-dist-ii/Mplex/mplex.c),
 [DikuMUD3](https://github.com/Seifert69/DikuMUD3), and

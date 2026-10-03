@@ -2,7 +2,11 @@
 #include "core/utils.h"
 #include "account/account.h"
 #include <cassert>
+#include <climits>
+#include <cstdlib>
+#include <fcntl.h>
 #include <iostream>
+#include <sys/select.h>
 #include <sys/wait.h>
 
 using namespace duris_transport;
@@ -10,7 +14,38 @@ using namespace duris_transport;
 bool is_world = true;
 unsigned long long ne_event_tick = 100;
 struct index_data *mob_index = nullptr;
+channel ipc_link;
+void nonblock(int fd)
+{
+	assert(fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) == 0);
+}
 /* PRODUCTION_SESSION_ELIGIBILITY */
+/* PRODUCTION_WORLD_CONFIGURE */
+
+static void inherited_high_descriptor()
+{
+	int fds[2];
+	assert(socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0, fds) == 0);
+	const pid_t child = fork();
+	assert(child >= 0);
+	if (!child)
+	{
+		const int high_fd = fcntl(fds[0], F_DUPFD, FD_SETSIZE + 32);
+		assert(high_fd >= FD_SETSIZE);
+		const std::string descriptor = std::to_string(high_fd);
+		const std::string parent = std::to_string(getppid());
+		assert(setenv("DURIS_TRANSPORT_FD", descriptor.c_str(), 1) == 0);
+		assert(setenv("DURIS_TRANSPORT_PARENT", parent.c_str(), 1) == 0);
+		is_world = false;
+		assert(transport_world_configure() && is_world && ipc_link.fd == high_fd);
+		_exit(0);
+	}
+	int status = 0;
+	assert(waitpid(child, &status, 0) == child);
+	assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+	close(fds[0]);
+	close(fds[1]);
+}
 
 static void session_eligibility()
 {
@@ -40,6 +75,9 @@ static void session_eligibility()
 	descriptor.player_load_request_id = 1;
 	assert(!transport_descriptor_eligible(&descriptor));
 	descriptor.player_load_request_id = 0;
+	descriptor.network_close_pending = 1;
+	assert(!transport_descriptor_eligible(&descriptor));
+	descriptor.network_close_pending = 0;
 	// Unstarted client work is replayable; unowned or partially expanded work is not.
 	txt_block input{};
 	descriptor.input.head = &input;
@@ -63,6 +101,7 @@ static void pairs(int (&fds)[2], channel &sender, channel &receiver)
 int main()
 {
 	session_eligibility();
+	inherited_high_descriptor();
 	writer w;
 	w.number(0x0102030405060708ULL);
 	w.string("session");
