@@ -783,3 +783,16 @@ published 100644 before the check. No production behavior changes.
 Evidence: `tmp/real-pool-harness-format-summary.local.json` SHA-256
 3594de85a8b8faea5e3c02fe774b727b3a71f9d18742ce0d55fddab8e28274e2. This formatting result does not replace native gameplay or
 accounting acceptance checks.
+
+## First-session native inspector build-budget repair
+
+The first-session entrypoint retained a 180-second compile deadline after the
+shared native inspector acquired the maintained 600-second build budget. It
+now uses that same build owner. Gameplay deadlines remain unchanged. The
+current candidate flatfile binary passes empty/populated bank first-session
+credit, retry, save and reload, plus all three maintained combat/death/corpse
+recovery/save/reconnect cases. Inspector compilation took 62.972 seconds in
+this run. Evidence: `tmp/first-session-inspector-budget-summary.local.json`
+SHA-256 70f2c2a3f08dddd3858557bf6a61ec377acbf64bd6e991b959a0f8043336e26f. The frozen 70aaa failures remain
+recorded; this is current component/gameplay evidence, not active-accounting
+qualification or a passing current-head broad suite.
