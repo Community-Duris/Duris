@@ -45,27 +45,27 @@
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2815,
-    "current_unique_path_line_family_sites": 2756,
+    "current_occurrences": 2816,
+    "current_unique_path_line_family_sites": 2757,
     "draft_registry_census_complete": true,
     "draft_source_commit": "b401a85219572eadae6cf1c91ae9488eb8bb419e",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2756,
+    "draft_unique_sites": 2757,
     "family_occurrences": {
       "coin_assignment": 164,
       "coin_bulk_mutation": 16,
       "direct_cash_assignment": 12,
-      "economic_submit": 187,
+      "economic_submit": 188,
       "item_lifecycle": 1146,
       "item_publication": 1063,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
       "sql_economy": 55
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 864-row registry maps 2756 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
-    "mapped_sites_still_present": 2756,
-    "mapped_unique_sites_from_draft_rows": 2756,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 864-row registry maps 2757 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2757,
+    "mapped_unique_sites_from_draft_rows": 2757,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -17616,7 +17616,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10117
+          10183
         ],
         "file": "src/cmd/actobj.c",
         "function": "publish_empty_objects",
@@ -18229,7 +18229,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7800
+          7866
         ],
         "file": "src/cmd/actobj.c",
         "function": "remove_item",
@@ -18291,7 +18291,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7734
+          7800
         ],
         "file": "src/cmd/actobj.c",
         "function": "execute_wear",
@@ -18711,10 +18711,10 @@
           6695
         ],
         "file": "src/cmd/actobj.c",
-        "function": "do_eat",
-        "original_draft_symbol": "do_eat"
+        "function": "apply_eaten_item",
+        "original_draft_symbol": "apply_eaten_item"
       },
-      "source_classification": "Eat action extracts consumed food; true UID retirement needs a source event.",
+      "source_classification": "Food effects and live extraction follow guarded UID retirement for durable player items.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {
@@ -20224,7 +20224,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9837
+          9903
         ],
         "file": "src/cmd/actobj.c",
         "function": "list_foods",
@@ -20966,7 +20966,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          9741
+          9807
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_apply_poison",
@@ -44744,7 +44744,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1051
+          1047
         ],
         "file": "src/cmd/actwiz.c",
         "function": "submit_wizard_load_establish",
@@ -44863,7 +44863,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1175
+          1171
         ],
         "file": "src/cmd/actwiz.c",
         "function": "do_purge",
@@ -44980,7 +44980,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2883
+          2879
         ],
         "file": "src/cmd/actwiz.c",
         "function": "do_storage",
@@ -45040,7 +45040,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2740
+          2736
         ],
         "file": "src/cmd/actwiz.c",
         "function": "flat_storage_completion",

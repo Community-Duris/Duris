@@ -1,4 +1,5 @@
 {"version": 1, "tests": {
+  "test_food_consumption_runtime.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":1.5,"purpose":"Execute eating admission and post-commit publication; preserve food and effects on refused retirement."},
   "telemetry_rollup_budget_test.py": {"profile":"fast","mode":"unittest","minimum_cases":7,"cpu":1,"memory_mb":256,"seconds":0.417,"purpose":"Focused offline budget regressions for issue #268."},
   "telemetry_rollup_engine_test.py": {"profile":"fast","mode":"unittest","minimum_cases":14,"cpu":1,"memory_mb":256,"seconds":0.071,"purpose":"Focused offline contract tests for the #268 external rollup engine."},
   "test_accept_watchdog_contract.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.029,"purpose":"accept watchdog contract"},

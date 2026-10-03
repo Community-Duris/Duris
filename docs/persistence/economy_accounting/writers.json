@@ -13997,7 +13997,7 @@
         ],
         [
           "src/cmd/actobj.c",
-          10490,
+          10556,
           "economic_submit"
         ]
       ],
@@ -15033,42 +15033,42 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          10136,
+          10202,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          10139,
+          10205,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          10152,
+          10218,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          10153,
+          10219,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          10160,
+          10226,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          10162,
+          10228,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          10164,
+          10230,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          10165,
+          10231,
           "item_publication"
         ]
       ],
@@ -15667,27 +15667,27 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          7820,
+          7886,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          7824,
+          7890,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          7828,
-          "item_publication"
-        ],
-        [
-          "src/cmd/actobj.c",
-          7842,
+          7894,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
           7908,
+          "item_publication"
+        ],
+        [
+          "src/cmd/actobj.c",
+          7974,
           "economic_submit"
         ]
       ],
@@ -15731,72 +15731,72 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          7684,
-          "item_publication"
-        ],
-        [
-          "src/cmd/actobj.c",
-          7687,
-          "item_publication"
-        ],
-        [
-          "src/cmd/actobj.c",
           7750,
+          "item_publication"
+        ],
+        [
+          "src/cmd/actobj.c",
+          7753,
+          "item_publication"
+        ],
+        [
+          "src/cmd/actobj.c",
+          7816,
           "economic_submit"
         ],
         [
           "src/cmd/actobj.c",
-          7759,
+          7825,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          7760,
+          7826,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8553,
+          8619,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8561,
+          8627,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8571,
+          8637,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8581,
+          8647,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8591,
+          8657,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8944,
+          9010,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8948,
+          9014,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8952,
+          9018,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          8956,
+          9022,
           "item_publication"
         ]
       ],
@@ -16103,14 +16103,14 @@
     {
       "id": "item.food_consumption",
       "path": "src/cmd/actobj.c",
-      "symbol": "do_eat",
+      "symbol": "apply_eaten_item",
       "reason": "item_destroy",
       "integration_issue": 482,
       "owner": "primary / #482",
       "coverage": "legacy",
-      "classification": "Eat action extracts consumed food; true UID retirement needs a source event.",
+      "classification": "Food effects and live extraction follow guarded UID retirement for durable player items.",
       "authority_boundary": "Expected UID/owner revision and source-qualified root before any live item list or extraction mutation.",
-      "current_support": "Direct item mutation identified; typed root, both-backend parity and active-epoch refusal unverified.",
+      "current_support": "Durable player food submits source-qualified destruction through the existing item coordinator. Refused admission leaves food and effects intact; committed publication resolves its exact UID. Native admission/publication boundaries and the disposable recovery journey cover normal save/reconnect/restart. Active-epoch acceptance and interrupted effect publication remain unverified; transient items retain the legacy path.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -16125,17 +16125,25 @@
           "evidence": []
         }
       },
-      "test_candidates": [],
+      "test_candidates": [
+        "tests/async/test_food_consumption_runtime.py",
+        "tests/async/test_issue331_player_journey.py"
+      ],
       "sites": [
         [
           "src/cmd/actobj.c",
-          6809,
+          6715,
           "item_lifecycle"
         ],
         [
           "src/cmd/actobj.c",
-          6919,
+          6826,
           "item_lifecycle"
+        ],
+        [
+          "src/cmd/actobj.c",
+          6880,
+          "economic_submit"
         ]
       ],
       "evidence": [],
@@ -17873,7 +17881,7 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          9841,
+          9907,
           "item_lifecycle"
         ]
       ],
@@ -18497,12 +18505,12 @@
       "sites": [
         [
           "src/cmd/actobj.c",
-          9830,
+          9896,
           "item_publication"
         ],
         [
           "src/cmd/actobj.c",
-          9831,
+          9897,
           "item_lifecycle"
         ]
       ],
@@ -19585,7 +19593,7 @@
         ],
         [
           "src/cmd/actobj.c",
-          8036,
+          8102,
           "item_lifecycle"
         ],
         [
@@ -39542,42 +39550,42 @@
       "sites": [
         [
           "src/cmd/actwiz.c",
-          1029,
+          1025,
           "item_lifecycle"
         ],
         [
           "src/cmd/actwiz.c",
-          1044,
+          1040,
           "item_publication"
         ],
         [
           "src/cmd/actwiz.c",
-          1046,
+          1042,
           "item_publication"
         ],
         [
           "src/cmd/actwiz.c",
-          1063,
+          1059,
           "economic_submit"
         ],
         [
           "src/cmd/actwiz.c",
-          1137,
+          1133,
           "item_lifecycle"
         ],
         [
           "src/cmd/actwiz.c",
-          1160,
+          1156,
           "item_publication"
         ],
         [
           "src/cmd/actwiz.c",
-          1162,
+          1158,
           "item_publication"
         ],
         [
           "src/cmd/actwiz.c",
-          1167,
+          1163,
           "item_lifecycle"
         ]
       ],
@@ -39656,12 +39664,12 @@
       "sites": [
         [
           "src/cmd/actwiz.c",
-          1283,
+          1279,
           "item_lifecycle"
         ],
         [
           "src/cmd/actwiz.c",
-          1380,
+          1376,
           "item_lifecycle"
         ]
       ],
@@ -39770,47 +39778,47 @@
       "sites": [
         [
           "src/cmd/actwiz.c",
-          2901,
+          2897,
           "item_lifecycle"
         ],
         [
           "src/cmd/actwiz.c",
-          2911,
+          2907,
           "item_lifecycle"
         ],
         [
           "src/cmd/actwiz.c",
-          2930,
+          2926,
           "item_lifecycle"
         ],
         [
           "src/cmd/actwiz.c",
-          2937,
+          2933,
           "item_publication"
         ],
         [
           "src/cmd/actwiz.c",
-          2950,
+          2946,
           "item_lifecycle"
         ],
         [
           "src/cmd/actwiz.c",
-          2980,
+          2976,
           "item_lifecycle"
         ],
         [
           "src/cmd/actwiz.c",
-          3010,
+          3006,
           "item_publication"
         ],
         [
           "src/cmd/actwiz.c",
-          3011,
+          3007,
           "item_publication"
         ],
         [
           "src/cmd/actwiz.c",
-          3017,
+          3013,
           "item_lifecycle"
         ]
       ],
@@ -39852,42 +39860,42 @@
       "sites": [
         [
           "src/cmd/actwiz.c",
-          2755,
+          2751,
           "item_lifecycle"
         ],
         [
           "src/cmd/actwiz.c",
-          2773,
+          2769,
           "item_publication"
         ],
         [
           "src/cmd/actwiz.c",
-          2801,
+          2797,
           "item_publication"
         ],
         [
           "src/cmd/actwiz.c",
-          2802,
+          2798,
           "item_publication"
         ],
         [
           "src/cmd/actwiz.c",
-          2822,
+          2818,
           "item_lifecycle"
         ],
         [
           "src/cmd/actwiz.c",
-          2834,
+          2830,
           "economic_submit"
         ],
         [
           "src/cmd/actwiz.c",
-          2853,
+          2849,
           "economic_submit"
         ],
         [
           "src/cmd/actwiz.c",
-          2868,
+          2864,
           "economic_submit"
         ]
       ],
@@ -47635,19 +47643,25 @@
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7750,
+      "line": 6880,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit("
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7908,
+      "line": 7816,
+      "family": "economic_submit",
+      "excerpt": "if (!item_movement_transaction_submit("
+    },
+    {
+      "path": "src/cmd/actobj.c",
+      "line": 7974,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit(ch, object, NULL, owner, owner,"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10490,
+      "line": 10556,
       "family": "economic_submit",
       "excerpt": "if (!item_movement_transaction_submit_batch("
     },
@@ -47779,31 +47793,31 @@
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6809,
+      "line": 6715,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 6919,
+      "line": 6826,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(temp);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8036,
+      "line": 8102,
       "family": "item_lifecycle",
       "excerpt": "MakeScrap(ch, obj_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 9831,
+      "line": 9897,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(poison, TRUE); // Transient artifact poison?"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 9841,
+      "line": 9907,
       "family": "item_lifecycle",
       "excerpt": "if (P_obj obj = read_object(i, VIRTUAL))"
     },
@@ -48061,181 +48075,181 @@
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7684,
+      "line": 7750,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7687,
+      "line": 7753,
       "family": "item_publication",
       "excerpt": "equip_char(actor, object, context.slot, !context.showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7759,
+      "line": 7825,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7760,
+      "line": 7826,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, position, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7820,
+      "line": 7886,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_1), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7820,
+      "line": 7886,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_1), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7824,
+      "line": 7890,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_2), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7824,
+      "line": 7890,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_2), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7828,
+      "line": 7894,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_3), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7828,
+      "line": 7894,
       "family": "item_publication",
       "excerpt": "obj_to_char(unequip_char(ch, WEAR_ATTACH_BELT_3), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7842,
+      "line": 7908,
       "family": "item_publication",
       "excerpt": "obj_to_char_checked(unequip_char(ch, position), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 7842,
+      "line": 7908,
       "family": "item_publication",
       "excerpt": "obj_to_char_checked(unequip_char(ch, position), ch);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8553,
+      "line": 8619,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8561,
+      "line": 8627,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_L, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8571,
+      "line": 8637,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_R, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8581,
+      "line": 8647,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_LL, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8591,
+      "line": 8657,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_WRIST_LR, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8944,
+      "line": 9010,
       "family": "item_publication",
       "excerpt": "obj_from_char(obj_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8948,
+      "line": 9014,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_ATTACH_BELT_1, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8952,
+      "line": 9018,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_ATTACH_BELT_2, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 8956,
+      "line": 9022,
       "family": "item_publication",
       "excerpt": "equip_char(ch, obj_object, WEAR_ATTACH_BELT_3, !showit);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 9830,
+      "line": 9896,
       "family": "item_publication",
       "excerpt": "obj_from_char(poison);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10136,
+      "line": 10202,
       "family": "item_publication",
       "excerpt": "obj_from_obj(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10139,
+      "line": 10205,
       "family": "item_publication",
       "excerpt": "obj_to_obj(object, target);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10152,
+      "line": 10218,
       "family": "item_publication",
       "excerpt": "obj_from_obj(*moved_object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10153,
+      "line": 10219,
       "family": "item_publication",
       "excerpt": "obj_to_obj(*moved_object, source);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10160,
+      "line": 10226,
       "family": "item_publication",
       "excerpt": "obj_from_obj(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10162,
+      "line": 10228,
       "family": "item_publication",
       "excerpt": "obj_from_room(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10164,
+      "line": 10230,
       "family": "item_publication",
       "excerpt": "obj_from_char(object);"
     },
     {
       "path": "src/cmd/actobj.c",
-      "line": 10165,
+      "line": 10231,
       "family": "item_publication",
       "excerpt": "obj_to_obj(object, source);"
     },
@@ -49069,25 +49083,25 @@
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1063,
+      "line": 1059,
       "family": "economic_submit",
       "excerpt": "return item_movement_transaction_submit("
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2834,
+      "line": 2830,
       "family": "economic_submit",
       "excerpt": "return item_movement_transaction_submit(actor, storage, NULL, source, destination,"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2853,
+      "line": 2849,
       "family": "economic_submit",
       "excerpt": "return item_movement_transaction_submit(actor, item, NULL, owner, owner,"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2868,
+      "line": 2864,
       "family": "economic_submit",
       "excerpt": "return item_movement_transaction_submit(actor, storage, NULL, owner, owner,"
     },
@@ -49105,139 +49119,139 @@
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1029,
+      "line": 1025,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(object, FALSE);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1137,
+      "line": 1133,
       "family": "item_lifecycle",
       "excerpt": "obj = read_object(r_num, REAL);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1167,
+      "line": 1163,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj, FALSE);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1283,
+      "line": 1279,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1380,
+      "line": 1376,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(obj);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2755,
+      "line": 2751,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(storage, FALSE);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2822,
+      "line": 2818,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(storage, context.action == flat_storage_action::destroy);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2901,
+      "line": 2897,
       "family": "item_lifecycle",
       "excerpt": "if (!(s_obj = read_object(atoi(objarg), VIRTUAL)))"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2911,
+      "line": 2907,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(s_obj, FALSE);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2930,
+      "line": 2926,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(s_obj, FALSE);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2950,
+      "line": 2946,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(s_obj);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2980,
+      "line": 2976,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(s_obj);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 3017,
+      "line": 3013,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(s_obj, FALSE);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1044,
+      "line": 1040,
       "family": "item_publication",
       "excerpt": "obj_to_room(object, context.room);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1046,
+      "line": 1042,
       "family": "item_publication",
       "excerpt": "obj_to_char(object, actor);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1160,
+      "line": 1156,
       "family": "item_publication",
       "excerpt": "obj_to_room(obj, ch->in_room);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 1162,
+      "line": 1158,
       "family": "item_publication",
       "excerpt": "obj_to_char(obj, ch);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2773,
+      "line": 2769,
       "family": "item_publication",
       "excerpt": "obj_to_room(storage, context.room);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2801,
+      "line": 2797,
       "family": "item_publication",
       "excerpt": "obj_from_obj(item);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2802,
+      "line": 2798,
       "family": "item_publication",
       "excerpt": "obj_to_room(item, context.room);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 2937,
+      "line": 2933,
       "family": "item_publication",
       "excerpt": "obj_to_room(s_obj, ch->in_room);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 3010,
+      "line": 3006,
       "family": "item_publication",
       "excerpt": "obj_from_obj(tmpobj);"
     },
     {
       "path": "src/cmd/actwiz.c",
-      "line": 3011,
+      "line": 3007,
       "family": "item_publication",
       "excerpt": "obj_to_room(tmpobj, ch->in_room);"
     },
