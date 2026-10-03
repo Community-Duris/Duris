@@ -468,3 +468,20 @@ not qualify production pool lifecycle, actual network disconnection, ordinary
 live drop/give/pile publication or full R1/R4/R8 completion. The exact SQL room
 payload prerequisite remains implementation WIP; broad/captured/workload gates
 remain open. See the latest review status for hashes and additional checks.
+
+
+### October 3 pooled replacement lease ownership repair
+
+A deterministic native regression reproduced an outstanding borrower after
+replacement refused during shutdown. Replacement now consumes a valid input
+lease consistently, including closing/discard/factory-failure paths; a fresh
+handle remains borrowed on success. Snapshot, death-conflict and locker callers
+clear the old pointer even on NULL, avoiding release of a freed/reused address.
+Strict/sanitized pool ordering, failure and capacity checks and both real SQL
+engines pass rollback/server-session retirement/reborrow/shutdown. Strict backend
+builds, pfile dependency check, formatting and all ten native recovery cases pass
+at source tree c60330b58de9063dc1ad8510ced36310324d5d4c (1,229 files match).
+Actual typed coordinator integration with the production pool is the next
+bounded qualification; supplied factories and manual ACKs do not establish
+production factory contention or live item/pile publication. Full R1-R8 remains
+open. Room payload/season-fence implementation is separate unqualified WIP.
