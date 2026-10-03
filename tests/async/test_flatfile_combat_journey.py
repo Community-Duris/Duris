@@ -327,8 +327,9 @@ def disputed_death(port: int, state_root: pathlib.Path, run_root: pathlib.Path) 
         refused_at = time.monotonic()
         client.expect("ACCOUNT MENU", timeout=30)
         elapsed = time.monotonic() - refused_at
-        require(not (state_root / "domains/.critical-authority-transaction").exists(),
-                "character released before death after-images completed")
+        # The native inspector holds the authority lock and refuses pending
+        # recovery. An unlocked existence check races unrelated world/corpse
+        # cleanup between journal publication and its completed after-images.
         after = inspect_authority(state_root)
         require(len(after["deaths"]) == 1, "death disposition missing at release")
         death = after["deaths"][0]

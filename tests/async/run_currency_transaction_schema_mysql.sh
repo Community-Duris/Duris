@@ -163,6 +163,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
     src/world/epic_command.c \
     src/economy/currency_command.c \
     src/sql/item_extra_descr_codec.c \
+    tests/async/item_extra_descr_codec_sql_escape_stub.cpp \
     src/combat/combat_outcome_command.c \
     src/item/item_uid_allocator.c \
     src/flatfile/flatfile_item_uid_allocator.c \
