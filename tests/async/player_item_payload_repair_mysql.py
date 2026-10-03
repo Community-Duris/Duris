@@ -10,6 +10,7 @@ import subprocess
 import struct
 import sys
 import tempfile
+import time
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -55,6 +56,20 @@ def main() -> None:
         target = api.identify_target(db, db.policy)
         backup_path = folder / "backup.json"
         backup = api.create_backup(db, db.policy, backup_path, lambda: api.check_quiescence(db, proof))
+
+        def wait_for_quiescence():
+            # MariaDB can briefly retain a just-disconnected transaction in the
+            # visibility cache. Wait for the real maintenance guard to clear.
+            for _ in range(100):
+                if db.scalar("SELECT COUNT(*) FROM information_schema.innodb_trx") == "0" and \
+                        db.scalar("SELECT COUNT(*) FROM information_schema.processlist WHERE ID<>CONNECTION_ID()") == "0":
+                    return
+                time.sleep(0.1)
+            raise AssertionError("synthetic transactions did not drain")
+
+        def cli(arguments):
+            wait_for_quiescence()
+            return api.main(arguments)
 
         def plan_for(uid=52601, source=evidence):
             return repair.prepare(api, db, uid, source, target, backup, backup["maintenance_boundary"])
@@ -133,6 +148,7 @@ def main() -> None:
         ):
             db.run(sql)
             expected_projection = db.scalar("SELECT COUNT(*) FROM player_items WHERE obj_uid=52601")
+            wait_for_quiescence()
             result = db.run(repair.build_sql(api, db, plan, "synthetic-operator", "stale plan test"))
             assert ["DURIS_REPAIR|0|0"] in result, result[-3:]
             assert_no_write(expected_projection)
@@ -140,18 +156,19 @@ def main() -> None:
         # SQL failure after projection insertion rolls the complete transaction back.
         db.run("CREATE TRIGGER fail_repair BEFORE INSERT ON player_item_runtime_state FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='synthetic interruption'")
         try:
+            wait_for_quiescence()
             db.run(repair.build_sql(api, db, plan, "synthetic-operator", "rollback test"))
             raise AssertionError("interrupted transaction committed")
         except api.ToolError:
             assert_no_write()
         db.run("DROP TRIGGER fail_repair")
         # Kill the actual client after the projection statement, before COMMIT.
+        wait_for_quiescence()
         sql = repair.build_sql(api, db, plan, "synthetic-operator", "client interruption test")
         cutoff = sql.index("INSERT INTO player_item_runtime_state")
         client = subprocess.Popen([*db.base, db.database], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=db.env)
         client.stdin.write((sql[:cutoff] + "\nSELECT SLEEP(30);\n").encode())
         client.stdin.flush()
-        import time
         time.sleep(0.3)
         client.kill()
         client.wait()
@@ -166,22 +183,22 @@ def main() -> None:
             if uid == 52603:
                 db.run("DELETE FROM player_items WHERE obj_uid=52603")
             plan_path = folder / f"plan-{uid}.json"
-            api.main(["repair-prepare", "--item-uid", str(uid), "--evidence", str(evidence_path),
+            cli(["repair-prepare", "--item-uid", str(uid), "--evidence", str(evidence_path),
                       "--backup-receipt", str(backup_path), "--artifact", str(plan_path)])
             plan = repair.load_plan(api, plan_path)
             assert plan["applyable"], (plan["classification"], plan["note"])
             controls = ["--plan", str(plan_path), "--evidence", str(evidence_path), "--offline-proof", str(proof),
                         "--actor", "synthetic-operator", "--reason", "synthetic exact UID repair"]
             try:
-                api.main(["repair-apply", *controls])
+                cli(["repair-apply", *controls])
                 raise AssertionError("apply without approval was accepted")
             except api.ToolError as error:
                 assert "authorization_required" in str(error)
-            api.main(["repair-apply", *controls, "--approve"])
+            cli(["repair-apply", *controls, "--approve"])
             assert db.scalar("SELECT status FROM player_death_restitution_receipt ORDER BY applied_at DESC LIMIT 1") == "2"
             db.run(f"UPDATE player_items SET cost=1 WHERE obj_uid={uid}")
             try:
-                api.main(["repair-verify", *controls])
+                cli(["repair-verify", *controls])
                 raise AssertionError("failed verification recorded a verified receipt")
             except api.ToolError as error:
                 assert "payload_fidelity" in str(error)
@@ -190,18 +207,18 @@ def main() -> None:
             if uid == 52603:
                 db.run("UPDATE item_current_owner SET root_item_uid=52601 WHERE item_uid=52602")
                 try:
-                    api.main(["repair-verify", *controls])
+                    cli(["repair-verify", *controls])
                     raise AssertionError("invalid ancestor chain was certified")
                 except api.ToolError as error:
                     assert "invalid_topology" in str(error)
                 assert db.scalar("SELECT status FROM player_death_restitution_receipt ORDER BY applied_at DESC LIMIT 1") == "2"
                 db.run("UPDATE item_current_owner SET root_item_uid=52602 WHERE item_uid=52602")
-            api.main(["repair-apply", *controls, "--approve"])
+            cli(["repair-apply", *controls, "--approve"])
             # Fresh native processes exercise the real production load and save,
             # then cold load again with the previous process's memory gone.
             subprocess.run([str(binary), "--repair-save"], check=True)
             subprocess.run([str(binary), "--repair-check"], check=True)
-            api.main(["repair-verify", *controls])
+            cli(["repair-verify", *controls])
             assert db.scalar("SELECT COUNT(*) FROM player_death_restitution_delivery") == "0"
             changed = copy.deepcopy(evidence)
             changed["snapshots_hex"] = [conflict.hex()]
