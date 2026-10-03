@@ -105,3 +105,18 @@ not yet an executed failing player journey.
 Coin callbacks also require separate review: current ACK ordering and replay's
 null callback do not prove pile publication survived restart. These are open
 R1/R2/R4/R8 requirements, not waived by the native SQL coordinator component fixtures.
+
+
+## October 3 replacement ownership repair
+
+Native shutdown regression reproduced one abandoned borrowed slot when
+replacement returned NULL. The pool now consumes the original lease on every
+valid replacement attempt, catches factory exceptions, and closes unpublished
+fresh sessions before releasing the reservation to shutdown. Success returns
+one new borrowed handle. Foreign/unborrowed handles cannot replace another
+lease. Snapshot/death-conflict/locker callers always clear their original
+pointer, including failure. Real-session rollback/replenishment/shutdown passes
+on both engines; pure pool ordering/capacity checks pass under ASan/UBSan.
+Actual typed coordinator paths linked to this production pool remain the next
+component gate. Boot configuration, mixed workload and actual publication/replay
+acceptance remain independent of this repair.
