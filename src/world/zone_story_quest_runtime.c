@@ -14,6 +14,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <limits>
+#include <new>
 #include <string>
 #include <time.h>
 
@@ -185,6 +186,25 @@ zone_story_quest_feature::service *service()
 bool persist(std::string *error)
 {
 	return ready() && save_persisted_state(error);
+}
+
+bool refresh_after_erasure(std::string *error)
+try
+{
+	tracker_ready = false;
+	const auto policy = tracker.get_daily_policy();
+	tracker = zone_story_quest_feature::service(tracker.catalog());
+	tracker.set_daily_policy(policy);
+	if (!load_persisted_state(error))
+		return false;
+	tracker_ready = zone_story_quest_production::ready();
+	return tracker_ready;
+}
+catch (const std::bad_alloc &)
+{
+	tracker_ready = false;
+	errno = ENOMEM;
+	return false;
 }
 
 bool remember_character(P_char player, std::string *error)
