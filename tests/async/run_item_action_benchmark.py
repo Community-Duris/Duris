@@ -22,6 +22,7 @@ def function(text,signature):
 
 platform=literal(ROOT/'tests/async/test_nevent_scheduler_runtime.py','HARNESS').split('struct record_payload\n',1)[0]
 platform=platform.replace('DEFINE_LABEL_CALLBACK(event_item_action_active)','')
+platform+=function((ROOT/'src/item/objmisc.c').read_text(),'bool item_restricted_for_player_pet(')
 fixture=literal(ROOT/'tests/async/test_item_actions_runtime.py','HARNESS')
 fixture=fixture.replace('int main() {','void foundation_main() {').replace('// INSERT_PRODUCTION_ABORT',
     function((ROOT/'src/net/sparser.c').read_text(),'void do_abort(P_char ch,'))
@@ -40,9 +41,10 @@ int main() {
         std::vector<std::pair<P_char,P_obj>> population{{s.actor,s.source}};
         for(int i=1;i<count;++i) {
             auto actor=new char_data{}; auto object=new obj_data{};
-            actor->only.pc=&s.actor_pc; actor->runtime_id=1000+i;
+            actor->only.pc=&s.actor_pc; actor->runtime_id=allocate_character_runtime_id();
             actor->in_room=0; SET_POS(actor,STAT_NORMAL+POS_STANDING);
             actor->next=character_list; character_list=actor;
+            register_character_runtime_id(actor);
             object->obj_uid=10000+i; object->loc_p=LOC_WORN; object->loc.wearing=actor;
             actor->equipment[WIELD]=object;
             object->next=object_list; object_list=object;
@@ -85,7 +87,8 @@ studio=(ROOT/'src/item/studio_abilities.c').read_text()
 start=studio.index('for (auto it = cooldowns.begin();')
 end=studio.index('\n\titem_action_definition action;',start)
 bench=BENCH.replace('// INSERT_COOLDOWN_SWEEP',studio[start:end])
-with tempfile.TemporaryDirectory(prefix='item-action-benchmark-') as tmp:
+scratch=ROOT/'bin/tests'; scratch.mkdir(parents=True,exist_ok=True)
+with tempfile.TemporaryDirectory(prefix='item-action-benchmark-',dir=scratch) as tmp:
     source=Path(tmp)/'benchmark.cpp'; binary=Path(tmp)/'benchmark'
     source.write_text(platform+fixture+bench)
     subprocess.run(['g++','-std=c++20','-O2','-ffunction-sections','-fdata-sections','-pthread',
