@@ -356,58 +356,75 @@ void sql_pool_release(MYSQL *conn)
 	pthread_mutex_unlock(&pool_mutex);
 }
 
+// Caller holds pool_mutex and owns this slot's lease.
+static void sql_pool_retire_borrowed_slot(int slot)
+{
+	mysql_close(pool[slot].conn);
+	pool[slot].conn = NULL;
+	pool[slot].in_use = 0;
+	pool[slot].discard_on_release = 0;
+	if (pool_closing)
+		pthread_cond_broadcast(&pool_cond);
+	else
+		pthread_cond_signal(&pool_cond);
+}
+
 MYSQL *sql_pool_replace_connection(MYSQL *conn)
 {
 	MYSQL *replacement = NULL;
-	MYSQL *old_conn = NULL;
 	int slot = -1;
 
 	if (!conn)
 		return NULL;
 
 	pthread_mutex_lock(&pool_mutex);
-	if (!pool || pool_closing)
-	{
-		pthread_mutex_unlock(&pool_mutex);
-		return NULL;
-	}
-
-	for (int i = 0; i < pool_size; i++)
-	{
-		if (pool[i].conn == conn && !pool[i].discard_on_release)
-		{
-			slot = i;
-			old_conn = pool[i].conn;
-			break;
-		}
-	}
-	pthread_mutex_unlock(&pool_mutex);
-
+	if (pool)
+		for (int i = 0; i < pool_size; i++)
+			if (pool[i].conn == conn && pool[i].in_use)
+			{
+				slot = i;
+				break;
+			}
 	if (slot < 0)
-		return NULL;
-
-	replacement = sql_pool_create_connection("sql_pool_replace_connection", slot);
-	if (!replacement)
 	{
-		pthread_mutex_lock(&pool_mutex);
-		if (pool && slot < pool_size && pool[slot].conn == old_conn &&
-		    !pool[slot].discard_on_release)
-		{
-			mysql_close(pool[slot].conn);
-			pool[slot].conn = NULL;
-			pool[slot].in_use = 0;
-			pthread_cond_signal(&pool_cond);
-		}
 		pthread_mutex_unlock(&pool_mutex);
 		return NULL;
+	}
+	if (pool_closing || pool[slot].discard_on_release)
+	{
+		sql_pool_retire_borrowed_slot(slot);
+		pthread_mutex_unlock(&pool_mutex);
+		return NULL;
+	}
+	// Keep the original lease reserved while the factory is outside the mutex.
+	// Shutdown waits for it; no other borrower can acquire/reuse its address.
+	pthread_mutex_unlock(&pool_mutex);
+	try
+	{
+		replacement = sql_pool_create_connection("sql_pool_replace_connection", slot);
+	}
+	catch (...)
+	{
+		logit(LOG_DEBUG, "sql_pool_replace_connection: connection factory failed");
 	}
 
 	pthread_mutex_lock(&pool_mutex);
-	if (!pool || pool_closing || slot >= pool_size || pool[slot].conn != old_conn ||
-	    pool[slot].discard_on_release)
+	if (!pool || slot >= pool_size || pool[slot].conn != conn || !pool[slot].in_use)
 	{
+		// Invalid concurrent use of a lease must not retire somebody else's slot.
 		pthread_mutex_unlock(&pool_mutex);
-		mysql_close(replacement);
+		if (replacement)
+			mysql_close(replacement);
+		return NULL;
+	}
+	if (!replacement || pool_closing || pool[slot].discard_on_release)
+	{
+		// Close the unpublished fresh session before releasing the reservation,
+		// so shutdown cannot report quiescence while that session remains open.
+		if (replacement)
+			mysql_close(replacement);
+		sql_pool_retire_borrowed_slot(slot);
+		pthread_mutex_unlock(&pool_mutex);
 		return NULL;
 	}
 
