@@ -4,6 +4,7 @@
 from _paths import SRC, rel, extract_function
 import subprocess
 import tempfile
+import os
 from pathlib import Path
 
 
@@ -18,6 +19,8 @@ COMM = (SRC / "comm.c").read_text()
 NANNY = (SRC / "nanny.c").read_text()
 WORKER = (SRC / "player_save_worker.c").read_text()
 SQL_PLAYER = (SRC / "sql_player.c").read_text()
+SANITIZER_FLAGS = (["-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie"]
+                   if os.environ.get("DURIS_TEST_SANITIZERS") == "1" else [])
 
 
 def section(text: str, start: str, end: str) -> str:
@@ -64,6 +67,7 @@ with tempfile.TemporaryDirectory(prefix="duris-player-save-pipeline-") as temp_d
     subprocess.run(
         [
             "g++",
+            *SANITIZER_FLAGS,
             "-std=c++20",
             "-Wall",
             "-Wextra",
@@ -287,6 +291,9 @@ terminal_slice = (
     + "namespace\n{\n"
     + PIPELINE[await_start:await_end]
 )
+# Retain the actual lease storage and PID lookup in both extracted coordinators.
+literal_fixture_state = section(PIPELINE, "struct literal_inventory_checkpoint",
+                                "bool literal_inventory_blob(")
 terminal_preamble = r'''
 #include "persistence/persistence_diagnostics.h"
 #include "player/player_save_pipeline.h"
@@ -297,8 +304,9 @@ terminal_preamble = r'''
 #include <chrono>
 #include <mutex>
 #include <thread>
+#include <array>
 bool player_save_journal_pid_quarantined(int) { return false; }
-struct char_data { int pid; unsigned int runtime_flags; };
+struct char_data { int pid; unsigned int runtime_flags = 0; };
 struct obj_data { int uid; };
 #define IS_SET(flag, bit) ((flag) & (bit))
 player_snapshot_capture_result death_capture_result = player_snapshot_capture_result::ok;
@@ -374,6 +382,39 @@ terminal_main = r'''
 int main() {
     char_data player{1};
     health.initialized = true;
+    assert(player_revision_hydrate(1, 7));
+    auto &literal = literal_inventory_checkpoints[0];
+    literal.token = {1, 11, 7001, 1};
+    literal.payload = {3, 4, 5};
+    literal.captured_revision = literal.acknowledged_revision = 7;
+    literal.held = true;
+    assert(find_literal_inventory_locked(1) == &literal);
+    assert(!find_literal_inventory_locked(2));
+    player_revision_t refused_revision = 999;
+    assert(!begin_terminal_fence(1, &refused_revision, false));
+    assert(!begin_terminal_fence(1, &refused_revision, true));
+    assert(refused_revision == 999 && !fence.pid && !fence.death_pinned);
+    assert(player_save_pipeline_terminal(&player, 6, 22800, 1, false) ==
+           player_save_terminal_result::unavailable);
+    player_revision_snapshot held_state = {};
+    assert(player_revision_snapshot_copy(1, &held_state));
+    assert(held_state.current_revision == 7 && held_state.acknowledged_revision == 7 &&
+           !held_state.dirty_components && !held_state.queued_components &&
+           !held_state.inflight_components && !held_state.unacknowledged_components);
+    assert(!captured_revision && !death_enqueued && !health.terminal_fences);
+    assert(literal.token.pid == 1 && literal.held && literal.payload.size() == 3);
+    literal.held = false;
+    assert(begin_terminal_fence(1, &refused_revision, false));
+    assert(refused_revision == 8 && !literal.token.pid && literal.payload.empty());
+    assert(fence.pid == 1 && !fence.death_pinned);
+    clear_terminal_fence_locked(fence);
+    literal.token = {2, 12, 7002, 2};
+    literal.held = true;
+    assert(begin_terminal_fence(1, &refused_revision, true));
+    assert(refused_revision == 9 && fence.death_pinned && literal.token.pid == 2 && literal.held);
+    assert(player_revision_unpin_terminal_death(1, refused_revision));
+    clear_terminal_fence_locked(fence);
+    literal_inventory_checkpoints.fill({});
     for (int trial = 0; trial < 10; ++trial) {
         player_revision_reset_for_tests();
         const player_revision_t old_revision = 50 + trial * 10;
@@ -436,13 +477,14 @@ terminal_build = ROOT / "bin/tests/terminal-save-intent"
 terminal_build.mkdir(parents=True, exist_ok=True)
 terminal_source = terminal_build / "regression.cpp"
 terminal_binary = terminal_build / "regression"
-terminal_source.write_text(terminal_preamble + terminal_slice + terminal_main)
+terminal_source.write_text(terminal_preamble + literal_fixture_state + terminal_slice + terminal_main)
 subprocess.run([
-    "g++", "-std=c++20", "-Isrc", str(terminal_source),
+    "g++", *SANITIZER_FLAGS, "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-Isrc", str(terminal_source),
     "src/player/player_revision_state.c", "-pthread", "-o", str(terminal_binary),
 ], cwd=ROOT, check=True)
 subprocess.run([str(terminal_binary)], check=True, timeout=10)
 print("[PASS] ten terminal-intent trials cover prior ACK, pending save, timed-out camp retry, and journal handoff")
+print("[PASS] actual literal PID lookup fences held ordinary/death intents before marking and supersedes unheld leases")
 
 # Compile the real checkpoint and receipt merge with controlled admission/capture
 # failures. Revision state and codec remain real so component and wire checks run.
@@ -456,7 +498,8 @@ receipt_harness = r'''
 #include <cassert>
 #include <mutex>
 #include <new>
-struct char_data { int pid; unsigned int runtime_flags = 0; };
+#include <array>
+struct char_data { int pid; unsigned int runtime_flags = 0; uint64_t runtime_id = 71; };
 #undef GET_PID
 #undef IS_NPC
 #define GET_PID(ch) ((ch)->pid)
@@ -478,6 +521,8 @@ bool player_save_pipeline_mark(int pid, player_component_mask_t components) {
     return player_revision_mark(pid, components, nullptr);
 }
 bool capture_fails = false;
+unsigned normal_capture_calls = 0, literal_capture_calls = 0;
+uint64_t captured_literal_root = 0;
 bool creation_pending = false;
 bool item_movement_transaction_player_creation_busy(P_char) { return creation_pending; }
 bool refuse_enqueue = false;
@@ -504,6 +549,25 @@ bool spell_component_retirement_pending_save_receipts(
 player_snapshot_capture_result player_snapshot_capture(
     P_char ch, player_revision_t revision, player_component_mask_t components,
     int intent, int room, player_snapshot *snapshot) {
+    ++normal_capture_calls;
+    if (capture_fails) return player_snapshot_capture_result::malformed_source;
+    snapshot->schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+    snapshot->pid = ch->pid;
+    snapshot->revision = revision;
+    snapshot->components = components;
+    snapshot->save_intent = intent;
+    snapshot->room_vnum = room;
+    snapshot->encoded_size_bound = 4096;
+    return player_snapshot_capture_result::ok;
+}
+player_snapshot_capture_result player_snapshot_capture_literal_inventory(
+    P_char ch, player_revision_t revision, player_component_mask_t components,
+    int intent, int room, uint64_t root, player_snapshot *snapshot) {
+    ++literal_capture_calls;
+    captured_literal_root = root;
+    assert(root == 7001);
+    constexpr auto inventory = PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY;
+    assert((components & inventory) == inventory);
     if (capture_fails) return player_snapshot_capture_result::malformed_source;
     snapshot->schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
     snapshot->pid = ch->pid;
@@ -518,7 +582,7 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot) {
     captured = std::move(snapshot);
     return refuse_enqueue ? player_save_pipeline_result::overloaded : player_save_pipeline_result::queued;
 }
-''' + extract_function("player_save_pipeline.c", "bool merge_quest_xp_receipts(") + "\n" + extract_function("player_save_pipeline.c", "bool merge_spell_effect_receipts(") + "\n" + extract_function("player_save_pipeline.c", "bool merge_craft_receipts(") + "\n" + extract_function(
+''' + literal_fixture_state + extract_function("player_save_pipeline.c", "bool merge_quest_xp_receipts(") + "\n" + extract_function("player_save_pipeline.c", "bool merge_spell_effect_receipts(") + "\n" + extract_function("player_save_pipeline.c", "bool merge_craft_receipts(") + "\n" + extract_function(
     "player_save_pipeline.c", "static player_save_pipeline_result checkpoint_dirty_with_quest_xp("
 ) + r'''
 void verify() {
@@ -648,6 +712,53 @@ int main() {
     assert(!merge_craft_receipts(&craft_death, conflict));
     craft_death.components &= ~PLAYER_COMPONENT_SKILLS;
     assert(!merge_craft_receipts(&craft_death, pending));
+    // The capture boundary is controlled here; the production checkpoint,
+    // lease lookup, revision state, and wire codec remain actual functions.
+    // Start clean so a prior ALL checkpoint cannot mask missing promotion.
+    assert(normal_capture_calls > 0 && literal_capture_calls == 0);
+    player_revision_reset_for_tests();
+    assert(player_revision_hydrate(41, 100));
+    pending = {};
+    captured = {};
+    craft_progression_hooks.pending = nullptr;
+    assert(player_save_pipeline_mark(41, PLAYER_COMPONENT_LANGUAGES));
+    auto &literal = literal_inventory_checkpoints[0];
+    literal.token = {41, player.runtime_id, 7001, 1};
+    literal.held = true;
+    player_revision_snapshot held_before = {}, held_after = {};
+    assert(player_revision_snapshot_copy(41, &held_before));
+    const auto previous_normal = normal_capture_calls;
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0) ==
+           player_save_pipeline_result::unavailable);
+    assert(player_revision_snapshot_copy(41, &held_after));
+    assert(held_before.current_revision == held_after.current_revision &&
+           held_before.dirty_components == held_after.dirty_components &&
+           held_before.queued_components == held_after.queued_components &&
+           !captured.pid && normal_capture_calls == previous_normal && !literal_capture_calls);
+    literal.held = false;
+    ++literal.token.actor_runtime_id;
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0) ==
+           player_save_pipeline_result::unavailable);
+    assert(!captured.pid && normal_capture_calls == previous_normal && !literal_capture_calls);
+    literal.token.actor_runtime_id = player.runtime_id;
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0) ==
+           player_save_pipeline_result::queued);
+    assert(literal_capture_calls == 1 && captured_literal_root == 7001 &&
+           normal_capture_calls == previous_normal);
+    assert(captured.components == (PLAYER_COMPONENT_LANGUAGES | LITERAL_INVENTORY_COMPONENTS));
+    assert(captured.revision > held_before.current_revision);
+    capture_fails = true;
+    captured = {};
+    assert(player_save_pipeline_mark(41, PLAYER_COMPONENT_STATUS));
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0) ==
+           player_save_pipeline_result::capture_failed);
+    assert(literal_capture_calls == 2 && !captured.pid && normal_capture_calls == previous_normal);
+    capture_fails = false;
+    literal_inventory_checkpoints.fill({});
+    assert(player_save_pipeline_mark(41, PLAYER_COMPONENT_STATUS));
+    assert(checkpoint_dirty_with_quest_xp(&player, RENT_CRASH, 1201, nullptr, 0) ==
+           player_save_pipeline_result::queued);
+    assert(normal_capture_calls == previous_normal + 1 && literal_capture_calls == 2);
 }
 '''
 with tempfile.TemporaryDirectory(prefix="duris-pending-spell-save-") as directory:
@@ -655,8 +766,52 @@ with tempfile.TemporaryDirectory(prefix="duris-pending-spell-save-") as director
     program = path / "pending.cpp"
     binary = path / "pending"
     program.write_text(receipt_harness)
-    subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-Isrc",
+    subprocess.run(["g++", *SANITIZER_FLAGS, "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-Isrc",
                     str(program), rel("player_revision_state.c"), rel("player_snapshot_codec.c"),
                     "-o", str(binary)], cwd=ROOT, check=True)
     subprocess.run([str(binary)], check=True)
 print("[PASS] capture/admission failures retain quest XP and spell receipts in later ordinary/terminal saves and combined death merges")
+print("[PASS] held/stale literal scopes refuse before queueing; empty receipt masks preserve full literal promotion and capture failure")
+
+# This API advertises a SQL database completion, not a flat-file worker ACK.
+# Compile actual public bodies under the flat backend with no capture, scope,
+# registry, or persistence implementations at all: reaching those dependencies
+# must fail compilation/linking instead of being waived by null-return stubs.
+flat_harness = r'''
+#define __NO_MYSQL__ 1
+#include "player/player_save_pipeline.h"
+#include <cassert>
+struct char_data {};
+struct obj_data {};
+''' + extract_function("player_save_pipeline.c", "player_literal_inventory_state\nplayer_save_pipeline_literal_inventory_begin(") + "\n" + extract_function(
+    "player_save_pipeline.c", "player_literal_inventory_state\nplayer_save_pipeline_literal_inventory_poll("
+) + "\n" + extract_function("player_save_pipeline.c", "bool player_save_pipeline_literal_inventory_hold(") + r'''
+int main() {
+    char_data actor;
+    obj_data root;
+    player_literal_inventory_token token{41, 71, 7001, 9};
+    const auto original = token;
+    assert(player_save_pipeline_literal_inventory_begin(&actor, &root, 22800, &token) ==
+           player_literal_inventory_state::refused);
+    assert(token == original);
+    assert(player_save_pipeline_literal_inventory_begin(nullptr, nullptr, -1, nullptr) ==
+           player_literal_inventory_state::refused);
+    assert(player_save_pipeline_literal_inventory_poll(token, &actor) ==
+           player_literal_inventory_state::refused);
+    assert(player_save_pipeline_literal_inventory_poll({}, nullptr) ==
+           player_literal_inventory_state::refused);
+    critical_operation_id operation = {};
+    operation.bytes[0] = 0x45;
+    assert(!player_save_pipeline_literal_inventory_hold(token, operation));
+    assert(!player_save_pipeline_literal_inventory_hold({}, {}));
+    assert(token == original);
+}
+'''
+with tempfile.TemporaryDirectory(prefix="duris-flat-literal-refusal-") as directory:
+    path = Path(directory)
+    program, binary = path / "flat.cpp", path / "flat"
+    program.write_text(flat_harness)
+    subprocess.run(["g++", *SANITIZER_FLAGS, "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+                    "-Isrc", str(program), "-o", str(binary)], cwd=ROOT, check=True)
+    subprocess.run([str(binary)], check=True, timeout=10)
+print("[PASS] actual flat-backend literal begin/poll/hold refuse without capture, scope, or hold dependencies and preserve output token")
