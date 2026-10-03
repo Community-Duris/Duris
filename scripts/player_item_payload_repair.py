@@ -261,8 +261,12 @@ def validate_topology(api: Any, db: Any, uid: int, owner: dict[str, Any], *, mis
         if row["parent_item_uid"] and projection["equip_slot"] != 0:
             raise api.ToolError("invalid_topology: nested projection claims equipment custody")
     parent_id = by_uid[str(owner["parent_item_uid"])]["id"] if owner["parent_item_uid"] else 0
-    if parent_id and db.scalar(f"SELECT item_type FROM player_items WHERE id={parent_id}") != "15":
-        raise api.ToolError("invalid_topology: authoritative parent is not a container")
+    parent_ids = {projection["container_id"] for projection in projections if projection["container_id"]}
+    if parent_id:
+        parent_ids.add(parent_id)
+    if parent_ids and int(db.scalar("SELECT COUNT(*) FROM player_items WHERE id IN " +
+                                  api.sql_list(sorted(parent_ids)) + " AND item_type=15")) != len(parent_ids):
+        raise api.ToolError("invalid_topology: authoritative ancestry contains a non-container parent")
     return parent_id
 
 
@@ -366,7 +370,9 @@ def build_sql(api: Any, db: Any, plan: dict[str, Any], actor: str, reason: str,
         op = source["snapshot_digest"][:32]
     actor, reason = api.validate_staff_approval(actor, reason)
     lock = api.RUNTIME_EXCLUSION_LOCK_EXPRESSION
-    lines = ["SET SESSION group_concat_max_len=1048576;", "SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;",
+    lines = ["SET SESSION group_concat_max_len=1048576;",
+             "SET SESSION sql_mode=CONCAT_WS(',',@@SESSION.sql_mode,'STRICT_ALL_TABLES');",
+             "SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;",
              f"SELECT GET_LOCK({lock},0) INTO @repair_lock;", "START TRANSACTION;",
              f"SET @repair_ok=(@repair_lock=1 AND IS_USED_LOCK({lock})=CONNECTION_ID());",
              "SET @repair_ok=@repair_ok AND (" + api.database_visibility_sql() + ")=1 "
@@ -419,21 +425,21 @@ def build_sql(api: Any, db: Any, plan: dict[str, Any], actor: str, reason: str,
                   ",".join([api.sql_blob(rid), str(source["pid"]), str(source["revision"]), str(pid), api.sql_blob(op),
                             api.sql_blob(plan["evidence_digest"]), api.sql_blob(plan["plan_digest"]), "2", api.sql_text(actor),
                             api.sql_text(reason), "1", "0", "0", "CURRENT_TIMESTAMP(6)"]) + " WHERE " + gate + ";",
-                  "SET @repair_receipt=ROW_COUNT();"]
+                  "SET @repair_receipt=ROW_COUNT(),@repair_ok=@repair_ok AND @@warning_count=0;"]
         columns, values = projection_values(api, item, pid, str(state["parent_id"]) if state["parent_id"] else "NULL")
         lines += ["INSERT INTO player_items(" + columns + ") SELECT " + ",".join(values) + " WHERE " + gate + ";",
-                  "SET @repair_projection=ROW_COUNT(),@repair_item_id=LAST_INSERT_ID();",
+                  "SET @repair_projection=ROW_COUNT(),@repair_item_id=LAST_INSERT_ID(),@repair_ok=@repair_ok AND @@warning_count=0;",
                   "INSERT INTO player_item_runtime_state(item_id,payload) SELECT @repair_item_id," + payload + " WHERE " + gate + ";",
-                  "SET @repair_runtime=ROW_COUNT(),@repair_affects=0,@repair_descriptions=0;"]
+                  "SET @repair_runtime=ROW_COUNT(),@repair_affects=0,@repair_descriptions=0,@repair_ok=@repair_ok AND @@warning_count=0;"]
         affects = {tuple(pair) for pair in item["affects"] if pair != [0, 0]}
         for location, modifier in sorted(affects):
             lines += [f"INSERT INTO player_item_affects(item_id,location,modifier) SELECT @repair_item_id,{location},{modifier} WHERE {gate};",
-                      "SET @repair_affects=@repair_affects+ROW_COUNT();"]
+                      "SET @repair_affects=@repair_affects+ROW_COUNT(),@repair_ok=@repair_ok AND @@warning_count=0;"]
         extra = descriptions(api, item)
         for keyword, text in sorted(extra):
             lines += ["INSERT INTO player_item_extra_descr(item_id,keyword,description) SELECT @repair_item_id," +
                       api.sql_blob(keyword) + "," + api.sql_blob(text) + " WHERE " + gate + ";",
-                      "SET @repair_descriptions=@repair_descriptions+ROW_COUNT();"]
+                      "SET @repair_descriptions=@repair_descriptions+ROW_COUNT(),@repair_ok=@repair_ok AND @@warning_count=0;"]
         lines += ["INSERT INTO player_death_restitution_item(restitution_id,item_uid,source_root_item_uid,source_parent_item_uid,"
                   "delivered_root_item_uid,delivered_parent_item_uid,source_item_revision,delivered_item_revision,vnum,"
                   "disposition,classification,metadata_digest,metadata_payload,note) SELECT " +
@@ -441,7 +447,7 @@ def build_sql(api: Any, db: Any, plan: dict[str, Any], actor: str, reason: str,
                             str(owner["root_item_uid"]), str(owner["parent_item_uid"]), str(owner["item_revision"]),
                             str(owner["item_revision"]), str(owner["vnum"]), str(DISPOSITION), "'payload_repair'",
                             api.sql_blob(digest), payload, "'Existing custody retained; payload repair only'"]) + " WHERE " + gate + ";",
-                  "SET @repair_item_receipt=ROW_COUNT();",
+                  "SET @repair_item_receipt=ROW_COUNT(),@repair_ok=@repair_ok AND @@warning_count=0;",
                   "SET @repair_ok=@repair_ok AND (@repair_completed=1 OR (@repair_receipt=1 AND @repair_projection=1 "
                   f"AND @repair_runtime=1 AND @repair_item_receipt=1 AND @repair_affects={len(affects)} AND @repair_descriptions={len(extra)}));"]
     lines += [f"SET @repair_ok=@repair_ok AND IS_USED_LOCK({lock})=CONNECTION_ID();",

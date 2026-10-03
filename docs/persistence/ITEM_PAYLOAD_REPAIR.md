@@ -107,6 +107,9 @@ locks authority, receipt and physical projection ranges. It rechecks the bound
 row cardinalities/digests and immutable evidence bytes before mutation and checks
 exclusion ownership before COMMIT. Missing or stale fences result in ROLLBACK.
 SQL errors or a disconnect before commit roll back the complete transaction.
+The session enforces strict SQL conversion and refuses any insert warning, so a
+column limit cannot silently clip a property even on a permissive server. Native
+evidence that cannot fit the current SQL schema fails without a repair commit.
 
 The transaction inserts `player_items`, its complete `player_item_runtime_state`,
 canonical affects/extra descriptions, and the durable repair receipt atomically.
