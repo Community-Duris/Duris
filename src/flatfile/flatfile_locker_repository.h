@@ -95,6 +95,10 @@ flatfile_locker_result flatfile_locker_list(const std::string &root,
 					    std::vector<flatfile_locker_record> *lockers,
 					    std::vector<flatfile_locker_access_record> *access,
 					    std::string *error);
+flatfile_locker_result
+flatfile_locker_recovery_list_locked(const std::string &root, const flatfile_authority_lock &lock,
+				     std::vector<flatfile_locker_record> *lockers,
+				     std::string *error);
 /* Prepare player-owned locker and visitor-grant removal under the authority lock. */
 flatfile_locker_result
 flatfile_locker_prepare_player_remove(const std::string &root, const flatfile_authority_lock &lock,

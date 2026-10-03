@@ -1,3 +1,4 @@
+#include "persistence/death_recovery_visibility.h"
 #include "item/item_transfer_repository.h"
 #include "item/craft_pouch_mutation.h"
 #include "item/craft_recipe_continuation.h"
@@ -1934,7 +1935,7 @@ bool execute_craft(MYSQL *connection, const critical_command &command,
 	}
 	if (selected.size() != payload.item_count)
 	{
-		*result_code = EMSGSIZE;
+		*result_code = ITEM_TRANSFER_TOPOLOGY_CARDINALITY;
 		return true;
 	}
 	for (size_t index = 0; index < payload.item_count; ++index)
@@ -2579,7 +2580,7 @@ bool item_transfer_repository_execute_at_offset(
 		}
 		if (selected.size() != payload.item_count)
 		{
-			*result_code = EMSGSIZE;
+			*result_code = ITEM_TRANSFER_TOPOLOGY_CARDINALITY;
 			return true;
 		}
 		for (size_t index = 0; index < payload.item_count; ++index)
