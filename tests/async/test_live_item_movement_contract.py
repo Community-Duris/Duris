@@ -301,8 +301,7 @@ class LiveItemMovementContractTests(unittest.TestCase):
 
     def test_failed_publication_is_bounded_and_not_erased(self):
         movement = (SRC / "item_movement_transaction.c").read_text()
-        failure = movement[movement.index("if (!published)"):]
-        failure = failure[:failure.index("if (!critical_command_coordinator_acknowledge_publication")]
+        failure = extract_function("item_movement_transaction.c", "if (!published)")
         self.assertIn("retain_publication_failure", failure)
         self.assertNotIn("pending.erase", failure)
         self.assertIn("publication_status", movement)

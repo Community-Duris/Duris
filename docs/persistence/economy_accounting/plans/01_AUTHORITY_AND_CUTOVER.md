@@ -108,9 +108,12 @@ callback reinserts the node, but the next ACK refuses the already-erased operati
 so the physical callback cannot retry and its journal/fences are already gone.
 Restored item endpoints also have a null callback that currently defaults to
 successful publication. The existing restart owner test expects this unsafe
-ACK without materializing the room pile. These findings are not yet an executed
-new native failure reproduction. SQL wallet-root qualification still excludes
-item endpoints; preserve that safety boundary and all inactive schema-1 behavior.
+ACK without materializing the room pile. These failures are now reproduced by
+a native actual-owner component with a controlled irreversible coordinator ACK;
+wallet-only replay is a passing control. The bounded fail-closed retention
+repair is in qualification and does not establish actual native pile publication.
+SQL wallet-root qualification still excludes item endpoints; preserve that
+safety boundary and all inactive schema-1 behavior.
 
 Repair physical verification/publication separately from post-ACK messages and
 bulk continuation. Keep explicit physical-ready/ACK-pending state and original
@@ -247,3 +250,110 @@ incoming 5c3bc0957 or physical publication, replay-observer registration,
 ordinary-drop gameplay, copyover, or the full R1-R8 release gates. Those owners
 remain open. Preserve immutable historical proof and the current admission
 exclusions while completing them.
+
+
+## Definite admission failure cleanup
+
+The real coordinator removes a definitely never-durably-admitted command before
+delivering its terminal admission-failure completion. Currency's schema-2 ACK
+then cannot succeed and its owner remains busy. Add a trusted explicit
+never-admitted disposition or a defined coordinator release contract, rather
+than interpreting arbitrary ACK=false as release permission. Prove actual
+journal quota/definite append refusal, zero domain applications, exactly one
+rejection notification/cleanup and no retained owner; uncertain append and
+committed publication remain held. This gap is separate from physical-publication retention. Six actual native
+currency/coordinator/journal RED cases now reproduce retained domain owners
+after definite refusal, while four uncertainty/durable-rejection controls pass.
+The trusted disposition and whole-batch validation repair now passes all 140
+actual journal/coordinator/domain-owner sanitizer cases in SQL-header and flatfile
+modes, existing native/persistence/restore owners, both strict production builds,
+and actual inactive creation/save/restart/relog plus three coin-pickup commands.
+Queued/full-delivery fallback and zero output capacity preserve the original
+operation until exact-once delivery. Only a validated never-admitted receipt
+releases without ACK; every uncertain/executed command keeps ordinary ACK rules.
+This is a locally solved bounded cleanup issue, not active/native physical route,
+combined incoming-remote or full R1-R8 qualification. See October 3 status for
+source/binary/declaration pins and preserved failed setup/driver attempts.
+
+The future physical adapter must stage both pile endpoints before changing
+either, adjust the destination command after the source's owner revision, and
+validate unique native UID/type/vnum/amount/topology/location plus exact result
+revision. Newer metadata or an unloaded player is not native proof. Required
+corpse/saved-item projection writes belong to the publication durability proof,
+not a cosmetic post-ACK notification. Complete runtime item/owner revision
+publication needs an atomic primitive; generic placement/extraction hooks and
+fallible live string replacement require separate staged verification.
+
+Separate craft ACK-retry cleanup is solved locally with before/after native
+proof: all30 valid before-source cases fail semantically; afterward30 cases per
+backend pass1990 combined assertions, including real journal ACK refusal/repair,
+progression cleanup, runtime identity, reentrant business hooks and bound receipt
+conflicts. The shared finalizer waits for the original durable ACK, extracts
+before external hooks and rechecks native actor identity. Physical/progression
+effects survive retry; definite never-admission disposes only staged output and
+skips progression cleanup. Both strict builds,68 existing admission cases and
+eight maintained owner suites pass. Actual inactive mortal Craft/Forge retains
+UIDs and exact XP through copyover/two cold restarts; inactive creation/relog and
+three pickup controls pass. Component saved() injection is not actual SQL save
+completion; arbitrary pre-ACK progression hook throw/reentry is outside this
+proof. This does not wire ordinary-drop recovery or qualify active accounting,
+combined remote source or full R1-R8 gates. October3 review pins final evidence.
+
+## Restored-drop competing save projection dependency
+
+Read-only repository tracing establishes two distinct current boundaries. Normal
+combined inventory/equipment SQL snapshots lock and reconcile custody; a dropped
+UID still included in such a snapshot is rejected before DELETE/INSERT and the
+transaction rolls back. A newer stale full snapshot can still terminal-fail and
+quarantine its PID, so queued/inflight save replay requires actual race tests
+before restored-drop production wiring.
+
+The accepted legacy equipment-only/inventory-only path in
+player_snapshot_repository.c::apply_items skips that custody reconciliation.
+After an ordinary drop retires its player projection, a newer inventory-only
+snapshot containing the old UID can reinsert player_items/runtime payload while
+native custody remains room-owned and the room sidecar remains intact. This is
+a source-established competing projection, not proven sidecar/custody overwrite
+or an actual-engine RED. Qualify both engines and add a scoped current-custody
+check for legacy partial replay without discarding retained snapshots or loosening
+quarantine/target-login/death gates. Background dispatch must defer only affected
+PIDs and preserve unrelated progress.
+
+Live literal-hold admission already requires completed replay, idle worker PID,
+no append or retained queue, exact current/ACK revisions and no dirty/queued/
+inflight masks; a compliant new live drop excludes outstanding newer saves.
+Restored obligation registration has different startup ordering, so it cannot
+use that live-admission proof. Registering a hold or one-shot boot prehydration
+alone does not qualify old journal replay or a drop first applied after boot.
+
+Further source tracing confirms full snapshots' SQL transaction locks serialize
+with the drop: save locks player_data then active custody; drop locks season,
+owner revisions, custody and physical rows. Equal/older save revisions are no-op,
+and newer complete stale snapshots roll back before destructive projection.
+No compliant-live-producer overwrite is demonstrated. Legacy partial replacement
+must validate incoming ownership AND its deletion/cascade scope; blindly filling
+in the missing component would silently change compatibility.
+
+Quarantine from a newer stale full snapshot remains a separate recovery concern.
+Direct save-journal startup replay bypasses the worker, while already dispatched
+work is outside pipeline queue checks. Before wiring restored-drop recovery,
+qualify affected-PID deferral across pipeline, worker and journal replay without
+acknowledging/discarding frames or exhausting ordinary retry into quarantine.
+An in-flight SQL transaction retains native custody checks; any stricter start/
+registration boundary needs defined PID ownership and wakeup without holding
+pipeline/worker mutexes across SQL or using coordinator cutover drain. Test both
+transaction orders and unrelated-PID progress on MySQL and MariaDB.
+
+
+Legacy partial replacement also has a source-established destructive scope gap:
+children of equipped containers have physical equip_slot0, so inventory-only
+DELETE currently removes them while leaving their equipment root. The partial
+planner must select complete roots from current custody and verified legacy
+slot evidence, validate incoming graph and physical deletion/cascade closure,
+and reject cross-PID/duplicate/foreign or incomplete closure before any DELETE.
+Keep the untouched component's complete payload and metadata unchanged; do not
+construct a missing component. Reuse the current custody diagnoses and preserve
+revision/no-op, rollback, inline-coin and inactive legacy equipment rules. New
+actual-repository/direct-SQL regression preparation is separate from a genuine
+pooled schema-2 drop and two-session lock-order proof. Both engines, journal
+exact-frame quarantine/restart and unrelated-PID controls remain required.
