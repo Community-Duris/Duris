@@ -339,7 +339,6 @@ periodic = (SRC / "nevent_periodic.c").read_text(encoding="utf-8")
 redis = (SRC / "redis_world_runtime.c").read_text(encoding="utf-8")
 artifact = (SRC / "artifact.c").read_text(encoding="utf-8")
 weather = (SRC / "weather.c").read_text(encoding="utf-8")
-handler = (SRC / "handler.c").read_text(encoding="utf-8")
 outposts = (SRC / "outposts.c").read_text(encoding="utf-8")
 drannak = (SRC / "drannak.c").read_text(encoding="utf-8")
 comm = (SRC / "comm.c").read_text(encoding="utf-8")
@@ -459,7 +458,6 @@ with tempfile.TemporaryDirectory(prefix="duris-object-event-rearm-") as director
 for key in (
     "game-clock",
     "astral-clock",
-    "generic-character-sweep",
     "artifact-bind",
     "artifact-wars",
     "artifact-expiry",
@@ -474,7 +472,6 @@ for key in (
 for source, signature, callback in (
     (weather, "void event_another_hour", "event_another_hour"),
     (weather, "void event_astral_clock", "event_astral_clock"),
-    (handler, "void generic_char_event", "generic_char_event"),
     (outposts, "void event_outposts_upkeep", "event_outposts_upkeep"),
     (drannak, "void event_update_surnames", "event_update_surnames"),
     (checkpoint, "void event_flush_dirty_players", "event_flush_dirty_players"),
