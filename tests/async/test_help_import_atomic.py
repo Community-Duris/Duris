@@ -30,7 +30,7 @@ class AtomicImport(unittest.TestCase):
                    DB_PASSWD=os.environ['TEST_DB_PASSWORD'],
                    DB_HOST=host, DB_PORT=port, DB_USER=os.environ['TEST_DB_USER'],
                    DB_NAME=schema, DB_SOCKET='')
-        mysql = ['mysql', '--protocol=tcp', '-h', host, '-P', port,
+        mysql = ['mysql', '--no-defaults', '--protocol=tcp', '-h', host, '-P', port,
                  '-u', env['DB_USER'], '-N', '-B']
 
         def query(sql, database=True):

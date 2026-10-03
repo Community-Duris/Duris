@@ -6,15 +6,17 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 IMAGE=${DURIS_TEST_TOOLS_IMAGE:-duris-issue331-journey-tools:local}
 DB_IMAGE=${DURIS_TEST_DB_IMAGE:-mariadb:10.11}
 SUFFIX="issue331-staff-${BASHPID}-${RANDOM}"
-NETWORK="${SUFFIX}-net"
+NETWORK=bridge
 DB_CONTAINER="${SUFFIX}-db"
 RUNTIME_CONTAINER="${SUFFIX}-game"
-DB_NAME="duris_issue331_staff_${BASHPID}_${RANDOM}"
+# Keep the schema plus runtime exclusion prefix inside MySQL's 64-character limit.
+DB_NAME="duris_issue331_staff_${RANDOM}"
 DB_PASSWORD="issue331-disposable-only"
 
 DB_ID=""
 RUNTIME_ID=""
 NETWORK_ID=""
+if [[ "$DB_IMAGE" == mariadb:* ]]; then DB_PREFIX=MARIADB; else DB_PREFIX=MYSQL; fi
 cleanup() {
   status=$?
   set +e
@@ -28,10 +30,11 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-NETWORK_ID=$(docker network create "$NETWORK")
+# Task-owned IDs and generated DB selectors isolate these fixtures. Reusing the
+# existing bridge avoids consuming a host subnet for every short-lived journey.
 DB_ID=$(docker create --name "$DB_CONTAINER" --restart=no --network "$NETWORK" \
-  -e "MARIADB_ROOT_PASSWORD=$DB_PASSWORD" -e "MARIADB_DATABASE=$DB_NAME" \
-  "$DB_IMAGE" --event-scheduler=OFF)
+  -e "${DB_PREFIX}_ROOT_PASSWORD=$DB_PASSWORD" -e "${DB_PREFIX}_DATABASE=$DB_NAME" \
+  "$DB_IMAGE" --event-scheduler=OFF --innodb-use-native-aio=OFF)
 docker start "$DB_CONTAINER" >/dev/null
 
 RUNTIME_ID=$(docker create --name "$RUNTIME_CONTAINER" --restart=no --network "$NETWORK" \

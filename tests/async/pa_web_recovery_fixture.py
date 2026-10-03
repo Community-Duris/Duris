@@ -26,9 +26,10 @@ import time
 import uuid
 
 from pa_accounting_batch_artifact import load_base_build, report_base_build
+from disposable_sql_fixture import private_network
 
 ROOT = Path(__file__).resolve().parents[2]
-DB_IMAGE = "mariadb:10.11"
+DB_IMAGE = os.environ.get("DURIS_TEST_DB_IMAGE", "mariadb:10.11")
 DB_PREFIX = "corpse_journey_test_"
 WEB_RECOVERY_SOURCE_INPUTS = (
     "src/net/ws_handlers.c",
@@ -134,19 +135,30 @@ class DisposableMariaDB:
             raise RuntimeError(f"required local MariaDB image unavailable: {DB_IMAGE}")
         self._tmp = tempfile.TemporaryDirectory(prefix="s10-db-env-")
         env_path = Path(self._tmp.name) / "mariadb.env"
+        prefix = "MARIADB" if DB_IMAGE.startswith("mariadb") else "MYSQL"
         env_path.write_text(
-            "MARIADB_ROOT_PASSWORD=" + self.root_password + "\n" +
-            "MARIADB_DATABASE=" + self.database + "\n" +
-            "MARIADB_USER=" + self.user + "\n" +
-            "MARIADB_PASSWORD=" + self.password + "\n",
+            prefix + "_ROOT_PASSWORD=" + self.root_password + "\n" +
+            prefix + "_DATABASE=" + self.database + "\n" +
+            prefix + "_USER=" + self.user + "\n" +
+            prefix + "_PASSWORD=" + self.password + "\n",
             encoding="utf-8",
         )
         env_path.chmod(0o600)
+        network = private_network()
+        if network:
+            with socket.socket() as probe:
+                probe.bind(("127.0.0.1", 0))
+                self.port = probe.getsockname()[1]
+            network_args = ["--network", network]
+            server_args = ["--innodb-use-native-aio=OFF", "--port=" + str(self.port), "--bind-address=127.0.0.1"]
+        else:
+            network_args = ["--publish", "127.0.0.1::3306"]
+            server_args = ["--innodb-use-native-aio=OFF"]
         try:
             created = subprocess.run(
                 ["docker", "run", "--detach", "--name", self.container,
                  "--restart=no", "--cpus=2", "--memory=2g", "--pids-limit=512",
-                 "--publish", "127.0.0.1::3306", "--env-file", str(env_path), DB_IMAGE],
+                 *network_args, "--env-file", str(env_path), DB_IMAGE, *server_args],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False,
             )
             if created.returncode:
@@ -163,14 +175,13 @@ class DisposableMariaDB:
             self._tmp = None
 
         try:
-            mapped = subprocess.check_output(
-                ["docker", "port", self.container, "3306/tcp"], text=True
-            ).strip().splitlines()
-            if len(mapped) != 1 or not mapped[0].startswith("127.0.0.1:"):
-                raise RuntimeError("disposable SQL port was not published exclusively on loopback")
-            self._forwarder = _LoopbackForwarder(
-                "host.docker.internal", int(mapped[0].rsplit(":", 1)[1]))
-            self.port = self._forwarder.local_port
+            if not network:
+                mapped = subprocess.check_output(
+                    ["docker", "port", self.container, "3306/tcp"], text=True
+                ).strip().splitlines()
+                if len(mapped) != 1 or not mapped[0].startswith("127.0.0.1:"):
+                    raise RuntimeError("disposable SQL port was not published exclusively on loopback")
+                self.port = int(mapped[0].rsplit(":", 1)[1])
             self._wait_ready()
             return self
         except BaseException:
