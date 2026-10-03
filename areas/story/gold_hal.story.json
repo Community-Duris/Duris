@@ -1,0 +1,1060 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "gold_hal",
+  "coverage": "complete",
+  "introduction": "Investigate a missing adventurer beneath the fortress inn, recover three royal proofs and release captives. Nine independent outcomes sit beside seven support exchanges. Optional sources and history explain a journey without requiring personal recovery. Active, ready accounting is required.",
+  "orientation": [
+    "The fortress has a surface approach and an Underdark tunnel entrance. Discovery opens this journal; stories and named contacts still depend on physical encounters. Administrative access is not an ordinary player entrance.",
+    "A stolen silver chalice earns an inn-bed clue. The inn also has addressed conversation about a barbarian moving a bed. These are alternate information leads, without an enforced briefing or learned-keyword achievement.",
+    "Shoving the inn sleeping-room bed clears its blocked secret downward route. A boulder below operates the upward return. Search and ordinary door state remain separate actions; neither successful access nor travel is recorded as quest history yet.",
+    "An adventurer corpse before the underground waterfall contains the bloodstained note and salt-water vials. This preplaced container is different from an actor death witnessed by the player. Taking or reading its contents alone does not finish a request.",
+    "The bloodstained-note delivery and three-proof royal finale are independent outcomes. The final proof set is an exact head, balanced longsword and gold hair pin. Supplied materials fit without a briefing, personal kill, full crafting chain or recorded escort.",
+    "The goblin leader carries a small silver key used by a locked chest and two captives. One rescue returns a replacement key with experience; the other consumes it for a gold hair pin. Check current custody before each delivery; a receipt is not another key.",
+    "A separate beaten prisoner wants the set of cell keys. This rescue also returns replacement keys with experience. Both key-return rescues count for zone progress and are not offered as daily quests.",
+    "The trainer's proof uses the decorated goblin totem and dark amulet, producing the balanced longsword. A crafted bullywug totem, ordinary goblin sword or earthen statue cannot substitute. Delivering the proof does not establish a personal kill.",
+    "A support chain runs from two distinct hides and a fee to a statue, then gourd plus statue and another fee to a totem, ring, buckler, rod and dark amulet. The two mixed-fee services remain guarded under active accounting; supplied later materials can still support independent deliveries.",
+    "A separate feather-headband service requires exact peryton feathers, gorilla hide and a fee. The relevant animals are captive locally despite distant homeland dialogue. This mixed service is guarded and creates no quest achievement.",
+    "The captain's strange note and the corpse's bloodstained note are different kinds. The strange-note delivery gives a hidden-shop key; the captain separately accepts a hemp necklace and peace pipe for fifty platinum. Direction dialogue does not create the carried note.",
+    "The underwater treasure chest is a push-operated switch rather than loot storage. It reveals a diagonal passage with an Underdark connection. Boulders at that tunnel currently target an already-open east route, so their shove action has no effect.",
+    "A mysterious key carried by the goblin shaman opens the concealed pool/platform connection. Standing at either blue-chalk inscription teleports between the platform and a spy chamber beside the royal room; the configured portals have unlimited charges. Destination and accepted travel still need live qualification.",
+    "Ordinary shops, room rental, teaching and a special sword's pegasus call follow their own rules. Other prisoners, animal cages and captive-centaur lore have no additional accepted rescue contracts here. Departure prose does not prove arrival home, invasion or settlement clearance."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 40404,
+      "name": "Master knight",
+      "keyword": "valiant",
+      "description": "Lower teaching area. Ask shield, buckler or drow. Exact drow buckler produces Farslayer as support; a lesson is separate.",
+      "topics": [
+        "shield",
+        "buckler",
+        "drow"
+      ]
+    },
+    {
+      "mob_vnum": 40406,
+      "name": "Captain of the guard",
+      "keyword": "captain",
+      "description": "Lower captain room. Ask directions. Carries the strange note; its response does not manufacture a new one. Woven hemp necklace plus peace pipe reward fifty platinum.",
+      "topics": [
+        "directions"
+      ]
+    },
+    {
+      "mob_vnum": 40407,
+      "name": "Hazk",
+      "keyword": "hazk",
+      "description": "Alchemist study and connected load rooms. Strange note gives the hidden-shop key. Distinct bear/olyx hides plus twenty-five platinum make an earthen statue; mixed payment remains guarded.",
+      "topics": [
+        "hide",
+        "hides"
+      ]
+    },
+    {
+      "mob_vnum": 40409,
+      "name": "Juggling thri-kreen",
+      "keyword": "juggling",
+      "description": "Inn. Ask inn or careful for the bed clue. Carries the chef's silver chalice. Farslayer gives the dark amulet as support; periodic juggling is ambient.",
+      "topics": [
+        "inn",
+        "careful"
+      ]
+    },
+    {
+      "mob_vnum": 40410,
+      "name": "Inn bartender",
+      "keyword": "bartender",
+      "description": "Inn of Golden Faith. Ask wasephius or brother for the missing adventurer rumor. Hospitality and room rental are separate from quest achievements.",
+      "topics": [
+        "wasephius",
+        "brother"
+      ]
+    },
+    {
+      "mob_vnum": 40417,
+      "name": "Prince Wasephius",
+      "keyword": "wasephius",
+      "description": "Connected rare-load rooms lead to his private chamber. Ask kaladron. Bloodstained note is an independent briefing; three exact proofs give platinum platemail and remove this appearance.",
+      "topics": [
+        "kaladron"
+      ]
+    },
+    {
+      "mob_vnum": 40427,
+      "name": "Bloodstone delegate",
+      "keyword": "delegate",
+      "description": "Appointment chamber. Ask peryton, feathers or headband. Feathers plus exact gorilla hide and twenty platinum make a headband; mixed service remains guarded.",
+      "topics": [
+        "peryton",
+        "feathers",
+        "headband"
+      ]
+    },
+    {
+      "mob_vnum": 40433,
+      "name": "Dwarven chef",
+      "keyword": "chef",
+      "description": "Hall kitchen. Ask what, criminal, criminals or silverware. The small silver chalice gives information, with no item reward or enforced route unlock.",
+      "topics": [
+        "what",
+        "criminal",
+        "criminals",
+        "silverware"
+      ]
+    },
+    {
+      "mob_vnum": 40449,
+      "name": "Disgusted drow cleric",
+      "keyword": "disgusted",
+      "description": "Bullywug prison side room. Red-crystal ring gives the drow buckler as support. Her captive status supplies no separate implemented rescue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40452,
+      "name": "Bullywug shaman",
+      "keyword": "bullywug",
+      "description": "Bullywug settlement chamber. Ask totem or components. Gourd plus statue and twenty platinum make an earth totem; mixed service remains guarded.",
+      "topics": [
+        "totem",
+        "components"
+      ]
+    },
+    {
+      "mob_vnum": 40459,
+      "name": "Captive half-elf",
+      "keyword": "half-elf",
+      "description": "Goblin leader cave. Small silver key gives experience and a replacement key, then removes her. This is an independent rescue, without daily eligibility.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40460,
+      "name": "Captive grey elf",
+      "keyword": "grey",
+      "description": "Goblin leader cave. Small silver key gives a gold hair pin, then removes her. She identifies herself as Pearla during acceptance; supplied keys work.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40463,
+      "name": "Glakkabb",
+      "keyword": "glakkabb",
+      "description": "Goblin shaman cave. Wears the decorated goblin totem and carries the mysterious pool-door key. Crafted bullywug totem gives a red-crystal ring as support.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40477,
+      "name": "Beaten kenku",
+      "keyword": "kenku",
+      "description": "Southern goblin prison cell. Ask keys. Cell-key delivery gives experience and replacement keys, then removes him. No followed escape or arrival-home event is implemented.",
+      "topics": [
+        "keys"
+      ]
+    },
+    {
+      "mob_vnum": 40482,
+      "name": "Tield",
+      "keyword": "tield",
+      "description": "Goblin barracks teaching chamber. Ask glakkabb. Decorated goblin totem plus dark amulet give the balanced longsword. Ordinary teaching is a separate service. Use tield to address him; dialogue may say Yield.",
+      "topics": [
+        "glakkabb"
+      ]
+    },
+    {
+      "mob_vnum": 40400,
+      "name": "Stern paladin",
+      "keyword": "paladin",
+      "description": "Fortress entrance gate. Wears the golden gate key in this one source declaration. Keys, unlocked state and physical entry remain separate facts.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40423,
+      "name": "Master priestess",
+      "keyword": "priestess",
+      "description": "Upper teaching room. Wears the hidden long wooden peace pipe accepted by the captain. Her teacher title alone is not an accepted lesson.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40428,
+      "name": "Plant golem",
+      "keyword": "golem",
+      "description": "Hidden alchemist shop. Carries and stocks the hollowed gourd for the earth-totem recipe. Ordinary shop stock and accepted purchase need separate qualification.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40456,
+      "name": "Goblin gate guard",
+      "keyword": "guard",
+      "description": "Goblin stair gate. One gate-guard appearance carries the cracked black key, with a break chance. The source declaration does not guarantee an available key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40458,
+      "name": "Galban",
+      "keyword": "galban",
+      "description": "Guarded goblin leader cave. Carries the small silver rescue key and exact bloody head proof. Carrying the head is not evidence of a personal kill.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40461,
+      "name": "Goblin sentinel",
+      "keyword": "sentinel",
+      "description": "Several goblin positions. One leader-door sentinel carries the brittle black-and-silver key; one barracks sentinel carries the tarnished steel key. Other appearances need not carry either.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40473,
+      "name": "Goblin prison guard",
+      "keyword": "prison",
+      "description": "Prison entrance. The second guard declaration wears the one-cap cell keys. Exact source appearance, recovery and later door use need separate evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40485,
+      "name": "Sulfious",
+      "keyword": "sulfious",
+      "description": "Solitary confinement behind the jailkeeper's gate. Captive centaur lore has no local accepted release recipe or custom rescue endpoint.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40487,
+      "name": "Captive olyx",
+      "keyword": "olyx",
+      "description": "Goblin animal cage. Carries the exact grey olyx hide used by the alchemist. Cage access and actual current material need checking.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40488,
+      "name": "Captive brown bear",
+      "keyword": "bear",
+      "description": "Goblin animal cage. Carries the exact brown bear hide used by the alchemist. Another hide kind cannot substitute.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40489,
+      "name": "Captive peryton",
+      "keyword": "peryton",
+      "description": "Goblin animal cage. Carries the exact feathers for the delegate's headband. Distant homeland prose does not rule out this local source.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 40490,
+      "name": "Captive gorilla",
+      "keyword": "gorilla",
+      "description": "Goblin animal cage. Carries the exact strip of gorilla hide for the feather headband. Shared caps and actual custody still govern availability.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "hazks-directions",
+      "title": "Directions for Hazk",
+      "category": "request",
+      "summary": "Hazk accepts the strange note for a small key to his hidden shop. The captain carries the note; his directions response describes writing one but does not create a new item. A supplied note works. The note stained with blood belongs to a different request.",
+      "contracts": [
+        {
+          "giver_vnum": 40407,
+          "completion_key": "give=I:40403;receive=I:40424;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "strange-note",
+          "text": "Carry the strange note",
+          "kind": "carried_item",
+          "hint": "The captain of the guard carries a hidden strange note in his lower-level room. Ask directions for its context, then recover the actual item through a valid route or bring one supplied. The bloodstained note does not substitute.",
+          "item_vnums": [
+            40403
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Deliver the strange note to Hazk",
+          "kind": "completion",
+          "hint": "Find the alchemist in his study; his connected load rooms can affect his appearance and inventory. Acceptance gives a small key and keeps him present. The key opens the hidden southern shop door after the exit is found. Receiving the key does not prove successful unlocking or entry.",
+          "contracts": [
+            {
+              "giver_vnum": 40407,
+              "completion_key": "give=I:40403;receive=I:40424;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "captains-necklace-and-pipe",
+      "title": "Two materials for the captain",
+      "category": "request",
+      "summary": "The captain accepts a woven hemp necklace and a long wooden peace pipe together for fifty platinum. This is independent of his directions conversation and the strange note delivery. Use the exact two materials; other necklaces and pipes do not fit.",
+      "contracts": [
+        {
+          "giver_vnum": 40406,
+          "completion_key": "give=I:40422,I:40427;receive=C:50000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "hemp-necklace",
+          "text": "Carry the woven hemp necklace",
+          "kind": "carried_item",
+          "hint": "The exact necklace is declared on the ground in an alchemist holding room connected to the study. Native roaming and pickup can move it; its declaration does not guarantee current ground stock. Supplied material also works.",
+          "item_vnums": [
+            40422
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "peace-pipe",
+          "text": "Carry the long wooden peace pipe",
+          "kind": "carried_item",
+          "hint": "The master priestess wears this hidden item in the upper teaching room. Obtain the actual pipe by a valid recovery route, or bring it supplied. Unequip any offered item first.",
+          "item_vnums": [
+            40427
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Deliver both materials to the captain",
+          "kind": "completion",
+          "hint": "Bring both exact items to the captain of the guard in the lower hall. The exchange consumes both and rewards 50,000 copper, equivalent to fifty platinum. It does not require a prior note receipt or record how you obtained the materials.",
+          "contracts": [
+            {
+              "giver_vnum": 40406,
+              "completion_key": "give=I:40422,I:40427;receive=C:50000;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-bloodstained-note",
+      "title": "Kaladron's bloodstained note",
+      "category": "story",
+      "summary": "Prince Wasephius accepts the note stained with blood and asks for three proofs. The note comes from a preplaced adventurer corpse below the inn. This briefing is an independent accepted delivery with no item reward; it is optional history for the final proof delivery.",
+      "contracts": [
+        {
+          "giver_vnum": 40417,
+          "completion_key": "give=I:40456;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "bloodstained-note",
+          "text": "Carry the note stained with blood",
+          "kind": "carried_item",
+          "hint": "Below the inn, an adventurer corpse before the waterfall contains this exact note and two salt-water vials. Inspect the actual container and take the note. The captain's strange note is a different kind; corpse contents do not establish that you witnessed a death.",
+          "item_vnums": [
+            40456
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Deliver the bloodstained note to the Prince",
+          "kind": "completion",
+          "hint": "Look for the Prince in his private chamber beyond the appointment room. He enters through connected load rooms and can move. Ask kaladron for context. Acceptance consumes the note, gives no object reward and keeps him present; it does not enable an enforced quest state.",
+          "contracts": [
+            {
+              "giver_vnum": 40417,
+              "completion_key": "give=I:40456;receive=;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "three-proofs-for-wasephius",
+      "title": "Three proofs for Prince Wasephius",
+      "category": "story",
+      "summary": "Deliver the bloody head of Galban, a balanced goblin longsword and a gold hair pin together for heavy platinum platemail. The Prince departs after acceptance. Earlier briefing, prisoner and trainer deliveries explain sources but are not required for supplied proofs. Ordinary goblin swords and either goblin totem do not replace the balanced sword.",
+      "contracts": [
+        {
+          "giver_vnum": 40417,
+          "completion_key": "give=I:40465,I:40483,I:40495;receive=I:40496;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "briefing-history",
+          "text": "Optional history: deliver the bloodstained note",
+          "kind": "completion",
+          "hint": "The earlier note delivery asks for three proofs. It is an independent outcome, not required for the final exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 40417,
+              "completion_key": "give=I:40456;receive=;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "prisoner-history",
+          "text": "Optional history: release the grey elf",
+          "kind": "completion",
+          "hint": "The captive grey elf gives the gold hair pin for a small silver key. A historical receipt does not replace the current hair pin.",
+          "contracts": [
+            {
+              "giver_vnum": 40460,
+              "completion_key": "give=I:40463;receive=I:40465;disappear=1"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "trainer-history",
+          "text": "Optional history: recover the trainer's amulet",
+          "kind": "completion",
+          "hint": "The trainer accepts the decorated goblin totem and dark amulet to produce the balanced longsword. A supplied exact sword works without this history.",
+          "contracts": [
+            {
+              "giver_vnum": 40482,
+              "completion_key": "give=I:40470,I:40502;receive=I:40483;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "silver-key-preparation",
+          "text": "Optional preparation: carry the small silver key",
+          "kind": "carried_item",
+          "hint": "The goblin leader carries this key and the bloody head proof. The half-elf rescue returns a new key of the same kind, while the grey elf rescue consumes it. This key is preparation, not a fourth final proof.",
+          "item_vnums": [
+            40463
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "bloody-head",
+          "text": "Carry the bloody head of Galban",
+          "kind": "carried_item",
+          "hint": "The goblin leader in the guarded leader cave carries this exact head as a reset item. Recover it through a valid route or bring it supplied. The item is not a custom personal-kill event.",
+          "item_vnums": [
+            40495
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "balanced-sword",
+          "text": "Carry the balanced goblin longsword",
+          "kind": "carried_item",
+          "hint": "The trainer in the goblin barracks gives this exact balanced sword for two materials. Ordinary short, long and two-handed goblin swords do not fit. Supplied matching swords also work.",
+          "item_vnums": [
+            40483
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "gold-hair-pin",
+          "text": "Carry the gold hair pin",
+          "kind": "carried_item",
+          "hint": "The captive grey elf in the leader cave gives this pin when handed the small silver key, then leaves. A supplied pin also works; the half-elf returns a key instead.",
+          "item_vnums": [
+            40465
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Deliver all three proofs to Prince Wasephius",
+          "kind": "completion",
+          "hint": "Bring the exact head, balanced longsword and gold hair pin together, unequipped and carried. Acceptance creates heavy platinum platemail and retires this Prince appearance. His charge towards the door is narrated; the exchange does not create an invasion, escort, cleared settlement or verified personal kill.",
+          "contracts": [
+            {
+              "giver_vnum": 40417,
+              "completion_key": "give=I:40465,I:40483,I:40495;receive=I:40496;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-chefs-silver-chalice",
+      "title": "Recover the chef's silver chalice",
+      "category": "story",
+      "summary": "The chef wants his stolen silverware. Deliver the small silver chalice for information about a suspicious barbarian and the inn beds. The chef keeps working and gives no item reward. The clue is useful for the investigation but does not unlock an exit or create a learned-topic achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 40433,
+          "completion_key": "give=I:40407;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "silver-chalice",
+          "text": "Carry the small silver chalice",
+          "kind": "carried_item",
+          "hint": "The juggling thri-kreen at the inn carries the chalice. Obtain the actual item through a valid route or bring it supplied. A different silver object is not the stolen chalice.",
+          "item_vnums": [
+            40407
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Return the silver chalice to the chef",
+          "kind": "completion",
+          "hint": "Find the chef in the hall kitchen. Ask what, criminals or silverware. Acceptance consumes the chalice and gives a bed/barbarian clue. The juggler also gives addressed inn/careful guidance, so this receipt is not an enforced prerequisite for the bed route.",
+          "contracts": [
+            {
+              "giver_vnum": 40433,
+              "completion_key": "give=I:40407;receive=;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "release-the-half-elf",
+      "title": "Release the captive half-elf",
+      "category": "story",
+      "summary": "Give the captive half-elf a small silver key for 75,000 experience and a replacement key of the same kind. She disappears after acceptance. The rescue counts for zone progress and is not offered as a daily quest.",
+      "contracts": [
+        {
+          "giver_vnum": 40459,
+          "completion_key": "give=I:40463;receive=E:75000,I:40463;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "small-silver-key",
+          "text": "Carry the small silver key",
+          "kind": "carried_item",
+          "hint": "The goblin leader carries this exact key. It also opens the heavy silver-bound chest. Bring a supplied key if available. Chest access and personal combat are not checked by the prisoner delivery.",
+          "item_vnums": [
+            40463
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Give the small silver key to the half-elf",
+          "kind": "completion",
+          "hint": "Find the naked half-elf in the goblin leader cave. Acceptance consumes the offered key, creates a replacement small silver key, awards 75,000 experience and removes her appearance. The replacement is a new item identity; her spell is departure prose, not an escort or recorded arrival home.",
+          "contracts": [
+            {
+              "giver_vnum": 40459,
+              "completion_key": "give=I:40463;receive=E:75000,I:40463;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "release-pearla",
+      "title": "Release the captive grey elf",
+      "category": "story",
+      "summary": "The captive grey elf identifies herself as Pearla after receiving a small silver key. She gives a gold hair pin and departs. This independent rescue supplies one final proof for the Prince; the half-elf rescue can return the same kind of key but is not required.",
+      "contracts": [
+        {
+          "giver_vnum": 40460,
+          "completion_key": "give=I:40463;receive=I:40465;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "half-elf-history",
+          "text": "Optional history: release the half-elf",
+          "kind": "completion",
+          "hint": "That separate rescue gives experience and a replacement key. A supplied or recovered key works directly for this rescue; a receipt alone is not current custody.",
+          "contracts": [
+            {
+              "giver_vnum": 40459,
+              "completion_key": "give=I:40463;receive=E:75000,I:40463;disappear=1"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "small-silver-key",
+          "text": "Carry the small silver key",
+          "kind": "carried_item",
+          "hint": "The goblin leader carries one small silver key, shared with the locked chest and two prisoner deliveries. The half-elf returns the same kind, while this grey elf consumes it. Check the actual current item before giving it.",
+          "item_vnums": [
+            40463
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Give the small silver key to the grey elf",
+          "kind": "completion",
+          "hint": "Find the naked grey elf in the leader cave. Acceptance consumes the key, gives a gold hair pin and retires her appearance. The returned-home and family-loss narrative does not implement an escort or require that you personally defeated the leader.",
+          "contracts": [
+            {
+              "giver_vnum": 40460,
+              "completion_key": "give=I:40463;receive=I:40465;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "release-the-kenku",
+      "title": "Release the beaten kenku",
+      "category": "story",
+      "summary": "The beaten kenku asks for the set of cell keys to escape. Acceptance gives 60,000 experience, a replacement set of keys and removes the prisoner. The rescue counts for zone progress and is not offered as a daily quest.",
+      "contracts": [
+        {
+          "giver_vnum": 40477,
+          "completion_key": "give=I:40479;receive=E:60000,I:40479;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "cell-keys",
+          "text": "Carry the set of cell keys",
+          "kind": "carried_item",
+          "hint": "One prison guard appearance at the prison entrance wears this exact set. It unlocks prison cells, including the kenku's cell. Take a valid recovery route or bring supplied keys; current unlocked doors and historical key receipts are different facts.",
+          "item_vnums": [
+            40479
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Give the cell keys to the beaten kenku",
+          "kind": "completion",
+          "hint": "Find the kenku in a southern prison cell and ask keys. Acceptance consumes the offered set, creates a replacement set, gives 60,000 experience and removes him. His sneaking away is narrative rather than a followed escape route or arrival-home event.",
+          "contracts": [
+            {
+              "giver_vnum": 40477,
+              "completion_key": "give=I:40479;receive=E:60000,I:40479;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tields-stolen-amulet",
+      "title": "Recover Tield's stolen amulet",
+      "category": "story",
+      "summary": "Tield wants the decorated goblin totem and a dark amulet of Kraang together. He rewards a balanced goblin longsword. His dialogue asks for proof of the shaman's demise, but the exchange accepts supplied items and checks no personal kill. The bullywug totem and earthen statue are different kinds.",
+      "contracts": [
+        {
+          "giver_vnum": 40482,
+          "completion_key": "give=I:40470,I:40502;receive=I:40483;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "amulet-history",
+          "text": "Optional history: exchange Farslayer for the amulet",
+          "kind": "completion",
+          "hint": "The juggler's rod exchange creates the dark amulet. The earlier statue/totem/ring/buckler/rod chain is optional source guidance and includes guarded mixed-fee services. A supplied amulet works without those receipts.",
+          "contracts": [
+            {
+              "giver_vnum": 40409,
+              "completion_key": "give=I:40501;receive=I:40502;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "decorated-goblin-totem",
+          "text": "Carry the decorated goblin totem",
+          "kind": "carried_item",
+          "hint": "The goblin shaman wears this decorated totem. It is not the crafted totem of the bullywug shaman, which is consumed by a separate service. Obtain the actual item through a valid route or bring it supplied.",
+          "item_vnums": [
+            40470
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "dark-amulet",
+          "text": "Carry the dark amulet of Kraang",
+          "kind": "carried_item",
+          "hint": "The juggler produces this exact dark amulet for an onyx rod called Farslayer. The raw recipe chain explains a source; a supplied exact amulet also qualifies, without a crafting or theft receipt.",
+          "item_vnums": [
+            40502
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Give both materials to Tield",
+          "kind": "completion",
+          "hint": "Find the trainer in the goblin barracks beyond the guarded gate. Ask glakkabb for context; tield is his actual lookup alias despite Yield in response prose. Acceptance consumes both exact materials, creates a balanced goblin longsword and keeps him present. Learning a skill is a separate service.",
+          "contracts": [
+            {
+              "giver_vnum": 40482,
+              "completion_key": "give=I:40470,I:40502;receive=I:40483;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hazks-earthen-statue",
+      "title": "Hazk's earthen statue",
+      "category": "service",
+      "summary": "Bring one brown bear hide, one grey olyx hide and twenty-five platinum for a small earthen statue. This support service is currently guarded under active accounting because its mixed item-and-coin offer is not settled. Supplied output can support later exchanges.",
+      "contracts": [
+        {
+          "giver_vnum": 40407,
+          "completion_key": "give=C:25000,I:40493,I:40494;receive=I:40497;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-1",
+          "text": "Carry a brown strip of bear hide",
+          "kind": "carried_item",
+          "hint": "Bear hide comes from the captive brown bear in a goblin beast cage. Check actual availability and carry the exact item; a declaration or earlier receipt is not current stock.",
+          "item_vnums": [
+            40493
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "material-2",
+          "text": "Carry a grey strip of olyx hide",
+          "kind": "carried_item",
+          "hint": "Olyx hide comes from the captive olyx in a different beast cage. Check actual availability and carry the exact item; a declaration or earlier receipt is not current stock.",
+          "item_vnums": [
+            40494
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the hazk's earthen statue exchange",
+          "kind": "completion",
+          "hint": "The alchemist consumes both exact hides and 25,000 copper to create a small earthen statue. His hide/hides response gestures at the fee. These are distinct material kinds; two hides of one animal do not fit. Qualify the mixed payment before enabling the fresh crafting route.",
+          "contracts": [
+            {
+              "giver_vnum": 40407,
+              "completion_key": "give=C:25000,I:40493,I:40494;receive=I:40497;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bullywug-earth-totem",
+      "title": "Craft the bullywug earth totem",
+      "category": "service",
+      "summary": "Bring a hollowed gourd, small earthen statue and twenty platinum for a totem of the bullywug shaman. This supporting mixed-fee service remains guarded under active accounting. The decorated goblin totem is a different item.",
+      "contracts": [
+        {
+          "giver_vnum": 40452,
+          "completion_key": "give=C:20000,I:40426,I:40497;receive=I:40498;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "producer-history",
+          "text": "Optional history: complete the preceding support exchange",
+          "kind": "completion",
+          "hint": "This receipt explains an output source. It does not replace current custody, require personal crafting or bypass a guarded payment. Supplied material also fits.",
+          "contracts": [
+            {
+              "giver_vnum": 40407,
+              "completion_key": "give=C:25000,I:40493,I:40494;receive=I:40497;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "material-1",
+          "text": "Carry a hollowed out gourd",
+          "kind": "carried_item",
+          "hint": "The plant golem in the hidden alchemist shop carries and stocks this exact hollowed gourd; purchases need their own accounting qualification. Check actual availability and carry the exact item; a declaration or earlier receipt is not current stock.",
+          "item_vnums": [
+            40426
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "material-2",
+          "text": "Carry a small earthen statue",
+          "kind": "carried_item",
+          "hint": "The alchemist produces the small earthen statue for two different hides and twenty-five platinum; supplied statues also work. Check actual availability and carry the exact item; a declaration or earlier receipt is not current stock.",
+          "item_vnums": [
+            40497
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the craft the bullywug earth totem exchange",
+          "kind": "completion",
+          "hint": "Find the bullywug shaman in the settlement chamber and ask totem or components. Native acceptance consumes the gourd, statue and 20,000 copper to create the earth totem. Its payment must be qualified before a fresh service journey; supplied totems can support the next exchange.",
+          "contracts": [
+            {
+              "giver_vnum": 40452,
+              "completion_key": "give=C:20000,I:40426,I:40497;receive=I:40498;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "glakkabbs-red-crystal-ring",
+      "title": "Exchange the earth totem for a ring",
+      "category": "service",
+      "summary": "The goblin shaman accepts a totem of the bullywug shaman for a red-crystal ring. This is a support exchange, with no story or daily achievement. His worn decorated totem is a different kind, wanted by the trainer.",
+      "contracts": [
+        {
+          "giver_vnum": 40463,
+          "completion_key": "give=I:40498;receive=I:40499;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "producer-history",
+          "text": "Optional history: complete the preceding support exchange",
+          "kind": "completion",
+          "hint": "This receipt explains an output source. It does not replace current custody, require personal crafting or bypass a guarded payment. Supplied material also fits.",
+          "contracts": [
+            {
+              "giver_vnum": 40452,
+              "completion_key": "give=C:20000,I:40426,I:40497;receive=I:40498;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "material-1",
+          "text": "Carry a totem of the bullywug shaman",
+          "kind": "carried_item",
+          "hint": "The bullywug shaman crafts this totem using the gourd, statue and twenty platinum. That mixed service is guarded; a supplied exact totem works. Check actual availability and carry the exact item; a declaration or earlier receipt is not current stock.",
+          "item_vnums": [
+            40498
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the exchange the earth totem for a ring exchange",
+          "kind": "completion",
+          "hint": "Find the shaman in his goblin cave. Acceptance consumes the crafted earth totem, produces a red-crystal ring and keeps him present. Supplied material works without the mixed-fee producer receipt; this service does not prove the shaman was defeated.",
+          "contracts": [
+            {
+              "giver_vnum": 40463,
+              "completion_key": "give=I:40498;receive=I:40499;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "drow-clerics-buckler",
+      "title": "Exchange the ring for a drow buckler",
+      "category": "service",
+      "summary": "The disgusted drow cleric accepts the exact red-crystal ring for a spiked drow-elven buckler. This supporting exchange earns no quest or daily achievement. Carry the ring unequipped before offering it.",
+      "contracts": [
+        {
+          "giver_vnum": 40449,
+          "completion_key": "give=I:40499;receive=I:40500;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "producer-history",
+          "text": "Optional history: complete the preceding support exchange",
+          "kind": "completion",
+          "hint": "This receipt explains an output source. It does not replace current custody, require personal crafting or bypass a guarded payment. Supplied material also fits.",
+          "contracts": [
+            {
+              "giver_vnum": 40463,
+              "completion_key": "give=I:40498;receive=I:40499;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "material-1",
+          "text": "Carry a red-crystal ring",
+          "kind": "carried_item",
+          "hint": "The goblin shaman gives this red-crystal ring for the bullywug earth totem. Supplied matching rings work without earlier crafting. Check actual availability and carry the exact item; a declaration or earlier receipt is not current stock.",
+          "item_vnums": [
+            40499
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the exchange the ring for a drow buckler exchange",
+          "kind": "completion",
+          "hint": "Find the drow cleric in the bullywug prison side room. Acceptance consumes the red-crystal ring and creates the buckler, while keeping her present. A historical ring receipt does not replace the current material.",
+          "contracts": [
+            {
+              "giver_vnum": 40449,
+              "completion_key": "give=I:40499;receive=I:40500;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "knights-farslayer-rod",
+      "title": "Exchange the buckler for Farslayer",
+      "category": "service",
+      "summary": "The master knight accepts a spiked drow-elven buckler for an onyx rod called Farslayer. This is a support exchange, separate from learning an ability or later using the rod. It earns no story or daily achievement.",
+      "contracts": [
+        {
+          "giver_vnum": 40404,
+          "completion_key": "give=I:40500;receive=I:40501;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "producer-history",
+          "text": "Optional history: complete the preceding support exchange",
+          "kind": "completion",
+          "hint": "This receipt explains an output source. It does not replace current custody, require personal crafting or bypass a guarded payment. Supplied material also fits.",
+          "contracts": [
+            {
+              "giver_vnum": 40449,
+              "completion_key": "give=I:40499;receive=I:40500;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "material-1",
+          "text": "Carry a spiked drow-elven buckler",
+          "kind": "carried_item",
+          "hint": "The disgusted drow cleric gives this spiked buckler for a red-crystal ring. A supplied exact buckler works; ordinary shields do not fit. Check actual availability and carry the exact item; a declaration or earlier receipt is not current stock.",
+          "item_vnums": [
+            40500
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the exchange the buckler for farslayer exchange",
+          "kind": "completion",
+          "hint": "Find the master knight in the lower teaching area and ask shield, buckler or drow. Acceptance consumes the exact buckler and creates Farslayer, keeping him present. Unequip it first. The title teacher alone does not establish an accepted lesson.",
+          "contracts": [
+            {
+              "giver_vnum": 40404,
+              "completion_key": "give=I:40500;receive=I:40501;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jugglers-kraang-amulet",
+      "title": "Exchange Farslayer for the dark amulet",
+      "category": "service",
+      "summary": "The juggling thri-kreen accepts the onyx rod called Farslayer for a dark amulet of Kraang. This support exchange supplies one trainer material. Its receipt does not prove a theft, reunion or personal crafting journey.",
+      "contracts": [
+        {
+          "giver_vnum": 40409,
+          "completion_key": "give=I:40501;receive=I:40502;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "producer-history",
+          "text": "Optional history: complete the preceding support exchange",
+          "kind": "completion",
+          "hint": "This receipt explains an output source. It does not replace current custody, require personal crafting or bypass a guarded payment. Supplied material also fits.",
+          "contracts": [
+            {
+              "giver_vnum": 40404,
+              "completion_key": "give=I:40500;receive=I:40501;disappear=0"
+            }
+          ],
+          "optional": true
+        },
+        {
+          "id": "material-1",
+          "text": "Carry an onyx rod called 'Farslayer'",
+          "kind": "carried_item",
+          "hint": "The master knight produces this onyx rod for the spiked drow-elven buckler. A supplied exact rod works without the earlier chain. Check actual availability and carry the exact item; a declaration or earlier receipt is not current stock.",
+          "item_vnums": [
+            40501
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the exchange farslayer for the dark amulet exchange",
+          "kind": "completion",
+          "hint": "Find the juggler in the inn. Acceptance consumes Farslayer and creates the dark amulet, keeping him present. The chalice recovery and bed clue are separate requests and dialogue. Supplying this rod works without other services; carry it unequipped.",
+          "contracts": [
+            {
+              "giver_vnum": 40409,
+              "completion_key": "give=I:40501;receive=I:40502;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "delegates-peryton-headband",
+      "title": "The delegate's feather headband",
+      "category": "service",
+      "summary": "Bring peryton feathers, a strip of gorilla hide and twenty platinum to make a feather headband. This independent support recipe remains guarded under active accounting. The exact local captive animals are valid source leads; a trip to Bloodstone is not enforced.",
+      "contracts": [
+        {
+          "giver_vnum": 40427,
+          "completion_key": "give=C:20000,I:40490,I:40491;receive=I:40492;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-1",
+          "text": "Carry some peryton feathers",
+          "kind": "carried_item",
+          "hint": "The captive peryton in a goblin beast cage carries these exact feathers, despite dialogue describing a distant Bloodstone source. Check actual availability and carry the exact item; a declaration or earlier receipt is not current stock.",
+          "item_vnums": [
+            40490
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "material-2",
+          "text": "Carry a strip of gorilla hide",
+          "kind": "carried_item",
+          "hint": "The captive gorilla in a different goblin beast cage carries this exact hide. Other strips of hide do not fit. Check actual availability and carry the exact item; a declaration or earlier receipt is not current stock.",
+          "item_vnums": [
+            40491
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "text": "Complete the the delegate's feather headband exchange",
+          "kind": "completion",
+          "hint": "Find the Bloodstone delegate in the appointment chamber and ask peryton, feathers or headband. Native acceptance consumes the exact feathers, gorilla hide and 20,000 copper, then gives a woven feather headband and keeps him present. Qualify the mixed payment before enabling the fresh service.",
+          "contracts": [
+            {
+              "giver_vnum": 40427,
+              "completion_key": "give=C:20000,I:40490,I:40491;receive=I:40492;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

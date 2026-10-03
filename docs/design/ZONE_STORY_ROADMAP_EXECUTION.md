@@ -88,9 +88,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 33 | Tharnadia | [Comprehensive source dossier](zone-stories/THARNADIA.md): all 44 native blocks/nineteen exchanges/24 addressed families, 584 rooms/176 mobs/206 objects/nineteen shops, 1,480 resets/661 families, 31 literal assignments/computed teachers and bounded foreign/shared review | Revision two: eight outcomes/eight services/one typed-food exclusion, 26 contacts/23 optional checks; exact toys, supplied medicine finale, paper-map correction and independent commissions | Active source/container/search/appearance qualification; accepted first-source/dialogue/access/healing/lesson/pet events; typed/coin-only and paid town settlement; builder-selected missing-mobile/clue/source/claim repairs |
 | 34 | Mini Zones | [Comprehensive source dossier](zone-stories/MINI_ZONES.md): all 21 blocks/seven exchanges/eleven addressed families, 300 rooms/125 mobs/124 objects/five shops, 548 resets/358 families, six literal assignments and bounded shared/foreign review | Revision one: three outcomes/four services, eighteen contacts/sixteen optional checks; exact maze/cutpurse, distinct sword and five-crystal guidance | Active source/recipient/episode and learned access/travel/effect evidence; guarded fee/charm/pet settlement; builder-selected missing-edge/identity/claim/prose repairs with clear fix/news reporting |
 | 35 | City of Torrhan | [Comprehensive source dossier](zone-stories/CITY_OF_TORRHAN.md): all 46 blocks/26 exchanges/eighteen addressed families, 289 rooms/152 mobs/125 objects/six shops, 447 resets/324 families; both literal and table/automatic bindings | Revision one: eight outcomes/fourteen services/four refusals, 23 contacts/28 optional checks; exact potion, ring, sword, crown and cloak cycle guidance | Active source/recipient episodes, competing materials, lineage/property presentation, access/choice and actual actor-state events; selected throne/stock/prose repairs require explicit fix/news reporting |
-| 36–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 36 | Golden Hall of the Crown | [Comprehensive source dossier](zone-stories/GOLDEN_HALL_OF_THE_CROWN.md): all 42 blocks/sixteen exchanges/seventeen addressed families, 300 rooms/91 mobs/106 objects/two shops, 534 resets/351 families, four literal assignments and automatic/shared bindings | Revision one: nine outcomes/seven services, 27 contacts/34 optional checks; exact note/key/totem/sword guidance, supplied finale and three independent rescues | Active source/recipient/returned-key lineage, three mixed fees, accepted access/travel/actor and pegasus events; builder-selected boulder/teacher/note/route/prose repairs require separate fix/news reporting |
+| 37–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Golden Hall of the Crown.
+The next area is Ashrumite Village.
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -1647,3 +1648,60 @@ with 185 remaining.** Four refusals are removed from the projected rows; fourtee
 services remove additional achievement/daily credit. All 2,668 native definitions,
 revision-two fingerprint/registry and other fifty-six maps are preserved.
 Continue with Golden Hall of the Crown. Active, ready accounting remains mandatory.
+
+## Golden Hall of the Crown completed source map — October 3, 2026
+
+Read all 42 native blocks (sixteen Q, 26 M), sixteen exchanges and seventeen
+addressed families; nine ambient action blocks are not player lessons.
+Reviewed 300 rooms/100 exact prose groups/25 headers/thirty metadata groups/
+250 exit families, 91 mobiles, 106 objects, two shops and 534 resets across
+351 source families. All local mobiles have M/F declarations. Four literal
+assignments, complete local searches and automatic switch/teleport/teaching
+plus bounded shared execution are recorded in the
+[dossier](zone-stories/GOLDEN_HALL_OF_THE_CROWN.md). All positive boundary,
+key and reset targets resolve; administrative access remains distinct.
+
+Revision one adds nine independent outcomes, seven support services, 27
+contacts/all addressed topics and 34 optional checks. The chalice/inn clues,
+bed, corpse note, optional royal briefing, captive key routes and trainer's
+long amulet chain explain progression. The final Prince receipt requires
+the exact head, balanced sword and hair pin together, accepting supplied
+proofs without earlier receipts. Three rescues record retirement; two return
+new same-kind keys and award experience. Both retain achievement credit
+and existing same-item daily exclusions. Seven outcomes are potential dailies.
+Seven support exchanges earn no new achievement; three mixed-fee services
+remain guarded under active accounting. Supplied later materials still work.
+
+Preplaced corpse contents and head/totem reset items do not prove witnessed
+death or personal combat. The captain's writing is prose, not a new note
+grant. Local captive animals carry the delegate's exact feathers/hide despite
+distant homeland dialogue. The bed/return-boulder/chest switches have blocked
+targets; tunnel boulders target an already-open east exit and do nothing.
+Pool/platform returns are directionally asymmetric but resolve, and standing
+on unlimited-charge inscriptions links the platform/spy chamber. Tield alone
+has the local teacher flag; other teacher titles require an intentional role
+decision. No entire quest is declared broken based only on these differences.
+
+Reliance calls distinguish fresh creation from relocating an existing linked
+pegasus. Only fresh creation updates its item timer; link-type/owner, summon
+and recovery events require qualification before a milestone. Expand accepted
+source-versus-gift, container/incarnation, output/returned-key lineage, access/
+travel, actor-retirement/arrival and optional full-campaign event plans.
+Keep accounting gates and frozen recovery obligations distinct. Builder selects
+boulder, teaching-role, note/source, directional and wording repairs deliberately.
+**No native zone or quest repair ships in this checkpoint.** Every selected
+implemented repair needs a clearly named fix commit where practical and a PR
+before/after, validation and player-facing news sentence.
+
+Native regression verifies exact note/totem/sword/key readiness, supplied finale
+without predecessor history, no read mutation, service exclusion, independent
+nine-outcome receipt recovery and both rescue daily exclusions. Production
+regression checks all bindings/topics, exact source/container parents, ordinary
+boundaries, switches, portals and teacher flags. These fixtures do not qualify
+live acquisition, payment, access, pet creation or actual rescued-actor travel.
+
+Current catalog: **58 journals, 1,721 achievement units, 1,498 potential daily
+units and 2,223 projected rows; 36 of 220 roadmap areas are source-comprehensive,
+with 184 remaining.** All 2,668 native definitions, revision-two fingerprint/
+registry and other fifty-seven maps are preserved. Continue with Ashrumite
+Village. Active, ready accounting remains mandatory.

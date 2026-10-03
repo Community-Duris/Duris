@@ -1262,7 +1262,87 @@ for line in (ROOT / "areas/AREA").read_text().splitlines():
     source=ROOT / "areas/obj" / (line.split()[0]+".obj")
     if source.exists(): assert not re.search(r"^#6087\s*$",source.read_text(errors="replace"),re.M)
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan"):
+# Golden Hall: all preparation stays optional, exact proofs remain distinct,
+# and experience/retirement key-return rescues keep achievements without dailies.
+gold = inventory_module.area_evidence(ROOT, "gold_hal")
+gold_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "gold_hal")
+gold_stories = {s["id"]:s for s in gold_mapping["stories"]}
+assert gold_mapping["coverage"] == "complete" and gold_mapping["revision"] == 1
+assert gold_mapping["schema_version"] == 3 and len(gold_mapping["contacts"]) == 27
+assert len(gold_stories) == 16 and not gold_mapping["exclusions"]
+assert collections.Counter(s["category"] for s in gold_stories.values()) == {"story":7,"request":2,"service":7}
+assert sum(t.get("optional",False) for s in gold_stories.values() for t in s["steps"]) == 34
+assert len(gold["requests"]) == 16 and len(gold["dialogue"]) == 17
+assert len(gold["mobs"]) == 91 and len(gold["items"]) == 106
+assert len(gold["reset_commands"]) == 534
+bindings = [b for s in gold_stories.values() for b in s["contracts"]]
+assert len(bindings) == 16 and {tuple(sorted(b.items())) for b in bindings} == {
+    tuple(sorted(r["block"]["binding"].items())) for r in gold["requests"]}
+assert all(t.get("optional") for s in gold_stories.values() for t in s["steps"][:-1])
+finale = gold_stories["three-proofs-for-wasephius"]
+assert finale["contracts"] == [{"giver_vnum":40417,"completion_key":"give=I:40465,I:40483,I:40495;receive=I:40496;disappear=1"}]
+assert [t["item_vnums"] for t in finale["steps"] if t["kind"] == "carried_item"] == [[40463],[40495],[40483],[40465]]
+assert finale["steps"][0]["contracts"] == gold_stories["the-bloodstained-note"]["contracts"]
+assert finale["steps"][1]["contracts"] == gold_stories["release-pearla"]["contracts"]
+assert finale["steps"][2]["contracts"] == gold_stories["tields-stolen-amulet"]["contracts"]
+assert gold_stories["release-pearla"]["steps"][0]["contracts"] == gold_stories["release-the-half-elf"]["contracts"]
+units = [u for u in catalog_module.story_units(catalog) if u["zone_number"] == 404]
+assert len(units) == 16 and sum(u["achievement"] for u in units) == 9
+assert sum(u["daily_candidate"] for u in units) == 7
+for id in ("release-the-half-elf","release-the-kenku"):
+    unit = next(u for u in units if u["id"] == "zone-story:story:gold_hal:"+id)
+    assert unit["achievement"] and not unit["daily_candidate"]
+for giver in (40459,40477):
+    definition = next(d for d in catalog["definitions"] if d["giver_vnum"] == giver)
+    assert definition["eligible_for_zone_completion"] and not definition["daily_eligible"]
+    assert definition["daily_exclusion"] == "Item exchange"
+contacts = {c["mob_vnum"]:c for c in gold_mapping["contacts"]}
+for v,c in contacts.items(): assert c["keyword"] in gold["mobs"][v]["keywords"]
+for d in gold["dialogue"]:
+    assert set(d["body"][0].rstrip("~").split()) <= set(contacts[d["giver_vnum"]]["topics"])
+assert contacts[40482]["keyword"] == "tield" and contacts[40482]["topics"] == ["glakkabb"]
+parent=room=None
+sources=collections.defaultdict(list)
+for reset in gold["reset_commands"]:
+    c,v=reset["command"],reset["arguments"]
+    assert len(v) == 8 and v[5:] == [0,0,0]
+    if c in ("M","F"): parent,room=v[1],v[3]
+    if c in ("G","E") and v[1] in (40403,40407,40427,40463,40470,40479,40490,40491,40493,40494,40495,40505):
+        sources[v[1]].append((parent,room,v[2],v[4]))
+assert sources == {40403:[(40406,40441,1,100)],40407:[(40409,40454,1,100)],
+    40427:[(40423,40492,1,100)],40463:[(40458,40635,1,100)],
+    40470:[(40463,40645,1,100)],40505:[(40463,40645,1,100)],
+    40479:[(40473,40657,1,100)],40490:[(40489,40696,1,100)],
+    40491:[(40490,40697,1,100)],40493:[(40488,40695,1,100)],
+    40494:[(40487,40694,1,100)],40495:[(40458,40635,1,100)]}
+assert any(r["command"] == "P" and r["arguments"][1:4] == [40456,1,40454] for r in gold["reset_commands"])
+assert any(r["command"] == "O" and r["arguments"][1:4] == [40454,1,40533] for r in gold["reset_commands"])
+assert any(r["command"] == "P" and r["arguments"][1:4] == [40489,1,40488] for r in gold["reset_commands"])
+assert {(a["kind"],a["vnum"],a["function"]) for a in gold["special_assignments"]} == {
+    ("mob",40466,"world_quest"),("mob",40410,"world_quest"),
+    ("obj",40409,"reliance_pegasus"),("room",40454,"inn")}
+rooms={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/wld/gold_hal.wld").read_text(),re.M|re.S)}
+assert set(rooms) == set(range(40400,40700))
+edges={v:{int(d):(int(f),int(k),int(t)) for d,f,k,t in re.findall(r"\bD(\d+)\s+[^~]*~[^~]*~\s*(-?\d+)\s+(-?\d+)\s+(-?\d+)",b,re.S)} for v,b in rooms.items()}
+assert {(v,d,t) for v,dirs in edges.items() for d,(f,k,t) in dirs.items() if t>0 and t not in rooms} == {(40400,2,559699),(40655,3,717300)}
+assert edges[40655][1] == (0,0,40546)
+assert not any(r["command"] == "D" and r["arguments"][1:3] == [40655,1] for r in gold["reset_commands"])
+assert edges[40455][5] == (13,0,40519) and edges[40519][4] == (13,0,40455)
+assert edges[40563][9] == (8,0,40565)
+assert edges[40538][4] == (7,40505,40698)
+assert edges[40698] == {1:(3,40505,40538),2:(3,40505,40538)}
+objects={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/obj/gold_hal.obj").read_text(),re.M|re.S)}
+for item,values in {40420:["274","40655","1","0"],40431:["274","40455","5","0"],40432:["274","40519","4","1"],40436:["270","40563","9","1"]}.items():
+    fields=objects[item].split("~")[4].split()
+    assert fields[0] == "29" and fields[11:15] == values
+assert gold["items"][40454]["name"] == "the corpse of an adventurer"
+for item,target in ((40503,40699),(40504,40698)):
+    fields=objects[item].split("~")[4].split()
+    assert fields[0] == "25" and fields[11:14] == [str(target),"42","-1"]
+mobs={int(m[1]):m[2] for m in re.finditer(r"^#(\d+)\s*\n(.*?)(?=^#\d+|^\$|\Z)",(ROOT/"areas/mob/gold_hal.mob").read_text(),re.M|re.S)}
+assert {v for v,b in mobs.items() if int(b.split("~")[4].split()[0]) & 32768} == {40482}
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

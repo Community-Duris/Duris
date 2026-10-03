@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 57 authored journals, accounting-gated player surfaces, starter/town
+**Status: 58 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -14,7 +14,7 @@ Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl, Ravenloft
 Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl, the Jade Empire and
 the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm, Verspin,
 Ship Yards, Ultarium, the Surface Realm, Tharnadia, Mini Zones and the City
-of Torrhan now have complete source story maps;
+of Torrhan and Golden Hall of the Crown now have complete source story maps;
 their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
 with seventeen contacts/all nineteen raw addressed families and twelve optional
@@ -368,6 +368,30 @@ teaching and the throne switch are concrete examples. The inert throne
 target, absent shop stock 6087 and reward/prose discrepancies have targeted
 repair plans. No native repair ships in this checkpoint; publish selected
 fixes in separate fix commits with before/after evidence and news wording.
+
+Golden Hall of the Crown's [comprehensive dossier](zone-stories/GOLDEN_HALL_OF_THE_CROWN.md)
+reviews all 42 native blocks/sixteen exchanges/seventeen addressed families,
+300 rooms/91 mobiles/106 objects/two shops and 534 resets/351 families.
+Revision one adds nine independent outcomes/seven support services, 27
+contacts and 34 optional checks. The inn investigation, bloodstained-note
+briefing, three-proof finale, three rescues, trainer's amulet and two hall
+requests explain actual material sources without requiring producer history.
+All nine outcomes count for zone progress; seven are potential daily candidates.
+The two experience/retirement rescues return a newly created same-kind key,
+so their existing same-item daily exclusions remain intact. Do not conflate
+that daily policy with an absent rescue or missing achievement.
+
+Golden Hall extends qualification for returned-key UID lineage, current custody,
+source-versus-player-gift proof and actual recipient retirement/arrival.
+Predeclared head/totem items do not prove personal combat. Three mixed-fee
+services remain guarded; supplied intermediate/final materials retain valid
+routes. Bed/boulder/chest and standing-inscription access need accepted switch,
+door and travel evidence. Reliance requires distinct accepted fresh summon and
+existing-mount relocation events, qualified owner/link/pet recovery and item
+timer publication; the fresh-creation timer is not a universal recall cooldown.
+Builder-selected boulder, teaching-role, note/source, directional and wording
+repairs remain pending, with clear separate fix commits and PR/news reporting.
+No native repair ships in this checkpoint.
 
 ## Accounting requirement and delivery sequence
 
@@ -1080,7 +1104,7 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 185 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 184 roadmap areas.
 - [x] Complete the Surface Realm's 31-exchange/36-addressed source dossier:
   all 160,004 rooms in exact grouped review, 234 mobs/78 objects, 1,736 resets/
   320 families, eight literal assignments/104 computed teachers and bounded
@@ -1101,6 +1125,17 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   Retain typed-food/coin-only and paid town guards; extend draw/custody and
   actor/NPC semantic settlement before healing/lesson/pet milestones. Resolve
   missing mobile, toy/pup/desk clues, chest/map-shop and claim policy fairly.
+- [x] Complete Golden Hall's sixteen-exchange/seventeen-addressed source dossier:
+  all 300 rooms/91 mobiles/106 objects/two shops, 534 resets/351 families,
+  four literal assignments and automatic switch/teleport/teacher bindings.
+  Ship nine outcomes/seven services, 27 contacts/34 optional checks; preserve
+  seven potential daily candidates and both key-return rescue exclusions.
+- [ ] Qualify Golden Hall's actual sources, returned-key/output lineage,
+  recipient episodes, three mixed fees and accepted dialogue/access/travel.
+  Add owner-qualified fresh-summon/relocation/pet recovery events for Reliance;
+  define meaningful-return daily policy and optional actor/campaign endpoints.
+  Select native boulder/teaching/note/route/prose repairs deliberately and
+  publish each implemented fix with before/after proof and a news sentence.
 - [x] Complete City of Torrhan's 26-exchange/eighteen-addressed source dossier:
   all 289 rooms/152 mobiles/125 objects/six shops, 447 resets/324 families,
   both literal procedures, table/default teaching and automatic throne switch.
@@ -1244,6 +1279,7 @@ contract classification; it does not claim complete objective coverage.
 | Tharnadia | 2 | Complete: eight outcomes/eight services/one typed-food exclusion across nineteen exchanges | [Source-comprehensive dossier](zone-stories/THARNADIA.md); 26 contacts/all 24 addressed families and 23 optional checks; exact toys, optional medicine producer, supplied finale and valid administrative paper | Eight achievement/potential daily units; active source/container/search/retirement unqualified, coin-only/typed-food and paid services guarded | Native exact-material/alternative/service/recovery fixtures; qualify first source/access/actor-state, dice/fee settlement and balanced mobile/clue/placement/claim repairs |
 | Mini Zones | 1 | Complete: three independent outcomes/four armor services across seven exchanges | [Source-comprehensive dossier](zone-stories/MINI_ZONES.md); eighteen contacts/all eleven addressed families, sixteen optional checks, actual maze/cutpurse route and distinct sword/crystal guidance | Three achievement/potential daily units; four mixed fees guarded; source, recipient, charm and pet qualification pending | Native exact-material/quantity/service/recovery fixtures; qualify source/access/effect/episode settlement and publish builder-selected boundary/identity/claim/prose repairs separately |
 | City of Torrhan | 1 | Complete: eight independent outcomes/fourteen support exchanges/four refusals across 26 native exchanges | [Source-comprehensive dossier](zone-stories/CITY_OF_TORRHAN.md); 23 contacts/eighteen addressed families, 28 optional checks and exact potion/sword/crown/cloak guidance | Eight achievement/potential daily units; live source/retirement, lineage, access/choice and actual royal transformation unqualified | Native supplied-route, exact-kind, service/refusal and recovery fixtures; qualify shared actor/lineage/property events and publish selected throne/stock/prose repairs distinctly |
+| Golden Hall of the Crown | 1 | Complete: nine outcomes/seven support services across all sixteen native exchanges | [Source-comprehensive dossier](zone-stories/GOLDEN_HALL_OF_THE_CROWN.md); 27 contacts/seventeen addressed families, 34 optional checks and exact note/key/totem/sword guidance | Nine achievements/seven potential dailies; both key-return rescues keep their daily exclusions; live sources, fees, access and pet events unqualified | Native supplied-proof, exact-kind, independent-rescue and recovery fixtures; qualify accepted actor/source/lineage/access/summon events and publish selected repairs clearly |
 
 ## Twin Towers evidence and decisions
 

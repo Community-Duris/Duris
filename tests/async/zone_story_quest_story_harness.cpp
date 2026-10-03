@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 57 &&
-				tracker.summary_for(7, 42).total == 1728,
+		require(catalog.story_mappings.size() == 58 &&
+				tracker.summary_for(7, 42).total == 1721,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -206,7 +206,9 @@ int main(int argc, char **argv)
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
 										    57, 2) == 3 &&
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
-										    666, 2) == 8,
+										    666, 2) == 8 &&
+				zone_story_quest_catalog::eligible_definition_count(file_catalog,
+										    404, 2) == 9,
 			"complete Alatorin/Newhaven/Faerie/Verspin/Ship Yards/Ultarium/Surface sidecars failed the native file loader");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -3073,6 +3075,113 @@ int main(int argc, char **argv)
 				recovered_torrhan.progress_for_zone(7, 42, 5000).completed == 0 &&
 				recovered_torrhan.progress_for_zone(7, 42, 57).completed == 0,
 			"Torrhan recovery merged independent outcomes or invented foreign credit");
+
+		const auto &gold_map = *std::find_if(catalog.story_mappings.begin(),
+						     catalog.story_mappings.end(),
+						     [](const auto &mapping)
+						     { return mapping.source_area == "gold_hal"; });
+		const auto &gold_finale = story_for("gold_hal", "three-proofs-for-wasephius");
+		const auto &gold_trainer = story_for("gold_hal", "tields-stolen-amulet");
+		const auto &gold_note = story_for("gold_hal", "the-bloodstained-note");
+		const auto &gold_kenku = story_for("gold_hal", "release-the-kenku");
+		service supplied_gold(catalog);
+		require(supplied_gold.discover_zone(7, 42, 404, 40400, 100, "arrival") ==
+					result::applied &&
+				supplied_gold.render_journal(7, 42, 404, 10, 1, 101, false, false)
+						.find(gold_finale.title) == std::string::npos,
+			"Golden Hall discovery revealed an unseen royal story");
+		for (const auto &contact : gold_map.contacts)
+			require(supplied_gold.meet_npc(7, 42, contact.mob_vnum, 40400, 101) ==
+					result::applied,
+				"Golden Hall contact encounter failed");
+		const auto gold_section = [&](const auto &entry)
+		{
+			const auto start = journal.find("] " + entry.title + "\r\n");
+			require(start != std::string::npos, "Golden Hall journal section missing");
+			return journal.substr(start, journal.find("\r\n  [", start) - start);
+		};
+		supplies = {};
+		supplies.carried[40403] = supplies.carried[40459] = supplies.carried[40498] = 1;
+		supplies.carried[40463] = 1;
+		const auto gold_before_read = supplied_gold.serialize_state();
+		journal = supplied_gold.render_journal(7, 42, 404, 10, 1, 102, false, false,
+						       &supplies);
+		require(gold_section(gold_note).find("[Missing now] " + gold_note.steps[0].text) !=
+					std::string::npos &&
+				gold_section(gold_trainer)
+						.find("[Missing now] " +
+						      gold_trainer.steps[1].text) !=
+					std::string::npos &&
+				gold_section(gold_finale)
+						.find("[Missing now] " +
+						      gold_finale.steps[5].text) !=
+					std::string::npos &&
+				gold_section(gold_kenku)
+						.find("[Missing now] " +
+						      gold_kenku.steps[0].text) !=
+					std::string::npos,
+			"Golden Hall wrong note, totem, sword or silver key replaced exact proof");
+		supplies = {};
+		supplies.carried[40495] = supplies.carried[40483] = supplies.carried[40465] = 1;
+		journal = supplied_gold.render_journal(7, 42, 404, 10, 1, 103, false, false,
+						       &supplies);
+		for (int index : { 4, 5, 6 })
+			require(gold_section(gold_finale)
+						.find("[Ready now] " +
+						      gold_finale.steps[index].text) !=
+					std::string::npos,
+				"supplied Golden Hall final proof failed readiness");
+		for (int index : { 0, 1, 2 })
+			require(gold_section(gold_finale)
+						.find("[Pending] " +
+						      gold_finale.steps[index].text) !=
+					std::string::npos,
+				"supplied Golden Hall proof manufactured producer history");
+		require(supplied_gold.serialize_state() == gold_before_read &&
+				supplied_gold.progress_for_zone(7, 42, 404).completed == 0,
+			"Golden Hall read manufactured quest completion");
+		record(supplied_gold, gold_finale.contracts.front(), "gold-supplied-finale", 404,
+		       40498);
+		for (const auto &entry : gold_map.stories)
+			if (entry.category == "service")
+				record(supplied_gold, entry.contracts.front(), entry.id.c_str(),
+				       404, 40400);
+		require(supplied_gold.progress_for_zone(7, 42, 404).completed == 1 &&
+				supplied_gold.progress_for_zone(7, 42, 404).total == 9,
+			"Golden Hall finale required predecessors or services earned achievements");
+		for (const char *id : { "release-the-half-elf", "release-the-kenku" })
+		{
+			const auto &rescue = story_for("gold_hal", id);
+			const auto definition = std::find_if(
+				catalog.definitions.begin(), catalog.definitions.end(),
+				[&](const auto &d)
+				{ return d.definition_id == rescue.contracts.front(); });
+			require(definition != catalog.definitions.end() &&
+					definition->eligible_for_zone_completion &&
+					!definition->daily_eligible &&
+					definition->daily_exclusion == "Item exchange",
+				"key-return rescue lost achievement eligibility or acquired daily credit");
+			record(supplied_gold, rescue.contracts.front(), rescue.id.c_str(), 404,
+			       40635);
+		}
+		require(supplied_gold.progress_for_zone(7, 42, 404).completed == 3,
+			"Golden Hall key-return rescues were treated as refusals");
+		service restored_gold(catalog);
+		require(restored_gold.deserialize_state(supplied_gold.serialize_state(), &error),
+			"Golden Hall supplied-finale and rescue recovery failed");
+		for (const auto &entry : gold_map.stories)
+			if (entry.category != "service" && entry.id != gold_finale.id &&
+			    entry.id != story_for("gold_hal", "release-the-half-elf").id &&
+			    entry.id != gold_kenku.id)
+				record(restored_gold, entry.contracts.front(), entry.id.c_str(),
+				       404, 40400);
+		service recovered_gold(catalog);
+		require(recovered_gold.deserialize_state(restored_gold.serialize_state(), &error) &&
+				recovered_gold.progress_for_zone(7, 42, 404).completed == 9 &&
+				recovered_gold.progress_for_zone(7, 42, 404).total == 9 &&
+				recovered_gold.progress_for_zone(7, 42, 5000).completed == 0 &&
+				recovered_gold.progress_for_zone(7, 42, 57).completed == 0,
+			"Golden Hall recovery merged independent stories or invented foreign credit");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;
