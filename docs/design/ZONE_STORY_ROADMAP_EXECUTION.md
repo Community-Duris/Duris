@@ -1082,11 +1082,11 @@ Priority 26 is in progress in the
 have been reviewed: 495 distinct contracts across 82 recipients and 466 M/MA
 blocks, including 296 nonambient addressed families. The conservative topic
 inventory retains 291; five apostrophe-bearing families still have usable
-aliases. All fifteen shops and all 425 mobiles were reviewed, together with
-546 of 952 rooms and 107 of 602 objects, including every local switch/teleport
-prototype. All 352 D resets are reviewed. The other 1,469 of 1,821 reset
-families still need complete review, along with the remaining 406 rooms, 495
-objects and selected source/handler paths. The draft lists exact ranges and gaps.
+aliases. All fifteen shops, 425 mobiles, 952 rooms and 602 objects were
+reviewed, including every local switch/teleport prototype. All 352 D resets
+are reviewed. The other 1,469 of 1,821 reset families still need complete
+review, along with selected source/handler paths. The draft lists exact ranges
+and remaining boundaries.
 
 The proposed progression separates kitchens/royal dishes, collecting and
 professional commendations, army/brewery proofs, arcanums/random attribute
@@ -1104,6 +1104,25 @@ confirmed invalid room-0/north target, while the intended kings gate is locked
 and blocked. A targeted repair needs builder-selected destination/placement
 and validation before mutation, preserving alternate shrine/outer-road routes.
 Dumathoin is the eighth avatar with no local Q/M; seven gift requests remain.
+
+The completed world/prototype continuation adds prison versus commander keys,
+remote casket/crate/handprint encounter-room exits, troglodyte alternate access,
+vine `grab` travel and selected reciprocal surface/roc-cave entrances. The
+83831 → 122947 descent has no direct reverse up edge. Static “dwarves only”
+signs, bounty notebook pages and an X-marked checklist remain guidance, without
+invented admission predicates, travel history or rescues.
+
+Two divine native I rewards are money-pile prototypes: Vergadain coins 83308
+and Abbathor satchel 83617, each with 2,000 in its platinum denomination. The
+reviewed SQL item creation path records custody/coin payload without the matching
+currency posting in its item accounting plan. This is a source accounting gap
+requiring typed preflight and balanced pile issuance/conversion qualification;
+it is not a played reconciliation result. Preserve native bindings, exact
+entitlements and verified paid masks. Copper legplates 83646 use arms flags and
+silver sleeves 83650 use head flags; these are confirmed targeted slot repair
+candidates. Copied Mundorno sabaton prose and identified names are separate
+display/content decisions. No world data or accounting implementation was
+changed by this audit checkpoint.
 
 New plan detail covers exact any-of recipe readiness instead of summed mixed
 materials, bounded district/family presentation, NPC-held staged smelting and
@@ -1125,7 +1144,8 @@ DB/server operation or merge is part of this checkpoint.
 Validation passed: the production-catalog coverage regression; exact native
 block/recipient/paid-offering and reviewed-range metrics; source digest,
 selected recipe shapes, current mechanism commands, shrine reciprocal/D edges,
-invalid wall target and key break values; whitespace; and local links across
-the five changed documents. All 2,668 native definitions and all 48 maps remain
-unchanged; 321 local links resolve.
+invalid wall target, key break values, typed money rewards and slot flags,
+selected return edges; whitespace; and local links across the five changed
+documents. All 2,668 native definitions and all 48 maps remain unchanged;
+328 local links resolve.
 This addition changes documentation only; no C++ build was required.

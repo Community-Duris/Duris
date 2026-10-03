@@ -2,10 +2,10 @@
 
 Priority 26, source area `alatorin`, canonical zone 831. **This is an interim
 source review, not a comprehensive dossier or a deployed journal.** All native
-Q/M blocks, all mobile prototypes and the shop file have been reviewed. The
-remaining rooms, object prototypes, reset families, shared handlers and foreign
-supply paths must be reviewed before publishing the sidecar and marking this
-zone complete.
+Q/M blocks, all room/mobile/object prototypes and the shop file have been
+reviewed. The remaining reset families, shared handlers and foreign supply
+paths must be reviewed before publishing the sidecar and marking this zone
+complete.
 
 Player discovery, encounters, journals, achievements and new daily eligibility
 require active, ready economic accounting. Several prerequisites deliberately
@@ -33,18 +33,15 @@ pending; raw inventory counts are not reviewed family coverage.
 
 Completed additional reads at this checkpoint:
 
-- [Rooms](../../../areas/wld/alatorin.wld): 83100–83614, 83776–83790,
-  83944–83946, 84002–84005, 84013 and 84044–84055, including every description,
-  field and exit of the existing rooms in those ranges: 546 rooms. Room 83343
+- [All 952 rooms](../../../areas/wld/alatorin.wld): 83100–84055, including
+  every description, field and exit of the existing rooms. Room 83343
   and rooms 84051–84053 are absent; mobile 83343 is a valid separate prototype.
 - [All 425 mobiles](../../../areas/mob/alatorin.mob): 83100–83524,
   including every description and numeric field.
-- [Objects](../../../areas/obj/alatorin.obj): 83245–83250, 83457–83458,
-  83530–83533, 83605–83607, 83626–83630 and 83677–83698; additionally all fifty
-  switch/teleport prototypes, 83104–83108, 83198, 83253–83258, 83279, 83307,
-  83338, 83371 and 83443: 107 distinct prototypes. Mechanisms comprise 22
-  switches and 28 teleporters. Their complete fields and extra descriptions
-  were read; this does not complete the other 495 object prototypes.
+- [All 602 objects](../../../areas/obj/alatorin.obj): 83100–83701, including
+  every numeric field and description. Mechanisms comprise 22 switches and
+  28 teleporters. Item types, wear flags and extra descriptions reveal the
+  reward and clue distinctions recorded below.
 - [All fifteen shops](../../../areas/shp/alatorin.shp), including stock,
   keepers, rooms, trading types, prices, schedules and restriction fields.
 - Both procedures and the completion helper in
@@ -54,9 +51,11 @@ Completed additional reads at this checkpoint:
   Their wider dispatch, economic publication and recovery paths still need
   qualification. Existing Winterhaven, Quietus and Jade dossiers provide
   previously reviewed shared-service context.
-- Bounded `surfacekeeps` road connections, low-numbered blank paper in the
-  loaded `limbo` file, and selected global stock declarations. This does not
-  complete the source map of those foreign areas.
+- Bounded `surfacekeeps` road connections, four selected `surface` entrances,
+  the `connectorzones` roc-cave connection, low-numbered blank paper in the
+  loaded `limbo` file, and selected global stock declarations. Every boundary
+  room listed below was read in full. This does not complete the source map of
+  those foreign areas or the local non-D reset families.
 - All 352 D reset commands, including their exact state and probability fields.
   There are 1,821 reset families in the existing evidence grouping, with 352 D
   families. The other 1,469 families still need a complete review; selected
@@ -91,7 +90,7 @@ and district pagination remain planned capabilities.
 | 10. Libraries, gardens and private royal requests | Three specific books pay the librarian for **wisp of deadly mist 83267**, despite medal prose. Baron Helgrim separately consumes Jedd's book for a medal and treasure. The mystic gardener requires all four named flowers together. The ancient wedding band has two recipients; Noroth's head has Taark, Queen Bellethra and Mundorno alternatives with different outcomes. | Keep exact outputs and competing allocation explicit. There is no receipt-backed requirement that the player personally visited every flower source or completed every royal errand. Royal keys are different physical kinds with different targets. |
 | 11. Guild proofs and opposed outposts | Two rogue districts contain separately owned FrostSharn-heart, five-king-weapon, paired-heart, two-banner and map requests. Khoralator and Helgor each accept the other's head and retire. Ulster's independent proof requests, Ravi's two hearts, Locke's insignia, the prisoner key and the lion cub have their own outcomes. | Equal recipes or gifts at different recipients do not establish a shared story identity. Retiring proof recipients need runtime availability and attempt evidence. Narrated membership, healing and escape are separate from what the exchange actually implements. |
 | 12. Deramuth Port and competing supplies | Bimk buys psychomia plants for money and drug bags. Naltem accepts five different barrels together for a stealth token, or buys drug bags separately. Jenk makes elemental potions, elixirs and elemental might; his signet-ring mission retires him, potentially ending those services for that appearance. Lundeen's egg soups compete with Modo, Dezik and the glutton. The clerk buys two Jade shipping-crate kinds at different prices. | Name quantity, contents/disposition, source and competing consumer. Brino's eleven buybacks, crystal sales and glutton food exchanges are commerce/services whose grouping needs explicit semantics, rather than a fabricated campaign. Ship and doctor services remain separate from native Q receipts. |
-| 13. The First Mountain and divine gifts | Shard 83626 is declared as ground stock at Moradin's bust, room 84045. Two priests return a replacement shard without another reward; seven named gods each return a replacement shard and their own gifts, retiring after the exchange. The priest's sacred-key request has mithril and cash alternatives. Meshadan's token and cash tithe alternatives award a Shanat officer's key. | Track actual independent gift receipts and exact old/new shard lineage. A same-kind return does not preserve the old UID. Divine narration is not proof of every temple visit or a single finished pilgrimage. Key-access routes and recipient availability remain under review. |
+| 13. The First Mountain and divine gifts | Shard 83626 is declared as ground stock at Moradin's bust, room 84045. Two priests return a replacement shard without another reward; seven named gods each return a replacement shard and their own gifts, retiring after the exchange. Vergadain's coins 83308 and Abbathor's satchel 83617 are actually money-pile prototypes. The priest's sacred-key request has mithril and cash alternatives. Meshadan's token and cash tithe alternatives award a Shanat officer's key. | Track actual independent gift receipts and exact old/new shard lineage. Qualify the two money-pile grants separately from ordinary equipment and explicit C rewards. A same-kind return does not preserve the old UID. Divine narration is not proof of every temple visit or a single finished pilgrimage. Recipient availability and source paths remain under review. |
 
 Other closures need explicit classification in the final map. Odeth's brew
 uses faerie dust, dragon blood, strange stone, gnome currency and nebula
@@ -203,6 +202,87 @@ one-way semantics, then publish the exact accepted effect. Include this malforme
 wall, ground versus carried switches, NPC-held placement, already-open targets
 and reset/replay cases. The repair must not invent a successful touch objective.
 
+### Outpost approaches, hidden encounters and return routes
+
+The completed world review adds these source-backed access candidates. They
+belong alongside the relevant request as optional route guidance; neither the
+native item exchange nor a room description records that the player followed
+the route personally.
+
+| Route | Exact source relationship | Journal and qualification consequence |
+| --- | --- | --- |
+| Helgor's cells and commander | Cell key 83354 fits 83597 east to 83601 and 83600 east/west to 83602/83603. Runed key 83365 fits 83594 north to General Helgor's 83614. The blocked south wall of 83600 leads to torture room 83616 through switches 83359/83360. | The prison-key delivery, actual cell unlock and prisoner escape are separate facts. Keys have selected G stock; complete parent/generation availability remains pending. The commander door and torture wall use different access mechanisms. |
+| Khoralator and the city brig | Large mithril key 83386 fits 83670 north to lord's room 83679. Brig key 83472 fits 83627 south to 83880 and its reverse door; it is G stock on Ulster 83348. | A bounty receipt does not prove jail release or entry to an opposed fort. Signage saying “dwarves only” is not sufficient evidence of a race predicate. |
+| Deramuth and Xamora | Etched key 83427 fits 83796 south to manor 83797. Rusty gate key 83431 fits 83821 north to tower base 83826. Elemental key 83430 is declared on Xamora and another carrier; some of its tower doors are locked, others merely closed. | Keep each exact key and live D state distinct. Xamora's prototype and some room descriptions disagree about race/gender; resolve that prose without guessing an admission condition. |
+| Sealed encounter rooms | Opening casket 83425 at 83699 unblocks 83814 north to 83699. Opening crate 83478 at 83941 unblocks 83942 down to 83941. Touching handprint 83512 at 83876 unblocks 83923 up to 83874. | The mechanism opens an exit from a load room. It does not itself prove the occupant appeared, reached the player, was defeated or supplied a quest proof. Track the effect and actual encounter separately. |
+| Troglodyte throne and captive | Iron key 83560 fits 83868 north to 83869. Captive Borik's 83871 north to 83872 instead has a locked, keyless door. Slime teleporters 83573/83579 connect throne 83870 and channel 83957 using `enter`. | Do not tell the player that the throne key opens Borik's cell, or infer healing/rescue from his tourniquet receipt. The slime route is an alternate approach and return mechanism. |
+| Worm-nest ascent | Vines 83577/83578 are ground stock at 83979/83978. Their actual `grab` trigger teleports to ledges 83971/83982; it is not the `climb` command. Adjacent shaft rooms have falling, and other side tunnels connect the nest route back to the river network. | Describe the usable command and destination, then require confirmed travel for a historical ascent. Falling into the nest does not establish a successful return. Supplied quest parts still bypass optional personal travel history. |
+
+Four selected boundaries in [the loaded surface file](../../../areas/wld/surface.wld)
+have exact return edges: 83678 up ↔ 518643 down at Khoralator's platform;
+83713 up ↔ 522647 down above Helgor's shaft; 83714 north ↔ 519847 south
+at the tundra caverns; and 83811 west ↔ 521443 east at Deramuth's waters.
+The roc-cave route is also reciprocal: 83913 east ↔ 53801 west in
+[`connectorzones`](../../../areas/wld/connectorzones.wld). These are loaded
+neighboring rooms, not missing destinations or additional local quest owners.
+
+The selected `surfacekeeps` review confirms return edges at the Steps of
+Honour, 83557 down ↔ 121444 up and 83558 up ↔ 121744 down; at the molten
+rift, 84023 down ↔ 122218 up; and at the Dhalnadar Span, 83498 east ↔
+123446 west. In contrast, 83831 down points to 122947, whose loaded exits
+are south and west, with no direct up edge. Its route needs return-path
+guidance rather than an assumed reciprocal climb. Alternate entrances are
+navigation candidates, not evidence that a given actor traversed them.
+
+### Typed rewards, equipment and authored clue text
+
+**Accounting source gap requiring qualification:** the native Vergadain and
+Abbathor contracts declare `R I 83308` and `R I 83617`. Both prototypes are
+`ITEM_MONEY` (20), with value[3] = 2,000 and the other three denominations zero.
+They also appear as G stock on their respective avatars. Their names do not
+make them a dagger or a wearable satchel. Preserve the exact native bindings;
+describe them as physical money-pile rewards until a builder chooses otherwise.
+
+The reviewed [quest recovery](../../../src/world/quest.c) routes these I slots
+through the ordinary item-creation grant. The SQL
+[item repository](../../../src/item/item_transfer_repository.c) can store a
+money object's coin payload, but the corresponding
+[accounted item transaction](../../../src/persistence/economic_sql_item_transfer_transaction.c)
+builds its plan from item custody changes without currency postings. This
+does not establish a balanced mint of the pile's value. The normal explicit
+C reward path uses a distinct wallet currency transaction. Qualify both
+custom money prototypes, their pickup/conversion and native settlement before
+claiming the two divine rewards are supported with active accounting. This is
+a source finding; no played reward or reconciliation journey has been run.
+
+Add typed reward preflight before offering consumption and recovery publication.
+Unsupported money-pile grants must retain the offering or committed obligation;
+do not silently turn them into wallet C rewards or clear unpaid slots. A future
+adapter must freeze the denomination vector, issuance source, exact recipient,
+pile UID and any pickup/conversion, with matching currency and custody evidence.
+Test mixed shard/treasure/money rewards, already-paid masks, rejection, donation,
+disconnect, replay and restart without duplicate minting or lost entitlement.
+
+**Confirmed equipment-slot mismatches:** Gimbrin's copper legplates 83646 have
+wear flags 257 (`TAKE | ARMS`), and his silver sleeves 83650 have 17
+(`TAKE | HEAD`). Neighboring leg and sleeve outputs use the expected legs/arms
+flags. Verify intended slots, correct only those flags if selected, and exercise
+the exact commission, wear operation and journal display. Their different
+affects and prices are not evidence that those values need changing. Mundorno's
+sabatons 83699/83700/83701 do use feet flags, but retain copied helmet/arm prose;
+that is a separate description repair.
+
+Checklist 83247 has fixed X marks, and notebook 83385 contains five authored
+bounty pages. They are ordinary clue text, not a saved quest-status interface.
+Some `_id_` equipment changes its visible name through
+[identification](../../../src/magic/spell_identification.c), while
+`_noquest_` is used by the
+[random world-quest reward policy](../../../src/world/world_quest_policy.c).
+Neither marker overrides the identity of an authored native Q contract. Resolve
+progress from VNUM/UID and accepted events, display the actual current item
+name and slot, and treat source descriptions or examination as guidance until
+a qualified learned-clue adapter exists.
+
 ## Required universal capabilities and repair proposals
 
 | Finding | Required implementation and qualification |
@@ -214,6 +294,7 @@ and reset/replay cases. The repair must not invent a successful touch objective.
 | ZSQ-ALA-DECAY: osquip preparation | The osquip death special creates item 120051 in its room, then initializes decay; the periodic consumer replaces expired remains with a generic corpse. Add accepted birth/expiry/replacement lineage and a precise episode clock before optional personal/fresh cooking objectives. Test donation, nested storage, expiry during delivery and reconnect. Retain native exact item acceptance. |
 | ZSQ-ALA-CITY: ownership and map visibility | Resolve interior/outer-city membership deliberately. Keep contract owner, current recipient room, visited area and authored district separate. Test movement across both directions, discovered/undiscovered neighboring areas, hidden room-number client behavior and duplicate receipt projection. |
 | ZSQ-ALA-ACCESS: actual commands and mechanism effects | Extract typed candidates from loaded object properties, current command IDs, exact D states, stock parents and reciprocal edges. Record accepted reveal/open separately from unlock, key destruction, confirmed travel and encounter. Add eight shrine targets, the remote treasury controls and malformed wall 83368 to target-safe switch qualification. Builders select the ritual command and intended wall target/placement; metadata alone cannot repair either. |
+| ZSQ-ALA-TYPED: reward kinds and live item presentation | Preflight native I outputs against loaded prototype types before consuming offerings or publishing recovery. Qualify money-pile issuance, denomination/custody settlement and conversion separately from explicit C rewards; retain unsupported entitlement. Audit actual wear slots, current identified names, copied descriptions and static clue pages without treating cosmetic markers as native quest eligibility or progress. Add focused tests for the two divine money outputs, copper-leg/silver-sleeve slots, supplied items and restart. |
 | ZSQ-ALA-CONTENT: builder decisions | Decide the intended librarian gift, five-versus-six badges, attendant/banquet rewards, Xamora prose and Mundorno's overlapping paid breastplate recipes from actual outputs. Quantify supply paths before selecting a source repair for tinker's tokens or foreign proofs. Existing dialogue could be stale rather than gameplay broken; preserve rewards and balance until that decision. |
 | ZSQ-ALA-PILGRIMAGE / ALLOCATION | Specify all-stage pilgrimage/banquet/profession campaigns separately from independent terminals. Confirm exact competing item use, replacement shards, retiring Jenk/proof recipients and reset generations. A final gifted item can complete its request while leaving personal journey history unearned. |
 
@@ -225,8 +306,7 @@ deliveries do not implement the world transformations described in dialogue.
 
 ## Next audit checkpoint
 
-Finish the remaining 406 rooms and 495 object prototypes; complete the
-1,469 non-D reset-family review and selected source paths;
+Complete the 1,469 non-D reset-family review and selected source/handler paths;
 resolve every gate, timed/random effect and quest-like orphan. Then classify
 all 495 contracts into faithful story/request/service/exclusion rows, author
 all usable contacts, publish the sidecar and reproducible index, and add

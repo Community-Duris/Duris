@@ -289,7 +289,8 @@ Implement and qualify the remaining additions in this order:
 
 Alatorin's [interim district review](zone-stories/ALATORIN.md) adds concrete
 requirements to these steps. Its 495 contracts include 93 paid offerings;
-publication awaits the remaining world/prototype/reset/source review.
+all 952 rooms and 602 objects have now been reviewed. Publication awaits the
+remaining non-D reset families and source/handler qualification.
 
 - **Exact recipe alternatives.** Current `carried_item` checks sum all listed
   kinds. That is suitable when mixed kinds really qualify, but not for two
@@ -345,6 +346,25 @@ publication awaits the remaining world/prototype/reset/source review.
   preserving intentional secret/one-way behavior. An alternate shrine or outer
   road route prevents treating this local defect as proof the whole mountain
   is inaccessible. Never mark a failed touch as successful quest progress.
+- **Alternate approaches and real return paths.** The completed world review
+  distinguishes prison keys, commander locks, remotely opened encounter load
+  rooms, `grab`-triggered vine travel and reciprocal surface/roc-cave entrances.
+  The 83831 → 122947 descent has no direct reverse up edge. Derive usable route
+  guidance from actual exits and effects, while leaving actor-specific travel,
+  encounter and rescue history dependent on qualified events. A locked door
+  with key 0 or “dwarves only” signage is a review lead, not an automatic defect
+  or admission predicate. Preserve alternative ways to reach the same request.
+- **Typed native rewards and item presentation.** Vergadain's 83308 and
+  Abbathor's 83617 are money piles declared as I rewards. The reviewed SQL item
+  path can store their coin payload, but its accounting plan records custody
+  without a currency posting. Qualify a balanced pile mint/conversion adapter
+  before treating these like equipment or ordinary C wallet rewards. Add typed
+  preflight before consumption and recovery; preserve unsupported obligations
+  and verified paid masks. Freeze exact denominations, source, UID and recipient
+  and test mixed rewards, replay and restart. The confirmed copper-legplate
+  arms flag and silver-sleeve head flag need targeted builder-selected slot
+  repairs. Current names, identified names and static clue pages affect guidance;
+  they do not change native receipt identity or establish historical progress.
 
 Client updates should follow committed events and live inventory/equipment
 changes; reconnect sends a fresh projection. Unsupported facts must be marked
@@ -540,6 +560,11 @@ store failure, reconnect, replay, and cold restart.
   reciprocal edge. Qualify Alatorin's eight shrine controls, remote treasury,
   physical honour/officer/kings keys and malformed room-0 wall. Builder-selected
   narrative dependencies remain explicit; generated candidates earn no credit.
+- [ ] Resolve loaded neighboring-area and return edges for optional routes.
+  Include Alatorin's surface entrances, roc cave, outpost/prison locks, remote
+  encounter exits, vine `grab` travel and descent without a direct reverse edge.
+  Separate a traversable route, a current available NPC and accepted personal
+  arrival/rescue history. Signs and static clue pages do not create predicates.
 - [ ] Project current access separately from previous receipt history: supplied
   keys, already-open doors, equivalent routes and access provided by another
   actor must not demand replay of an unrelated recipe. A live key count alone
@@ -774,13 +799,20 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
 - [ ] Complete comprehensive source dossiers for the other 195 roadmap areas.
-- [ ] Finish Alatorin's remaining room/prototype/reset/source audit, then publish
+- [ ] Finish Alatorin's remaining reset/source/handler audit, then publish
   its district journal and evidence index. The interim draft covers all native
   contracts/topics and fifteen shops, with 93 paid-offering and custom-service
   dependencies; it is not a completed twenty-sixth dossier.
-  All 425 mobiles, fifty mechanism prototypes and 352 D resets are now reviewed,
-  with 546 rooms/107 objects covered. Complete the remaining 406 rooms, 495
-  objects and 1,469 non-D families before comprehensive publication.
+  All 952 rooms, 425 mobiles, 602 objects, fifteen shops and 352 D resets are
+  now reviewed. Complete the other 1,469 reset families and selected source
+  paths before comprehensive publication. Qualify two typed money-pile I
+  rewards and targeted slot/prose repairs alongside the access findings.
+- [ ] Add typed native reward qualification before journal availability claims:
+  distinguish ordinary I items, I money piles and explicit C wallet rewards.
+  Preflight unsupported outputs before offering consumption; retain committed
+  recovery obligations and frozen paid masks. Qualify balanced issuance,
+  custody and conversion of Alatorin's two divine piles, with mixed reward,
+  retry and restart cases. Do not silently rewrite native bindings.
 - [ ] Add district/family authoring and shared presentation for large zones.
   Winterhaven's 219 rows fit existing story/objective limits but need a bounded
   512 KiB source-sidecar allowance for detailed guidance. Preserve receipt IDs;

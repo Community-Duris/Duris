@@ -222,6 +222,29 @@ current access, accepted mechanism use, key consumption, arrival and NPC encount
 as separate facts. Schema 3 can explain these routes but cannot claim durable
 historical completion of those new event kinds.
 
+Check the complete usable route, including its return. Alatorin's vine objects
+listen to `grab`, and its casket/crate mechanisms open exits from encounter
+load rooms. A successful control action is distinct from meeting the occupant.
+Some neighboring-area entrances have real reciprocal exits, while one reviewed
+descent has no direct up return. Keep equivalent approaches available without
+requiring the player to repeat optional history when they already have access.
+
+Inspect the actual prototype type and wear flags for every requested/rewarded
+item. An I reward can be `ITEM_MONEY`, as with Alatorin's Vergadain coins and
+Abbathor satchel; its name does not establish an equipment grant or a balanced
+currency mint. Ordinary C wallet rewards and physical piles need different
+settlement evidence. The integration plan requires typed preflight and recovery
+qualification before claiming those pile grants are supported with active
+accounting. Preserve the exact native I binding until that adapter or a deliberate
+content change exists.
+
+Use current item names for display and VNUM/UID for identity, including equipment
+renamed by identification. Confirm the actual slot when writing wear guidance;
+the Alatorin audit found legplates flagged as arms and sleeves flagged as head.
+Treat static X marks, clue notebook pages and copied extra descriptions as
+authored text. They are not live journal progress, and `_noquest_` in an item name
+does not erase a separately authored native contract.
+
 ## Later schema capabilities
 
 All three versions reject dialogue milestones, personal recovery, kills, arbitrary scripted events,
