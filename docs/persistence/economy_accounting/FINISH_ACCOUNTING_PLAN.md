@@ -19,7 +19,7 @@ migration 0054 and adding exact room-item payload migration 0055. The staging
 fork preserves its first 45 and appends ten; the master fork preserves its first
 31 and appends 24, retaining existing runtime-state payloads. All three converge
 on the pinned 226-table schema on disposable MySQL 8.0.46 and MariaDB 10.11.14 targets.
-The writer inventory covers 864 routes, 2,815 occurrences and 2,756 unique sites
+The writer inventory covers 868 routes, 2,817 occurrences and 2,758 unique sites
 with zero unmapped sites. These counts do not replace route qualification.
 
 Independent reconciliation now checks every native item's parent edge even when

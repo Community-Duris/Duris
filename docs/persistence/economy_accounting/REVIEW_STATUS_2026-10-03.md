@@ -839,3 +839,19 @@ The separate observer binary supplies exact native readback only under a test
 macro; production does not enable it. The original frozen broad result remains
 831 passed, 11 skipped and 17 failed; a current-head broad run and full R1–R8
 qualification remain required. Release and activation remain blocked.
+
+
+## Published room recovery writer-census repair
+
+The lexical scanner and owning registry now include immutable room payload
+insertion, exact hydration, exact placement and detached stage cleanup. Reviewed
+source anchors are refreshed without promoting component proof to executable
+backend coverage. The matrix is pinned to published native source
+5f542e9cf769dfa7ef89e28ce4845d7495d4e1b3, with no unpublished candidate claim.
+It records 868 routes, 2,817 occurrences and 2,758 unique sites, zero unmapped.
+All 54 coverage tests, three issue-590 census tests, 2,727 writer-site checks,
+14 contract fixtures and reproducible generator check pass. Release validation
+still refuses missing executable evidence as required. Native recovery evidence
+does not qualify the real producer or full writer inventory.
+Evidence: `tmp/room-payload55-census-final-summary.local.json`, SHA-256
+de9d84286097c91951b62d2c34a2316331ac537abb47f9199228911b248adeb1.
