@@ -1623,6 +1623,15 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 	std::set<int> runtime_quarantined_pids;
 	int deferred_pid = 0;
 	bool replay_has_deferred = false;
+	auto withdraw_pid_proofs = [&](int pid)
+	{
+		acknowledged.erase(pid);
+		proven_operations.erase(std::remove_if(proven_operations.begin(),
+						       proven_operations.end(),
+						       [&](const operation_record_proof &proof)
+						       { return proof.pid == pid; }),
+					proven_operations.end());
+	};
 	auto quarantine_failed_pid = [&](persistence_trace_event trace)
 	{
 		const int pid = trace.pid;
@@ -1633,12 +1642,7 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 		if (quarantined != player_save_journal_result::ok)
 			return quarantined;
 		runtime_quarantined_pids.insert(pid);
-		acknowledged.erase(pid);
-		proven_operations.erase(std::remove_if(proven_operations.begin(),
-						       proven_operations.end(),
-						       [&](const operation_record_proof &proof)
-						       { return proof.pid == pid; }),
-					proven_operations.end());
+		withdraw_pid_proofs(pid);
 		return player_save_journal_result::ok;
 	};
 	auto stop_replay = [&]()
@@ -1699,6 +1703,14 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 			{
 				applied = apply(frame.snapshot, context);
 			}
+			catch (const std::bad_alloc &)
+			{
+				// Allocation may fail before execution or during possible-commit
+				// verification. Keep the request unresolved, without durability
+				// proof, deferral or a new corruption quarantine.
+				applied = { player_save_apply_outcome::retryable_failure, 0,
+					    ENOMEM };
+			}
 			catch (...)
 			{
 				trace.stage = persistence_trace_stage::save_replay_result;
@@ -1729,18 +1741,15 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 				// or an exact receipt must not retire this PID's retained frames.
 				deferred_pid = frame.snapshot.pid;
 				replay_has_deferred = true;
-				acknowledged.erase(deferred_pid);
-				proven_operations.erase(
-					std::remove_if(proven_operations.begin(),
-						       proven_operations.end(),
-						       [&](const operation_record_proof &proof)
-						       { return proof.pid == deferred_pid; }),
-					proven_operations.end());
+				withdraw_pid_proofs(deferred_pid);
 				continue;
 			}
 			if (applied.outcome == player_save_apply_outcome::retryable_failure ||
 			    applied.outcome == player_save_apply_outcome::ambiguous_commit)
 			{
+				// Earlier success for this PID cannot retire any of its frames
+				// once a later request is unresolved. Drain only unaffected PIDs.
+				withdraw_pid_proofs(frame.snapshot.pid);
 				{
 					std::lock_guard<std::mutex> lock(journal_mutex);
 					++health.backpressure;

@@ -661,7 +661,14 @@ Startup/registration, checkpoint-owned permits, affected-PID hydration, retained
 wakes, independent ACK/checkpoint fencing and original publication release remain
 pending. A per-pass marker does not establish a resident or cold-restart hold.
 Existing admission/retry/promotion/result-queue allocation gaps are separate work.
-Separate unresolved callback proof withdrawal and bad_alloc classification also
-remain unqualified; ordinary SQL transaction/pool-lease exception cleanup is
-distinct from the journal repair. See Plan1 and October3 review for exact scope.
+Unresolved callback proof withdrawal and bad_alloc classification now have
+bounded paired qualification:19 before failures/four terminal controls become23
+passes per mode; unchanged19-case deferral owners also pass per mode. Both strict
+incremental builds, nine maintained owners,14 validations/30 contracts and actual
+inactive MariaDB/MySQL plus flatfile restart/relog journeys pass. Final declaration
+9ef8c4b2 pins exact source, native cases, gameplay and owned service teardown.
+Ordinary SQL transaction/pool-lease exception cleanup, general postcallback
+allocation safety and worker admission/retry/promotion/completion allocation
+remain separate. A newly confirmed typed snapshot-mask/exact-journal identity
+race also remains open; native custody and stale-frame safety must be preserved. See Plan1 and October3 review for exact scope.
 This does not authorize ordinary-drop wiring, active accounting or gate promotion.

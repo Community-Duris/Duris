@@ -2046,7 +2046,91 @@ or permission to hydrate a deferred player. The durable critical owner must
 restore its gate before cold replay; a later wake must be retained. Startup
 census, checkpoint-spanning permits/generation recheck, independent worker ACK
 and public checkpoint fences, stale-frame disposition and original-publication
-ACK reservation remain unwired. Separate callback bad_alloc classification and
-proof withdrawal on unresolved retry/ambiguity, general postcallback allocation,
+ACK reservation remain unwired. The later milestone below closes bounded callback bad_alloc classification and
+proof withdrawal on unresolved retry/ambiguity. General postcallback allocation,
 SQL transaction/pool-lease cleanup and worker queue allocation gaps remain open.
 No route, R1-R8 or release gate is promoted; coverage_complete=false/release=BLOCKED.
+
+### Unresolved callback failures must retain earlier same-PID proofs
+
+The next paired native owner establishes two separate failure paths. Callback
+bad_alloc was caught as terminal EFAULT and quarantined the entire affected PID;
+returned retry/ambiguity retained earlier ordinary durable99 or exact death/
+quest/spell/craft proofs, so stop_replay checkpointing retired earlier frames
+despite the unresolved later request. All19 unresolved cases fail on the actual
+before source, while four genuine terminal controls pass. Strict SQL-header
+before compilation takes28.172 seconds/300; aggregate execution1.604/120. Binary
+4f6cbb73911b4eaea96d2ce6e773a3e44e93db1bebd1b2b42104c7c6c5503ac8;
+`tmp/journal-unresolved-before-qualified-artifact-v2.local.json` SHA-256
+391d84aa9a19b32aa0595a430476d4549cfe23e3fa2b46f4d9cea511193e1533.
+
+The candidate catches only std::bad_alloc before the existing catch-all, records
+retryable ENOMEM with zero durability proof, and withdraws both proof stores
+before stopping on any retryable or ambiguous outcome. Unaffected prior PIDs
+checkpoint; later callbacks remain unattempted and the global replay/load fence
+stays closed. Real checkpoint errors keep precedence. Shared allocation-free
+proof withdrawal also serves existing deferral/quarantine without changing their
+meaning. Runtime EFAULT, explicit terminal ENOMEM, custody error10001/diagnosis6
+and death error10001/diagnosis11 retain genuine durable quarantine semantics.
+Read-only review found no source blocker. This does not repair ordinary SQL
+transaction or pool-lease cleanup, possible-COMMIT readback ownership, or general
+postcallback allocation safety.
+
+The final23-case owner includes intended callback branch counters and exact
+native save_replay_result PID/revision/outcome/error/diagnosis/durable0 assertions;
+frame retention alone would not establish error classification. Complete raw
+headers/payload/duplicate IDs, earlier exact proofs, unaffected earlier and
+unattempted later PIDs, repeated replay, actual cold reopen and real fdatasync
+failure/repair are checked. The marked-effect exception is explicitly a controlled
+uncertainty simulation, not SQL COMMIT/rollback/lease proof. Native SQL-header and
+flatfile23-case after runs pass, along with fresh unchanged19-case deferral
+regressions per mode on the same new source. Component declaration
+`tmp/journal-unresolved-qualified-artifact.local.json` SHA-256
+2ba29acd58b51f9c2a2c027b504b0743e105e1b50f78c4faddf38c07e9a139de
+pins all five before/after artifacts and every case log, full compiler argv,
+source/header/owner identities and three supplied negative guards per run.
+After23 SQL compile/runtime32.821/1.810 seconds; flat27.873/1.561. Refreshed19
+SQL28.707/3.366; flat28.939/3.637. Original300/120 gates remain unchanged.
+
+Both incremental strict production builds pass original600-second budgets/-j2,
+recompiling the one changed journal translation unit and retaining unchanged
+objects under the identical source closure. SQL18 seconds, binary SHA-256
+b5ab9b49afb341a91cc0915ba1038b69925205013824bd99fd5ccea179a8c513;
+flatfile15 seconds,cc8909496f1536c631c41b01f37948a0745c928af67f6e3ab1eb88c0c6ffe57a.
+All nine maintained worker/pipeline/journal/quarantine/recovery/diagnostic/writer/
+evidence/root owners pass.14 accounting validations,30 contracts and matrix
+--check pass with captured logs, retaining868/2817/2758/zero unmapped and false/
+BLOCKED. Actual inactive SQL gameplay plus maintained native follow-ups pass
+on fresh MariaDB and MySQL. Actual inactive flatfile creation/save/cold restart/
+relog passes in129.215 seconds within the unchanged600-second outer budget.
+Owned SQL schemas were torn down, exact disposable server processes stopped and
+ports35281/35282 rebound successfully. Final nonmutating format/matrix/whitespace
+checks pass. Immutable `tmp/journal-unresolved-final-milestone.local.json`, SHA-256
+9ef8c4b2071c26b0c95209266a3dc32d48306caeeb93a604fa652e6efc581dfe,
+reverifies all1232 native source pins, five before/after component declarations,
+case logs/binaries, builds, gameplay, teardown and maintained owner logs. This
+bounded journal prerequisite is solved locally. No R1-R8 gate is promoted.
+
+The initial candidate preparation stopped on one clang-format aggregate line
+wrap before any compiler, object forcing or manifest write. Its original source
+2eeac6700fd81968162183ae2aa6fd243f2d9d1b69e90d82dceb647e208c106b
+remains preserved. The formatted frozen candidate journal source is
+f1a1f7bd5f8abb9cdc1cd663edc8db8b003bb8f080ecae095bea794ac3522272;
+all other1231 native inputs remain unchanged. Production source manifest
+`tmp/journal-unresolved-production-inputs.local.json`, SHA-256
+d530541c8950ae5d1f8ee69f707ed7eb23bfb5e5ca48b2703d0febf1da152874,
+pins that failed-preparation witness and the new1232-input source copy. Its
+strict builds recompiled the only changed journal translation unit, retaining
+unchanged objects under the prior identical source closure. The private final
+verifier initially ran under Windows and refused Linux paths before any evidence
+write; its subsequent Linux run verified the original pinned evidence.
+
+Source-only review also confirms a separate typed worker identity gap: initial
+submission/pending promotion can narrow components after the original journal
+append, so real ACK re-encoding conflicts with the retained frame. Typed-required
+bits can also be removed. Separate revision ownership and original apply/ACK
+identity must preserve native custody/stale-frame safety; flatfile currently lacks
+SQL apply-time custody comparison. This remains unimplemented. General worker
+allocation, SQL transaction/lease cleanup, restored-save gates, current broad and
+combined incoming-source qualification remain open. GitHub publication remains
+pending local history integration authorization under the no-merge restriction.
