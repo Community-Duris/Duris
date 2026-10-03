@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 49 authored journals, accounting-gated player surfaces, starter/town
+**Status: 50 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -12,7 +12,7 @@ Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus, Torg, Vast Hidden
 Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter
 Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl, Ravenloft
 Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl, the Jade Empire and
-the Savannah of Broken Trusts and Alatorin now have complete source story maps;
+the Savannah of Broken Trusts, Alatorin and Newhaven now have complete source story maps;
 their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
 with seventeen contacts/all nineteen raw addressed families and twelve optional
@@ -196,6 +196,22 @@ tinkerer token 83458 or prison key 83294. The disabled old parchment lesson,
 unbound thug barrier alias and stale references need builder-selected restoration
 or retirement, rather than assumed gates. These findings add precise qualification
 and repair work while retaining the mandatory accounting prerequisite.
+
+Newhaven's [comprehensive dossier](zone-stories/NEWHAVEN.md) and revision-one
+journal classify nine exchanges as three named achievement/potential daily
+outcomes and six services, with seventeen contacts/twelve optional checks.
+The rift connects real recovery, berries and lost tobacco to unfinished scholar,
+erinyes and prisoner lore. Dibbly accepts a snorkel pipe despite requesting
+fishing line; retain that real binding as a service until builders choose
+intent. The armorer's four fees and Vulgaris's two-item collar fee remain
+unsupported by active accounting. The foreign collar's table switch resets
+inside its own blocked alcove, so the promised ordinary approach needs a
+placement/target decision. Tail get/put has a one-charge piercing trap;
+acquisition, trap effects and custody must be qualified separately. The
+displacer has mainland dispersal/wandering rather than a reachable city
+waypoint. ROOM_INN bootstrap binds both inns even though the literal list
+names only the ruined one. These property-driven and bounded foreign cases
+extend source/access review without granting invented rescue or rift closure.
 
 ## Accounting requirement and delivery sequence
 
@@ -867,7 +883,18 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 194 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 193 roadmap areas.
+- [x] Complete Newhaven's nine-Q/two-addressed/53-ambient source dossier,
+  all 100 rooms/91 mobs/44 objects/four shops/252 resets, bounded foreign
+  suppliers and shared property/command dispatch. Ship three named outcomes,
+  six services, seventeen contacts and twelve optional exact/history checks.
+- [ ] Qualify Newhaven's active sources, supplied versus personal proofs,
+  five mixed fees, exact badge choices, tail trap/custody and travel/key/inn
+  journeys. Resolve Dibbly's reel/pipe, collar-table placement, stale pool and
+  tail/badge/cloak prose through deliberate builder decisions.
+- [ ] Define builder-selected rift/prisoner endpoints before all-stage credit;
+  unlocking a cell, ambient confession and defeating a counterpart are not
+  accepted rescue or curse-resolution evidence. Preserve optional preparation.
 - [x] Complete Alatorin's source dossier, selected foreign supply/shared dispatch,
   journal and evidence index: 495 contracts, all 296 raw addressed families,
   253 rows, 94 contacts and 548 optional checks, preserving native identities.
@@ -926,6 +953,7 @@ contract classification; it does not claim complete objective coverage.
 | The Jade Empire | 1 | Complete: eight stories/nine requests/seventeen services/two exclusions across 37 contracts | [Source-comprehensive dossier](zone-stories/THE_JADE_EMPIRE.md); 38 contacts/all three addressed blocks, 35 optional checks and equivalent fish grouping | Paid net/map/mixed fees, legacy mithril supply and computed forge/mining pending; native cash rewards preserved | Qualify fresh sources/captures, exact allocation, same-kind replacement, load-room encounters, actual keys/water/foreign routes and fishing publication; builder selects belt/lore/prose repairs |
 | Savannah of Broken Trusts | 1 | Complete: two stories/three requests/twelve services across seventeen contracts | [Source-comprehensive dossier](zone-stories/SAVANNAH_OF_BROKEN_TRUSTS.md); seventeen contacts/all nineteen raw topics and twelve optional checks | Fresh stock/retiring episodes unqualified; native cash reward supported; no active sister collection terminal | Qualify three-part sources, six-kind allocation/matching upgrades, real well/tunnel/hazard access; builder selects sister/tribal endpoints and alias/prose/protection repairs |
 | Alatorin - the Forge City | 1 | Complete: eighteen stories, 72 requests, 163 services/four returns across 495 contracts | [Source-comprehensive dossier](zone-stories/ALATORIN.md); 94 contacts/all 296 raw topics, 548 optional checks, complete recipes and bounded foreign supply/dispatch | Fresh source generation, material preparation, fees and typed money outputs remain unqualified | Native projection/file-loader checks; qualify exact sources, target/custody, class-gift entitlement, random/decay lineage, district presentation and builder-selected repairs |
+| The City of Newhaven | 1 | Complete: one story, two requests and six services across nine Q | [Source-comprehensive dossier](zone-stories/NEWHAVEN.md); seventeen contacts/all two addressed families, twelve optional checks; rift/counterpart/key/source guidance | Fresh source issuance and five mixed fees remain unqualified; real pipe trade retained as service | Native projection/file-loader checks; qualify supplied/personal proof, tail trap/custody, actual travel/inn and builder-selected source/prose/endpoints |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
 
 ## Twin Towers evidence and decisions

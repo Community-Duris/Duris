@@ -705,7 +705,61 @@ assert len(forge_units) == 253 and sum(u["achievement"] for u in forge_units) ==
 assert sum(u["daily_candidate"] for u in forge_units) == 82
 assert (ROOT / "areas/story/alatorin.story.json").stat().st_size <= catalog_module.MAX_STORY_MAPPING_BYTES
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin"):
+haven = inventory_module.area_evidence(ROOT, "newhaven")
+assert len(haven["requests"]) == 9 and len(haven["dialogue"]) == 2
+assert len(haven["mobs"]) == 91 and len(haven["items"]) == 44
+assert len(haven["reset_commands"]) == 252 and haven["zone"]["reset_mode"] == 2
+haven_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "newhaven")
+assert haven_mapping["coverage"] == "complete" and haven_mapping["schema_version"] == 3
+assert collections.Counter(s["category"] for s in haven_mapping["stories"]) == {"story": 1, "request": 2, "service": 6}
+assert not haven_mapping["exclusions"]
+assert sum(t.get("optional", False) for s in haven_mapping["stories"] for t in s["steps"]) == 12
+haven_contacts = {c["mob_vnum"]: c for c in haven_mapping["contacts"]}
+assert len(haven_contacts) == 17
+for response in haven["dialogue"]:
+    assert set(response["body"][0].rstrip("~").split()) & set(haven_contacts[response["giver_vnum"]]["topics"])
+for vnum, contact in haven_contacts.items():
+    assert contact["keyword"] in haven["mobs"][vnum]["keywords"]
+assert all(not c["topics"] for v, c in haven_contacts.items() if v not in (35204, 35211))
+haven_stories = {s["id"]: s for s in haven_mapping["stories"]}
+assert {s["contracts"][0]["giver_vnum"] for s in haven_mapping["stories"] if s["category"] != "service"} == {35204, 35213, 35216}
+# Preserve the implemented pipe identity while treating the mismatched merchant
+# trade as a service; ambient line/reel prose must not silently change receipts.
+pipe = haven_stories["dibblys-snorkel-pipe-buyback"]
+assert pipe["category"] == "service" and pipe["contracts"] == [{"giver_vnum": 35216, "completion_key": "give=I:88905;receive=C:5000;disappear=0"}]
+history, = [t for t in pipe["steps"] if t["kind"] == "completion" and t.get("optional")]
+assert history["contracts"] == [{"giver_vnum": 88907, "completion_key": "give=I:88909,I:88909,I:88909,I:88909;receive=E:7500,I:88905;disappear=0"}]
+assert any(t["kind"] == "carried_item" and t["item_vnums"] == [88909] and t["count"] == 4 and t["optional"] for t in pipe["steps"])
+for name, fee, reward in (("scale-and-balance-badge", 45000, 35228), ("hammer-and-anvil-badge", 55000, 35239)):
+    badge = haven_stories[name]
+    assert badge["category"] == "service" and badge["contracts"] == [{"giver_vnum": 35211, "completion_key": f"give=C:{fee},I:93901;receive=I:{reward};disappear=0"}]
+assert haven_stories["vulgaris-veldian-collar"]["contracts"] == [{"giver_vnum": 35286, "completion_key": "give=C:100000,I:13221,I:98606;receive=I:35224;disappear=0"}]
+haven_units = [u for u in catalog_module.story_units(catalog) if u["zone_number"] == 352]
+assert len(haven_units) == 9 and sum(u["achievement"] for u in haven_units) == 3
+assert sum(u["daily_candidate"] for u in haven_units) == 3
+assert sum(r["definition"]["daily_eligible"] for r in haven["requests"]) == 4
+paid = [r for r in haven["requests"] if any(k == "C" for k, _ in r["block"]["give"])]
+assert len(paid) == 5 and all(r["definition"]["daily_exclusion"] == "Unsupported durable offering" for r in paid)
+# Same-room lore, similar NPCs and repeated prototype appearances are not the
+# item source. Keep actual G parents and independent ground declarations.
+parent = room = None
+material_sources = {}
+ground = []
+for reset in haven["reset_commands"]:
+    c, v = reset["command"], reset["arguments"]
+    if c in ("M", "F"):
+        parent, room = v[1], v[3]
+    if c == "G" and v[1] in (35226, 35227, 35237):
+        material_sources[v[1]] = (parent, room, v[2], v[4])
+    if c == "O" and v[1] in (35233, 35238):
+        ground.append((v[1], v[2], v[3], v[4]))
+assert material_sources == {35226: (35254, 35295, 1, 100), 35227: (35290, 35279, 1, 100), 35237: (35287, 35272, 1, 100)}
+assert ground == [(35233, 2, 35267, 100), (35238, 1, 35270, 100), (35233, 2, 35279, 100)]
+assert any(r["command"] == "M" and r["arguments"][1:5] == [35278, 1, 35270, 25] for r in haven["reset_commands"])
+assert re.search(r"\bT\s+2\s+7\s+1\s+5\b", (ROOT / "areas/obj/newhaven.obj").read_text())
+assert all(t.get("optional", False) and len(t["item_vnums"]) == 1 for s in haven_mapping["stories"] for t in s["steps"] if t["kind"] == "carried_item")
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

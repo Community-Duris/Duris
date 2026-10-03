@@ -1,6 +1,6 @@
 # Zone journal integration priorities
 
-**Reviewed planning order — October 2, 2026. Active economic accounting is required.**
+**Reviewed planning order — October 3, 2026. Active economic accounting is required.**
 
 This is an integration order, not a difficulty ranking or a claim that players must follow
 these stories in order. New journals use the existing schema; proposed learned dialogue,
@@ -13,10 +13,12 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 26 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 27 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
+Newhaven's [completed dossier](zone-stories/NEWHAVEN.md) adds rift/counterpart
+guidance, three delivery outcomes, six services and precise source/access gaps.
 Active reset-generation qualification is a shared prerequisite for the pilots.
 
 ## Reviewed first integrations
@@ -49,7 +51,7 @@ Active reset-generation qualification is a shared prerequisite for the pilots.
 | 24 | [The Jade Empire](zone-stories/THE_JADE_EMPIRE.md) (`jade`) | Five rice → bag → ground rice → competing hat/sushi/drink; five seed portions → bouquet; knife → turtle → soup/ore; net → captive → bounty; heart + finger → invitation → royal key; four relics; Mande + Troggahn proofs; Marn brig key + Miu Pai keys → princess token → Emperor. | Source-comprehensive, revision 1: seventeen achievements/potential dailies, seventeen services/two exclusions, 38 contacts/all three addressed blocks and 35 optional checks. Exact quantities, competing inputs, real keys/alternate water access, paid/legacy-source gaps, fishing publication, foreign ownership and selected belt/lore/prose repairs have qualification plans. |
 | 25 | [The Savannah of Broken Trusts](zone-stories/SAVANNAH_OF_BROKEN_TRUSTS.md) (`savannah`) | Three tusks or three skins → distinct Tukluk gifts; roc feather → Kylian; lion bones → laboratory; sealed Kahir essence → Watcher cloak; six different Mitashi katanas → six instruments, or all six → Retribution → matching epic upgrades. Sister collection and chief/god finale are unfinished lore leads. | Source-comprehensive, revision 1: five achievements/potential dailies, twelve separate equipment services, seventeen contacts/all nineteen raw topics and twelve optional checks. Exact source parents, competing allocation, retiring appearances and real well/tunnel routes are documented; absent sister/tribal endpoints and alias/prose/protection decisions have qualification/repair plans. |
 | 26 | [Alatorin - the Forge City](zone-stories/ALATORIN.md) (`alatorin`) | Inn kitchens → four royal dishes → culinary tokens; collecting fragments → professional tokens → medals/honor key; ten arcanums → random attributes → nine rings → wondrous power; mining/armor/dragon services; separately owned guild/outpost proofs; Deramuth supplies; First Mountain divine gifts. | Source-comprehensive, revision 1: all 495 contracts classified into 253 rows, 90 achievements/82 potential dailies, 163 services/four returns, 94 contacts/all 296 topic families and 548 optional checks. Exact recipes, rare/nested/foreign sources, consumed keys, typed money rewards and actual mechanisms have qualification plans. Accounting-blocked preparation/payments, released refining inputs, target/custody dispatch, class-gift entitlement, missing token/key sources and builder-selected content repairs remain explicit. |
-| 27 | [The City of Newhaven](../../areas/qst/newhaven.qst) (`newhaven`) | Return the blacksmith's wife; baker berries; Dibbly's supplies; armorer and collar recipes. | Candidate reviewed in Q source. Compact town stories with mixed-fee service limits. |
+| 27 | [The City of Newhaven](zone-stories/NEWHAVEN.md) (`newhaven`) | Living city → rift/corrupted counterpart → recover the blacksmith's wife; ruined berries/tobacco → living recipients; optional badge/bracer/cloak/collar recipes; scholar/erinyes/prisoner lore. | Source-comprehensive, revision 1: three achievements/potential dailies, six services, seventeen contacts/twelve optional checks. Exact pipe-versus-reel mismatch, inside-blocked collar switch, tail trap, mainland beast dispersal and five accounting-blocked fees have explicit qualification/repair plans. No invented rift closure or prisoner rescue. |
 | 28 | [Faerie Realm](../../areas/qst/realm.qst) (`realm`) | Finn's lost ring → realm map; elemental/astral forge components → repair scroll routes. | Candidate reviewed in Q/M source. Check alternative makers and homeward travel specials before adding escape milestones. |
 | 29 | [Verspin](../../areas/qst/verspin.qst) (`verspin`) | Circus rivalry → five gnomish totems; trade-master amulet combinations → hunting equipment. | Candidate reviewed in Q/M source. Distinguish rivalry resolution from repeated equipment services. |
 | 30 | [The Ship Yards](../../areas/qst/shipy.qst) (`shipy`) | Chef's six-pike request; glassblower's lost work; shipyard supply requests; trade/support services. | Candidate reviewed in Q/M source. Require fishing/freshness evidence only for explicitly authored sourcing objectives. |

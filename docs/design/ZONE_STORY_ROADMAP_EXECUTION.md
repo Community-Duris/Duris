@@ -51,9 +51,10 @@ neither every branch nor every historical prerequisite.
 | 24 | The Jade Empire | [Comprehensive source dossier](zone-stories/THE_JADE_EMPIRE.md): 37 Q/four M, 340 rooms, 134 mobs, 130 objects, 583 resets/all 331 families, three shops, two literal room services/computed smith and bounded foreign proofs/routes | Revision 1: eight stories/nine requests/seventeen services/two exclusions, 38 contacts/all three addressed topics and 35 optional checks; equivalent fish and exact allocation/access guidance | Paid net/map/mixed fees, legacy mithril and deliberate forge/mining refusal; accepted fishing/source/capture/recipient, same-kind replacement, load-room encounters and real key/water/foreign travel; builder-selected belt/lore/prose repairs |
 | 25 | Savannah of Broken Trusts | [Comprehensive source dossier](zone-stories/SAVANNAH_OF_BROKEN_TRUSTS.md): seventeen Q/nineteen M, 167 rooms, 59 mobs, 39 objects, 315 resets/all 105 families; shared native/access/falling/bard and bounded foreign Mitashi/Air/Hostel review | Revision 1: two stories/three requests/twelve equipment services, seventeen contacts/all nineteen raw topics and twelve optional checks | Active parts/sword stock, exact allocation, retiring appearances and well/tunnel access; source/learned-topic evidence; builder-selected absent sister/tribal endpoints and alias/prose/protection decisions |
 | 26 | Alatorin - the Forge City | [Comprehensive source dossier](zone-stories/ALATORIN.md): 495 contracts/961 blocks, full local world/prototypes/shop/reset and bounded foreign/shared review | Revision 1: 253 rows, 90 achievements/82 potential dailies, 163 services/four returns, 94 contacts/all 296 addressed families, 548 optional checks | Active source/preparation/payment and typed-money admission; target/custody/random/class-gift recovery; exact alternative predicates; builder source/access/prose/slot repairs; district presentation and full-stage campaigns |
-| 26–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 27 | The City of Newhaven | [Comprehensive source dossier](zone-stories/NEWHAVEN.md): nine Q/two addressed/53 ambient blocks, all local world/prototypes/four shops/252 resets and bounded foreign/shared review | Revision 1: three named outcomes/six services, seventeen contacts/twelve optional checks; exact source, fee, counterpart and unfinished-lore guidance | Active source/personal proof, five mixed payments, badge choices, tail trap/custody and actual travel/inn; builder-selected pipe/reel, collar-table, stale pool/prose and rift/prisoner endpoints |
+| 28–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Alatorin - the Forge City, followed by the City of Newhaven.
+The next area is Faerie Realm, followed by Verspin and the Ship Yards.
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -137,6 +138,9 @@ matches, or a candidate item graph was extracted.
 | ZSQ-SMOKEVEIL-SERVICES / LEGACY | Normal boot attaches Dorno's smith table; Keebo is an epic teacher. Their active purchases refuse. Shared smith choice uses table index and searches NPC ore; unassigned coral-golem code references stale local identities. | Qualify complete menu/player-owned ore/payment/result recovery and successful teaching. Builder resolves the dormant golem's owner/item/slot/destination before assignment. Preserve explicit economic refusals; findings are source-level, not observed player-loss incidents. |
 | ZSQ-SMOKEVEIL-CLOSURE | Tarlator's narrated cure/message/reunion is two native deliveries; Raltron accepts a supplied helm. No typed letter, transformation or reunion event is implemented. | Optional producer history is shipped. Add explicitly owned all-stage/closure events and shared projection only after builder intent and committed episode evidence; neither receipt alone represents the entire cure. |
 | Evidence extractor gaps | Fixed chained/multiline literal assignment detection and ignored commented assignments. Object/mobile membership follows source prototypes rather than room bounds. | Continue review for aliases, computed VNUMs, preprocessor branches, table-driven teacher/smith assignments, F-selected parents, and foreign reset sources; extraction remains a lead list, not execution proof. |
+| ZSQ-NEWHAVEN-CONTENT | Dibbly requests a reel but accepts a snorkel pipe; armorer tail success says collar and hammer-badge ground text names the other badge. Existing exact deliveries are preserved. | Builder chooses pipe prose/retained service or a deliberate revised reel contract with receipt compatibility. Correct tail/badge/cloak prose without changing equipment balance; qualify both badge allocations and competing reel consumers. |
+| ZSQ-NEWHAVEN-ACCESS / PROPERTIES | Collar-source table resets inside its own closed/blocked alcove and uses pull on the inside return. Displacer starts in a mainland dispersal room. ROOM_INN bootstrap binds both inns; literal pool targets are missing. Tail has an actual get/put trap. | Review table placement/target/opening and supplied collars; qualify forest wandering, accepted travel/return, both inns, stale-target validation and trap charge/damage/custody. Property-driven source review supplements literal assignment candidates. |
+| ZSQ-NEWHAVEN-LORE / ENDPOINT | Rift inquiry/confession, erinyes boasting and chained Dibbly's plea have no accepted closure, rescue or mercy-kill endpoint. Living and corrupted appearances are independent. | Retain lore or author deliberate actor/party/episode/branch endpoints before adding semantic events. Separate door unlock, current supplies, source recovery, actual kills and full-stage credit. Five paid recipes stay guarded until atomic material/fee/output settlement is qualified. |
 
 ## Verification record
 
@@ -1142,3 +1146,44 @@ exact contract/recipe/price/topic classification and optional-supply checks;
 generated catalog/index/inventory reproducibility; source/access/reset/material
 metrics and local links; changed-line formatting, whitespace and cached server
 build. See the PR/checkpoint result for executed outcomes and limitations.
+
+## Newhaven completed source map — October 3, 2026
+
+Completed priority 27 with the [source dossier](zone-stories/NEWHAVEN.md),
+[revision 1 journal](../../areas/story/newhaven.story.json) and
+[reproducible index](../reference/zone-story-audits/newhaven.md). All nine
+native exchanges become one story, two requests and six services: three
+achievement/potential daily outcomes and nine rows. Seventeen contacts cover
+all thirteen native speakers/both addressed families and four useful carriers;
+twelve optional checks preserve supplied materials and foreign receipt ownership.
+
+Reviewed all 64 Q/M/MA blocks, 100 rooms, 91 mobs, 44 objects, four shops,
+252 resets/all 187 families, literal and property-driven dispatch, exact
+teleports/keys/traps/inns and bounded foreign proof suppliers and surface
+destinations. The blacksmith, berries and tobacco are independent accepted
+deliveries. Five mixed-fee equipment recipes stay unavailable under active
+accounting. Dibbly's actual pipe buyback is a service while its reel wording
+awaits a deliberate content decision; no native reward or binding was changed.
+
+Concrete plan additions cover the collar table inside the blocked alcove,
+tail get/put trap and custody, mainland beast dispersal, ROOM_INN automatic
+assignment, stale literal pool targets, real counterpart/ground parents and
+unfinished librarian/erinyes/prisoner endpoints. Supplied proofs remain valid;
+no conversation, unlocked cell, counterpart death or optional earlier recipe
+becomes invented personal-source or full-campaign credit.
+
+Current catalog: **50 journals, 1,794 achievement units, 1,544 potential daily
+units and 2,240 projected rows; 27 of 220 roadmap areas are source-comprehensive,
+with 193 remaining.** The native 2,668 definitions, revision two and fingerprint
+and all prior 49 maps are unchanged. Service classification replaces six raw
+achievement units and one pipe daily candidate without changing gameplay rewards.
+Continue with Faerie Realm, Verspin, Ship Yards and Ultarium. Active-world
+qualification remains separate; no accounting activation, migration, DB/server
+operation or merge has been performed.
+
+Validation: focused production-catalog and native story/file-loader regressions,
+exact fees/identities/source parents/optional foreign history, generated evidence
+reproducibility, switch/inn/teleport source checks, document links, changed-line
+formatting, whitespace and cached server build. These fixtures do not substitute
+for played source, paid, trap, travel or restart journeys; publication records
+the executed checks and remaining limitations.

@@ -194,6 +194,25 @@ exact root allocation require a future schema. Optional status does not change
 the counting semantics. See the [Alatorin dossier](../design/zone-stories/ALATORIN.md)
 for the two/six/eight-matching-material examples and planned qualification.
 
+## Source mismatches, properties and unfinished lore
+
+The [Newhaven dossier](../design/zone-stories/NEWHAVEN.md) shows why full
+source review matters. Dibbly's fishing-line prose accepts a different snorkel
+prototype; retain actual bindings until builders deliberately correct content.
+The foreign collar switch resets inside the blocked alcove it should expose;
+an item-source edge alone cannot establish a usable approach. The lizard tail
+has an actual get/put trap, while the beast carrying cloak material disperses
+into mainland forests. Read current command IDs and exact targets/parents.
+
+ROOM_INN automatically binds the shared inn procedure at room bootstrap;
+literal assignment lists alone omit the living inn. Conversely, literal pool
+assignments with missing loaded targets are not active travel routes. Include
+property-driven dispatch and active source inventory before presenting access.
+Rift confession and prisoner pleas remain narrative without accepted endpoints.
+Current possession is preparation; it does not prove a kill, harvest, gift-free
+recovery, safe handling or supported payment. Author exact optional checks and
+keep future semantic events and deliberate content repair in the shared plan.
+
 ## The gardener dependency
 
 Alvinar's Q contract does not describe the barrier. `gardener_block` in

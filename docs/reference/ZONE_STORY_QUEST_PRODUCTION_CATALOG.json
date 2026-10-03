@@ -51694,6 +51694,526 @@
     {
       "contacts": [
         {
+          "description": "The working stables and blacksmithy. Ask about wife to hear the rift loss; return the exact remains for XP.",
+          "keyword": "blacksmith",
+          "mob_vnum": 35204,
+          "name": "Living blacksmith",
+          "topics": [
+            "wife",
+            "quest"
+          ]
+        },
+        {
+          "description": "The living armory. Ask about armor for four different paid equipment recipes. Their accounting settlement is not ready.",
+          "keyword": "armorer",
+          "mob_vnum": 35211,
+          "name": "Living armorer",
+          "topics": [
+            "armor",
+            "quest"
+          ]
+        },
+        {
+          "description": "The working bakery. Her ambient berry request has an XP delivery; the spectre in the ruined bakery is a different NPC.",
+          "keyword": "baker",
+          "mob_vnum": 35213,
+          "name": "Living baker",
+          "topics": []
+        },
+        {
+          "description": "The living general store. Lost tobacco earns copper. His other trade accepts a snorkel pipe despite requesting fishing line in ambient speech.",
+          "keyword": "dibbly",
+          "mob_vnum": 35216,
+          "name": "Dibbly, living shopkeeper",
+          "topics": []
+        },
+        {
+          "description": "The living library, entered by touching its painting in the scribing room. His unanswered rift investigation is ambient lore with no exchange or learned topic.",
+          "keyword": "evelosi",
+          "mob_vnum": 35221,
+          "name": "Evelosi, living librarian",
+          "topics": []
+        },
+        {
+          "description": "The ruined city's locked holding cell. His plea has no accepted rescue, escort or mercy-kill outcome. A black key opens the cell; it does not complete a quest.",
+          "keyword": "dibbly",
+          "mob_vnum": 35258,
+          "name": "Dibbly, chained prisoner",
+          "topics": []
+        },
+        {
+          "description": "The second library, entered by touching the painting in its ruined scribing room. He regrets summoning an erinyes; no confession or closure receipt exists.",
+          "keyword": "evelosi",
+          "mob_vnum": 35263,
+          "name": "Evelosi, corrupted-city librarian",
+          "topics": []
+        },
+        {
+          "description": "The ruined general store, on a 25-percent mobile reset. Her claims about the city and librarian are ambient lore. Her death does not close the rift; ground tobacco has a separate source.",
+          "keyword": "erinyes",
+          "mob_vnum": 35278,
+          "name": "The erinyes",
+          "topics": []
+        },
+        {
+          "description": "Initially the ruined northeastern tower. His ambient joke and the three corrupted captains give context, without a defeat or cure objective.",
+          "keyword": "riverlan",
+          "mob_vnum": 35280,
+          "name": "Riverlan Strom, zombie-lord",
+          "topics": []
+        },
+        {
+          "description": "Initially ruined Refuge Street by its blood fountain. Ambient snarls and combat remain separate from accepted quest delivery.",
+          "keyword": "hellhound",
+          "mob_vnum": 35285,
+          "name": "Hellhound",
+          "topics": []
+        },
+        {
+          "description": "The damp cave behind the waterfall. Read the actual sign for the two-item collar recipe and fee; his spoken messages are ambient. Paid settlement is pending.",
+          "keyword": "vulgaris",
+          "mob_vnum": 35286,
+          "name": "Vulgaris",
+          "topics": []
+        },
+        {
+          "description": "Initially in the mainland forest distribution room; it can wander through the forest exits. Its carried skin supports the armorer's paid cloak recipe.",
+          "keyword": "displacer",
+          "mob_vnum": 35287,
+          "name": "Displacer beast",
+          "topics": []
+        },
+        {
+          "description": "Before the living city gate. His law/undead warning is ambient speech; his undead-race hostility is an AI rule, not a quest gate or achievement.",
+          "keyword": "gatekeeper",
+          "mob_vnum": 35288,
+          "name": "Stronghold gatekeeper",
+          "topics": []
+        },
+        {
+          "description": "The living institution of punishment. He carries one of two declared copies of the black CELL key, which fits both cells.",
+          "keyword": "artos",
+          "mob_vnum": 35217,
+          "name": "Artos, living avenger",
+          "topics": []
+        },
+        {
+          "description": "The ruined institution of suffering. He also carries the black CELL key; the native cell unlock has no rescue completion attached.",
+          "keyword": "artos",
+          "mob_vnum": 35259,
+          "name": "Artos, demi-lich of Talos",
+          "topics": []
+        },
+        {
+          "description": "The decaying armory. This assistant carries the mummified female for the living blacksmith; the nearby vampire armorer does not own that reset stock.",
+          "keyword": "assistant",
+          "mob_vnum": 35254,
+          "name": "Zombie assistant",
+          "topics": []
+        },
+        {
+          "description": "This mobile has several city appearances, but only the one initially in the northern ruined Rapture Way dead end has a tail stock declaration. It may wander.",
+          "keyword": "lizard",
+          "mob_vnum": 35290,
+          "name": "Tail-bearing small lizard",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore Newhaven's living streets and their corrupted counterpart. The blacksmith's loss connects the rift to a real recovery request; berries and lost tobacco have separate deliveries. Equipment and the mismatched pipe trade remain services. The rift, librarian and prisoner have unfinished lore. Active, ready accounting is required.",
+      "orientation": [
+        "Enter from the Tharnadia Highway and meet the living blacksmith, baker, armorer and plump Dibbly. Only the blacksmith and armorer have addressed quest topics. Ambient messages elsewhere explain leads without learned-keyword achievements.",
+        "The tear in reality on Newhaven Way leads to the ruined city. Its southern street also returns toward Newhaven Way. The two cities have separate NPC prototypes; killing a counterpart does not transform the living citizen or end the curse.",
+        "Search the decaying armory for the zombie assistant carrying the blacksmith's mummified wife. Return the remains to the living blacksmith for 50,000 XP. That accepted delivery answers his loss without resurrecting her or closing the rift.",
+        "Newhaven blackberries have ground declarations in the ruined bakery and a northern ruined Rapture Way dead end. Bring one bunch to the living baker for 18,000 XP. Both locations share a live cap of two; the spectre does not accept the delivery.",
+        "Recover the ground tobacco pouch in the ruined general store for the living Dibbly's 3,500-copper reward. An erinyes can appear there on a separate 25-percent reset; her death is not required by the exchange.",
+        "Dibbly asks for fishing line but his other current binding consumes a snorkel pipe for 5,000 copper. The actual reel has a different item identity. Read this trade as a support service until its intended recipe is resolved; it does not craft a fishing rod.",
+        "The armorer offers two dark-circle badges with different fees and rewards, a lizard-tail bracer and a displacer-hide cloak. Exact current material checks help preparation; paid offerings remain unavailable with active accounting until supported settlement. One circle cannot satisfy both badge recipes.",
+        "The tail stock belongs only to one small-lizard appearance in the northern ruined Rapture Way dead end. The displacer skin is carried by a beast that starts in a mainland forest distribution room and can wander through several woodland exits. These sources are not general animal harvesting rules.",
+        "Enter the waterfall beside the living gate to visit Vulgaris's damp cave. Read its sign for the frayed Khomani-Khan collar, Mixt's heart and 100,000 copper recipe. Supplied materials qualify; the fee still requires supported accounting settlement.",
+        "Touch the library painting in each city's scribing room to enter that city's library. Ordinary paths out remain in the same city. Both Evelosi appearances and the erinyes provide lore, but no implemented investigation, confession or rift-closure outcome exists.",
+        "The living and ruined Artos each carry a black CELL key. Both locked cells use it. The chained Dibbly asks for death, but opening his door, killing him or paying the living merchant does not record a rescue. Key access is a useful route, without a current quest endpoint.",
+        "The living sewer grate leads to western mainland forest; its ruined counterpart leads to eastern hills. Fountain and statue signs explain local law and faith without accepted-action objectives. Rent at the ruined inn uses shared inn rules; it is not the living innkeeper's quest.",
+        "Current items and an optional earlier Fisherman's Wharf receipt explain preparation. Gifts remain valid inputs; possession does not prove recovery, a kill or harvest. Completion follows an accepted terminal exchange, and active source generation still needs qualification."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "newhaven",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:35226;receive=E:50000;disappear=0",
+              "giver_vnum": 35204
+            }
+          ],
+          "id": "the-blacksmiths-missing-wife",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The zombie assistant, beside the vampire armorer in the decaying armory, carries the remains. The assistant is the actual source; the armorer is a different creature. The rift at Newhaven Way leads into the ruined city. Current possession does not prove personal recovery.",
+              "id": "wifes-remains",
+              "item_vnums": [
+                35226
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the mummified female"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:35226;receive=E:50000;disappear=0",
+                  "giver_vnum": 35204
+                }
+              ],
+              "hint": "Find the massive working blacksmith in the living stables and blacksmithy, not his zombie counterpart. Only an accepted exchange completes this request.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Return her remains to the living blacksmith"
+            }
+          ],
+          "summary": "Ask the living blacksmith about wife, then search the corrupted armory for his wife's remains. Returning the mummified female earns 50,000 XP and gives him an answer. His grief does not close the rift or restore her life; supplied remains also qualify.",
+          "title": "The blacksmith's missing wife"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:35233;receive=E:18000;disappear=0",
+              "giver_vnum": 35213
+            }
+          ],
+          "id": "blackberries-for-the-living-baker",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Look for the actual berry item in the ruined bakery or the dead end south of ruined Refuge Street on Rapture Way. Both declarations share a live cap of two. Described fruit and flowers elsewhere are not this item; supplied berries qualify.",
+              "id": "berries",
+              "item_vnums": [
+                35233
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Newhaven blackberries"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:35233;receive=E:18000;disappear=0",
+                  "giver_vnum": 35213
+                }
+              ],
+              "hint": "Return to the working bakery in the living city. The spectre in the ruined bakery is a different NPC and has no such exchange. The baker's request is ambient speech; no learned keyword is required.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Deliver the berries to the living baker"
+            }
+          ],
+          "summary": "Bring one bunch of Newhaven blackberries to the living baker for 18,000 XP. The ruined bakery and a northern ruined-street dead end have ground supplies. This is a delivery, not a recorded harvest or pastry recipe.",
+          "title": "Blackberries for the living baker"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:35238;receive=C:3500;disappear=0",
+              "giver_vnum": 35216
+            }
+          ],
+          "id": "dibblys-missing-tobacco",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The ruined general store declares one ground pouch. The erinyes is a separate 25-percent mobile load; defeating her is not a native prerequisite. Supplied tobacco is accepted as well.",
+              "id": "pouch",
+              "item_vnums": [
+                35238
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the pouch of tobacco"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:35238;receive=C:3500;disappear=0",
+                  "giver_vnum": 35216
+                }
+              ],
+              "hint": "Give it to the plump Dibbly in the living general store, not the skinny prisoner in the holding cell. His payment does not release or change the prisoner.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Return the pouch to the shopkeeper Dibbly"
+            }
+          ],
+          "summary": "Recover the pouch of tobacco from the ruined general store and return it to the living Dibbly for 3,500 copper. The pouch is ground stock; the erinyes may share its room. The chained Dibbly is a separate unfinished lead.",
+          "title": "Dibbly's missing tobacco"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:88905;receive=C:5000;disappear=0",
+              "giver_vnum": 35216
+            }
+          ],
+          "id": "dibblys-snorkel-pipe-buyback",
+          "steps": [
+            {
+              "count": 4,
+              "hint": "Fisherman's Wharf bullfrogs carry the jelly in the lake shallows and marsh pond. Four identical jellies together earn a pipe and 7,500 XP from an eager fisherman on the docks. Supplied pipes skip this preparation.",
+              "id": "frog-spawn",
+              "item_vnums": [
+                88909
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional route: carry four frog-spawn jellies"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:88909,I:88909,I:88909,I:88909;receive=E:7500,I:88905;disappear=0",
+                  "giver_vnum": 88907
+                }
+              ],
+              "hint": "This earlier receipt belongs to Fisherman's Wharf. It explains a source without making personal crafting or that foreign story mandatory in Newhaven.",
+              "id": "wharf-pipe-history",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional route: receive a pipe from the eager fisherman"
+            },
+            {
+              "count": 1,
+              "hint": "This is the pipe, not a reel of fishing line. Do not offer the real reel expecting this binding. Readiness describes current items; it does not establish how you obtained them.",
+              "id": "pipe",
+              "item_vnums": [
+                88905
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a crude snorkel pipe"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:88905;receive=C:5000;disappear=0",
+                  "giver_vnum": 35216
+                }
+              ],
+              "hint": "The recipient pays copper. His existing stock of teak fishing rods is a shop service; this exchange does not craft a rod or teach fishing.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Trade the accepted pipe to the living Dibbly"
+            }
+          ],
+          "summary": "Dibbly's current exchange pays 5,000 copper for a crude snorkel pipe. His ambient request instead names fishing line; the real reel is a different item. This mismatched trade remains a support service while builders choose its intended contract. It grants no zone achievement or daily credit.",
+          "title": "Dibbly's snorkel-pipe buyback"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:45000,I:93901;receive=I:35228;disappear=0",
+              "giver_vnum": 35211
+            }
+          ],
+          "id": "scale-and-balance-badge",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The dark circle has equipped Shadowclave druid sources and a carried cloaked-visitor source in Deramuth. This choice competes with the hammer-and-anvil recipe. Supplied material is valid. The checklist does not check wallet payment or personal source history.",
+              "id": "material",
+              "item_vnums": [
+                93901
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact material"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:45000,I:93901;receive=I:35228;disappear=0",
+                  "giver_vnum": 35211
+                }
+              ],
+              "hint": "Ask the living armorer about armor for the explanation. This service is currently unavailable with active accounting; do not bypass that guard. Distinct fees and rewards remain separate contracts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the armorer's exact paid recipe"
+            }
+          ],
+          "summary": "The living armorer makes this equipment from the exact ingredient and 45,000 copper. Paid native offerings await supported accounting settlement. These equipment services grant no separate achievement or daily credit; the spoken class recommendations do not add a turn-in class requirement.",
+          "title": "Scale and balance badge"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:75000,I:35227;receive=I:35229;disappear=0",
+              "giver_vnum": 35211
+            }
+          ],
+          "id": "lizard-tail-bracer",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Only the tail-bearing small lizard initially in the northern ruined-street dead end carries this stocked tail. Other city lizards are separate appearances. Its first get/put can trigger a one-charge piercing trap. The success text says collar, but the accepted ingredient is a tail. Supplied material is valid. The checklist does not check wallet payment or personal source history.",
+              "id": "material",
+              "item_vnums": [
+                35227
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact material"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:75000,I:35227;receive=I:35229;disappear=0",
+                  "giver_vnum": 35211
+                }
+              ],
+              "hint": "Ask the living armorer about armor for the explanation. This service is currently unavailable with active accounting; do not bypass that guard. Distinct fees and rewards remain separate contracts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the armorer's exact paid recipe"
+            }
+          ],
+          "summary": "The living armorer makes this equipment from the exact ingredient and 75,000 copper. Paid native offerings await supported accounting settlement. These equipment services grant no separate achievement or daily credit; the spoken class recommendations do not add a turn-in class requirement.",
+          "title": "Lizard-tail bracer"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:55000,I:93901;receive=I:35239;disappear=0",
+              "giver_vnum": 35211
+            }
+          ],
+          "id": "hammer-and-anvil-badge",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The same dark circle used for the scale-and-balance badge has a different fee and reward here. A single current circle cannot pay both recipes. Supplied material is valid. The checklist does not check wallet payment or personal source history.",
+              "id": "material",
+              "item_vnums": [
+                93901
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact material"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:55000,I:93901;receive=I:35239;disappear=0",
+                  "giver_vnum": 35211
+                }
+              ],
+              "hint": "Ask the living armorer about armor for the explanation. This service is currently unavailable with active accounting; do not bypass that guard. Distinct fees and rewards remain separate contracts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the armorer's exact paid recipe"
+            }
+          ],
+          "summary": "The living armorer makes this equipment from the exact ingredient and 55,000 copper. Paid native offerings await supported accounting settlement. These equipment services grant no separate achievement or daily credit; the spoken class recommendations do not add a turn-in class requirement.",
+          "title": "Hammer and anvil badge"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:50000,I:35237;receive=I:35240;disappear=0",
+              "giver_vnum": 35211
+            }
+          ],
+          "id": "displacer-hide-cloak",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The displacer beast carries the skin and starts in a forest distribution room with outward woodland exits. It can wander; search the mainland woods rather than treating that room as a normal city destination. Supplied material is valid. The checklist does not check wallet payment or personal source history.",
+              "id": "material",
+              "item_vnums": [
+                35237
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact material"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:50000,I:35237;receive=I:35240;disappear=0",
+                  "giver_vnum": 35211
+                }
+              ],
+              "hint": "Ask the living armorer about armor for the explanation. This service is currently unavailable with active accounting; do not bypass that guard. Distinct fees and rewards remain separate contracts.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the armorer's exact paid recipe"
+            }
+          ],
+          "summary": "The living armorer makes this equipment from the exact ingredient and 50,000 copper. Paid native offerings await supported accounting settlement. These equipment services grant no separate achievement or daily credit; the spoken class recommendations do not add a turn-in class requirement.",
+          "title": "Displacer-hide cloak"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:100000,I:13221,I:98606;receive=I:35224;disappear=0",
+              "giver_vnum": 35286
+            }
+          ],
+          "id": "vulgaris-veldian-collar",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The mangy snarling bitch in Khomani-Khan's tiny alcove wears the collar. The ordinary approach is blocked, and its table switch starts inside the alcove; that access needs builder review. Supplied collars remain valid.",
+              "id": "frayed-collar",
+              "item_vnums": [
+                98606
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the frayed cloth collar"
+            },
+            {
+              "count": 1,
+              "hint": "Mixt in the northern Twin Towers chamber carries this existing heart object. The nearby forest journal has a different source area. Delivering the heart does not record your own kill. Supplied hearts remain valid.",
+              "id": "mixt-heart",
+              "item_vnums": [
+                13221
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Mixt's bloody heart"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:100000,I:13221,I:98606;receive=I:35224;disappear=0",
+                  "giver_vnum": 35286
+                }
+              ],
+              "hint": "Enter the waterfall beside Newhaven's main gate to reach the damp cave. The sign gives the recipe; Vulgaris has ambient speech but no addressed quest keywords. Item readiness does not verify the fee or unlock the accounting guard.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete Vulgaris's exact paid recipe"
+            }
+          ],
+          "summary": "Read Vulgaris's cave sign: the frayed cloth collar, Mixt's bloody heart, and 100,000 copper together make a Veldian collar. Both exact materials are needed simultaneously. This paid equipment service awaits supported accounting settlement and grants no separate achievement or daily credit.",
+          "title": "Vulgaris's Veldian collar"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Follow his life, fighter, and help conversation, then answer yes for the ingredient request. His no response is a rebuke; the native exchanges do not record a permanent refusal.",
           "keyword": "drider",
           "mob_vnum": 35800,
