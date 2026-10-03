@@ -1461,6 +1461,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 				// add to character_list first
 				ch->next = character_list;
 				character_list = ch;
+				register_character_runtime_id(ch);
 
 				// use room from copyover data, not pfile
 				save_room = desc_entry.room;

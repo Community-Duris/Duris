@@ -13,6 +13,7 @@ HARNESS = r'''
 #define clock_gettime nevent_test_clock_gettime
 #include "world/new_events.c"
 #undef clock_gettime
+#include "account/character_identity.c"
 
 #include <algorithm>
 #include <chrono>
@@ -756,6 +757,12 @@ static void test_integrity_and_owner_links()
 	player.runtime_id = 10001;
 	player.specials.position = STAT_NORMAL | POS_STANDING;
 	character_list = &player;
+	require(!check_nevents(), 397);
+	require(check_nevents(false), 398); // In-constructor scheduling diagnostic.
+	register_character_runtime_id(&player);
+	player.next = &player;
+	require(!check_nevents(), 396); // Do not pass a corrupt list to deeper diagnostics.
+	player.next = nullptr;
 	record_payload payload = { 9100, ULLONG_MAX };
 	auto first = add_event(record_callback, 10, &player, nullptr, nullptr, 0, &payload,
 			       sizeof(payload));
@@ -795,6 +802,7 @@ static void test_integrity_and_owner_links()
 	require(check_nevents(), 208);
 	cancel_all_events();
 	require(player.nevents == nullptr && player.nevents_tail == nullptr, 209);
+	unregister_character_runtime_id(&player);
 	character_list = nullptr;
 
 	reset_scheduler();
@@ -846,6 +854,8 @@ static void test_integrity_and_owner_links()
 	victim.specials.position = STAT_NORMAL | POS_STANDING;
 	owner.next = &victim;
 	character_list = &owner;
+	register_character_runtime_id(&owner);
+	register_character_runtime_id(&victim);
 	auto victim_event =
 		add_event(noop_callback, 10, &owner, &victim, nullptr, 0, nullptr, 0);
 	require(victim_event.was_scheduled() && victim_event.handle.event->cld != nullptr, 225);
@@ -862,6 +872,8 @@ static void test_integrity_and_owner_links()
 	require(owner.nevents == nullptr && owner.nevents_tail == nullptr &&
 			owner.linking == nullptr && victim.linked == nullptr,
 		231);
+	unregister_character_runtime_id(&owner);
+	unregister_character_runtime_id(&victim);
 	character_list = nullptr;
 	require_balanced(232);
 }
@@ -1244,6 +1256,54 @@ static void test_short_affect()
 	std::puts("short-affect expiry, PC fallback, cancellation, reuse, and zero NPC scans passed");
 }
 
+struct runtime_target_payload { uint64_t runtime_id; P_char expected; };
+static int live_runtime_callbacks;
+static int stale_runtime_callbacks;
+static void runtime_target_callback(P_char, P_char, P_obj, void *data)
+{
+	auto *target = static_cast<runtime_target_payload *>(data);
+	P_char live = find_character_by_runtime_id(target->runtime_id);
+	if (live && live == target->expected)
+		++live_runtime_callbacks;
+	else
+		++stale_runtime_callbacks;
+}
+
+static void test_runtime_target_retirement()
+{
+	reset_scheduler();
+	live_runtime_callbacks = stale_runtime_callbacks = 0;
+	auto *target = new char_data{};
+	target->runtime_id = allocate_character_runtime_id();
+	character_list = target;
+	register_character_runtime_id(target);
+	runtime_target_payload payload{target->runtime_id, target};
+	// Unowned deferred work may outlive its target; only the index resolves it.
+	add_event(runtime_target_callback, 1, nullptr, nullptr, nullptr, 0, &payload, sizeof(payload));
+	while (ne_event_counter) run_one_heartbeat();
+	require(live_runtime_callbacks == 1 && stale_runtime_callbacks == 0, 400);
+	add_event(runtime_target_callback, 1, nullptr, nullptr, nullptr, 0, &payload, sizeof(payload));
+	// The extraction hook retires identity before recursive teardown can call back.
+	unregister_character_runtime_id(target);
+	while (ne_event_counter) run_one_heartbeat();
+	require(live_runtime_callbacks == 1 && stale_runtime_callbacks == 1, 401);
+	// Actual same-address replacement cannot revive the old deferred reference.
+	target->runtime_id = allocate_character_runtime_id();
+	register_character_runtime_id(target);
+	add_event(runtime_target_callback, 1, nullptr, nullptr, nullptr, 0, &payload, sizeof(payload));
+	while (ne_event_counter) run_one_heartbeat();
+	require(live_runtime_callbacks == 1 && stale_runtime_callbacks == 2, 402);
+	payload.runtime_id = target->runtime_id;
+	add_event(runtime_target_callback, 1, nullptr, nullptr, nullptr, 0, &payload, sizeof(payload));
+	unregister_character_runtime_id(target);
+	character_list = nullptr;
+	delete target;
+	while (ne_event_counter) run_one_heartbeat(); // ASan guards stale-pointer dereferences.
+	require(live_runtime_callbacks == 1 && stale_runtime_callbacks == 3, 403);
+	require(check_nevents(), 404);
+	require_balanced(405);
+}
+
 int main(int argc, char **argv)
 {
 	require(argc == 2, 160);
@@ -1280,6 +1340,7 @@ int main(int argc, char **argv)
 	{
 		test_integrity_and_owner_links();
 		test_thread_ownership();
+		test_runtime_target_retirement();
 	}
 	else
 		require(false, 161);

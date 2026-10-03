@@ -2224,14 +2224,6 @@ struct sticks_to_snakes_context
 
 static_assert(sizeof(sticks_to_snakes_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
 
-static P_char spell_character_by_runtime_id(uint64_t runtime_id)
-{
-	for (P_char character = character_list; character; character = character->next)
-		if (character->runtime_id == runtime_id)
-			return character;
-	return NULL;
-}
-
 static void sticks_to_snakes_retirement_completed(P_char caster, bool committed,
 						  const item_transfer_result &,
 						  unsigned int /*error_code*/,
@@ -2249,7 +2241,7 @@ static void sticks_to_snakes_retirement_completed(P_char caster, bool committed,
 		return;
 	}
 
-	P_char victim = spell_character_by_runtime_id(context.victim_runtime_id);
+	P_char victim = find_character_by_runtime_id(context.victim_runtime_id);
 	struct damage_messages arrow_messages = {
 		"You turn $N's $q into a &+gsnake&n and send it against $M!",
 		"Your own $q turns into a &+gsnake&n and bites you, &+Lvanishing afterwards&n!",

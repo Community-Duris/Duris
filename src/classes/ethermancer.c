@@ -353,10 +353,11 @@ spell_faerie_sight_component_completed(const critical_operation_id &operation_id
 		    static_cast<uint32_t>(target_pid), item_spell_component_effect::faerie_sight))
 		return spell_component_effect_status::retry;
 	P_char victim = self_target ? actor : NULL;
-	if (!victim)
+	if (!victim && !target_pid)
+		victim = find_character_by_runtime_id(victim_runtime_id);
+	if (!victim && target_pid)
 		for (P_char candidate = character_list; candidate; candidate = candidate->next)
-			if (target_pid ? (IS_PC(candidate) && GET_PID(candidate) == target_pid) :
-					 candidate->runtime_id == victim_runtime_id)
+			if (IS_PC(candidate) && GET_PID(candidate) == target_pid)
 			{
 				victim = candidate;
 				break;

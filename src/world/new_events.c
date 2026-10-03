@@ -949,7 +949,8 @@ static nevent_schedule_result add_event_internal(event_func func, int delay, P_c
 
 	if (debug_event_list)
 	{
-		check_nevents();
+		// Constructors can schedule events before publishing their runtime ID.
+		check_nevents(false);
 	}
 
 	return { nevent_schedule_status::scheduled, nevent_handle_from_event(event) };
@@ -2094,10 +2095,8 @@ void zone_purge(int zone_number)
 		}
 		for (const uint64_t runtime_id : character_ids)
 		{
-			for (vict = world[k].people; vict; vict = vict->next_in_room)
-				if (vict->runtime_id == runtime_id)
-					break;
-			if (vict && IS_NPC(vict) && !IS_MORPH(vict))
+			vict = find_character_by_runtime_id(runtime_id);
+			if (vict && vict->in_room == k && IS_NPC(vict) && !IS_MORPH(vict))
 			{
 				extract_char(vict);
 				vict = NULL;
@@ -2425,11 +2424,15 @@ static nevent_integrity_report nevent_inspect_invariants(bool emit_summary)
 }
 
 // Expensive by design, but observation-only: diagnostics never sever or repair links.
-bool check_nevents()
+bool check_nevents(bool check_character_index)
 {
 	if (!nevent_require_game_thread("check_nevents"))
 		return false;
-	return nevent_inspect_invariants(true).errors == 0;
+	const bool characters_consistent = !check_character_index ||
+					   character_runtime_index_is_consistent();
+	if (!characters_consistent)
+		logit(LOG_EXIT, "character runtime index disagrees with character_list");
+	return characters_consistent && nevent_inspect_invariants(true).errors == 0;
 }
 
 void event_broken(struct char_link_data *cld)
