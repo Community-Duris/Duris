@@ -27,6 +27,8 @@ harness = r'''
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <cstdint>
+#include <vector>
 
 struct critical_operation_id { int value; };
 struct critical_command { int value; };
@@ -58,6 +60,17 @@ void remember_completed(const std::string &, const critical_command &,
                         const critical_completion &) {}
 void update_depth() {}
 
+// The production ACK also reports its completed disk checkpoint. These small
+// observation bindings preserve the isolated command/journal fixture types.
+enum class persistence_trace_stage { publication_ack };
+struct fixture_trace { int command; uint32_t outcome = 0; };
+std::vector<fixture_trace> recorded_traces;
+fixture_trace persistence_command_trace(const critical_command &command, persistence_trace_stage stage) {
+    assert(stage == persistence_trace_stage::publication_ack);
+    return {command.value, 0};
+}
+void persistence_trace_record(const fixture_trace &trace) { recorded_traces.push_back(trace); }
+
 critical_command_journal_result critical_command_journal_checkpoint(
     const critical_operation_id &)
 {
@@ -75,6 +88,7 @@ int main()
 {
     const critical_operation_id id = {1};
     operations.emplace(operation_key(id), std::make_unique<operation_state>());
+    operations.at(operation_key(id))->command.value = 41;
     std::thread ack_thread([&] {
         assert(critical_command_coordinator_acknowledge_publication(id));
     });
@@ -96,15 +110,22 @@ int main()
     assert(publication_checkpoints_inflight == 0);
     assert(operations.empty());
     assert(health.completed == 1);
+    assert(recorded_traces.size() == 1 && recorded_traces[0].command == 41 &&
+           recorded_traces[0].outcome == static_cast<uint32_t>(critical_command_journal_result::ok));
 
     operations.emplace(operation_key(id), std::make_unique<operation_state>());
+    operations.at(operation_key(id))->command.value = 71;
     fail_checkpoint = true;
     assert(!critical_command_coordinator_acknowledge_publication(id));
     assert(operations.at(operation_key(id))->publication_checkpointing == false);
     assert(publication_checkpoints_inflight == 0);
+    assert(recorded_traces.size() == 2 && recorded_traces[1].command == 71 &&
+           recorded_traces[1].outcome == static_cast<uint32_t>(critical_command_journal_result::io_failure));
     fail_checkpoint = false;
     assert(critical_command_coordinator_acknowledge_publication(id));
     assert(operations.empty());
+    assert(health.completed == 2 && recorded_traces.size() == 3 && recorded_traces[2].command == 71 &&
+           recorded_traces[2].outcome == static_cast<uint32_t>(critical_command_journal_result::ok));
 }
 '''.replace("__ACK__", ack)
 

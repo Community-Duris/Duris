@@ -1,6 +1,7 @@
 #include "flatfile/flatfile_character_delete.h"
 
 #include "flatfile/flatfile_authority_transaction.h"
+#include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_account_reward_summon_repository.h"
 #include "flatfile/flatfile_artifact_repository.h"
 #include "flatfile/flatfile_association_repository.h"
@@ -22,6 +23,7 @@
 
 #include <ctime>
 #include <new>
+#include <cerrno>
 #include <vector>
 
 namespace
@@ -104,6 +106,14 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 	flatfile_authority_lock authority_lock;
 	if (!authority_lock.acquire(root, error))
 		return flatfile_character_delete_result::io_error;
+
+	// Recover a published bundle before refusing unsupported new erasure.
+	const auto admission = flatfile_economic_legacy_domain_gate(root, authority_lock, error);
+	if (admission)
+		return admission == EAGAIN ? flatfile_character_delete_result::conflict :
+		       admission == EIO || admission == ENOMEM ?
+					     flatfile_character_delete_result::io_error :
+					     flatfile_character_delete_result::invalid;
 
 	flatfile_authority_operation identity_operation;
 	const auto identity = flatfile_identity_prepare_remove(root, identity_lock, authority_lock,

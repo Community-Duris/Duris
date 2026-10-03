@@ -18,8 +18,8 @@ assert "make -C src PERSISTENCE_BACKEND=flatfile" in building
 assert "does not add the MySQL include path or client library" in building_words
 assert "mixed per-operation authority transfer is not supported" in building_words
 assert "Hiredis and OpenSSL remain build dependencies" in building_words
-assert "make -C src PERSISTENCE_BACKEND=flatfile" in help_system
-assert "`__NO_MYSQL__`" in help_system
+assert "Without MySQL" in help_system
+assert "`make -C src PERSISTENCE_BACKEND=flatfile`, which defines `__NO_MYSQL__`" in help_words
 assert "same client-free content path serves" in help_words
 
 print("supported MariaDB and client-free server build contract passed")

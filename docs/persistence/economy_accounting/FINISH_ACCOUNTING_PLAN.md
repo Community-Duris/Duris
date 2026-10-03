@@ -24,11 +24,119 @@ Independent reconciliation now checks every native item's parent edge even when
 lineage history replaces its epoch-local history or its opening origin is
 missing. Corruption/recovery probes pass through the read-only SQL exporter on
 both engines. Lineage and epoch-local history also share creation and irreversible
-UID-retirement checks; memoized native topology bounds ancestor work, and 53
+UID-retirement checks; memoized native topology bounds ancestor work, and 59
 reconciler tests pass. Explicit creation/destruction must also match live/tombstone
 custody, a corrupt destruction cannot erase the UID retirement fence, and
-a second destruction of an already retired UID is reported. Complete native source/origin
-and writer qualification remain open. See the October 2 review status for scope.
+a second destruction of an already retired UID is reported. SQL lineage
+references and history cuts now derive prior UID revisions from the immutable
+item revision, independently of aggregate owner counters; impossible revision
+zero refuses before filtering. The independent audit now also rejects boolean,
+negative and overflowing item revisions in origins, native custody, references
+and all event scopes, while admitting the full native uint64 range. A witnessed
+UINT64_MAX transition, missing-reference detection and exact baseline recovery
+pass through SELECT-only exports on both engines. Money revisions use the same
+native unsigned range for holdings, ordinary effects, opening origins,
+creation/retirement roots and pile mappings. Boolean/overflow evidence refuses;
+full-range wallet/pile SQL cuts detect stale revisions and restore their exact
+original snapshot. Ten exporter tests and both SQL probes pass. Complete native source/origin
+and writer qualification remain open. Restore qualification also rejects
+unwitnessed epic revisions and gaps that conserve aggregate value; both SQL
+component probes and the nine-case native recovery suite pass this repair. See the October 2 review status for scope.
+
+The independent reconciler now also refuses weighted copper overflow in parsed
+native, opening and effect denomination vectors, even if their values agree and
+all postings balance. The consistent malformed snapshot reproduced a false
+zero-exception result; 61 reconciler tests and both SELECT-only SQL probes pass
+overflow refusal, exact repair and unchanged authority. The CLI refuses the same
+malformed input with a zero detail limit. These are bounded R2/R7 format checks,
+not complete holding/source, workload or active-gameplay qualification.
+
+Native isolated SQL restore now supports an explicit `restore_database_engine`
+policy choice, retaining MariaDB by default and admitting an installed MySQL 8.0
+executable only after a version check. All ten native recovery cases pass,
+including full MySQL and MariaDB dump/import and isolated server boot. Both SQL
+cases also pass with direct source/candidate version readbacks; 40 policy tests
+and seven provisioning tests pass. Captured-clone, complete accounting, erasure,
+remote backup custody and measured workload qualification remain open.
+Restore now also refuses unwitnessed wallet/bank revisions and missing native
+revision pairs even when all denomination totals remain unchanged. It accepts
+both currency-ledger and committed economic-effect witnesses, counting their
+same-root, same-transition bridge once, including receipted native children.
+Distinct roots claiming the same revision and invalid wallet/bank transitions
+refuse even when counting them could hide another missing revision. Dual-engine
+SELECT-only probes and all ten native
+recovery cases pass this bounded R8 repair; complete accounting/clone workload
+qualification is still required. The diagnostics integration now also passes
+both strict production builds, all ten native recovery cases and the nested
+locker journey on both SQL engines at native source `5d6cf93...`. These bounded
+proofs remain separate from the frozen failed broad runs and full R1-R8 gates.
+A native economic-only shop purchase reproduced a value restore refusal despite
+valid committed money revisions. The restore qualifier now walks actual native
+and economic denomination before/after witnesses instead of summing only legacy
+currency deltas. Both engines pass native-purchase and full buy/sell
+corruption, exact-repair, bridge and later-opening probes. All ten native recovery
+cases pass in 321.980 seconds. These remain native component/recovery checks,
+not active-epoch player qualification. The frozen `88d3b364c` broad regression is
+also in progress and does not contain this subsequent value qualifier change.
+
+Flatfile legacy deletion now refuses active or corrupt accounting metadata under
+native authority locks, including direct wallet/bank removal and empty-account
+finalization. The pre-fix native fixture admitted a wallet removal operation.
+ASan/UBSan deletion/recovery checks, borrowed-lock reads, both strict production
+builds and the inactive real account-menu deletion/cold-restart journey pass.
+All ten native recovery/restore cases also pass in 427.430 seconds with both SQL
+engines, exact legacy replay and private service boot.
+This is bounded R6/R8 unsupported-writer refusal; typed erasure, account-menu
+pre-fence admission, complete retention/audit and release qualification remain
+open. SQL deletion admission is now repaired as described below. Native source is `4968da54...`; the frozen broad
+`88d3b364c` run does not contain these changes. See the October 2 review status.
+
+SQL legacy deletion now acquires native writer admission before BEGIN. The
+character guard and physical-delete boundary validate the exact same-session
+held lease; a cached PID cannot bypass absent/lost authority. Both SQL engines
+pass native active/staged/schema-error/reconnect/lost-lease refusal and the two
+retained-death-evidence lock-order races. ASan/UBSan runtime refusal/rollback/
+publication checks and strict SQL, flatfile and offline pfile builds pass.
+Real inactive character-menu journeys pass lifecycle-read-error refusal,
+playable repair/retry, deletion once and cold restart on both SQL engines;
+flatfile's inactive journey also passes. All ten native recovery cases pass in
+316.257 seconds at native source `971da564...`. Whole-account cleanup now acquires
+the same gate before its transaction; that change has build/source-order proof,
+not whole-account runtime qualification. Account-menu pre-fence admission,
+typed erasure and full R1-R8 qualification remain open. See the October 2 status.
+
+SQL account confirmation now acquires native admission before the irreversible
+deletion fence, retains the lease through that write, then releases it before
+worker-save draining. An unavailable lifecycle table reproduced permanent
+fencing before backend refusal on both real SQL engines. Both engines now pass
+unfenced refusal, unchanged character/mapping/items, playable reconnect/save,
+and the subsequent character-deletion fault/retry/cold-restart journey.
+ASan/UBSan confirmation-owner tests cover unavailable authority, outer
+transaction, fence-write failure, retained fenced retry/cancel and successful
+publication. Both strict server profiles and pfile pass; all ten native recovery
+cases pass in 275.327 seconds at native source `30d8b4b4...`. Flatfile's existing
+inactive deletion journey passes, but its pre-fence admission remains open.
+Whole-account typed erasure/runtime cleanup and full R1-R8 gates remain open.
+
+The completed frozen `88d3b364c` broad run retains three failures: two native
+files violate the formatter contract, the full-world inspector compilation hit
+its 180-second deadline, and the isolated publication-ACK harness omitted the
+new observation bindings. The ACK harness now executes the current production
+function with those bindings and asserts command/outcome traces across blocked
+checkpoint, failure and retry; its focused test passes without changing native
+code or checkpoint semantics. Formatter/full-world/current-head broad gates
+remain open. The separate unchanged-source inspector build takes 98.804 seconds;
+that compile result does not replace the failed full-world journey.
+
+The later frozen `79540e65d` broad run also finished: 826 passed, 11 skipped
+and two stale source-contract assertions failed in 6,127.39 seconds. NPC cash
+assignments still match the classified registry; their expected locations in
+the test now match the boot-integration source, and all 52 writer contracts
+pass. The help-build contract now checks the documented flatfile make target
+and compiler define and passes its focused check. This remains
+a failed full run plus a focused repair. The frozen `8c997b00d` run also
+finished: 828 passed, 11 skipped and the same two stale source-contract tests
+failed in 7,160.80 seconds. Later focused repairs remain separate evidence.
 
 The frozen candidate `fbd9f5035` completed `make test-all`: 822 passed, 11
 skipped and one live Redis fixture failed because its Unix socket path exceeded
@@ -39,8 +147,11 @@ This is a failed broad run plus a separate focused repair pass; a current-head
 integrated run and skipped external-service checks remain qualification gates.
 The skipped help-import fixture now honors a validated disposable connection;
 its rollback, atomic publication and nontransactional refusal test passes on
-both SQL engines. A fresh 839-test full run is underway on exact published
-candidate `79540e65d`; later fixture fixes retain separate focused evidence.
+both SQL engines. The 79540e65d run completed with the failure totals above; later fixture fixes
+retain separate focused evidence. The later diagnostics merge `4fffb0748`
+moved three existing census sites; the registry and generated matrix now retain
+the same 864 routes and 2,756 unique sites, zero unmapped, with all 52 writer
+contracts passing. This inventory refresh does not qualify those routes.
 The optional native item-provenance fixture now links and honors terminal
 source-reuse refusal; its full transaction/replay/epoch/concurrency probe passes
 on both engines. Native load/recovery and telemetry schema/factory checks also
@@ -49,8 +160,15 @@ real telemetry-role grants and Docker integration gates open.
 Guarded development combat has bounded variant passes on both engines,
 but the first MariaDB boon attempt has an unexplained owner-revision failure.
 The fixture now retains exact acknowledged source rows before assertions for
-that investigation. Production conflict-release attempts remain RED; no gate
+that investigation. Five more MariaDB boon repeats pass with durable ACK,
+self-scoped conflict readback and restart stability, without explaining the
+original RED. Production conflict-release attempts remain RED; no gate
 or inactive selector is changed.
+The current ten-case native disposable backup/restore suite passes on the
+same strict SQL/flatfile source, including both SQL engines, journal recovery,
+isolated server boot and corruption refusals, with direct daemon version
+readbacks. Captured-clone/full-world, erasure propagation, remote custody and
+active-accounting lifecycle gates remain open.
 
 The disposable playtime journey now honors a validated `TEST_DB_PORT` in both
 native connections and SQL clients. Its outdated temporary-table probe is
@@ -123,6 +241,14 @@ roll boundaries. Both production profiles pass; compound salvage remains open.
 Quest XP receipts make progression replay-safe; they are not ledger postings.
 A logged-out character cannot join a live quest group. A linkdead character
 remaining in the game can participate and is paid without a descriptor check.
+
+The nested SQL locker journey now also passes a cold reload after withdrawal
+on both supported engines. Original root/child UIDs, exact item revisions
+5 -> 6 -> 7, immutable transfer operations and successful durable inbox receipts
+survive both reloads and the following saves. Native nesting, extra descriptions
+and affects are preserved. This is inactive-accounting gameplay qualification
+with a synthetic player and seeded items; active locker fees remain guarded,
+and crash-point, active-epoch and flatfile parity gates remain open.
 
 ## Work order
 

@@ -85,6 +85,8 @@ struct txt_q
 {
 	struct txt_block *head;
 	struct txt_block *tail;
+	size_t bytes;
+	size_t entries;
 };
 
 static void logit(int, const char *, ...) {}
@@ -119,6 +121,8 @@ static void push(struct txt_q *q, const char *text)
 	else
 		q->head = block;
 	q->tail = block;
+	q->bytes += strlen(text) + 1;
+	++q->entries;
 }
 
 static void drain(struct txt_q *q)
@@ -131,6 +135,8 @@ static void drain(struct txt_q *q)
 		q->head = next;
 	}
 	q->tail = NULL;
+	q->bytes = 0;
+	q->entries = 0;
 }
 
 static void check_intact(struct txt_q *q, const char *label)
@@ -176,7 +182,7 @@ static void expect_str(const char *got, const char *want, const char *label)
 int main()
 {
 	char dest[MAX_INPUT_LENGTH];
-	struct txt_q q;
+	struct txt_q q = {};
 	struct char_data caster = {};
 
 	/* The default-off player policy blocks abort without changing

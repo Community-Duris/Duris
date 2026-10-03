@@ -85,8 +85,12 @@ checks.append(
 )
 
 repair = body(
-    mysql_sql_player,
-    "int sql_repair_account_character_projection(const char *account_name)",
+    (SRC / "account_load.c").read_text(encoding="utf-8"),
+    "int account_load_repair(",
+)
+assert contains(
+    body(mysql_sql_player, "int sql_repair_account_character_projection(const char *account_name)"),
+    "account_load_repair(DB, account_name)",
 )
 checks.append(
     (

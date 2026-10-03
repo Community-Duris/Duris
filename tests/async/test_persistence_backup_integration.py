@@ -420,10 +420,27 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
                 else:
                     corrupt.write_bytes(original)
     def test_mariadb_full_dump_schema_history_values_and_isolated_service_boot(self):
+        self.sql_full_dump_restore("mariadb")
+
+    @unittest.skipUnless(os.environ.get("DURIS_RUN_MYSQL_BACKUP_INTEGRATION") == "1",
+                         "requires explicit disposable MySQL 8.0 integration invocation")
+    def test_mysql_full_dump_schema_history_values_and_isolated_service_boot(self):
+        self.sql_full_dump_restore("mysql")
+
+    def sql_full_dump_restore(self, engine):
+        self.p["restore_database_engine"] = engine
         self.build_native_fixture()
         source = self.base / "live"
         source.mkdir(mode=0o700)
-        with restore.private_database(source) as env:
+        def require_selected_engine(env):
+            version = sql(env, "SELECT VERSION();")
+            if engine == "mysql":
+                self.assertTrue(version.startswith("8.0.") and "MariaDB" not in version, version)
+            else:
+                self.assertIn("MariaDB", version)
+            return version
+        with restore.private_database(source, engine) as env:
+            source_version = require_selected_engine(env)
             self.p["journal_roots"] = {"players": Path(env["PLAYER_SAVE_JOURNAL_DIR"]),
                                        "critical": Path(env["CRITICAL_COMMAND_JOURNAL_DIR"])}
             for journal in self.p["journal_roots"].values():
@@ -460,6 +477,7 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
             actual_service_load = restore.service_load
             checked = []
             def check_values_then_boot(candidate, mode, restored_env):
+                self.assertEqual(require_selected_engine(restored_env), source_version)
                 self.assertNotEqual(restored_env["DB_SOCKET"], env["DB_SOCKET"])
                 self.assertEqual(sql(restored_env, query), expected)
                 checked.append(mode)
@@ -468,6 +486,7 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
                 receipt = restore.restore(self.p, result["generation"], self.ledger())
             self.assertEqual(checked, ["mariadb-primary"])
             self.assertEqual(receipt["result"], "qualified")
+            self.assertEqual(receipt["checks"]["database_engine"], engine)
             self.assertEqual(sql(env, query), expected)
             self.assertEqual(backup.inventory(generation), captured)
             candidate = self.p["restore_root"] / receipt["candidate"]
@@ -479,6 +498,92 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
             with self.assertRaises(backup.BackupError):
                 restore.database_qualify(env)
             sql(env, "UPDATE player_data SET account_name='SyntheticRestore' WHERE pid=42;")
+            # Money authority also needs a witnessed revision, independently
+            # of unchanged denomination totals.
+            for table, key, identity, column in (
+                    ("player_data", "pid", 42, "wallet_revision"),
+                    ("account_banks", "id", 1, "bank_revision")):
+                sql(env, f"UPDATE {table} SET {column}=9 WHERE {key}={identity};")
+                with self.assertRaises(backup.BackupError):
+                    restore.database_qualify(env)
+                sql(env, f"UPDATE {table} SET {column}=0 WHERE {key}={identity};")
+                restore.database_qualify(env)
+            # Removing a cancelling money pair preserves every aggregate and
+            # the latest after-image, but loses two recoverable native revisions.
+            currency_rows = ((1, 1, 12, 20), (2, 2, 14, 18),
+                             (3, -2, 12, 20), (4, -1, 11, 21))
+            def currency_event(revision, delta, wallet_copper, bank_copper):
+                identity = "f1" + f"{revision:030x}"
+                sql(env, "INSERT IGNORE INTO critical_operation_inbox(operation_id,command_hash,"
+                         "keys_hash,command_type,schema_version,payload_version,status,result_code,"
+                         "result_payload,committed_at) VALUES(UNHEX('" + identity + "'),"
+                         "UNHEX(REPEAT('11',32)),UNHEX(REPEAT('22',32)),1,1,1,1,0,X'',CURRENT_TIMESTAMP);")
+                sql(env, "INSERT INTO currency_ledger(operation_id,pid,bank_id,"
+                         "wallet_delta_copper,wallet_delta_silver,wallet_delta_gold,wallet_delta_platinum,"
+                         "bank_delta_copper,bank_delta_silver,bank_delta_gold,bank_delta_platinum,"
+                         "wallet_after_copper,wallet_after_silver,wallet_after_gold,wallet_after_platinum,"
+                         "bank_after_copper,bank_after_silver,bank_after_gold,bank_after_platinum,"
+                         "wallet_revision,bank_revision,reason_type,source_site) VALUES(UNHEX('" +
+                         identity + "'),42,1," + str(delta) + ",0,0,0," + str(-delta) + ",0,0,0," +
+                         str(wallet_copper) + ",12,13,14," + str(bank_copper) + ",22,23,24," +
+                         str(revision) + "," + str(revision) + ",1,1);")
+            for row in currency_rows:
+                currency_event(*row)
+            sql(env, "UPDATE player_data SET wallet_revision=4 WHERE pid=42;"
+                     "UPDATE account_banks SET bank_revision=4 WHERE id=1;")
+            restore.database_qualify(env)
+            sql(env, "DELETE FROM currency_ledger WHERE pid=42 AND wallet_revision IN(2,3);")
+            self.assertEqual(sql(env, query), expected)
+            with self.assertRaises(backup.BackupError):
+                restore.database_qualify(env)
+            for row in currency_rows[1:3]:
+                currency_event(*row)
+            restore.database_qualify(env)
+            sql(env, "DELETE FROM currency_ledger WHERE pid=42;"
+                     "DELETE FROM critical_operation_inbox WHERE LEFT(HEX(operation_id),2)='F1';"
+                     "UPDATE player_data SET wallet_revision=0 WHERE pid=42;"
+                     "UPDATE account_banks SET bank_revision=0 WHERE id=1;")
+            restore.database_qualify(env)
+            # A balance alone cannot establish recoverable authority: a future
+            # revision without an immutable event would fence legitimate retry.
+            sql(env, "UPDATE player_data SET epic_revision=9 WHERE pid=42;")
+            with self.assertRaises(backup.BackupError):
+                restore.database_qualify(env)
+            sql(env, "UPDATE player_data SET epic_revision=0 WHERE pid=42;")
+            restore.database_qualify(env)
+            # Remove a cancelling pair from an otherwise contiguous history:
+            # aggregate value and the latest event remain exactly unchanged.
+            event_rows = ((1, 1, 16), (2, 2, 18), (3, -2, 16), (4, 3, 19))
+            def epic_event(revision, delta, balance):
+                identity = f"{revision:032x}"
+                sql(env, "INSERT INTO epic_ledger(operation_id,pid,delta,balance_after,"
+                         "epic_revision,reason_type,reason_id,source_site) VALUES(UNHEX('" +
+                         identity + "'),42," + str(delta) + "," + str(balance) + "," +
+                         str(revision) + ",1,0,1);")
+            for revision, delta, balance in event_rows:
+                identity = f"{revision:032x}"
+                sql(env, "INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,"
+                         "command_type,schema_version,payload_version,status,result_payload,committed_at) "
+                         "VALUES(UNHEX('" + identity + "'),UNHEX(REPEAT('11',32)),"
+                         "UNHEX(REPEAT('22',32)),1,1,1,1,'',CURRENT_TIMESTAMP(6));")
+                epic_event(revision, delta, balance)
+            sql(env, "UPDATE player_data SET epics=19,epic_revision=4 WHERE pid=42;")
+            restore.database_qualify(env)
+            sql(env, "DELETE FROM epic_ledger WHERE pid=42 AND epic_revision IN(2,3);")
+            with self.assertRaises(backup.BackupError):
+                restore.database_qualify(env)
+            for revision, delta, balance in event_rows[1:3]:
+                epic_event(revision, delta, balance)
+            restore.database_qualify(env)
+            sql(env, "DELETE FROM epic_ledger WHERE pid=42;"
+                     "DELETE FROM critical_operation_inbox WHERE operation_id IN("
+                     "UNHEX('00000000000000000000000000000001'),"
+                     "UNHEX('00000000000000000000000000000002'),"
+                     "UNHEX('00000000000000000000000000000003'),"
+                     "UNHEX('00000000000000000000000000000004'));"
+                     "UPDATE player_data SET epics=15,epic_revision=0 WHERE pid=42;")
+            restore.database_qualify(env)
+            self.assertEqual(sql(env, query), expected)
             # Corrupt only the disposable source baseline: the same qualifier
             # that accepted restored values must now reject reconciliation.
             sql(env, "UPDATE currency_wallet_baseline SET opening_copper=999 WHERE pid=42;")

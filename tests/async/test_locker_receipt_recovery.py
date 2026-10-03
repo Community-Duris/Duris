@@ -31,7 +31,7 @@ def run_backend(temp, mysql=False):
     libraries = shlex.split(subprocess.check_output(['mysql_config', '--libs'], text=True)) if mysql else []
     sources = ['src/' + path for path in SQL_DISPATCH_SOURCES] if mysql else ['src/flatfile/flatfile_player_domain_repository.c', 'src/flatfile/flatfile_authority_transaction.c']
     binary = directory / 'harness'
-    section_flags = ['-ffunction-sections', '-fdata-sections', '-Wl,--gc-sections'] if mysql else []
+    section_flags = ['-ffunction-sections', '-fdata-sections', '-Wl,--gc-sections']
     subprocess.run(['g++', '-std=c++20', '-Wall', '-Wextra', '-Werror',
                     *section_flags, '-Isrc', *flags,
                     str(source), *COMMON, *sources, *libraries, '-lcrypto', '-pthread', '-o', str(binary)], cwd=ROOT, check=True)

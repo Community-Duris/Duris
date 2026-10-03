@@ -62,6 +62,7 @@ assert "strcasecmp(arg, d->account->acct_name)" not in confirm_delete
 
 # The durable, non-cancellable fence precedes disconnection, drains, and backend mutation.
 fence = confirm_delete.index("d->account->acct_blocked = ACCOUNT_BLOCK_DELETION")
+assert confirm_delete.index("economic_sql_currency_writer_guard::acquire") < fence
 fence_write = confirm_delete.index("write_account(d->account)", fence)
 disconnect = confirm_delete.index("close_other_account_sessions(d)")
 backend = confirm_delete.index("sql_delete_account(")
@@ -113,7 +114,7 @@ assert "flatfile_account_delete(" in confirm_delete
 # MariaDB locks the fence and owns one transaction. Credentials are removed last,
 # reconciled absent, and only then committed.
 assert "if (sql_in_transaction())" in sql_delete
-assert sql_delete.index("sql_begin_transaction()") < sql_delete.index("FOR UPDATE")
+assert sql_delete.index("economic_sql_currency_writer_guard::acquire") < sql_delete.index("sql_begin_transaction()") < sql_delete.index("FOR UPDATE")
 assert contains(sql_delete, "atoi(row[0]) != ACCOUNT_BLOCK_DELETION")
 fence_lock = index(sql_delete, '"SELECT blocked FROM accounts')
 missing_account = index(sql_delete, "if (!row)", fence_lock)
