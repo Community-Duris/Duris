@@ -1,3 +1,4 @@
+#include "persistence/death_recovery_visibility.h"
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/persistence_diagnostics.h"
 
@@ -383,6 +384,7 @@ void retain_exhausted_retry_locked(const std::string &identity, operation_state 
 {
 	release_keys(identity, state.command);
 	state.phase = critical_operation_phase::blocked;
+	state.publication_completion = completion;
 	if (completion.outcome == critical_apply_outcome::ambiguous_commit)
 		++health.ambiguous;
 	++health.terminal_failures;
@@ -1364,7 +1366,7 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 			completion_delivery.front(critical_completion_channel::execution);
 		if (!front)
 			break;
-		const critical_completion completion = *front;
+		critical_completion completion = *front;
 		const std::string identity = operation_key(completion.operation_id);
 		auto found = operations.find(identity);
 		if (found == operations.end() || !operation_is_executing(*found->second) ||
@@ -1385,6 +1387,8 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 		completion_delivery.pop_front(critical_completion_channel::execution);
 		result_available.notify_one();
 		operation_state &state = *found->second;
+		(void)death_recovery_command_correlation(state.command,
+							 completion.recovery_correlation.data());
 		if (state.retain_until_publication && !retryable)
 		{
 			release_keys(identity, state.command);
@@ -1696,6 +1700,42 @@ critical_coordinator_health critical_command_coordinator_health_copy(void)
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
 	update_depth();
 	return health;
+}
+
+size_t critical_command_coordinator_recovery_copy(critical_recovery_case *cases, size_t capacity,
+						  size_t *total, size_t offset)
+{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	size_t copied = 0, found = 0;
+	const uint64_t now = now_usec();
+	for (const auto &[identity, operation] : operations)
+	{
+		(void)identity;
+		critical_recovery_case entry;
+		if (!death_recovery_command_correlation(operation->command, entry.correlation))
+			continue;
+		++found;
+		if (!cases || copied >= capacity || found <= offset)
+			continue;
+		entry.operation_id = operation->command.operation_id;
+		entry.attempts = operation->attempt;
+		entry.error_code = operation->publication_completion.error_code;
+		entry.owner = operation->phase == critical_operation_phase::publication_pending ?
+				      "item_movement_publication" :
+				      "critical_command";
+		entry.state = operation->phase == critical_operation_phase::blocked &&
+					      operation->attempt >
+						      CRITICAL_COORDINATOR_MAX_RETRIES ?
+				      "unresolved_retry_exhausted" :
+				      "unresolved";
+		entry.elapsed_msec = now >= operation->command.accepted_at_usec ?
+					     (now - operation->command.accepted_at_usec) / 1000 :
+					     0;
+		cases[copied++] = entry;
+	}
+	if (total)
+		*total = found;
+	return copied;
 }
 
 bool critical_command_coordinator_inject_completion_for_tests(const critical_completion &completion)

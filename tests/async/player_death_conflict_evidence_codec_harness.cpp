@@ -139,6 +139,13 @@ int main(int argc, char **argv)
 		"legacy encode failed");
 	if (argc == 2)
 	{
+		if (std::string(argv[1]) == "conflict-evidence")
+		{
+			legacy_bytes.clear();
+			require(player_snapshot_encode(with_evidence(), &legacy_bytes) ==
+					player_snapshot_codec_result::ok,
+				"conflict fixture encode failed");
+		}
 		std::fwrite(legacy_bytes.data(), 1, legacy_bytes.size(), stdout);
 		return 0;
 	}
