@@ -74,9 +74,12 @@ Migration `0056_spell_ward_durability` adds eight guarded columns to
 The runtime schema fingerprints must match the upgraded database before boot.
 Player help, the affect display, and GMCP expose remaining damage capacity,
 remaining lifetime, source, and equipment renewal timing.
+Score lists cast and equipment pools separately and identifies paused equipment
+timers, so an inactive item source cannot hide an active cast.
 
 Run `python3 tests/async/test_spell_ward_durability.py` for the executable ward,
-timer, overlap, recast, equipment-cycle, and snapshot recovery regression.
+timer, overlap, recast, equipment-cycle, ordinary affect-tick, dispel, score,
+and snapshot recovery regression.
 `run_spell_ward_persistence_journey.py` exercises weakened and broken ward state
 through SQL save, cold restart, and exec copyover using an isolated loopback
 database. It takes an absolute MariaDB server executable and requires the
