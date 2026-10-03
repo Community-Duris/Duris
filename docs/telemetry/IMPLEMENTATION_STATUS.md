@@ -10,8 +10,8 @@ work. A future production deployment is a separate operational decision.
 
 | Requirement | State | Evidence or remaining work |
 | --- | --- | --- |
-| #561: full writer startup contract | Implemented and locally qualified | Validate every current writer column, type, signedness, width, nullable/default semantics, InnoDB engine and 13 required indexes. Exercise effective SELECT/INSERT/session UPDATE with zero-row statements and rollback. Reject admission until the worker qualifies; later transient outages retain buffering. |
-| #565: shared serialization/schema descriptor | Implemented and locally qualified | `telemetry_columns.inc` supplies the column identities used by serializers and startup validation. Preserve all record kinds 1–10, admitted replay keys and column prefixes. Reserved/padding/absent union fields and sink-generated fields have explicit exclusions. |
+| #561: full writer startup contract | Implemented and locally qualified | Validate every current writer column, type, signedness, width, nullable/default semantics, InnoDB engine and 14 required indexes. Exercise effective SELECT/INSERT/session UPDATE with zero-row statements and rollback. Reject admission until the worker qualifies; later transient outages retain buffering. |
+| #565: shared serialization/schema descriptor | Implemented and locally qualified | `telemetry_columns.inc` supplies the column identities used by serializers and startup validation. Preserve all record kinds 1–11, admitted replay keys and column prefixes. Reserved/padding/absent union fields and sink-generated fields have explicit exclusions. |
 | #566: durable outage/loss evidence | Implemented and locally qualified | Worker registration before SQL initialization/admission; protected exclusive checksummed storage; bounded coherent samples; clean drain versus known abandonment and unknown tails; real restart/exec/SIGKILL and storage-failure tests. Offline read-only export preserves unknown ends. See [OUTAGE_STORAGE.md](OUTAGE_STORAGE.md) and the qualified #567 report integration below. |
 | #567: reviewed incident coverage | Implemented and locally qualified | Consecutive retained inventory versions, nullable unknown ends, committed first verified post-fix references, explicit backlog/reconstruction dispositions and atomic published coverage snapshots. Reports preserve gaps, source uncertainty and bounded private-role separation. Full local MariaDB/MySQL chains, capacity, digest/permission negatives, lost commit replies and unchanged v1 totals qualified. Historical facts require evidence; synthetic fixtures do not establish a real incident history. See [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
 | Initial session qualification/capacity recovery | Implemented and locally qualified | Existing descriptor sweep and context/evidence adapters retry missing entry. Deferred copyover retains one handoff in descriptor memory; supplied keys/totals/revision survive. No earlier unobserved time or human activity is invented. True capacity refusal rolls back IDs; lifecycle queue loss retains admitted IDs. See [SESSION_LIFECYCLE.md](SESSION_LIFECYCLE.md). |
@@ -23,7 +23,7 @@ work. A future production deployment is a separate operational decision.
 | Atomic identity effort and observed XP portfolio publication | Implemented and locally qualified | Migration 0060 adds exact bounded source retention tied to the cursor, a conserved publication header and two reports. Definition 3 consumes the reserved dated review and incident schema 2 in the same publication transaction. Both 60-step chains qualified the actual CLI, corrections, old generations, explicit unknown identity, source/publication rollback, real committed writes with lost acknowledgements, private roles, budget refusal, guarded reruns and exact fresh/restored fingerprints. Definitions 1/2 retain their earlier amounts. See [IDENTITY_PUBLICATION.md](IDENTITY_PUBLICATION.md). |
 | Durable shared-battle facts and loss review | Implemented and locally qualified | Migration 0061 maps all 70 canonical kind-10 fields with independent logical/transport replay, immutable configuration qualification and NULL family separation. Both 61-step chains qualified actual native packets, lost acknowledgements, header/scope/constraint refusals, exact quarantine evidence, guarded reruns, drift/restoration, private v3 review CLI and unchanged definitions 1/2/3. Outage v2 retains readable original v1 histories. Live capture and atomic battle publication remain separate requirements. See [BATTLES.md](BATTLES.md). |
 | Character/account/confirmed controller association | In progress | Dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation, authenticated source capture, identity wire handoff, reviewed SQL registration and immutable generation reservations are qualified. Atomic identity effort/report publication now consumes the reserved review and qualified ownership incident snapshot. Real personal source journeys and linkage coverage in the complete balance suites remain required. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
-| Shared battles and changing rosters | In progress | Native callbacks capture shared hostile, effective-support and actual formal-presence relationships through the existing worker and kind-10 writer. Qualified context, roster changes, teardown and censored lifecycle retain battle identity; configuration cuts preserve cumulative effort, and unavailable properties produce an unknown-mode gap. Unique NPC/pet lifetimes, conservative sides, immutable aliases, canonical packets and independent replay/loss remain qualified. A bounded disjoint contribution accumulator and 65-field native/Python codec are separately qualified. Its native capture/durable linkage, compact build/power/arena context, actual additional control/prevention and faction exposure sources, atomic balance publication and personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
+| Shared battles and changing rosters | In progress | Native callbacks capture shared hostile, effective-support and proven formal-presence graphs through kind 10, and disjoint damage/healing/casting/opponent-link contributions through kind 11. Shared clocks, context/owner/group/mode/configuration cuts, immutable aliases, distinct NPC lifetimes, retained pet teardown, exact session exit and observed-prefix inactivity preserve measured amounts. Control remains unavailable in native contribution mask 27. Compact build/power/arena context, actual control/prevention/faction exposure, full published association/alias/loss coverage, typed outcomes, atomic balance publication and personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
 | Progression and portfolios | In progress | Observed XP/level projections and published exact account/controller effort unions and observed XP portfolio amounts are qualified. Rested/assistance provenance, milestone exposure/censoring, switching, canonical comparable rewards and rates remain required. |
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
@@ -812,13 +812,13 @@ python3 tests/async/test_telemetry_contract_headers.py
 make -C src
 ```
 
-The accumulator is compiled but not allocated/called by the runtime. The
-kind-11 durable contribution family is qualified below; record kinds 1–10 and
-report definitions 1/2/3 retain their contracts. Native authoritative contribution
-capture, exact association/alias/linkage coverage and atomic battle publication
-remain required. This
-qualification uses pure collector fixtures, not a running personal game server;
-it establishes no actual producer/control/prevention or performance coverage.
+The accumulator is now owned and called by the runtime; its native connection
+is described below. The kind-11 durable family preserves earlier record meanings
+and report definitions 1/2/3. Complete published association/alias/loss coverage
+and atomic battle publication remain required. The pure qualification in this
+section establishes the collector contract; the native fixture establishes the
+specific connected callbacks. Actual control/prevention sources and running
+personal-server/performance coverage remain required.
 All seven accepted identity/source-suite, full battle/context/population,
 PvE attempt/objective/interruption/reward, progression/rested/assistance/
 milestone/switching/comparable portfolio, four-suite/statistical, #487
@@ -897,10 +897,9 @@ admitted immutable kind-11 payload through control-reserve admission and worker
 delivery. ThreadSanitizer could not start its trivial host capability probe;
 the harness was not run under TSAN and no TSAN pass is claimed.
 
-Native authoritative contribution capture and exact complete association/alias
-linkage are the next required work. They must include mode/configuration/group,
-pet ownership, leave/expiry/shutdown and capture-gap boundaries without copying
-old totals or extending observed durations. Full compact context/control/
+The native contribution connection described below retains exact complete-packet
+references and disjoint boundary amounts. Complete published association/alias/
+loss linkage remains required. Full compact context/control/
 prevention/faction-population sources, typed death/escape/objective evidence,
 bounded atomic battle publication and actual personal-server source journeys
 remain open. All seven accepted identity/source-suite, PvE attempt/objective/
@@ -908,3 +907,85 @@ interruption/reward, progression/rested/assistance/milestone/switching/comparabl
 portfolio, four-suite/statistical, #487 compatibility and personal-local
 gameplay/persistence/performance requirements retain their incomplete portions
 under #258. Technical completion requires no production or staging access.
+
+## Qualified native disjoint contribution capture
+
+The runtime now owns the bounded contribution accumulator and connects native
+damage, healing, casting and actual opponent-link observations to its kind-11
+writer path. Each combat observation uses one clock across its hostile/support
+relationship, formal party presence and metric update. The contribution context
+comes from the committed shared battle state, with its actual actor/owner,
+current scope, group revision, mode/side and final complete-packet reference.
+The native availability mask is 27: damage, healing, casting and engagement.
+Control remains unavailable until a real native effect producer is connected.
+An availability bit alone does not prove complete lifecycle coverage, and an
+absent row cannot establish a measured zero.
+
+Association mutations seal affected retained streams before further activity.
+Battle aliases, mode/side, ownership/kind, group revision, dimensions and
+configuration changes retain old disjoint amounts under their original identity.
+Teardown uses the retained pet kind even if current owner context is missing.
+Session exit and battle leave share one exact clock. Useful support requires
+positive effective healing; ineffective attempts count only inside an existing
+shared battle. Formal presence supplies no metric stream. Pending casts become
+unresolved at a context boundary and later terminal callbacks cannot copy their
+attempts or elapsed time into a replacement.
+
+The battle close callback seals contributions before the association slot is
+released. Inactivity preserves the actual observed prefix with a later decision;
+copyover/shutdown retain their observed source cut. Casting/opponent observations
+extend an active prefix without refreshing hostility or emitting duplicate
+packets. Inactive actors and unrelated battles cannot extend that prefix.
+Configuration withdrawal seals measured source-gap prefixes. Recovery keeps
+partial association coverage while admitting the newly observed amounts.
+An actual opponent pointer without a usable native identity seals a source gap
+and preserves uncertainty instead of reporting zero engagement.
+Capture/admission/capacity/clock loss remains explicit.
+
+Both full 62-step disposable SQL chains passed the actual native runtime, queue,
+worker and canonical writer journey: **123 kind-10 facts in 38 complete packets
+and 28 kind-11 segments per engine**. Every one of the 65 contribution fields
+matched its emitted source, including both first/last references to complete
+association packets, configuration versions, actor lifetimes, clocks and
+availability. The source retained 112 damage dealt and 112 damage taken,
+45 attempted healing partitioned into 15 effective and 30 overhealing, and
+six casting attempts partitioned into one completion, one abort and four
+unresolved attempts. Private writer negatives, absent-family NULLs and an empty
+quarantine passed. The MySQL 8.0.46 fingerprint remains
+`3a979c1d7b66f57e820db1087ade7f84bdbf2dc6b4ac988280aa3360eda8ed68`;
+MariaDB 10.11.14 remains
+`90a2741fc2425a0d2e06809fdbaa3ebd8f098325d4e6805b82b2cb14b6fdc520`.
+Temporary databases/roles were removed and both fixture engines were stopped.
+
+The gameplay journey checks party arrival/departure, two-sided metrics, pet
+ownership/kind and retained teardown, distinct NPC generations, configuration
+cuts, an alias, terminal casting retries and exact session exit. A separate
+native journey supplies a future pulse clock for two independent inactivity
+closures and verifies their different measured prefixes at one later decision.
+It is a controlled fixture clock. A third native fixture validates the unavailable
+opponent source-gap segment through actual SQL, preserving known damage and an
+unresolved cast. Each actual copyover flush keeps its 250 ms
+cap; the SQL correctness fixture allows bounded generation retries within five
+seconds and verifies conserved amounts and one censored close. Neither fixture
+establishes a running personal-server performance budget.
+
+Normal and ASan/UBSan gameplay and pure battle checks passed. Both runtime
+variants passed configuration withdrawal/recovery, copyover, sequence exhaustion
+and durable outage checks. The twelve battle and nine contribution cross-language
+contracts, legacy combat/encounter checks, standalone headers and frozen
+40-record/9-configuration/3-transition bridge passed. The maintained server built
+with `make -C src -j1`; touched C/C++ passed the repository formatter. The unchanged
+schema remains at head 62 with fourteen qualified writer indexes. The earlier
+TSAN limitation remains: its host capability probe could not initialize, so no
+TSAN harness pass is claimed.
+
+Reproducible focused commands are in [BATTLES.md](BATTLES.md#native-contribution-capture).
+Full native compact context/control/prevention/faction exposure and typed death/
+escape/objective evidence, complete published association/alias/loss coverage
+and bounded atomic battle publication remain required. All seven accepted
+identity/source-suite, zone attempt/objective/interruption/reward, progression/
+rested/assistance/milestone/switching/comparable portfolio, four-suite/statistical,
+#487 compatibility and actual personal-local gameplay/persistence/performance
+requirements retain their incomplete portions under #258. The report catalog
+remains definitions 1/2/3, and this connection publishes no automatic balance
+change. Technical completion requires no production or staging access.

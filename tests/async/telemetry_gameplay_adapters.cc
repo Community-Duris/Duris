@@ -2,6 +2,7 @@
 #include "telemetry/telemetry_runtime.h"
 #include "telemetry/telemetry_battle.h"
 #include "telemetry/telemetry_battle_contract.h"
+#include "telemetry/telemetry_battle_contribution.h"
 #include "telemetry/telemetry_transport_private.h"
 #include "core/structs.h"
 #include "core/utils.h"
@@ -21,6 +22,7 @@
 #include <cstring>
 #include <thread>
 #include <vector>
+#include <set>
 
 P_room world = nullptr;
 P_char character_list = nullptr;
@@ -55,6 +57,7 @@ struct fake_repository
 	std::vector<telemetry_encounter_payload> encounters;
 	std::vector<telemetry_combat_summary_payload> combat;
 	std::vector<telemetry_record> battles;
+	std::vector<telemetry_record> contributions;
 };
 
 telemetry_repository_outcome fake_init(void *context, telemetry_repository_config config) noexcept
@@ -116,6 +119,11 @@ telemetry_apply_batch_result fake_apply(void *context, const telemetry_record *r
 		{
 			assert(telemetry_record_is_valid(records[index]));
 			fake->battles.push_back(records[index]);
+		}
+		if (records[index].header.kind == telemetry_record_kind::battle_contribution)
+		{
+			assert(telemetry_record_is_valid(records[index]));
+			fake->contributions.push_back(records[index]);
 		}
 		if (records[index].header.kind == telemetry_record_kind::interval &&
 		    records[index].payload.interval.context == telemetry_activity_context::combat)
@@ -1492,6 +1500,162 @@ void check_authenticated_ownership_path()
 		"PASS: authenticated ownership observes scoped caches, transfers, unavailable identity and reconnect");
 }
 
+fake_repository check_native_unavailable_opponent(bool use_native)
+{
+	fake_repository fake{};
+	fake.use_native = use_native;
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	telemetry_test_start_runtime(enabled_options());
+	char_data actor{}, target{}, unavailable{};
+	pc_only_data actor_pc{}, target_pc{};
+	npc_only_data unavailable_npc{};
+	actor.only.pc = &actor_pc;
+	target.only.pc = &target_pc;
+	actor_pc.pid = 8951;
+	target_pc.pid = 8952;
+	actor.player.level = target.player.level = 25;
+	actor.specials.fighting = &target;
+	target.specials.fighting = &actor;
+	unavailable.only.npc = &unavailable_npc;
+	unavailable.specials.act = ACT_ISNPC;
+	unavailable.runtime_id = 0U; // The actual target pointer has no usable lifetime.
+	telemetry_runtime_game_combat_damage(&actor, &target, 5U, 0U);
+	telemetry_runtime_game_combat_cast_attempt(&actor, 1);
+	actor.specials.fighting = &unavailable;
+	telemetry_monotonic_usec before = 0U, after = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	assert(telemetry_runtime_now(&before, &utc));
+	telemetry_runtime_game_combat_context(&actor);
+	assert(telemetry_runtime_now(&after, &utc));
+	actor.specials.fighting = nullptr;
+	telemetry_runtime_game_combat_context(&actor); // No new zero-valued stream.
+	assert(telemetry_runtime_shutdown({ after + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	telemetry_transport_unbind_for_tests();
+	assert(fake.contributions.size() == 2U);
+	unsigned gaps = 0U;
+	for (const auto &record : fake.contributions)
+	{
+		const auto &row = record.payload.battle_contribution;
+		assert((row.quality_flags &
+			(TELEMETRY_QUALITY_CONTEXT_UNKNOWN | TELEMETRY_QUALITY_QUEUE_DROP)) ==
+		       (TELEMETRY_QUALITY_CONTEXT_UNKNOWN | TELEMETRY_QUALITY_QUEUE_DROP));
+		if (row.context.actor.actor.actor_id == 8951U)
+		{
+			assert(row.end_reason == telemetry_battle_contribution_end::source_gap &&
+			       row.counters.damage_dealt == 5U &&
+			       row.counters.casting_attempts == 1U &&
+			       row.counters.casting_unresolved == 1U &&
+			       before <= row.cut.observed_usec && row.cut.observed_usec <= after &&
+			       row.cut.observed_usec == row.cut.decision_usec);
+			++gaps;
+		}
+		else
+			assert(row.context.actor.actor.actor_id == 8952U &&
+			       row.counters.damage_taken == 5U);
+	}
+	assert(gaps == 1U);
+	std::puts(
+		"PASS: native unavailable opponent seals explicit source-gap coverage without inventing zero engagement");
+	return fake;
+}
+
+fake_repository check_native_inactivity_contributions(bool use_native)
+{
+	fake_repository fake{};
+	fake.use_native = use_native;
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	telemetry_test_start_runtime(enabled_options());
+	room_data rooms[1]{};
+	zone_data zones[1]{};
+	zones[0].number = 1903;
+	const auto previous_world = world;
+	const auto previous_zones = zone_table;
+	const int previous_top_world = top_of_world, previous_top_zone = top_of_zone_table;
+	world = rooms;
+	zone_table = zones;
+	top_of_world = top_of_zone_table = 0;
+	char_data actors[4]{};
+	pc_only_data players[4]{};
+	for (unsigned index = 0U; index < 4U; ++index)
+	{
+		actors[index].only.pc = &players[index];
+		players[index].pid = 8911 + static_cast<int>(index);
+		actors[index].player.level = 25;
+		actors[index].player.m_class = 3;
+		actors[index].player.race = 4;
+		actors[index].player.racewar = 5;
+		actors[index].specials.fighting = &actors[index ^ 1U];
+	}
+	telemetry_runtime_game_combat_damage(&actors[0], &actors[1], 5U, 0U);
+	telemetry_monotonic_usec cast_before = 0U, cast_after = 0U, now = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	assert(telemetry_runtime_now(&cast_before, &utc));
+	telemetry_runtime_game_combat_cast_attempt(&actors[0], 1);
+	assert(telemetry_runtime_now(&cast_after, &utc));
+	std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	telemetry_runtime_game_combat_damage(&actors[2], &actors[3], 6U, 0U);
+	assert(telemetry_runtime_now(&now, &utc));
+	const auto decision = now + 30'000'000U;
+	/* The public pulse supplies the fixture's future observation clock. The
+	 * actual native close callback must preserve both earlier measured prefixes. */
+	assert(telemetry_runtime_pulse({ decision, utc + 30'000'000, 0U, 0U }).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	telemetry_transport_unbind_for_tests();
+	unsigned closed = 0U;
+	telemetry_monotonic_usec first_prefix = 0U, second_prefix = 0U;
+	for (const auto &record : fake.battles)
+		if (record.payload.battle.kind == telemetry_battle_fact_kind::close)
+		{
+			const auto &row = record.payload.battle;
+			assert(row.close_reason == telemetry_battle_close_reason::inactivity &&
+			       row.at_monotonic_usec == decision && row.end_censored == 1U);
+			if (row.battle.sequence == 1U)
+				first_prefix = row.observed_through_monotonic_usec;
+			else
+				second_prefix = row.observed_through_monotonic_usec;
+			++closed;
+		}
+	assert(closed == 2U && cast_before <= first_prefix && first_prefix <= cast_after &&
+	       first_prefix < second_prefix && second_prefix < decision);
+	assert(fake.contributions.size() == 4U);
+	unsigned unresolved = 0U;
+	for (const auto &record : fake.contributions)
+	{
+		const auto &row = record.payload.battle_contribution;
+		const auto prefix = row.context.battle.sequence == 1U ? first_prefix :
+									second_prefix;
+		assert(row.end_reason == telemetry_battle_contribution_end::battle_ended &&
+		       row.cut.observed_usec == prefix && row.cut.decision_usec == decision &&
+		       row.counters.engaged_target_usec == prefix - row.start_usec);
+		assert(!(row.quality_flags &
+			 (TELEMETRY_QUALITY_QUEUE_DROP | TELEMETRY_QUALITY_CLOCK_DISCONTINUITY)));
+		unresolved += static_cast<unsigned>(row.counters.casting_unresolved);
+	}
+	assert(unresolved == 1U);
+	world = previous_world;
+	zone_table = previous_zones;
+	top_of_world = previous_top_world;
+	top_of_zone_table = previous_top_zone;
+	std::puts(
+		"PASS: native inactivity closes two measured prefixes at a later common decision clock");
+	return fake;
+}
+
 void check_native_shared_battle_capture(bool use_native = false)
 {
 	fake_repository fake{};
@@ -1562,9 +1726,16 @@ void check_native_shared_battle_capture(bool use_native = false)
 	       telemetry_runtime_outcome::accepted);
 	assert(telemetry_runtime_game_enter(&defender, &defender_descriptor).outcome ==
 	       telemetry_runtime_outcome::accepted);
+	attacker.specials.fighting = &defender;
+	defender.specials.fighting = &attacker;
 	assert(telemetry_runtime_game_combat_engage(&attacker, &defender).outcome ==
 	       telemetry_runtime_outcome::accepted);
 	assert(telemetry_runtime_game_combat_engage(&attacker, &defender).records_emitted == 0U);
+	telemetry_runtime_game_combat_damage(&attacker, &defender, 11U, 0U);
+	telemetry_runtime_game_combat_cast_attempt(&attacker, 1);
+	telemetry_runtime_game_combat_cast_attempt(&attacker, 1); // One actual pending cast.
+	telemetry_runtime_game_combat_cast_complete(&attacker);
+	telemetry_runtime_game_combat_cast_complete(&attacker); // Terminal retry adds no amount.
 	telemetry_monotonic_usec arrival_cut = 0U;
 	telemetry_utc_usec arrival_utc = TELEMETRY_UTC_UNKNOWN;
 	assert(telemetry_runtime_now(&arrival_cut, &arrival_utc));
@@ -1578,10 +1749,16 @@ void check_native_shared_battle_capture(bool use_native = false)
 	distant.in_room = 1;
 	telemetry_runtime_game_combat_healing(&healer, &attacker, 20U, 0U, 0U);
 	telemetry_runtime_game_combat_healing(&healer, &attacker, 20U, 12U, 0U);
+	telemetry_runtime_game_combat_healing(&healer, &attacker, 20U, 0U, 0U);
+	telemetry_runtime_game_combat_healing(&attacker, &attacker, 5U, 3U, 0U);
+	telemetry_runtime_game_combat_cast_attempt(&healer, 1);
+	telemetry_runtime_game_combat_cast_abort(&healer);
 	fixture_pet = &pet;
 	fixture_pet_master = &attacker;
+	pet.specials.fighting = &defender;
 	assert(telemetry_runtime_game_combat_engage(&pet, &defender).outcome ==
 	       telemetry_runtime_outcome::accepted);
+	telemetry_runtime_game_combat_damage(&pet, &defender, 7U, 0U);
 	telemetry_runtime_game_combat_damage(&attacker, &first_npc, 3U, 0U);
 	telemetry_runtime_game_combat_damage(&attacker, &second_npc, 4U, 0U);
 	const auto old_instance = TELEMETRY_BATTLE_NPC_GENERATION_TAG | first_npc.runtime_id;
@@ -1609,6 +1786,8 @@ void check_native_shared_battle_capture(bool use_native = false)
 	fixture_pet_master = nullptr;
 	assert(telemetry_runtime_game_battle_context(&pet).outcome ==
 	       telemetry_runtime_outcome::accepted);
+	telemetry_runtime_game_combat_damage(&pet, &defender, 9U, 0U);
+	telemetry_runtime_game_combat_cast_attempt(&attacker, 1);
 	auto changed = initial_config;
 	++changed.revision;
 	++changed.policy_version;
@@ -1623,11 +1802,53 @@ void check_native_shared_battle_capture(bool use_native = false)
 	assert(telemetry_config_publish(changed).outcome == telemetry_runtime_outcome::accepted);
 	assert(telemetry_runtime_game_battle_context(&attacker).outcome ==
 	       telemetry_runtime_outcome::accepted);
+	telemetry_runtime_game_combat_cast_complete(&attacker); // Pre-cut cast stays unresolved.
+	telemetry_runtime_game_combat_damage(&attacker, &defender, 19U, 0U);
 	assert(telemetry_runtime_now(&now, &utc));
-	assert(telemetry_runtime_flush_for_copyover(now + 250000U) ==
-	       telemetry_runtime_outcome::accepted);
+	const auto flush_limit = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+	auto flushed = telemetry_runtime_flush_for_copyover(now + 250'000U);
+	unsigned flush_retries = 0U;
+	/* Each production barrier retains its 250 ms cap. A SQL correctness fixture
+	 * may retry a failed generation while the worker finishes the same immutable
+	 * records; repeated closes must not duplicate contribution amounts. */
+	while (use_native && flushed == telemetry_runtime_outcome::queue_full &&
+	       std::chrono::steady_clock::now() < flush_limit)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		assert(telemetry_runtime_now(&now, &utc));
+		flushed = telemetry_runtime_flush_for_copyover(now + 250'000U);
+		++flush_retries;
+	}
+	if (flushed != telemetry_runtime_outcome::accepted)
+	{
+		const auto health = telemetry_runtime_health_copy();
+		std::fprintf(
+			stderr,
+			"Native copyover flush refused: outcome=%u state=%u queue=%llu admitted=%llu applied=%llu invalid=%llu conflict=%llu failure=%u retries=%u\n",
+			unsigned(flushed), unsigned(health.state),
+			static_cast<unsigned long long>(health.queue_depth),
+			static_cast<unsigned long long>(health.admitted_detail +
+							health.admitted_control),
+			static_cast<unsigned long long>(health.applied_records),
+			static_cast<unsigned long long>(health.invalid_records),
+			static_cast<unsigned long long>(health.conflict_records),
+			unsigned(health.last_failure_class), flush_retries);
+	}
+	assert(flushed == telemetry_runtime_outcome::accepted);
+	if (use_native)
+		std::printf("Native copyover accepted with %u bounded generation retries\n",
+			    flush_retries);
 	assert(telemetry_runtime_game_combat_engage(&attacker, &defender).outcome ==
 	       telemetry_runtime_outcome::accepted);
+	healer.specials.fighting = &second_npc;
+	telemetry_runtime_game_combat_damage(&healer, &second_npc, 13U, 0U);
+	telemetry_runtime_game_combat_damage(&attacker, &healer, 17U, 0U); // Join two battles.
+	fixture_pet_master = &attacker;
+	telemetry_runtime_game_combat_damage(&pet, &defender, 2U, 0U);
+	fixture_pet_master = nullptr; // Teardown still has the retained pet lifetime kind.
+	assert(telemetry_runtime_game_battle_leave(&pet).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	telemetry_runtime_game_combat_cast_attempt(&attacker, 1);
 	assert(telemetry_runtime_game_session_exit(&attacker, &attacker_descriptor,
 						   telemetry_session_end_reason::logout)
 		       .outcome == telemetry_runtime_outcome::accepted);
@@ -1717,6 +1938,97 @@ void check_native_shared_battle_capture(bool use_native = false)
 	assert(copyovers == 1U && shutdowns == 1U && source_roles != 0U &&
 	       presence_summaries == 1U && arrival_summaries == 1U && session_leaves == 1U);
 	assert(saw_old_instance && saw_new_instance && saw_pet_owner_loss && saw_changed_scope);
+	std::set<telemetry_sequence> contribution_sequences;
+	std::uint64_t dealt = 0U, taken = 0U, healing = 0U, effective = 0U, overhealing = 0U,
+		      received = 0U, attempts = 0U, completed = 0U, aborted = 0U, unresolved = 0U;
+	std::uint64_t attacker_damage = 0U, old_npc_damage = 0U, new_npc_damage = 0U,
+		      owned_pet_damage = 0U, unowned_pet_damage = 0U;
+	unsigned aliases = 0U, changed_segments = 0U, pet_teardowns = 0U,
+		 contribution_session_leaves = 0U, changed_scope_segments = 0U;
+	for (const auto &record : fake.battles)
+		aliases += record.payload.battle.kind == telemetry_battle_fact_kind::merge_alias;
+	for (const auto &record : fake.contributions)
+	{
+		const auto &row = record.payload.battle_contribution;
+		const auto &actor = row.context.actor.actor;
+		const auto &counts = row.counters;
+		assert(contribution_sequences.insert(row.sequence).second);
+		assert(row.context.available_metrics == 27U && counts.control_applications == 0U &&
+		       counts.control_received == 0U);
+		assert(actor.actor_id != 8804U &&
+		       actor.actor_id != 8805U); // Presence adds no metrics.
+		assert(row.cut.observed_usec >= row.start_usec &&
+		       row.cut.decision_usec >= row.cut.observed_usec);
+		assert(counts.engaged_target_usec <= row.cut.observed_usec - row.start_usec);
+		assert(!(row.quality_flags &
+			 (TELEMETRY_QUALITY_QUEUE_DROP | TELEMETRY_QUALITY_CLOCK_DISCONTINUITY)));
+		dealt += counts.damage_dealt;
+		taken += counts.damage_taken;
+		healing += counts.healing_attempted;
+		effective += counts.effective_healing;
+		overhealing += counts.overhealing;
+		received += counts.healing_received;
+		attempts += counts.casting_attempts;
+		completed += counts.casting_completions;
+		aborted += counts.casting_aborts;
+		unresolved += counts.casting_unresolved;
+		if (actor.actor_id == 8801U)
+		{
+			attacker_damage += counts.damage_dealt;
+			if (row.end_reason == telemetry_battle_contribution_end::actor_left &&
+			    row.context.battle.sequence != first_battle.sequence)
+			{
+				assert(row.cut.observed_usec == session_exit_cut &&
+				       row.cut.decision_usec == session_exit_cut);
+				++contribution_session_leaves;
+			}
+		}
+		if (actor.actor_id == old_instance)
+			old_npc_damage += counts.damage_taken;
+		if (actor.actor_id == new_instance)
+			new_npc_damage += counts.damage_taken;
+		if (actor.actor_id == (TELEMETRY_BATTLE_NPC_GENERATION_TAG | pet.runtime_id))
+		{
+			if (actor.kind == telemetry_combat_actor_kind::pet)
+			{
+				assert(actor.owner_subject_id == 8801U);
+				owned_pet_damage += counts.damage_dealt;
+				pet_teardowns += row.end_reason ==
+						 telemetry_battle_contribution_end::actor_left;
+			}
+			else
+			{
+				assert(actor.kind == telemetry_combat_actor_kind::npc &&
+				       actor.owner_subject_id == 0U);
+				unowned_pet_damage += counts.damage_dealt;
+			}
+		}
+		if (row.context.scope.config_id == changed.config_id)
+		{
+			assert(row.context.scope.policy_version == changed.policy_version);
+			++changed_scope_segments;
+		}
+		changed_segments += row.end_reason ==
+				    telemetry_battle_contribution_end::context_changed;
+	}
+	assert(!fake.contributions.empty() && dealt == 96U && taken == dealt &&
+	       attacker_damage == 65U && old_npc_damage == 3U && new_npc_damage == 5U &&
+	       owned_pet_damage == 9U && unowned_pet_damage == 9U);
+	assert(healing == 45U && effective == 15U && overhealing == 30U && received == effective);
+	assert(attempts == 4U && completed == 1U && aborted == 1U && unresolved == 2U);
+	assert(aliases == 1U && changed_segments != 0U && changed_scope_segments != 0U &&
+	       pet_teardowns == 1U && contribution_session_leaves == 1U);
+	const auto inactivity = check_native_inactivity_contributions(use_native);
+	fake.battles.insert(fake.battles.end(), inactivity.battles.begin(),
+			    inactivity.battles.end());
+	fake.contributions.insert(fake.contributions.end(), inactivity.contributions.begin(),
+				  inactivity.contributions.end());
+	const auto unavailable_opponent = check_native_unavailable_opponent(use_native);
+	fake.battles.insert(fake.battles.end(), unavailable_opponent.battles.begin(),
+			    unavailable_opponent.battles.end());
+	fake.contributions.insert(fake.contributions.end(),
+				  unavailable_opponent.contributions.begin(),
+				  unavailable_opponent.contributions.end());
 #ifdef TELEMETRY_TEST_NATIVE_BATTLE_SQL
 	const char *export_path = std::getenv("TELEMETRY_BATTLE_CAPTURE_EXPORT");
 	assert(export_path && use_native);
@@ -1746,6 +2058,31 @@ void check_native_shared_battle_capture(bool use_native = false)
 #undef TELEMETRY_BATTLE_FIELD
 		std::fputs("}\n", export_file);
 	}
+	for (const auto &record : fake.contributions)
+	{
+		std::fprintf(
+			export_file,
+			"{\"boot_id\":%llu,\"process_id\":%llu,\"record_seq\":%llu,\"record_kind\":11,\"schema_version\":1,\"occurrence_utc_usec\":%lld",
+			static_cast<unsigned long long>(record.header.key.producer.boot_id),
+			static_cast<unsigned long long>(record.header.key.producer.process_id),
+			static_cast<unsigned long long>(record.header.key.record_seq),
+			static_cast<long long>(record.header.occurrence_utc_usec));
+#define TELEMETRY_BC_FIELD(name, member, width, is_signed)                                \
+	do                                                                                \
+	{                                                                                 \
+		if constexpr (is_signed)                                                  \
+			std::fprintf(export_file, ",\"" #name "\":%lld",                  \
+				     static_cast<long long>(                              \
+					     record.payload.battle_contribution.member)); \
+		else                                                                      \
+			std::fprintf(export_file, ",\"" #name "\":%llu",                  \
+				     static_cast<unsigned long long>(                     \
+					     record.payload.battle_contribution.member)); \
+	} while (false);
+#include "telemetry/telemetry_battle_contribution_fields.inc"
+#undef TELEMETRY_BC_FIELD
+		std::fputs("}\n", export_file);
+	}
 	assert(std::fclose(export_file) == 0);
 #endif
 	fixture_pet = fixture_pet_master = nullptr;
@@ -1753,7 +2090,7 @@ void check_native_shared_battle_capture(bool use_native = false)
 	zone_table = nullptr;
 	top_of_world = top_of_zone_table = -1;
 	std::puts(
-		"PASS: live runtime battle capture, useful support, exact party presence, generations, scope cuts and censored lifecycle");
+		"PASS: native shared battles and disjoint contributions, useful support, exact party presence, generations, alias, scope cuts and censored lifecycle");
 }
 
 } // namespace

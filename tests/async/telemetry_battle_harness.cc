@@ -357,6 +357,41 @@ void ambiguous_coalitions_and_timeout_bounds()
 	complete_packets(test);
 }
 
+void unchanged_context_measures_prefix_without_refreshing_hostility()
+{
+	fixture test;
+	const auto actor = player(1);
+	const auto started =
+		observe(test, telemetry_battle_relation::hostile, actor, player(2), 0U);
+	const auto count = test.facts.size();
+	assert(telemetry_battle_context(test.state.get(), actor, 75'000U, 75, sink, &test).outcome ==
+	       telemetry_battle_outcome::idempotent);
+	assert(test.facts.size() == count);
+	assert(test.state->slots[0].last_engagement_usec == 0U &&
+	       test.state->slots[0].last_observation_usec == 75'000U);
+	assert(telemetry_battle_expire(test.state.get(), 100'000U, 100, sink, &test).outcome ==
+	       telemetry_battle_outcome::accepted);
+	assert(test.facts.back().battle.sequence == started.battle.sequence &&
+	       test.facts.back().observed_through_monotonic_usec == 75'000U &&
+	       test.facts.back().observed_through_utc_usec == 75 &&
+	       test.facts.back().at_monotonic_usec == 100'000U);
+	complete_packets(test);
+
+	fixture departed;
+	observe(departed, telemetry_battle_relation::hostile, actor, player(2), 0U);
+	assert(telemetry_battle_leave(departed.state.get(),
+				      { 1U, telemetry_combat_actor_kind::player }, 50'000U, 50,
+				      sink, &departed)
+		       .outcome == telemetry_battle_outcome::accepted);
+	assert(telemetry_battle_context(departed.state.get(), actor, 75'000U, 75, sink, &departed)
+		       .outcome == telemetry_battle_outcome::idempotent);
+	assert(departed.state->slots[0].last_observation_usec == 50'000U);
+	assert(telemetry_battle_expire(departed.state.get(), 100'000U, 100, sink, &departed)
+		       .outcome == telemetry_battle_outcome::accepted);
+	assert(departed.facts.back().observed_through_monotonic_usec == 50'000U);
+	complete_packets(departed);
+}
+
 void source_scopes_roster_uncertainty_and_inline_expiry()
 {
 	fixture test;
@@ -809,6 +844,7 @@ int main(int argc, char **argv)
 	pve_mixed_pvp_and_pet_lifetimes();
 	independent_clones_and_proven_merge();
 	ambiguous_coalitions_and_timeout_bounds();
+	unchanged_context_measures_prefix_without_refreshing_hostility();
 	source_scopes_roster_uncertainty_and_inline_expiry();
 	merge_at_capacity_and_sequence_exhaustion();
 	loss_clock_and_cap_refusals();

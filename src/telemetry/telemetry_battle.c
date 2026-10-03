@@ -903,7 +903,16 @@ telemetry_battle_update telemetry_battle_context(telemetry_battle_state *state,
 	const auto position = static_cast<std::uint16_t>(actor_index(slot, key(actor)));
 	auto &entry = slot.actors[position];
 	if (same_context(entry.context, actor))
+	{
+		if (entry.active)
+		{
+			/* A real casting/opponent observation extends the measured prefix,
+			 * without refreshing hostile activity or publishing a duplicate cut. */
+			slot.last_observation_usec = at;
+			slot.last_observation_utc_usec = utc;
+		}
 		return refused(telemetry_battle_outcome::idempotent);
+	}
 	seal(slot, at);
 	if (entry.context.group_key != actor.group_key && (entry.roles & CONTRIBUTOR_ROLES) == 0U)
 		entry.active = 0U;

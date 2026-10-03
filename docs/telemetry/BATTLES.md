@@ -83,8 +83,9 @@ the existing queue and worker. Capture performs no SQL or file I/O. Accepted
 combat entry, positive actual damage and the existing positive typed control
 callback observe hostile relationships. Healing attaches support only when its
 effective amount is positive and no greater than the attempted amount. The
-legacy kind-8 amounts retain their meaning; these relationship observations do
-not yet supply exact shared-battle damage/healing/control/prevention totals.
+legacy kind-8 amounts retain their meaning. The separate native kind-11 capture
+described below supplies disjoint shared damage, healing, casting and observed
+opponent-link measurements alongside these relationship facts.
 
 Every qualified hostile/support observation can establish actual same-room formal
 party presence, including a member arriving while a previously observed hostile
@@ -281,14 +282,14 @@ cross-language regressions round-trip every actual sealed field and qualify
 immutable layout, strict types/widths/lengths, semantic corruption, signed clocks,
 unknown metrics and logical keys. Normal and ASan/UBSan executions passed.
 
-The accumulator is compiled into the maintained server but is not yet allocated
-or called by the runtime. Its new kind-11 durable family is described below.
-Earlier record kinds, kind-8 encounter summaries, kind-10 association storage and
-report definitions retain their contracts. The next required integration connects
-this accumulator at authoritative gameplay and association boundaries and
-atomically publishes complete battle reports with source/linkage coverage. No timestamp join or
-prototype-based conversion of legacy kind-8 totals is acceptable. Actual
-personal-server journeys and performance qualification remain required.
+The runtime now owns this accumulator and connects it to authoritative gameplay
+and association boundaries, as described below. Its kind-11 durable family
+preserves the independent segment identity. Earlier record kinds, kind-8 encounter
+summaries, kind-10 association storage and report definitions retain their
+contracts. Atomic complete battle reports still require source/linkage coverage;
+timestamp joins or prototype-based conversion of legacy kind-8 totals cannot
+establish that coverage. Actual personal-server journeys and performance
+qualification remain required.
 
 ## Durable shared-battle storage
 
@@ -391,10 +392,96 @@ Outage ledger v3 and private incident schema v4 include contribution loss;
 earlier versions retain their original family limits. The common coverage
 snapshot seam selects v4 for future definitions beginning with 5 and keeps
 definition 4 on v3. The current report catalog still contains definitions 1/2/3.
-Neither this storage nor that seam publishes a battle report. Native runtime
-capture, complete association/alias linkage, context/prevention/population,
+Neither this storage nor that seam publishes a battle report. The native runtime
+capture below retains exact packet references; complete published association/
+alias/loss linkage, context/prevention/population,
 atomic battle projections and actual personal-local gameplay/performance
 qualification remain required under the full expansion in #258.
+
+## Native contribution capture
+
+The runtime owns the fixed 3,674,176-byte contribution state and emits sealed
+kind-11 records through the existing queue, worker and canonical writer. Native
+damage, effective/attempted healing, casting and actual `GET_OPPONENT` observations
+use maintained live actor IDs and the current shared battle's scope, actor/owner,
+group revision, mode, side and complete-packet reference. Each combat observation
+uses one monotonic/UTC pair for relationship capture, formal party presence and
+its metric update. Legacy kind-8 amounts are independently preserved.
+
+The native availability mask is **27**: damage (1), healing (2), casting (8) and
+observed opponent-link time (16). Control (4) remains unavailable because the
+typed control API has no native effect producer. Prevention and measured incoming
+pressure also remain required sources. An availability bit identifies an
+implemented producer family; it does not prove that every lifecycle or actor was
+observed. An absent contribution row alone cannot establish a measured zero.
+
+Positive effective healing can admit useful support. Ineffective attempted
+healing counts only when both actual actors already belong to the same battle;
+it cannot admit an unrelated healer. Self-healing retains one exact attempted/
+effective/overhealing partition. Proven formal presence alone creates no metric
+stream. Pets retain their own maintained lifetime, current owner and event
+modifiers; teardown uses the retained stream kind even if owner context is
+unavailable by the time the pet leaves.
+
+After an association mutation, affected retained streams observe the committed
+packet basis. Changes of battle/alias, mode/side, owner/kind, configuration,
+dimensions or group revision seal old amounts before further activity can start
+a replacement. A pending cast at that boundary becomes unresolved in its old
+segment. A later terminal callback cannot relabel that old attempt or copy its
+elapsed time. Explicit leave uses its actual cut, including the same source
+clock as session exit. A changed context without a newer usable packet basis
+retains an explicit source-gap prefix. Configuration withdrawal also seals
+source-gap prefixes; recovery preserves the association's partial coverage.
+An actual opponent pointer without a usable native lifetime seals a source gap
+and keeps missing coverage explicit; it cannot end engagement as a measured zero.
+
+Real casting/opponent context observations can extend an active battle's last
+observed prefix without refreshing its hostile clock or publishing a duplicate
+packet. Inactive actors cannot extend that prefix. Observations in another battle
+cannot advance a retained stream's measured time. The collector's close callback
+seals metrics before its association slot is released. Inactivity supplies the
+original observed prefix and a later decision; copyover/shutdown supply their
+actual observed cut. The kind-11 header labels the decision UTC. These boundaries
+do not establish a whole-battle winner.
+
+The gameplay fixture checks conserved damage, exact healing partitions, terminal
+casting retries, unresolved casts, both sides, party arrival/departure, different
+NPC generations, owner/kind changes, configuration changes, aliases, retained
+pet teardown and exact session exit. A second native fixture processes two
+independent inactivity closures at one supplied future pulse clock and checks
+both earlier observed prefixes. That future pulse is a fixture seam, rather than
+a running personal-server clock journey. The SQL fixture compares all 65 emitted
+fields, validates complete first/last association packet references and checks
+private writer permissions, NULL family separation and empty quarantine.
+
+Both disposable full-62-step MariaDB 10.11.14 and MySQL 8.0.46 journeys passed:
+123 shared facts in 38 complete packets and 28 native contribution segments per
+engine. Damage dealt/taken both equal 112. Attempted healing 45 partitions into
+effective 15 and overhealing 30; six casting attempts partition into one
+completion, one abort and four unresolved attempts. All 65 contribution fields
+and both packet references match the emitted source. Fresh metadata fingerprints
+retain their sealed head-62 values. The temporary databases/roles were removed
+and both fixture engines were stopped. These journeys use synthetic gameplay
+objects and a private connection factory seam; real personal-server source,
+persistence and performance journeys remain required.
+The unavailable-opponent fixture verifies an actual native source-gap segment
+through the writer and preserves the known amounts and unresolved cast.
+
+Each production copyover flush retains its 250 ms cap. The SQL correctness fixture
+permits bounded generation retries within five seconds and requires unchanged
+source totals and one censored close. This is a correctness check; the final
+personal-local performance gate still needs measured latency and memory budgets.
+
+```sh
+python3 tests/async/test_telemetry_gameplay_adapters.py
+python3 tests/async/test_telemetry_gameplay_adapters.py --sanitize
+python3 tests/async/test_telemetry_battles.py --sanitize
+python3 tests/async/test_telemetry_runtime_integration.py
+python3 tests/async/test_telemetry_runtime_exhaustion.py
+python3 tests/async/test_telemetry_runtime_outage.py
+TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 bash tests/async/run_telemetry_repository_sql.sh --battle-runtime
+TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 bash tests/async/run_telemetry_repository_sql.sh --battle-runtime
+```
 
 ## Bounds and qualification
 

@@ -21,6 +21,7 @@ from test_telemetry_incidents import runtime_fingerprint
 
 sys.path.insert(0, str(ROOT / "scripts/telemetry"))
 import battle_contract
+import battle_contribution_contract
 from db_access import RAW_COLUMNS
 
 
@@ -62,10 +63,15 @@ def qualify() -> None:
                 TELEMETRY_BATTLE_WRITER_PASSWORD=password, TELEMETRY_BATTLE_CAPTURE_EXPORT=str(export))
             subprocess.run([str(executable), "--native-battle-sql"], check=True,
                            cwd=ROOT, env=run_environment, timeout=30)
-            source = [json.loads(line) for line in export.read_text().splitlines()]
-            stored = query("SELECT " + ",".join(RAW_COLUMNS) + " FROM telemetry_interval WHERE record_kind=10 ORDER BY record_seq")
-            assert len(source) == len(stored) > 0
-            for emitted, raw in zip(source, stored, strict=True):
+            source = [json.loads(line) for line in export.read_text(encoding="utf-8").splitlines()]
+            def receipt(row):
+                return row["boot_id"], row["process_id"], row["record_seq"]
+            battle_source = sorted((row for row in source if row["record_kind"] == 10), key=receipt)
+            contribution_source = sorted((row for row in source if row["record_kind"] == 11), key=receipt)
+            stored = query("SELECT " + ",".join(RAW_COLUMNS) +
+                " FROM telemetry_interval WHERE record_kind=10 ORDER BY boot_id,process_id,record_seq")
+            assert len(battle_source) == len(stored) > 0
+            for emitted, raw in zip(battle_source, stored, strict=True):
                 assert all(raw[column] == value for column, value in emitted.items()), "native source/SQL field drift"
                 values = battle_contract.validate_raw_fact(raw)
                 assert values == {column: value for column, value in emitted.items() if column.startswith("battle_")}
@@ -77,10 +83,60 @@ def qualify() -> None:
                     for raw in stored[cursor:cursor + count]])
                 cursor += count
                 packets += 1
+            contributions = query("SELECT " + ",".join(RAW_COLUMNS) +
+                " FROM telemetry_interval WHERE record_kind=11 ORDER BY boot_id,process_id,record_seq")
+            assert len(contribution_source) == len(contributions) > 0
+            # References must resolve to complete, real association packets.
+            bases = {(row["battle_boot_id"], row["battle_process_id"], row["battle_seq"],
+                      row["battle_revision"], row["battle_fact_sequence"]): row
+                     for row in stored if row["battle_fact_index"] + 1 == row["battle_fact_count"]}
+            for emitted, raw in zip(contribution_source, contributions, strict=True):
+                assert all(raw[column] == value for column, value in emitted.items()), "native contribution/SQL field drift"
+                values = battle_contribution_contract.validate_raw_segment(raw)
+                assert values == {column: value for column, value in emitted.items() if column.startswith("bc_")}
+                identity = tuple(raw[column] for column in ("bc_battle_boot_id", "bc_battle_process_id", "bc_battle_seq"))
+                first = bases[identity + (raw["bc_first_association_revision"], raw["bc_first_association_fact_sequence"])]
+                last = bases[identity + (raw["bc_last_association_revision"], raw["bc_last_association_fact_sequence"])]
+                assert first["battle_at_monotonic_usec"] <= raw["bc_start_monotonic_usec"]
+                assert last["battle_at_monotonic_usec"] <= raw["bc_observed_through_monotonic_usec"]
+                for basis in (first, last):
+                    assert basis["battle_config_id"] == raw["bc_config_id"]
+                    assert basis["battle_policy_version"] == raw["bc_policy_version"]
+                    assert basis["battle_classifier_version"] == raw["bc_classifier_version"]
+                assert first["battle_mode"] == raw["bc_mode"]
+                assert first["battle_side_status"] == raw["bc_side_status"]
+                assert raw["bc_available_metrics"] == 27 and raw["bc_control_applications"] == raw["bc_control_received"] == 0
+            assert sum(row["bc_damage_dealt"] for row in contributions) == 112
+            assert sum(row["bc_damage_taken"] for row in contributions) == 112
+            assert sum(row["bc_healing_attempted"] for row in contributions) == 45
+            assert sum(row["bc_effective_healing"] for row in contributions) == 15
+            assert sum(row["bc_overhealing"] for row in contributions) == 30
+            assert sum(row["bc_healing_received"] for row in contributions) == 15
+            assert sum(row["bc_casting_attempts"] for row in contributions) == 6
+            assert sum(row["bc_casting_completions"] for row in contributions) == 1
+            assert sum(row["bc_casting_aborts"] for row in contributions) == 1
+            assert sum(row["bc_casting_unresolved"] for row in contributions) == 4
+            unavailable_opponent = [row for row in contributions if row["bc_actor_id"] == 8951]
+            assert len(unavailable_opponent) == 1
+            assert unavailable_opponent[0]["bc_end_reason"] == 4
+            assert unavailable_opponent[0]["bc_quality_flags"] & 17 == 17
+            assert not {8804, 8805}.intersection(row["bc_actor_id"] for row in contributions)
             assert query("SELECT COUNT(*) AS n FROM telemetry_quarantine")[0]["n"] == 0
             assert query("SELECT COUNT(*) AS n FROM telemetry_session")[0]["n"] == 2
             assert query("SELECT COUNT(*) AS n FROM telemetry_config")[0]["n"] == 2
-            assert {row["battle_close_reason"] for row in stored if row["battle_fact_kind"] == 7} == {2, 3}
+            assert {row["battle_close_reason"] for row in stored if row["battle_fact_kind"] == 7} == {1, 2, 3}
+            inactivity_closes = [row for row in stored if row["battle_fact_kind"] == 7 and row["battle_close_reason"] == 1]
+            assert len(inactivity_closes) == 2
+            for close in inactivity_closes:
+                matching = [row for row in contributions if
+                    (row["bc_battle_boot_id"], row["bc_battle_process_id"], row["bc_battle_seq"]) ==
+                    (close["battle_boot_id"], close["battle_process_id"], close["battle_seq"])]
+                assert len(matching) == 2
+                for row in matching:
+                    assert row["bc_end_reason"] == 3
+                    assert row["bc_observed_through_monotonic_usec"] == close["battle_observed_through_monotonic_usec"]
+                    assert row["bc_decision_monotonic_usec"] == close["battle_at_monotonic_usec"]
+                    assert row["bc_engaged_target_usec"] == row["bc_observed_through_monotonic_usec"] - row["bc_start_monotonic_usec"]
             writer = pymysql.connect(host="127.0.0.1", port=int(environment["DB_PORT"]),
                 user=user, password=password, database=name, autocommit=True,
                 connect_timeout=3, read_timeout=10, write_timeout=10)
@@ -98,6 +154,12 @@ def qualify() -> None:
                 normalized_metadata_fingerprint=fingerprint,
                 migration_head=json.loads((ROOT / "migrations/migration_manifest.json").read_text())["migrations"][-1]["id"],
                 battle_schema_migration="0061_telemetry_shared_battle_facts", records=len(stored), packets=packets,
+                contribution_schema_migration="0062_telemetry_battle_contributions",
+                contribution_records=len(contributions), contribution_field_count=65,
+                complete_association_references=True, exact_damage_total=112,
+                unavailable_opponent_source_gap=True,
+                inactivity_prefixes_preserved=True, inactivity_fixture_future_pulse=True,
+                available_metric_mask=27, native_control_producer=False,
                 battle_field_count=70, native_runtime=True, actual_worker=True,
                 native_sql_writer=True, private_writer=True, running_server=False)
             if artifact := os.environ.get("TELEMETRY_BATTLE_RUNTIME_RESULT"):

@@ -155,6 +155,7 @@ struct fake_repository
 	std::atomic<telemetry_monotonic_usec> transport_now{ 0U };
 	telemetry_dimensions dimensions{};
 	std::vector<telemetry_record> battles;
+	std::vector<telemetry_record> contributions;
 };
 
 struct reload_property_values
@@ -279,6 +280,11 @@ telemetry_apply_batch_result fake_apply(void *context, const telemetry_record *r
 		{
 			assert(telemetry_record_is_valid(records[index]));
 			fake->battles.push_back(records[index]);
+		}
+		if (records[index].header.kind == telemetry_record_kind::battle_contribution)
+		{
+			assert(telemetry_record_is_valid(records[index]));
+			fake->contributions.push_back(records[index]);
 		}
 		if (records[index].header.kind == telemetry_record_kind::session_lifecycle)
 		{
@@ -1071,6 +1077,8 @@ void check_battle_capture_across_property_reload()
 	source.player.level = target.player.level = 25;
 	assert(telemetry_runtime_game_combat_engage(&source, &target).outcome ==
 	       telemetry_runtime_outcome::accepted);
+	telemetry_runtime_game_combat_damage(&source, &target, 7U, 0U);
+	telemetry_runtime_game_combat_cast_attempt(&source, 1);
 	values.payout_factor = 1.25F;
 	telemetry_config_property_capture probe_capture{};
 	probe_capture.reader = { reload_property_read, &values };
@@ -1125,8 +1133,40 @@ void check_battle_capture_across_property_reload()
 		}
 	}
 	assert(saw_gap && saw_recovered && saw_unknown_effort && saw_leave && closes == 1U);
+	std::uint64_t dealt = 0U, taken = 0U, attempts = 0U, unresolved = 0U;
+	unsigned gap_segments = 0U, recovered_segments = 0U;
+	for (const auto &record : fake.contributions)
+	{
+		const auto &row = record.payload.battle_contribution;
+		dealt += row.counters.damage_dealt;
+		taken += row.counters.damage_taken;
+		attempts += row.counters.casting_attempts;
+		unresolved += row.counters.casting_unresolved;
+		if (row.context.scope.config_id == original.config_id)
+		{
+			assert(row.end_reason == telemetry_battle_contribution_end::source_gap &&
+			       row.cut.observed_usec <= row.cut.decision_usec &&
+			       (row.quality_flags & (TELEMETRY_QUALITY_CONTEXT_UNKNOWN |
+						     TELEMETRY_QUALITY_QUEUE_DROP)) ==
+				       (TELEMETRY_QUALITY_CONTEXT_UNKNOWN |
+					TELEMETRY_QUALITY_QUEUE_DROP));
+			++gap_segments;
+		}
+		else
+		{
+			assert(row.context.scope.config_id == recovered.config_id &&
+			       row.context.side_status == telemetry_battle_side_status::partial &&
+			       (row.quality_flags & (TELEMETRY_QUALITY_CONTEXT_UNKNOWN |
+						     TELEMETRY_QUALITY_QUEUE_DROP)) ==
+				       (TELEMETRY_QUALITY_CONTEXT_UNKNOWN |
+					TELEMETRY_QUALITY_QUEUE_DROP));
+			++recovered_segments;
+		}
+	}
+	assert(dealt == 8U && taken == 8U && attempts == 1U && unresolved == 1U &&
+	       gap_segments == 2U && recovered_segments == 2U);
 	std::puts(
-		"PASS: native battle configuration withdrawal, unknown-mode gap, teardown and reviewed recovery");
+		"PASS: native battle and contribution configuration withdrawal, measured source-gap prefix, teardown and reviewed recovery");
 }
 
 void check_bounded_shutdown_request_and_final_reap()

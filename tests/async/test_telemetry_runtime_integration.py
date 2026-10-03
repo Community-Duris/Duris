@@ -68,6 +68,7 @@ def main(*, exhaustion: bool = False, outage: bool = False) -> None:
                     for name in (
                         "telemetry_activity.c",
                         "telemetry_battle.c",
+                        "telemetry_battle_contribution.c",
                         "telemetry_combat_summary.c",
                         "telemetry_config.c",
                         "telemetry_encounter.c",
