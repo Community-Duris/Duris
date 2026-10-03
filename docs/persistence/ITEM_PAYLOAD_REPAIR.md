@@ -31,6 +31,14 @@ reconciliation, and its current player placement and timer must already agree
 with the payload. Repair never seeds/rebinds a registry, extends a timer, or
 changes artifact location. A name-marked unique item does not become an artifact.
 
+On experimental-accounting, the plan also fences authoritative equipment slots,
+accounting item references and the retained death-conflict gate. Nonzero custody
+slots, unresolved retained conflicts and pending quest obligations/entitlements
+are refused. Canonical `item_properties`
+comes from the branch's native properties encoder and is written/verified alongside
+the complete runtime companion. Repair does not create an accounting operation,
+item reference, equipment transition or economic posting.
+
 ## Evidence and preparation
 
 Supply an operator-reviewed, owner-only JSON file (0600) containing original

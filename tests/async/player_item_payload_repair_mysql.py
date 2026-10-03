@@ -29,8 +29,9 @@ def main() -> None:
     # uses a different sequence and retains additional load/save authorities.
     suffixes = {"player_death_disposition", "pet_restore_state", "pet_custody",
                 "player_death_restitution", "player_item_runtime_state",
-                "economy_accounting", "player_death_conflict_evidence",
-                "item_equipment_slot", "item_extra_description_fulltext_unique"}
+                "economy_accounting", "player_death_conflict_evidence", "player_item_dynamic_state",
+                "item_equipment_slot", "item_extra_description_fulltext_unique",
+                "quest_reward_obligation", "quest_xp_receipt", "quest_xp_entitlement"}
     manifest = json.loads((ROOT / "migrations/migration_manifest.json").read_text())
     for migration in manifest["migrations"]:
         if migration["id"].split("_", 1)[1] in suffixes:
@@ -117,6 +118,36 @@ def main() -> None:
             db.run(sql)
             refuse(label)
             db.run(undo)
+        db.run("UPDATE item_current_owner SET equipment_slot=1 WHERE item_uid=52601")
+        refuse("unsupported_placement")
+        db.run("UPDATE item_current_owner SET equipment_slot=0 WHERE item_uid=52601")
+        db.run("INSERT INTO player_death_conflict_evidence(operation_id,pid,save_revision,source_revision,corpse_item_uid,request_hash,payload_hash,payload) "
+               "VALUES(UNHEX(REPEAT('ba',16)),43,99,2,52699,UNHEX(REPEAT('ba',32)),UNHEX(REPEAT('ba',32)),'synthetic retained conflict')")
+        refuse("pending_authority")
+        db.run("DELETE FROM player_death_conflict_evidence")
+        db.run("INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,command_type,schema_version,payload_version,status,result_payload) "
+               "VALUES(UNHEX(REPEAT('bd',16)),UNHEX(REPEAT('bd',32)),UNHEX(REPEAT('bd',32)),1,1,1,1,'')")
+        db.run("INSERT INTO quest_reward_obligation(offering_operation_id,player_pid,continuation) VALUES(UNHEX(REPEAT('bd',16)),43,'')")
+        refuse("pending_authority")
+        db.run("UPDATE quest_reward_obligation SET player_pid=44 WHERE offering_operation_id=UNHEX(REPEAT('bd',16))")
+        db.run("INSERT INTO quest_reward_xp_entitlement(offering_operation_id,recipient_pid,reward_index,amount) VALUES(UNHEX(REPEAT('bd',16)),43,1,1)")
+        refuse("pending_authority")
+        db.run("DELETE FROM quest_reward_xp_entitlement")
+        db.run("DELETE FROM quest_reward_obligation")
+        db.run("DELETE FROM critical_operation_inbox")
+        # A 33-object chain exceeds the production codec's root-inclusive depth.
+        parent_uid = 52602
+        parent_id = int(db.scalar("SELECT id FROM player_items WHERE obj_uid=52602"))
+        for extra_uid in range(52701, 52732):
+            db.run(f"INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,vnum,item_revision,state) VALUES({extra_uid},52602,{parent_uid},1,43,0,{extra_uid},8,1)")
+            db.run(f"INSERT INTO player_items(pid,vnum,obj_uid,item_type,container_id) VALUES(43,{extra_uid},{extra_uid},15,{parent_id})")
+            parent_uid = extra_uid
+            parent_id = int(db.scalar(f"SELECT id FROM player_items WHERE obj_uid={extra_uid}"))
+        db.run(f"UPDATE item_current_owner SET parent_item_uid={parent_uid},root_item_uid=52602 WHERE item_uid=52601")
+        refuse("invalid_topology")
+        db.run("UPDATE item_current_owner SET parent_item_uid=NULL,root_item_uid=52601 WHERE item_uid=52601")
+        db.run("DELETE FROM player_items WHERE obj_uid BETWEEN 52701 AND 52731 ORDER BY id DESC")
+        db.run("DELETE FROM item_current_owner WHERE item_uid BETWEEN 52701 AND 52731 ORDER BY item_uid DESC")
         journal = Path(os.environ["CRITICAL_COMMAND_JOURNAL_DIR"]) / "critical-command.journal"
         journal.write_bytes(b"CCJ1pending")
         journal.chmod(0o600)
@@ -137,6 +168,7 @@ def main() -> None:
         # Direct transaction tests prove the fences are inside SQL, independent
         # of the Python preflight. Mutate after preparation and require rollback.
         for sql, undo in (
+            ("UPDATE item_current_owner SET equipment_slot=1 WHERE item_uid=52601", "UPDATE item_current_owner SET equipment_slot=0 WHERE item_uid=52601"),
             ("UPDATE item_current_owner SET item_revision=9 WHERE item_uid=52601", "UPDATE item_current_owner SET item_revision=8 WHERE item_uid=52601"),
             ("UPDATE item_owner_revision SET revision=21 WHERE owner_type=1 AND owner_id=43", "UPDATE item_owner_revision SET revision=20 WHERE owner_type=1 AND owner_id=43"),
             ("UPDATE player_data SET save_revision=99 WHERE pid=43", "UPDATE player_data SET save_revision=2 WHERE pid=43"),
@@ -214,6 +246,13 @@ def main() -> None:
                 assert db.scalar("SELECT status FROM player_death_restitution_receipt ORDER BY applied_at DESC LIMIT 1") == "2"
                 db.run("UPDATE item_current_owner SET root_item_uid=52602 WHERE item_uid=52602")
             cli(["repair-apply", *controls, "--approve"])
+            db.run(f"UPDATE player_items SET item_properties='' WHERE obj_uid={uid}")
+            try:
+                cli(["repair-verify", *controls])
+                raise AssertionError("changed canonical accounting properties were certified")
+            except api.ToolError as error:
+                assert "payload_fidelity" in str(error)
+            db.run(f"UPDATE player_items SET item_properties={api.sql_text(plan['item']['item_properties_hex'])} WHERE obj_uid={uid}")
             # Fresh native processes exercise the real production load and save,
             # then cold load again with the previous process's memory gone.
             subprocess.run([str(binary), "--repair-save"], check=True)
@@ -236,6 +275,8 @@ def main() -> None:
         assert db.scalar("SELECT COUNT(*) FROM player_death_restitution_receipt WHERE status=3") == "2"
         assert db.scalar("SELECT COUNT(*) FROM item_ownership_ledger") == "0"
         assert db.scalar("SELECT COUNT(*) FROM currency_ledger") == "0"
+        assert db.scalar("SELECT COUNT(*) FROM economic_accounting_operation") == "0"
+        assert db.scalar("SELECT COUNT(*) FROM economic_accounting_item_reference") == "0"
         print("successful generated/nested repair, no authority side effects, all refusals, stale transaction fences, rollback, interruption, idempotency and process restart fidelity passed")
 
 

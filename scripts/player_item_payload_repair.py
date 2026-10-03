@@ -118,7 +118,7 @@ def fingerprint_sql(table: str, fields: list[str], where: str) -> str:
 
 def observation_specs(api: Any, uid: int, pid: int, vnum: int) -> list[tuple[str, list[str], str]]:
     own_fields = ["item_uid", "root_item_uid", "parent_item_uid", "owner_type", "owner_id",
-                  "owner_context_id", "vnum", "item_revision", "state", "coin_payload"]
+                  "owner_context_id", "vnum", "item_revision", "state", "coin_payload", "equipment_slot"]
     specs = [
         ("item_current_owner", own_fields, f"item_uid={uid} OR (owner_type=1 AND owner_id={pid} AND owner_context_id=0 AND state=1)"),
         ("item_owner_revision", ["owner_type", "owner_id", "owner_context_id", "revision"],
@@ -138,6 +138,14 @@ def observation_specs(api: Any, uid: int, pid: int, vnum: int) -> list[tuple[str
             fields += ["pid", "equip_slot", "container_id", "item_type"]
             where += f" OR pid={pid} OR obj_uid IN ({domain})"
         specs.append((table, fields, where))
+    specs += [
+        ("economic_accounting_item_reference", ["operation_id", "line_index", "event_index", "child_index",
+          "item_uid", "before_revision", "after_revision", "legacy_operation_id", "legacy_event_index"],
+         f"item_uid={uid} OR item_uid IN ({domain})"),
+        ("player_death_conflict_evidence", ["operation_id", "pid", "save_revision", "request_hash", "payload_hash"], f"pid={pid}"),
+        ("quest_reward_obligation", ["offering_operation_id", "player_pid", "continuation", "xp_applied_mask", "acknowledged_at"], f"player_pid={pid} AND acknowledged_at IS NULL"),
+        ("quest_reward_xp_entitlement", ["offering_operation_id", "recipient_pid", "reward_index", "amount", "applied_at"], f"recipient_pid={pid} AND applied_at IS NULL"),
+    ]
     # No artifact writes. Existing identity rules and every authority/competitor
     # input used by them are fenced even for an ordinary or name-marked item.
     for table, fields in (
@@ -183,6 +191,8 @@ def inspect_state(api: Any, db: Any, uid: int, selected: dict[str, Any]) -> dict
         "player_death_restitution_receipt", "player_death_restitution_item", "player_death_restitution_delivery",
         "player_death_restitution_runtime", "artifact_domain_state", "artifact_domain_baseline",
         "artifact_bind", "artifacts", "artifacts_mortal", "player_death_custody",
+        "economic_accounting_item_reference", "player_death_conflict_evidence",
+        "quest_reward_obligation", "quest_reward_xp_entitlement",
     }
     transactional = db.run("SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() "
                            "AND engine='InnoDB' AND table_name IN (" +
@@ -197,6 +207,13 @@ def inspect_state(api: Any, db: Any, uid: int, selected: dict[str, Any]) -> dict
     if owner["owner_type"] != api.OWNER_PLAYER or owner["owner_context_id"]:
         raise api.ToolError("unsupported_owner: only SQL active player inventory custody is supported")
     pid = owner["owner_id"]
+    if db.scalar(f"SELECT COUNT(*) FROM player_death_conflict_evidence WHERE pid={pid}") != "0":
+        raise api.ToolError("pending_authority: retained death conflict requires its separate reconciliation workflow")
+    if db.scalar(f"SELECT COUNT(*) FROM quest_reward_obligation WHERE player_pid={pid} AND acknowledged_at IS NULL") != "0" or \
+            db.scalar(f"SELECT COUNT(*) FROM quest_reward_xp_entitlement WHERE recipient_pid={pid} AND applied_at IS NULL") != "0":
+        raise api.ToolError("pending_authority: quest reward obligations/entitlements must finish first")
+    if db.scalar(f"SELECT equipment_slot FROM item_current_owner WHERE item_uid={uid}") != "0":
+        raise api.ToolError("unsupported_placement: authoritative equipment custody requires separate review")
     if owner["vnum"] != selected["item"]["vnum"]:
         raise api.ToolError("identity_conflict: custody and evidence vnums differ")
     data = db.run(f"SELECT active,save_revision FROM player_data WHERE pid={pid}")
@@ -229,6 +246,10 @@ def validate_topology(api: Any, db: Any, uid: int, owner: dict[str, Any], *, mis
         raise api.ToolError("state_limit: player topology exceeds codec bounds")
     if int(db.scalar("SELECT " + api.projection_count_sql(domain_uids))) != len(domain_uids) - int(missing):
         raise api.ToolError("competing_instance: another custody UID has ambiguous or absent physical instances")
+    placement = {int(row[0]): (int(row[1]), row[2] == "1") for row in db.run(
+        "SELECT own.item_uid,own.equipment_slot,EXISTS(SELECT 1 FROM economic_accounting_item_reference reference "
+        "WHERE reference.item_uid=own.item_uid AND reference.after_revision=own.item_revision) "
+        f"FROM item_current_owner own WHERE owner_type=1 AND owner_id={pid} AND owner_context_id=0 AND state=1")}
     owners = api.fetch_current_owners(db, domain_uids)
     projections = api.fetch_player_projections(db, domain_uids)
     by_uid = {}
@@ -241,7 +262,7 @@ def validate_topology(api: Any, db: Any, uid: int, owner: dict[str, Any], *, mis
         visited = set()
         current = row
         while current["parent_item_uid"]:
-            if current["item_uid"] in visited or len(visited) >= 32:
+            if current["item_uid"] in visited or len(visited) >= 31:  # production maximum 32 counts the root
                 raise api.ToolError("invalid_topology: cycle or excessive depth")
             visited.add(current["item_uid"])
             parent = owners.get(str(current["parent_item_uid"]))
@@ -250,6 +271,9 @@ def validate_topology(api: Any, db: Any, uid: int, owner: dict[str, Any], *, mis
             current = parent
         if current["item_uid"] != row["root_item_uid"]:
             raise api.ToolError("invalid_topology: root relationship is inconsistent")
+        slot, authoritative_slot = placement[int(key)]
+        if (int(key) == uid or row["parent_item_uid"]) and slot:
+            raise api.ToolError("invalid_topology: equipment custody contradicts inventory/container placement")
         if missing and int(key) == uid:
             continue
         projection = by_uid.get(key)
@@ -258,6 +282,8 @@ def validate_topology(api: Any, db: Any, uid: int, owner: dict[str, Any], *, mis
                 (row["parent_item_uid"] and (parent_projection is None or projection["container_id"] != parent_projection["id"])) or \
                 (not row["parent_item_uid"] and projection["container_id"]):
             raise api.ToolError("invalid_topology: another custody payload is missing or its projection disagrees")
+        if (slot or authoritative_slot) and projection["equip_slot"] != slot:
+            raise api.ToolError("invalid_topology: projection disagrees with accounted equipment custody")
         if row["parent_item_uid"] and projection["equip_slot"] != 0:
             raise api.ToolError("invalid_topology: nested projection claims equipment custody")
     parent_id = by_uid[str(owner["parent_item_uid"])]["id"] if owner["parent_item_uid"] else 0
@@ -326,6 +352,8 @@ def projection_values(api: Any, item: dict[str, Any], pid: int, parent: str) -> 
               str(item["timers"][0]), str(item["extra_flags"]), str(item["wear_flags"]), str(item["type"]),
               *map(str, item["values"]), *strings, *map(str, item["bitvectors"]), str(item["material"]),
               str(item["object_uid"]), str(item["condition"])]
+    columns += ",item_properties"
+    values.append(api.sql_text(item["item_properties_hex"]))
     return columns, values
 
 
@@ -501,7 +529,10 @@ def verify(api: Any, db: Any, plan: dict[str, Any]) -> None:
         raise api.ToolError("artifact_authority_changed: repair cannot certify changed artifact authority")
     if db.scalar(f"SELECT COUNT(*) FROM player_data WHERE pid={expected['owner_id']} AND active=1") != "1" or \
             db.scalar("SELECT COUNT(*) FROM critical_operation_inbox WHERE status<>1") != "0" or \
-            db.scalar("SELECT COUNT(*) FROM critical_outbox WHERE status<>1") != "0":
+            db.scalar("SELECT COUNT(*) FROM critical_outbox WHERE status<>1") != "0" or \
+            db.scalar(f"SELECT COUNT(*) FROM player_death_conflict_evidence WHERE pid={expected['owner_id']}") != "0" or \
+            db.scalar(f"SELECT COUNT(*) FROM quest_reward_obligation WHERE player_pid={expected['owner_id']} AND acknowledged_at IS NULL") != "0" or \
+            db.scalar(f"SELECT COUNT(*) FROM quest_reward_xp_entitlement WHERE recipient_pid={expected['owner_id']} AND applied_at IS NULL") != "0":
         raise api.ToolError("pending_authority: verification requires active player and drained operations")
     if projection[0]["container_id"] != parent_id:
         raise api.ToolError("invalid_topology: repaired parent projection does not match custody")

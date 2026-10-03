@@ -110,26 +110,6 @@ void __free(void *pointer, const char *, int)
 	std::abort();
 }
 
-bool item_owner_identity_valid(const item_owner_identity &owner)
-{
-	return owner.type > item_owner_type::unknown && owner.type <= item_owner_type::shopkeeper &&
-	       ((owner.type == item_owner_type::system ||
-		 owner.type == item_owner_type::destruction) ?
-			owner.id == 0 && owner.context_id == 0 :
-			owner.id != 0);
-}
-
-bool item_owner_identity_equal(const item_owner_identity &left, const item_owner_identity &right)
-{
-	return left.type == right.type && left.id == right.id &&
-	       left.context_id == right.context_id;
-}
-
-uint64_t item_transfer_result_root(const item_transfer_payload &payload)
-{
-	return payload.target_root_item_uid;
-}
-
 bool item_ownership_runtime_hydrate_batch(const item_ownership_runtime_entry *, size_t)
 {
 	return true;
