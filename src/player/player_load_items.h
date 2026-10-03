@@ -55,5 +55,7 @@ bool player_load_item_graph_materialize_creation(const item_transfer_payload &pa
 void player_load_item_runtime_state_apply(P_obj object, const player_item_snapshot &item);
 void player_load_items_activate_equipment(P_char character);
 void player_load_items_discard(P_char character);
+// Pure production metadata validation for identity-bound offline evidence.
+bool player_load_item_snapshot_metadata_valid(const player_item_snapshot &item);
 
 #endif
