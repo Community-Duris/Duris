@@ -55,7 +55,11 @@ def vector(value: object) -> tuple[int, int, int, int]:
     if (not isinstance(value, list) or len(value) != 4 or
             any(type(part) is not int or not -(2**63) <= part < 2**63 for part in value)):
         raise SnapshotError("invalid denomination vector")
-    return tuple(value)
+    checked = tuple(value)
+    # Matching native/opening/effect vectors can still exceed the native money
+    # range. Validate their weighted value, not only each denomination field.
+    copper(checked)
+    return checked
 
 
 def copper(value: tuple[int, int, int, int]) -> int:
@@ -75,6 +79,14 @@ def account_key(value: object) -> tuple[str, int, int, int]:
     if raw[16:18] != b"\x01\x00" or raw[36:] != bytes(4) or not 1 <= kind <= 10 or not identity:
         raise SnapshotError("invalid account key")
     return raw[:16].hex(), kind, identity, context
+
+
+def unsigned_revision(value: object) -> bool:
+    return type(value) is int and 0 <= value < 2**64
+
+
+def item_revision_transition(before: object, after: object) -> bool:
+    return unsigned_revision(before) and unsigned_revision(after) and after == before + 1
 
 
 def require_id(value: object, label: str) -> str:
@@ -183,8 +195,7 @@ class Reconciler:
                 owner = event.get("owner")
                 if (type(event_index) is not int or not 0 <= event_index <= 65535 or
                         type(uid) is not int or not 0 < uid < 2**64 or
-                        type(before_revision) is not int or not 0 <= before_revision < 2**63 or
-                        type(revision) is not int or revision != before_revision + 1 or
+                        not item_revision_transition(before_revision, revision) or
                         type(root_uid) is not int or not 0 < root_uid < 2**64 or
                         (parent_uid is not None and
                          (type(parent_uid) is not int or not 0 < parent_uid < 2**64)) or
@@ -413,6 +424,9 @@ class Reconciler:
 
         by_account: dict[str, list[dict]] = defaultdict(list)
         for row in effects.values():
+            if (not unsigned_revision(row.get("before_revision")) or
+                    not unsigned_revision(row.get("after_revision"))):
+                raise SnapshotError("invalid account effect revision")
             key = row.get("account_key")
             account_key(key)
             by_account[key].append(row)
@@ -579,6 +593,9 @@ class Reconciler:
 
     def audit_accounts(self, lineage: str, operations: dict, by_account: dict, origins: dict, native: dict,
                        deltas: dict) -> None:
+        for holding in native.values():
+            if not unsigned_revision(holding.get("revision")):
+                raise SnapshotError("invalid native holding revision")
         for key in set(by_account) | {row[0] for row in origins} | {row[0] for row in native}:
             key_lineage, kind, _, _ = account_key(key)
             if key_lineage != lineage:
@@ -615,7 +632,7 @@ class Reconciler:
                 continue
             expected = vector(origin.get("balance"))
             revision = origin.get("revision")
-            if type(revision) is not int or revision < 0:
+            if not unsigned_revision(revision):
                 raise SnapshotError("invalid account origin revision")
             if origin["origin"] == "creation" and (expected != (0, 0, 0, 0) or revision != 0):
                 self.emit("invalid_account_creation_origin", account_key=key)
@@ -827,8 +844,8 @@ class Reconciler:
                 self.emit("unauthorized_mapping_creation", operation_id=creator_id,
                           account_key=key)
             effect = matching_effects[0]
-            if (type(effect.get("before_revision")) is not int or
-                    type(effect.get("after_revision")) is not int or
+            if (not unsigned_revision(effect.get("before_revision")) or
+                    not unsigned_revision(effect.get("after_revision")) or
                     effect["after_revision"] <= effect["before_revision"] or
                     ((origin is None or origin.get("origin") == "creation") and
                      (effect.get("before") != [0, 0, 0, 0] or
@@ -1044,9 +1061,9 @@ class Reconciler:
                 if (type(account_index) is not int or not 0 <= account_index < 3072 or
                         account_index in effects_by_index or key in effects_by_key or
                         (root_lineage is not None and key_lineage != root_lineage) or
-                        type(before_revision) is not int or not 0 <= before_revision < 2**63 or
-                        type(after_revision) is not int or after_revision <= before_revision or
-                        after_revision >= 2**63):
+                        not unsigned_revision(before_revision) or
+                        not unsigned_revision(after_revision) or
+                        after_revision <= before_revision):
                     raise SnapshotError("invalid retirement root effect")
                 effects_by_index[account_index] = effect
                 effects_by_key[key] = effect
@@ -1284,8 +1301,7 @@ class Reconciler:
             if (type(event_index) is not int or not 0 <= event_index <= 65535 or
                     type(uid) is not int or not 0 < uid < 2**64 or
                     type(child_index) is not int or not 0 <= child_index <= 64 or
-                    type(before_revision) is not int or not 0 <= before_revision < 2**63 or
-                    type(after_revision) is not int or after_revision != before_revision + 1 or
+                    not item_revision_transition(before_revision, after_revision) or
                     type(legacy_event_index) is not int or not 0 <= legacy_event_index <= 65535 or
                     not isinstance(operation_epoch, str) or not HEX_ID.fullmatch(operation_epoch) or
                     root is None or root.get("epoch") != operation_epoch or
@@ -1402,8 +1418,7 @@ class Reconciler:
                 self.emit("invalid_uid_history_root", operation_id=operation_id, uid=uid)
             if (type(event_index) is not int or not 0 <= event_index <= 65535 or
                     type(uid) is not int or not 0 < uid < 2**64 or
-                    type(before) is not int or before < 0 or
-                    type(revision) is not int or revision != before + 1 or
+                    not item_revision_transition(before, revision) or
                     type(row.get("referenced")) is not bool or
                     type(row.get("root")) is not int or not 0 < row["root"] < 2**64 or
                     (row.get("parent") is not None and
@@ -1440,6 +1455,7 @@ class Reconciler:
             if not origin or origin.get("origin") not in ("baseline", "creation"):
                 self.emit("unknown_legacy_origin", uid=uid)
                 continue
+            self.audit_item_lifetime(uid, origin, rows)
             state = {field: origin.get(field)
                      for field in ("revision", "root", "parent", "owner", "state")}
             for row in rows:
@@ -1520,8 +1536,7 @@ class Reconciler:
             parent = row.get("parent")
             if (type(event_index) is not int or not 0 <= event_index <= 65535 or
                     type(uid) is not int or not 0 < uid < 2**64 or
-                    type(before) is not int or before < 0 or
-                    type(revision) is not int or revision != before + 1 or
+                    not item_revision_transition(before, revision) or
                     type(root) is not int or not 0 < root < 2**64 or
                     (parent is not None and (type(parent) is not int or not 0 < parent < 2**64)) or
                     not isinstance(owner, list) or len(owner) != 3 or
@@ -1606,7 +1621,7 @@ class Reconciler:
             balance = vector(mapping.get("balance"))
             revision = mapping.get("revision")
             holding = holdings.get((key,))
-            if (type(revision) is not int or not 0 <= revision < 2**63 or
+            if (not unsigned_revision(revision) or
                     holding is None or holding.get("balance") != list(balance) or
                     holding.get("revision") != revision or pile is None or
                     pile.get("amounts") != list(balance) or pile.get("revision") != revision):
@@ -1782,10 +1797,44 @@ class Reconciler:
         if missing != coverage["missing_price_rows"]:
             raise SnapshotError("realized price coverage count mismatch")
 
+    def audit_item_lifetime(self, uid: int, origin: dict, events: list[dict]) -> None:
+        if origin["origin"] == "creation" and {
+                field: origin.get(field)
+                for field in ("revision", "root", "parent", "owner", "state")} != {
+                "revision": 0, "root": uid, "parent": None,
+                "owner": [0, 0, 0], "state": "absent"}:
+            self.emit("invalid_item_creation_origin", uid=uid)
+        created = origin["origin"] == "baseline"
+        retired = origin.get("state") == "tombstone"
+        for event in events:
+            action = event.get("action")
+            if ((action == "create" and event.get("state") != "live") or
+                    (action == "destroy" and event.get("state") != "tombstone")):
+                self.emit("invalid_item_supply_state", uid=uid,
+                          operation_id=event.get("operation_id"))
+            if action == "create":
+                if created:
+                    self.emit("duplicate_uid", uid=uid, operation_id=event.get("operation_id"))
+                created = True
+            if retired and action == "destroy":
+                self.emit("duplicate_item_retirement", uid=uid,
+                          operation_id=event.get("operation_id"))
+            if retired and event.get("state") == "live":
+                self.emit("resurrected_item_uid", uid=uid, operation_id=event.get("operation_id"))
+            retired = retired or action == "destroy" or event.get("state") == "tombstone"
+        if not created:
+            self.emit("missing_item_creation", uid=uid)
+
     def audit_items(self, ownership: dict, references: dict, origins: dict, native: dict,
                     lineage_history_uids: set[int] | None = None) -> None:
+        for row in list(origins.values()) + list(native.values()):
+            if not unsigned_revision(row.get("revision")):
+                raise SnapshotError("invalid item origin or native revision")
         referenced = set()
         for ref in references.values():
+            if (not unsigned_revision(ref.get("before_revision")) or
+                    not unsigned_revision(ref.get("after_revision"))):
+                raise SnapshotError("invalid item reference revision")
             legacy_key = (ref.get("legacy_operation_id"), ref.get("legacy_event_index"))
             event = ownership.get(legacy_key)
             uid = ref.get("uid")
@@ -1799,6 +1848,9 @@ class Reconciler:
                 referenced.add(legacy_key)
         by_uid: dict[int, list[dict]] = defaultdict(list)
         for key, event in ownership.items():
+            if (not unsigned_revision(event.get("before_revision")) or
+                    not unsigned_revision(event.get("revision"))):
+                raise SnapshotError("invalid ownership event revision")
             uid = event.get("uid")
             by_uid[uid].append(event)
             if key not in referenced:
@@ -1818,47 +1870,59 @@ class Reconciler:
             if not origin or origin.get("origin") not in ("baseline", "creation"):
                 self.emit("unknown_legacy_origin", uid=uid)
                 continue
+            self.audit_item_lifetime(uid, origin, rows)
             state = {field: origin.get(field) for field in ("revision", "root", "parent", "owner", "state")}
-            if origin["origin"] == "creation" and state != {
-                    "revision": 0, "root": uid, "parent": None, "owner": [0, 0, 0], "state": "absent"}:
-                self.emit("invalid_item_creation_origin", uid=uid)
-            created = origin.get("origin") == "baseline"
             for event in rows:
                 if event.get("before_revision") != state["revision"] or event.get("revision") != state["revision"] + 1:
                     self.emit("broken_item_history", uid=uid, operation_id=event.get("operation_id"))
-                if event.get("action") == "create":
-                    if created:
-                        self.emit("duplicate_uid", uid=uid, operation_id=event.get("operation_id"))
-                    created = True
                 state = {field: event.get(field) for field in ("revision", "root", "parent", "owner", "state")}
-            if not created:
-                self.emit("missing_item_creation", uid=uid)
             if not current:
                 self.emit("missing_native_item", uid=uid)
             elif any(current.get(field) != state[field] for field in state):
                 self.emit("stale_native_item", uid=uid)
-            if current and current.get("parent") is not None and (current.get("parent"),) not in native:
-                self.emit("orphan_item_parent", uid=uid, parent_uid=current.get("parent"))
+        topology = {}
+        edge_mismatches = {}
         for (uid,), item in native.items():
-            visited = set()
-            position = item
-            while position.get("parent") is not None:
-                if position.get("uid") in visited:
-                    self.emit("cyclic_native_topology", uid=uid)
+            # Check every direct edge independently of origin/history proof.
+            parent_uid = item.get("parent")
+            if parent_uid is None:
+                topology[uid] = ("root", item.get("uid"), False)
+                continue
+            parent = native.get((parent_uid,))
+            if parent is None:
+                self.emit("orphan_item_parent", uid=uid, parent_uid=parent_uid)
+                topology[uid] = ("orphan", None, False)
+                continue
+            edge_mismatches[uid] = (item.get("root") != parent.get("root") or
+                                    item.get("owner") != parent.get("owner"))
+        # Resolve each node once without recursion. Memoizing terminal roots,
+        # missing ancestors and cycles bounds work even on corrupt deep cuts.
+        for (uid,) in native:
+            path = []
+            positions = {}
+            position = uid
+            while position not in topology:
+                if position in positions:
+                    cycle_start = positions[position]
+                    cycle = path[cycle_start:]
+                    mismatch = any(edge_mismatches[node] for node in cycle)
+                    for node in cycle:
+                        topology[node] = ("cycle", None, mismatch)
+                    path = path[:cycle_start]
                     break
-                visited.add(position.get("uid"))
-                parent = native.get((position.get("parent"),))
-                if parent is None:
-                    break  # orphan_item_parent was reported above.
-                if (item.get("state") == "live" and
-                        (position.get("root") != parent.get("root") or
-                         position.get("owner") != parent.get("owner"))):
-                    self.emit("inconsistent_native_topology", uid=uid)
-                    break
-                position = parent
-            else:
-                if item.get("state") == "live" and position.get("uid") != item.get("root"):
-                    self.emit("inconsistent_native_topology", uid=uid)
+                positions[position] = len(path)
+                path.append(position)
+                position = native[(position,)]["parent"]
+            for node in reversed(path):
+                kind, terminal, mismatch = topology[native[(node,)]["parent"]]
+                topology[node] = (kind, terminal, mismatch or edge_mismatches[node])
+        for (uid,), item in native.items():
+            kind, terminal, mismatch = topology[uid]
+            if item.get("state") == "live" and (mismatch or (
+                    kind == "root" and terminal != item.get("root"))):
+                self.emit("inconsistent_native_topology", uid=uid)
+            elif kind == "cycle":
+                self.emit("cyclic_native_topology", uid=uid)
 
 
 def bounded_rows(rows: list[dict], limit: int) -> dict:
@@ -1872,7 +1936,7 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
         rows = [{"account_key": row["account_key"], "kind": account_key(row["account_key"])[1],
                  "balance": vector(row["balance"]), "revision": row["revision"]}
                 for row in snapshot["native"]["holdings"]]
-        if any(type(row["revision"]) is not int or row["revision"] < 0 for row in rows):
+        if any(not unsigned_revision(row["revision"]) for row in rows):
             raise SnapshotError("invalid native holding revision")
     elif name == "provenance":
         if uid is None:

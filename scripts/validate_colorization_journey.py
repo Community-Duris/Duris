@@ -130,6 +130,11 @@ def run(server: Path, inspector: Path, report_path: Path | None) -> None:
         runtime.mkdir()
         subprocess.run([str(inspector), str(state), "seed-combat"], check=True)
         make_fixture(runtime)
+        properties = runtime / "lib/duris.properties"
+        contents, changed = re.subn(r"^stats\.str\.Human=.*$", "stats.str.Human=137.000",
+                                    properties.read_text(), flags=re.M)
+        require(changed == 1, "racial help property fixture changed")
+        properties.write_text(contents)
         generate_certificate(runtime)
         zone = runtime / "areas_mini/mini.zon"
         zone.write_text(re.sub(r"^[MG] .*\n", "", zone.read_text(), flags=re.M))
@@ -175,7 +180,26 @@ def run(server: Path, inspector: Path, report_path: Path | None) -> None:
                     client.pending.clear()
                     start = len(client.terminal)
                     client.send(line)
-                    client.expect(expected, timeout=45 if line == "quit" else 15)
+                    if line.startswith("help "):
+                        client.expect_any((expected, "[Return to continue"))
+                        client.drain()
+                        page_start = start
+                        for _ in range(20):
+                            if b"[Return to continue" not in client.terminal[page_start:]:
+                                break
+                            page_start = len(client.terminal)
+                            client.send("")
+                            deadline = time.monotonic() + 15
+                            while len(client.terminal) == page_start and time.monotonic() < deadline:
+                                client._receive()
+                            require(len(client.terminal) > page_start, "help pager did not advance")
+                            client.drain()
+                        else:
+                            raise AssertionError("help output exceeded the journey page bound")
+                        require(expected.encode("ascii") in ANSI.sub(b"", client.terminal[start:]),
+                                f"help output did not contain {expected!r}")
+                    else:
+                        client.expect(expected, timeout=45 if line == "quit" else 15)
                     client.drain()
                     checks.append({"command": line, "expected": expected})
                     print(f"PASS {line}: {expected}", flush=True)
@@ -199,6 +223,39 @@ def run(server: Path, inspector: Path, report_path: Path | None) -> None:
                     command(client, "toggle color preview tell yellow", "Sample (tell)")
                     command(client, "toggle color tell", f"tell: {color}.")
                     command(client, "save", f"Save complete for {character}.")
+
+                reader = clients[0]
+                raw = command(reader, "help Human", "==Racial Statistics==")
+                visible = ANSI.sub(b"", raw).decode("utf-8")
+                require("Strength    : 137" in visible,
+                        "help did not read the actual racial property loaded at boot")
+                require(visible.count("==Racial Statistics==") == 1 and
+                        visible.count("==Class list==") == 1 and "Class list:" not in visible,
+                        "help repeated captured generated sections")
+                require(foregrounds(raw, "Human") == [27] * len("Human"),
+                        "race help did not use the canonical bright cyan")
+                require(foregrounds(raw, "Warrior") == [25] * len("Warrior"),
+                        "race help did not use the canonical class color")
+                frames.append({"label": "live racial help", "terminalAnsi": raw.decode("utf-8")})
+                command(reader, "help ment", "Mentalist")
+                command(reader, "help Mentalist", "not yet been authored")
+                command(reader, "help index races", "37 topics")
+                command(reader, "help index all 2", "page 2/")
+                typo = command(reader, "help huamn", "Did you mean?")
+                require(b"help human" in ANSI.sub(b"", typo).lower(),
+                        "typo feedback did not identify the exact Human help command")
+                command(reader, "help Bard Skills", "==Songs==")
+                for topic in ("named equipment", "namedreport", "racewar", "introduce",
+                              "refine", "soulbind", "prestige"):
+                    command(reader, "help " + topic, "==Syntax==")
+                command(reader, "toggle terminal gen", "GEN")
+                raw = command(reader, "help Human", "==Racial Statistics==")
+                require(not ANSI.search(raw) and b"Strength    : 137" in raw,
+                        "generic terminal help lost readability or leaked ANSI escapes")
+                command(reader, "toggle terminal ansi", "ANSI")
+                raw = command(reader, "help Human", "==Racial Statistics==")
+                require(foregrounds(raw, "Human") == [27] * len("Human"),
+                        "returning to ANSI did not restore canonical help colors")
 
                 def chat_pair(label: str) -> None:
                     for sender, receiver in ((0, 1), (1, 0)):

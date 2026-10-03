@@ -21,12 +21,14 @@ HARNESS = r'''
 #include "world/vnum.obj.h"
 
 #include <cassert>
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <cerrno>
 #include <cstdint>
 #include <fcntl.h>
 #include <string>
+#include <stdexcept>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
@@ -55,12 +57,27 @@ struct replay_state
     bool stale_receipt = false;
     bool newer_receipt = false;
     bool verified_receipt = false;
+    bool custody_failure = false;
+    bool throw_failure = false;
     std::vector<uint8_t> expected_death;
 };
 
 player_save_apply_result replay_apply(const player_snapshot &snapshot, void *raw)
 {
     auto &state = *static_cast<replay_state *>(raw);
+    if (state.throw_failure)
+        throw std::runtime_error("fixture exception prose must not enter diagnostics");
+    if (state.custody_failure) {
+        player_save_apply_result failure{player_save_apply_outcome::terminal_failure, 0,
+                                        PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH};
+        failure.custody_diagnosis = player_save_custody_diagnosis::active_custody_absent_from_snapshot;
+        failure.custody_witness.item_uid = 7051;
+        failure.custody_witness.observed_present = true;
+        failure.custody_witness.observed_root = 7051;
+        failure.custody_witness.observed_item_revision = 3;
+        failure.custody_witness.source_line = 123;
+        return failure;
+    }
     if (snapshot.death) {
         std::vector<uint8_t> bytes;
         assert(player_snapshot_encode(snapshot, &bytes) == player_snapshot_codec_result::ok);
@@ -302,6 +319,64 @@ int main(int argc, char **argv)
     const std::string directory = argv[1];
     const std::string journal = directory + "/player-save.journal";
     const std::string quarantine = directory + "/player-save.journal.quarantine.archive";
+
+    // Startup replay bypasses the live worker. Its original result must reach
+    // diagnostics before quarantining, including exceptions, without changing
+    // the native archive or losing a witness after the rolling history wraps.
+    for (int failure_case : {0, 1, 2}) {
+        const int pid = 9101 + failure_case;
+        const std::string isolated = directory + "-diagnostic-replay-" + std::to_string(failure_case);
+        assert(player_save_journal_init(isolated.c_str()));
+        auto pending = make_snapshot(pid, 42);
+        if (failure_case == 2) {
+            pending.schema_version = PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION;
+            player_quest_xp_receipt_snapshot receipt{};
+            receipt.offering_operation.bytes[0] = 0x42;
+            receipt.reward_index = 1; receipt.amount = 1234;
+            pending.quest_xp_receipts.push_back(receipt);
+        }
+        assert(player_save_journal_append(pending) == player_save_journal_result::ok);
+        const auto frame = read_file_bytes(isolated + "/player-save.journal");
+        player_save_journal_shutdown();
+        assert(player_save_journal_init(isolated.c_str()));
+        replay_state failure;
+        failure.custody_failure = failure_case == 0;
+        failure.throw_failure = failure_case == 1;
+        failure.stale_receipt = failure_case == 2;
+        assert(player_save_journal_replay(replay_apply, &failure) == player_save_journal_result::ok);
+        assert(player_save_journal_pid_quarantined(pid));
+        const auto archive = player_save_journal_diagnostic_copy(pid);
+        assert(archive.available && archive.pid_fence && !archive.global_fence);
+        assert(archive.archived_frames == 1 && archive.archived_bytes == frame.size());
+        const auto bytes = read_file_bytes(isolated + "/player-save.journal.quarantine.archive");
+        assert(std::search(bytes.begin(), bytes.end(), frame.begin(), frame.end()) != bytes.end());
+        auto trace = persistence_trace_copy({critical_entity_type::player, static_cast<uint64_t>(pid)});
+        assert(trace.available && trace.count == 3 && trace.incident_count == 1);
+        assert(trace.events[0].stage == persistence_trace_stage::save_replay_apply);
+        assert(trace.events[1].stage == persistence_trace_stage::save_replay_result);
+        assert(trace.events[2].stage == persistence_trace_stage::save_replay_fence);
+        const auto first = trace.incidents[0];
+        assert(first.revision == 42 && first.outcome == static_cast<unsigned>(player_save_apply_outcome::terminal_failure));
+        assert(first.error == (failure_case == 0 ? PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH :
+                              static_cast<unsigned>(failure_case == 1 ? EFAULT : ESTALE)));
+        assert(first.stage == (failure_case == 2 ? persistence_trace_stage::save_replay_fence :
+                               persistence_trace_stage::save_replay_result));
+        if (failure_case == 0) {
+            assert(first.diagnosis == 6 && first.witness.item_uid == 7051);
+            assert(first.witness.observed_item_revision == 3 && first.witness.source_line == 123);
+        }
+        for (size_t i = 0; i < PERSISTENCE_TRACE_CAPACITY; ++i) {
+            persistence_trace_event noise; noise.pid = 9300; persistence_trace_record(noise);
+        }
+        trace = persistence_trace_copy({critical_entity_type::player, static_cast<uint64_t>(pid)});
+        assert(trace.count == 0 && trace.incident_count == 1);
+        assert(trace.incidents[0].sequence == first.sequence && trace.incidents[0].error == first.error);
+        if (failure_case == 0) {
+            const auto item = persistence_trace_copy({critical_entity_type::item, 7051});
+            assert(item.incident_count == 1 && item.incidents[0].sequence == first.sequence);
+        }
+        player_save_journal_shutdown();
+    }
 
     player_snapshot original = make_snapshot(10, 1);
     std::vector<uint8_t> encoded;

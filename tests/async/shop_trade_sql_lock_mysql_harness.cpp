@@ -313,6 +313,9 @@ void writer_cases(const critical_operation_id &epoch, const economic_account_key
 		      std::to_string(KEEPER_ROW) + " AND obj_uid=" + std::to_string(ITEM)) == 0);
 	assert(scalar("SELECT owner_type FROM item_current_owner WHERE item_uid=" +
 		      std::to_string(ITEM)) == static_cast<uint8_t>(item_owner_type::player));
+	if (const char *cut = getenv("DURIS_RESTORE_SHOP_PURCHASE_CUT");
+	    cut && std::strcmp(cut, "1") == 0)
+		return;
 
 	auto sale_payload = payload_for(shop_trade_action::sell_store);
 	sale_payload.expected_wallet_revision = 5;
@@ -618,6 +621,14 @@ int main()
 		std::to_string(ITEM));
 	plan_case(shop_trade_action::discard_invalid, 79, epoch, wallet, bank, keeper);
 	writer_cases(epoch, wallet, bank, keeper);
+	if (const char *cut = getenv("DURIS_RESTORE_SHOP_PURCHASE_CUT");
+	    cut && std::strcmp(cut, "1") == 0)
+	{
+		mysql_close(connection);
+		std::puts(
+			"SQL shop restore purchase cut: committed native buy, accounting root, receipt and original UID PASS");
+		return 0;
+	}
 	execute("UPDATE economic_lineage_state SET active_epoch=NULL WHERE lineage=" +
 		literal(lineage));
 	execute("START TRANSACTION");

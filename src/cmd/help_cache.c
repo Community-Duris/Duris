@@ -133,6 +133,10 @@ const help_catalog *help_cache_get()
 {
 	return cache.get();
 }
+unsigned long help_cache_generation()
+{
+	return cache.generation_value();
+}
 bool help_title_equal(const std::string &left, const std::string &right)
 {
 	return left.size() == right.size() &&

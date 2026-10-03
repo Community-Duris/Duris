@@ -35,6 +35,8 @@ PRODUCTION = "\n".join(
 )
 PRELUDE = r'''
 #include <mysql.h>
+#include "persistence/economic_sql_lifecycle_guard.h"
+#include "sql/sql_player_deletion.h"
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -145,23 +147,40 @@ int main() {
     execute("CREATE TEMPORARY TABLE player_data(pid INT NOT NULL PRIMARY KEY) ENGINE=InnoDB");
     execute("CREATE TEMPORARY TABLE player_death_conflict_evidence(operation_id BINARY(16) NOT NULL, pid INT NOT NULL, PRIMARY KEY(pid,operation_id)) ENGINE=InnoDB");
     execute("CREATE TEMPORARY TABLE deletion_guard_cleanup(pid INT NOT NULL PRIMARY KEY, marker INT NOT NULL) ENGINE=InnoDB");
+    execute("CREATE TEMPORARY TABLE economic_sql_lifecycle_installation(phase TINYINT NOT NULL)");
+    execute("CREATE TEMPORARY TABLE economic_lineage_state(active_epoch BINARY(16) NULL)");
     seed_player();
 
-    require(!sql_player_deletion_guard(1), "guard must require an active outer transaction");
+    {
+    economic_sql_currency_writer_guard writer;
+    require(!writer.is_valid_for(DB), "unowned lease must not validate");
+    require(economic_sql_currency_writer_guard::acquire(DB, &writer) == 0, "legacy deletion lease");
+    require(writer.is_valid_for(DB) && !writer.is_valid_for(nullptr), "lease must bind exact live session");
+    using reconnect_flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+    reconnect_flag allow_reconnect = true;
+    require(mysql_options(DB, MYSQL_OPT_RECONNECT, &allow_reconnect) == 0, "enable reconnect fault");
+    require(!writer.is_valid_for(DB), "reconnect-enabled session must invalidate admission");
+    allow_reconnect = false;
+    require(mysql_options(DB, MYSQL_OPT_RECONNECT, &allow_reconnect) == 0 && writer.is_valid_for(DB), "restore reconnect-disabled lease");
+    require(!sql_player_deletion_guard(1, writer), "guard must require an active outer transaction");
     require(sql_begin_transaction(), "begin no-evidence guard transaction");
-    require(!sql_player_deletion_guard(2), "missing player row must fail closed");
-    require(sql_player_deletion_guard(1), "clean player row should pass guard");
+    require(!sql_player_deletion_guard(2, writer), "missing player row must fail closed");
+    require(sql_player_deletion_guard(1, writer), "clean player row should pass guard");
     require(sql_rollback(), "rollback clean guard transaction");
+    }
 
     execute("INSERT INTO player_death_conflict_evidence(operation_id,pid) VALUES(UNHEX('00000000000000000000000000000001'),1)");
     require(!sql_delete_player(1, false), "sql_delete_player must refuse unresolved evidence");
     require(scalar("SELECT COUNT(*) FROM player_data WHERE pid=1") == "1", "refusal deleted player row");
     require(scalar("SELECT COUNT(*) FROM player_death_conflict_evidence WHERE pid=1") == "1", "refusal deleted recovery evidence");
 
+    {
+    economic_sql_currency_writer_guard writer;
+    require(economic_sql_currency_writer_guard::acquire(DB, &writer) == 0, "outer cleanup deletion lease");
     require(sql_begin_transaction(), "begin cleanup rollback probe");
     execute("UPDATE deletion_guard_cleanup SET marker=2 WHERE pid=1");
-    require(!sql_player_deletion_guard(1), "outer guard must refuse unresolved evidence");
-    require(!sql_delete_player(1, false), "outer-transaction deletion must refuse unresolved evidence");
+    require(!sql_player_deletion_guard(1, writer), "outer guard must refuse unresolved evidence");
+    require(!sql_delete_player(1, false, &writer), "outer-transaction deletion must refuse unresolved evidence");
     require(transaction_active, "guard unexpectedly ended caller-owned transaction");
     require(sql_rollback(), "caller rollback after deletion refusal");
     require(scalar("SELECT marker FROM deletion_guard_cleanup WHERE pid=1") == "1", "caller rollback did not preserve cleanup row");
@@ -169,12 +188,47 @@ int main() {
             scalar("SELECT COUNT(*) FROM player_death_conflict_evidence WHERE pid=1") == "1",
             "caller rollback did not preserve identity/evidence rows");
 
+    }
     execute("DROP TEMPORARY TABLE player_death_conflict_evidence");
     require(!sql_delete_player(1, false), "missing evidence table/read failure must fail closed");
     require(scalar("SELECT COUNT(*) FROM player_data WHERE pid=1") == "1", "read failure deleted player row");
     require(revision_forgets == 0, "refusal evicted player revision");
 
     execute("CREATE TEMPORARY TABLE player_death_conflict_evidence(operation_id BINARY(16) NOT NULL, pid INT NOT NULL, PRIMARY KEY(pid,operation_id)) ENGINE=InnoDB");
+    // Native SQL authority refuses active/staged/read-error cuts before BEGIN.
+    const auto unchanged = [&] {
+        require(!transaction_active && revision_forgets == 0, "refusal started a transaction or evicted revision");
+        require(scalar("SELECT COUNT(*) FROM player_data WHERE pid=1") == "1" &&
+                scalar("SELECT marker FROM deletion_guard_cleanup WHERE pid=1") == "1",
+                "accounting refusal changed native identity/cleanup");
+    };
+    execute("INSERT INTO economic_lineage_state(active_epoch) VALUES(UNHEX('00000000000000000000000000000001'))");
+    require(!sql_delete_player(1, false), "active accounting admitted physical player deletion");
+    unchanged();
+    execute("DELETE FROM economic_lineage_state");
+    for (int phase : {1, 2}) {
+        execute("INSERT INTO economic_sql_lifecycle_installation(phase) VALUES(" + std::to_string(phase) + ")");
+        require(!sql_delete_player(1, false), "staged installation admitted physical player deletion");
+        unchanged();
+        execute("DELETE FROM economic_sql_lifecycle_installation");
+    }
+    execute("DROP TEMPORARY TABLE economic_sql_lifecycle_installation");
+    require(!sql_delete_player(1, false), "missing lifecycle schema admitted deletion");
+    unchanged();
+    execute("CREATE TEMPORARY TABLE economic_sql_lifecycle_installation(phase TINYINT NOT NULL)");
+    {
+        economic_sql_currency_writer_guard writer;
+        require(economic_sql_currency_writer_guard::acquire(DB, &writer) == 0, "lease-loss deletion admission");
+        require(sql_begin_transaction() && sql_player_deletion_guard(1, writer), "guarded outer deletion admission");
+        require(!sql_delete_player(1, false), "cached PID admitted deletion without the held lease");
+        execute("SELECT RELEASE_LOCK('duris:economic_sql_currency_writers')");
+        require(!writer.is_valid_for(DB), "lost named lease still validates");
+        require(!sql_player_deletion_guard(1, writer), "cached PID bypassed lease loss");
+        require(!sql_delete_player(1, false, &writer), "physical deletion bypassed lease loss");
+        require(sql_rollback(), "rollback lost-lease transaction");
+    }
+    unchanged();
+    std::cout << "PASS: active/staged/missing-schema and absent/lost-lease deletion refusals preserve identity\n";
     require(sql_delete_player(1, false), "clean player deletion should commit");
     require(scalar("SELECT COUNT(*) FROM player_data WHERE pid=1") == "0", "successful deletion retained player row");
     require(revision_forgets == 0, "transaction owner unexpectedly evicted player revision");
@@ -196,7 +250,8 @@ class DeleteGateSQL(unittest.TestCase):
             libs = shlex.split(subprocess.check_output(["mysql_config", "--libs"], text=True))
             subprocess.run(
                 [os.environ.get("CXX", "g++"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
-                 "-Isrc", *cflags, str(source), *libs, "-o", str(binary)],
+                 "-pthread", "-Isrc", *cflags, str(source),
+                 "src/persistence/economic_sql_lifecycle_guard.c", *libs, "-o", str(binary)],
                 cwd=ROOT, check=True,
             )
             if os.environ.get("TEST_DB_DISPOSABLE") != "1":

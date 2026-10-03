@@ -199,6 +199,9 @@ class economic_sql_currency_writer_guard
 
 	static unsigned int acquire(MYSQL *connection,
 				    economic_sql_currency_writer_guard *) noexcept;
+	// Validate this exact held lease inside its transaction as well as before it.
+	// This does not acquire authority or accept a caller assertion of admission.
+	bool is_valid_for(MYSQL *connection) const noexcept;
 
     private:
 	std::shared_lock<std::shared_mutex> local_shared_;

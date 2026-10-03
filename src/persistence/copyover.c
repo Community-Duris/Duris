@@ -5,12 +5,14 @@
 
 #include "persistence/persistence_log.h"
 #include "core/prototypes.h"
+#include "core/game_loop_watchdog.h"
 #include "world/world_singletons.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "core/utils.h"
 #include "persistence/copyover.h"
+#include "persistence/copyover_codec.h"
 #include "combat/training_dummy.h"
 #include "world/generated_npc_state.h"
 #include "item/item_movement_transaction.h"
@@ -49,7 +51,6 @@
 #include "world/world_recovery_pipeline.h"
 #include "telemetry/telemetry_runtime.h"
 #include <new>
-#include <type_traits>
 #include <vector>
 
 #define DMS_STAGED_BINARY "bin/server/dms_new"
@@ -79,27 +80,6 @@ extern void nonblock(int s);
 extern void clear_char(P_char ch);
 
 static int copyover_in_progress = 0;
-
-static bool copyover_version_supported(int version)
-{
-	return version >= 12 && version <= COPYOVER_VERSION;
-}
-
-static size_t copyover_mob_bytes_for_version(int version)
-{
-	if (version == 12)
-		return offsetof(copyover_mob, transport);
-	if (version < 16)
-		return offsetof(copyover_mob, shopkeeper_shop_id);
-	return sizeof(copyover_mob);
-}
-
-static size_t copyover_desc_bytes_for_version(int version)
-{
-	if (version < 17)
-		return offsetof(copyover_desc, death_retry_pending);
-	return sizeof(copyover_desc);
-}
 
 const char *copyover_state_file()
 {
@@ -134,27 +114,6 @@ struct copyover_worker_resume_guard
 			redis_world_recovery_resume_after_copyover();
 	}
 };
-
-constexpr char TELEMETRY_COPYOVER_MAGIC[4] = { 'T', 'L', 'M', 'Y' };
-constexpr std::uint32_t TELEMETRY_COPYOVER_VERSION = 1U;
-struct telemetry_copyover_header
-{
-	char magic[4];
-	std::uint32_t version;
-	std::uint32_t count;
-};
-
-struct telemetry_copyover_entry
-{
-	int fd;
-	char player_name[50];
-	std::uint8_t handoff_valid;
-	std::uint8_t reserved[3];
-	telemetry_session_handoff handoff;
-};
-
-static_assert(std::is_trivially_copyable_v<telemetry_copyover_header>);
-static_assert(std::is_trivially_copyable_v<telemetry_copyover_entry>);
 } // namespace
 
 bool copyover_has_durable_shopkeepers()
@@ -162,10 +121,13 @@ bool copyover_has_durable_shopkeepers()
 	FILE *file = fopen(COPYOVER_FILE, "rb");
 	if (!file)
 		return false;
-	copyover_header header = {};
-	const bool current = fread(&header, sizeof(header), 1, file) == 1 &&
-			     memcmp(header.magic, COPYOVER_MAGIC, 4) == 0 && header.version >= 13 &&
-			     copyover_version_supported(header.version);
+	copyover_decoded_state state;
+	const char *error = nullptr;
+	const bool current = copyover_codec_read(file, &state, &error) &&
+			     state.header.version >= 13;
+	if (!current)
+		logit(LOG_STATUS, "copyover: shopkeeper provenance unavailable: %s",
+		      error ? error : "legacy version 12");
 	fclose(file);
 	return current;
 }
@@ -274,7 +236,7 @@ static int write_desc_entry(FILE *fp, P_desc d)
 	strlcpy(entry.ttype_client, d->client_name, sizeof(entry.ttype_client));
 	entry.ttype_terminal[0] = '\0'; // removed
 
-	return fwrite(&entry, sizeof(entry), 1, fp) == 1;
+	return copyover_codec_write(fp, entry);
 }
 
 static bool copyover_descriptor_is_eligible(P_desc d)
@@ -333,12 +295,6 @@ static bool write_telemetry_copyover_state(FILE *fp, int expected_count)
 			logit(LOG_STATUS,
 			      "copyover: telemetry durability unavailable; recovering as absent");
 	}
-	telemetry_copyover_header header{};
-	memcpy(header.magic, TELEMETRY_COPYOVER_MAGIC, sizeof(header.magic));
-	header.version = TELEMETRY_COPYOVER_VERSION;
-	header.count = static_cast<std::uint32_t>(expected_count);
-	if (fwrite(&header, sizeof(header), 1, fp) != 1)
-		return false;
 	int written = 0;
 	for (P_desc d = descriptor_list; d; d = d->next)
 	{
@@ -353,63 +309,11 @@ static bool write_telemetry_copyover_state(FILE *fp, int expected_count)
 		if (GET_NAME(d->character) != nullptr)
 			strlcpy(entry.player_name, GET_NAME(d->character),
 				sizeof(entry.player_name));
-		if (fwrite(&entry, sizeof(entry), 1, fp) != 1)
+		if (!copyover_codec_write(fp, entry))
 			return false;
 		++written;
 	}
 	return written == expected_count;
-}
-
-static bool read_telemetry_copyover_state(FILE *fp, int expected_count,
-					  std::vector<telemetry_copyover_entry> *entries)
-{
-	if (entries != nullptr)
-		entries->clear();
-	// Accepted game sockets are below FD_SETSIZE. Never allocate from an
-	// unchecked on-disk count, even when both headers contain the same value.
-	if (fp == nullptr || entries == nullptr || expected_count < 0 ||
-	    expected_count > FD_SETSIZE)
-		return false;
-	telemetry_copyover_header header{};
-	if (fread(&header, sizeof(header), 1, fp) != 1 ||
-	    memcmp(header.magic, TELEMETRY_COPYOVER_MAGIC, sizeof(header.magic)) != 0 ||
-	    header.version != TELEMETRY_COPYOVER_VERSION ||
-	    header.count != static_cast<std::uint32_t>(expected_count))
-		return false;
-	bool retain_entries = true;
-	try
-	{
-		entries->reserve(header.count);
-	}
-	catch (const std::bad_alloc &)
-	{
-		// Telemetry memory pressure must not prevent world recovery. Consume
-		// the known framing but resume every recovered session as absent.
-		retain_entries = false;
-	}
-	for (std::uint32_t index = 0; index < header.count; ++index)
-	{
-		telemetry_copyover_entry entry{};
-		if (fread(&entry, sizeof(entry), 1, fp) != 1)
-		{
-			entries->clear();
-			return false; // truncated file: the following world section is unavailable
-		}
-		if (entry.fd <= 0 || entry.fd >= FD_SETSIZE ||
-		    entry.player_name[sizeof(entry.player_name) - 1U] != '\0' ||
-		    entry.handoff_valid > 1U || entry.reserved[0] != 0U ||
-		    entry.reserved[1] != 0U || entry.reserved[2] != 0U)
-			continue; // consume the whole frame; this session resumes as absent
-		if (entry.handoff_valid == 0U)
-		{
-			const telemetry_session_handoff empty{};
-			if (memcmp(&entry.handoff, &empty, sizeof(empty)) != 0)
-				continue;
-		}
-		if (retain_entries)
-			entries->push_back(entry);
-	}
-	return true;
 }
 
 static void
@@ -507,6 +411,8 @@ static int write_mob_entry(FILE *fp, P_char mob)
 	entry.num_affects = 0;
 	for (af = mob->affected; af; af = af->next)
 	{
+		if (entry.num_affects >= COPYOVER_MAX_CHILD_RECORDS)
+			return 0;
 		entry.num_affects++;
 	}
 
@@ -522,41 +428,26 @@ static int write_mob_entry(FILE *fp, P_char mob)
 	// count carried items
 	entry.num_carrying = 0;
 	for (P_obj obj = mob->carrying; obj; obj = obj->next_content)
+	{
+		if (entry.num_carrying >= COPYOVER_MAX_CHILD_RECORDS)
+			return 0;
 		entry.num_carrying++;
+	}
 
 	entry.gold = GET_GOLD(mob);
 	entry.birthplace = GET_BIRTHPLACE(mob);
 	entry.shopkeeper_shop_id = mob->only.npc ? mob->only.npc->shopkeeper_shop_id : -1;
 	transport_capture(mob, &entry.transport);
 
-	return fwrite(&entry, sizeof(entry), 1, fp) == 1;
+	return copyover_codec_write(fp, entry);
 }
 
 static bool write_generated_npc_state(FILE *fp, P_char mob)
 {
-	std::string generated, extension;
+	std::string generated;
 	return generated_npc_capture(mob, &generated) &&
-	       generated_npc_extension_encode(mob_index[GET_RNUM(mob)].virtual_number, generated,
-					      &extension) &&
-	       fwrite(extension.data(), extension.size(), 1, fp) == 1;
-}
-
-static bool read_generated_npc_state(FILE *fp, int vnum, std::string *generated)
-{
-	char header[GENERATED_NPC_EXTENSION_HEADER_BYTES];
-	if (fread(header, sizeof(header), 1, fp) != 1 || memcmp(header, "GNP1", 4))
-		return false;
-	uint32_t length = 0;
-	for (size_t i = 0; i < 4; ++i)
-		length |= static_cast<uint32_t>(static_cast<unsigned char>(header[4 + i]))
-			  << (i * 8);
-	if (length > GENERATED_NPC_STATE_WALLET_BYTES + PET_RESTORE_STATE_MAX_BYTES)
-		return false;
-	std::string extension(header, sizeof(header));
-	extension.resize(sizeof(header) + length);
-	if (length && fread(extension.data() + sizeof(header), length, 1, fp) != 1)
-		return false;
-	return generated_npc_extension_decode(vnum, extension.data(), extension.size(), generated);
+	       copyover_codec_write_generated(fp, mob_index[GET_RNUM(mob)].virtual_number,
+					      generated);
 }
 
 static int write_mob_affects(FILE *fp, P_char mob)
@@ -581,7 +472,7 @@ static int write_mob_affects(FILE *fp, P_char mob)
 		entry.bitvector4 = af->bitvector4;
 		entry.bitvector5 = af->bitvector5;
 
-		if (fwrite(&entry, sizeof(entry), 1, fp) != 1)
+		if (!copyover_codec_write(fp, entry))
 		{
 			return 0;
 		}
@@ -591,13 +482,13 @@ static int write_mob_affects(FILE *fp, P_char mob)
 
 static int write_mob_inventory(FILE *fp, P_char mob)
 {
-	copyover_carried_item entry;
+	copyover_carried_item entry = {};
 	P_obj obj;
 
 	for (obj = mob->carrying; obj; obj = obj->next_content)
 	{
 		entry.vnum = OBJ_VNUM(obj);
-		if (fwrite(&entry, sizeof(entry), 1, fp) != 1)
+		if (!copyover_codec_write(fp, entry))
 		{
 			return 0;
 		}
@@ -614,53 +505,22 @@ static int write_room_door(FILE *fp, int room_rnum, int dir)
 	entry.dir = dir;
 	entry.state = world[room_rnum].dir_option[dir]->exit_info;
 
-	return fwrite(&entry, sizeof(entry), 1, fp) == 1;
+	return copyover_codec_write(fp, entry);
 }
 
 static int write_obj_entry(FILE *fp, P_obj obj, std::vector<char> &buffer)
 {
-	const int size = copyover_write_obj_to_buffer(obj, buffer.data(), buffer.size());
-	if (size <= 0)
+	try
+	{
+		const int size = copyover_write_obj_to_buffer(obj, buffer.data(), buffer.size());
+		if (size <= 0)
+			return 0;
+		return copyover_codec_write_object(fp, buffer.data(), static_cast<size_t>(size));
+	}
+	catch (const std::bad_alloc &)
+	{
 		return 0;
-	const uint32_t record_size = size;
-	return fwrite(&record_size, sizeof(record_size), 1, fp) == 1 &&
-	       fwrite(buffer.data(), record_size, 1, fp) == 1;
-}
-
-static P_obj read_obj_entry(FILE *fp)
-{
-	uint32_t record_size = 0;
-	if (fread(&record_size, sizeof(record_size), 1, fp) != 1 ||
-	    record_size > WORLD_RECOVERY_MAX_RECORD_BYTES ||
-	    record_size < sizeof(world_recovery_object_record))
-	{
-		logit(LOG_STATUS, "copyover_recover: invalid or truncated ground object length=%u",
-		      record_size);
-		return nullptr;
 	}
-	std::vector<char> buffer(record_size);
-	if (fread(buffer.data(), record_size, 1, fp) != 1)
-	{
-		logit(LOG_STATUS, "copyover_recover: truncated ground object payload bytes=%u",
-		      record_size);
-		return nullptr;
-	}
-	size_t consumed = 0;
-	P_obj object = copyover_restore_obj_from_buffer(buffer.data(), buffer.size(), &consumed);
-	if (!object || consumed != buffer.size())
-	{
-		world_recovery_object_record record = {};
-		memcpy(&record, buffer.data(), sizeof(record));
-		uint64_t root_uid = 0;
-		if (buffer.size() >= sizeof(record) + sizeof(world_recovery_item_snapshot))
-			memcpy(&root_uid, buffer.data() + sizeof(record), sizeof(root_uid));
-		logit(LOG_STATUS,
-		      "copyover_recover: ground object validation/materialization failed room=%d root_uid=%llu items=%u bytes=%u",
-		      record.room_vnum, (unsigned long long)root_uid, record.item_count,
-		      record_size);
-		return nullptr;
-	}
-	return object;
 }
 
 // raw write to socket fd
@@ -956,10 +816,18 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	// count items to save
 	count_copyover_items(&num_descs, &num_mobs, &num_objs, &num_rooms);
 
-	fp = fopen(copyover_tmp, "wb");
+	const int temporary_fd =
+		open(copyover_tmp, O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW, 0600);
+	fp = temporary_fd < 0 ? nullptr : fdopen(temporary_fd, "w+b");
+	if (!fp && temporary_fd >= 0)
+	{
+		close(temporary_fd);
+		unlink(copyover_tmp);
+	}
 	if (!fp)
 	{
-		logit(LOG_STATUS, "copyover: cant open %s for writing", copyover_tmp);
+		logit(LOG_STATUS, "copyover: cant open %s for writing: %s", copyover_tmp,
+		      strerror(errno));
 		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		return false;
 	}
@@ -975,10 +843,8 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	header.num_rooms = num_rooms;
 	header.num_combat = 0;
 
-	if (fwrite(&header, sizeof(header), 1, fp) != 1 ||
-	    fwrite(&mother_desc, sizeof(int), 1, fp) != 1 ||
-	    fwrite(&mother_desc_ssl, sizeof(int), 1, fp) != 1 ||
-	    fwrite(&ws_desc, sizeof(int), 1, fp) != 1)
+	const int listeners[3] = { mother_desc, mother_desc_ssl, ws_desc };
+	if (!copyover_codec_begin(fp, header, listeners))
 	{
 		logit(LOG_STATUS, "copyover: failed to write header/sockets");
 		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
@@ -1040,7 +906,19 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		}
 	}
 
-	std::vector<char> object_buffer(WORLD_RECOVERY_MAX_RECORD_BYTES);
+	std::vector<char> object_buffer;
+	try
+	{
+		object_buffer.resize(WORLD_RECOVERY_MAX_RECORD_BYTES);
+	}
+	catch (const std::bad_alloc &)
+	{
+		logit(LOG_STATUS, "copyover: object capture allocation failed");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		fclose(fp);
+		unlink(copyover_tmp);
+		return false;
+	}
 	// write objects on ground, skip ship stuff - already loaded
 	// also skip objects in ship rooms (dynamic vnums 60000-64999)
 	for (obj = object_list; obj; obj = obj->next)
@@ -1089,6 +967,15 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		}
 	}
 
+	const char *codec_error = nullptr;
+	if (!copyover_codec_finish(fp, &codec_error))
+	{
+		logit(LOG_STATUS, "copyover: failed to seal/sync file: %s", codec_error);
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		fclose(fp);
+		unlink(copyover_tmp);
+		return false;
+	}
 	if (fclose(fp) != 0)
 	{
 		logit(LOG_STATUS, "copyover: failed to close %s: %s", copyover_tmp,
@@ -1106,6 +993,14 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		return false;
 	}
 
+	if (!copyover_codec_sync_parent(COPYOVER_FILE))
+	{
+		logit(LOG_STATUS, "copyover: publication directory fsync failed: %s",
+		      strerror(errno));
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
+	}
+
 	logit(LOG_STATUS, "copyover: saved %d descs, %d mobs, %d objs, %d doors", num_descs,
 	      num_mobs, num_objs, num_rooms);
 	if (!redis_world_recovery_prepare_copyover())
@@ -1114,6 +1009,13 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		return false;
 	}
 	resume_workers.redis_released = true;
+
+	if (!game_loop_watchdog_prepare_copyover())
+	{
+		logit(LOG_STATUS, "copyover: could not preserve game-loop watchdog channel");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
+	}
 
 	// All prerequisite saves and the complete copyover file are durable. Only
 	// now may non-preservable transports be disconnected.
@@ -1331,17 +1233,22 @@ static P_char copyover_load_player(const char *name, P_desc d)
 int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 {
 	FILE *fp;
-	struct copyover_header header;
+	copyover_decoded_state state;
+	const copyover_header &header = state.header;
+	const char *codec_error = nullptr;
 	struct copyover_desc desc_entry;
 	struct copyover_room room_entry;
 	P_desc d;
 	P_char ch;
 	int i, rnum, save_room;
 	int success = 0;
-	size_t desc_bytes = 0;
-	std::vector<telemetry_copyover_entry> telemetry_entries;
-
 	copyover_in_progress = 1;
+	if (mother_desc)
+		*mother_desc = -1;
+	if (mother_desc_ssl)
+		*mother_desc_ssl = -1;
+	if (ws_desc)
+		*ws_desc = -1;
 
 	fp = fopen(COPYOVER_FILE, "rb");
 	if (!fp)
@@ -1352,49 +1259,24 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		return 0;
 	}
 
-	// read and verify header
-	if (fread(&header, sizeof(header), 1, fp) != 1 ||
-	    memcmp(header.magic, COPYOVER_MAGIC, 4) != 0 ||
-	    !copyover_version_supported(header.version))
+	if (!mother_desc || !mother_desc_ssl || !ws_desc ||
+	    !copyover_codec_read(fp, &state, &codec_error))
 	{
-		logit(LOG_STATUS, "copyover_recover: invalid header or version mismatch");
+		logit(LOG_STATUS, "copyover_recover: file rejected before mutation: %s",
+		      codec_error ? codec_error : "missing listener outputs");
 		goto copyover_recover_fail;
 	}
 
-	logit(LOG_STATUS, "copyover_recover: restoring %d descs, %d mobs, %d doors",
-	      header.num_descriptors, header.num_mobs, header.num_rooms);
-	desc_bytes = copyover_desc_bytes_for_version(header.version);
-
-	// read listener sockets
-	if (fread(mother_desc, sizeof(int), 1, fp) != 1 ||
-	    fread(mother_desc_ssl, sizeof(int), 1, fp) != 1 ||
-	    fread(ws_desc, sizeof(int), 1, fp) != 1)
-	{
-		logit(LOG_STATUS, "copyover_recover: failed to read listener sockets");
-		goto copyover_recover_fail;
-	}
+	logit(LOG_STATUS, "copyover_recover: validated v%d; restoring %d descs, %d mobs, %d doors",
+	      header.version, header.num_descriptors, header.num_mobs, header.num_rooms);
+	*mother_desc = state.listeners[0];
+	*mother_desc_ssl = state.listeners[1];
+	*ws_desc = state.listeners[2];
 
 	// restore descriptors
 	for (i = 0; i < header.num_descriptors; i++)
 	{
-		memset(&desc_entry, 0, sizeof(desc_entry));
-		if (fread(&desc_entry, desc_bytes, 1, fp) != 1)
-		{
-			logit(LOG_STATUS, "copyover_recover: failed reading desc %d", i);
-			goto copyover_recover_fail;
-		}
-		if (header.version >= 17 &&
-		    (desc_entry.death_retry_pending > 1 || desc_entry.death_retry_reserved[0] ||
-		     desc_entry.death_retry_reserved[1] || desc_entry.death_retry_reserved[2] ||
-		     (desc_entry.death_retry_pending &&
-		      (desc_entry.death_retry_delay < 4 || desc_entry.death_retry_delay > 60)) ||
-		     (!desc_entry.death_retry_pending &&
-		      (desc_entry.death_retry_delay || desc_entry.death_retry_corpse_uid))))
-		{
-			logit(LOG_STATUS, "copyover_recover: invalid death retry state in desc %d",
-			      i);
-			goto copyover_recover_fail;
-		}
+		desc_entry = state.descriptors[static_cast<size_t>(i)];
 
 		d = (P_desc)mm_get(dead_desc_pool);
 		if (!d)
@@ -1454,6 +1336,8 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 				d->character = ch;
 				ch->desc = d;
 				d->connected = CON_PLAYING;
+				d->next = descriptor_list;
+				descriptor_list = d;
 
 				// make them alive
 				SET_POS(ch, POS_STANDING + STAT_NORMAL);
@@ -1508,73 +1392,20 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 				continue;
 			}
 		}
-
-		// add to descriptor list
-		d->next = descriptor_list;
-		descriptor_list = d;
 	}
 
-	if (header.version >= 15)
-	{
-		if (!read_telemetry_copyover_state(fp, header.num_descriptors, &telemetry_entries))
-		{
-			logit(LOG_STATUS,
-			      "copyover_recover: invalid telemetry session handoff state");
-			goto copyover_recover_fail;
-		}
-		restore_telemetry_copyover_sessions(&telemetry_entries);
-	}
-	else
-	{
-		/* Versions without the trailer have no safe predecessor identity.  The
-		 * runtime resumes each restored player as an explicit absent handoff. */
-		restore_telemetry_copyover_sessions(nullptr);
-	}
+	restore_telemetry_copyover_sessions(header.version >= 15 ? &state.telemetry : nullptr);
 
 	// restore mobs directly from saved data (zones were not reset)
 	for (i = 0; i < header.num_mobs; i++)
 	{
-		struct copyover_mob mob_entry = {};
-		struct copyover_affect aff_entries[64];
-		copyover_carried_item inv_entries[256];
-		int num_affs, num_inv;
-
-		const size_t mob_bytes = copyover_mob_bytes_for_version(header.version);
-		if (fread(&mob_entry, mob_bytes, 1, fp) != 1)
-			goto copyover_recover_fail;
-		if (header.version < 16)
-			mob_entry.shopkeeper_shop_id = -1;
-
-		// read affects into temp array
-		num_affs = mob_entry.num_affects;
-		if (num_affs > 64)
-			num_affs = 64;
-		for (int a = 0; a < mob_entry.num_affects; a++)
-		{
-			struct copyover_affect aff_entry;
-			if (fread(&aff_entry, sizeof(aff_entry), 1, fp) != 1)
-				goto copyover_recover_fail;
-			if (a < 64)
-				aff_entries[a] = aff_entry;
-		}
-
-		// read carried items into temp array
-		num_inv = mob_entry.num_carrying;
-		if (num_inv > 256)
-			num_inv = 256;
-		for (int c = 0; c < mob_entry.num_carrying; c++)
-		{
-			copyover_carried_item inv_entry;
-			if (fread(&inv_entry, sizeof(inv_entry), 1, fp) != 1)
-				goto copyover_recover_fail;
-			if (c < 256)
-				inv_entries[c] = inv_entry;
-		}
-
-		std::string generated;
-		if (header.version >= 14 &&
-		    !read_generated_npc_state(fp, mob_entry.vnum, &generated))
-			goto copyover_recover_fail;
+		const auto &saved = state.mobs[static_cast<size_t>(i)];
+		const auto &mob_entry = saved.entry;
+		const auto &aff_entries = saved.affects;
+		const auto &inv_entries = saved.inventory;
+		const int num_affs = mob_entry.num_affects;
+		const int num_inv = mob_entry.num_carrying;
+		const std::string &generated = saved.generated;
 		if (generated.empty() && generated_npc_vnum(mob_entry.vnum))
 			logit(LOG_STATUS,
 			      "generated NPC recovery review: legacy state missing vnum=%d id=%d room=%d; lost identity cannot be reconstructed",
@@ -1707,21 +1538,36 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		}
 	}
 
-	// Version 12 stores bounded trees and their live custody handoff.
+	// Trees are decoded and checked; gameplay checks still fail closed if their
+	// room/prototype/custody can no longer be materialized.
 	for (i = 0; i < header.num_objects; ++i)
-		if (!read_obj_entry(fp))
+	{
+		const auto &object = state.objects[static_cast<size_t>(i)];
+		size_t consumed = 0;
+		P_obj restored = nullptr;
+		try
+		{
+			restored = copyover_restore_obj_from_buffer(object.data(), object.size(),
+								    &consumed);
+		}
+		catch (const std::bad_alloc &)
+		{
+			logit(LOG_STATUS, "copyover_recover: ground object allocation failed");
+			goto copyover_recover_fail;
+		}
+		if (!restored || consumed != object.size())
 		{
 			logit(LOG_STATUS,
 			      "copyover_recover: failed ground object record %d/%d; aborting copyover",
 			      i + 1, header.num_objects);
 			goto copyover_recover_fail;
 		}
+	}
 
 	// restore door states
 	for (i = 0; i < header.num_rooms; i++)
 	{
-		if (fread(&room_entry, sizeof(room_entry), 1, fp) != 1)
-			goto copyover_recover_fail;
+		room_entry = state.doors[static_cast<size_t>(i)];
 
 		rnum = real_room(room_entry.vnum);
 		if (rnum >= 0 && rnum <= top_of_world && room_entry.dir >= 0 &&
@@ -1748,8 +1594,8 @@ copyover_recover_fail:
 		*ws_desc = -1;
 	copyover_in_progress = 0;
 	fclose(fp);
-	unlink(COPYOVER_FILE);
-	logit(LOG_STATUS, "copyover_recover: failed, copyover state discarded");
+	logit(LOG_STATUS,
+	      "copyover_recover: failed; state retained for inspection and cold restart");
 	return 0;
 }
 

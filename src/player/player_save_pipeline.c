@@ -1,4 +1,5 @@
 #include "player/player_save_pipeline.h"
+#include "net/network_wakeup.h"
 #include "sql/sql_thread_init.h"
 #include "persistence/persistence_observability.h"
 #include <cstdlib>
@@ -278,6 +279,12 @@ void dispatcher_main()
 		}
 
 		const player_save_journal_result appended = player_save_journal_append(snapshot);
+		persistence_trace_event journal_trace;
+		journal_trace.stage = persistence_trace_stage::save_journal;
+		journal_trace.pid = snapshot.pid;
+		journal_trace.revision = snapshot.revision;
+		journal_trace.outcome = static_cast<uint32_t>(appended);
+		persistence_trace_record(journal_trace);
 		const bool quarantined = appended == player_save_journal_result::quarantined_pid;
 		// A capture queued before the fence still needs durable preservation.
 		// Archive it without admitting it to SQL or claiming a revision ACK.
@@ -296,6 +303,7 @@ void dispatcher_main()
 				try
 				{
 					durable_ready.push_back(std::move(snapshot));
+					network_wakeup_notify();
 					if (terminal_fence *fence = find_terminal_fence_locked(
 						    durable_ready.back().pid);
 					    fence &&
@@ -950,6 +958,12 @@ static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 		if (player_snapshot_encode(snapshot, &encoded) != player_snapshot_codec_result::ok)
 			return player_save_pipeline_result::capture_failed;
 	}
+	persistence_trace_event capture_trace;
+	capture_trace.stage = persistence_trace_stage::save_capture;
+	capture_trace.pid = snapshot.pid;
+	capture_trace.revision = snapshot.revision;
+	capture_trace.components = snapshot.components;
+	persistence_trace_record(capture_trace);
 	if (trace_player_saves())
 		logit(LOG_STATUS,
 		      "PLAYER SAVE TRACE: stage=capture mono_us=%llu pid=%d revision=%llu components=%llu intent=%d room=%d",
@@ -1373,6 +1387,12 @@ player_save_terminal_result await_terminal_fence(int pid, player_revision_t revi
 		      (unsigned long long)health.durable_ready,
 		      (unsigned long long)health.append_failures);
 	}
+	persistence_trace_event timeout_trace;
+	timeout_trace.stage = persistence_trace_stage::save_timeout;
+	timeout_trace.pid = pid;
+	timeout_trace.revision = revision;
+	timeout_trace.incident = true;
+	persistence_trace_record(timeout_trace);
 	++health.terminal_timeouts;
 	return player_save_terminal_result::timed_out;
 }
@@ -1487,16 +1507,16 @@ void player_save_pipeline_pulse(void)
 				recapture_scheduled = true;
 				break;
 			}
-		persistence_alert(AVATAR, "player_save", "redacted", "none", "none",
-				  "custody_payload_mismatch_rejected",
-				  "pid=%d revision=%llu components=%llu destructive_write=0 "
-				  "custody_diagnosis=%s recapture_scheduled=%d",
-				  custody_mismatches[index].pid,
-				  (unsigned long long)custody_mismatches[index].revision,
-				  (unsigned long long)custody_mismatches[index].components,
-				  player_save_custody_diagnosis_name(
-					  custody_mismatches[index].custody_diagnosis),
-				  recapture_scheduled ? 1 : 0);
+		persistence_alert(
+			AVATAR, "player_save", "redacted", "none", "none",
+			"custody_payload_mismatch_rejected",
+			"pid=%d revision=%llu components=%llu destructive_write=0 "
+			"custody_diagnosis_code=%u recapture_scheduled=%d",
+			custody_mismatches[index].pid,
+			(unsigned long long)custody_mismatches[index].revision,
+			(unsigned long long)custody_mismatches[index].components,
+			static_cast<unsigned>(custody_mismatches[index].custody_diagnosis),
+			recapture_scheduled ? 1 : 0);
 	}
 	for (size_t index = 0; index < missing_baseline_count; ++index)
 	{
@@ -1585,6 +1605,22 @@ player_save_pipeline_health player_save_pipeline_health_copy(void)
 {
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	return health;
+}
+
+player_save_pipeline_diagnostic player_save_pipeline_diagnostic_copy(int pid)
+{
+	player_save_pipeline_diagnostic result;
+	std::unique_lock<std::mutex> lock(pipeline_mutex, std::try_to_lock);
+	if (!lock.owns_lock())
+		return result;
+	result.available = true;
+	result.health = health;
+	const terminal_fence *fence = find_terminal_fence_locked(pid);
+	result.pid_admission_open = !find_target_save_login_fence_locked(pid) &&
+				    !(fence && fence->death_pinned);
+	result.retained_save = !health.initialized || stop_requested || !accepting || fence ||
+			       append_inflight_pid == pid || any_snapshot_is_retained_locked(pid);
+	return result;
 }
 
 bool player_save_pipeline_loads_allowed(void)

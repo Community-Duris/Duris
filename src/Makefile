@@ -163,6 +163,8 @@ OBJS =  $(SHIP_OBJS) \
 				 account/racewar_admission.o \
 				 account/password_hash.o \
 				 account/password_async.o \
+				 account/account_load.o \
+				 account/account_async.o \
 				 account/account_recovery.o \
 				 account/account_recovery_nanny.o \
 				 account/account_reward.o \
@@ -267,6 +269,7 @@ OBJS =  $(SHIP_OBJS) \
 				net/command_latency.o \
 				 net/comm.o \
 				 persistence/copyover.o \
+				 persistence/copyover_codec.o \
 				 core/common.o \
 				 world/condition.o \
 				 world/bloodstains.o \
@@ -578,6 +581,7 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/shaman.o \
 				 economy/shop.o \
 				 core/signals.o \
+				 core/game_loop_watchdog.o \
 				 classes/skills.o \
 				 magic/smagic.o \
 				 classes/salchemist.o \

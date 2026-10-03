@@ -52,6 +52,7 @@
 #include "classes/npc_alchemist.h"
 #include "account/newbie_kit_plan.h"
 #include "economy/economic_gameplay_authority.h"
+#include "world/zone_story_quest_runtime.h"
 
 /*
  * external variables
@@ -92,6 +93,21 @@ void recalc_zone_numbers();
 void ne_init_events();
 void ne_init_event_pool();
 extern void event_reset_zone(P_char, P_char, P_obj, void *);
+
+static void boot_zone_story_quest_state()
+{
+	// Retained character state needs its catalog even when mobile procedures
+	// are disabled. Normal boots already load quests in assign_mobiles().
+	if (no_specials)
+		boot_the_quests();
+	std::string error;
+	if (!zone_story_quest_runtime::bootstrap(&error))
+		logit(LOG_DEBUG, "Zone-story quest catalog disabled at boot: %s", error.c_str());
+	else
+		logit(LOG_STATUS, "Zone-story quest catalog ready: %zu definitions, revision %u",
+		      zone_story_quest_runtime::service()->catalog().definitions.size(),
+		      zone_story_quest_runtime::content_revision());
+}
 
 /**************************************************************************
  *  declarations of most of the 'global' variables                         *
@@ -637,6 +653,7 @@ void boot_db(int mini_mode)
 		fprintf(stderr, "-- Room special procedures.\r\n");
 		assign_rooms();
 	}
+	boot_zone_story_quest_state();
 
 	fprintf(stderr, "Assigning command pointers from interpreter.\r\n");
 

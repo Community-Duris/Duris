@@ -2003,7 +2003,7 @@ spell_vines_component_retirement_completed(const critical_operation_id &operatio
 	spell_component_context_reader reader(encoded, encoded_size);
 	vines_component_context context = {};
 	if (!actor || !reader.get_i32(&context.level) || !reader.get_i32(&context.count) ||
-	    !reader.finished())
+	    !reader.finished() || context.count < 1 || context.count > 4)
 		return spell_component_effect_status::retry;
 	if (!committed)
 	{

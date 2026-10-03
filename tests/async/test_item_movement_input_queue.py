@@ -349,6 +349,8 @@ static void push(struct txt_q *q, const char *text)
 	else
 		q->head = block;
 	q->tail = block;
+	q->bytes += strlen(text) + 1;
+	++q->entries;
 }
 
 static void drain(struct txt_q *q)
@@ -361,6 +363,8 @@ static void drain(struct txt_q *q)
 		q->head = next;
 	}
 	q->tail = NULL;
+	q->bytes = 0;
+	q->entries = 0;
 }
 
 static void expect_text(const char *got, const char *want, const char *label)

@@ -1,3 +1,4 @@
+#include "net/network_wakeup.h"
 #include "redis/redis_donation_worker.h"
 #include "redis/redis_connection.h"
 
@@ -103,6 +104,7 @@ void accept_payload(const char *payload, size_t length)
 			return;
 		}
 		pending_events.push_back(event);
+		network_wakeup_notify();
 		health.queued = pending_events.size();
 		health.high_water = std::max(health.high_water, pending_events.size());
 	}

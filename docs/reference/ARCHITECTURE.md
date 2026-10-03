@@ -14,7 +14,10 @@ for operations. A visual overview lives in
 
 One process (`bin/server/dms`, staged as `bin/server/dms_new`). There is no
 fork-per-connection, player-save fork, or world-save fork; all socket I/O is
-multiplexed in a single `select()` loop. Concurrency includes:
+multiplexed in a single `poll()` readiness/deadline loop. Bounded network turns
+service sockets between 250 ms simulation boundaries; command dispatch and world
+phases retain their established cadence and order. See the
+[game-loop phase contract](../network/GAME_LOOP_PHASES.md). Concurrency includes:
 
 - One bounded player-load worker that owns a pooled connection and returns typed rows.
 - A private player-journal append dispatcher and keyed revisioned-save workers.
@@ -27,8 +30,9 @@ multiplexed in a single `select()` loop. Concurrency includes:
   connect / 20 s total, no retry), and is disabled unless `MAIL_ENABLED=TRUE`.
 - Legacy item, scalar, and large-payload queue modules for remaining compatibility
   producers; they are not the player snapshot or critical-operation authority.
-- The main game loop blocking signals (including `SIGSEGV`, handled internally)
-  around each iteration so workers cannot interrupt pulse processing.
+- A nonblocking, close-on-exec pipe wakes the game-thread wait for relevant worker
+  completions. Queue ownership and publication remain in the existing pulse phases.
+  Signal handlers can interrupt the wait; interruptions do not advance world ticks.
 
 Legacy hostname lookup may still use a short-lived child. It is unrelated to
 persistence and never receives player or world snapshot work.

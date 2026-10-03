@@ -8,7 +8,7 @@ from _paths import ROOT, extract_function
 HARNESS=r'''
 #include "world/generated_npc_state.h"
 #include "world/world_recovery_codec.h"
-#include "persistence/copyover.h"
+#include "persistence/copyover_codec.h"
 #include "core/utils.h"
 #include "core/prototypes.h"
 #include <cassert>
@@ -21,7 +21,7 @@ P_index mob_index=indexes;
 int panic_corruption_int(const char *, const char *, ...) { std::abort(); }
 char *str_dup(const char *s) { return strdup(s); }
 void str_free(const char *s) { free(const_cast<char *>(s)); }
-'''+extract_function('copyover.c','static bool write_generated_npc_state(')+'\n'+extract_function('copyover.c','static bool read_generated_npc_state(')+r'''
+'''+extract_function('copyover.c','static bool write_generated_npc_state(')+r'''
 static void clear_strings(P_char mob) {
  str_free(mob->player.name); str_free(mob->player.short_descr); str_free(mob->player.long_descr);
  mob->player.name=mob->player.short_descr=mob->player.long_descr=nullptr;
@@ -55,9 +55,17 @@ int main() {
   assert(generated_npc_state_decode(fuzzy,&fuzzy_state,&fuzzy_wallet));
   assert((fuzzy_wallet == std::array<int32_t,4>{}));
   FILE *file=tmpfile(); assert(file);
-  assert(write_generated_npc_state(file,&original)); rewind(file);
-  std::string from_file; assert(read_generated_npc_state(file,indexes[type].virtual_number,&from_file));
-  assert(from_file==encoded); fclose(file);
+  copyover_header header={}; header.num_mobs=1;
+  const int listeners[3]={-1,-1,-1};
+  assert(copyover_codec_begin(file,header,listeners));
+  copyover_mob file_mob={}; file_mob.vnum=indexes[type].virtual_number;
+  file_mob.room=22800; file_mob.shopkeeper_shop_id=-1;
+  assert(copyover_codec_write(file,file_mob));
+  assert(write_generated_npc_state(file,&original));
+  assert(copyover_codec_finish(file,nullptr));
+  copyover_decoded_state from_file;
+  assert(copyover_codec_read(file,&from_file,nullptr));
+  assert(from_file.mobs.size()==1 && from_file.mobs[0].generated==encoded); fclose(file);
   std::string extension; assert(generated_npc_extension_encode(indexes[type].virtual_number,encoded,&extension));
   for(size_t size=0;size<extension.size();++size) {
    std::string bad; assert(!generated_npc_extension_decode(indexes[type].virtual_number,extension.data(),size,&bad));
@@ -108,6 +116,8 @@ with tempfile.TemporaryDirectory(prefix='generated-npc-') as directory:
     cpp.write_text(HARNESS)
     subprocess.run(['g++','-std=c++20','-Wall','-Wextra','-Werror','-D__NO_MYSQL__',
         '-Isrc','-Isrc/no_mysql','-fsanitize=address,undefined','-g',str(cpp),
+        'src/persistence/copyover_codec.c','src/item/item_transfer_command.c',
+        '-ffunction-sections','-fdata-sections','-Wl,--gc-sections',
         'src/world/generated_npc_state.c','src/world/generated_npc_runtime.c',
         'src/player/pet_restore_state.c','src/world/world_recovery_codec.c','-o',str(binary)],cwd=ROOT,check=True)
     subprocess.run([str(binary)],check=True)

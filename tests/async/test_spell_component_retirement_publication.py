@@ -56,7 +56,7 @@ def main() -> None:
         "item_movement_transaction.c",
         "bool item_movement_transaction_pending_spell_effects("
     )
-    assert "payload.items[index].item_uid" in restore_context
+    assert "payload.items[index]" in restore_context
     assert "data[5] != data.size() - 6" in restore_context
     assert "payload.continuation.kind" in restore_context
     assert "if (committed)" in replay_publish
@@ -77,6 +77,12 @@ def main() -> None:
     )
     vines_publish = extract_function(
         "spells.c", "spell_component_effect_status\nspell_vines_component_retirement_completed("
+    )
+    spells = source("spells.c").read_text(encoding="utf-8")
+    vines_start = spells.index("struct vines_component_context\n{")
+    vines_context = spells[vines_start:spells.index("\n};", vines_start) + 3]
+    vines_production = vines_publish.replace(
+        "spell_vines_component_retirement_completed(", "vines_production_completion(", 1
     )
     assert "spell_component_retirement_save_effect(" in vines_publish
     assert "CHAR_RFLAG_LOAD_DEGRADED" in vines_publish
@@ -114,6 +120,7 @@ P_obj object_list = nullptr;
 constexpr unsigned CHAR_RFLAG_LOAD_DEGRADED = 1;
 constexpr size_t ITEM_MOVEMENT_PENDING_MAX = 1024;
 constexpr size_t ITEM_MOVEMENT_CONTEXT_MAX_BYTES = 256;
+constexpr size_t ITEM_TRANSFER_MAX_ITEMS = 16;
 P_char character_list = nullptr;
 constexpr int LOG_FILE = 1;
 enum class item_spell_component_effect { faerie_sight = 1, spore_burst_initial, spore_burst_repeat, summon_insects, wall_of_bones, vines };
@@ -149,12 +156,13 @@ enum class item_custody_state { active, destroyed };
 struct item_owner_identity { item_owner_type type = item_owner_type::player; uint64_t id = 0; };
 enum class item_transfer_reason { destruction };
 enum class item_transfer_continuation_kind { spell_component_retirement };
+struct item_transfer_entry { uint64_t item_uid = 0, root_item_uid = 0, parent_item_uid = 0; };
 struct item_transfer_payload {
     item_owner_identity from_owner;
     item_transfer_reason reason = item_transfer_reason::destruction;
     bool multi_root = true;
     size_t item_count = 1;
-    struct { uint64_t item_uid = 0; } items[8];
+    item_transfer_entry items[ITEM_TRANSFER_MAX_ITEMS];
     struct { item_transfer_continuation_kind kind = item_transfer_continuation_kind::spell_component_retirement;
         std::vector<uint8_t> data; } continuation;
 };
@@ -221,7 +229,16 @@ void apply_faerie_sight(int, P_char, P_char victim, int, bool live_consume) {
     assert(victim->pid == 43 && !live_consume);
     ++faerie_applications;
 }
-''' + reader + "\n" + faerie_publish + r'''
+constexpr int SPELL_VINES = 445, AFFTYPE_NOSHOW = 1, AFFTYPE_NODISPEL = 2;
+constexpr int AFF5_VINES = 4, FALSE = 0, TO_CHAR = 1, TO_NOTVICT = 2;
+struct affected_type { int type, flags, bitvector5, duration, modifier; };
+int vines_modifier = 0;
+void act(const char *, int, P_char, int, int, int) {}
+void affect_to_char(P_char, const affected_type *effect) {
+    ++applied_effects;
+    vines_modifier = effect->modifier;
+}
+''' + reader + "\n" + faerie_publish + "\n" + vines_context + "\n" + vines_production + r'''
 spell_component_effect_status spell_spore_burst_initial_components_completed(const critical_operation_id &o, P_char a, bool c, const item_transfer_result &r, unsigned int e, const uint8_t *p, size_t n) { return continue_spell(o,a,c,r,e,p,n); }
 spell_component_effect_status spell_spore_burst_repeat_components_completed(const critical_operation_id &o, P_char a, bool c, const item_transfer_result &r, unsigned int e, const uint8_t *p, size_t n) { return continue_spell(o,a,c,r,e,p,n); }
 spell_component_effect_status spell_summon_insects_component_completed(const critical_operation_id &o, P_char a, bool c, const item_transfer_result &r, unsigned int e, const uint8_t *p, size_t n) { return continue_spell(o,a,c,r,e,p,n); }
@@ -363,7 +380,7 @@ int main() {
     put(100, 8); put(42, 4); put(50, 4); put(1, 1); put(0, 1); put(43, 4);
     item_transfer_payload payload;
     payload.from_owner.id = 42;
-    payload.items[0].item_uid = 60;
+    payload.items[0] = {60, 60, 0};
     payload.continuation.data = {1,1,0,0,0,22};
     payload.continuation.data.insert(payload.continuation.data.end(), terms.begin(), terms.end());
     std::array<uint8_t, ITEM_MOVEMENT_CONTEXT_MAX_BYTES> restored_context = {};
@@ -459,6 +476,97 @@ int main() {
         result, 0, restored_context.data(), restored_size));
     assert(faerie_applications == 3);
     assert(alerts >= 4);
+
+    // A retained vines command cannot award strength for unconsumed herbs.
+    payload.continuation.data = {1,6,0,0,0,8,50,0,0,0,1,0,0,0};
+    payload.item_count = 1;
+    assert(spell_component_retirement_restore_context(payload, &restored_context,
+        &restored_size, &restored_effect, &restored_owner));
+    assert(restored_effect == 6 && restored_owner == 42);
+    const auto valid_vines = payload.continuation.data;
+    const int effects_before_invalid = applied_effects;
+    const int saves_before_invalid = saves_requested;
+    for (int32_t count : {0, -1, 2, 5, INT32_MAX}) {
+        payload.continuation.data = valid_vines;
+        for (size_t byte = 0; byte < 4; ++byte)
+            payload.continuation.data[10 + byte] = static_cast<uint32_t>(count) >> (8 * byte);
+        restored_size = 123;
+        restored_effect = restored_owner = 99;
+        assert(!spell_component_retirement_restore_context(payload, &restored_context,
+            &restored_size, &restored_effect, &restored_owner));
+        assert(restored_size == 123 && restored_effect == 99 && restored_owner == 99);
+        if (count != 2) {
+            assert(vines_production_completion(operation_id, &actor, true, result, 0,
+                payload.continuation.data.data() + 6, 8) == spell_component_effect_status::retry);
+        }
+        assert(applied_effects == effects_before_invalid && saves_requested == saves_before_invalid);
+    }
+    for (size_t length : {size_t(0), size_t(7), size_t(9)}) {
+        payload.continuation.data = valid_vines;
+        payload.continuation.data.resize(6 + length);
+        payload.continuation.data[5] = length;
+        assert(!spell_component_retirement_restore_context(payload, &restored_context,
+            &restored_size, &restored_effect, &restored_owner));
+    }
+    // Both wire generations retain valid one-to-four herb effects.
+    for (int32_t count = 1; count <= 4; ++count) {
+        payload.continuation.data = valid_vines;
+        payload.continuation.data[10] = count;
+        payload.item_count = count;
+        for (int32_t index = 0; index < count; ++index) payload.items[index] = {uint64_t(100 + index), uint64_t(100 + index), 0};
+        assert(spell_component_retirement_restore_context(payload, &restored_context,
+            &restored_size, &restored_effect, &restored_owner));
+        payload.continuation.data.erase(payload.continuation.data.begin() + 5);
+        payload.continuation.data.erase(payload.continuation.data.begin());
+        assert(spell_component_retirement_restore_context(payload, &restored_context,
+            &restored_size, &restored_effect, &restored_owner));
+        spell_component_retired_items.clear();
+        ++operation_id.bytes[0];
+        assert(spell_component_retirement_restore_replayed_effect(operation_id, 42, 6, 42));
+        assert(vines_production_completion(operation_id, &actor, true, result, 0,
+            payload.continuation.data.data() + 4, 8) == spell_component_effect_status::waiting_for_owner);
+        assert(vines_modifier == 40 * count);
+        const int applied = applied_effects, saved = saves_requested;
+        assert(vines_production_completion(operation_id, &actor, true, result, 0,
+            payload.continuation.data.data() + 4, 8) == spell_component_effect_status::waiting_for_owner);
+        assert(applied_effects == applied && saves_requested == saved);
+    }
+    // Children in the retired forest are not extra spell components.
+    payload.item_count = 10;
+    payload.items[0] = {100, 100, 0};
+    for (size_t index = 1; index < payload.item_count; ++index)
+        payload.items[index] = {100 + index, 100, 100};
+    payload.continuation.data = valid_vines;
+    assert(spell_component_retirement_restore_context(payload, &restored_context,
+        &restored_size, &restored_effect, &restored_owner));
+    spell_component_retirement_context forest_context = {};
+    std::memcpy(&forest_context, restored_context.data(), restored_size);
+    assert(forest_context.item_count == 1 && forest_context.item_uids[0] == 100);
+    payload.continuation.data = {1,1,0,0,0,22};
+    payload.continuation.data.insert(payload.continuation.data.end(), terms.begin(), terms.end());
+    assert(spell_component_retirement_restore_context(payload, &restored_context,
+        &restored_size, &restored_effect, &restored_owner));
+    assert(restored_owner == 43);
+    std::memcpy(&forest_context, restored_context.data(), restored_size);
+    assert(forest_context.item_count == 1 && forest_context.item_uids[0] == 100);
+    payload.items[9].item_uid = payload.items[8].item_uid;
+    assert(!spell_component_retirement_restore_context(payload, &restored_context,
+        &restored_size, &restored_effect, &restored_owner));
+    payload.items[9].item_uid = 0;
+    assert(!spell_component_retirement_restore_context(payload, &restored_context,
+        &restored_size, &restored_effect, &restored_owner));
+    payload.items[9] = {109, 100, 100};
+    payload.items[0].root_item_uid = 99;
+    assert(!spell_component_retirement_restore_context(payload, &restored_context,
+        &restored_size, &restored_effect, &restored_owner));
+    payload.items[0].root_item_uid = 100;
+    payload.items[0].parent_item_uid = 109;
+    assert(!spell_component_retirement_restore_context(payload, &restored_context,
+        &restored_size, &restored_effect, &restored_owner));
+    for (size_t index = 0; index < payload.item_count; ++index)
+        payload.items[index] = {100 + index, 100 + index, 0};
+    assert(!spell_component_retirement_restore_context(payload, &restored_context,
+        &restored_size, &restored_effect, &restored_owner));
 }
 '''
     with tempfile.TemporaryDirectory() as directory:
