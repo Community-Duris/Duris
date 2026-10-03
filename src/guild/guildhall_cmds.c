@@ -19,6 +19,7 @@
 #include "kingdom/kingdom.h"
 #include "guild/guildhall_db.h"
 #include "combat/justice.h"
+#include "economy/economic_gameplay_authority.h"
 #include "world/map.h"
 
 #define CAN_CONSTRUCT_CMD(ch)                                                  \
@@ -153,6 +154,15 @@ void do_construct(P_char ch, char *arg, int /*cmd*/)
 
 	char buff[MAX_STRING_LENGTH];
 	arg = one_argument(arg, buff);
+	if (*buff && economic_gameplay_authority::active() &&
+	    (is_abbrev(buff, "guildhall") || is_abbrev(buff, "room") || is_abbrev(buff, "golem") ||
+	     is_abbrev(buff, "upgrade") || is_abbrev(buff, "rename") || is_abbrev(buff, "overmax")))
+	{
+		send_to_char(
+			"Guild construction is unavailable while active accounting is enabled.\r\n",
+			ch);
+		return;
+	}
 
 	if (is_abbrev(buff, "guildhall"))
 	{

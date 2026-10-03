@@ -363,13 +363,6 @@ P_obj find_live_object(uint64_t uid)
 	return nullptr;
 }
 
-void extract_collected_objects(const pending_pouch_collection &collection)
-{
-	for (uint64_t uid : collection.material_uids)
-		if (P_obj material = find_live_object(uid))
-			extract_obj(material, FALSE);
-}
-
 void chaos_material_pouch_collection_completion(P_char actor, bool committed,
 						const item_transfer_result &,
 						unsigned int error_code, const uint8_t *encoded,
@@ -400,33 +393,13 @@ void chaos_material_pouch_collection_completion(P_char actor, bool committed,
 		logit(LOG_FILE,
 		      "CHAOS pouch collection did not commit pid=%u pouch_uid=%llu error=%u",
 		      actor_pid, static_cast<unsigned long long>(collection.pouch_uid), error_code);
-		P_obj pouch = find_live_object(collection.pouch_uid);
-		const bool reverted =
-			pouch && chaos_material_pouch_revert_collected(
-					 pouch, collection.usage.data(), collection.usage_count);
-		if (reverted)
-		{
-			mark_player_dirty_components(actor_pid, PLAYER_COMPONENT_STATUS |
-									PLAYER_COMPONENT_EQUIPMENT |
-									PLAYER_COMPONENT_INVENTORY);
-			send_to_char(
-				"The Chaos craft pouch collection did not commit; materials were retained. Please try again.\r\n",
-				actor);
-		}
-		else
-		{
-			logit(LOG_FILE,
-			      "CHAOS pouch collection could not roll back scoreboard pid=%u pouch_uid=%llu",
-			      actor_pid, static_cast<unsigned long long>(collection.pouch_uid));
-			send_to_char(
-				"The Chaos craft pouch collection did not commit, but its scoreboard could not be rolled back; please contact staff before retrying.\r\n",
-				actor);
-		}
+		send_to_char(
+			"The Chaos craft pouch collection did not commit; materials and counters were retained. Please try again.\r\n",
+			actor);
 		return;
 	}
 
 	P_obj pouch = find_live_object(collection.pouch_uid);
-	extract_collected_objects(collection);
 	mark_player_dirty_components(actor_pid, PLAYER_COMPONENT_STATUS |
 							PLAYER_COMPONENT_EQUIPMENT |
 							PLAYER_COMPONENT_INVENTORY);
@@ -477,26 +450,13 @@ bool submit_pouch_collection(P_char actor, P_obj pouch, P_obj const *roots, size
 	}
 	if (!pending_collections.emplace(actor_pid, std::move(collection)).second)
 		return false;
-	if (!chaos_material_pouch_record_collected(pouch, usage.data(), usage_count))
-	{
-		pending_collections.erase(actor_pid);
-		return false;
-	}
-
-	const item_owner_identity source = { item_owner_type::player,
-					     static_cast<uint64_t>(GET_PID(actor)), 0 };
-	const item_owner_identity destination = { item_owner_type::destruction, 0, 0 };
 	const pouch_collection_context context = { actor_pid, pouch->obj_uid };
 	item_movement_reject reject = item_movement_reject::none;
-	if (!item_movement_transaction_submit_batch(actor, roots, root_count, NULL, source,
-						    destination, item_transfer_reason::destruction,
-						    0, chaos_material_pouch_collection_completion,
-						    &context, sizeof(context), NULL, &reject))
+	if (!item_movement_transaction_submit_craft(
+		    actor, roots, root_count, nullptr, 0, VOBJ_CHAOS_CRAFT_POUCH,
+		    chaos_material_pouch_collection_completion, &context, sizeof(context), &reject,
+		    pouch, usage.data(), usage_count, chaos_pouch_usage_mode::collected))
 	{
-		if (!chaos_material_pouch_revert_collected(pouch, usage.data(), usage_count))
-			logit(LOG_FILE,
-			      "CHAOS pouch collection could not roll back scoreboard pid=%u pouch_uid=%llu",
-			      actor_pid, static_cast<unsigned long long>(pouch->obj_uid));
 		pending_collections.erase(actor_pid);
 		logit(LOG_FILE, "CHAOS pouch collection could not be queued pid=%u reason=%s",
 		      actor_pid, item_movement_reject_name(reject));

@@ -1,4 +1,6 @@
+#include "persistence/death_recovery_visibility.h"
 #include "player/player_save_pipeline.h"
+#include "net/network_wakeup.h"
 #include "sql/sql_thread_init.h"
 #include "persistence/persistence_observability.h"
 #include <cstdlib>
@@ -6,13 +8,21 @@
 
 #include "core/prototypes.h"
 #include "core/files.h"
+#include "classes/necromancy.h"
 #include "flatfile/flatfile_player_repository.h"
 #include "player/player_save_journal.h"
 #include "player/player_save_worker.h"
 #include "player/player_snapshot_capture.h"
+#include "player/player_snapshot_codec.h"
 #include "player/player_snapshot_repository.h"
 #include "core/structs.h"
 #include "core/utils.h"
+#include "magic/spell_item_lifecycle.h"
+#include "item/item_movement_transaction.h"
+#include "economy/item_transfer_accounting.h"
+#include "persistence/sql_room_item_payload.h"
+#include "world/quest_reward_recovery.h"
+#include "player/craft_progression_hooks.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -23,14 +33,19 @@
 #include <limits>
 #include <mutex>
 #include <new>
+#include <optional>
 #include <set>
 #include <thread>
+#include <type_traits>
 #include <utility>
 
 extern P_char character_list;
 
 #ifndef __NO_MYSQL__
 #include <mysql/mysql.h>
+#ifdef TEST_MUD
+#include "player/player_death_conflict_repository.h"
+#endif
 #endif
 
 namespace
@@ -52,21 +67,138 @@ std::deque<player_snapshot> pending_append;
 std::deque<player_snapshot> durable_ready;
 std::thread dispatcher;
 player_save_pipeline_health health = {};
+player_save_pipeline_replay_gate replay_gate;
 size_t retained_bytes = 0;
 bool stop_requested = false;
 bool accepting = false;
 bool append_inflight = false;
 int append_inflight_pid = 0;
+player_revision_t append_inflight_revision = 0;
 /* One failed graph may be recaptured once.  Keep the PID armed until a later
  * database acknowledgement proves custody and payload agree; otherwise every
  * rejected recapture creates a new revision and an unbounded wizlog loop. */
 std::set<int32_t> custody_recapture_armed;
+
+struct literal_inventory_checkpoint
+{
+	player_literal_inventory_token token = {};
+	std::vector<uint8_t> payload;
+	player_revision_t captured_revision = 0;
+	player_revision_t acknowledged_revision = 0;
+	critical_operation_id operation_id = {};
+	bool held = false;
+	bool restored_sql_drop = false;
+};
+std::array<literal_inventory_checkpoint, PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS>
+	literal_inventory_checkpoints = {};
+#ifndef __NO_MYSQL__
+uint64_t literal_inventory_generation = 0;
+#endif
+constexpr player_component_mask_t LITERAL_INVENTORY_COMPONENTS = PLAYER_COMPONENT_EQUIPMENT |
+								 PLAYER_COMPONENT_INVENTORY;
+
+literal_inventory_checkpoint *find_literal_inventory_locked(int pid)
+{
+	for (auto &checkpoint : literal_inventory_checkpoints)
+		if (checkpoint.token.pid == pid)
+			return &checkpoint;
+	return nullptr;
+}
+
+#ifndef __NO_MYSQL__
+bool literal_inventory_capacity_locked(size_t incoming_bytes)
+{
+	if (incoming_bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES)
+		return false;
+	for (const auto &checkpoint : literal_inventory_checkpoints)
+	{
+		if (checkpoint.payload.size() > PLAYER_SAVE_PIPELINE_MAX_BYTES - incoming_bytes)
+			return false;
+		incoming_bytes += checkpoint.payload.size();
+	}
+	return true;
+}
+#endif
+
+bool literal_inventory_blob(const player_snapshot &snapshot, uint64_t root_uid,
+			    std::vector<uint8_t> *blob)
+{
+	if (!root_uid || !blob || snapshot.items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS ||
+	    (snapshot.components & LITERAL_INVENTORY_COMPONENTS) != LITERAL_INVENTORY_COMPONENTS)
+		return false;
+	try
+	{
+		std::vector<int32_t> indices(snapshot.items.size(), PLAYER_SNAPSHOT_NO_PARENT);
+		std::vector<player_item_snapshot> selected;
+		bool found = false;
+		for (size_t index = 0; index < snapshot.items.size(); ++index)
+		{
+			const auto &item = snapshot.items[index];
+			if (item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    item.parent_index >= static_cast<int32_t>(index))
+				return false;
+			const bool root = item.object_uid == root_uid;
+			if (root && (found || item.parent_index != PLAYER_SNAPSHOT_NO_PARENT ||
+				     item.equipment_slot != 0))
+				return false;
+			const bool child = item.parent_index >= 0 &&
+					   indices[item.parent_index] >= 0;
+			if (!root && !child)
+				continue;
+			if (!item.object_uid || item.equipment_slot ||
+			    item.string_mask !=
+				    (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3))
+				return false;
+			found = found || root;
+			indices[index] = static_cast<int32_t>(selected.size());
+			selected.push_back(item);
+			selected.back().parent_index = child ? indices[item.parent_index] :
+							       PLAYER_SNAPSHOT_NO_PARENT;
+		}
+		return found &&
+		       player_item_snapshot_list_encode(selected, blob) ==
+			       player_snapshot_codec_result::ok &&
+		       !blob->empty() && blob->size() <= ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+void note_literal_enqueue_locked(literal_inventory_checkpoint *checkpoint,
+				 player_revision_t revision)
+{
+	if (checkpoint)
+	{
+		checkpoint->captured_revision = revision;
+		checkpoint->acknowledged_revision = 0;
+	}
+}
 
 player_save_apply_fn selected_snapshot_apply()
 {
 #ifdef __NO_MYSQL__
 	return flatfile_player_snapshot_apply_selected;
 #else
+#ifdef TEST_MUD
+	// Qualification only: no normal/production selection before the socket,
+	// recovery-view and restart acceptance gates. Both worker and journal
+	// replay use this selector; never substitute a different replay owner.
+	const char *enabled = std::getenv("DURIS_TEST_SQL_DEATH_CONFLICT_RECOVERY");
+	const char *disposable = std::getenv("TEST_DB_DISPOSABLE");
+	const char *host = std::getenv("DB_HOST");
+	const char *database = std::getenv("DB_NAME");
+	constexpr char prefix[] = "corpse_journey_test_";
+	constexpr size_t prefix_length = sizeof(prefix) - 1;
+	if (enabled && std::strcmp(enabled, "1") == 0 && disposable &&
+	    std::strcmp(disposable, "1") == 0 && host &&
+	    (std::strcmp(host, "127.0.0.1") == 0 || std::strcmp(host, "localhost") == 0) &&
+	    database && std::strlen(database) == prefix_length + 12 &&
+	    std::strncmp(database, prefix, prefix_length) == 0 &&
+	    std::strspn(database + prefix_length, "0123456789abcdef") == 12)
+		return player_death_conflict_apply_from_pool;
+#endif
 	return player_snapshot_repository_apply_from_pool;
 #endif
 }
@@ -77,7 +209,14 @@ struct terminal_fence
 	player_revision_t revision = 0;
 	bool journaled = false;
 	bool acknowledged = false;
+	bool death_pinned = false;
+	uint64_t corpse_uid = 0;
+	critical_operation_id operation_id = {};
+	uint64_t wallet_pile_uid = 0;
+	std::optional<player_snapshot> death_snapshot;
 };
+
+static_assert(std::is_nothrow_move_constructible_v<player_snapshot>);
 
 std::array<terminal_fence, PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS> terminal_fences = {};
 
@@ -141,6 +280,8 @@ allocate_target_save_login_fence_locked(int pid, player_revision_t expected_revi
 	return nullptr;
 }
 
+size_t pinned_death_count_locked();
+
 /** Refresh queue depth and high-water counters while pipeline_mutex is held. */
 void update_depth_locked()
 {
@@ -150,9 +291,46 @@ void update_depth_locked()
 	health.accepting = accepting;
 	health.append_inflight = append_inflight;
 	health.high_water_snapshots =
-		std::max(health.high_water_snapshots, health.pending_append + health.durable_ready);
+		std::max(health.high_water_snapshots,
+			 static_cast<uint64_t>(health.pending_append + health.durable_ready +
+					       pinned_death_count_locked()));
 	health.high_water_bytes =
 		std::max(health.high_water_bytes, static_cast<uint64_t>(retained_bytes));
+}
+
+size_t pinned_death_count_locked()
+{
+	return static_cast<size_t>(std::count_if(terminal_fences.begin(), terminal_fences.end(),
+						 [](const terminal_fence &fence)
+						 { return fence.death_pinned; }));
+}
+
+void clear_terminal_fence_locked(terminal_fence &fence)
+{
+	if (fence.death_pinned)
+	{
+		(void)player_revision_unpin_terminal_death(fence.pid, fence.revision);
+		if (fence.death_snapshot)
+		{
+			const size_t bytes = fence.death_snapshot->encoded_size_bound;
+			retained_bytes = bytes <= retained_bytes ? retained_bytes - bytes : 0;
+		}
+	}
+	fence = {};
+	update_depth_locked();
+}
+
+bool death_snapshot_identity_matches(const terminal_fence &fence)
+{
+	if (!fence.death_snapshot)
+		return false;
+	const player_snapshot &snapshot = *fence.death_snapshot;
+	return player_snapshot_is_death_request_schema(snapshot.schema_version) &&
+	       snapshot.revision == fence.revision && snapshot.death &&
+	       snapshot.death->operation_id.bytes == fence.operation_id.bytes &&
+	       snapshot.death->wallet_pile_uid == fence.wallet_pile_uid &&
+	       !snapshot.death->corpse.empty() &&
+	       snapshot.death->corpse.front().object_uid == fence.corpse_uid;
 }
 
 /** Replay the journal, then append queued snapshots before making them eligible for persistence workers. */
@@ -174,32 +352,59 @@ void dispatcher_main()
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		health.replay_complete = replay == player_save_journal_result::ok;
 		health.replay_blocked = replay != player_save_journal_result::ok;
+		replay_gate.finish_replay(replay == player_save_journal_result::ok &&
+					  health.initialized && !stop_requested);
 	}
 
+	player_snapshot snapshot;
+	bool retry_inflight = false;
 	for (;;)
 	{
-		player_snapshot snapshot;
 		{
 			std::unique_lock<std::mutex> lock(pipeline_mutex);
-			append_available.wait(
-				lock, [] { return stop_requested || !pending_append.empty(); });
-			if (stop_requested && pending_append.empty())
-				break;
-			snapshot = std::move(pending_append.front());
-			pending_append.pop_front();
-			append_inflight = true;
-			append_inflight_pid = snapshot.pid;
+			if (!retry_inflight)
+			{
+				append_available.wait(
+					lock,
+					[] { return stop_requested || !pending_append.empty(); });
+				if (stop_requested && pending_append.empty())
+					break;
+				snapshot = std::move(pending_append.front());
+				pending_append.pop_front();
+				append_inflight = true;
+				append_inflight_pid = snapshot.pid;
+				append_inflight_revision = snapshot.revision;
+			}
+			retry_inflight = false;
 			update_depth_locked();
 		}
 
 		const player_save_journal_result appended = player_save_journal_append(snapshot);
+		persistence_trace_event journal_trace;
+		journal_trace.stage = persistence_trace_stage::save_journal;
+		journal_trace.pid = snapshot.pid;
+		journal_trace.revision = snapshot.revision;
+		journal_trace.outcome = static_cast<uint32_t>(appended);
+		persistence_trace_record(journal_trace);
+		const bool quarantined = appended == player_save_journal_result::quarantined_pid;
+		// A capture queued before the fence still needs durable preservation.
+		// Archive it without admitting it to SQL or claiming a revision ACK.
+		const bool quarantine_preserved =
+			quarantined && player_save_journal_archive_quarantined(snapshot) ==
+					       player_save_journal_result::ok;
 		{
 			std::lock_guard<std::mutex> lock(pipeline_mutex);
-			if (appended == player_save_journal_result::ok)
+			if (quarantine_preserved)
+			{
+				retained_bytes -= snapshot.encoded_size_bound;
+				++health.durable_spills;
+			}
+			else if (appended == player_save_journal_result::ok)
 			{
 				try
 				{
 					durable_ready.push_back(std::move(snapshot));
+					network_wakeup_notify();
 					if (terminal_fence *fence = find_terminal_fence_locked(
 						    durable_ready.back().pid);
 					    fence &&
@@ -218,20 +423,31 @@ void dispatcher_main()
 				++health.append_failures;
 				try
 				{
-					pending_append.push_front(std::move(snapshot));
+					if (quarantined)
+						pending_append.push_back(std::move(snapshot));
+					else
+						pending_append.push_front(std::move(snapshot));
 				}
 				catch (const std::bad_alloc &)
 				{
-					retained_bytes -= snapshot.encoded_size_bound;
+					// No durable copy exists. Keep the already-owned capture and
+					// its in-flight fence until it is archived, appended, or requeued.
+					retry_inflight = true;
 					++health.overloads;
 				}
 			}
-			append_inflight = false;
-			append_inflight_pid = 0;
+			if (!retry_inflight)
+			{
+				append_inflight = false;
+				append_inflight_pid = 0;
+				append_inflight_revision = 0;
+			}
 			update_depth_locked();
 		}
-		if (appended != player_save_journal_result::ok)
+		if (appended != player_save_journal_result::ok && !quarantine_preserved)
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		if (!retry_inflight)
+			snapshot = {};
 	}
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	health.dispatcher_running = false;
@@ -265,19 +481,286 @@ bool any_snapshot_is_retained_locked(int pid)
 	return false;
 }
 
+bool merge_quest_xp_receipts(player_snapshot *target, const player_snapshot &source)
+{
+	if (!target || source.quest_xp_receipts.empty())
+		return true;
+	if (source.death ||
+	    (!player_snapshot_is_death_request_schema(target->schema_version) &&
+	     target->schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
+	     target->schema_version != PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION &&
+	     target->schema_version != PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION &&
+	     target->schema_version != PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION))
+		return false;
+	size_t added = 0;
+	for (const auto &candidate : source.quest_xp_receipts)
+	{
+		auto found = std::find_if(
+			target->quest_xp_receipts.begin(), target->quest_xp_receipts.end(),
+			[&](const auto &existing)
+			{
+				return existing.offering_operation.bytes ==
+					       candidate.offering_operation.bytes &&
+				       existing.reward_index == candidate.reward_index;
+			});
+		if (found != target->quest_xp_receipts.end())
+		{
+			if (found->amount != candidate.amount)
+				return false;
+			continue;
+		}
+		++added;
+	}
+	if (!added)
+		return true;
+	const size_t schema_overhead =
+		target->schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION ? 8 :
+		(target->schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ||
+		 target->schema_version == PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION) ?
+										 4 :
+										 0;
+	if (target->quest_xp_receipts.size() + added > 64 ||
+	    target->encoded_size_bound > PLAYER_SNAPSHOT_MAX_BYTES ||
+	    schema_overhead > PLAYER_SNAPSHOT_MAX_BYTES - target->encoded_size_bound ||
+	    added > (PLAYER_SNAPSHOT_MAX_BYTES - target->encoded_size_bound - schema_overhead) / 24)
+		return false;
+	try
+	{
+		target->quest_xp_receipts.reserve(target->quest_xp_receipts.size() + added);
+		for (const auto &candidate : source.quest_xp_receipts)
+		{
+			const bool present = std::any_of(
+				target->quest_xp_receipts.begin(), target->quest_xp_receipts.end(),
+				[&](const auto &existing)
+				{
+					return existing.offering_operation.bytes ==
+						       candidate.offering_operation.bytes &&
+					       existing.reward_index == candidate.reward_index;
+				});
+			if (!present)
+				target->quest_xp_receipts.push_back(candidate);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (target->death && !player_snapshot_has_craft_receipt_schema(target->schema_version))
+		target->schema_version = PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION;
+	else if (target->schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION)
+		target->schema_version = PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION;
+	target->encoded_size_bound += schema_overhead + 24 * added;
+	return true;
+}
+
+bool merge_spell_effect_receipts(player_snapshot *target, const player_snapshot &source)
+{
+	if (!target || source.spell_effect_receipts.empty())
+		return true;
+	if (source.death ||
+	    (!player_snapshot_is_death_request_schema(target->schema_version) &&
+	     target->schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
+	     target->schema_version != PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION &&
+	     target->schema_version != PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION &&
+	     target->schema_version != PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION))
+		return false;
+	size_t added = 0;
+	for (const auto &candidate : source.spell_effect_receipts)
+	{
+		auto found = std::find_if(
+			target->spell_effect_receipts.begin(), target->spell_effect_receipts.end(),
+			[&](const auto &existing)
+			{ return existing.operation_id.bytes == candidate.operation_id.bytes; });
+		if (found != target->spell_effect_receipts.end())
+		{
+			if (found->effect_id != candidate.effect_id)
+				return false;
+			continue;
+		}
+		++added;
+	}
+	if (!added)
+		return true;
+	const size_t schema_overhead =
+		target->schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ? 8 :
+		target->schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION ||
+				target->schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION ?
+									   4 :
+									   0;
+	if (target->spell_effect_receipts.size() + added > PLAYER_SPELL_EFFECT_RECEIPT_MAX ||
+	    target->encoded_size_bound > PLAYER_SNAPSHOT_MAX_BYTES ||
+	    schema_overhead > PLAYER_SNAPSHOT_MAX_BYTES - target->encoded_size_bound ||
+	    added > (PLAYER_SNAPSHOT_MAX_BYTES - target->encoded_size_bound - schema_overhead) / 20)
+		return false;
+	try
+	{
+		target->spell_effect_receipts.reserve(target->spell_effect_receipts.size() + added);
+		for (const auto &candidate : source.spell_effect_receipts)
+		{
+			const bool present =
+				std::any_of(target->spell_effect_receipts.begin(),
+					    target->spell_effect_receipts.end(),
+					    [&](const auto &existing) {
+						    return existing.operation_id.bytes ==
+							   candidate.operation_id.bytes;
+					    });
+			if (!present)
+				target->spell_effect_receipts.push_back(candidate);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (!player_snapshot_has_craft_receipt_schema(target->schema_version))
+		target->schema_version =
+			target->death ?
+				(target->quest_xp_receipts.empty() ?
+					 PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION :
+					 PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION) :
+				PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION;
+	target->encoded_size_bound += schema_overhead + 20 * added;
+	return true;
+}
+
+bool merge_craft_receipts(player_snapshot *target, const player_snapshot &source)
+{
+	if (!target || source.craft_receipts.empty())
+		return true;
+	size_t added = 0;
+	for (const auto &candidate : source.craft_receipts)
+	{
+		const auto found = std::find_if(
+			target->craft_receipts.begin(), target->craft_receipts.end(),
+			[&](const auto &existing)
+			{ return existing.operation_id.bytes == candidate.operation_id.bytes; });
+		if (found != target->craft_receipts.end())
+		{
+			if (found->discipline != candidate.discipline ||
+			    found->experience != candidate.experience)
+				return false;
+		}
+		else
+			++added;
+	}
+	const size_t overhead =
+		player_snapshot_has_craft_receipt_schema(target->schema_version) ?
+			0 :
+			4 +
+				(player_snapshot_has_quest_receipt_schema(target->schema_version) ?
+					 0 :
+					 4) +
+				(player_snapshot_has_spell_receipt_schema(target->schema_version) ?
+					 0 :
+					 4);
+	if (target->craft_receipts.size() + added > PLAYER_CRAFT_RECEIPT_MAX ||
+	    (target->components & CRAFT_PROGRESSION_COMPONENTS) != CRAFT_PROGRESSION_COMPONENTS ||
+	    target->encoded_size_bound > PLAYER_SNAPSHOT_MAX_BYTES ||
+	    overhead > PLAYER_SNAPSHOT_MAX_BYTES - target->encoded_size_bound ||
+	    added > (PLAYER_SNAPSHOT_MAX_BYTES - target->encoded_size_bound - overhead) / 24)
+		return false;
+	try
+	{
+		target->craft_receipts.reserve(target->craft_receipts.size() + added);
+		for (const auto &candidate : source.craft_receipts)
+			if (std::none_of(target->craft_receipts.begin(),
+					 target->craft_receipts.end(),
+					 [&](const auto &existing) {
+						 return existing.operation_id.bytes ==
+							candidate.operation_id.bytes;
+					 }))
+				target->craft_receipts.push_back(candidate);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	target->schema_version =
+		target->death ? (target->death->conflict_evidence ?
+					 PLAYER_SNAPSHOT_DEATH_CRAFT_EVIDENCE_SCHEMA_VERSION :
+					 PLAYER_SNAPSHOT_DEATH_CRAFT_RECEIPT_SCHEMA_VERSION) :
+				PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
+	target->encoded_size_bound += overhead + 24 * added;
+	return true;
+}
+
 /** Admit or coalesce a snapshot within queue and byte limits before notifying the dispatcher. */
 player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 {
+	const player_revision_t literal_revision = snapshot.revision;
+	if (player_save_journal_pid_quarantined(snapshot.pid))
+		return player_save_pipeline_result::unavailable;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	if (!health.initialized || stop_requested ||
 	    find_target_save_login_fence_locked(snapshot.pid))
+		return player_save_pipeline_result::unavailable;
+	literal_inventory_checkpoint *literal = find_literal_inventory_locked(snapshot.pid);
+	if (literal)
+	{
+		std::vector<uint8_t> blob;
+		if (literal->held ||
+		    !literal_inventory_blob(snapshot, literal->token.root_uid, &blob) ||
+		    blob != literal->payload)
+			return player_save_pipeline_result::capture_failed;
+	}
+	if (terminal_fence *fence = find_terminal_fence_locked(snapshot.pid);
+	    fence && fence->death_pinned)
 		return player_save_pipeline_result::unavailable;
 	for (player_snapshot &queued : pending_append)
 	{
 		if (queued.pid != snapshot.pid)
 			continue;
 		if (snapshot.revision <= queued.revision)
+		{
+			for (const auto &receipt : snapshot.quest_xp_receipts)
+			{
+				const auto found = std::find_if(
+					queued.quest_xp_receipts.begin(),
+					queued.quest_xp_receipts.end(),
+					[&](const auto &pending)
+					{
+						return pending.offering_operation.bytes ==
+							       receipt.offering_operation.bytes &&
+						       pending.reward_index ==
+							       receipt.reward_index &&
+						       pending.amount == receipt.amount;
+					});
+				if (found == queued.quest_xp_receipts.end())
+					return player_save_pipeline_result::capture_failed;
+			}
+			for (const auto &receipt : snapshot.spell_effect_receipts)
+			{
+				const auto found = std::find_if(
+					queued.spell_effect_receipts.begin(),
+					queued.spell_effect_receipts.end(),
+					[&](const auto &pending)
+					{
+						return pending.operation_id.bytes ==
+							       receipt.operation_id.bytes &&
+						       pending.effect_id == receipt.effect_id;
+					});
+				if (found == queued.spell_effect_receipts.end())
+					return player_save_pipeline_result::capture_failed;
+			}
+			for (const auto &receipt : snapshot.craft_receipts)
+				if (std::none_of(
+					    queued.craft_receipts.begin(),
+					    queued.craft_receipts.end(),
+					    [&](const auto &pending)
+					    {
+						    return pending.operation_id.bytes ==
+								   receipt.operation_id.bytes &&
+							   pending.discipline ==
+								   receipt.discipline &&
+							   pending.experience == receipt.experience;
+					    }))
+					return player_save_pipeline_result::capture_failed;
 			return player_save_pipeline_result::coalesced;
+		}
+		if (!merge_quest_xp_receipts(&snapshot, queued) ||
+		    !merge_spell_effect_receipts(&snapshot, queued) ||
+		    !merge_craft_receipts(&snapshot, queued))
+			return player_save_pipeline_result::capture_failed;
 		if ((snapshot.components & queued.components) != queued.components)
 			return player_save_pipeline_result::capture_failed;
 		if (snapshot.encoded_size_bound >
@@ -289,11 +772,13 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 		retained_bytes =
 			retained_bytes - queued.encoded_size_bound + snapshot.encoded_size_bound;
 		queued = std::move(snapshot);
+		note_literal_enqueue_locked(literal, literal_revision);
 		++health.coalesced;
 		update_depth_locked();
 		return player_save_pipeline_result::coalesced;
 	}
-	if (pending_append.size() + durable_ready.size() >= PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS ||
+	if (pending_append.size() + durable_ready.size() + pinned_death_count_locked() >=
+		    PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS ||
 	    snapshot.encoded_size_bound > PLAYER_SAVE_PIPELINE_MAX_BYTES - retained_bytes)
 	{
 		++health.overloads;
@@ -310,6 +795,7 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 		++health.overloads;
 		return player_save_pipeline_result::overloaded;
 	}
+	note_literal_enqueue_locked(literal, literal_revision);
 	++health.captured;
 	update_depth_locked();
 	append_available.notify_one();
@@ -317,7 +803,7 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 }
 } // namespace
 
-bool player_save_pipeline_init(const char *journal_directory)
+bool player_save_pipeline_init(const char *journal_directory, void (*verify_resolved_recovery)())
 {
 	if (!journal_directory || journal_directory[0] != '/')
 		return false;
@@ -326,14 +812,18 @@ bool player_save_pipeline_init(const char *journal_directory)
 		if (health.initialized)
 			return false;
 	}
+	replay_gate.begin_replay();
 	if (!player_save_journal_init(journal_directory, PLAYER_SAVE_JOURNAL_MAX_BYTES))
 		return false;
+	if (verify_resolved_recovery)
+		verify_resolved_recovery();
 	if (!player_save_worker_init(selected_snapshot_apply(), nullptr))
 	{
 		player_save_journal_shutdown();
 		return false;
 	}
-	if (!player_save_worker_set_journal_hooks(nullptr, player_save_journal_worker_ack, nullptr))
+	if (!player_save_worker_set_journal_hooks(nullptr, player_save_journal_worker_ack, nullptr,
+						  player_save_journal_worker_terminal))
 	{
 		player_save_worker_shutdown();
 		player_save_journal_shutdown();
@@ -347,6 +837,7 @@ bool player_save_pipeline_init(const char *journal_directory)
 		accepting = true;
 		append_inflight = false;
 		append_inflight_pid = 0;
+		append_inflight_revision = 0;
 	}
 	try
 	{
@@ -368,6 +859,7 @@ void player_save_pipeline_shutdown(void)
 {
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		replay_gate.begin_replay();
 		stop_requested = true;
 		append_available.notify_all();
 	}
@@ -378,12 +870,15 @@ void player_save_pipeline_shutdown(void)
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	pending_append.clear();
 	durable_ready.clear();
-	terminal_fences.fill({});
+	for (terminal_fence &fence : terminal_fences)
+		clear_terminal_fence_locked(fence);
 	target_save_login_fences.fill({});
+	literal_inventory_checkpoints.fill({});
 	retained_bytes = 0;
 	accepting = false;
 	append_inflight = false;
 	append_inflight_pid = 0;
+	append_inflight_revision = 0;
 	health.initialized = false;
 	update_depth_locked();
 }
@@ -395,12 +890,17 @@ bool player_save_pipeline_mark(int pid, player_component_mask_t components)
 	 * delete container descendants or make an exact custody comparison impossible. */
 	if (components & (PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY))
 		components |= PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY;
+	if (player_save_journal_pid_quarantined(pid))
+		return false;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	if (!accepting)
 		return false;
 	if (find_target_save_login_fence_locked(pid))
 		return false;
-	const bool fenced = find_terminal_fence_locked(pid) != nullptr;
+	terminal_fence *existing_fence = find_terminal_fence_locked(pid);
+	if (existing_fence && existing_fence->death_pinned)
+		return false;
+	const bool fenced = existing_fence != nullptr;
 	player_revision_t revision = 0;
 	// Keep admission and the revision transition under the same pipeline lock
 	// as target-fence acquisition. Otherwise a save could mark dirty between
@@ -421,21 +921,93 @@ bool player_save_pipeline_mark(int pid, player_component_mask_t components)
 }
 
 /** Capture and enqueue pending player components with the supplied save intent and room. */
-player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int save_intent,
-								  int room_vnum)
+static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
+	P_char ch, int save_intent, int room_vnum, const player_quest_xp_receipt_snapshot *receipts,
+	size_t receipt_count,
+	const player_spell_effect_receipt_snapshot *spell_effect_receipt = nullptr)
 {
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0)
 		return player_save_pipeline_result::invalid;
+	if (player_save_journal_pid_quarantined(GET_PID(ch)))
+		return player_save_pipeline_result::unavailable;
 	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return player_save_pipeline_result::unavailable;
+	// Pending grants must publish before capturing their recipient inventory.
+	if (item_movement_transaction_player_creation_busy(ch) ||
+	    item_creation_grant_player_publication_pending(ch))
 		return player_save_pipeline_result::unavailable;
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		if (find_target_save_login_fence_locked(GET_PID(ch)))
 			return player_save_pipeline_result::unavailable;
+		if (terminal_fence *fence = find_terminal_fence_locked(GET_PID(ch));
+		    fence && fence->death_pinned)
+			return player_save_pipeline_result::unavailable;
 	}
+	uint64_t literal_root_uid = 0;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (auto *literal = find_literal_inventory_locked(GET_PID(ch)))
+		{
+			if (literal->held || literal->token.actor_runtime_id != ch->runtime_id)
+				return player_save_pipeline_result::unavailable;
+			literal_root_uid = literal->token.root_uid;
+		}
+	}
+	player_snapshot pending_effects;
+	player_component_mask_t required_components =
+		literal_root_uid ? LITERAL_INVENTORY_COMPONENTS : 0;
+	player_component_mask_t quest_components = 0;
+	if (!quest_reward_recovery_pending_save_receipts(
+		    GET_PID(ch), &pending_effects.quest_xp_receipts, &quest_components))
+		return player_save_pipeline_result::capture_failed;
+	required_components |= quest_components;
+	if (!spell_component_retirement_pending_save_receipts(
+		    GET_PID(ch), &pending_effects.spell_effect_receipts))
+		return player_save_pipeline_result::capture_failed;
+	if (!craft_progression_pending_save_receipts(GET_PID(ch), &pending_effects.craft_receipts))
+		return player_save_pipeline_result::capture_failed;
+	if (!pending_effects.craft_receipts.empty())
+		required_components |= CRAFT_PROGRESSION_COMPONENTS;
+	if (spell_effect_receipt)
+	{
+		try
+		{
+			const auto found = std::find_if(
+				pending_effects.spell_effect_receipts.begin(),
+				pending_effects.spell_effect_receipts.end(),
+				[&](const auto &existing) {
+					return existing.operation_id.bytes ==
+					       spell_effect_receipt->operation_id.bytes;
+				});
+			if (found != pending_effects.spell_effect_receipts.end())
+			{
+				if (found->effect_id != spell_effect_receipt->effect_id)
+					return player_save_pipeline_result::invalid;
+			}
+			else
+				pending_effects.spell_effect_receipts.push_back(
+					*spell_effect_receipt);
+		}
+		catch (const std::bad_alloc &)
+		{
+			return player_save_pipeline_result::capture_failed;
+		}
+	}
+	// Applied rewards/effects need their component boundary even when the first
+	// checkpoint never queued or this caller only dirtied another component.
 	player_revision_snapshot revision = {};
 	if (!player_revision_snapshot_copy(GET_PID(ch), &revision))
 		return player_save_pipeline_result::unavailable;
+	if (!pending_effects.spell_effect_receipts.empty())
+		required_components |= PLAYER_COMPONENT_AFFECTS;
+	const auto missing_components = required_components & ~revision.dirty_components;
+	if (missing_components)
+	{
+		if (!player_save_pipeline_mark(GET_PID(ch), missing_components) ||
+		    !player_revision_snapshot_copy(GET_PID(ch), &revision))
+			return player_save_pipeline_result::capture_failed;
+	}
 	if (!revision.dirty_components)
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
@@ -446,18 +1018,84 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
 			return player_save_pipeline_result::unchanged;
 		}
 	}
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (terminal_fence *fence = find_terminal_fence_locked(GET_PID(ch));
+		    fence && fence->death_pinned)
+			return player_save_pipeline_result::unavailable;
+	}
 	player_revision_t queued_revision = 0;
 	player_component_mask_t components = 0;
 	if (!player_revision_queue(GET_PID(ch), &queued_revision, &components))
 		return player_save_pipeline_result::capture_failed;
 	player_snapshot snapshot;
-	if (player_snapshot_capture(ch, queued_revision, components, save_intent, room_vnum,
-				    &snapshot) != player_snapshot_capture_result::ok)
+	const auto captured = literal_root_uid ?
+				      player_snapshot_capture_literal_inventory(
+					      ch, queued_revision, components, save_intent,
+					      room_vnum, literal_root_uid, &snapshot) :
+				      player_snapshot_capture(ch, queued_revision, components,
+							      save_intent, room_vnum, &snapshot);
+	if (captured != player_snapshot_capture_result::ok)
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		++health.capture_failures;
 		return player_save_pipeline_result::capture_failed;
 	}
+	if (receipt_count)
+	{
+		if (!receipts || receipt_count > 64 || snapshot.death ||
+		    snapshot.encoded_size_bound > PLAYER_SNAPSHOT_MAX_BYTES ||
+		    snapshot.encoded_size_bound > PLAYER_SNAPSHOT_MAX_BYTES - 4 ||
+		    receipt_count >
+			    (PLAYER_SNAPSHOT_MAX_BYTES - snapshot.encoded_size_bound - 4) / 24)
+			return player_save_pipeline_result::invalid;
+		for (size_t index = 0; index < receipt_count; ++index)
+		{
+			const auto &receipt = receipts[index];
+			const bool empty_operation =
+				std::all_of(receipt.offering_operation.bytes.begin(),
+					    receipt.offering_operation.bytes.end(),
+					    [](uint8_t byte) { return !byte; });
+			if (empty_operation || receipt.reward_index >= 64 || !receipt.amount)
+				return player_save_pipeline_result::invalid;
+			for (size_t prior = 0; prior < index; ++prior)
+				if (receipts[prior].offering_operation.bytes ==
+					    receipt.offering_operation.bytes &&
+				    receipts[prior].reward_index == receipt.reward_index)
+					return player_save_pipeline_result::invalid;
+		}
+		try
+		{
+			snapshot.quest_xp_receipts.assign(receipts, receipts + receipt_count);
+		}
+		catch (const std::bad_alloc &)
+		{
+			return player_save_pipeline_result::capture_failed;
+		}
+		snapshot.schema_version = PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION;
+		snapshot.encoded_size_bound += 4 + 24 * receipt_count;
+		std::vector<uint8_t> encoded;
+		if (player_snapshot_encode(snapshot, &encoded) != player_snapshot_codec_result::ok)
+			return player_save_pipeline_result::capture_failed;
+	}
+	if (!pending_effects.quest_xp_receipts.empty() ||
+	    !pending_effects.spell_effect_receipts.empty() ||
+	    !pending_effects.craft_receipts.empty())
+	{
+		if (!merge_quest_xp_receipts(&snapshot, pending_effects) ||
+		    !merge_spell_effect_receipts(&snapshot, pending_effects) ||
+		    !merge_craft_receipts(&snapshot, pending_effects))
+			return player_save_pipeline_result::capture_failed;
+		std::vector<uint8_t> encoded;
+		if (player_snapshot_encode(snapshot, &encoded) != player_snapshot_codec_result::ok)
+			return player_save_pipeline_result::capture_failed;
+	}
+	persistence_trace_event capture_trace;
+	capture_trace.stage = persistence_trace_stage::save_capture;
+	capture_trace.pid = snapshot.pid;
+	capture_trace.revision = snapshot.revision;
+	capture_trace.components = snapshot.components;
+	persistence_trace_record(capture_trace);
 	if (trace_player_saves())
 		logit(LOG_STATUS,
 		      "PLAYER SAVE TRACE: stage=capture mono_us=%llu pid=%d revision=%llu components=%llu intent=%d room=%d",
@@ -467,6 +1105,267 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
 	return enqueue_snapshot(std::move(snapshot));
 }
 
+namespace
+{
+bool literal_actor_matches(const player_literal_inventory_token &token, P_char actor)
+{
+	return actor && IS_PC(actor) && actor->only.pc && GET_PID(actor) == token.pid &&
+	       actor->runtime_id && actor->runtime_id == token.actor_runtime_id &&
+	       find_character_by_runtime_id(token.actor_runtime_id) == actor && token.root_uid &&
+	       token.generation && !IS_SET(actor->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED);
+}
+}
+
+player_literal_inventory_state
+player_save_pipeline_literal_inventory_begin(P_char actor, P_obj root, int room_vnum,
+					     player_literal_inventory_token *token_out)
+{
+#ifdef __NO_MYSQL__
+	(void)actor;
+	(void)root;
+	(void)room_vnum;
+	(void)token_out;
+	return player_literal_inventory_state::refused;
+#else
+	if (!actor || !root || !token_out || !IS_PC(actor) || !actor->only.pc ||
+	    GET_PID(actor) <= 0 || !actor->runtime_id ||
+	    find_character_by_runtime_id(actor->runtime_id) != actor || !root->obj_uid ||
+	    !OBJ_CARRIED_BY(root, actor) ||
+	    IS_SET(actor->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED) ||
+	    player_save_journal_pid_quarantined(GET_PID(actor)))
+		return player_literal_inventory_state::refused;
+	player_snapshot captured;
+	std::vector<uint8_t> blob;
+	if (player_snapshot_capture_literal_inventory(
+		    actor, 1, LITERAL_INVENTORY_COMPONENTS, RENT_CRASH, room_vnum, root->obj_uid,
+		    &captured) != player_snapshot_capture_result::ok ||
+	    !literal_inventory_blob(captured, root->obj_uid, &blob))
+		return player_literal_inventory_state::refused;
+	player_literal_inventory_token token;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (!health.initialized || stop_requested || !accepting ||
+		    !health.replay_complete || health.replay_blocked ||
+		    find_target_save_login_fence_locked(GET_PID(actor)) ||
+		    find_terminal_fence_locked(GET_PID(actor)))
+			return player_literal_inventory_state::refused;
+		if (auto *existing = find_literal_inventory_locked(GET_PID(actor)))
+		{
+			if (!literal_actor_matches(existing->token, actor) ||
+			    existing->token.root_uid != root->obj_uid ||
+			    existing->payload != blob || existing->held)
+				return player_literal_inventory_state::refused;
+			*token_out = existing->token;
+			return player_literal_inventory_state::pending;
+		}
+		if (literal_inventory_generation == std::numeric_limits<uint64_t>::max())
+			return player_literal_inventory_state::refused;
+		literal_inventory_checkpoint *slot = nullptr;
+		for (auto &candidate : literal_inventory_checkpoints)
+			if (!candidate.token.pid)
+			{
+				slot = &candidate;
+				break;
+			}
+		if (!slot || !literal_inventory_capacity_locked(blob.size()))
+			return player_literal_inventory_state::refused;
+		token = { GET_PID(actor), actor->runtime_id, root->obj_uid,
+			  ++literal_inventory_generation };
+		slot->token = token;
+		slot->payload = std::move(blob);
+	}
+	const auto queued = player_save_pipeline_request(actor, LITERAL_INVENTORY_COMPONENTS,
+							 RENT_CRASH, room_vnum);
+	if (queued != player_save_pipeline_result::queued &&
+	    queued != player_save_pipeline_result::coalesced)
+	{
+		player_save_pipeline_literal_inventory_cancel(token);
+		return player_literal_inventory_state::refused;
+	}
+	*token_out = token;
+	return player_literal_inventory_state::pending;
+#endif
+}
+
+player_literal_inventory_state
+player_save_pipeline_literal_inventory_poll(const player_literal_inventory_token &token,
+					    P_char actor)
+{
+#ifdef __NO_MYSQL__
+	(void)token;
+	(void)actor;
+	return player_literal_inventory_state::refused;
+#else
+	if (!literal_actor_matches(token, actor) || player_save_journal_pid_quarantined(token.pid))
+	{
+		player_save_pipeline_literal_inventory_cancel(token);
+		return player_literal_inventory_state::refused;
+	}
+	player_snapshot captured;
+	std::vector<uint8_t> blob;
+	if (player_snapshot_capture_literal_inventory(
+		    actor, 1, LITERAL_INVENTORY_COMPONENTS, RENT_CRASH, NOWHERE, token.root_uid,
+		    &captured) != player_snapshot_capture_result::ok ||
+	    !literal_inventory_blob(captured, token.root_uid, &blob))
+	{
+		player_save_pipeline_literal_inventory_cancel(token);
+		return player_literal_inventory_state::refused;
+	}
+	if (player_save_worker_pid_pending(token.pid))
+		return player_literal_inventory_state::pending;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	auto *literal = find_literal_inventory_locked(token.pid);
+	if (!literal || literal->token != token || literal->held)
+		return player_literal_inventory_state::refused;
+	if (literal->payload != blob)
+	{
+		*literal = {};
+		return player_literal_inventory_state::refused;
+	}
+	player_revision_snapshot revision = {};
+	if (!player_revision_snapshot_copy(token.pid, &revision) || revision.overflowed)
+		return player_literal_inventory_state::refused;
+	if (!literal->captured_revision ||
+	    literal->acknowledged_revision != literal->captured_revision ||
+	    revision.current_revision != literal->captured_revision ||
+	    revision.acknowledged_revision != literal->captured_revision ||
+	    revision.dirty_components || revision.unacknowledged_components ||
+	    revision.queued_components || revision.inflight_components ||
+	    append_inflight_pid == token.pid || any_snapshot_is_retained_locked(token.pid))
+		return player_literal_inventory_state::pending;
+	return player_literal_inventory_state::database_acknowledged;
+#endif
+}
+
+bool player_save_pipeline_literal_inventory_hold(const player_literal_inventory_token &token,
+						 const critical_operation_id &operation_id)
+{
+#ifdef __NO_MYSQL__
+	(void)token;
+	(void)operation_id;
+	return false;
+#else
+	if (std::all_of(operation_id.bytes.begin(), operation_id.bytes.end(),
+			[](uint8_t byte) { return !byte; }) ||
+	    player_save_pipeline_literal_inventory_poll(
+		    token, find_character_by_runtime_id(token.actor_runtime_id)) !=
+		    player_literal_inventory_state::database_acknowledged ||
+	    player_save_worker_pid_pending(token.pid))
+		return false;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	auto *literal = find_literal_inventory_locked(token.pid);
+	player_revision_snapshot revision = {};
+	if (!health.initialized || stop_requested || !accepting || !health.replay_complete ||
+	    health.replay_blocked || find_terminal_fence_locked(token.pid) ||
+	    find_target_save_login_fence_locked(token.pid) || !literal || literal->token != token ||
+	    literal->held || !literal->captured_revision ||
+	    literal->acknowledged_revision != literal->captured_revision ||
+	    !player_revision_snapshot_copy(token.pid, &revision) || revision.overflowed ||
+	    revision.current_revision != literal->captured_revision ||
+	    revision.acknowledged_revision != literal->captured_revision ||
+	    revision.dirty_components || revision.unacknowledged_components ||
+	    revision.queued_components || revision.inflight_components ||
+	    append_inflight_pid == token.pid || any_snapshot_is_retained_locked(token.pid))
+		return false;
+	literal->operation_id = operation_id;
+	literal->held = true;
+	return true;
+#endif
+}
+
+bool player_save_pipeline_literal_inventory_release(const player_literal_inventory_token &token,
+						    const critical_operation_id &operation_id)
+{
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	auto *literal = find_literal_inventory_locked(token.pid);
+	if (!literal || literal->token != token || !literal->held || literal->restored_sql_drop ||
+	    literal->operation_id.bytes != operation_id.bytes)
+		return false;
+	*literal = {};
+	return true;
+}
+
+bool player_save_pipeline_literal_inventory_cancel(const player_literal_inventory_token &token)
+{
+	if (token.pid <= 0 || !token.actor_runtime_id || !token.root_uid || !token.generation)
+		return false;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	auto *literal = find_literal_inventory_locked(token.pid);
+	if (!literal || literal->token != token || literal->held)
+		return false;
+	*literal = {};
+	return true;
+}
+
+bool player_save_pipeline_restore_sql_drop_obligation(const critical_command &command)
+{
+#ifdef __NO_MYSQL__
+	(void)command;
+	return false;
+#else
+	try
+	{
+		if (!command.publication_required || !critical_command_envelope_valid(command) ||
+		    !item_transfer_accounting_command_supported(command))
+			return false;
+		item_transfer_payload payload = {};
+		sql_room_item_payload_batch captured;
+		std::vector<uint8_t> frozen;
+		if (!item_transfer_command_decode_payload(command, &payload) ||
+		    !sql_room_item_payload_capture(payload, &captured) ||
+		    critical_command_encode(command, &frozen) != critical_command_codec_result::ok)
+			return false;
+		const int pid = static_cast<int>(payload.from_owner.id);
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (!health.initialized || stop_requested)
+			return false;
+		literal_inventory_checkpoint *slot = nullptr;
+		for (auto &candidate : literal_inventory_checkpoints)
+		{
+			if (candidate.token.pid == pid ||
+			    (candidate.held &&
+			     candidate.operation_id.bytes == command.operation_id.bytes))
+				return candidate.restored_sql_drop && candidate.held &&
+				       candidate.token.pid == pid &&
+				       candidate.token.root_uid == payload.selected_item_uid &&
+				       candidate.operation_id.bytes == command.operation_id.bytes &&
+				       candidate.payload == frozen;
+			if (!candidate.token.pid && !slot)
+				slot = &candidate;
+		}
+		if (!slot || !literal_inventory_capacity_locked(frozen.size()))
+			return false;
+		slot->token.pid = pid;
+		slot->token.root_uid = payload.selected_item_uid;
+		slot->payload = std::move(frozen);
+		slot->operation_id = command.operation_id;
+		slot->held = true;
+		slot->restored_sql_drop = true;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+#endif
+}
+
+void player_save_pipeline_sql_drop_publication_acknowledged(
+	const critical_operation_id &operation_id) noexcept
+{
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	for (auto &checkpoint : literal_inventory_checkpoints)
+		if (checkpoint.token.pid && checkpoint.held &&
+		    checkpoint.operation_id.bytes == operation_id.bytes)
+			checkpoint = {};
+}
+
+player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int save_intent,
+								  int room_vnum)
+{
+	return checkpoint_dirty_with_quest_xp(ch, save_intent, room_vnum, nullptr, 0);
+}
+
 /** Mark requested components and capture a checkpoint with the supplied intent and room. */
 player_save_pipeline_result player_save_pipeline_request(P_char ch,
 							 player_component_mask_t components,
@@ -474,41 +1373,139 @@ player_save_pipeline_result player_save_pipeline_request(P_char ch,
 {
 	if (ch && IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
 		return player_save_pipeline_result::unavailable;
+	if (ch && player_save_journal_pid_quarantined(GET_PID(ch)))
+		return player_save_pipeline_result::unavailable;
 	if (!ch || IS_NPC(ch) || !player_save_pipeline_mark(GET_PID(ch), components))
 		return player_save_pipeline_result::invalid;
 	return player_save_pipeline_checkpoint_dirty(ch, save_intent, room_vnum);
 }
 
+player_save_pipeline_result
+player_save_pipeline_request_quest_xp(P_char ch, player_component_mask_t components,
+				      const player_quest_xp_receipt_snapshot *receipts,
+				      size_t receipt_count, int room_vnum)
+{
+	if (!ch || IS_NPC(ch) || !receipts || !receipt_count || receipt_count > 64 ||
+	    !(components & PLAYER_COMPONENT_STATUS) ||
+	    (components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) ||
+	    IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return player_save_pipeline_result::invalid;
+	if (!player_save_pipeline_mark(GET_PID(ch), components))
+		return player_save_pipeline_result::unavailable;
+	return checkpoint_dirty_with_quest_xp(ch, RENT_CRASH, room_vnum, receipts, receipt_count);
+}
+
+player_save_pipeline_result
+player_save_pipeline_request_spell_effect(P_char ch, player_component_mask_t components,
+					  const player_spell_effect_receipt_snapshot *receipt,
+					  int room_vnum)
+{
+	if (!ch || IS_NPC(ch) || !receipt || !(components & PLAYER_COMPONENT_AFFECTS) ||
+	    (components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) ||
+	    IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return player_save_pipeline_result::invalid;
+	if (!player_save_pipeline_mark(GET_PID(ch), components))
+		return player_save_pipeline_result::unavailable;
+	return checkpoint_dirty_with_quest_xp(ch, RENT_CRASH, room_vnum, nullptr, 0, receipt);
+}
+
 namespace
 {
 /** Reserve this player's durability fence and mark the revision the caller will wait on. */
-bool begin_terminal_fence(int pid, player_revision_t *revision)
+bool begin_terminal_fence(int pid, player_revision_t *revision, bool pin_death = false)
 {
-	{
-		std::lock_guard<std::mutex> lock(pipeline_mutex);
-		if (!health.initialized || find_target_save_login_fence_locked(pid))
-			return false;
-		if (!allocate_terminal_fence_locked(pid))
-			return false;
-	}
-	// Every terminal call captures the caller's current intent and room. A
-	// previous timeout may have been ACKed by a nonterminal retry; its fence
-	// cannot authorize removal using the old snapshot or logout intent.
-	if (!player_revision_mark(pid, PLAYER_CHECKPOINT_COMPONENT_ALL, revision))
-	{
-		std::lock_guard<std::mutex> lock(pipeline_mutex);
-		if (terminal_fence *fence = find_terminal_fence_locked(pid))
-			*fence = {};
-		return false;
-	}
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
-	terminal_fence *fence = find_terminal_fence_locked(pid);
+	if (!health.initialized || find_target_save_login_fence_locked(pid))
+		return false;
+	if (auto *literal = find_literal_inventory_locked(pid))
+	{
+		if (literal->held)
+			return false;
+		// No operation was admitted. A terminal intent supersedes this capture
+		// request, while its already queued immutable saves retain normal order.
+		*literal = {};
+	}
+	if (terminal_fence *existing = find_terminal_fence_locked(pid);
+	    existing && existing->death_pinned)
+		return false;
+	terminal_fence *fence = allocate_terminal_fence_locked(pid);
 	if (!fence)
 		return false;
-	*fence = { pid, *revision, false, false };
+	// Ordinary terminal intents deliberately take a fresh revision on every
+	// call. Death retries use the separate pinned request path below.
+	if (!player_revision_mark(pid, PLAYER_CHECKPOINT_COMPONENT_ALL, revision))
+	{
+		clear_terminal_fence_locked(*fence);
+		return false;
+	}
+	if (pin_death && !player_revision_pin_terminal_death(pid, *revision))
+	{
+		clear_terminal_fence_locked(*fence);
+		return false;
+	}
+	fence->pid = pid;
+	fence->revision = *revision;
+	fence->journaled = false;
+	fence->acknowledged = false;
+	fence->death_pinned = pin_death;
 	return true;
 }
 
+bool retain_and_enqueue_death_snapshot(player_snapshot snapshot, uint64_t corpse_uid,
+				       uint64_t wallet_pile_uid,
+				       const critical_operation_id &operation_id)
+{
+	const size_t snapshot_bytes = snapshot.encoded_size_bound;
+	player_snapshot pinned_copy;
+	try
+	{
+		pinned_copy = snapshot;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	terminal_fence *fence = find_terminal_fence_locked(snapshot.pid);
+	if (auto *literal = find_literal_inventory_locked(snapshot.pid); literal && literal->held)
+		return false;
+	if (!health.initialized || stop_requested || !fence || !fence->death_pinned ||
+	    fence->revision != snapshot.revision || fence->death_snapshot ||
+	    !player_snapshot_is_death_request_schema(snapshot.schema_version) || !snapshot.death ||
+	    snapshot.death->operation_id.bytes != operation_id.bytes ||
+	    snapshot.death->wallet_pile_uid != wallet_pile_uid || snapshot.death->corpse.empty() ||
+	    snapshot.death->corpse.front().object_uid != corpse_uid)
+		return false;
+	if (pending_append.size() + durable_ready.size() + pinned_death_count_locked() >=
+		    PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS ||
+	    retained_bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
+	    snapshot_bytes > (PLAYER_SAVE_PIPELINE_MAX_BYTES - retained_bytes) / 2)
+	{
+		++health.overloads;
+		return false;
+	}
+	try
+	{
+		pending_append.push_back(std::move(snapshot));
+	}
+	catch (const std::bad_alloc &)
+	{
+		++health.overloads;
+		return false;
+	}
+	fence->corpse_uid = corpse_uid;
+	fence->operation_id = operation_id;
+	fence->wallet_pile_uid = pinned_copy.death->wallet_pile_uid;
+	fence->death_snapshot.emplace(std::move(pinned_copy));
+	retained_bytes += snapshot_bytes * 2;
+	++health.captured;
+	update_depth_locked();
+	append_available.notify_one();
+	return true;
+}
+
+bool requeue_pinned_death(int pid, uint64_t corpse_uid);
 player_save_terminal_result await_terminal_fence(int pid, player_revision_t revision,
 						 uint64_t timeout_msec, bool allow_journal_handoff);
 } // namespace
@@ -520,11 +1517,13 @@ player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_in
 {
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0 || !timeout_msec)
 		return player_save_terminal_result::invalid;
+	if (player_save_journal_pid_quarantined(GET_PID(ch)))
+		return player_save_terminal_result::unavailable;
 	if (IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
 		return player_save_terminal_result::unavailable;
 	const int pid = GET_PID(ch);
 	player_revision_t revision = 0;
-	if (!begin_terminal_fence(pid, &revision))
+	if (!begin_terminal_fence(pid, &revision, false))
 		return player_save_terminal_result::unavailable;
 	const auto checkpoint = player_save_pipeline_checkpoint_dirty(ch, save_intent, room_vnum);
 	if (trace_player_saves())
@@ -536,14 +1535,22 @@ player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_in
 	return await_terminal_fence(pid, revision, timeout_msec, allow_journal_handoff);
 }
 
-/** Record an immutable death disposition and wait for it to become durable. */
+/** Record one immutable death disposition; retries resume its exact pinned bytes. */
 player_save_terminal_result
 player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
 				    const critical_operation_id &operation_id, int room_vnum,
 				    uint64_t timeout_msec, bool allow_journal_handoff)
 {
-	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0 || !corpse || !timeout_msec)
+	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0 || !timeout_msec)
 		return player_save_terminal_result::invalid;
+	const player_save_terminal_result resumed =
+		player_save_pipeline_terminal_death_resume(ch, 0, timeout_msec);
+	if (resumed != player_save_terminal_result::not_pending)
+		return resumed;
+	if (!corpse)
+		return player_save_terminal_result::invalid;
+	if (player_save_journal_pid_quarantined(GET_PID(ch)))
+		return player_save_terminal_result::unavailable;
 	// A payload-gap load keeps its valid item graph read-only. Its only safe
 	// terminal write is the immutable death disposition, which records that
 	// graph and quarantines matching durable custody. Every other degraded load
@@ -553,10 +1560,8 @@ player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
 		return player_save_terminal_result::unavailable;
 	const int pid = GET_PID(ch);
 	player_revision_t revision = 0;
-	if (!begin_terminal_fence(pid, &revision))
+	if (!begin_terminal_fence(pid, &revision, true))
 		return player_save_terminal_result::unavailable;
-	// Only an enqueued snapshot may retain a fence for an asynchronous ACK.
-	// Capture/queue refusal must release capacity for other terminal saves.
 	struct unqueued_fence_guard
 	{
 		int pid;
@@ -567,40 +1572,173 @@ player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
 			{
 				std::lock_guard<std::mutex> lock(pipeline_mutex);
 				if (terminal_fence *fence = find_terminal_fence_locked(pid))
-					*fence = {};
+					clear_terminal_fence_locked(*fence);
 			}
 		}
 	} guard{ pid };
 	player_snapshot snapshot;
 	if (player_death_snapshot_capture(ch, corpse, wallet_pile, operation_id, revision,
 					  room_vnum, {},
-					  &snapshot) != player_snapshot_capture_result::ok)
+					  &snapshot) != player_snapshot_capture_result::ok ||
+	    !player_snapshot_is_death_request_schema(snapshot.schema_version) || !snapshot.death)
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		++health.capture_failures;
 		return player_save_terminal_result::invalid;
 	}
+	player_snapshot pending_effects;
+	player_component_mask_t required_components = 0;
+	if (!quest_reward_recovery_pending_save_receipts(pid, &pending_effects.quest_xp_receipts,
+							 &required_components) ||
+	    !merge_quest_xp_receipts(&snapshot, pending_effects) ||
+	    !spell_component_retirement_pending_save_receipts(
+		    pid, &pending_effects.spell_effect_receipts) ||
+	    !merge_spell_effect_receipts(&snapshot, pending_effects) ||
+	    !craft_progression_pending_save_receipts(pid, &pending_effects.craft_receipts) ||
+	    !merge_craft_receipts(&snapshot, pending_effects))
+		return player_save_terminal_result::unavailable;
+	std::vector<uint8_t> encoded;
+	if (player_snapshot_encode(snapshot, &encoded) != player_snapshot_codec_result::ok)
+		return player_save_terminal_result::invalid;
 	player_revision_t queued_revision = 0;
 	player_component_mask_t components = 0;
 	if (!player_revision_queue(pid, &queued_revision, &components) ||
 	    queued_revision != revision || components != snapshot.components)
 		return player_save_terminal_result::unavailable;
-	const auto queued = enqueue_snapshot(std::move(snapshot));
-	if (queued != player_save_pipeline_result::queued &&
-	    queued != player_save_pipeline_result::coalesced)
+	const uint64_t wallet_pile_uid = wallet_pile ? wallet_pile->obj_uid : 0;
+	if (!retain_and_enqueue_death_snapshot(std::move(snapshot), corpse->obj_uid,
+					       wallet_pile_uid, operation_id))
 		return player_save_terminal_result::unavailable;
 	guard.queued = true;
+	char correlation[33] = {};
+	death_recovery_correlation((static_cast<uint64_t>(pid) << 32) |
+					   static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]),
+				   correlation);
 	if (trace_player_saves())
 		logit(LOG_STATUS,
-		      "PLAYER SAVE TRACE: stage=terminal_death_begin mono_us=%llu pid=%d revision=%llu room=%d timeout_ms=%llu journal_allowed=%d",
-		      (unsigned long long)persistence_observability_now_usec(), pid,
-		      (unsigned long long)revision, room_vnum, (unsigned long long)timeout_msec,
-		      allow_journal_handoff);
-	return await_terminal_fence(pid, revision, timeout_msec, allow_journal_handoff);
+		      "PLAYER SAVE TRACE: correlation=%s stage=terminal_death_begin mono_us=%llu pid=%d revision=%llu room=%d timeout_ms=%llu journal_allowed=0",
+		      correlation, (unsigned long long)persistence_observability_now_usec(), pid,
+		      (unsigned long long)revision, room_vnum, (unsigned long long)timeout_msec);
+	(void)allow_journal_handoff;
+	return await_terminal_fence(pid, revision, timeout_msec, false);
+}
+
+player_save_terminal_result
+player_save_pipeline_terminal_death_resume(P_char ch, uint64_t corpse_uid, uint64_t timeout_msec)
+{
+	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0 || !timeout_msec)
+		return player_save_terminal_result::invalid;
+	const int pid = GET_PID(ch);
+	player_revision_t revision = 0;
+	bool acknowledged = false;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		terminal_fence *fence = find_terminal_fence_locked(pid);
+		if (!fence || !fence->death_pinned)
+			return player_save_terminal_result::not_pending;
+		if ((corpse_uid && corpse_uid != fence->corpse_uid) ||
+		    !death_snapshot_identity_matches(*fence))
+			return player_save_terminal_result::unavailable;
+		revision = fence->revision;
+		acknowledged = fence->acknowledged;
+	}
+	if (!acknowledged && !requeue_pinned_death(pid, corpse_uid))
+		return player_save_terminal_result::unavailable;
+	return await_terminal_fence(pid, revision, timeout_msec, false);
 }
 
 namespace
 {
+/** Requeue only the pinned immutable bytes after the worker has released a failed slot. */
+bool requeue_pinned_death(int pid, uint64_t corpse_uid)
+{
+	player_snapshot retry_snapshot;
+	player_revision_t revision = 0;
+	size_t snapshot_bytes = 0;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		terminal_fence *fence = find_terminal_fence_locked(pid);
+		if (!fence || !fence->death_pinned ||
+		    (corpse_uid && corpse_uid != fence->corpse_uid) ||
+		    !death_snapshot_identity_matches(*fence))
+			return false;
+		if (fence->acknowledged || snapshot_is_retained_locked(pid, fence->revision) ||
+		    (append_inflight_pid == pid && append_inflight_revision == fence->revision))
+			return true;
+		revision = fence->revision;
+		snapshot_bytes = fence->death_snapshot->encoded_size_bound;
+		try
+		{
+			retry_snapshot = *fence->death_snapshot;
+		}
+		catch (const std::bad_alloc &)
+		{
+			++health.overloads;
+			return false;
+		}
+	}
+	if (player_save_worker_pid_pending(pid))
+		return true;
+	player_revision_snapshot current = {};
+	if (!player_revision_snapshot_copy(pid, &current) || current.current_revision != revision ||
+	    current.queued_revision != revision ||
+	    current.queued_components != retry_snapshot.components || current.inflight_components)
+		return false;
+
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	terminal_fence *fence = find_terminal_fence_locked(pid);
+	if (!fence || !fence->death_pinned || fence->revision != revision ||
+	    !death_snapshot_identity_matches(*fence))
+		return false;
+	if (fence->acknowledged || snapshot_is_retained_locked(pid, revision) ||
+	    (append_inflight_pid == pid && append_inflight_revision == revision))
+		return true;
+	if (pending_append.size() + durable_ready.size() + pinned_death_count_locked() >=
+		    PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS ||
+	    retained_bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
+	    snapshot_bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES - retained_bytes)
+	{
+		++health.overloads;
+		return false;
+	}
+	try
+	{
+		pending_append.push_back(std::move(retry_snapshot));
+	}
+	catch (const std::bad_alloc &)
+	{
+		++health.overloads;
+		return false;
+	}
+	retained_bytes += snapshot_bytes;
+	++health.terminal_death_requeues;
+	update_depth_locked();
+	append_available.notify_one();
+	return true;
+}
+
+bool acknowledge_terminal_fence_completion_locked(const player_save_completion &completion)
+{
+	terminal_fence *fence = find_terminal_fence_locked(completion.pid);
+	if (!fence || fence->revision != completion.revision)
+		return false;
+	const bool applied = completion.outcome == player_save_apply_outcome::applied ||
+			     completion.outcome == player_save_apply_outcome::already_applied;
+	if (fence->death_pinned)
+	{
+		if (!applied || completion.durable_revision != fence->revision ||
+		    !death_snapshot_identity_matches(*fence) ||
+		    completion.components != fence->death_snapshot->components)
+			return false;
+		fence->acknowledged = true;
+		return true;
+	}
+	if ((applied || completion.outcome == player_save_apply_outcome::stale_revision) &&
+	    completion.durable_revision >= fence->revision)
+		fence->acknowledged = true;
+	return fence->acknowledged;
+}
+
 /** Pump the pipeline until this player revision is durable or the deadline passes. */
 player_save_terminal_result await_terminal_fence(int pid, player_revision_t revision,
 						 uint64_t timeout_msec, bool allow_journal_handoff)
@@ -618,13 +1756,13 @@ player_save_terminal_result await_terminal_fence(int pid, player_revision_t revi
 			if (fence->acknowledged)
 			{
 				++health.terminal_database_acks;
-				*fence = {};
+				clear_terminal_fence_locked(*fence);
 				return player_save_terminal_result::database_acknowledged;
 			}
-			if (allow_journal_handoff && fence->journaled)
+			if (!fence->death_pinned && allow_journal_handoff && fence->journaled)
 			{
 				++health.terminal_journal_handoffs;
-				*fence = {};
+				clear_terminal_fence_locked(*fence);
 				return player_save_terminal_result::journal_durable;
 			}
 		}
@@ -650,6 +1788,12 @@ player_save_terminal_result await_terminal_fence(int pid, player_revision_t revi
 		      (unsigned long long)health.durable_ready,
 		      (unsigned long long)health.append_failures);
 	}
+	persistence_trace_event timeout_trace;
+	timeout_trace.stage = persistence_trace_stage::save_timeout;
+	timeout_trace.pid = pid;
+	timeout_trace.revision = revision;
+	timeout_trace.incident = true;
+	persistence_trace_record(timeout_trace);
 	++health.terminal_timeouts;
 	return player_save_terminal_result::timed_out;
 }
@@ -668,6 +1812,14 @@ void player_save_pipeline_pulse(void)
 		player_save_worker_pulse(completions, PLAYER_SAVE_PIPELINE_PULSE_BUDGET);
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		for (auto &literal : literal_inventory_checkpoints)
+			if (literal.token.pid && !literal.held)
+			{
+				P_char actor = find_character_by_runtime_id(
+					literal.token.actor_runtime_id);
+				if (!literal_actor_matches(literal.token, actor))
+					literal = {};
+			}
 		health.completions += completed;
 		for (size_t index = 0; index < completed; ++index)
 		{
@@ -679,27 +1831,32 @@ void player_save_pipeline_pulse(void)
 			{
 				const auto &completion = completions[index];
 				logit(LOG_STATUS,
-				      "PLAYER SAVE TRACE: stage=completion mono_us=%llu pid=%d revision=%llu components=%llu outcome=%u durable=%llu error=%u retries=%u queued_us=%llu started_us=%llu completed_us=%llu",
+				      "PLAYER SAVE TRACE: stage=completion mono_us=%llu pid=%d revision=%llu components=%llu outcome=%u durable=%llu error=%u custody_diagnosis=%s retries=%u queued_us=%llu started_us=%llu completed_us=%llu",
 				      (unsigned long long)persistence_observability_now_usec(),
 				      completion.pid, (unsigned long long)completion.revision,
 				      (unsigned long long)completion.components,
 				      (unsigned)completion.outcome,
 				      (unsigned long long)completion.durable_revision,
-				      completion.error_code, completion.retry_count,
+				      completion.error_code,
+				      player_save_custody_diagnosis_name(
+					      completion.custody_diagnosis),
+				      completion.retry_count,
 				      (unsigned long long)completion.queued_at_usec,
 				      (unsigned long long)completion.started_at_usec,
 				      (unsigned long long)completion.completed_at_usec);
 			}
-			if (terminal_fence *fence =
-				    find_terminal_fence_locked(completions[index].pid);
-			    fence && fence->revision == completions[index].revision &&
-			    (completions[index].outcome == player_save_apply_outcome::applied ||
-			     completions[index].outcome ==
-				     player_save_apply_outcome::already_applied ||
-			     completions[index].outcome ==
-				     player_save_apply_outcome::stale_revision) &&
-			    completions[index].durable_revision >= fence->revision)
-				fence->acknowledged = true;
+			(void)acknowledge_terminal_fence_completion_locked(completions[index]);
+			const auto &completion = completions[index];
+			if (auto *literal = find_literal_inventory_locked(completion.pid);
+			    literal && !literal->held &&
+			    literal->captured_revision == completion.revision &&
+			    completion.durable_revision == completion.revision &&
+			    !completion.error_code &&
+			    (completion.components & LITERAL_INVENTORY_COMPONENTS) ==
+				    LITERAL_INVENTORY_COMPONENTS &&
+			    (completion.outcome == player_save_apply_outcome::applied ||
+			     completion.outcome == player_save_apply_outcome::already_applied))
+				literal->acknowledged_revision = completion.revision;
 			// The worker only ever UPDATEs player_data. A missing row means the
 			// character never got its baseline INSERT, and every further async
 			// save would fail the same way; record it for the sync fallback.
@@ -721,6 +1878,37 @@ void player_save_pipeline_pulse(void)
 			}
 		}
 	}
+	for (size_t index = 0; index < completed; ++index)
+	{
+		if (craft_progression_hooks.saved)
+		{
+			if (!completions[index].craft_receipts.empty())
+				craft_progression_hooks.saved(
+					completions[index].pid, true,
+					completions[index].craft_receipts.data(),
+					completions[index].craft_receipts.size());
+			if (!completions[index].failed_craft_receipts.empty())
+				craft_progression_hooks.saved(
+					completions[index].pid, false,
+					completions[index].failed_craft_receipts.data(),
+					completions[index].failed_craft_receipts.size());
+		}
+		if (!completions[index].quest_xp_receipts.empty())
+			quest_reward_recovery_save_acknowledged(
+				completions[index].pid, completions[index].revision,
+				completions[index].quest_xp_receipts.data(),
+				completions[index].quest_xp_receipts.size());
+		if (!completions[index].spell_effect_receipts.empty())
+			spell_component_retirement_save_completed(
+				completions[index].pid, true,
+				completions[index].spell_effect_receipts.data(),
+				completions[index].spell_effect_receipts.size());
+		if (!completions[index].failed_spell_effect_receipts.empty())
+			spell_component_retirement_save_completed(
+				completions[index].pid, false,
+				completions[index].failed_spell_effect_receipts.data(),
+				completions[index].failed_spell_effect_receipts.size());
+	}
 	for (size_t index = 0; index < custody_mismatch_count; ++index)
 	{
 		bool recapture_scheduled = false;
@@ -739,14 +1927,16 @@ void player_save_pipeline_pulse(void)
 				recapture_scheduled = true;
 				break;
 			}
-		persistence_alert(AVATAR, "player_save", "redacted", "none", "none",
-				  "custody_payload_mismatch_rejected",
-				  "pid=%d revision=%llu components=%llu destructive_write=0 "
-				  "recapture_scheduled=%d",
-				  custody_mismatches[index].pid,
-				  (unsigned long long)custody_mismatches[index].revision,
-				  (unsigned long long)custody_mismatches[index].components,
-				  recapture_scheduled ? 1 : 0);
+		persistence_alert(
+			AVATAR, "player_save", "redacted", "none", "none",
+			"custody_payload_mismatch_rejected",
+			"pid=%d revision=%llu components=%llu destructive_write=0 "
+			"custody_diagnosis_code=%u recapture_scheduled=%d",
+			custody_mismatches[index].pid,
+			(unsigned long long)custody_mismatches[index].revision,
+			(unsigned long long)custody_mismatches[index].components,
+			static_cast<unsigned>(custody_mismatches[index].custody_diagnosis),
+			recapture_scheduled ? 1 : 0);
 	}
 	for (size_t index = 0; index < missing_baseline_count; ++index)
 	{
@@ -837,6 +2027,29 @@ player_save_pipeline_health player_save_pipeline_health_copy(void)
 	return health;
 }
 
+player_save_pipeline_diagnostic player_save_pipeline_diagnostic_copy(int pid)
+{
+	player_save_pipeline_diagnostic result;
+	std::unique_lock<std::mutex> lock(pipeline_mutex, std::try_to_lock);
+	if (!lock.owns_lock())
+		return result;
+	result.available = true;
+	result.health = health;
+	const terminal_fence *fence = find_terminal_fence_locked(pid);
+	const auto *literal = find_literal_inventory_locked(pid);
+	result.pid_admission_open = !find_target_save_login_fence_locked(pid) &&
+				    !(fence && fence->death_pinned) && !(literal && literal->held);
+	result.retained_save = !health.initialized || stop_requested || !accepting || fence ||
+			       literal || append_inflight_pid == pid ||
+			       any_snapshot_is_retained_locked(pid);
+	return result;
+}
+
+bool player_save_pipeline_loads_allowed(void)
+{
+	return replay_gate.loads_allowed();
+}
+
 size_t player_save_pipeline_dirty_count(void)
 {
 	return player_revision_dirty_count();
@@ -851,15 +2064,37 @@ bool player_save_pipeline_is_nonterminal_type(int save_intent)
 	       save_intent != RENT_FIGHTARTI;
 }
 
-bool player_save_pipeline_target_save_pending(int pid)
+bool player_save_pipeline_sealed_save_pending(int pid)
 {
-	if (pid <= 0)
+	if (pid <= 0 || player_save_journal_pid_quarantined(pid))
 		return true;
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		if (!health.initialized || stop_requested || !accepting ||
-		    find_terminal_fence_locked(pid) || append_inflight_pid == pid ||
+		    find_target_save_login_fence_locked(pid) || find_terminal_fence_locked(pid) ||
+		    find_literal_inventory_locked(pid) || append_inflight_pid == pid ||
 		    any_snapshot_is_retained_locked(pid))
+			return true;
+	}
+	if (player_save_worker_pid_pending(pid))
+		return true;
+	player_revision_snapshot revision = {};
+	if (!player_revision_snapshot_copy(pid, &revision))
+		return false;
+	return revision.overflowed || revision.queued_components || revision.inflight_components;
+}
+
+bool player_save_pipeline_target_save_pending(int pid)
+{
+	if (pid <= 0)
+		return true;
+	if (player_save_journal_pid_quarantined(pid))
+		return true;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (!health.initialized || stop_requested || !accepting ||
+		    find_terminal_fence_locked(pid) || find_literal_inventory_locked(pid) ||
+		    append_inflight_pid == pid || any_snapshot_is_retained_locked(pid))
 			return true;
 	}
 	if (player_save_worker_pid_pending(pid))
@@ -878,11 +2113,14 @@ bool player_save_pipeline_acquire_target_save_login_fence(int pid,
 {
 	if (pid <= 0 || expected_revision == std::numeric_limits<player_revision_t>::max())
 		return false;
+	if (player_save_journal_pid_quarantined(pid))
+		return false;
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		if (!health.initialized || stop_requested || !accepting ||
 		    find_terminal_fence_locked(pid) || find_target_save_login_fence_locked(pid) ||
-		    append_inflight_pid == pid || any_snapshot_is_retained_locked(pid) ||
+		    find_literal_inventory_locked(pid) || append_inflight_pid == pid ||
+		    any_snapshot_is_retained_locked(pid) ||
 		    !allocate_target_save_login_fence_locked(pid, expected_revision))
 			return false;
 	}
@@ -932,6 +2170,8 @@ bool player_save_pipeline_target_save_login_fenced(int pid)
 {
 	if (pid <= 0)
 		return false;
+	if (player_save_journal_pid_quarantined(pid))
+		return true;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	return find_target_save_login_fence_locked(pid) != nullptr;
 }
@@ -940,8 +2180,35 @@ bool player_save_pipeline_save_admitted(int pid)
 {
 	if (pid <= 0)
 		return false;
+	if (player_save_journal_pid_quarantined(pid))
+		return false;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
-	return find_target_save_login_fence_locked(pid) == nullptr;
+	if (find_target_save_login_fence_locked(pid))
+		return false;
+	if (auto *literal = find_literal_inventory_locked(pid); literal && literal->held)
+		return false;
+	if (terminal_fence *fence = find_terminal_fence_locked(pid); fence && fence->death_pinned)
+		return false;
+	return true;
+}
+
+bool player_save_pipeline_authoritative_hydration_admitted(int pid)
+{
+#ifdef __NO_MYSQL__
+	return player_save_pipeline_save_admitted(pid);
+#else
+	if (pid <= 0 || player_save_journal_pid_quarantined(pid))
+		return false;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	if (find_target_save_login_fence_locked(pid))
+		return false;
+	if (auto *literal = find_literal_inventory_locked(pid);
+	    literal && literal->held && !literal->restored_sql_drop)
+		return false;
+	if (terminal_fence *fence = find_terminal_fence_locked(pid); fence && fence->death_pinned)
+		return false;
+	return true;
+#endif
 }
 
 /** Stop the pipeline and clear worker, revision, and health state for an isolated test. */
@@ -952,9 +2219,11 @@ void player_save_pipeline_reset_for_tests(void)
 	player_revision_reset_for_tests();
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	health = {};
+	replay_gate.begin_replay();
 	stop_requested = false;
 	accepting = false;
 	append_inflight = false;
 	append_inflight_pid = 0;
+	append_inflight_revision = 0;
 	target_save_login_fences.fill({});
 }

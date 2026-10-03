@@ -21,7 +21,7 @@ struct redis_world_store_config
 
 constexpr size_t REDIS_WORLD_GENERATION_CHUNK_BYTES = 1024 * 1024;
 constexpr size_t REDIS_WORLD_GENERATION_MANIFEST_BYTES = 120;
-constexpr size_t REDIS_WORLD_GENERATION_MAX_CHUNKS = 64;
+constexpr size_t REDIS_WORLD_GENERATION_MAX_CHUNKS = 128;
 
 bool redis_world_store_claim_fence(const struct redis_world_store_config *config,
 				   const char *writer_token, uint64_t lease_msec);

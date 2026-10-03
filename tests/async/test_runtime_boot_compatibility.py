@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from _paths import SRC
 import json
+import re
 import subprocess
 import sys
 import unittest
@@ -40,6 +41,26 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
                 with self.assertRaises(validator.migration_runner.MigrationContractError):
                     validator.validate_death_schema(path)
 
+    def test_offline_death_conflict_schema_rejects_contract_damage(self):
+        import tempfile
+        validator = runtime
+        original = (ROOT / "migrations/immutable/0034_player_death_conflict_evidence.sql").read_text()
+        validator.validate_death_conflict_schema()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "death-conflict.sql"
+            damaged_sources = (
+                original.replace("request_hash BINARY(32)", "request_hash BINARY(31)"),
+                original.replace("UNIQUE KEY uq_death_conflict_revision (pid,save_revision),\n", ""),
+                original.replace("ENGINE=InnoDB", "ENGINE=MyISAM"),
+                original.replace(
+                    "    PRIMARY KEY (operation_id),",
+                    "    PRIMARY KEY (operation_id),\n    FOREIGN KEY (pid) REFERENCES player_data(pid),"),
+            )
+            for damaged in damaged_sources:
+                path.write_text(damaged)
+                with self.assertRaises(validator.migration_runner.MigrationContractError):
+                    validator.validate_death_conflict_schema(path)
+
     def test_manifests_and_compiled_contract_are_synchronized(self):
         """The manifest, migration ledger, and compiled header agree.
 
@@ -48,9 +69,10 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         fails here instead of at a server's boot gate.
         """
         report = runtime.validate()
-        # Includes both death recovery tables, verified on both supported engines.
-        self.assertEqual(report["current_table_count"], 203)
-        for table in ("player_death_disposition", "player_death_custody"):
+        # Includes death evidence/recovery and SQL lifecycle tables.
+        self.assertEqual(report["current_table_count"], 226)
+        for table in ("player_death_disposition", "player_death_custody",
+                      "player_death_conflict_evidence"):
             self.assertIn("'" + table + "'", self.header)
         for table in ("collector_catalog_state", "collector_deaths",
                       "collector_listings", "collector_ledger",
@@ -58,14 +80,18 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
             self.assertIn("'" + table + "'", self.header)
         self.assertIn("'corpse_catalog_state'", self.header)
         self.assertIn("'zone_story_quest_state'", self.header)
+        self.assertIn("'economic_sql_lifecycle_installation'", self.header)
+        self.assertIn("'economic_sql_activation_receipt'", self.header)
+        self.assertIn("'economic_sql_global_activation'", self.header)
         self.assertEqual(report["migration_head"],
-                         "0030_telemetry_quarantine")
+                         "0055_sql_room_item_payload")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)
         self.assertIn("RUNTIME_MYSQL8_METADATA_FINGERPRINT", self.header)
         self.assertIn("RUNTIME_MARIADB10_11_METADATA_FINGERPRINT", self.header)
-        for constant in ("RUNTIME_DB_CHARACTER_SET", "RUNTIME_DB_TIME_ZONE",
+        for constant in ("RUNTIME_DB_CHARACTER_SET", "RUNTIME_DB_COLLATION",
+                         "RUNTIME_DB_TIME_ZONE",
                          "RUNTIME_DB_ISOLATION", "RUNTIME_DB_SQL_MODE",
                          "RUNTIME_DB_TIMEOUT_SECONDS",
                          "RUNTIME_DB_REMOTE_TLS_REQUIRED",
@@ -82,6 +108,42 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertLess(verify, populate)
         self.assertLess(populate, allocator)
         self.assertLess(allocator, pool)
+
+    def test_completed_fork_histories_are_pinned_and_queries_cannot_drift(self):
+        import tempfile
+        from unittest import mock
+        value = runtime.load()
+        self.assertEqual(value["migration_head"]["sequence"], 55)
+        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 55)
+        self.assertEqual(value["staging_0045_migration_head"]["id"],
+                         "0055_sql_room_item_payload")
+        self.assertNotEqual(value["migration_head"]["history_checksum"],
+                            value["staging_0045_migration_head"]["history_checksum"])
+        self.assertEqual(value["master_0031_migration_head"]["sequence"], 55)
+        self.assertEqual(value["master_0031_migration_head"]["id"],
+                         "0055_sql_room_item_payload")
+        self.assertEqual(len({value[field]["history_checksum"] for field in (
+            "migration_head", "staging_0045_migration_head", "master_0031_migration_head")}), 3)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "runtime.json"
+            for field in ("staging_0045_migration_head", "master_0031_migration_head",
+                          "migration_history_sql",
+                          "extra_description_generation_sql"):
+                damaged = json.loads(json.dumps(value))
+                if isinstance(damaged[field], dict):
+                    damaged[field]["history_checksum"] = "0" * 64
+                else:
+                    damaged[field] += " LIMIT 1"
+                path.write_text(json.dumps(damaged))
+                with mock.patch.object(runtime, "MANIFEST", path):
+                    with self.assertRaises(runtime.migration_runner.MigrationContractError):
+                        runtime.validate()
+            header = Path(directory) / "runtime.h"
+            for field in ("staging_0045_migration_head", "master_0031_migration_head"):
+                header.write_text(self.header.replace(value[field]["history_checksum"], "0" * 64))
+                with mock.patch.object(runtime, "HEADER", header):
+                    with self.assertRaises(runtime.migration_runner.MigrationContractError):
+                        runtime.validate()
 
     def test_mysql_boundary_precedes_hydration_workers_replay_and_gameplay(self):
         mysql_boundary = (
@@ -109,7 +171,14 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         game_loop = self.comm[self.comm.index("static bool run_connection_phase"):
                               self.comm.index("bool runtime_listener_address")]
         self.assertIn("redis_load_world_state", game_loop)
-        self.assertIn("drain_new_connections", game_loop)
+        self.assertIn("transport_world_pump", game_loop)
+        # Listener acceptance moved before run_connection_phase. Both the
+        # legacy poll boundary and transport pump remain behind verified boot.
+        acceptance = self.comm[self.comm.index("static int drain_new_connections"):
+                               self.comm.index("static bool run_connection_phase")]
+        for listener in ("ctx.telnet_listener", "ctx.ssl_listener",
+                         "ctx.websocket_listener"):
+            self.assertIn("drain_new_connections(" + listener, acceptance)
 
     def test_schema_fingerprint_and_redacted_reason_ids_are_enforced(self):
         self.assertIn("sql_verify_metadata_fingerprint", self.sql)
@@ -120,6 +189,23 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertIn("column_type LIKE '%unsigned'", self.sql)
         self.assertIn("k.referenced_table_name IN (", self.sql)
         verifier = (ROOT / "migrations/verify_runtime_compatibility.sh").read_text()
+        detailed = []
+        for source in (self.sql, verifier):
+            # These rows protect the detailed types and CHECK clauses that the
+            # generic column fingerprint does not retain.
+            lists = re.findall(
+                r"table_name IN \(([^)]*economic_baseline_control[^)]*)\)",
+                source)
+            self.assertEqual(len(lists), 3)
+            detailed.append(lists)
+        self.assertEqual(*detailed)
+        for table in ("economic_sql_activation_receipt",
+                      "economic_sql_global_activation"):
+            self.assertIn("'" + table + "'", detailed[0][0])
+        for source in (self.sql, verifier):
+            self.assertIn("BINARY k.referenced_table_schema <> BINARY DATABASE()", source)
+            self.assertIn("BINARY k.table_name='user_profile_stats'", source)
+            self.assertIn("BINARY k.referenced_table_schema=BINARY DATABASE()", source)
         self.assertIn(
             "k.table_name IN ($runtime_tables) OR "
             "k.referenced_table_name IN ($runtime_tables)", verifier)
@@ -127,7 +213,8 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
                       "information_schema.statistics", "referential_constraints"):
             self.assertIn(token, self.sql)
         self.assertIn("RUNTIME_METADATA_MAX_BYTES - canonical.size()", self.sql)
-        for reason in ("COMPAT-E001", "COMPAT-E002", "COMPAT-E003", "COMPAT-E007"):
+        for reason in ("COMPAT-E001", "COMPAT-E002", "COMPAT-E003", "COMPAT-E007",
+                       "COMPAT-E008", "COMPAT-E009"):
             self.assertIn(reason, self.sql)
         compatibility_logs = [line for line in self.sql.splitlines() if "COMPAT-E" in line]
         self.assertFalse(any(secret in line.lower() for line in compatibility_logs

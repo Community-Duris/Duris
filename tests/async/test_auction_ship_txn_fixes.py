@@ -21,10 +21,10 @@ sql_player = (SRC / "sql_player.c").read_text()
 assert sql_player.count("ship->db_id = -1;") >= 4
 
 # 4. Ship UPDATE must include owner_name so rename_ship_owner persists
-assert contains(sql_player, "update ships set owner_name='%s', ship_name='%s'")
+assert contains(sql_player, "update ships set owner_name='%s', ship_name='%s'", literal=True)
 
 # 4. Auction finalization still has the atomic claim
-assert contains(auction, "UPDATE auctions SET status = %d WHERE id = '%d' AND status <> %d")
+assert contains(auction, "UPDATE auctions SET status = %d WHERE id = '%d' AND status <> %d", literal=True)
 assert contains(auction, "mysql_affected_rows(DB) != 1")
 
 print("auction bid leak, cargo rollback, and ship db_id reset checks passed")

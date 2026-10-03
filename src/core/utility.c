@@ -35,14 +35,15 @@ using namespace std;
 #include "core/utils.h"
 #include "guild/assocs.h"
 #include "economy/auction_houses.h"
+#include "economy/account_bank_balances.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "core/defines.h"
 #include "world/epic.h"
 #include "net/gmcp.h"
 #include "world/graph.h"
 #include "combat/grapple.h"
 #include "combat/justice.h"
-#include "combat/spell_wards.h"
 #include "combat/training_dummy.h"
 #include "world/map.h"
 #include "core/mm.h"
@@ -57,7 +58,6 @@ using namespace std;
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_pool.h"
-#include "sql/sql_player.h"
 #include "world/weather.h"
 
 /*
@@ -111,6 +111,53 @@ extern struct mm_ds *dead_mob_pool;
 extern struct mm_ds *dead_pconly_pool;
 extern int _pwipe;
 extern const char *sector_types[];
+
+/* Format a long integer with grouping commas. */
+char *comma_string(long num)
+{
+	static char buf1[50] = { 0 }, buf2[50] = { 0 };
+	int bp1, bp2, len, j;
+
+	snprintf(buf1, 50, "%ld", num);
+
+	len = strlen(buf1);
+	bp1 = 0;
+	bp2 = 0;
+
+	if (buf1[0] == '-')
+	{
+		*(buf2 + bp2++) = *(buf1 + bp1++);
+		len--;
+	}
+	if (len < 4)
+		return (buf1); /*
+		                * doesn't need commas
+		                */
+
+	if (len % 3)
+	{
+		for (j = len % 3; j > 0; j--)
+		{
+			*(buf2 + bp2++) = *(buf1 + bp1++);
+			len--;
+		}
+		*(buf2 + bp2++) = ',';
+	}
+	while (len)
+	{
+		for (j = 0; j < 3; j++)
+		{
+			*(buf2 + bp2++) = *(buf1 + bp1++);
+			len--;
+		}
+		if (len)
+			*(buf2 + bp2++) = ',';
+	}
+
+	*(buf2 + bp2) = '\0';
+
+	return (buf2);
+}
 
 char GS_buf1[MAX_STRING_LENGTH];
 
@@ -3065,7 +3112,7 @@ static void currency_adjustment_committed(P_char ch, bool committed,
 					  unsigned int error_code, const uint8_t *context,
 					  size_t context_size);
 
-void ADD_MONEY(P_char ch, int amount)
+void ADD_MONEY(P_char ch, int amount, const char *committed_message)
 {
 	int t = 0;
 
@@ -3077,12 +3124,27 @@ void ADD_MONEY(P_char ch, int amount)
 
 	if (amount == 0)
 		return;
+	if (economic_gameplay_authority::active())
+	{
+		logit(LOG_WIZ, "ADD_MONEY: refusing unsupported active cash credit");
+		if (IS_PC(ch) && GET_PID(ch) > 0)
+			send_to_char(
+				"Your coin credit could not be processed while active accounting is enabled.\r\n",
+				ch);
+		return;
+	}
+	const size_t message_size = committed_message ? strlen(committed_message) + 1 : 0;
+	if (message_size > CURRENCY_PENDING_CONTEXT_MAX_BYTES)
+	{
+		logit(LOG_WIZ, "ADD_MONEY: credit acknowledgement exceeds context capacity");
+		return;
+	}
 	if (IS_PC(ch) && GET_PID(ch) > 0)
 	{
 		if (!currency_transaction_submit_wallet_value(
 			    ch, amount, currency_reason_type::wallet_reward, 0,
 			    critical_source_site::command, critical_deadline_class::interactive,
-			    currency_adjustment_committed, nullptr, 0))
+			    currency_adjustment_committed, committed_message, message_size))
 		{
 			logit(LOG_WIZ, "ADD_MONEY: wallet transaction submission failed for pid %d",
 			      GET_PID(ch));
@@ -3093,6 +3155,8 @@ void ADD_MONEY(P_char ch, int amount)
 			else
 				send_to_char("Your coin credit is pending staff review.\r\n", ch);
 		}
+		else if (committed_message)
+			send_to_char("Your coin credit is pending confirmation.\r\n", ch);
 		return;
 	}
 
@@ -3123,6 +3187,8 @@ void ADD_MONEY(P_char ch, int amount)
 
 	/* Update web client */
 	gmcp_char_vitals(ch);
+	if (committed_message)
+		send_to_char(committed_message, ch);
 }
 
 /* TOWARDS BANK MONEY
@@ -3181,6 +3247,8 @@ void publish_account_bank_balances_revision(const char *account_name, int racewa
 	for (P_desc desc = descriptor_list; desc; desc = desc->next)
 	{
 		P_char target = desc->original ? desc->original : desc->character;
+		if (target && IS_MORPH(target))
+			target = MORPH_ORIG(target);
 		if (desc->connected != CON_PLAYING || !target || IS_NPC(target) || !desc->account ||
 		    !desc->account->acct_name ||
 		    strcasecmp(desc->account->acct_name, account_name) ||
@@ -3200,15 +3268,19 @@ void publish_account_bank_balances_revision(const char *account_name, int racewa
 
 static void currency_adjustment_committed(P_char ch, bool committed,
 					  const currency_command_result & /*result*/,
-					  unsigned int error_code, const uint8_t * /*context*/,
-					  size_t /*context_size*/)
+					  unsigned int error_code, const uint8_t *context,
+					  size_t context_size)
 {
+	if (committed && ch && context && context_size && context[context_size - 1] == 0)
+		send_to_char(reinterpret_cast<const char *>(context), ch);
 	if (!committed && ch)
 	{
 		logit(LOG_DEBUG, "Currency adjustment rejected for pid %d (error %u)", GET_PID(ch),
 		      error_code);
 		send_to_char(
-			"Your coin transaction could not be completed. Please contact staff if goods were delivered.\r\n",
+			context_size ?
+				"Your coin credit could not be completed. Please contact staff.\r\n" :
+				"Your coin transaction could not be completed. Please contact staff if goods were delivered.\r\n",
 			ch);
 	}
 }
@@ -3230,6 +3302,8 @@ int SUB_MONEY(P_char ch, int amount, int mode)
 	int t = 0;
 
 	if (amount <= 0)
+		return -1;
+	if (economic_gameplay_authority::active())
 		return -1;
 	if (amount > GET_MONEY(ch))
 		return -1;
@@ -4909,6 +4983,10 @@ P_char char_in_room(int room)
 bool spell_can_affect_char(P_char ch, int spl)
 {
 	int i = GetLowestSpellCircle_p(spl);
+	// Finite player wards can be worn down by these spells. Selection must
+	// remain read-only; the damage stage owns eligibility and capacity wear.
+	if (IS_PC(ch))
+		return true;
 
 	if (spl == SPELL_MOLTEN_SPRAY && IS_UNDEADRACE(ch))
 		return true;
@@ -4916,17 +4994,16 @@ bool spell_can_affect_char(P_char ch, int spl)
 	if (spl == SPELL_BALLISTIC_ATTACK)
 		return true;
 
-	const bool native_ward = (IS_AFFECTED(ch, AFF_MINOR_GLOBE) && (i < 4)) ||
-		(IS_AFFECTED3(ch, AFF3_SPIRIT_WARD) && (i < 5)) ||
-		(IS_AFFECTED3(ch, AFF3_GR_SPIRIT_WARD) && (i < 6)) ||
-		(IS_AFFECTED2(ch, AFF2_GLOBE) && (i < 7) && (spl != SPELL_NEG_ENERGY_BARRIER));
-	if (native_ward)
-		return false;
+	return !((IS_AFFECTED(ch, AFF_MINOR_GLOBE) && (i < 4)) ||
+		 (IS_AFFECTED3(ch, AFF3_SPIRIT_WARD) && (i < 5)) ||
+		 (IS_AFFECTED3(ch, AFF3_GR_SPIRIT_WARD) && (i < 6)) ||
+		 (IS_AFFECTED2(ch, AFF2_GLOBE) && (i < 7) && (spl != SPELL_NEG_ENERGY_BARRIER)));
+}
 
-	/* Equipment ward bits are masked out of the aggregate affect bits. Keep
-	 * the old NPC/cast decision while making an available finite ward visible
-	 * to the selector; a broken finite ward must never suppress the cast. */
-	return !spell_ward_has_available(ch, spl);
+// The swashbuckler is considered the victim. // May09 -Lucrot
+bool opposite_racewar(P_char ch, P_char victim)
+{
+	return IS_PC(ch) && IS_PC(victim) && GET_RACEWAR(ch) != GET_RACEWAR(victim);
 }
 
 /* is viewee at war with viewer? */

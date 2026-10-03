@@ -34,6 +34,7 @@
 #include "combat/spell_wards.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
+#include "economy/economic_gameplay_authority.h"
 #include "world/weather.h"
 
 /*
@@ -1268,6 +1269,8 @@ void spell_arieks_shattering_iceball(int level, P_char ch, char * /*arg*/, int /
 		return;
 
 	if (!IS_ALIVE(ch) || (room = ch->in_room) == NOWHERE)
+		return;
+	if (economic_gameplay_authority::active())
 		return;
 
 	if (world[room].contents)
@@ -4083,8 +4086,8 @@ void spell_spirit_ward(int level, P_char ch, char * /*arg*/, [[maybe_unused]] in
 	{
 		act("$n&+W glows dimly as a faint white halo surrounds $m.", TRUE, victim, 0, 0,
 		    TO_ROOM);
-		act("&+WYou begin to glow dimly as a faint white halo surrounds you.", FALSE, victim, 0,
-		    0, TO_CHAR);
+		act("&+WYou begin to glow dimly as a faint white halo surrounds you.", FALSE,
+		    victim, 0, 0, TO_CHAR);
 	}
 
 	spell_ward_apply_cast(victim, &af, duration);
@@ -4125,8 +4128,8 @@ void spell_greater_spirit_ward(int level, P_char ch, char * /*arg*/, [[maybe_unu
 	{
 		act("$n&+W glows visibly as a faint white halo surrounds $m.", TRUE, victim, 0, 0,
 		    TO_ROOM);
-		act("&+WYou begin to glow as a faint white halo surrounds you.", FALSE, victim, 0, 0,
-		    TO_CHAR);
+		act("&+WYou begin to glow as a faint white halo surrounds you.", FALSE, victim, 0,
+		    0, TO_CHAR);
 	}
 
 	spell_ward_apply_cast(victim, &af, duration);

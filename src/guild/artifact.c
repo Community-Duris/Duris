@@ -2049,6 +2049,7 @@ P_char load_dummy_char(char *name)
 	restoreItemsOnly(owner, -1);
 	owner->next = character_list;
 	character_list = owner;
+	register_character_runtime_id(owner);
 	updateArtis = TRUE;
 
 	return owner;
@@ -4632,7 +4633,6 @@ void arti_fixit_sql(P_char ch)
 		// If the arti is on a different PC, we want to update artifact_bind AND increase the timer to max in artifacts.
 		if (location != pid)
 		{
-			extract_obj(arti);
 			sql_update_bind_data(vnum, &location, &timer);
 			qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu), lastUpdate=SYSDATE() WHERE vnum = %d",
 			    new_time, vnum);
@@ -4643,7 +4643,8 @@ void arti_fixit_sql(P_char ch)
 				       pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35, TRUE).c_str(),
 				       vnum, get_player_name_from_pid(location), location);
 		}
-		extract_obj(arti);
+		if (arti)
+			extract_obj(arti);
 	}
 	if (counter == 0)
 	{

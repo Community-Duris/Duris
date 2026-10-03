@@ -105,6 +105,7 @@ PRELUDE = r'''
 #include "core/utils.h"
 #include "account/account.h"
 #include "economy/currency_transaction.h"
+#include "economy/account_bank_balances.h"
 #include "sql/sql_player.h"
 #include "item/item_ownership_runtime.h"
 #include "item/item_movement_transaction.h"
@@ -176,6 +177,17 @@ static const char *command[] = {
 };
 
 P_char character_list = NULL;
+int IS_MORPH(P_char character)
+{
+	return character && IS_NPC(character) && character->only.npc->orig_char;
+}
+P_char find_character_by_runtime_id(uint64_t runtime_id)
+{
+	for (P_char character = character_list; character; character = character->next)
+		if (character->runtime_id == runtime_id)
+			return character;
+	return nullptr;
+}
 P_desc descriptor_list = NULL;
 static room_data test_rooms[2] = {};
 P_room world = test_rooms;
@@ -218,6 +230,16 @@ critical_submit_result critical_command_coordinator_submit(critical_command comm
 	++submission_count;
 	submitted_command = std::move(command_value);
 	return critical_submit_result::accepted;
+}
+
+critical_submit_result critical_command_coordinator_submit_for_publication(critical_command)
+{
+	std::abort(); // This legacy queue fixture has no activated accounting authority.
+}
+
+bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &)
+{
+	std::abort(); // Held accounting publication is tested by completion_retention.
 }
 
 bool critical_command_coordinator_is_fenced(const critical_entity_key &,
@@ -371,7 +393,8 @@ COIN_GET = (ACTOBJ[ACTOBJ.index("struct synchronous_get_item"):ACTOBJ.index("str
 static std::unordered_map<uint32_t, bulk_get_state> bulk_gets;
 static bulk_get_state *corpse_bulk_get(P_char, uint64_t) { return NULL; }
 static void announce_corpse_bulk_get(P_char, bulk_get_state &, P_obj) {}
-static bool item_get_ack_publication = false, item_get_deferred = false, item_get_rejected = false;
+enum class get_phase { admission, publication };
+enum class get_outcome { rejected, deferred, placed, consumed, destroyed };
 static int bulk_total = 0;
 static bool submit_coin_get(P_char, P_obj, P_obj, int,
     const coin_get_submission_options * = nullptr);
@@ -398,13 +421,14 @@ P_obj resolve_synchronous_get_item(const synchronous_get_item &item, const bulk_
 bool bulk_get_source_matches(const bulk_get_state &, P_obj container, P_obj money)
 { return money && OBJ_INSIDE(money) && money->loc.inside == container; }
 void MakeScrap(P_char, P_obj) { abort(); }
-void do_get_finalize_container_success(P_char actor, P_char, P_obj container, P_obj money,
-    int &, bool &, bool, const char *, const coin_get_submission_options *options)
+get_outcome do_get_finalize_container_success(P_char actor, P_char, P_obj container, P_obj money,
+    int &, bool &, bool, const char *, const coin_get_submission_options *options,
+    get_phase)
 {
-    item_get_deferred = submit_coin_get(actor, money, container, 1, options);
-    item_get_rejected = !item_get_deferred;
+    return submit_coin_get(actor, money, container, 1, options)
+        ? get_outcome::deferred : get_outcome::rejected;
 }
-void do_get_finalize_room_item(P_char, P_obj, bool &, int &) { abort(); }
+get_outcome do_get_finalize_room_item(P_char, P_obj, bool &, int &, get_phase) { abort(); }
 void finish_bulk_get(P_char, uint32_t pid)
 {
     bulk_total = bulk_gets.at(pid).total;
@@ -426,7 +450,8 @@ bool item_movement_transaction_submit(P_char, P_obj, P_obj parent,
     const item_owner_identity &from, const item_owner_identity &to,
     item_transfer_reason reason, int64_t, item_movement_completion_fn callback,
     const void *context, size_t size, P_obj, item_movement_reject *,
-    item_movement_publication_fn)
+    item_movement_publication_fn, economic_source_kind, uint64_t,
+    const item_transfer_continuation &)
 {
     assert(item_owner_identity_equal(from, to));
     assert(reason == item_transfer_reason::player_get && size == sizeof(admission_context));
@@ -453,6 +478,8 @@ static void push(struct txt_q *queue, const char *text)
 	else
 		queue->head = block;
 	queue->tail = block;
+	queue->bytes += strlen(text) + 1;
+	++queue->entries;
 }
 
 static void drain(struct txt_q *queue)
@@ -465,6 +492,8 @@ static void drain(struct txt_q *queue)
 		queue->head = next;
 	}
 	queue->tail = NULL;
+	queue->bytes = 0;
+	queue->entries = 0;
 }
 
 static void expect_text(const char *got, const char *want)
@@ -599,6 +628,7 @@ int main()
 	player.wallet_revision = 1;
 	player.bank_revision = 1;
 	char_data actor = {};
+	actor.runtime_id = 42;
 	actor.only.pc = &player;
 	actor.player.racewar = 1;
 	char account_name[] = "queue_account";
@@ -638,6 +668,7 @@ int main()
 	pc_only_data sibling_player = {};
 	sibling_player.pid = 43;
 	char_data sibling = {};
+	sibling.runtime_id = 43;
 	sibling.only.pc = &sibling_player;
 	sibling.player.racewar = actor.player.racewar;
 	assert(currency_transaction_player_busy(&sibling));
@@ -811,6 +842,7 @@ int main()
 	completion.operation_id = submitted_command.operation_id;
 	std::copy(encoded.begin(), encoded.end(), completion.result_payload.begin());
 	character_list = nullptr;
+	descriptor.character = nullptr;
 	coordinator_fenced = false;
 	currency_transaction_handle_completions(&completion, 1);
 	assert(currency_transaction_health_copy().retained_offline == 1);
@@ -820,6 +852,7 @@ int main()
 	GET_BALANCE_GOLD(&actor) = 5;
 	player.bank_revision = 4;
 	character_list = &actor;
+	descriptor.character = &actor;
 	currency_transaction_player_ready(&actor);
 	assert(GET_COPPER(&actor) == 7 && GET_PLATINUM(&actor) == 2);
 	assert(player.wallet_revision == 4);
@@ -831,9 +864,10 @@ int main()
 	pc_only_data recipient_player = {};
 	recipient_player.pid = 45;
 	char_data recipient = {};
+	recipient.runtime_id = 45;
 	recipient.only.pc = &recipient_player;
 	recipient.player.racewar = 1;
-	for (int scenario = 0; scenario < 4; ++scenario)
+	for (int scenario = 0; scenario < 5; ++scenario)
 	{
 		currency_transaction_reset_for_tests();
 		coordinator_fenced = false;
@@ -844,6 +878,8 @@ int main()
 		GET_PLATINUM(&recipient) = 10;
 		player.wallet_revision = player.bank_revision = 1;
 		recipient_player.wallet_revision = recipient_player.bank_revision = 1;
+		GET_BALANCE_COPPER(&actor) = GET_BALANCE_SILVER(&actor) =
+			GET_BALANCE_GOLD(&actor) = GET_BALANCE_PLATINUM(&actor) = 0;
 		coin_transfer_payload transfer;
 		assert(currency_transaction_coin_wallet(&actor, -40000, &transfer.source));
 		assert(currency_transaction_coin_wallet(&recipient, 40000, &transfer.destination));
@@ -864,14 +900,53 @@ int main()
 			wallet.wallet_revision = wallet.bank_revision = 2;
 		std::array<uint8_t, COIN_TRANSFER_RESULT_BYTES> coin_bytes;
 		assert(coin_transfer_command_encode_result(admitted, coin_result, &coin_bytes));
+		coin_transfer_result stale_result = coin_result;
+		stale_result.wallets[0].wallet.amount[3] = 125;
+		stale_result.wallets[0].bank.amount[2] = 7;
+		stale_result.wallets[0].wallet_revision = 2;
+		stale_result.wallets[0].bank_revision = 2;
+		const critical_failure_stage stale_stage = static_cast<critical_failure_stage>(
+			static_cast<uint16_t>(critical_failure_stage::coin_source_wallet_revision) |
+			static_cast<uint16_t>(critical_failure_stage::coin_source_bank_revision));
+		std::array<uint8_t, COIN_TRANSFER_STALE_RESULT_BYTES> stale_bytes;
+		assert(coin_transfer_command_encode_stale_result(admitted, stale_result, stale_stage,
+							 &stale_bytes));
+		coin_transfer_stale_result decoded_stale;
+		assert(coin_transfer_command_decode_stale_result(
+			admitted, stale_stage, stale_bytes.data(), stale_bytes.size(), &decoded_stale) &&
+		       decoded_stale.endpoint_index == 0 && decoded_stale.wallet_stale &&
+		       decoded_stale.bank_stale);
+		auto mismatched_stale_bytes = stale_bytes;
+		mismatched_stale_bytes[1] = 1;
+		assert(!coin_transfer_command_decode_stale_result(
+			admitted, stale_stage, mismatched_stale_bytes.data(),
+			mismatched_stale_bytes.size(), &decoded_stale));
+		auto wrong_version_stale_bytes = stale_bytes;
+		wrong_version_stale_bytes[0] = 0;
+		assert(!coin_transfer_command_decode_stale_result(
+			admitted, stale_stage, wrong_version_stale_bytes.data(),
+			wrong_version_stale_bytes.size(), &decoded_stale));
+		assert(!coin_transfer_command_decode_stale_result(
+			admitted, stale_stage, stale_bytes.data(), stale_bytes.size() - 1,
+			&decoded_stale));
 		critical_completion ack = {};
 		ack.operation_id = submitted_command.operation_id;
-		ack.outcome = scenario == 0 ? critical_apply_outcome::terminal_failure : critical_apply_outcome::applied;
-		ack.error_code = scenario == 0 ? ESTALE : 0;
-		ack.result_size = scenario == 0 ? 0 : coin_bytes.size();
-		std::copy(coin_bytes.begin(), coin_bytes.end(), ack.result_payload.begin());
+		const bool stale_completion = scenario == 0 || scenario == 4;
+		ack.outcome = stale_completion ? critical_apply_outcome::terminal_failure : critical_apply_outcome::applied;
+		ack.error_code = stale_completion ? ESTALE : 0;
+		ack.failure_stage = stale_completion ? stale_stage : critical_failure_stage::none;
+		ack.result_size = stale_completion ? stale_bytes.size() : coin_bytes.size();
+		if (stale_completion)
+			std::copy(stale_bytes.begin(), stale_bytes.end(), ack.result_payload.begin());
+		else
+			std::copy(coin_bytes.begin(), coin_bytes.end(), ack.result_payload.begin());
 		if (scenario == 1)
+		{
 			character_list = &recipient; // Sender detached before acknowledgement.
+			descriptor.character = nullptr;
+		}
+		else
+			descriptor.character = &actor;
 		if (scenario == 2)
 			actor.next = nullptr; // Recipient detached before acknowledgement.
 		if (scenario == 3)
@@ -880,18 +955,85 @@ int main()
 			GET_PLATINUM(&recipient) = 80;
 			recipient_player.wallet_revision = 3;
 		}
+		if (scenario == 4)
+		{
+			// A later source reload also wins over an older stale-authority repair.
+			GET_PLATINUM(&actor) = 140;
+			player.wallet_revision = 3;
+			GET_BALANCE_GOLD(&actor) = 9;
+			player.bank_revision = 3;
+		}
 		coordinator_fenced = false;
 		const int callbacks_before = coin_callbacks;
 		currency_transaction_handle_completions(&ack, 1);
-		assert(coin_callbacks == callbacks_before + 1 && coin_committed == (scenario != 0));
+		assert(coin_callbacks == callbacks_before + 1 &&
+		       coin_committed == !stale_completion);
 		assert(currency_transaction_health_copy().pending == 0);
-		assert(GET_PLATINUM(&actor) == (scenario == 0 || scenario == 1 ? 100 : 60));
-		assert(GET_PLATINUM(&recipient) == (scenario == 0 || scenario == 2 ? 10 : scenario == 3 ? 80 : 50));
+		assert(GET_PLATINUM(&actor) ==
+		       (scenario == 0 ? 125 : scenario == 4 ? 140 : scenario == 1 ? 100 : 60));
+		assert(GET_PLATINUM(&recipient) ==
+		       (scenario == 0 || scenario == 2 || scenario == 4 ? 10 :
+			scenario == 3 ? 80 : 50));
+		if (scenario == 0)
+		{
+			assert(player.wallet_revision == 2 && player.bank_revision == 2 &&
+			       GET_BALANCE_GOLD(&actor) == 7);
+			coin_transfer_payload retry;
+			assert(currency_transaction_coin_wallet(&actor, -1000, &retry.source));
+			assert(retry.source.change.expected_revisions[0].revision == 2 &&
+			       retry.source.change.expected_revisions[1].revision == 2 &&
+			       retry.source.before[3] == 125 && retry.source.after[3] == 124);
+		}
+		if (scenario == 4)
+			assert(player.wallet_revision == 3 && player.bank_revision == 3 &&
+			       GET_BALANCE_GOLD(&actor) == 9);
 		currency_transaction_handle_completions(&ack, 1);
 		assert(coin_callbacks == callbacks_before + 1);
 		assert(submission_count == submitted_before + 1); // No second credit or refund.
 	}
-	// The actual gameplay helper shares admission and preserves existing change-making.
+	// Destination authority is repaired independently; the rejected source is
+	// neither debited nor retried.
+	currency_transaction_reset_for_tests();
+	coordinator_fenced = false;
+	actor.next = &recipient;
+	character_list = &actor;
+	GET_PLATINUM(&actor) = 100;
+	GET_PLATINUM(&recipient) = 10;
+	player.wallet_revision = player.bank_revision = 1;
+	recipient_player.wallet_revision = recipient_player.bank_revision = 1;
+	coin_transfer_payload destination_transfer;
+	assert(currency_transaction_coin_wallet(&actor, -40000, &destination_transfer.source));
+	assert(currency_transaction_coin_wallet(&recipient, 40000,
+						&destination_transfer.destination));
+	const int destination_submitted_before = submission_count;
+	assert(currency_transaction_submit_coin(&actor, destination_transfer, coin_completed,
+						 nullptr, 0));
+	coin_transfer_payload destination_admitted;
+	assert(coin_transfer_command_decode_payload(submitted_command, &destination_admitted));
+	coin_transfer_result destination_current;
+	destination_current.wallets[1].wallet.amount[3] = 20;
+	destination_current.wallets[1].wallet_revision = 4;
+	destination_current.wallets[1].bank_revision = 1;
+	std::array<uint8_t, COIN_TRANSFER_STALE_RESULT_BYTES> destination_stale_bytes;
+	assert(coin_transfer_command_encode_stale_result(
+		destination_admitted, destination_current,
+		critical_failure_stage::coin_destination_wallet_revision,
+		&destination_stale_bytes));
+	critical_completion destination_stale = {};
+	destination_stale.operation_id = submitted_command.operation_id;
+	destination_stale.outcome = critical_apply_outcome::terminal_failure;
+	destination_stale.error_code = ESTALE;
+	destination_stale.failure_stage =
+		critical_failure_stage::coin_destination_wallet_revision;
+	destination_stale.result_size = destination_stale_bytes.size();
+	std::copy(destination_stale_bytes.begin(), destination_stale_bytes.end(),
+		  destination_stale.result_payload.begin());
+	coordinator_fenced = false;
+	currency_transaction_handle_completions(&destination_stale, 1);
+	assert(GET_PLATINUM(&actor) == 100 && player.wallet_revision == 1);
+	assert(GET_PLATINUM(&recipient) == 20 && recipient_player.wallet_revision == 4);
+	assert(submission_count == destination_submitted_before + 1);
+	// The actual gameplay helper shares admission and preserves exact denominations.
 	currency_transaction_reset_for_tests();
 	coordinator_fenced = false;
 	actor.next = &recipient;
@@ -912,8 +1054,8 @@ int main()
 	assert(GET_COPPER(&actor) == 100 && GET_COPPER(&recipient) == 10);
 	coin_transfer_payload give_payload;
 	assert(coin_transfer_command_decode_payload(submitted_command, &give_payload));
-	assert((give_payload.source.after == std::array<int32_t, 4>{0, 6, 0, 0}));
-	assert((give_payload.destination.after == std::array<int32_t, 4>{10, 4, 0, 0}));
+	assert((give_payload.source.after == std::array<int32_t, 4>{60, 0, 0, 0}));
+	assert((give_payload.destination.after == std::array<int32_t, 4>{50, 0, 0, 0}));
 	coin_transfer_result give_result;
 	for (size_t i = 0; i < 4; ++i)
 	{
@@ -932,8 +1074,8 @@ int main()
 	coordinator_fenced = false;
 	currency_transaction_handle_completions(&give_ack, 1);
 	assert(coin_announcements == 1 && coin_errors == 0);
-	assert(GET_SILVER(&actor) == 6 && GET_COPPER(&actor) == 0);
-	assert(GET_SILVER(&recipient) == 4 && GET_COPPER(&recipient) == 10);
+	assert(GET_SILVER(&actor) == 0 && GET_COPPER(&actor) == 60);
+	assert(GET_SILVER(&recipient) == 0 && GET_COPPER(&recipient) == 50);
 	assert(submission_count == admitted_before + 1);
 	actor.next = nullptr;
 	character_list = &actor;
@@ -1394,6 +1536,24 @@ int main()
 	actor.next = nullptr;
 	character_list = &actor;
 	currency_transaction_reset_for_tests();
+	// Shared bank publication follows a morphed descriptor to the original PC.
+	npc_only_data morphed_player = {};
+	char_data morphed = {};
+	SET_BIT(morphed.specials.act, ACT_ISNPC);
+	morphed.only.npc = &morphed_player;
+	morphed_player.orig_char = &actor;
+	descriptor.character = &morphed;
+	descriptor.original = nullptr;
+	player.bank_revision = 10;
+	const AccountBankBalances morph_bank = {1, 2, 3, 4};
+	publish_account_bank_balances_revision(account_name, 1, &morph_bank, 11);
+	assert(GET_BALANCE_COPPER(&actor) == 1 && GET_BALANCE_SILVER(&actor) == 2 &&
+	       GET_BALANCE_GOLD(&actor) == 3 && GET_BALANCE_PLATINUM(&actor) == 4 &&
+	       player.bank_revision == 11);
+	const AccountBankBalances old_bank = {5, 6, 7, 8};
+	publish_account_bank_balances_revision(account_name, 1, &old_bank, 10);
+	assert(GET_BALANCE_COPPER(&actor) == 1 && player.bank_revision == 11);
+	descriptor.character = &actor;
 	printf("currency input queue runtime: ok\n");
 	return 0;
 }
@@ -1439,7 +1599,12 @@ def main(flatfile: bool = False) -> int:
                 "-ffunction-sections", "-fdata-sections", "-fsanitize=address,undefined",
                 "-Isrc", *mysql_cflags, str(source), rel("currency_transaction.c"),
                 rel("currency_command.c"), rel("critical_command.c"),
-                rel("coin_transfer_command.c"), rel("item_transfer_command.c"),
+                rel("economic_gameplay_authority.c"), rel("economic_command_admission.c"),
+                rel("economic_currency_adapter.c"), rel("economic_accounting_intent.c"),
+                rel("economic_accounting_plan.c"), rel("economic_accounting_types.c"),
+                rel("coin_transfer_command.c"), rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
+                rel("coin_transfer_accounting.c"), rel("item_transfer_accounting.c"),
+                rel("economic_accounting_item_reference.c"),
                 rel("player_snapshot_codec.c"), rel("item_ownership_runtime.c"),
                 "-Wl,--gc-sections", "-lcrypto", "-o", str(binary),
             ],

@@ -34,6 +34,9 @@ shop_trade_payload trade(shop_trade_action action)
 	payload.racewar = 1;
 	strcpy(payload.account_name.data(), "ShopTester");
 	payload.price = 1250;
+	payload.keeper_vnum = 1000;
+	payload.expected_keeper_cash = 5000;
+	payload.keeper_roaming = 1;
 	payload.expected_wallet_revision = 7;
 	payload.expected_bank_revision = 8;
 	payload.expected_shop_revision = 9;
@@ -89,14 +92,19 @@ int main()
 	assert(shop_trade_command_decode_payload(command_copy, &decoded));
 	assert(decoded.action == shop_trade_action::buy_existing && decoded.shop_id == 0 &&
 	       decoded.item_count == 2 && decoded.items[1].parent_item_uid == 100 &&
-	       decoded.stock_item_uid == 100 && decoded.item_blob_size == 4 &&
+	       decoded.stock_item_uid == 100 && decoded.keeper_vnum == 1000 &&
+	       decoded.expected_keeper_cash == 5000 && decoded.item_blob_size == 4 &&
 	       decoded.item_blob[3] == 0x77);
 
 	critical_command previous = command;
+	previous.payload.erase(previous.payload.begin() + 18,
+			       previous.payload.begin() + 31);
 	previous.payload_version = SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION;
 	assert(shop_trade_command_decode_payload(previous, &decoded));
 	assert(decoded.target_root_item_uid == 100);
 	critical_command stock_version = previous;
+	stock_version.payload_version = SHOP_TRADE_CONTAINER_PAYLOAD_VERSION;
+	assert(shop_trade_command_decode_payload(stock_version, &decoded));
 	stock_version.payload.erase(stock_version.payload.begin() + 50,
 				    stock_version.payload.begin() + 74);
 	stock_version.payload_version = SHOP_TRADE_STOCK_PAYLOAD_VERSION;
@@ -115,9 +123,13 @@ int main()
 					critical_source_site::command,
 					critical_deadline_class::interactive));
 	previous = command;
+	previous.payload.erase(previous.payload.begin() + 18,
+			       previous.payload.begin() + 31);
 	previous.payload_version = SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION;
 	assert(shop_trade_command_decode_payload(previous, &decoded));
 	stock_version = previous;
+	stock_version.payload_version = SHOP_TRADE_CONTAINER_PAYLOAD_VERSION;
+	assert(shop_trade_command_decode_payload(stock_version, &decoded));
 	stock_version.payload.erase(stock_version.payload.begin() + 50,
 				    stock_version.payload.begin() + 74);
 	stock_version.payload_version = SHOP_TRADE_STOCK_PAYLOAD_VERSION;
@@ -188,6 +200,9 @@ int main()
 	shop_trade_result decoded_result = {};
 	assert(shop_trade_command_decode_result(encoded_result.data(), encoded_result.size(),
 						&decoded_result));
+	assert(shop_trade_command_decode_result(encoded_result.data(),
+						 SHOP_TRADE_PREVIOUS_RESULT_BYTES,
+						 &decoded_result));
 	assert(decoded_result.shop_revision == 12 && decoded_result.item_uids[1] == 101 &&
 	       decoded_result.wallet.amount[3] == 4);
 	encoded_result[1] = 0;
@@ -206,6 +221,24 @@ int main()
 	assert(shop_trade_command_encode_result(result, &encoded_result));
 	encoded_result.back() = 1;
 	assert(!shop_trade_command_decode_result(encoded_result.data(), encoded_result.size(),
+						 &decoded_result));
+	result.keeper_cash_recorded = true;
+	result.keeper_cash = 8750;
+	result.action = shop_trade_action::buy_existing;
+	result.item_count = SHOP_TRADE_MAX_ITEMS;
+	for (size_t index = 0; index < result.item_count; ++index)
+	{
+		result.item_uids[index] = 100 + index;
+		result.item_revisions[index] = 6;
+	}
+	assert(shop_trade_command_encode_result(result, &encoded_result));
+	assert(shop_trade_command_decode_result(encoded_result.data(), encoded_result.size(),
+						&decoded_result));
+	assert(decoded_result.item_count == SHOP_TRADE_MAX_ITEMS &&
+	       decoded_result.item_uids.back() == 111 &&
+	       decoded_result.keeper_cash_recorded && decoded_result.keeper_cash == 8750);
+	assert(!shop_trade_command_decode_result(encoded_result.data(),
+						 SHOP_TRADE_PREVIOUS_RESULT_BYTES,
 						 &decoded_result));
 	return 0;
 }
@@ -227,7 +260,7 @@ with tempfile.TemporaryDirectory(prefix="duris-shop-trade-command-") as temp_dir
             "-Isrc",
             str(source),
             rel("shop_trade_command.c"),
-            rel("item_transfer_command.c"),
+            rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"), rel("player_snapshot_codec.c"),
             rel("currency_command.c"),
             rel("critical_command.c"),
             "-lcrypto",

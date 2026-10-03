@@ -4,7 +4,8 @@ Optional Redis restart and crash recovery uses a long-lived in-process publisher
 forked serializer. The game thread incrementally captures one sequence-numbered
 generation across NPCs, floor objects, doors, and zone timers. Each pulse is bounded by
 record count and elapsed time, each record has a byte ceiling, and the complete retained
-generation has a fixed memory ceiling.
+generation has a fixed 128 MiB memory ceiling. The existing 2 MiB per-record and 512-item
+tree ceilings remain unchanged.
 
 The generation is an explicitly fuzzy recovery snapshot, not a point-in-time transaction.
 Its timestamp is capture start, so age is conservative relative to every record. Capture

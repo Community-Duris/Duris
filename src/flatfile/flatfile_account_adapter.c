@@ -1,6 +1,7 @@
 #include "flatfile/flatfile_account_adapter.h"
 
 #include "flatfile/flatfile_account_repository.h"
+#include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_identity_repository.h"
 #include "persistence/persistence_mode.h"
@@ -85,6 +86,18 @@ bool membership_records(P_acct account, std::vector<flatfile_identity_record> *r
 		value.blocked = character->blocked;
 		value.active = true;
 		value.racewar = character->racewar;
+		if (character->racewar == ACCT_IMMORTAL)
+		{
+			// The menu's immortal category is not the character's gameplay side.
+			// Keep the established domain identity when saving a staff account.
+			flatfile_identity_record retained;
+			const char *root = persistence_mode_flatfile_root();
+			if (!root ||
+			    flatfile_identity_lookup_pid(root, value.pid, &retained, nullptr) !=
+				    flatfile_identity_result::ok)
+				return false;
+			value.racewar = retained.racewar;
+		}
 		value.level = character->level;
 		value.race = character->race;
 		value.primary_class = character->m_class;
@@ -206,7 +219,10 @@ void flatfile_account_state_release(P_acct account)
 	release_account(account);
 }
 
-bool flatfile_account_state_save(P_acct account, std::string *error)
+namespace
+{
+bool save_account(P_acct account, std::string *error, bool ensure_fence,
+		  flatfile_authority_commit_outcome *outcome)
 {
 	const char *root = persistence_mode_flatfile_root();
 	flatfile_account_record record;
@@ -227,9 +243,35 @@ bool flatfile_account_state_save(P_acct account, std::string *error)
 	flatfile_authority_lock authority_lock;
 	if (!authority_lock.acquire(root, error))
 		return false;
+	// Resolve any retained journal before preparing either authority revision,
+	// including inactive stores with no economic-evidence directory yet.
+	if (flatfile_authority_transaction_recover(root, authority_lock, error) !=
+	    flatfile_authority_transaction_result::ok)
+	{
+		if (outcome)
+			*outcome = flatfile_authority_commit_outcome::publication_uncertain;
+		return false;
+	}
+	// A permanent deletion fence must be admitted before either after-image.
+	// Borrow the transaction lock so admission spans native fence publication.
+	if (account->acct_blocked == ACCOUNT_BLOCK_DELETION &&
+	    flatfile_economic_legacy_domain_gate(root, authority_lock, error))
+		return false;
 	flatfile_account_lock account_lock;
 	if (!account_lock.acquire(root, error))
 		return false;
+	if (ensure_fence)
+	{
+		flatfile_account_record native;
+		if (flatfile_account_load_locked(root, account_lock, account->acct_name, &native,
+						 error) != flatfile_account_result::ok)
+			return false;
+		if (native.blocked == ACCOUNT_BLOCK_DELETION)
+		{
+			account->persistence_revision = native.revision;
+			return true;
+		}
+	}
 
 	std::vector<flatfile_authority_operation> operations;
 	flatfile_authority_operation account_operation;
@@ -253,12 +295,31 @@ bool flatfile_account_state_save(P_acct account, std::string *error)
 	{
 		return false;
 	}
-	if (flatfile_authority_transaction_commit_operations(root, authority_lock, operations,
-							     error) !=
+	if (flatfile_authority_transaction_commit_operations_with_outcome(
+		    root, authority_lock, operations, error, outcome) !=
 	    flatfile_authority_transaction_result::ok)
 		return false;
 	account->persistence_revision = committed_revision;
 	return true;
+}
+} // namespace
+
+bool flatfile_account_state_save(P_acct account, std::string *error)
+{
+	return save_account(account, error, false, nullptr);
+}
+
+flatfile_account_fence_result flatfile_account_state_fence(P_acct account, bool retry,
+							   std::string *error)
+{
+	if (!account || account->acct_blocked != ACCOUNT_BLOCK_DELETION)
+		return flatfile_account_fence_result::refused;
+	auto outcome = flatfile_authority_commit_outcome::not_published;
+	if (save_account(account, error, true, &outcome))
+		return flatfile_account_fence_result::ready;
+	return retry || outcome != flatfile_authority_commit_outcome::not_published ?
+		       flatfile_account_fence_result::pending_recovery :
+		       flatfile_account_fence_result::refused;
 }
 
 bool flatfile_account_state_exists(const char *name, bool *exists, std::string *error)

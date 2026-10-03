@@ -1,22 +1,27 @@
-// wiz_newchar.c - wizard command to create test characters
+// Wizard character creation and approval commands.
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "cmd/interp.h"
+#include "core/utility.h"
 #include "core/utils.h"
 #include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include "account/account.h"
+#include "account/creation_availability_config.h"
 #include "world/epic.h"
 #include "classes/epic_skills.h"
+#include "guild/assocs.h"
+#include "item/trophy.h"
 #include "core/files.h"
 #include "core/mm.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_player_identity.h"
 
 extern int class_table[LAST_RACE + 1][CLASS_COUNT + 1];
 extern Skill skills[];
@@ -25,6 +30,8 @@ extern struct race_names race_names_table[];
 extern struct class_names class_names_table[];
 extern struct mm_ds *dead_mob_pool;
 extern struct mm_ds *dead_pconly_pool;
+extern P_desc descriptor_list;
+extern struct race_names race_names_table[];
 
 // syntax: newchar <name> <race_id> <class_id> <level> <true|false>
 // see: newchar help race, newchar help class
@@ -417,4 +424,437 @@ void do_newchar(P_char ch, char *argument, int /*cmd*/)
 
 	// cleanup temp structures
 	free_char(newch);
+}
+
+void do_decline(P_char ch, char *arg, int /*cmd*/)
+{
+	char Gbuf2[MAX_STRING_LENGTH], f_a[MAX_STRING_LENGTH], Gbuf1[MAX_STRING_LENGTH];
+	P_desc d, i;
+
+	arg = skip_spaces(arg);
+	if (!*arg)
+	{
+		send_to_char("Usage: decline <charname> [reason]\n", ch);
+		return;
+	}
+	arg = one_argument(arg, f_a);
+	for (d = descriptor_list; d; d = d->next)
+		if (STATE(d) == CON_ACCEPTWAIT && d->character &&
+		    !str_cmp(GET_NAME(d->character), f_a))
+		{
+			if (!arg || !*arg)
+			{
+				SEND_TO_Q(
+					"\n\nYour new character application has been declined. It is highly probable\n",
+					d);
+				SEND_TO_Q(
+					"that either your name does not suit fantasy theme, or something else is\n"
+					"inappropriate to the theme Duris strives to maintain.\n\n",
+					d);
+				SEND_TO_Q("Please enter another, more suitable fantasy name:", d);
+			}
+			else
+			{
+				SEND_TO_Q(
+					"\n\nYour new character application has been declined.\nReason supplied was:",
+					d);
+				SEND_TO_Q(arg, d);
+				SEND_TO_Q("\n\nPlease enter another, more suitable fantasy name:",
+					  d);
+			}
+			d->character->only.pc->prestige = 0;
+			logit(LOG_NEWCHAR, "%s declined new char %s (%s): %s.", GET_NAME(ch),
+			      GET_NAME(d->character), (*d->host ? d->host : "UNKNOWN"),
+			      (arg ? arg : "NO REASON GIVEN"));
+			snprintf(Gbuf1, MAX_STRING_LENGTH,
+				 "&+c*** STATUS: %s declined new player %s. (%s)\n", GET_NAME(ch),
+				 GET_NAME(d->character), arg);
+			snprintf(Gbuf2, MAX_STRING_LENGTH,
+				 "&+c*** STATUS: Someone declined new player %s. (%s)\n",
+				 GET_NAME(d->character), arg);
+			for (i = descriptor_list; i; i = i->next)
+				if (!i->connected && i->character &&
+				    IS_SET(i->character->specials.act, PLR_PETITION) &&
+				    IS_TRUSTED(i->character))
+				{
+					if (!CAN_SEE(i->character, ch))
+						send_to_char(Gbuf2, i->character);
+					else
+						send_to_char(Gbuf1, i->character);
+					//    deny_name(GET_NAME(d->character));
+					STATE(d) = CON_NEW_NAME;
+				}
+
+			deny_name(GET_NAME(d->character));
+
+			return;
+		}
+	send_to_char("Decline what new player's application?\n", ch);
+}
+
+extern int approve_mode;
+
+#define APPROVE_OFF 0
+#define APPROVE_ON 1
+void do_approve(P_char ch, char *arg, int /*cmd*/)
+{
+	int count;
+	P_desc d1, d2;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	const char *approve_modes[] = { "off", "on", "\n" };
+
+	if (!arg || !*arg)
+	{
+		/* list characters needing approval:  */
+		count = 0;
+		snprintf(Gbuf1, MAX_STRING_LENGTH,
+			 "&+cAC: Post-creation approval system is now %s.\n",
+			 approve_modes[approve_mode]);
+		send_to_char(Gbuf1, ch);
+		if (approve_mode == APPROVE_ON)
+		{
+			send_to_char("List of characters needing approval:\n", ch);
+			for (d1 = descriptor_list; d1; d1 = d1->next)
+			{
+				if (STATE(d1) == CON_ACCEPTWAIT)
+				{
+					snprintf(
+						Gbuf1, MAX_STRING_LENGTH,
+						"%d. %s (%s %s) %s - Rolled for %ld:%02ld, Socket: %d, Idle: %d:%02d.\n",
+						++count, GET_NAME(d1->character),
+						get_class_string(d1->character, Gbuf2),
+						race_names_table[(int)GET_RACE(d1->character)].ansi,
+						*d1->host ? d1->host : "UNKNOWN",
+						d1->character->only.pc->pc_timer[PC_TIMER_HEAVEN] /
+							60,
+						d1->character->only.pc->pc_timer[PC_TIMER_HEAVEN] %
+							60,
+						d1->descriptor, (d1->wait / WAIT_SEC) / 60,
+						(d1->wait / WAIT_SEC) % 60);
+					send_to_char(Gbuf1, ch);
+				}
+			}
+			if (count == 0)
+			{
+				send_to_char("None.\n\n", ch);
+			}
+		}
+		send_to_char("Usage: approve <charname|on|off>\n", ch);
+		return;
+	}
+	arg = skip_spaces(arg);
+	switch (search_block(arg, approve_modes, FALSE))
+	{
+	case 0:
+		if (GET_LEVEL(ch) < 62)
+		{
+			send_to_char("Sorry, that option is overlord only.\n", ch);
+			return;
+		}
+		approve_mode = APPROVE_OFF;
+
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "&+cAC: %s set newchar application system %s.\n",
+			 GET_NAME(ch), approve_modes[APPROVE_OFF]);
+		snprintf(Gbuf2, MAX_STRING_LENGTH,
+			 "&+CAC: Someone set newchar application system %s.\n",
+			 approve_modes[APPROVE_OFF]);
+		logit(LOG_WIZ, "%s", Gbuf1);
+		for (d1 = descriptor_list; d1; d1 = d1->next)
+		{
+			if ((d1->connected == CON_PLAYING) && d1->character &&
+			    IS_SET(d1->character->specials.act, PLR_PETITION) &&
+			    IS_TRUSTED(d1->character))
+			{
+				if (!CAN_SEE(d1->character, ch))
+					send_to_char(Gbuf2, d1->character);
+				else
+					send_to_char(Gbuf1, d1->character);
+			}
+		}
+		break;
+	case 1:
+		if (GET_LEVEL(ch) < 62)
+		{
+			send_to_char("Sorry, that option is overlord only.\n", ch);
+			return;
+		}
+		approve_mode = APPROVE_ON;
+
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "&+cAC: %s set newchar application system %s.\n",
+			 GET_NAME(ch), approve_modes[APPROVE_ON]);
+		logit(LOG_WIZ, "%s", Gbuf1);
+		snprintf(Gbuf2, MAX_STRING_LENGTH,
+			 "&+cAC: Someone set newchar application system %s.\n",
+			 approve_modes[APPROVE_ON]);
+		for (d1 = descriptor_list; d1; d1 = d1->next)
+		{
+			if ((d1->connected == CON_PLAYING) && d1->character &&
+			    IS_SET(d1->character->specials.act, PLR_PETITION) &&
+			    IS_TRUSTED(d1->character))
+			{
+				if (!CAN_SEE(d1->character, ch))
+					send_to_char(Gbuf2, d1->character);
+				else
+					send_to_char(Gbuf1, d1->character);
+			}
+		}
+		break;
+	default:
+		for (d1 = descriptor_list; d1; d1 = d1->next)
+		{
+			if (STATE(d1) == CON_ACCEPTWAIT && d1->character &&
+			    !str_cmp(GET_NAME(d1->character), arg))
+			{
+				logit(LOG_NEWCHAR, "%s approved new char %s from %s.", GET_NAME(ch),
+				      GET_NAME(d1->character), (*d1->host ? d1->host : "UNKNOWN"));
+				snprintf(Gbuf1, MAX_STRING_LENGTH,
+					 "&+c*** STATUS: %s approved new player %s from %s.\n",
+					 GET_NAME(ch), GET_NAME(d1->character),
+					 *d1->host ? d1->host : "&+WUNKNOWN&n");
+				snprintf(Gbuf2, MAX_STRING_LENGTH,
+					 "&+c*** STATUS: Someone approved new player %s from %s.\n",
+					 GET_NAME(d1->character),
+					 *d1->host ? d1->host : "&+WUNKNOWN&n");
+
+				for (d2 = descriptor_list; d2; d2 = d2->next)
+				{
+					if ((d2->connected == CON_PLAYING) && d2->character &&
+					    IS_SET(d2->character->specials.act, PLR_PETITION) &&
+					    IS_TRUSTED(d2->character))
+					{
+						if (!CAN_SEE(d2->character, ch))
+							send_to_char(Gbuf2, d2->character);
+						else
+							send_to_char(Gbuf1, d2->character);
+					}
+				}
+
+				SEND_TO_Q(
+					"\nYour application for character has been approved. Welcome into ranks of\nthe players of Duris!\n\n",
+					d1);
+				SEND_TO_Q("\n*** PRESS RETURN:\n", d1);
+				STATE(d1) = CON_WELCOME;
+				approve_name(GET_NAME(d1->character));
+				schedule_chaos_new_character_kit_before_entry(d1->character);
+
+				return;
+			}
+		}
+
+		if (approve_mode == APPROVE_OFF)
+		{
+			approve_name(arg);
+			statuslog(GET_WIZINVIS(ch),
+				  "Name '%s' added to the approved names list by %s", arg,
+				  GET_NAME(ch));
+		}
+		else
+		{
+			send_to_char("No such player in the newplayer-queue! \n", ch);
+		}
+		break;
+	}
+}
+
+// fullReset -> Do we reset epic skills/tradeskills?
+void NewbySkillSet(P_char ch, bool fullReset)
+{
+	int i;
+
+	// Walk through skills..
+	for (i = FIRST_SKILL; i <= LAST_SKILL; i++)
+	{
+		if (!fullReset && (IS_EPIC_SKILL(i) || IS_TRADESKILL(i)))
+		{
+			continue;
+		}
+		// if they have the skill..
+		if (SKILL_DATA_ALL(ch, i).rlevel[0] > 0 &&
+		    SKILL_DATA_ALL(ch, i).rlevel[0] <= GET_LEVEL(ch) && !IS_SPELL(i))
+		{
+			ch->only.pc->skills[i].learned = number(5, 20);
+			ch->only.pc->skills[i].taught = SKILL_DATA_ALL(ch, i).maxlearn[0] - 10;
+		}
+		else if (SKILL_DATA_ALL(ch, i).rlevel[0] && IS_SPELL(i) &&
+			 SKILL_DATA_ALL(ch, i).rlevel[0] <= GET_LEVEL(ch) && praying_class(ch))
+		{
+			ch->only.pc->skills[i].learned = 100;
+		}
+		else
+		{
+			ch->only.pc->skills[i].learned = 0;
+		}
+	}
+}
+
+// If nomsg == 0, send a message and assume a new char.
+// If nomsg == CMD_MULTICLASS, this is a new multiclassed char.
+static void do_start_impl(P_char ch, int nomsg, bool grant_newbie_kit)
+{
+	int i;
+
+	if (IS_NPC(ch))
+	{
+		return;
+	}
+
+	ch->player.level = 1;
+	ch->points.base_hit = 1;
+	ch->points.base_mana = 1;
+
+	if (!nomsg)
+	{
+		send_to_char("Welcome. This is now your character on Duris.\n"
+			     "May your journey here never end.....\n\n"
+			     " NOTE:  Type TOGGLE and HELP for useful information!\n",
+			     ch);
+	}
+
+	clear_title(ch);
+
+	if (grant_newbie_kit && !(GET_CLASS(ch, CLASS_AVENGER | CLASS_DREADLORD)) &&
+	    !((GET_RACE(ch) == RACE_DUERGAR || GET_RACE(ch) == RACE_MOUNTAIN) &&
+	      GET_CLASS(ch, CLASS_BERSERKER)))
+	{
+		load_obj_to_newbies(ch);
+	}
+
+	if (nomsg == CMD_MULTICLASS)
+	{
+		/* Clear the skills array */
+		for (i = 0; i < MAX_SKILLS; i++)
+		{
+			// We don't reset epic skills nor tradeskills when multiclassing.
+			if (!IS_EPIC_SKILL(i) && !IS_TRADESKILL(i))
+			{
+				ch->only.pc->skills[i].learned = 0;
+			}
+		}
+	}
+	else
+	{
+		/* Clear the skills array */
+		for (i = 0; i < MAX_SKILLS; i++)
+		{
+			ch->only.pc->skills[i].learned = 0;
+		}
+	}
+
+	clear_zone_trophy(ch);
+
+	ch->only.pc->prestige = 0;
+	if (nomsg == CMD_MULTICLASS)
+	{
+		// Set ch to parole if guilded.
+		if (GET_ASSOC(ch) != NULL)
+		{
+			SET_PAROLE(GET_A_BITS(ch));
+		}
+	}
+	else
+	{
+		ch->specials.guild = 0;
+		ch->specials.guild_status = 0;
+	}
+
+	/* These legacy standalone classes were replaced by Rogue specializations,
+	   so their specialization menus are intentionally empty. Preserve their
+	   old class-specific abilities when direct creation is explicitly open. */
+	if (creation_all_classes_enabled() && !ch->player.spec)
+	{
+		if (ch->player.m_class == CLASS_ASSASSIN)
+			ch->player.spec = SPEC_ASSMASTER;
+		else if (ch->player.m_class == CLASS_THIEF)
+			ch->player.spec = SPEC_CUTPURSE;
+	}
+
+	NewbySkillSet(ch, (nomsg != CMD_MULTICLASS) ? TRUE : FALSE);
+
+	GET_EXP(ch) = 1;
+
+	if (isname("Tyrus", GET_NAME(ch)) || god_check(GET_NAME(ch)))
+	{
+		ch->player.level = OVERLORD;
+	}
+
+	GET_MAX_HIT(ch) = GET_HIT(ch) = ch->points.base_hit;
+
+	GET_MAX_MANA(ch) = GET_MANA(ch) = ch->points.base_mana;
+
+	GET_MAX_VITALITY(ch) = GET_VITALITY(ch) = vitality_limit(ch);
+
+	if (GET_RACE(ch) != RACE_ILLITHID)
+	{
+		GET_COND(ch, THIRST) = 96;
+		GET_COND(ch, DRUNK) = 0;
+	}
+	else
+	{
+		GET_COND(ch, THIRST) = -1;
+		GET_COND(ch, DRUNK) = -1;
+	}
+
+	GET_COND(ch, FULL) = 96;
+
+	if (nomsg != CMD_MULTICLASS)
+	{
+		/* set some defaults. */
+		ch->specials.act =
+			(PLR_PETITION | PLR_ECHO | PLR_SNOTIFY | PLR_PAGING_ON | PLR_MAP);
+
+		/* preserve hardcore and newbie bits */
+		ch->specials.act2 &= (PLR2_HARDCORE_CHAR | PLR2_NEWBIE);
+
+		SET_BIT(ch->specials.act2, PLR2_NCHAT);
+		SET_BIT(ch->specials.act2, PLR2_QUICKCHANT);
+		SET_BIT(ch->specials.act2, PLR2_SPEC);
+		SET_BIT(ch->specials.act2, PLR2_HINT_CHANNEL);
+		SET_BIT(ch->specials.act2, PLR2_SHOW_QUEST);
+		SET_BIT(ch->specials.act2, PLR2_BOON);
+		SET_BIT(ch->specials.act2, PLR2_SHIPMAP);
+		if (!GET_CLASS(ch, CLASS_PALADIN))
+		{
+			SET_BIT(ch->specials.act, PLR_VICIOUS);
+		}
+		ch->only.pc->wimpy = 10;
+		ch->only.pc->aggressive = -1;
+
+		ch->only.pc->prompt = (PROMPT_HIT | PROMPT_MAX_HIT | PROMPT_MOVE | PROMPT_MAX_MOVE |
+				       PROMPT_TANK_NAME | PROMPT_TANK_COND | PROMPT_ENEMY |
+				       PROMPT_ENEMY_COND | PROMPT_TWOLINE | PROMPT_STATUS);
+	}
+	// New multi'd Paladins don't get vicious on.
+	else if (GET_CLASS(ch, CLASS_PALADIN))
+	{
+		REMOVE_BIT(ch->specials.act, PLR_VICIOUS);
+	}
+
+	if (USES_MANA(ch))
+	{
+		ch->only.pc->prompt |= (PROMPT_MANA | PROMPT_MAX_MANA);
+	}
+
+	/*  if(!GET_CLASS(ch, CLASS_PSIONICIST) && !GET_CLASS(ch, CLASS_MINDFLAYER))
+	    ch->only.pc->prompt =
+	      PROMPT_HIT | PROMPT_MAX_HIT | PROMPT_MOVE | PROMPT_MAX_MOVE;
+	  else
+	    ch->only.pc->prompt = PROMPT_HIT | PROMPT_MAX_HIT | PROMPT_MANA |
+	      PROMPT_MAX_MANA | PROMPT_MOVE | PROMPT_MAX_MOVE; */
+
+#ifndef EQ_WIPE
+	ch->player.time.played = 0;
+#else
+	ch->player.time.played = EQ_WIPE;
+#endif
+	ch->player.time.logon = time(0);
+}
+
+void do_start(P_char ch, int nomsg)
+{
+	do_start_impl(ch, nomsg, true);
+}
+
+void do_start_deferred_newbie_kit(P_char ch, int nomsg)
+{
+	do_start_impl(ch, nomsg, false);
 }

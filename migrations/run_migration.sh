@@ -43,11 +43,32 @@ MYSQL_PWD="$DB_PASSWD"
 export MYSQL_PWD
 MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
 
+# Archive-only columns require a copy followed by non-atomic DDL. The generic
+# runner must never infer isolation or writer quiescence from a database marker,
+# a loopback address, or a test-looking schema name. A disposable offline-clone
+# workflow must preserve and reconcile them before invoking this runner.
+if ! archive_columns=$("${MYSQL[@]}" -N -B -e "
+SELECT COUNT(*) FROM information_schema.columns
+WHERE table_schema=DATABASE() AND
+ ((table_name='ships' AND column_name IN
+   ('owner_pid','crew_index','crew_sail_skill','crew_guns_skill',
+    'crew_rpar_skill','crew_sail_chief','crew_guns_chief','crew_rpar_chief',
+    'maxspeed_bonus','capacity_bonus'))
+  OR (table_name='account_locker_items' AND column_name='item_type'));" 2>/dev/null); then
+    printf 'archive preflight: database connection or column inventory failed\n' >&2
+    exit 1
+fi
+if ! [[ "$archive_columns" =~ ^[0-9]+$ ]]; then
+    printf 'archive preflight: malformed column inventory\n' >&2
+    exit 1
+fi
+if (( archive_columns > 0 )); then
+    printf 'archive preflight: archive-only columns require offline reconciliation before the runner; no steps applied\n' >&2
+    exit 1
+fi
+
 STEP=0
-# Keep the historical baseline visible for immutable-runner documentation.
-# The live runner includes the renewable ward schema step below.
-# TOTAL=145 was the pre-ward migration count.
-TOTAL=146
+TOTAL=150
 FAILED=0
 
 run_sql() {
@@ -799,14 +820,6 @@ CREATE TABLE IF NOT EXISTS player_affects (
     bitvector5 BIGINT UNSIGNED DEFAULT 0,
     custom_msg_char TEXT DEFAULT NULL,
     custom_msg_room TEXT DEFAULT NULL,
-    ward_source_uid BIGINT UNSIGNED NOT NULL DEFAULT 0,
-    ward_full_duration INT NOT NULL DEFAULT 0,
-    ward_capacity BIGINT UNSIGNED NOT NULL DEFAULT 0,
-    ward_capacity_max BIGINT UNSIGNED NOT NULL DEFAULT 0,
-    ward_refresh_remaining INT NOT NULL DEFAULT 0,
-    ward_source_type TINYINT UNSIGNED NOT NULL DEFAULT 0,
-    ward_source_worn TINYINT UNSIGNED NOT NULL DEFAULT 0,
-    ward_active TINYINT UNSIGNED NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     INDEX idx_pid (pid),
     CONSTRAINT fk_player_affects FOREIGN KEY (pid) REFERENCES player_data(pid) ON DELETE CASCADE
@@ -2999,7 +3012,6 @@ convert_tables_to_charset "ensure consistent collation on all tables" 1
 run_sql_file "apply account-bound reward schema" "$SCRIPT_DIR/account_bound_rewards.sql"
 run_check "verify account-bound reward schema" "$SCRIPT_DIR/verify_account_bound_rewards.sh"
 run_sql_file "apply persistence and auction schema contract" "$SCRIPT_DIR/persistence_contract.sql"
-run_sql_file "apply renewable spell ward durability schema" "$SCRIPT_DIR/spell_ward_durability.sql"
 run_sql_file "apply player corpse persistence state" "$SCRIPT_DIR/corpse_persistence_state.sql"
 run_sql_file "apply critical command inbox and outbox" "$SCRIPT_DIR/critical_command_inbox_outbox.sql"
 run_check "verify critical command inbox and outbox" "$SCRIPT_DIR/verify_critical_command_schema.sh"
@@ -3112,6 +3124,11 @@ SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schem
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'bitvector5') = 0, 'ALTER TABLE siege_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;"
 
 run_sql_file "normalize legacy schema metadata" "$SCRIPT_DIR/legacy_schema_convergence.sql"
+run_sql_file "preserve archived schema columns" "$SCRIPT_DIR/legacy_archive_schema_reconciliation.sql"
+run_sql_file "normalize archived item material order" "$SCRIPT_DIR/legacy_archive_material_order.sql"
+run_sql_file "normalize archived locker unique key" "$SCRIPT_DIR/legacy_archive_locker_index.sql"
+run_sql_file "remove archived affect signature collision key" "$SCRIPT_DIR/legacy_archive_affect_index.sql"
+run_sql_file "remove redundant archived character mapping key" "$SCRIPT_DIR/legacy_archive_character_index.sql"
 
 run_sql "convert ship cargo tables to InnoDB" "
 ALTER TABLE ship_cargo_prices ENGINE=InnoDB;

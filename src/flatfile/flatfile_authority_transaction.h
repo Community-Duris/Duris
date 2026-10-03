@@ -12,7 +12,10 @@
  * Callers that build a transaction from a fixed domain contract must assert their
  * own maximum against this value at compile time.
  */
-constexpr size_t flatfile_authority_transaction_maximum_operations = 32;
+// One player save can carry 4096 operation receipts, its snapshot, a death
+// disposition, and a custody after-image. The total byte limit still applies.
+constexpr size_t flatfile_authority_transaction_maximum_operations = 4099;
+constexpr size_t flatfile_authority_transaction_maximum_bytes = 256 * 1024 * 1024;
 
 struct flatfile_authority_after_image
 {
@@ -27,7 +30,9 @@ enum class flatfile_authority_store : uint8_t
 	identities = 3,
 	accounts = 4,
 	metadata = 5,
-	player_deaths = 6
+	player_deaths = 6,
+	economic_evidence = 7,
+	item_accounting_references = 8
 };
 
 enum class flatfile_authority_operation_kind : uint8_t
@@ -52,6 +57,15 @@ enum class flatfile_authority_transaction_result
 	io_error
 };
 
+// A failed apply does not undo publication of the authority journal. A rename
+// with failed directory sync is uncertain until native recovery finishes.
+enum class flatfile_authority_commit_outcome
+{
+	not_published,
+	publication_uncertain,
+	committed
+};
+
 class flatfile_authority_lock
 {
     public:
@@ -67,6 +81,7 @@ class flatfile_authority_lock
 	struct state;
 	std::unique_ptr<state> state_;
 	bool owns(const std::string &root) const;
+	friend class flatfile_accounting_storage;
 	friend flatfile_authority_transaction_result
 	flatfile_authority_transaction_recover(const std::string &, const flatfile_authority_lock &,
 					       std::string *);
@@ -90,5 +105,9 @@ flatfile_authority_transaction_commit(const std::string &root, const flatfile_au
 flatfile_authority_transaction_result flatfile_authority_transaction_commit_operations(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const std::vector<flatfile_authority_operation> &operations, std::string *error);
+flatfile_authority_transaction_result flatfile_authority_transaction_commit_operations_with_outcome(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const std::vector<flatfile_authority_operation> &operations, std::string *error,
+	flatfile_authority_commit_outcome *outcome);
 
 #endif

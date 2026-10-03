@@ -6,7 +6,7 @@ CC	= g++
 DEBUG	= -ggdb3
 #LDFLAGS	= -ggdb3
 
-HARDENING_FLAGS = -Og -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fstack-clash-protection
+HARDENING_FLAGS = -Og -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fstack-clash-protection
 WARNING_FLAGS = -Wall -Wextra -Wpedantic -Werror \
 	-Wformat=2 -Wformat-overflow=2 -Wformat-truncation=2 \
 	-Wnull-dereference -Wduplicated-cond -Wduplicated-branches -Wlogical-op \
@@ -36,6 +36,7 @@ else ifneq ($(BUILD_PROFILE),production)
 $(error BUILD_PROFILE must be development or production)
 endif
 CFLAGS += -D__NO_TESTS__    # exclude built-in test hooks from maintained builds
+CFLAGS += -DDURIS_PERSISTENT_TRANSPORT
 CFLAGS += $(EXTRA_CFLAGS)
 LDFLAGS += $(EXTRA_LDFLAGS)
 
@@ -94,6 +95,7 @@ SHIP_SRCS = \
 SHIP_OBJS = $(SHIP_SRCS:%.c=ships/%.o)
 
 OBJS =  $(SHIP_OBJS) \
+				 net/transport.o \
 				 item/item_actions.o \
 				 item/native_artifact_actions.o \
 				 item/tsunami_actions.o \
@@ -110,11 +112,61 @@ OBJS =  $(SHIP_OBJS) \
 				 item/artifact_mana_runtime.o \
 				 item/artifact_mana_store.o \
 				 magic/magic.o \
+				 magic/spell_age.o \
+				 magic/spell_prismatic.o \
+				 magic/spell_permanent_stats.o \
+				 magic/spell_attribute_buffs.o \
+				 magic/spell_travel.o \
+				 magic/spell_protection.o \
+				 magic/spell_elemental_shields.o \
+				 magic/spell_globes.o \
+				 magic/spell_physical_armor.o \
+				 magic/spell_chaos_shield.o \
+				 magic/spell_portals.o \
+				 magic/spell_detection.o \
+				 magic/spell_identification.o \
+				 magic/spell_item_enhancement.o \
+				 magic/spell_item_lifecycle.o \
+				 magic/spell_visibility.o \
+				 magic/spell_light_darkness.o \
+				 magic/spell_direct_attacks.o \
+				 magic/spell_words_of_power.o \
+				 magic/spell_judgement.o \
+				 magic/spell_dragon_breaths.o \
+				 magic/spell_dragoon_spells.o \
+				 magic/spell_elemental_attacks.o \
+				 magic/spell_environment.o \
+				 magic/spell_bigby_hands.o \
+				 magic/spell_missile_barrage.o \
+				 magic/spell_status_control.o \
+				 magic/spell_charm.o \
+				 magic/spell_size_changes.o \
+				 magic/spell_transformations.o \
+				 magic/spell_healing.o \
+				 magic/spell_corpse_lifecycle.o \
+				 magic/spell_damage_over_time.o \
+				 magic/spell_area_doom.o \
+				 magic/spell_summon_ghasts.o \
+				 magic/spell_conjuration.o \
+				 magic/spell_life_drain.o \
+				 magic/spell_weakening.o \
+				 magic/spell_negative_energy.o \
+				 magic/spell_lightning_aoe.o \
+				 magic/spell_meteor_swarm.o \
+				 magic/spell_firestorm.o \
+				 magic/spell_ice_storm.o \
+				 magic/spell_incendiary_cloud.o \
+				 magic/spell_spore_cloud.o \
+				 magic/spell_alignment_dispel.o \
+				 magic/spell_sunray.o \
+				 magic/spell_obtenebration.o \
 				 world/achievements.o \
 				 account/account.o \
 				 account/racewar_admission.o \
 				 account/password_hash.o \
 				 account/password_async.o \
+				 account/account_load.o \
+				 account/account_async.o \
 				 account/account_recovery.o \
 				 account/account_recovery_nanny.o \
 				 account/account_reward.o \
@@ -131,11 +183,32 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/actobj.o \
 				 cmd/actoff.o \
 				 cmd/divine_refusal_policy.o \
+				 cmd/divine_refusal_content.o \
 				 cmd/actoth.o cmd/color_command.o \
 				 cmd/actset.o \
 				 cmd/actwiz.o \
+				 cmd/racewar_chat.o \
+				 cmd/staff_broadcast.o \
+				 cmd/staff_where.o \
+				 cmd/staff_which.o \
+				 cmd/staff_lookup.o \
+				 cmd/staff_petitions.o \
+				 cmd/staff_moderation.o \
+				 cmd/staff_travel.o \
+				 cmd/staff_world_control.o \
+				 cmd/staff_setattr.o \
+				 cmd/staff_character_recovery.o \
+				 cmd/staff_access.o \
+				 cmd/staff_stat.o \
+				 cmd/staff_presence.o \
+				 cmd/staff_grants.o \
+				 cmd/staff_eqrate.o \
+				 cmd/staff_session_control.o \
+				 cmd/staff_newbie_aid.o \
+				 cmd/whois_lookup.o \
 				 cmd/community_spellup.o \
 				 cmd/player_death_restitution.o \
+				 cmd/audit.o \
 				 net/ansi.o net/chat_presentation.o \
 				 net/output_style.o \
 				 net/output_profiles.o \
@@ -180,6 +253,8 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/collector_notification.o \
 				 economy/collector_transaction.o \
 				 economy/collector_repository.o \
+				 economy/collector_accounting.o \
+				 persistence/economic_sql_collector_transaction.o \
 				 classes/bard.o \
 				 magic/beh_magic.o \
          magic/blispells.o \
@@ -190,12 +265,16 @@ OBJS =  $(SHIP_OBJS) \
          economy/cardgames.o \
          combat/chaos.o \
 				combat/chaos_materials.o \
+				combat/chaos_pouch_ledger.o \
+				combat/chaos_pouch_publication.o \
 				combat/chaos_config.o \
 				net/command_latency.o \
 				 net/comm.o \
 				 persistence/copyover.o \
+				 persistence/copyover_codec.o \
 				 core/common.o \
 				 world/condition.o \
+				 world/bloodstains.o \
 				 core/constant.o \
 				 combat/ctf.o \
 				 combat/dam_mods.o \
@@ -208,6 +287,7 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/drannak.o \
 				 item/enhance.o \
 				 economy/crafting.o \
+				 economy/craft_progression.o \
 				 economy/mining.o \
 				 economy/mining_config.o \
 				 item/random_equipment_config.o \
@@ -225,12 +305,21 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/epic_skills.o \
 				 classes/ethermancer.o \
 				 world/events.o \
+				 world/world_activity.o \
 				 world/event_names.o \
 				 world/new_events.o \
 				 world/nevent_periodic.o \
 				 combat/training_dummy.o \
 				 combat/attack_continuation.o \
 				 combat/spell_wards.o \
+				 combat/hit_calculations.o \
+				 combat/defense_resolution.o \
+				 combat/attack_cadence.o \
+				 combat/damage_support.o \
+				 combat/fight_state.o \
+				 combat/attack_effects.o \
+				 combat/attack_resolution.o \
+				 combat/death_messages.o \
 				 combat/fight.o \
 				 core/files.o \
 				 combat/fraglist.o \
@@ -244,6 +333,7 @@ OBJS =  $(SHIP_OBJS) \
 				 guild/guildhall_procs.o \
 				 guild/guildhall_db.o \
 				 combat/grapple.o \
+				 world/character_maintenance.o \
 				 world/handler.o \
 				 world/hardcore.o \
 				 classes/innates.o \
@@ -262,6 +352,7 @@ OBJS =  $(SHIP_OBJS) \
 				 core/memory.o \
 				 core/mm.o \
 				 mob/mobact.o \
+				 mob/pet_lifecycle.o \
 				 world/world_quest.o \
 				 world/world_quest_policy.o \
 				 combat/mobcombat.o \
@@ -284,6 +375,16 @@ OBJS =  $(SHIP_OBJS) \
 				 core/env_file.o \
 				 flatfile/flatfile_store.o \
 				 flatfile/flatfile_authority_transaction.o \
+				 flatfile/flatfile_accounting_store.o \
+				 flatfile/flatfile_accounting_authority.o \
+				 flatfile/flatfile_accounting_bank_transaction.o \
+				 flatfile/flatfile_accounting_coin_transaction.o \
+				 flatfile/flatfile_accounting_pile_state.o \
+				 flatfile/flatfile_accounting_pile_baseline.o \
+				 flatfile/flatfile_accounting_dispatch.o \
+				 flatfile/flatfile_accounting_baseline.o \
+				 flatfile/flatfile_accounting_lifecycle_transaction.o \
+				 flatfile/flatfile_item_accounting_reference.o \
 				 flatfile/flatfile_account_repository.o \
 				 flatfile/flatfile_account_delete.o \
 				 flatfile/flatfile_account_reward_summon_repository.o \
@@ -329,11 +430,25 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/critical_command.o \
 				 persistence/critical_command_journal.o \
 				 persistence/critical_command_coordinator.o \
+				 persistence/economic_accounting_repository.o \
+				 persistence/economic_sql_baseline_transaction.o \
+				 persistence/economic_sql_activation_receipt.o \
+				 persistence/economic_sql_lifecycle_guard.o \
+				 persistence/economic_sql_cutover_capability.o \
+				 persistence/economic_sql_accounting_lifecycle_transaction.o \
+				 persistence/economic_sql_source_snapshot.o \
+				 economy/economic_sql_source_normalize.o \
+				 persistence/economic_sql_bank_transaction.o \
+				 persistence/economic_sql_item_transfer_transaction.o \
+				 persistence/sql_room_item_payload.o \
 				 persistence/critical_command_repository.o \
+				 persistence/quest_reward_obligation_repository.o \
+				 persistence/quest_reward_obligation_pipeline.o \
 				 persistence/player_death_restitution_command.o \
 				 persistence/player_death_restitution_repository.o \
 				 persistence/corpse_lifecycle_command.o \
 				 item/item_transfer_command.o \
+				 item/craft_pouch_mutation.o \
 				 item/item_ownership_runtime.o \
 				 item/item_get_policy.o \
 				 item/item_command_policy.o \
@@ -343,15 +458,40 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/shop_trade_transaction.o \
 				 economy/shop_trade_runtime.o \
 				 item/item_transfer_repository.o \
+				 item/economic_accounting_item_reference.o \
 				 item/item_transfer_synthetic.o \
 				 item/item_uid_allocator.o \
 				 persistence/critical_outbox.o \
 				 world/epic_command.o \
 				 world/epic_transaction.o \
 				 economy/currency_command.o \
+				 economy/currency_exchange_proc.o \
 				 economy/coin_transfer_command.o \
+				 economy/coin_transfer_accounting.o \
+				 economy/item_transfer_accounting.o \
+				 economy/economic_accounting_types.o \
+				 economy/economic_accounting_plan.o \
+				 economy/economic_accounting_intent.o \
+				 economy/economic_command_admission.o \
+				 economy/economic_gameplay_authority.o \
+				 economy/economic_baseline_adapter.o \
+				 economy/economic_baseline_codec.o \
+				 economy/economic_baseline_command.o \
+				 economy/economic_currency_adapter.o \
 				 economy/auction_command.o \
 				 economy/auction_repository.o \
+				 economy/auction_accounting.o \
+				 economy/auction_money_claim_accounting.o \
+				 persistence/economic_sql_pending_claim_source.o \
+				 economy/auction_listing_accounting.o \
+				 persistence/economic_sql_auction_listing_transaction.o \
+				 persistence/economic_sql_shop_trade_transaction.o \
+				 persistence/economic_sql_auction_bid_transaction.o \
+				 persistence/economic_sql_auction_money_claim_transaction.o \
+				 economy/auction_item_claim_accounting.o \
+				 persistence/economic_sql_auction_item_claim_transaction.o \
+				 economy/auction_settlement_accounting.o \
+				 persistence/economic_sql_auction_settlement_transaction.o \
 				 economy/auction_transaction.o \
 				 combat/combat_outcome_command.o \
 				 combat/combat_outcome_repository.o \
@@ -366,6 +506,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/boon_shop_command.o \
 				 economy/boon_shop_transaction.o \
 				 economy/shop_trade_command.o \
+				 economy/shop_trade_accounting.o \
 				 world/zone_story_quest_tracking.o \
 				 world/zone_story_quest_catalog.o \
 				 world/zone_story_quest_repository.o \
@@ -380,6 +521,7 @@ OBJS =  $(SHIP_OBJS) \
 				 account/session_audit_command.o \
 				 account/session_audit_repository.o \
 				 account/session_audit_transaction.o \
+				 player/player_death_recovery_query.o \
 				 player/player_load_repository.o \
 				 player/player_load_topology.o \
 				 player/player_load_pipeline.o \
@@ -410,6 +552,7 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_revision_state.o \
 				 player/player_save_worker.o \
 				 player/player_save_journal.o \
+				 player/player_quarantine_recovery.o \
 				 player/player_save_pipeline.o \
 				 player/player_death_restitution_runtime.o \
 				 player/player_death_restitution_adapter.o \
@@ -418,12 +561,14 @@ OBJS =  $(SHIP_OBJS) \
 				 world/world_recovery_npc_items.o \
 				 world/world_recovery_pipeline.o \
 				 player/player_snapshot_repository.o \
+				 player/player_death_conflict_repository.o \
 				 player/output_preferences.o player/output_message.o player/player_snapshot_capture.o \
 				 player/player_snapshot_codec.o \
 				 persistence/persistence_queue.o \
 				 persistence/latency_trace.o \
 				 sql/sql_persistence_raw.o \
 				 sql/sql_pool.o \
+				 sql/sql_economic_runtime.o \
 				 item/plushit.o \
 				 net/poll.o \
 				 net/prompt.o \
@@ -440,17 +585,36 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/shaman.o \
 				 economy/shop.o \
 				 core/signals.o \
+				 core/game_loop_watchdog.o \
 				 classes/skills.o \
 				 magic/smagic.o \
 				 classes/salchemist.o \
+				 classes/npc_alchemist.o \
 				 classes/sillusionist.o \
 				 net/sparser.o \
 				 mob/specials.o \
 				 classes/specializations.o \
 				 specs/specs.assign.o \
+				 specs/specs.aracguil.o \
 				 specs/specs.barovia.o \
 				 specs/specs.clwcvrn.o \
 				 specs/specs.dragonnia.o \
+				 specs/specs.unique.o \
+				 specs/specs.teleport_pools.o \
+				 specs/specs.moonshae.o \
+				 specs/specs.astral_main.o \
+				 specs/specs.ixarkon.o \
+				 specs/specs.olympus.o \
+				 specs/specs.limbo.o \
+				 specs/specs.faang.o \
+				 specs/specs.surface.o \
+				 specs/specs.cosmic.o \
+				 specs/specs.githzer.o \
+				 specs/specs.alatorin.o \
+				 specs/specs.battlefields.o \
+				 specs/specs.bctdl.o \
+				 specs/specs.kimordril.o \
+				 specs/specs.tradeskills.o \
 				 specs/specs.eth2.o \
 				 specs/specs.halfcut.o \
 				 specs/specs.ravenloft.o \
@@ -462,9 +626,73 @@ OBJS =  $(SHIP_OBJS) \
 				 mob/studioproclib.o \
 				 specs/specs.lohrr.o \
 				 specs/specs.mobile.o \
+				 specs/specs.ghore.o \
+				 specs/specs.jin.o \
+				 specs/specs.clfhaven.o \
+				 specs/specs.stormport.o \
+				 specs/specs.tharnadian_ruin.o \
+				 specs/specs.world_quest.o \
+				 specs/specs.guards.o \
+				 specs/specs.exit_barriers.o \
+				 specs/specs.monster_attacks.o \
+				 specs/specs.monster_tracking.o \
+				 specs/specs.fooquest.o \
+				 specs/specs.elemental_bosses.o \
+				 specs/specs.elemental_swarm.o \
+				 specs/specs.braddistock.o \
+				 specs/specs.ceothia.o \
+				 specs/specs.dracopit.o \
+				 specs/specs.dungeon.o \
+				 specs/specs.foggy_woods.o \
+				 specs/specs.khildarak.o \
+				 specs/specs.knight.o \
+				 specs/specs.celestia.o \
+				 specs/specs.avernus.o \
+				 specs/specs.earth.o \
+				 specs/specs.player_castles.o \
+				 specs/specs.prison.o \
+				 specs/specs.dlsc.o \
+				 specs/specs.fourhorse.o \
+				 specs/specs.kastle.o \
+				 specs/specs.nexus_uc.o \
+				 specs/specs.seacaves.o \
+				 specs/specs.temple.o \
+				 specs/specs.torg.o \
+				 specs/specs.plane_earth.o \
+				 specs/specs.nyneth.o \
+				 specs/specs.heavens.o \
+				 specs/specs.bahamut.o \
+				 specs/specs.lava_tubes.o \
+				 specs/specs.negplane.o \
+				 specs/specs.tikitt.o \
+				 specs/specs.teka2.o \
+				 specs/specs.graves.o \
+				 specs/specs.trnsptow.o \
+				 specs/specs.kobold.o \
+				 specs/specs.patrol.o \
+				 specs/specs.newbie_guards.o \
+				 specs/specs.obsidian_citadel.o \
+				 specs/specs.raxquest.o \
+				 specs/specs.newbie2.o \
+				 specs/specs.newhope.o \
+				 specs/specs.demogorgon.o \
+				 specs/specs.wildland_trails.o \
+				 specs/specs.nw.o \
+				 specs/specs.ako.o \
+				 specs/specs.menden.o \
+				 specs/specs.minizones.o \
+				 specs/specs.scorchvalley.o \
+				 specs/specs.split_shield.o \
+				 specs/specs.harpy_hometown.o \
+				 specs/specs.bloodstone.o \
 				 specs/specs.morgs.o \
 				 specs/specs.mist.o \
 				 specs/specs.object.o \
+				 specs/specs.walls.o \
+				 specs/specs.character_progression.o \
+				 specs/specs.set_equipment.o \
+				 specs/specs.artifacts.o \
+				 specs/specs.cerebusp.o \
 				 specs/specs.realm.o \
 				 specs/specs.room.o \
 				 specs/specs.snikzone.o \
@@ -520,6 +748,7 @@ OBJS =  $(SHIP_OBJS) \
 				 item/trophy.o \
 				 net/unicode.o \
 				 persistence/persistence_log.o \
+				 core/flag_formatting.o \
 				 core/utility.o \
 				 world/weather.o \
 				 world/ferry.o \

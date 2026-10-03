@@ -121,8 +121,10 @@
 #define MINLVLIMMORTAL 57 /* bottom of immortal levels */
 #define MAX_CIRCLE 12 /* Alter at your own peril! */
 #define MAX_CMD_LIST 1000 /* maximum number of total commands */
-#define MAX_CMD 865 // current number of commands, including the final newline
-#define MAX_CONNECTIONS 256 /* last descriptor allowed, really; needs fixed */
+#define MAX_CMD 866 // current number of commands, including the final newline
+#define MAX_CONNECTIONS 256 /* live connections, independent of descriptor numbers */
+/* Match GnuTLS's established 40-second default; also enforce it without packets. */
+#define TLS_HANDSHAKE_TIMEOUT_MS 40000
 #define MAX_DUPES_IN_WELL 5 /* donation well won't accept more than this of same item */
 #define MAX_HOSTNAME 256 /* max length of server's hostname */
 #define MAX_INPUT_LENGTH 1024 /*    12+ 80 character lines */

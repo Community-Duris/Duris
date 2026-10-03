@@ -23,13 +23,18 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <vector>
+#include <unordered_set>
 #include "combat/damage.h"
 #include "core/defines.h"
 #include "world/epic.h"
 #include "world/epic_transaction.h"
 #include "combat/justice.h"
+#include "economy/economic_gameplay_authority.h"
+#include "item/item_command_policy.h"
 #include "core/mm.h"
 #include "item/objmisc.h"
+#include "item/item_movement_transaction.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
@@ -61,6 +66,34 @@ bool is_neg_good(sbyte location);
 
 namespace
 {
+bool collect_required_objects(P_char ch, const int required[],
+			      const std::unordered_set<P_obj> &used, std::vector<P_obj> *objects)
+{
+	int remaining[MAX_INGREDIENTS + 1] = {};
+	for (int index = 0; index < MAX_INGREDIENTS + 1; ++index)
+		remaining[index] = required[index];
+	objects->clear();
+	for (P_obj object = ch->carrying; object; object = object->next_content)
+	{
+		if (used.contains(object))
+			continue;
+		for (int index = 0; index < MAX_INGREDIENTS + 1; ++index)
+			if (remaining[index] && remaining[index] == OBJ_VNUM(object))
+			{
+				remaining[index] = 0;
+				objects->push_back(object);
+				break;
+			}
+	}
+	for (int value : remaining)
+		if (value)
+		{
+			objects->clear();
+			return false;
+		}
+	return !objects->empty();
+}
+
 struct spellbind_context
 {
 	unsigned long object_uid;
@@ -86,7 +119,8 @@ void spellbind_committed(P_char ch, bool committed, const epic_command_result &,
 	spellbind_context context = {};
 	memcpy(&context, raw_context, sizeof(context));
 	P_obj item = carried_object_by_uid(ch, context.object_uid);
-	if (!item || IS_SET(item->extra_flags, ITEM_NOREPAIR) || item->condition <= 99)
+	if (!item || IS_SET(item->extra_flags, ITEM_NOREPAIR) || item->condition <= 99 ||
+	    (economic_gameplay_authority::active() && item_command_uses_durable_ownership(item)))
 	{
 		send_to_char(
 			"The item changed while spellbinding was pending; your epic is being refunded.\n",
@@ -153,54 +187,6 @@ extern struct zone_data *zone_table;
 
 P_obj set_encrust_affect(P_obj obj, int proc);
 
-struct potion potion_data[] = {
-	{ SPELL_GREATER_LIVING_STONE,
-	  51,
-	  { LIVING_STONE, FAERIE_DUST, DRAGONS_BLOOD, BONE },
-	  FIRST_POTION_VIRTUAL },
-	{ SPELL_STRONG_ACID,
-	  41,
-	  { BONE, DRAGONS_BLOOD, NIGHTSHADE, GREEN_HERB, LIVING_STONE },
-	  FIRST_POTION_VIRTUAL + 3 },
-	{ SPELL_ENTANGLE,
-	  41,
-	  { BONE, GREEN_HERB, GARLIC, MANDRAKE_ROOT },
-	  FIRST_POTION_VIRTUAL + 4 },
-	{ SPELL_GLASS_BOMB,
-	  36,
-	  { MANDRAKE_ROOT, GARLIC, GREEN_HERB, DRAGONS_BLOOD, NIGHTSHADE },
-	  FIRST_POTION_VIRTUAL + 5 },
-	{ SPELL_FLY,
-	  36,
-	  { MANDRAKE_ROOT, GARLIC, GREEN_HERB, FAERIE_DUST, NIGHTSHADE },
-	  FIRST_POTION_VIRTUAL + 6 },
-	{ SPELL_NAPALM,
-	  31,
-	  { GARLIC, DRAGONS_BLOOD, MANDRAKE_ROOT, NIGHTSHADE },
-	  FIRST_POTION_VIRTUAL + 7 },
-	{ SPELL_FEEBLEMIND,
-	  31,
-	  { GARLIC, GREEN_HERB, FAERIE_DUST, NIGHTSHADE },
-	  FIRST_POTION_VIRTUAL + 8 },
-	{ SPELL_GREASE,
-	  26,
-	  { GARLIC, DRAGONS_BLOOD, GREEN_HERB, NIGHTSHADE },
-	  FIRST_POTION_VIRTUAL + 9 },
-	{ SPELL_LIVING_STONE,
-	  26,
-	  { LIVING_STONE, FAERIE_DUST, DRAGONS_BLOOD, MANDRAKE_ROOT },
-	  FIRST_POTION_VIRTUAL + 11 },
-	{ SPELL_SLOW,
-	  21,
-	  { DRAGONS_BLOOD, FAERIE_DUST, GREEN_HERB, NIGHTSHADE },
-	  FIRST_POTION_VIRTUAL + 13 },
-	{ SPELL_WITHER, 16, { NIGHTSHADE, GREEN_HERB, MANDRAKE_ROOT }, FIRST_POTION_VIRTUAL + 15 },
-	{ SPELL_DISPEL_MAGIC, 11, { NIGHTSHADE, GARLIC, MANDRAKE_ROOT }, FIRST_POTION_VIRTUAL + 16 },
-	{ SPELL_FAERIE_FIRE, 11, { GREEN_HERB, GARLIC, FAERIE_DUST }, FIRST_POTION_VIRTUAL + 17 },
-	{ SPELL_NITROGEN, 6, { GREEN_HERB, GARLIC }, FIRST_POTION_VIRTUAL + 18 },
-	{}
-};
-
 struct poison
 {
 	int poison_type;
@@ -251,11 +237,6 @@ struct poison poison_data[] = {
 	  VOBJ_POISON_VIAL_LIFELEAK },
 	{}
 };
-
-int basic_ingredients[] = { VOBJ_FORAGE_NIGHTSHADE,    VOBJ_FORAGE_MANDRAKE,
-			    VOBJ_FORAGE_GARLIC,	       VOBJ_FORAGE_FAERIE_DUST,
-			    VOBJ_FORAGE_DRAGON_BLOOD,  VOBJ_FORAGE_GREEN_HERB,
-			    VOBJ_FORAGE_STRANGE_STONE, VOBJ_FORAGE_HUMAN_BONE };
 
 const char *encrust_color_list[] = { "",    "&+G", "&+R", "&+Y", "&+B", "&+L",
 				     "&+M", "&+r", "&+b", "&+m", " " };
@@ -458,102 +439,6 @@ void set_long_description(P_obj t_obj, const char *newDescription)
 	t_obj->description = str_dup(newDescription);
 }
 
-int get_id_for(P_obj t_obj)
-{
-	int i;
-
-	for (i = 0; i < LAST_BASIC_INGREDIENT; i++)
-	{
-		if (basic_ingredients[i] == obj_index[t_obj->R_num].virtual_number)
-		{
-			return i + 1;
-		}
-	}
-	if (obj_index[t_obj->R_num].virtual_number != 8)
-	{
-		return WRONG_INGREDIENT;
-	}
-
-	if (strstr(t_obj->name, "bowels"))
-	{
-		return BOWELS;
-	}
-	else if (strstr(t_obj->name, "face"))
-	{
-		return FACE;
-	}
-	else if (strstr(t_obj->name, "eyes"))
-	{
-		return EYES;
-	}
-	else if (strstr(t_obj->name, "legs"))
-	{
-		return LEGS;
-	}
-	else if (strstr(t_obj->name, "arms"))
-	{
-		return ARMS;
-	}
-	else if (strstr(t_obj->name, "tongue"))
-	{
-		return TONGUE;
-	}
-	else if (strstr(t_obj->name, "scalp"))
-	{
-		return SCALP;
-	}
-	else if (strstr(t_obj->name, "skull"))
-	{
-		return SKULL;
-	}
-	else if (strstr(t_obj->name, "ears"))
-	{
-		return EARS;
-	}
-
-	return WRONG_INGREDIENT;
-}
-
-int got_all_ingredients(P_char ch, int required[])
-{
-	int found[MAX_INGREDIENTS + 1];
-	int i;
-	P_obj t_obj, next_obj;
-	int object_id;
-
-	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-	{
-		found[i] = required[i];
-	}
-
-	for (t_obj = ch->carrying; t_obj; t_obj = next_obj)
-	{
-		next_obj = t_obj->next_content;
-		object_id = get_id_for(t_obj);
-
-		for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-		{
-			if (found[i] == object_id)
-			{
-				found[i] = 0;
-				break;
-			}
-		}
-	}
-
-	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-	{
-		if (found[i])
-		{
-			return 0;
-		}
-	}
-
-	notch_skill(ch, SKILL_MIX, 6.25);
-
-	return 1;
-}
-
 int got_all_poison_ingredients(P_char ch, int required[])
 {
 	int found[MAX_INGREDIENTS + 1];
@@ -590,102 +475,6 @@ int got_all_poison_ingredients(P_char ch, int required[])
 	}
 
 	return 1;
-}
-
-void extract_used_poison_ingredients(P_char ch, int ingredients[])
-{
-	int found[MAX_INGREDIENTS + 1];
-	P_obj used_objs[MAX_INGREDIENTS + 1];
-	P_obj t_obj, next_obj;
-	int object_id;
-	int i;
-
-	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-	{
-		found[i] = ingredients[i];
-		used_objs[i] = NULL;
-	}
-
-	for (t_obj = ch->carrying; t_obj; t_obj = next_obj)
-	{
-		next_obj = t_obj->next_content;
-
-		object_id = obj_index[t_obj->R_num].virtual_number;
-
-		for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-		{
-			if (found[i] == object_id)
-			{
-				found[i] = 0;
-				used_objs[i] = t_obj;
-				break;
-			}
-		}
-	}
-
-	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-	{
-		if (used_objs[i])
-		{
-			extract_obj(used_objs[i]);
-		}
-	}
-}
-
-void extract_used_ingredients(P_char ch, int ingredients[])
-{
-	int found[MAX_INGREDIENTS + 1];
-	P_obj used_objs[MAX_INGREDIENTS + 1];
-	P_obj t_obj, next_obj;
-	int object_id;
-	int i;
-
-	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-	{
-		found[i] = ingredients[i];
-		used_objs[i] = NULL;
-	}
-
-	for (t_obj = ch->carrying; t_obj; t_obj = next_obj)
-	{
-		next_obj = t_obj->next_content;
-
-		object_id = get_id_for(t_obj);
-
-		for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-		{
-			if (found[i] == object_id)
-			{
-				found[i] = 0;
-				used_objs[i] = t_obj;
-				break;
-			}
-		}
-	}
-
-	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
-	{
-		if (used_objs[i])
-		{
-			extract_obj(used_objs[i]);
-		}
-	}
-}
-
-P_obj get_bottle(P_char ch)
-{
-	P_obj t_obj, next_obj;
-
-	for (t_obj = ch->carrying; t_obj; t_obj = next_obj)
-	{
-		next_obj = t_obj->next_content;
-		if (OBJ_VNUM(t_obj) == VOBJ_POTION_BOTTLES && strstr(t_obj->name, "bottle"))
-		{
-			return t_obj;
-		}
-	}
-
-	return NULL;
 }
 
 P_obj get_vial(P_char ch)
@@ -772,140 +561,76 @@ void do_mixpoison(P_char ch, char *argument, int /*cmd*/)
 		act("You need to have a poison vial in your inventory.", FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
-	notch_skill(ch, SKILL_MIXPOISON, 6.25);
 	for (i = 0; poison_data[i].poison_type; i++)
 	{
-		if (GET_LEVEL(ch) >= poison_data[i].level_required &&
-		    skl_lvl >= poison_data[i].skill_required)
+		if (GET_LEVEL(ch) < poison_data[i].level_required ||
+		    skl_lvl < poison_data[i].skill_required)
+			continue;
+		std::vector<P_obj> inputs, outputs, ingredients;
+		std::unordered_set<P_obj> used;
+		// Bound the plan below the command's item/key and snapshot byte budgets.
+		constexpr size_t max_poison_batch = 64;
+		while (outputs.size() < max_poison_batch)
 		{
-			bool made_poison = false;
-			while (got_all_poison_ingredients(ch, poison_data[i].ingredients))
-			{
-				P_obj poison_vial;
-				char gbuf2[MAX_STRING_LENGTH], buffer[MAX_STRING_LENGTH];
-
-				poison_vial = read_object(poison_data[i].vnum, VIRTUAL);
-				act("You've &+Wcreated&n $p!", FALSE, ch, poison_vial, 0, TO_CHAR);
-				snprintf(gbuf2, MAX_STRING_LENGTH, "%s %s", GET_NAME(ch),
-					 poison_vial->name);
-				poison_vial->name = str_dup(gbuf2);
-				snprintf(buffer, MAX_STRING_LENGTH, "%s mixed by %s",
-					 poison_vial->short_description, GET_NAME(ch));
-				set_short_description(poison_vial, buffer);
-				obj_to_char(poison_vial, ch);
-				extract_obj(vial);
-				extract_used_poison_ingredients(ch, poison_data[i].ingredients);
-				CharWait(ch, PULSE_VIOLENCE);
-				made_poison = true;
-
-				vial = get_vial(ch);
-				if (!vial)
+			vial = nullptr;
+			for (P_obj candidate = ch->carrying; candidate;
+			     candidate = candidate->next_content)
+				if (!used.contains(candidate) &&
+				    OBJ_VNUM(candidate) == VOBJ_POISON_VIALS &&
+				    strstr(candidate->name, "vial"))
 				{
+					vial = candidate;
 					break;
 				}
+			if (!vial || !collect_required_objects(ch, poison_data[i].ingredients, used,
+							       &ingredients))
+				break;
+			P_obj output = read_object(poison_data[i].vnum, VIRTUAL);
+			if (!output)
+				break;
+			char name[MAX_STRING_LENGTH], description[MAX_STRING_LENGTH];
+			snprintf(name, sizeof(name), "%s %s", GET_NAME(ch), output->name);
+			output->name = str_dup(name);
+			snprintf(description, sizeof(description), "%s mixed by %s",
+				 output->short_description, GET_NAME(ch));
+			set_short_description(output, description);
+			inputs.push_back(vial);
+			used.insert(vial);
+			for (P_obj ingredient : ingredients)
+			{
+				inputs.push_back(ingredient);
+				used.insert(ingredient);
 			}
-
-			if (!vial || made_poison)
-				return;
+			outputs.push_back(output);
 		}
+		if (outputs.empty())
+			continue;
+		craft_recipe_continuation terms = {
+			.player_pid = static_cast<uint32_t>(GET_PID(ch)),
+			.discipline = craft_recipe_discipline::poison,
+			.recipe_vnum = static_cast<uint32_t>(poison_data[i].vnum),
+			.pouch_mutation = {},
+			.output_count = static_cast<uint32_t>(outputs.size())
+		};
+		terms.notch = skill_notch_prepare(ch, SKILL_MIXPOISON, 6.25);
+		item_movement_reject reject = item_movement_reject::none;
+		if (!item_movement_transaction_submit_craft(
+			    ch, inputs.data(), inputs.size(), outputs.data(), outputs.size(),
+			    poison_data[i].vnum, nullptr, nullptr, 0, &reject, nullptr, nullptr, 0,
+			    chaos_pouch_usage_mode::generated, &terms))
+		{
+			for (P_obj output : outputs)
+				extract_obj(output);
+			send_to_char(
+				"The poison craft service is busy; no ingredients were consumed.\r\n",
+				ch);
+		}
+		else
+			CharWait(ch, PULSE_VIOLENCE);
+		return;
 	}
 
 	act("No poison created in the vial!", FALSE, ch, 0, 0, TO_CHAR);
-	return;
-}
-
-void do_mix(P_char ch, char *argument, int /*cmd*/)
-{
-	P_obj bottle;
-	char arg[MAX_STRING_LENGTH];
-	int i;
-
-	if (!GET_CHAR_SKILL(ch, SKILL_MIX))
-	{
-		act("Well trying might not hurt, but dont.", FALSE, ch, 0, 0, TO_CHAR);
-		return;
-	}
-
-	CharWait(ch, PULSE_VIOLENCE * 1);
-	one_argument(argument, arg);
-	if (*arg)
-	{
-		act("Get a potion bottle, and have the garlic and stuff in inventory and type mix!",
-		    FALSE, ch, 0, 0, TO_CHAR);
-		return;
-	}
-
-	bottle = get_bottle(ch);
-
-	if (!bottle)
-	{
-		act("You need to have a potion bottle in your inventory.", FALSE, ch, 0, 0,
-		    TO_CHAR);
-		return;
-	}
-	for (i = 0; potion_data[i].spell_type; i++)
-	{
-		if (GET_LEVEL(ch) >= potion_data[i].spell_level &&
-		    got_all_ingredients(ch, potion_data[i].ingredients))
-		{
-			while (TRUE)
-			{
-				P_obj potion;
-				char gbuf2[MAX_STRING_LENGTH], buffer[MAX_STRING_LENGTH];
-
-				if (number(1, 160) < ((GET_C_WIS(ch) + GET_C_DEX(ch)) / 2))
-				{
-					potion = read_object(potion_data[i].vnum, VIRTUAL);
-					potion->value[0] = GET_LEVEL(ch);
-					act("You've &+Wcreated&n $p.", FALSE, ch, potion, 0,
-					    TO_CHAR);
-					snprintf(gbuf2, MAX_STRING_LENGTH, "%s %s", GET_NAME(ch),
-						 potion->name);
-					potion->name = str_dup(gbuf2);
-					snprintf(buffer, MAX_STRING_LENGTH, "%s mixed by %s",
-						 potion->short_description, GET_NAME(ch));
-					set_short_description(potion, buffer);
-					obj_to_char(potion, ch);
-				}
-				else
-				{
-					act("&+RYou clumsily spill your ingredients everywhere, ruining your creation!",
-					    FALSE, ch, 0, 0, TO_CHAR);
-				}
-				extract_obj(bottle);
-
-				if (number(0, 5))
-				{
-					bottle = read_object(VOBJ_POTION_BOTTLES, VIRTUAL);
-					obj_to_char(bottle, ch);
-				}
-
-				if (number(0, (GET_CHAR_SKILL(ch, SKILL_MIX) / 10 + number(1, 2))))
-				{
-					bottle = get_bottle(ch);
-					if (!bottle)
-					{
-						act("But cant make more since you dont have any more bottles on you!",
-						    FALSE, ch, 0, 0, TO_CHAR);
-						break;
-					}
-				}
-				else
-				{
-					act("You wasted all your ingredients\r\n", FALSE, ch, 0, 0,
-					    TO_CHAR);
-					extract_used_ingredients(ch, potion_data[i].ingredients);
-					break;
-				}
-			}
-			notch_skill(ch, SKILL_MIX, 6.25);
-			CharWait(ch, PULSE_VIOLENCE * 2);
-
-			return;
-		}
-	}
-
-	act("No potion created in the bottle!\r\n", FALSE, ch, 0, 0, TO_CHAR);
 	return;
 }
 
@@ -968,6 +693,11 @@ void do_spellbind(P_char ch, char *argument, int /*cmd*/)
 	if (!(item = get_obj_in_list_vis(ch, arg, ch->carrying)))
 	{
 		act("What item do you do you want to spellbind?", FALSE, ch, 0, 0, TO_CHAR);
+		return;
+	}
+	if (economic_gameplay_authority::active() && item_command_uses_durable_ownership(item))
+	{
+		send_to_char("You cannot spellbind that item right now.\r\n", ch);
 		return;
 	}
 
@@ -1118,7 +848,6 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 	char arg[MAX_STRING_LENGTH];
 	char arg2[MAX_STRING_LENGTH];
 	char buf1[MAX_STRING_LENGTH];
-	char buf2[MAX_STRING_LENGTH];
 	int skill = 0;
 	int craftsmanship;
 
@@ -1240,36 +969,59 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 	}
 	if (virtual_jewel)
 	{
-		const chaos_material_pouch_usage generated = { OBJ_VNUM(jewel), 1 };
-		if (!chaos_material_pouch_record_generated(ch, &generated, 1))
+		const chaos_material_pouch_usage usage = { OBJ_VNUM(jewel), 1 };
+		if (!chaos_material_pouch_can_record_generated(ch, &usage, 1))
 		{
-			chaos_material_pouch_report_generated_failure(ch, "encrust");
 			extract_obj(jewel);
+			send_to_char(
+				"The Chaos craft pouch counter cannot record this encrust.\r\n",
+				ch);
 			return;
 		}
 	}
 
-	snprintf(buf2, MAX_STRING_LENGTH, "%s attempts to encrust %s with %s...", GET_NAME(ch),
-		 item->short_description, jewel->short_description);
-	act(buf2, TRUE, ch, 0, 0, TO_ROOM);
-	wizlog(56, "%s", buf2);
-
-	craftsmanship = item->craftsmanship;
-
-	if (number(1, 110) > skill)
+	// Trap state is not represented by the durable item snapshot yet. Preserve
+	// both inputs rather than publish a replacement that loses its trap on reload.
+	if (item->trap_eff || item->trap_dam || item->trap_charge || item->trap_level)
 	{
-		act("You broke your item in the process.", FALSE, ch, 0, 0, TO_CHAR);
-		act("...and breaks it in the process.", TRUE, ch, 0, 0, TO_ROOM);
-		extract_obj(item);
-		extract_obj(jewel);
-		wizlog(56, "and ruined it in the process...");
+		if (virtual_jewel)
+			extract_obj(jewel);
+		send_to_char("Remove the item's trap before encrusting it.\r\n", ch);
 		return;
 	}
-	else
+	craftsmanship = item->craftsmanship;
+	P_obj retained_pouch = virtual_jewel ? chaos_material_pouch_find(ch) : nullptr;
+	const chaos_material_pouch_usage pouch_usage = { OBJ_VNUM(jewel), 1 };
+	const int jewel_vnum = OBJ_VNUM(jewel);
+	if (virtual_jewel && !retained_pouch)
 	{
-		// notch_skill(ch, SKILL_ENCRUST, 7.7);
-		act("...creating a real masterpiece!", TRUE, ch, 0, 0, TO_ROOM);
-		act("Hurrah! Hurrah!", FALSE, ch, 0, 0, TO_CHAR);
+		extract_obj(jewel);
+		return;
+	}
+	const bool succeeded = number(1, 110) <= skill;
+	if (!succeeded)
+	{
+		P_obj inputs[] = { item, jewel };
+		const craft_recipe_continuation terms = {
+			.player_pid = static_cast<uint32_t>(GET_PID(ch)),
+			.discipline = craft_recipe_discipline::encrust_failure,
+			.recipe_vnum = static_cast<uint32_t>(jewel_vnum),
+			.pouch_mutation = {}
+		};
+		item_movement_reject reject = item_movement_reject::none;
+		if (!item_movement_transaction_submit_craft(
+			    ch, inputs, virtual_jewel ? 1 : 2, nullptr, 0, jewel_vnum, nullptr,
+			    nullptr, 0, &reject, retained_pouch,
+			    virtual_jewel ? &pouch_usage : nullptr, virtual_jewel ? 1 : 0,
+			    chaos_pouch_usage_mode::generated, &terms))
+			send_to_char(
+				"The encrust service is busy; your item and jewel were preserved.\r\n",
+				ch);
+		else
+			CharWait(ch, PULSE_VIOLENCE);
+		if (virtual_jewel)
+			extract_obj(jewel);
+		return;
 	}
 
 	P_obj new_item = read_object(1251, VIRTUAL);
@@ -1340,12 +1092,26 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 		set_encrust_affect(new_item, jewel->value[6]);
 	if (IS_SET(new_item->extra2_flags, ITEM2_ENHANCED))
 		describe_encrusted_enhanced(new_item);
-	extract_obj(item);
-	extract_obj(jewel);
-	obj_to_char(new_item, ch);
-
-	wizlog(56, "and created %s", new_item->short_description);
-
+	P_obj inputs[] = { item, jewel };
+	const craft_recipe_continuation terms = { .player_pid = static_cast<uint32_t>(GET_PID(ch)),
+						  .discipline = craft_recipe_discipline::encrust,
+						  .recipe_vnum = static_cast<uint32_t>(jewel_vnum),
+						  .pouch_mutation = {},
+						  .output_count = 1 };
+	item_movement_reject reject = item_movement_reject::none;
+	if (!item_movement_transaction_submit_craft(
+		    ch, inputs, virtual_jewel ? 1 : 2, &new_item, 1, jewel_vnum, nullptr, nullptr,
+		    0, &reject, retained_pouch, virtual_jewel ? &pouch_usage : nullptr,
+		    virtual_jewel ? 1 : 0, chaos_pouch_usage_mode::generated, &terms))
+	{
+		extract_obj(new_item);
+		send_to_char("The encrust service is busy; your item and jewel were preserved.\r\n",
+			     ch);
+	}
+	else
+		CharWait(ch, PULSE_VIOLENCE);
+	if (virtual_jewel)
+		extract_obj(jewel);
 	return;
 }
 
@@ -1685,71 +1451,6 @@ void do_smelt(P_char ch, char * /*arg*/, int /*cmd*/)
 		act("&+L$p &+Lmakes a roaring sound!&n", FALSE, 0, furnace, 0, TO_ROOM);
 		// notch_skill(ch, SKILL_SMELT, 50);
 	}
-}
-
-bool MobAlchemistGetPotions(P_char ch, int type, int number)
-{
-	P_obj bottle;
-	int i = 0;
-
-	while (i++ < number)
-	{
-		bottle = read_object(potion_data[type].vnum, VIRTUAL);
-		bottle->value[0] = MIN(50, GET_LEVEL(ch));
-		obj_to_char(bottle, ch);
-	}
-	CharWait(ch, PULSE_VIOLENCE);
-
-	return TRUE;
-}
-
-int spl2potion(int spl)
-{
-	int i;
-
-	for (i = 0; potion_data[i].spell_type; i++)
-		if (potion_data[i].spell_type == spl)
-			return i;
-
-	return 0;
-}
-
-int count_potions(P_char ch)
-{
-	P_obj t_obj;
-	int level;
-	int potions = 0;
-
-	level = GET_LEVEL(ch);
-	for (t_obj = ch->carrying; t_obj; t_obj = t_obj->next_content)
-	{
-		if (obj_index[t_obj->R_num].virtual_number >= FIRST_POTION_VIRTUAL &&
-		    obj_index[t_obj->R_num].virtual_number <= FIRST_POTION_VIRTUAL + 21 &&
-		    t_obj->value[0] <= level)
-			potions++;
-	}
-
-	return potions;
-}
-
-P_obj get_potion(P_char ch)
-{
-	P_obj t_obj, next_obj;
-	int count = count_potions(ch);
-	int pick = number(0, count - 1);
-
-	for (t_obj = ch->carrying; t_obj; t_obj = next_obj)
-	{
-		next_obj = t_obj->next_content;
-		if (obj_index[t_obj->R_num].virtual_number >= FIRST_POTION_VIRTUAL &&
-		    obj_index[t_obj->R_num].virtual_number <= FIRST_POTION_VIRTUAL + 21 &&
-		    t_obj->value[0] <= GET_LEVEL(ch) && pick-- == 0)
-		{
-			return t_obj;
-		}
-	}
-
-	return NULL;
 }
 
 #define LAST_HARMFUL_SPELL_TO_ADD 11

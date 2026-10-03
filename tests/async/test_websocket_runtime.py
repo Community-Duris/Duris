@@ -29,6 +29,7 @@ with tempfile.TemporaryDirectory(prefix="duris-websocket-runtime-") as directory
             "-lssl",
             "-lcrypto",
             "-lz",
+            "-lbsd",
             "-o",
             str(binary),
         ],

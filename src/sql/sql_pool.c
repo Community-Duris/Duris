@@ -37,6 +37,7 @@ typedef struct
 {
 	MYSQL *conn;
 	int in_use; /* boolean: 1 = borrowed, 0 = free */
+	int discard_on_release;
 } sql_pool_slot_t;
 
 static sql_pool_slot_t *pool = NULL;
@@ -193,6 +194,7 @@ MYSQL *sql_pool_acquire_with_status(int *pool_was_active)
 
 	while (1)
 	{
+		int retry_scan = 0;
 		/* Linear scan for a free slot -- pool is small (4-16), so O(n)
 		 * is fine. */
 		for (int i = 0; i < pool_size; i++)
@@ -202,12 +204,69 @@ MYSQL *sql_pool_acquire_with_status(int *pool_was_active)
 				pool[i].in_use = 1;
 				conn = pool[i].conn;
 				pthread_mutex_unlock(&pool_mutex);
-				if (!duris_sql_exclusion_guard_allows(conn))
+				const auto guard_status = duris_sql_exclusion_guard_check(conn);
+				if (guard_status == duris_sql_exclusion_guard_status::allowed)
+					return conn;
+				if (guard_status == duris_sql_exclusion_guard_status::owner_lost)
 				{
 					sql_pool_release(conn);
 					return NULL;
 				}
-				return conn;
+				/* An inconclusive probe says nothing about the original lock owner.
+				 * Retire this worker and rescan so another healthy slot can serve the
+				 * request or this slot can be refilled with a fresh configured handle. */
+				sql_pool_discard_connection(conn);
+				sql_pool_release(conn);
+				retry_scan = 1;
+				break;
+			}
+		}
+		if (retry_scan)
+			continue;
+
+		/* A discarded handle must never be reused, but permanently losing its
+		 * slot would eventually strand every persistence worker. Prefer the
+		 * healthy slots above; otherwise reserve one empty slot while opening
+		 * a validated replacement outside the mutex. Shutdown counts this
+		 * reservation as a borrower and cannot free the slot underneath us. */
+		for (int i = 0; i < pool_size; i++)
+		{
+			if (!pool[i].in_use && !pool[i].conn)
+			{
+				pool[i].in_use = 1;
+				pthread_mutex_unlock(&pool_mutex);
+				try
+				{
+					conn = sql_pool_create_connection("sql_pool_acquire", i);
+				}
+				catch (...)
+				{
+					conn = NULL;
+				}
+				pthread_mutex_lock(&pool_mutex);
+				if (pool_closing || !conn)
+				{
+					if (conn)
+						mysql_close(conn);
+					pool[i].in_use = 0;
+					pthread_cond_broadcast(&pool_cond);
+					pthread_mutex_unlock(&pool_mutex);
+					return NULL;
+				}
+				pool[i].conn = conn;
+				pthread_mutex_unlock(&pool_mutex);
+				const auto guard_status = duris_sql_exclusion_guard_check(conn);
+				if (guard_status == duris_sql_exclusion_guard_status::allowed)
+					return conn;
+				if (guard_status == duris_sql_exclusion_guard_status::inconclusive)
+				{
+					/* The configured factory already validated this handle. If this
+					 * independent lease check is inconclusive, leave the slot empty for
+					 * a later acquisition rather than returning an unproven session. */
+					sql_pool_discard_connection(conn);
+				}
+				sql_pool_release(conn);
+				return NULL;
 			}
 		}
 
@@ -246,6 +305,22 @@ MYSQL *sql_pool_acquire(void)
 	return sql_pool_acquire_with_status(NULL);
 }
 
+void sql_pool_discard_connection(MYSQL *conn)
+{
+	if (!conn)
+		return;
+
+	pthread_mutex_lock(&pool_mutex);
+	if (pool)
+		for (int i = 0; i < pool_size; i++)
+			if (pool[i].conn == conn && pool[i].in_use)
+			{
+				pool[i].discard_on_release = 1;
+				break;
+			}
+	pthread_mutex_unlock(&pool_mutex);
+}
+
 void sql_pool_release(MYSQL *conn)
 {
 	if (!conn)
@@ -263,6 +338,12 @@ void sql_pool_release(MYSQL *conn)
 	{
 		if (pool[i].conn == conn)
 		{
+			if (pool[i].in_use && pool[i].discard_on_release)
+			{
+				mysql_close(pool[i].conn);
+				pool[i].conn = NULL;
+				pool[i].discard_on_release = 0;
+			}
 			pool[i].in_use = 0;
 			if (pool_closing)
 				pthread_cond_broadcast(&pool_cond);
@@ -275,56 +356,75 @@ void sql_pool_release(MYSQL *conn)
 	pthread_mutex_unlock(&pool_mutex);
 }
 
+// Caller holds pool_mutex and owns this slot's lease.
+static void sql_pool_retire_borrowed_slot(int slot)
+{
+	mysql_close(pool[slot].conn);
+	pool[slot].conn = NULL;
+	pool[slot].in_use = 0;
+	pool[slot].discard_on_release = 0;
+	if (pool_closing)
+		pthread_cond_broadcast(&pool_cond);
+	else
+		pthread_cond_signal(&pool_cond);
+}
+
 MYSQL *sql_pool_replace_connection(MYSQL *conn)
 {
 	MYSQL *replacement = NULL;
-	MYSQL *old_conn = NULL;
 	int slot = -1;
 
 	if (!conn)
 		return NULL;
 
 	pthread_mutex_lock(&pool_mutex);
-	if (!pool || pool_closing)
-	{
-		pthread_mutex_unlock(&pool_mutex);
-		return NULL;
-	}
-
-	for (int i = 0; i < pool_size; i++)
-	{
-		if (pool[i].conn == conn)
-		{
-			slot = i;
-			old_conn = pool[i].conn;
-			break;
-		}
-	}
-	pthread_mutex_unlock(&pool_mutex);
-
+	if (pool)
+		for (int i = 0; i < pool_size; i++)
+			if (pool[i].conn == conn && pool[i].in_use)
+			{
+				slot = i;
+				break;
+			}
 	if (slot < 0)
-		return NULL;
-
-	replacement = sql_pool_create_connection("sql_pool_replace_connection", slot);
-	if (!replacement)
 	{
-		pthread_mutex_lock(&pool_mutex);
-		if (pool && slot < pool_size && pool[slot].conn == old_conn)
-		{
-			mysql_close(pool[slot].conn);
-			pool[slot].conn = NULL;
-			pool[slot].in_use = 0;
-			pthread_cond_signal(&pool_cond);
-		}
 		pthread_mutex_unlock(&pool_mutex);
 		return NULL;
+	}
+	if (pool_closing || pool[slot].discard_on_release)
+	{
+		sql_pool_retire_borrowed_slot(slot);
+		pthread_mutex_unlock(&pool_mutex);
+		return NULL;
+	}
+	// Keep the original lease reserved while the factory is outside the mutex.
+	// Shutdown waits for it; no other borrower can acquire/reuse its address.
+	pthread_mutex_unlock(&pool_mutex);
+	try
+	{
+		replacement = sql_pool_create_connection("sql_pool_replace_connection", slot);
+	}
+	catch (...)
+	{
+		logit(LOG_DEBUG, "sql_pool_replace_connection: connection factory failed");
 	}
 
 	pthread_mutex_lock(&pool_mutex);
-	if (!pool || pool_closing || slot >= pool_size || pool[slot].conn != old_conn)
+	if (!pool || slot >= pool_size || pool[slot].conn != conn || !pool[slot].in_use)
 	{
+		// Invalid concurrent use of a lease must not retire somebody else's slot.
 		pthread_mutex_unlock(&pool_mutex);
-		mysql_close(replacement);
+		if (replacement)
+			mysql_close(replacement);
+		return NULL;
+	}
+	if (!replacement || pool_closing || pool[slot].discard_on_release)
+	{
+		// Close the unpublished fresh session before releasing the reservation,
+		// so shutdown cannot report quiescence while that session remains open.
+		if (replacement)
+			mysql_close(replacement);
+		sql_pool_retire_borrowed_slot(slot);
+		pthread_mutex_unlock(&pool_mutex);
 		return NULL;
 	}
 
@@ -407,6 +507,11 @@ MYSQL *sql_pool_acquire(void)
 }
 
 void sql_pool_release(MYSQL *conn)
+{
+	(void)conn;
+}
+
+void sql_pool_discard_connection(MYSQL *conn)
 {
 	(void)conn;
 }

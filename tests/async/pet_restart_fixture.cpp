@@ -25,7 +25,7 @@ int main(int argc, char **argv)
 	std::string error;
 	assert(flatfile_player_snapshot_read(root, 1, &snapshot, &error) ==
 	       flatfile_player_load_result::ok);
-	if (mode == "seed")
+	if (mode == "seed" || mode == "seed-hidden")
 	{
 		assert(snapshot.pets.empty());
 		for (auto &field : snapshot.status_integers)
@@ -80,6 +80,8 @@ int main(int argc, char **argv)
 					--row.parent_index;
 			pet.items[0].equipment_slot = i == 0 ? WEAR_BODY + 1 : 0;
 			pet.items[0].affects[0] = { APPLY_HIT, 19 };
+			if (mode == "seed-hidden" && i == 0)
+				pet.items[0].extra_flags |= ITEM_NOSHOW;
 			snapshot.pets.push_back(std::move(pet));
 		}
 	}
@@ -99,7 +101,7 @@ int main(int argc, char **argv)
 		}
 		assert(armed);
 	}
-	if (mode == "seed" || mode == "arm-expiry")
+	if (mode == "seed" || mode == "seed-hidden" || mode == "arm-expiry")
 	{
 		std::vector<uint8_t> payload, bytes;
 		snapshot.encoded_size_bound = PLAYER_SNAPSHOT_MAX_BYTES;
@@ -124,7 +126,11 @@ int main(int argc, char **argv)
 		std::cout << static_cast<unsigned>(pet.hold_reason) << '|' << pet.restore_state
 			  << '|' << pet.max_hit;
 		for (const auto &item : pet.items)
+		{
 			std::cout << '|' << item.object_uid;
+			if (item.extra_flags & ITEM_NOSHOW)
+				std::cout << "|hidden:" << item.equipment_slot;
+		}
 		std::cout << '\n';
 	}
 }

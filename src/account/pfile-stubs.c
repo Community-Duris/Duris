@@ -1,4 +1,12 @@
 #include "core/structs.h"
+#include "sql/sql_corpse.h"
+#include "sql/sql_locker.h"
+#include "sql/sql_player_deletion.h"
+#include "persistence/economic_sql_lifecycle_guard.h"
+#include <cerrno>
+#include "sql/sql_player_identity.h"
+#include "sql/sql_ship.h"
+#include "sql/sql_transaction.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -135,6 +143,23 @@ bool sql_begin_transaction()
 {
 	return false;
 }
+// The offline pfile binary owns no SQL session or economic writer admission.
+MYSQL *DB = nullptr;
+economic_sql_currency_writer_guard::~economic_sql_currency_writer_guard() = default;
+unsigned int
+economic_sql_currency_writer_guard::acquire(MYSQL *, economic_sql_currency_writer_guard *) noexcept
+{
+	return ENOTSUP;
+}
+bool economic_sql_currency_writer_guard::is_valid_for(MYSQL *) const noexcept
+{
+	return false;
+}
+bool sql_player_deletion_guard(int, const economic_sql_currency_writer_guard &)
+{
+	// The offline pfile tool has no SQL authority and cannot approve deletion.
+	return false;
+}
 bool sql_commit()
 {
 	return false;
@@ -198,7 +223,7 @@ bool sql_delete_locker(int, int)
 {
 	return true;
 }
-bool sql_delete_player(int, bool)
+bool sql_delete_player(int, bool, const economic_sql_currency_writer_guard *)
 {
 	return true;
 }

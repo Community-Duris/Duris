@@ -232,6 +232,12 @@ bool combat_outcome_repository_execute(MYSQL *connection, const critical_command
 				       combat_outcome_result *result, unsigned int *result_code,
 				       bool *mutation_applied)
 {
+	if (!critical_command_legacy_execution_supported(command))
+	{
+		errno = EPROTONOSUPPORT;
+		return false;
+	}
+
 	if (!connection || !result || !result_code || !mutation_applied)
 		return false;
 	combat_outcome_payload payload = {};

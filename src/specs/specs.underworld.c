@@ -8,6 +8,8 @@
  */
 
 #include "core/prototypes.h"
+#include "combat/attack_continuation.h"
+#include "combat/defense_resolution.h"
 #include "item/weapon_actions.h"
 #include "item/native_artifact_actions.h"
 #include "core/structs.h"
@@ -964,6 +966,18 @@ int doombringer(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int curr_time, i, room;
 	P_char vict;
+	auto refresh_doombringer_continuation = [&](const attack_continuation &continuation)
+	{
+		const attack_continuation_result after_callback =
+			check_attack_continuation(continuation);
+		if (!after_callback.can_continue())
+			return false;
+
+		ch = after_callback.actor;
+		vict = after_callback.target;
+		obj = after_callback.weapon;
+		return true;
+	};
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -976,7 +990,7 @@ int doombringer(P_obj obj, P_char ch, int cmd, char *arg)
 		return TRUE;
 	}
 
-	if (!IS_ALIVE(ch) || !(room = ch->in_room))
+	if (!char_in_list(ch) || !IS_ALIVE(ch) || !(room = ch->in_room))
 	{
 		return FALSE;
 	}
@@ -1014,7 +1028,8 @@ int doombringer(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		vict = legacy_proc_arg<P_char>(arg);
 	}
-	if (cmd != CMD_MELEE_HIT || !IS_ALIVE(vict) || !OBJ_WORN_BY(obj, ch))
+	if (cmd != CMD_MELEE_HIT || !vict || !char_in_list(vict) || !IS_ALIVE(vict) ||
+	    !OBJ_WORN_BY(obj, ch))
 	{
 		return FALSE;
 	}
@@ -1034,44 +1049,52 @@ int doombringer(P_obj obj, P_char ch, int cmd, char *arg)
 		act("&+LFoul black &=LBLIGHTNING&+L surges forth from $q&+L...", FALSE, ch, obj,
 		    vict, TO_ROOM);
 
+		attack_continuation continuation = begin_attack_continuation(ch, vict, obj);
 		if (spell_damage(ch, vict, number(100, 200), SPLDAM_LIGHTNING,
 				 SPLDAM_NODEFLECT | SPLDAM_NOSHRUG, 0) != DAM_NONEDEAD)
 		{
 			return TRUE;
 		}
+		if (!refresh_doombringer_continuation(continuation))
+			return TRUE;
 
 		act("&+LDoombringer continues to grow with a putrid power, and unleashes &=LRFIRE&+L...",
 		    FALSE, ch, obj, vict, TO_CHAR);
 		act("&+LThe blade of $q &+Lcontinues to grow with a putrid power, and unleashes &=LRFIRE&+L...",
 		    FALSE, ch, obj, vict, TO_ROOM);
+		continuation = begin_attack_continuation(ch, vict, obj);
 		if (spell_damage(ch, vict, number(100, 200), SPLDAM_FIRE,
 				 SPLDAM_NODEFLECT | SPLDAM_NOSHRUG, 0) != DAM_NONEDEAD)
 		{
 			return TRUE;
 		}
+		if (!refresh_doombringer_continuation(continuation))
+			return TRUE;
 
 		act("&+LDoombringer continues to grow with a putrid power, and unleashes &=LCICE&+L...",
 		    FALSE, ch, obj, vict, TO_CHAR);
 		act("&+LSuddenly, the air surrounding $q&+L grows eerily cold, and &=LCICE&+L pours forth!",
 		    FALSE, ch, obj, vict, TO_ROOM);
 
+		continuation = begin_attack_continuation(ch, vict, obj);
 		if (spell_damage(ch, vict, number(100, 200), SPLDAM_COLD,
 				 SPLDAM_NODEFLECT | SPLDAM_NOSHRUG, 0) != DAM_NONEDEAD)
 		{
 			return TRUE;
 		}
+		if (!refresh_doombringer_continuation(continuation))
+			return TRUE;
 
 		act("&+LYour $q blurs as it strikes $N.", FALSE, ch, obj, vict, TO_CHAR);
 		act("&+L$n's $q blurs as it strikes you.", FALSE, ch, obj, vict, TO_VICT);
 		act("&+L$n's $q blurs as it strikes $N.", FALSE, ch, obj, vict, TO_NOTVICT);
 
-		for (i = 0; i < 3 && IS_ALIVE(ch) && IS_ALIVE(vict); i++)
+		for (i = 0; i < 3; i++)
 		{
+			continuation = begin_attack_continuation(ch, vict, obj);
 			hit(ch, vict, obj);
-		}
-		if (!IS_ALIVE(ch) || !IS_ALIVE(vict))
-		{
-			return TRUE;
+			if (!refresh_doombringer_continuation(continuation))
+				return TRUE;
 		}
 	}
 	return FALSE;
@@ -1798,122 +1821,6 @@ int nexus(P_obj obj, P_char ch, int cmd, char *arg)
 	act("$n slowly fades into existence.", FALSE, ch, 0, 0, TO_ROOM);
 #endif
 	return (TRUE);
-}
-
-int magic_pool(P_obj obj, P_char ch, int cmd, char *arg)
-{
-	int dam = obj->value[1];
-	char Gbuf1[MAX_STRING_LENGTH];
-
-	if (cmd == CMD_SET_PERIODIC)
-	{
-		return FALSE;
-	}
-
-	if (cmd != CMD_ENTER || !OBJ_ROOM(obj) || !IS_ALIVE(ch) || !arg)
-	{
-		return FALSE;
-	}
-
-	one_argument(arg, Gbuf1);
-	// If not the right portal..
-	if (obj != get_obj_in_list(Gbuf1, world[ch->in_room].contents))
-	{
-		return FALSE;
-	}
-
-	if (real_room(obj->value[0]) == NOWHERE)
-	{
-		send_to_char("Hmm...  Looks like it's busted.  Might wanna notify a god.\n", ch);
-		return (FALSE);
-	}
-
-#if defined(CTF_MUD) && (CTF_MUD == 1)
-	if (ctf_carrying_flag(ch) == CTF_PRIMARY)
-	{
-		send_to_char("You can't carry that with you.\r\n", ch);
-		drop_ctf_flag(ch);
-	}
-#endif
-
-	act("As you step into the $o, there is a blinding flash of light!", FALSE, ch, obj, 0,
-	    TO_CHAR);
-	act("You are ripped through a dark and star-filled void, pain sears through", FALSE, ch,
-	    obj, 0, TO_CHAR);
-	act("your body!  When you again open your eyes, you are elsewhere...", FALSE, ch, obj, 0,
-	    TO_CHAR);
-	act("$n vanishes into the $o.", FALSE, ch, obj, 0, TO_ROOM);
-
-	if (!IS_TRUSTED(ch))
-	{
-		if (GET_HIT(ch) > dam)
-			GET_HIT(ch) -= dam;
-		else
-			GET_HIT(ch) = 1;
-		StartRegen(ch, regen_resource::hit);
-	}
-	teleport_to(ch, real_room(obj->value[0]), 0);
-
-	return (TRUE);
-}
-
-// For the gate to ardgral spell.
-int magic_map_pool(P_obj obj, P_char ch, int cmd, char *arg)
-{
-	int dam = obj->value[1];
-	char Gbuf1[MAX_STRING_LENGTH];
-	int target_room;
-
-	if (cmd == CMD_SET_PERIODIC)
-	{
-		return FALSE;
-	}
-
-	if (cmd != CMD_ENTER || !IS_ALIVE(ch) || !arg || !OBJ_ROOM(obj))
-	{
-		return FALSE;
-	}
-
-	one_argument(arg, Gbuf1);
-	// If not the right portal..
-	if (obj != get_obj_in_list(Gbuf1, world[ch->in_room].contents))
-	{
-		return FALSE;
-	}
-
-	target_room = real_room(random_map_room());
-
-	while (world[target_room].sector_type == SECT_MOUNTAIN ||
-	       world[target_room].sector_type == SECT_INSIDE ||
-	       world[target_room].sector_type == SECT_OCEAN || IS_ROOM(target_room, ROOM_NO_GATE))
-	{
-		target_room = real_room(random_map_room());
-	}
-
-	if (target_room == NOWHERE)
-	{
-		debug("magic_map_pool: Target room is NOWHERE for char '%s'.", J_NAME(ch));
-		send_to_char("Hmm...  Looks like it's busted.  Might wanna notify a god.\n", ch);
-		return FALSE;
-	}
-
-	act("As you step into the $o, there is a blinding flash of light!", FALSE, ch, obj, 0,
-	    TO_CHAR);
-	act("You are ripped through a dark and star-filled void, pain sears through", FALSE, ch,
-	    obj, 0, TO_CHAR);
-	act("your body!  When you again open your eyes, you are elsewhere...", FALSE, ch, obj, 0,
-	    TO_CHAR);
-	act("$n vanishes into the $o.", FALSE, ch, obj, 0, TO_ROOM);
-
-	if (!IS_TRUSTED(ch))
-	{
-		// Tighter like this.
-		GET_HIT(ch) = (GET_HIT(ch) > dam) ? GET_HIT(ch) - dam : 1;
-		StartRegen(ch, regen_resource::hit);
-	}
-	teleport_to(ch, target_room, 0);
-
-	return TRUE;
 }
 
 int random_map_room()
@@ -3136,6 +3043,18 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 	int damage, type, flags, result;
 	struct proc_data *data;
 	struct affected_type *af1;
+	auto refresh_barb_continuation = [&](const attack_continuation &continuation)
+	{
+		const attack_continuation_result after_callback =
+			check_attack_continuation(continuation);
+		if (!after_callback.can_continue())
+			return false;
+
+		ch = after_callback.actor;
+		vict = after_callback.target;
+		obj = after_callback.weapon;
+		return true;
+	};
 
 	static int curr_race = RACE_NONE;
 	// Whom ever did this is a very bad man; how do we know to reset when they rent/die/etc?
@@ -3343,7 +3262,7 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	// 1/6 chance.
-	if ((cmd == CMD_GOTNUKED) &&
+	if ((cmd == CMD_GOTNUKED) && char_in_list(ch) && IS_ALIVE(ch) &&
 	    (GET_RACE(ch) == RACE_MOUNTAIN || GET_RACE(ch) == RACE_DUERGAR) && (!number(0, 5)))
 	{
 		hammer_berserk_check(ch);
@@ -3352,7 +3271,7 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 			return FALSE;
 		}
 		vict = data->victim;
-		if (!IS_ALIVE(vict))
+		if (!vict || !char_in_list(vict) || !IS_ALIVE(vict))
 		{
 			return FALSE;
 		}
@@ -3400,6 +3319,7 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 			act("&+c...and releases a previously stored &+Bmagical energy&+c straight back at $N!",
 			    FALSE, ch, obj, vict, TO_CHAR);
 
+			attack_continuation continuation = begin_attack_continuation(ch, vict, obj);
 			result =
 				spell_damage(ch, vict, BarbProcData.damage, BarbProcData.attacktype,
 					     BarbProcData.flags | SPLDAM_NOSHRUG | SPLDAM_NODEFLECT,
@@ -3426,7 +3346,7 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 			}
 
 			/*      wizlog(MINLVLIMMORTAL,"setting new values, old dam = %d, new dam = %d", BarbProcData.damage, damage);*/
-			if (result == DAM_NONEDEAD)
+			if (result == DAM_NONEDEAD && refresh_barb_continuation(continuation))
 			{
 				attack_back(vict, ch, FALSE);
 			}
@@ -3461,7 +3381,7 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 
 	vict = legacy_proc_arg<P_char>(arg);
 
-	if (IS_ALIVE(vict))
+	if (char_in_list(ch) && IS_ALIVE(ch) && vict && char_in_list(vict) && IS_ALIVE(vict))
 	{
 		// 4% proc
 		if (!number(0, 24) && (GET_RACE(ch) == RACE_BARBARIAN) && CheckMultiProcTiming(ch))
@@ -3473,13 +3393,19 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 			act("$n's $q &+Bcalls down the lightning of the barbarian kings on $N!",
 			    FALSE, obj->loc.wearing, obj, vict, TO_NOTVICT);
 
+			attack_continuation continuation = begin_attack_continuation(ch, vict, obj);
 			spell_chain_lightning(GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, vict, 0);
+			if (!refresh_barb_continuation(continuation))
+				return FALSE;
 
 			// 1/25 * 1/4 = 1/100 chance.
 			if (IS_ALIVE(ch) && IS_ALIVE(vict) && !number(0, 3))
 			{
+				continuation = begin_attack_continuation(ch, vict, obj);
 				spell_forked_lightning((int)(GET_LEVEL(ch) - 15), ch, 0,
 						       SPELL_TYPE_SPELL, vict, 0);
+				if (!refresh_barb_continuation(continuation))
+					return FALSE;
 			}
 			// 1/20 chance * ~100/500 = 1/5 chance == about 1/100 chance.
 			if (IS_ALIVE(ch) && !number(0, 19) && GET_C_LUK(ch) < number(0, 500))
@@ -3497,9 +3423,17 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 			act("$n's $q &+bfills them with the &+WPOWER&+b of the ogre chieftains!",
 			    FALSE, obj->loc.wearing, obj, vict, TO_NOTVICT);
 
+			attack_continuation continuation = begin_attack_continuation(ch, vict, obj);
 			hit(ch, vict, obj);
+			if (!refresh_barb_continuation(continuation))
+				return FALSE;
 			if (IS_ALIVE(vict) && IS_ALIVE(ch))
+			{
+				continuation = begin_attack_continuation(ch, vict, obj);
 				hit(ch, vict, obj);
+				if (!refresh_barb_continuation(continuation))
+					return FALSE;
+			}
 			if (IS_ALIVE(vict) && IS_ALIVE(ch) && number(1, 100) <= 30)
 			{
 				if (MIN_POS(vict, POS_STANDING + STAT_NORMAL))
@@ -3518,7 +3452,10 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 				// if not standing, hit them again.
 				else
 				{
+					continuation = begin_attack_continuation(ch, vict, obj);
 					hit(ch, vict, obj);
+					if (!refresh_barb_continuation(continuation))
+						return FALSE;
 				}
 			}
 		} // 2% proc (this can stack with the regular berserker proc if wielded by a
@@ -3539,6 +3476,9 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 			// bool ancestor_was_here = false;
 			if (BarbProcData.damage && IS_ALIVE(vict))
 			{
+				const uint64_t actor_runtime_id = ch->runtime_id;
+				attack_continuation continuation =
+					begin_attack_continuation(ch, vict, obj);
 				result = spell_damage(ch, vict, BarbProcData.damage,
 						      BarbProcData.attacktype, BarbProcData.flags,
 						      BarbProcData.messages_set ?
@@ -3550,9 +3490,16 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 
 				if (result == DAM_VICTDEAD)
 				{
-					do_action(ch, 0, CMD_ROAR);
+					P_char live_actor =
+						find_character_by_runtime_id(actor_runtime_id);
+					if (live_actor == ch && IS_ALIVE(live_actor))
+					{
+						do_action(live_actor, 0, CMD_ROAR);
+					}
 					return DAM_VICTDEAD;
 				}
+				if (!refresh_barb_continuation(continuation))
+					return TRUE;
 			}
 			update_pos(vict);
 			/* Disabling this for now. It seems that no messages are provided.
@@ -3621,8 +3568,12 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 			hammer_berserk_check(ch);
 			if (is_char_in_room(vict, ch->in_room))
 			{
+				attack_continuation continuation =
+					begin_attack_continuation(ch, vict, obj);
 				spell_damage(ch, vict, 200, SPLDAM_GENERIC,
 					     SPLDAM_NOSHRUG | SPLDAM_NODEFLECT, 0);
+				if (!refresh_barb_continuation(continuation))
+					return FALSE;
 
 				if (!has_skin_spell(ch))
 				{
@@ -4414,7 +4365,7 @@ int sevenoaks_longsword(P_obj obj, P_char ch, int cmd, char *arg)
 		obj
 	};
 
-	if (cmd != CMD_MELEE_HIT || !IS_ALIVE(ch))
+	if (cmd != CMD_MELEE_HIT || !char_in_list(ch) || !IS_ALIVE(ch))
 	{
 		return FALSE;
 	}
@@ -4422,7 +4373,7 @@ int sevenoaks_longsword(P_obj obj, P_char ch, int cmd, char *arg)
 	vict = legacy_proc_arg<P_char>(arg);
 	room = ch->in_room;
 
-	if (!IS_ALIVE(vict) || !room)
+	if (!char_in_list(vict) || !IS_ALIVE(vict) || !room)
 	{
 		return FALSE;
 	}
@@ -4435,9 +4386,18 @@ int sevenoaks_longsword(P_obj obj, P_char ch, int cmd, char *arg)
 		act("&+L$n's $q blurs as it strikes you.", FALSE, ch, obj, vict, TO_VICT);
 		act("&+L$n's $q blurs as it strikes $N.", FALSE, ch, obj, vict, TO_NOTVICT);
 
-		for (i = 0; i < 2 && IS_ALIVE(ch) && IS_ALIVE(vict); i++)
+		for (i = 0; i < 2; i++)
 		{
+			const attack_continuation hit_continuation =
+				begin_attack_continuation(ch, vict, obj);
 			hit(ch, vict, obj);
+			const attack_continuation_result after_hit =
+				check_attack_continuation(hit_continuation);
+			if (!after_hit.can_continue())
+				break;
+			ch = after_hit.actor;
+			vict = after_hit.target;
+			obj = after_hit.weapon;
 		}
 		return TRUE;
 	}
@@ -4743,4 +4703,228 @@ int Einjar(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	return TRUE;
+}
+
+/* Spectral ferry procedures. */
+
+int charon(P_char ch, P_char pl, int cmd, char *arg)
+{
+	P_char tch, next_tch;
+	int to_room;
+	P_obj ship;
+
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+	if (cmd == CMD_ENTER)
+	{
+		arg = skip_spaces(arg);
+		if (!strcmp(arg, "galleon") || !strcmp(arg, "spectral"))
+		{
+			act("&+LA black haze surrounds you... when it clears, you are elsewhere!",
+			    FALSE, pl, 0, 0, TO_CHAR);
+			act("&+LA black haze surrounds $n&+L... when it clears, $e is gone!", FALSE,
+			    pl, 0, 0, TO_ROOM);
+			char_from_room(pl);
+			char_to_room(pl, real_room0(VROOM_UNDEAD_FERRY), 0);
+			return TRUE;
+		}
+		return FALSE;
+	}
+	if (IS_FIGHTING(ch))
+	{
+		/* Open a SERIOUS can o' whoopass! */
+		act("&+W$n&+W's jaw gapes as &+Lblackness&+W pours out of his eyes and mouth.&n",
+		    FALSE, ch, 0, 0, TO_ROOM);
+		act("&+W$n &n&+cheaves its mighty blade through the air and brings it's wrath unto the puny beings nearby...&n",
+		    FALSE, ch, 0, 0, TO_ROOM);
+		for (tch = world[ch->in_room].people; tch; tch = next_tch)
+		{
+			next_tch = tch->next_in_room;
+			if (GET_OPPONENT(ch) == tch ||
+			    (IS_PC(tch) && !number(0, 5) && !IS_TRUSTED(tch)))
+			{
+				act("$n&+w's mighty blade cuts $N clean in half!!", FALSE, ch, 0,
+				    tch, TO_NOTVICT);
+				act("$n&+w's mighty blade cuts YOU clean in half!!", FALSE, ch, 0,
+				    tch, TO_VICT);
+				die(tch, ch);
+			}
+		}
+	}
+	else
+	{
+		if (world[ch->in_room].number != VROOM_UNDEAD_FERRY)
+		{
+			ship = get_obj_in_list_vis(ch, "galleon", world[ch->in_room].contents);
+			if (!ship || !(to_room = real_room0(VROOM_UNDEAD_FERRY)))
+				return FALSE;
+			if (ship->timer[1] == 1)
+			{
+				act("$n boards $p.", FALSE, ch, ship, 0, TO_ROOM);
+				char_from_room(ch);
+				char_to_room(ch, to_room, 0);
+				act("$n climbs aboard.", FALSE, ch, 0, 0, TO_ROOM);
+			}
+		}
+	}
+	return FALSE;
+}
+
+int charon_ship(P_obj obj, P_char ch, int cmd, char * /*argument*/)
+{
+	int curr_time, boat_room = real_room0(VROOM_UNDEAD_FERRY);
+	int to_room, old_room, spill = 0, look_out = 0;
+	int galleon_route[] = { 600586, 600986, 600987, 600988, 601388, 601389, 601789, 601790,
+				602190, 602191, 602192, 602193, 602194, 602195, 602196, 602197,
+				602198, 602199, 602200, 602600, 602601, 602602, 602603, 602604,
+				602605, 602606, 602607, 602608, 602609, 602610, 602611, 602612,
+				602613, 602614, 602615, 602616, 602617, 602618, 603018, 603019,
+				603020, 603021, 603022, 603422, 603822, 603823, 604223, 604224,
+				604624, 605024, 605424, 605425, 605825, -1 };
+	P_char tch, next_tch;
+	P_obj tobj, next_tobj;
+
+	if (cmd == CMD_SET_PERIODIC)
+	{
+		return TRUE;
+	}
+	if (cmd != CMD_PERIODIC || !obj)
+	{
+		return FALSE;
+	}
+
+	if (!(obj->timer[0]))
+	{
+		obj->timer[0] = time(NULL);
+	}
+
+	if (OBJ_ROOM(obj))
+	{
+		curr_time = time(NULL);
+		switch (obj->timer[1])
+		{
+		// Beginning state, docked.
+		case 0:
+			// If 1 minute has passed..
+			if (curr_time > obj->timer[0] + (1 * 60))
+			{
+				obj->timer[0] = time(NULL);
+				obj->timer[1] = 1;
+				send_to_room(
+					"&+LA spectral galleon hoists its anchor, preparing to depart.\n",
+					obj->loc.room);
+			}
+			break;
+		// Preparing to sail
+		case 1:
+			// If 30 sec have passed..
+			if (curr_time > obj->timer[0] + (30))
+			{
+				obj->timer[0] = time(NULL);
+				if (obj->timer[2])
+				{
+					obj->timer[1] = 3;
+				}
+				else
+				{
+					obj->timer[1] = 2;
+				}
+			}
+			break;
+		// Embark on journey, status sailing forward
+		case 2:
+			if (galleon_route[obj->timer[2] + 1] == -1)
+			{
+				obj->timer[1] = 4;
+				obj->timer[0] = time(NULL);
+				send_to_room("&+LA spectral galleon drops its anchor.\n",
+					     obj->loc.room);
+				spill = 1;
+			}
+			else if ((to_room = real_room(galleon_route[++(obj->timer[2])])))
+			{
+				send_to_room("&+LA spectral galleon sails onward.\n",
+					     obj->loc.room);
+				obj_from_room(obj);
+				obj_to_room(obj, to_room);
+				send_to_room("&+LA spectral galleon arrives.\n", obj->loc.room);
+				look_out = 1;
+			}
+			break;
+		// sailing backward
+		case 3:
+			if (!(obj->timer[2]))
+			{
+				obj->timer[1] = 4;
+				obj->timer[0] = time(NULL);
+				send_to_room("&+LA spectral galleon drops its anchor.\n",
+					     obj->loc.room);
+				spill = 1;
+			}
+			else if ((to_room = real_room(galleon_route[--(obj->timer[2])])))
+			{
+				send_to_room("&+LA spectral galleon sails onward.\n",
+					     obj->loc.room);
+				obj_from_room(obj);
+				obj_to_room(obj, to_room);
+				send_to_room("&+LA spectral galleon arrives.\n", obj->loc.room);
+				look_out = 1;
+			}
+			break;
+		// docking
+		case 4:
+			if (curr_time > obj->timer[0] + (30))
+			{
+				obj->timer[0] = time(NULL);
+				obj->timer[1] = 0;
+			}
+			break;
+		}
+
+		if (spill && boat_room)
+		{
+			send_to_room("&+LA large globe of blackness engulfs the entire room...\n",
+				     boat_room);
+			send_to_room("&+LA black mist pours out of the galleon!&n\n",
+				     obj->loc.room);
+			for (tch = world[boat_room].people; tch; tch = next_tch)
+			{
+				next_tch = tch->next_in_room;
+				char_from_room(tch);
+				char_to_room(tch, obj->loc.room, -2);
+				if (isname(GET_NAME(tch), "charon"))
+				{
+					do_action(ch, 0, CMD_GRIN);
+				}
+				send_to_char(
+					"&+w ...light slowly begins &+Wto form... and you are elsewhere!\n",
+					tch);
+			}
+			for (tobj = world[boat_room].contents; tobj; tobj = next_tobj)
+			{
+				next_tobj = tobj->next_content;
+				obj_from_room(tobj);
+				obj_to_room(tobj, obj->loc.room);
+			}
+		}
+		if (look_out)
+		{
+			for (tch = world[boat_room].people; tch; tch = next_tch)
+			{
+				next_tch = tch->next_in_room;
+
+				if (IS_NPC(tch))
+				{
+					continue;
+				}
+
+				old_room = tch->in_room;
+				char_from_room(tch);
+				char_to_room(tch, obj->loc.room, -1);
+				char_from_room(tch);
+				char_to_room(tch, old_room, -2);
+			}
+		}
+	}
+	return FALSE;
 }

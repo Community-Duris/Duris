@@ -259,7 +259,9 @@ are restored without inventing SQL custody, while SQL-restored player corpses ar
 A failed or stale generation is retained for diagnosis and the
 server performs a full normal zone boot.
 
-World generations are capped at 64 MiB. Restore checks the value length inside Redis
+World generations are capped at 128 MiB and stored in at most 128 chunks of 1 MiB each.
+The floor payload remains capped at 16 MiB, and the combined generation-plus-floor read
+budget remains 128 MiB. Restore checks the value length inside Redis
 before transfer. Each published generation receives a TTL of at least one hour or four
 times `REDIS_WORLD_STATE_MAX_AGE`, whichever is greater, so abandoned generations expire.
 The background publisher scales its write timeout for the blob size, up to five seconds;

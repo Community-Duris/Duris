@@ -45,7 +45,10 @@ assert "GET_HIT(ch) = GET_MAX_HIT(ch) - hit_difference;" not in materialize
 assert "d->rtype = loaded.snapshot.save_intent;" in account_load
 assert "d->rtype = result.snapshot.save_intent;" in legacy_complete
 assert "d->rtype == RENT_DEATH" in enter_game
-assert "r_room = real_room(GET_BIRTHPLACE(ch));" in enter_game
+assert "resolve_entry_room(ch, d->rtype, ct)" in enter_game
+entry_room = extract_function("nanny.c", "static int resolve_entry_room(")
+assert "room = real_room(GET_BIRTHPLACE(ch));" in entry_room
+assert "rent_type == RENT_DEATH" in entry_room
 assert "You rejoin the land of the living" in enter_game
 assert "if (d->rtype != RENT_DEATH)" in enter_game
 

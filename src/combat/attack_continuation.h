@@ -30,6 +30,7 @@ struct attack_continuation
 	uint64_t weapon_uid = 0;
 	int room = NOWHERE;
 	int height = 0;
+	int target_height = 0;
 	int weapon_slot = -1;
 };
 
@@ -49,7 +50,7 @@ struct attack_continuation_result
 /*
  * Capture identities and the location policy before entering a callback. The
  * location policy rejects a participant that is no longer in the captured
- * room/height; it intentionally does not claim to detect an away-and-back move
+ * room or its own captured height; it intentionally does not claim to detect an away-and-back move
  * without a departure epoch in the character lifecycle.
  */
 attack_continuation begin_attack_continuation(P_char actor, P_char target, P_obj weapon = nullptr,

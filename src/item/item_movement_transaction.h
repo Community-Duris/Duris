@@ -1,13 +1,17 @@
 #ifndef ITEM_MOVEMENT_TRANSACTION_H
 #define ITEM_MOVEMENT_TRANSACTION_H
+#include "combat/chaos_pouch_types.h"
+#include "item/craft_recipe_continuation.h"
 
 #include "persistence/critical_command_coordinator.h"
 #include "item/item_transfer_command.h"
+#include "economy/economic_accounting_plan.h"
 #include "core/structs.h"
 
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <vector>
 
 enum class item_creation_prepare_result
 {
@@ -20,11 +24,13 @@ enum class item_creation_prepare_result
 using item_creation_prepare_fn = std::function<item_creation_prepare_result(P_char, P_obj *)>;
 using item_creation_grant_completion_fn = void (*)(P_char actor, uint64_t item_uid, bool committed,
 						   unsigned int error_code);
-bool item_creation_grant_defer(P_char actor, item_creation_prepare_fn prepare);
+bool item_creation_grant_defer(P_char actor, item_creation_prepare_fn prepare,
+			       economic_source_kind source = {}, uint64_t source_id = 0);
 void item_creation_grant_prepare_pulse(void);
 
 constexpr size_t ITEM_MOVEMENT_PENDING_MAX = 1024;
-constexpr size_t ITEM_MOVEMENT_CONTEXT_MAX_BYTES = 128;
+// Durable quest publication captures a bounded group-credit snapshot here.
+constexpr size_t ITEM_MOVEMENT_CONTEXT_MAX_BYTES = 768;
 // Creation batches are held in the same bounded admission queue as movement
 // transactions, so admission must never promise more roots than submission can carry.
 constexpr size_t ITEM_CREATION_GRANT_MAX_ROOTS =
@@ -37,8 +43,10 @@ using item_movement_completion_fn = void (*)(P_char actor, bool committed,
 					     unsigned int error_code, const uint8_t *context,
 					     size_t context_size);
 // Opt-in callbacks are the publication boundary: returning false retains the
-// movement entry and the coordinator's entity fences for a later attempt.
-using item_movement_publication_fn = bool (*)(P_char actor, bool committed,
+// movement entry and the coordinator's entity fences for a later attempt. The
+// operation ID is borrowed for this call; copy it before retaining it.
+using item_movement_publication_fn = bool (*)(const critical_operation_id &operation_id,
+					      P_char actor, bool committed,
 					      const item_transfer_result &result,
 					      unsigned int error_code, const uint8_t *context,
 					      size_t context_size);
@@ -54,6 +62,8 @@ enum class item_movement_reject
 	invalid_request,
 	queue_saturated,
 	pending_conflict,
+	active_accounting_unsupported,
+	missing_owner_identity,
 	owner_mismatch,
 	missing_owner_revision,
 	topology_mismatch,
@@ -84,16 +94,17 @@ struct item_movement_health
 	uint64_t publication_retrying;
 	uint64_t publication_blocked;
 	uint64_t publication_ack_pending;
+	uint64_t publication_owner_waiting;
 };
 
-bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_container,
-				      const item_owner_identity &from_owner,
-				      const item_owner_identity &to_owner,
-				      item_transfer_reason reason, int64_t reason_id,
-				      item_movement_completion_fn completion, const void *context,
-				      size_t context_size, P_obj corpse_context = NULL,
-				      item_movement_reject *reject = NULL,
-				      item_movement_publication_fn publication = nullptr);
+bool item_movement_transaction_submit(
+	P_char actor, P_obj root, P_obj target_container, const item_owner_identity &from_owner,
+	const item_owner_identity &to_owner, item_transfer_reason reason, int64_t reason_id,
+	item_movement_completion_fn completion, const void *context, size_t context_size,
+	P_obj corpse_context = NULL, item_movement_reject *reject = NULL,
+	item_movement_publication_fn publication = nullptr,
+	economic_source_kind lifecycle_source = {}, uint64_t logical_source_id = 0,
+	const item_transfer_continuation &continuation = {});
 // A corpse_create batch validates and publishes all captured live roots before
 // invoking completion. Its callback persists/finalizes the corpse, not the moves.
 // Stale topology retains the movement and busy fence without calling completion.
@@ -102,41 +113,90 @@ bool item_movement_transaction_submit_batch(
 	const item_owner_identity &from_owner, const item_owner_identity &to_owner,
 	item_transfer_reason reason, int64_t reason_id, item_movement_completion_fn completion,
 	const void *context, size_t context_size, P_obj corpse_context = NULL,
-	item_movement_reject *reject = NULL, item_movement_publication_fn publication = nullptr);
+	item_movement_reject *reject = NULL, item_movement_publication_fn publication = nullptr,
+	economic_source_kind lifecycle_source = {}, uint64_t logical_source_id = 0);
+bool item_movement_transaction_submit_batch(
+	P_char actor, P_obj const *roots, size_t root_count, P_obj target_container,
+	const item_owner_identity &from_owner, const item_owner_identity &to_owner,
+	item_transfer_reason reason, int64_t reason_id, item_movement_completion_fn completion,
+	const void *context, size_t context_size, P_obj corpse_context,
+	item_movement_reject *reject, item_movement_publication_fn publication,
+	economic_source_kind lifecycle_source, uint64_t logical_source_id,
+	const item_transfer_continuation &continuation);
+// Atomically retire captured input trees and publish one or more detached output
+// trees through the existing critical-command coordinator.
+bool item_movement_transaction_submit_craft(
+	P_char actor, P_obj const *inputs, size_t input_count, P_obj const *outputs,
+	size_t output_count, int64_t recipe_id, item_movement_completion_fn completion,
+	const void *context, size_t context_size, item_movement_reject *reject = NULL,
+	P_obj retained_pouch = nullptr, const chaos_material_pouch_usage *pouch_usage = nullptr,
+	size_t pouch_usage_count = 0,
+	chaos_pouch_usage_mode pouch_mode = chaos_pouch_usage_mode::generated,
+	const craft_recipe_continuation *recipe = nullptr);
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
-					  P_obj target_container = NULL);
+					  P_obj target_container = NULL,
+					  economic_source_kind source = {}, uint64_t source_id = 0);
 /* As above, but invoke `completion` only after the ownership authority has
  * published the detached object to the recipient (or has terminally rejected
  * the grant). The callback context is copied into the bounded transaction
  * state and must not contain live pointers. */
-bool item_creation_grant_submit_to_player_with_completion(P_char actor, P_obj object,
-							  P_char recipient,
-							  item_movement_completion_fn completion,
-							  const void *context, size_t context_size,
-							  P_obj target_container = NULL);
+bool item_creation_grant_submit_to_player_with_completion(
+	P_char actor, P_obj object, P_char recipient, item_movement_completion_fn completion,
+	const void *context, size_t context_size, P_obj target_container = NULL,
+	economic_source_kind source = {}, uint64_t source_id = 0);
 // Reports only the final outcome: committed means the durable grant was also
 // published into the requested live inventory/container. The callback runs
 // after the grant queue releases this request, so it may submit a successor.
 bool item_creation_grant_submit_to_player_with_completion(
 	P_char actor, P_obj object, P_char recipient, P_obj target_container,
-	item_creation_grant_completion_fn completion);
-bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object,
-						       P_char recipient);
+	item_creation_grant_completion_fn completion, economic_source_kind source = {},
+	uint64_t source_id = 0);
+bool item_creation_grant_submit_to_player_before_entry_with_completion(
+	P_char actor, P_obj object, P_char recipient, item_creation_grant_completion_fn completion,
+	economic_source_kind source, uint64_t source_id);
+bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object, P_char recipient,
+						       economic_source_kind source = {},
+						       uint64_t source_id = 0);
 // Admit all detached roots before starting any ownership operation. A refused
 // batch leaves every object with the caller; an accepted batch owns every root.
 bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,
-							     size_t count, P_char recipient);
-bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room);
+							     size_t count, P_char recipient,
+							     economic_source_kind source = {},
+							     uint64_t source_id = 0);
+bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room,
+					economic_source_kind source,
+					item_creation_grant_completion_fn completion = nullptr,
+					uint64_t source_id = 0);
 bool item_creation_grant_mark_blocking(P_char actor);
 bool item_creation_grant_blocks_commands(P_char actor);
+// Only admitted grants block snapshot capture. Queued grants waiting for an
+// older save must allow that save to finish; unrelated publication owners may
+// themselves require a receipt-bearing save.
+bool item_creation_grant_player_publication_pending(P_char player);
 // Orderly maintenance must not quiesce between the roots of an accepted kit.
 bool item_creation_grant_batches_pending(void);
 // A disconnected pre-entry character cannot finish unsubmitted kit roots.
 void item_creation_grant_cancel_batch_before_entry(P_char actor);
 void item_movement_transaction_handle_completions(const critical_completion *completions,
 						  size_t count);
+// Restore the in-memory publication owner for replayed item commands whose
+// durable continuation is sufficient to finish recovery without the original
+// process-local callback.
+bool item_movement_transaction_restore_replayed_command(const critical_command &command);
+// Copy outstanding spell publications for a player's load request. The loader
+// only needs receipts for commands whose publication is still fenced.
+bool item_movement_transaction_pending_craft_progression(
+	uint32_t actor_pid, std::vector<critical_operation_id> *operations);
+bool item_movement_transaction_pending_spell_effects(
+	uint32_t actor_pid, std::vector<critical_operation_id> *operations);
+bool item_movement_transaction_restore_replayed_publication(
+	const critical_command &command, item_movement_publication_fn publication,
+	const void *context, size_t context_size);
 void item_movement_transaction_player_ready(P_char actor);
 bool item_movement_transaction_player_busy(P_char actor);
+// A creation commit can advance custody before its item is published live.
+// Ordinary snapshots must wait until every inbound creation has published.
+bool item_movement_transaction_player_creation_busy(P_char actor);
 item_movement_health item_movement_transaction_health_copy(void);
 void item_movement_transaction_reset_for_tests(void);
 

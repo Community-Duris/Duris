@@ -142,7 +142,7 @@ with tempfile.TemporaryDirectory(prefix="collector-death-recovery-") as temporar
         "-O1", "-g", "-fsanitize=address,undefined", "-fno-sanitize-recover=all", "-fno-omit-frame-pointer", "-no-pie",
         "-I", str(ROOT / "src"), "-I", str(ROOT / "tests/async"),
         str(ROOT / "src/persistence/critical_command.c"),
-        str(ROOT / "src/item/item_transfer_command.c"),
+        str(ROOT / "src/item/item_transfer_command.c"), str(ROOT / "src/item/craft_pouch_mutation.c"), str(ROOT / "src/combat/chaos_pouch_ledger.c"), str(ROOT / "src/player/player_snapshot_codec.c"),
         str(ROOT / "src/economy/collector_policy.c"),
         str(ROOT / "src/economy/collector_death_enrollment.c"),
         str(source), "-lcrypto", "-o", str(binary),

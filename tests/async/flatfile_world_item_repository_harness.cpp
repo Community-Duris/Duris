@@ -341,6 +341,109 @@ static void test_nested_saved_container_collection(const fs::path &root)
 		"nested collected container remained in saved room custody");
 }
 
+static void test_interrupted_saved_collection(const fs::path &base)
+{
+	struct fault_case
+	{
+		const char *name;
+		const char *environment;
+		bool marker_first;
+		bool committed;
+	};
+	const fault_case cases[] = {
+		{ "before-journal", "DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT", false,
+		  false },
+		{ "after-journal", "DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_JOURNAL", false,
+		  true },
+		{ "after-catalog", "DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION", false,
+		  true },
+		{ "after-marker", "DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION", true,
+		  true },
+	};
+	for (const auto &fault : cases)
+	{
+		const fs::path root = base / fault.name;
+		prepare_root(root);
+		std::string error;
+		auto saved = saved_item();
+		saved.items.resize(1);
+		require(flatfile_world_item_establish(root.string(), {}, { saved }, &error) ==
+				flatfile_world_item_result::ok,
+			"interrupted saved collection fixture establishment failed: " + error);
+		const auto before = read_catalog(root);
+		collector_command_payload payload = {};
+		payload.action = collector_action::collect;
+		payload.from_owner = { item_owner_type::room,
+				       static_cast<uint64_t>(saved.room_vnum), 0 };
+		payload.to_owner = { item_owner_type::collector, 7, 0 };
+		payload.target_state = item_custody_state::active;
+		payload.expected_from_owner_revision = saved.revision;
+		payload.selected_item_uid = saved.items[0].object_uid;
+		payload.item_count = 1;
+		payload.items[0] = { saved.items[0].object_uid, saved.items[0].object_uid, 0, 1,
+				     saved.items[0].vnum,	item_custody_state::active };
+		auto shell = saved.items[0];
+		shell.equipment_slot = 0;
+		const auto blob = encode_items({ shell });
+		payload.item_blob_size = static_cast<uint32_t>(blob.size());
+		std::copy(blob.begin(), blob.end(), payload.item_blob.begin());
+		const flatfile_authority_operation marker = {
+			flatfile_authority_store::players,
+			flatfile_authority_operation_kind::write,
+			"saved-collection-marker",
+			{ 'o', 'k' }
+		};
+		{
+			flatfile_authority_lock lock;
+			require(lock.acquire(root.string(), &error),
+				"could not lock interrupted saved collection fixture");
+			flatfile_collector_world_mutation mutation;
+			unsigned int result_code = 1;
+			require(flatfile_world_item_prepare_collector_transfer(
+					root.string(), lock, payload, &mutation, &result_code,
+					&error) == flatfile_world_item_result::ok &&
+					result_code == 0 && mutation.changed,
+				"interrupted saved collection did not prepare: " + error);
+			require(read_catalog(root) == before,
+				"interrupted saved collection published before commit");
+			const flatfile_authority_operation catalog = {
+				flatfile_authority_store::domains,
+				flatfile_authority_operation_kind::write,
+				mutation.after_image.filename, mutation.after_image.bytes
+			};
+			const std::vector<flatfile_authority_operation> operations =
+				fault.marker_first ?
+					std::vector<flatfile_authority_operation>{ marker,
+										   catalog } :
+					std::vector<flatfile_authority_operation>{ catalog,
+										   marker };
+			require(setenv(fault.environment, "1", 1) == 0,
+				"could not enable saved collection commit fault");
+			const auto interrupted = flatfile_authority_transaction_commit_operations(
+				root.string(), lock, operations, &error);
+			unsetenv(fault.environment);
+			require(interrupted == flatfile_authority_transaction_result::io_error,
+				"saved collection commit fault did not interrupt the transaction");
+		}
+		std::vector<flatfile_corpse_record> corpses;
+		std::vector<flatfile_saved_world_item_record> saved_items;
+		require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
+					flatfile_world_item_result::ok &&
+				corpses.empty() &&
+				saved_items.size() == (fault.committed ? 0U : 1U),
+			"saved collection recovery published the wrong live forest: " + error);
+		require(fs::exists(root / "players/saved-collection-marker") == fault.committed &&
+				!fs::exists(root / "domains/.critical-authority-transaction"),
+			"saved collection recovery left a partial cross-store transaction");
+		if (!fault.committed)
+		{
+			require(read_catalog(root) == before,
+				"pre-journal refusal changed saved-item authority");
+			require_saved_items(saved_items[0], saved);
+		}
+	}
+}
+
 int main(int argc, char **argv)
 {
 	require(argc == 2, "state root argument required");
@@ -533,6 +636,7 @@ int main(int argc, char **argv)
 	require_saved_items(saved_items[0], two_roots);
 	test_saved_root_collection(fs::path(argv[1]) / "collector-root");
 	test_nested_saved_container_collection(fs::path(argv[1]) / "collector-nested");
+	test_interrupted_saved_collection(fs::path(argv[1]) / "collector-recovery");
 
 	flatfile_world_item_player_removal removal;
 	{

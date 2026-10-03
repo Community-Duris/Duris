@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/rested.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -15,6 +16,8 @@
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include "magic/spells.h"
+#include "magic/spell_item_lifecycle.h"
+#include "economy/economic_gameplay_authority.h"
 #include <stdio.h>
 #include <string.h>
 #include "combat/ctf.h"
@@ -287,109 +290,6 @@ void cast_minor_creation(int level, P_char ch, char *arg, int /*type*/, P_char /
 	}
 
 	spell_minor_creation(level, ch, 0, tar_obj);
-}
-
-void cast_channel(int level, P_char ch, char * /*arg*/, int type, P_char /*tar_ch*/,
-		  P_obj /*tar_obj*/)
-{
-	P_char t_ch, is_head = get_linked_char(ch, LNK_CONSENT);
-	P_obj t_obj;
-	int num_valid_chars = 0, obj_found = FALSE, obj_num;
-	int curr_time = time(NULL);
-
-	switch (type)
-	{
-	case SPELL_TYPE_SPELL:
-		if (!IS_PC(ch))
-			return;
-		if (ch->only.pc->pc_timer[3] + 7200 > curr_time)
-		{
-			send_to_char(
-				"You have not built up enough energy to summon another diety.\r\n",
-				ch);
-			return;
-		}
-		if (!is_head)
-		{ // caster is the head
-			if ((num_valid_chars = get_multicast_chars(ch, CLASS_CLERIC, 51)) < 3)
-			{
-				send_to_char(
-					"You need more participants to begin the channeling.\r\n",
-					ch);
-				return;
-			}
-			else
-				t_ch = ch;
-		}
-		else
-		{ // caster is a participant, is_head is leader
-			if ((num_valid_chars = get_multicast_chars(is_head, CLASS_CLERIC, 51)) < 4)
-			{
-				send_to_char(
-					"Your channeler needs more participants to begin the channeling.\r\n",
-					ch);
-				return;
-			}
-			else
-				t_ch = is_head;
-		}
-
-		// Ok we have the participants, now check for the object
-		if (IS_EVIL(ch))
-			obj_num = EVIL_AVATAR_OBJ;
-		else
-			obj_num = GOOD_AVATAR_OBJ;
-
-		for (t_obj = world[ch->in_room].contents; t_obj; t_obj = t_obj->next_content)
-		{
-			if (obj_index[t_obj->R_num].virtual_number == obj_num)
-			{
-				obj_found = TRUE;
-				break;
-			}
-		}
-		if (obj_found)
-		{
-			spell_channel(level, ch, t_ch, t_obj);
-			return;
-		}
-		else if (t_ch == ch)
-		{
-			if (IS_EVIL(ch))
-				t_obj = read_object(EVIL_AVATAR_OBJ, VIRTUAL);
-			else
-				t_obj = read_object(GOOD_AVATAR_OBJ, VIRTUAL);
-			if (!t_obj)
-			{
-				send_to_char(
-					"Avatar summoning object missing, please tell a god.\r\n",
-					ch);
-				return;
-			}
-			t_obj->timer[0] = 0;
-			obj_to_room(t_obj, ch->in_room);
-			act("$n's eyes roll back in $s head as $e begins the incantation... specs of light begin to form in the room.",
-			    FALSE, ch, 0, 0, TO_ROOM);
-			act("Your eyes roll back in your head as you begin the incantation... specs of light begin to form in the room.",
-			    FALSE, ch, 0, 0, TO_CHAR);
-			set_obj_affected(t_obj, 500, TAG_OBJ_DECAY, 0);
-			spell_channel(level, ch, t_ch, t_obj);
-			return;
-		}
-		send_to_char("The channeler must begin the incantation.\r\n", ch);
-		break;
-	case SPELL_TYPE_POTION:
-		break;
-	case SPELL_TYPE_SCROLL:
-		break;
-	case SPELL_TYPE_WAND:
-		break;
-	case SPELL_TYPE_STAFF:
-		break;
-	default:
-		logit(LOG_DEBUG, "Serious screw-up in channel!");
-		break;
-	}
 }
 
 int planes_room_num[] = { 23801, 23201, 12401, 24401, 19701, 25401, SURFACE_MAP_START,
@@ -2088,6 +1988,50 @@ void cast_grow(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*
 	send_to_room("&+GThe ground starts to glow with a soft green light.&n\n", ch->in_room);
 }
 
+struct vines_component_context
+{
+	int32_t level;
+	int32_t count;
+};
+
+spell_component_effect_status
+spell_vines_component_retirement_completed(const critical_operation_id &operation_id, P_char actor,
+					   bool committed, const item_transfer_result &,
+					   unsigned int /*error_code*/, const uint8_t *encoded,
+					   size_t encoded_size)
+{
+	spell_component_context_reader reader(encoded, encoded_size);
+	vines_component_context context = {};
+	if (!actor || !reader.get_i32(&context.level) || !reader.get_i32(&context.count) ||
+	    !reader.finished() || context.count < 1 || context.count > 4)
+		return spell_component_effect_status::retry;
+	if (!committed)
+	{
+		send_to_char("Your green herbs remain intact as the spell fizzles.\r\n", actor);
+		return spell_component_effect_status::complete;
+	}
+	if (IS_SET(actor->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+		return spell_component_effect_status::waiting_for_owner;
+	if (!spell_component_retirement_effect_applied(operation_id))
+	{
+		if (!spell_component_retirement_effect_applied_once(operation_id))
+			return spell_component_effect_status::retry;
+		act("&+GGreen&n vines sprout up around you forming a protective shield.", FALSE,
+		    actor, 0, 0, TO_CHAR);
+		act("&+GVines&n sprout up around $n forming a protective shield.", FALSE, actor, 0,
+		    0, TO_NOTVICT);
+		struct affected_type effect = {};
+		effect.type = SPELL_VINES;
+		effect.flags = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
+		effect.bitvector5 = AFF5_VINES;
+		effect.duration = context.level / 2;
+		effect.modifier = 40 * context.count;
+		affect_to_char(actor, &effect);
+	}
+	return spell_component_retirement_save_effect(operation_id, actor,
+						      item_spell_component_effect::vines);
+}
+
 void cast_vines(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char /*tar_ch*/,
 		P_obj /*tar_obj*/)
 {
@@ -2129,6 +2073,21 @@ void cast_vines(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 			return;
 		}
 
+		if (economic_gameplay_authority::active() && IS_PC(ch))
+		{
+			const vines_component_context values = { level, count };
+			spell_component_context_writer context;
+			if (!context.put_i32(values.level) || !context.put_i32(values.count))
+				return;
+			if (!spell_consume_components(ch, VOBJ_FORAGE_GREEN_HERB,
+						      static_cast<size_t>(count), SPELL_VINES,
+						      item_spell_component_effect::vines,
+						      spell_vines_component_retirement_completed,
+						      context.data(), context.size))
+				send_to_char("Your green herbs cannot be consumed right now.\r\n",
+					     ch);
+			return;
+		}
 		for (i = 0; i < count; i++)
 		{
 			extract_obj(used_obj[i], TRUE); // Just herb ingred, but 'in game.'
@@ -2633,6 +2592,8 @@ bool create_walls(int room, int exit, P_char ch, int level, int type, int power,
 	{
 		return FALSE;
 	}
+	if (economic_gameplay_authority::active())
+		return FALSE;
 
 	wall_inside = read_object(VOBJ_WALLS, VIRTUAL);
 	wall_outside = read_object(VOBJ_WALLS, VIRTUAL);
@@ -3088,10 +3049,15 @@ void spell_curse_of_yzar(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unuse
 	send_to_char("Your spell has taken hold of poor Yzar.\n", ch);
 }
 
-void spell_rest(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
-		P_obj /*obj*/)
+static void apply_rested_bonus(P_char ch, P_char victim, bool staff_override)
 {
 	struct affected_type af, *afp;
+
+	if (!staff_override && !rested_bonus_enabled())
+	{
+		send_to_char("Rested and well-rested experience bonuses are disabled.\n", ch);
+		return;
+	}
 
 	if (!IS_ALIVE(victim))
 	{
@@ -3101,6 +3067,8 @@ void spell_rest(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int t
 
 	if ((afp = get_spell_from_char(victim, TAG_WELLRESTED)) != NULL)
 	{
+		if (staff_override)
+			afp->flags |= AFFTYPE_CUSTOM1;
 		afp->duration = 150;
 		act("You refresh $N's well-rested bonus.", FALSE, ch, NULL, victim, TO_CHAR);
 		debug("%s refreshed %s's well-rested bonus!", J_NAME(ch), J_NAME(victim));
@@ -3109,6 +3077,8 @@ void spell_rest(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int t
 
 	if ((afp = get_spell_from_char(victim, TAG_RESTED)) != NULL)
 	{
+		if (staff_override)
+			afp->flags |= AFFTYPE_CUSTOM1;
 		afp->duration = 150;
 
 		afp->type = TAG_WELLRESTED;
@@ -3124,8 +3094,21 @@ void spell_rest(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int t
 	af.type = TAG_RESTED;
 	af.duration = 150;
 	af.flags = AFFTYPE_PERM | AFFTYPE_NODISPEL | AFFTYPE_OFFLINE;
+	if (staff_override)
+		af.flags |= AFFTYPE_CUSTOM1;
 	affect_to_char(victim, &af);
 
 	act("You give $N a rested bonus.", FALSE, ch, NULL, victim, TO_CHAR);
 	debug("%s gives %s a rested bonus!", J_NAME(ch), J_NAME(victim));
+}
+
+void grant_staff_rested_bonus(P_char ch, P_char victim)
+{
+	apply_rested_bonus(ch, victim, true);
+}
+
+void spell_rest(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		P_obj /*obj*/)
+{
+	apply_rested_bonus(ch, victim, false);
 }

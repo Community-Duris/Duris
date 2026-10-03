@@ -117,6 +117,7 @@
 #include <string.h>
 #include <time.h>
 #include <pthread.h>
+#include <vector>
 
 #include "core/prototypes.h"
 #include "core/structs.h"
@@ -805,7 +806,7 @@ static void sp_attack_one(struct sp_ctx *cx, struct sp_action *a, P_char vict)
 	double dam;
 	int cap;
 
-	if (!vict || !IS_ALIVE(vict) || vict->in_room < 0)
+	if (!vict || !char_in_list(vict) || !IS_ALIVE(vict) || vict->in_room < 0)
 		return;
 	if (IS_TRUSTED(vict))
 		return;
@@ -856,8 +857,12 @@ static void sp_attack_one(struct sp_ctx *cx, struct sp_action *a, P_char vict)
 static void sp_do_attack(struct sp_ctx *cx, struct sp_action *a, int aidx)
 {
 	int room = sp_room_of(cx);
-	P_char k, next_k, tank = NULL;
+	P_char k, tank = NULL;
 	P_char prime = cx->actor;
+	std::vector<uint64_t> target_ids;
+	uint64_t self_id = cx->self_ch ? cx->self_ch->runtime_id : 0;
+	uint64_t actor_id = cx->actor ? cx->actor->runtime_id : 0;
+	uint64_t prime_id, tank_id;
 	long now;
 
 	if (room < 0 || room > top_of_world)
@@ -873,9 +878,15 @@ static void sp_do_attack(struct sp_ctx *cx, struct sp_action *a, int aidx)
 	}
 
 	if (cx->self_ch)
+	{
 		tank = GET_OPPONENT(cx->self_ch);
+		if (tank && !char_in_list(tank))
+			tank = NULL;
+	}
 	if (!prime)
 		prime = tank;
+	prime_id = prime ? prime->runtime_id : 0;
+	tank_id = tank ? tank->runtime_id : 0;
 
 	if (a->scope == SP_SCOPE_ONE)
 	{
@@ -883,9 +894,18 @@ static void sp_do_attack(struct sp_ctx *cx, struct sp_action *a, int aidx)
 		return;
 	}
 
-	for (k = world[room].people; k; k = next_k)
+	for (k = world[room].people; k; k = k->next_in_room)
 	{
-		next_k = k->next_in_room;
+		if (!char_in_list(k) || k->in_room != room)
+			break;
+		target_ids.push_back(k->runtime_id);
+	}
+
+	for (const uint64_t target_id : target_ids)
+	{
+		k = find_character_by_runtime_id(target_id);
+		if (!k || k->in_room != room)
+			continue;
 		if (k == cx->self_ch)
 			continue;
 		if (cx->self_ch && IS_NPC(k) && IS_NPC(cx->self_ch))
@@ -896,6 +916,23 @@ static void sp_do_attack(struct sp_ctx *cx, struct sp_action *a, int aidx)
 		    !(k == prime || (k->group && prime->group && k->group == prime->group)))
 			continue;
 		sp_attack_one(cx, a, k);
+		/* Damage callbacks may extract targets or the proc owner. */
+		if (self_id)
+		{
+			cx->self_ch = find_character_by_runtime_id(self_id);
+			if (!cx->self_ch || (!cx->self_dead_ok && !IS_ALIVE(cx->self_ch)))
+				return;
+		}
+		if (actor_id)
+			cx->actor = find_character_by_runtime_id(actor_id);
+		if (prime_id)
+		{
+			prime = find_character_by_runtime_id(prime_id);
+			if (!prime && a->scope == SP_SCOPE_GROUP)
+				return;
+		}
+		if (tank_id)
+			tank = find_character_by_runtime_id(tank_id);
 	}
 }
 
@@ -971,7 +1008,17 @@ static int sp_execute(struct sp_trig *t, struct sp_ctx *cx)
 		struct sp_action *a = &t->actions[i];
 
 		self = (cx->targ == SP_T_MOB) ? cx->self_ch : NULL;
+		if (self && !char_in_list(self))
+		{
+			cx->self_ch = NULL;
+			self = NULL;
+		}
 		actor = cx->actor;
+		if (actor && !char_in_list(actor))
+		{
+			cx->actor = NULL;
+			actor = NULL;
+		}
 		room = sp_room_of(cx);
 
 		/* self validity: never touch a dead / extracted target */
@@ -1012,7 +1059,7 @@ static int sp_execute(struct sp_trig *t, struct sp_ctx *cx)
 
 		/* actions that need a live actor */
 		if ((a->op == SP_A_GIVE || a->op == SP_A_TRANSFER || a->op == SP_A_DAMAGE) &&
-		    (!actor || !IS_ALIVE(actor) || actor->in_room < 0))
+		    (!actor || !char_in_list(actor) || !IS_ALIVE(actor) || actor->in_room < 0))
 			continue;
 
 		switch (a->op)
@@ -1387,6 +1434,10 @@ static int sp_run(struct sp_rec *rec, int ev, struct sp_ctx *cx, const char *low
 	int r = 0, one;
 
 	cx->rec = rec;
+	if (cx->self_ch && !char_in_list(cx->self_ch))
+		cx->self_ch = NULL;
+	if (cx->actor && !char_in_list(cx->actor))
+		cx->actor = NULL;
 	for (t = rec->trigs; t; t = t->next)
 	{
 		if (t->event != ev)
@@ -1457,10 +1508,10 @@ static int sp_run(struct sp_rec *rec, int ev, struct sp_ctx *cx, const char *low
 		r |= one;
 		if (one & SP_X_SELFGONE)
 			break;
-		if (cx->targ == SP_T_MOB &&
-		    (!cx->self_ch || (!cx->self_dead_ok && !IS_ALIVE(cx->self_ch))))
+		if (cx->targ == SP_T_MOB && (!cx->self_ch || !char_in_list(cx->self_ch) ||
+					     (!cx->self_dead_ok && !IS_ALIVE(cx->self_ch))))
 			break;
-		if (cx->actor && !IS_ALIVE(cx->actor))
+		if (cx->actor && (!char_in_list(cx->actor) || !IS_ALIVE(cx->actor)))
 			cx->actor = NULL;
 	}
 	return r;
@@ -1584,8 +1635,10 @@ int studioproc_mob(P_char mob, P_char actor, int cmd, char *arg)
 	struct sp_ctx cx;
 	char *targ = arg;
 
-	if (!mob || !sp_on_game_thread())
+	if (!mob || !sp_on_game_thread() || !char_in_list(mob))
 		return FALSE;
+	if (actor && !char_in_list(actor))
+		actor = NULL;
 	sp_arm_hour();
 	if (!(rec = sp_find(SP_T_MOB, GET_VNUM(mob))))
 		return FALSE;
@@ -1593,6 +1646,8 @@ int studioproc_mob(P_char mob, P_char actor, int cmd, char *arg)
 	/* never clobber a hand-written C proc: it runs first and wins */
 	if (rec->prev_mob && (*rec->prev_mob)(mob, actor, cmd, arg))
 		return TRUE;
+	if (!char_in_list(mob))
+		return FALSE;
 
 	/* CMD_GOTHIT / CMD_GOTNUKED pass a struct proc_data, not a string */
 	if (cmd == CMD_GOTHIT || cmd == CMD_GOTNUKED || cmd == CMD_MELEE_HIT)
@@ -1611,10 +1666,14 @@ int studioproc_obj(P_obj obj, P_char actor, int cmd, char *arg)
 	struct sp_rec *rec;
 	struct sp_ctx cx;
 	char *targ = arg;
-	const uint64_t original_activator_id = actor ? actor->runtime_id : 0;
+	uint64_t original_activator_id = 0;
 
 	if (!obj || obj->R_num < 0 || !sp_on_game_thread())
 		return FALSE;
+	if (actor && char_in_list(actor))
+		original_activator_id = actor->runtime_id;
+	else
+		actor = NULL;
 	sp_arm_hour();
 	if (!(rec = sp_find(SP_T_OBJ, obj_index[obj->R_num].virtual_number)))
 		return FALSE;
@@ -1640,7 +1699,7 @@ int studioproc_obj(P_obj obj, P_char actor, int cmd, char *arg)
 		P_char vict = (P_char)(void *)arg;
 
 		targ = NULL;
-		if (vict && IS_ALIVE(vict))
+		if (vict && char_in_list(vict) && IS_ALIVE(vict))
 		{
 			cx.actor = vict;
 			cx.struck_victim_id = vict->runtime_id;
@@ -1657,6 +1716,8 @@ int studioproc_room(int room, P_char actor, int cmd, char *arg)
 	if (!sp_on_game_thread())
 		return FALSE;
 	sp_arm_hour();
+	if (actor && !char_in_list(actor))
+		actor = NULL;
 
 	/* CALL-SITE INCONSISTENCY, handled here rather than patched there:
 	   every room-proc call site passes the room's REAL index -
@@ -1709,7 +1770,7 @@ void studioproc_speech(P_char ch, const char *text)
 	int room, j;
 	char low[MAX_STRING_LENGTH], mut[MAX_STRING_LENGTH];
 
-	if (!ch || !text || !*text || !IS_PC(ch) || !sp_on_game_thread())
+	if (!ch || !sp_on_game_thread() || !char_in_list(ch) || !text || !*text || !IS_PC(ch))
 		return;
 	room = ch->in_room;
 	if (room < 0 || room > top_of_world)
@@ -1728,7 +1789,7 @@ void studioproc_speech(P_char ch, const char *text)
 			cx.self_room = room;
 			cx.actor = ch;
 			sp_run(rec, SP_EV_SPEECH, &cx, low, 0);
-			if (!IS_ALIVE(ch) || ch->in_room != room)
+			if (!char_in_list(ch) || !IS_ALIVE(ch) || ch->in_room != room)
 				return;
 		}
 
@@ -1736,6 +1797,8 @@ void studioproc_speech(P_char ch, const char *text)
 		{
 			for (k = world[room].people; k; k = next_k)
 			{
+				if (!char_in_list(k) || k->in_room != room)
+					break;
 				next_k = k->next_in_room;
 				if (k == ch || !IS_NPC(k) || !IS_ALIVE(k))
 					continue;
@@ -1746,7 +1809,7 @@ void studioproc_speech(P_char ch, const char *text)
 				cx.self_ch = k;
 				cx.actor = ch;
 				sp_run(rec, SP_EV_SPEECH, &cx, low, 0);
-				if (!IS_ALIVE(ch) || ch->in_room != room)
+				if (!char_in_list(ch) || !IS_ALIVE(ch) || ch->in_room != room)
 					return;
 			}
 		}
@@ -1765,7 +1828,8 @@ void studioproc_speech(P_char ch, const char *text)
 					cx.self_obj = o;
 					cx.actor = ch;
 					sp_run(rec, SP_EV_SPEECH, &cx, low, 0);
-					if (!IS_ALIVE(ch) || ch->in_room != room)
+					if (!char_in_list(ch) || !IS_ALIVE(ch) ||
+					    ch->in_room != room)
 						return;
 				}
 			}
@@ -1781,7 +1845,8 @@ void studioproc_speech(P_char ch, const char *text)
 					cx.self_obj = o;
 					cx.actor = ch;
 					sp_run(rec, SP_EV_SPEECH, &cx, low, 0);
-					if (!IS_ALIVE(ch) || ch->in_room != room)
+					if (!char_in_list(ch) || !IS_ALIVE(ch) ||
+					    ch->in_room != room)
 						return;
 				}
 			}
@@ -1802,7 +1867,7 @@ void studioproc_speech(P_char ch, const char *text)
 				cx.self_obj = o;
 				cx.actor = ch;
 				sp_run(rec, SP_EV_SPEECH, &cx, low, 0);
-				if (!IS_ALIVE(ch) || ch->in_room != room)
+				if (!char_in_list(ch) || !IS_ALIVE(ch) || ch->in_room != room)
 					return;
 			}
 		}
@@ -1816,7 +1881,7 @@ void studioproc_speech(P_char ch, const char *text)
 		next_o = o->next_content;
 		if (IS_SET(o->extra_flags, ITEM_PROCLIB))
 			proclib_obj_proc(o, ch, CMD_SAY, mut);
-		if (!IS_ALIVE(ch) || ch->in_room != room)
+		if (!char_in_list(ch) || !IS_ALIVE(ch) || ch->in_room != room)
 			return;
 	}
 	for (o = ch->carrying; o; o = next_o)
@@ -1824,14 +1889,14 @@ void studioproc_speech(P_char ch, const char *text)
 		next_o = o->next_content;
 		if (IS_SET(o->extra_flags, ITEM_PROCLIB))
 			proclib_obj_proc(o, ch, CMD_SAY, mut);
-		if (!IS_ALIVE(ch) || ch->in_room != room)
+		if (!char_in_list(ch) || !IS_ALIVE(ch) || ch->in_room != room)
 			return;
 	}
 	for (j = 0; j < MAX_WEAR; j++)
 	{
 		if (ch->equipment[j] && IS_SET(ch->equipment[j]->extra_flags, ITEM_PROCLIB))
 			proclib_obj_proc(ch->equipment[j], ch, CMD_SAY, mut);
-		if (!IS_ALIVE(ch) || ch->in_room != room)
+		if (!char_in_list(ch) || !IS_ALIVE(ch) || ch->in_room != room)
 			return;
 	}
 }
@@ -1844,8 +1909,8 @@ void studioproc_give(P_char vict, P_obj obj, P_char giver)
 	struct sp_ctx cx;
 	int ovnum;
 
-	if (!studioproc_count || !vict || !IS_NPC(vict) || vict->in_room < 0 ||
-	    !sp_on_game_thread())
+	if (!studioproc_count || !sp_on_game_thread() || !vict || !char_in_list(vict) ||
+	    !IS_NPC(vict) || vict->in_room < 0)
 		return;
 	if (!(rec = sp_find(SP_T_MOB, GET_VNUM(vict))))
 		return;
@@ -1867,7 +1932,8 @@ void studioproc_kill(P_char killer, P_char victim)
 	struct sp_ctx cx;
 	int i, room;
 
-	if (!studioproc_count || !killer || !victim || !IS_ALIVE(killer) || !sp_on_game_thread())
+	if (!studioproc_count || !sp_on_game_thread() || !killer || !victim ||
+	    !char_in_list(killer) || !IS_ALIVE(killer))
 		return;
 	room = killer->in_room;
 	if (room < 0 || room > top_of_world)
@@ -1881,7 +1947,7 @@ void studioproc_kill(P_char killer, P_char victim)
 		cx.actor = victim;
 		cx.self_dead_ok = TRUE; /* the victim is already dead */
 		sp_run(rec, SP_EV_KILL, &cx, NULL, 0);
-		if (!IS_ALIVE(killer))
+		if (!char_in_list(killer) || !IS_ALIVE(killer))
 			return;
 	}
 
@@ -1901,7 +1967,7 @@ void studioproc_kill(P_char killer, P_char victim)
 			cx.actor = killer;
 			cx.self_dead_ok = TRUE;
 			sp_run(rec, SP_EV_KILL, &cx, NULL, 0);
-			if (!IS_ALIVE(killer))
+			if (!char_in_list(killer) || !IS_ALIVE(killer))
 				return;
 		}
 	}

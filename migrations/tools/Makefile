@@ -1,7 +1,7 @@
 # makefile for migrate_pfiles tool
 
 CC = g++
-CFLAGS = -g -Wno-write-strings -std=c++14 -D_FORTIFY_SOURCE=0 -DTEST_MUD
+CFLAGS = -g -Wno-write-strings -std=c++20 -D_FORTIFY_SOURCE=0 -DTEST_MUD
 DEBUG = -ggdb3
 
 INCLUDES = -I. -I../../src -I/usr/include/libxml2 -I/usr/include/mysql -I../../src/ships

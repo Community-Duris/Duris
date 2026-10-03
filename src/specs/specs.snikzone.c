@@ -1,4 +1,5 @@
 #include "core/prototypes.h"
+#include "combat/damage.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"

@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "telemetry/telemetry_runtime.h"
 #include "item/item_actions.h"
 #include "core/structs.h"
@@ -20,6 +21,7 @@
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include "world/handler.h"
+#include "world/bloodstains.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -28,7 +30,9 @@
 #include "combat/arena.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "economy/collector_catalog_cache.h"
+#include "economy/economic_gameplay_authority.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_death_restitution_locker.h"
@@ -50,6 +54,8 @@
 #include "persistence/persistence_checkpoint.h"
 #include "persistence/persistence_mode.h"
 #include "world/world_recovery_pipeline.h"
+#include "world/world_activity.h"
+#include "world/character_maintenance.h"
 #include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
@@ -266,124 +272,6 @@ int container_total_weight(P_obj cont)
 		recalc_container_weight(cont);
 	}
 	return GET_OBJ_WEIGHT(cont);
-}
-
-/*
- * called every 20 seconds, just loops through chars doing...stuff
- */
-/*
- * This is a housekeeping sweep over every character in the game.  Walking the
- * whole character list at once cost ~18ms, which is most of a single event
- * pulse's budget and pushed everything else in that pulse late.  The work is
- * split into GENERIC_CHAR_EVENT_SLICES groups that run one per invocation, at
- * the matching fraction of the old delay: a character is still visited exactly
- * once every GENERIC_CHAR_EVENT_PERIOD pulses, but each pass does a quarter of
- * the work.  The slice comes from the character's address, so it is stable for
- * the character's lifetime -- nobody is skipped or done twice.
- */
-#define GENERIC_CHAR_EVENT_SLICES 4
-#define GENERIC_CHAR_EVENT_PERIOD (20 * WAIT_SEC)
-
-static unsigned int generic_char_event_phase = 0;
-
-static unsigned int char_sweep_slice(P_char c)
-{
-	unsigned long long h = (unsigned long long)(uintptr_t)c;
-
-	h ^= h >> 33;
-	h *= 0xff51afd7ed558ccdULL;
-	h ^= h >> 33;
-
-	return (unsigned int)(h % GENERIC_CHAR_EVENT_SLICES);
-}
-
-void generic_char_event(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
-{
-	P_char i, i_next;
-	int n;
-	unsigned int phase = generic_char_event_phase++ % GENERIC_CHAR_EVENT_SLICES;
-
-	for (i = character_list; i; i = i_next)
-	{
-		i_next = i->next;
-
-		/* A basic mob sanity check */
-		if (IS_NPC(i) && !i->only.npc && !IS_MORPH(i))
-		{
-			wizlog(AVATAR,
-			       "&=LRDanger! Mob without only.npc struct! Attempting to neutralize!");
-			logit(LOG_DEBUG, "mob #%u (%s) without only.npc struct", GET_RNUM(i),
-			      i->player.long_descr);
-			extract_char(i);
-			continue;
-		}
-
-		/* Everything below is this character's turn only once per full period. */
-		if (char_sweep_slice(i) != phase)
-		{
-			continue;
-		}
-
-		if (!IS_BLOODLUST && has_innate(i, INNATE_VULN_SUN))
-		{
-			sun_damage_check(i);
-		}
-
-		if (GET_CLASS(i, CLASS_DRUID) && (GET_LEVEL(i) > 30) &&
-		    (IS_AFFECTED2(i, AFF2_POISONED)))
-		{
-			if (poison_common_remove(i))
-			{
-				send_to_char("You neutralize the poison in your bloodstream!\r\n",
-					     i);
-			}
-		}
-
-		// that wonderful god spell...
-		if (affected_by_spell(i, SPELL_PLEASANTRY))
-		{
-			pleasantry(i);
-		}
-
-		/* repair munged flyers/swimmers */
-		if (i->specials.z_cord > 0 && !OUTSIDE(i))
-		{
-			i->specials.z_cord = 0;
-		}
-		else if (i->specials.z_cord < 0 && !IS_WATER_ROOM(i->in_room))
-		{
-			i->specials.z_cord = 0;
-		}
-		if (IS_SET(i->specials.affected_by3, AFF3_SWIMMING) && !IS_WATER_ROOM(i->in_room))
-		{
-			REMOVE_BIT(i->specials.affected_by3, AFF3_SWIMMING);
-		}
-
-		/* keep taught/learned proper */
-		if (IS_PC(i) && !IS_MORPH(i))
-		{
-			for (n = FIRST_SKILL; n <= LAST_SKILL; n++)
-			{
-				if (i->only.pc->skills[n].taught < i->only.pc->skills[n].learned)
-					i->only.pc->skills[n].learned =
-						i->only.pc->skills[n].taught;
-			}
-		}
-
-		/* light sources, et al */
-		update_char_objects(i);
-
-		/* since fights stop healing, lets make sure we restart it */
-		if (GET_HIT(i) < GET_MAX_HIT(i))
-		{
-			StartRegen(i, regen_resource::hit);
-		}
-		if (GET_WARD(i) < GET_MAX_WARD(i))
-		{
-			StartRegen(i, regen_resource::ward);
-		}
-	}
-	// AddEvent(EVENT_SPECIAL, 20 * WAIT_SEC, TRUE, generic_char_event, 0);
 }
 
 void event_sundamage(P_char ch, P_char victim, P_obj obj, void *data);
@@ -841,6 +729,9 @@ void poison_moveleak(int /*level*/, P_char /*ch*/, char * /*arg*/, [[maybe_unuse
 void poison_heart_toxin(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 			P_char victim, struct affected_type *af)
 {
+	uint64_t ch_runtime_id = 0;
+	uint64_t victim_runtime_id;
+	int dam_result;
 	struct damage_messages messages = {
 		"$N suddenly turns &+ggreen &nas your poison reaches $S &+Wvital &norgans.",
 		"You suddenly feel &+gsick &nas $n's poison reaches your &+Wvital &norgans.",
@@ -850,6 +741,10 @@ void poison_heart_toxin(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 		"$N suddenly turns &+Ggreen &nholds $S throat and vomits &+Rblood &nas $S soul leaves the body forever.",
 	};
 
+	if (!char_in_list(victim) || !IS_ALIVE(victim))
+		return;
+	if (ch && !char_in_list(ch))
+		ch = NULL;
 	if (ch)
 		level = GET_LEVEL(ch);
 
@@ -867,10 +762,22 @@ void poison_heart_toxin(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 	{
 		if (!ch)
 			ch = victim;
-		int dam_result = raw_damage(ch, victim, 3 * level + number(0, 40), RAWDAM_DEFAULT,
-					    &messages);
+		ch_runtime_id = ch->runtime_id;
+		victim_runtime_id = victim->runtime_id;
+		af = get_spell_from_char(victim, POISON_HEART_TOXIN);
+		if (!af)
+			return;
+		dam_result = raw_damage(ch, victim, 3 * level + number(0, 40), RAWDAM_DEFAULT,
+					&messages);
 		if (dam_result == DAM_NONEDEAD)
 		{
+			victim = find_character_by_runtime_id(victim_runtime_id);
+			if (!victim || !IS_ALIVE(victim))
+				return;
+			ch = find_character_by_runtime_id(ch_runtime_id);
+			af = get_spell_from_char(victim, POISON_HEART_TOXIN);
+			if (!af)
+				return;
 			if (!number(0, 3))
 				add_event(event_poison,
 					  IS_AFFECTED(victim, AFF_SLOW_POISON) ?
@@ -1178,6 +1085,7 @@ void char_from_room(P_char ch)
 		}
 		i->next_in_room = ch->next_in_room;
 	}
+	world_activity_character_leave(ch);
 
 	ch->specials.was_in_room = world[ch->in_room].number;
 	ch->in_room = NOWHERE;
@@ -1424,6 +1332,8 @@ bool char_to_room(P_char ch, int room, int dir)
 	}
 
 	AddCharToZone(ch);
+	world_activity_character_enter(ch);
+	character_maintenance_enter(ch);
 
 	if ((t_ch = get_linked_char(ch, LNK_RIDING)) && t_ch->in_room != ch->in_room)
 	{
@@ -1827,7 +1737,7 @@ static void mark_char_or_owner_dirty(P_char ch)
 }
 
 // Give an object to a char
-void obj_to_char(P_obj object, P_char ch)
+obj_to_char_result obj_to_char_checked(P_obj object, P_char ch)
 {
 	P_obj o;
 	char Gbuf[MAX_STRING_LENGTH];
@@ -1836,7 +1746,7 @@ void obj_to_char(P_obj object, P_char ch)
 	{
 		logit(LOG_MOB, "obj_to_char: no ch, obj vnum %d", object ? OBJ_VNUM(object) : -1);
 		logit(LOG_OBJ, "obj_to_char: no ch, obj vnum %d", object ? OBJ_VNUM(object) : -1);
-		return;
+		return obj_to_char_result::rejected;
 	}
 
 	if (!object)
@@ -1849,7 +1759,7 @@ void obj_to_char(P_obj object, P_char ch)
 		{
 			logit(LOG_OBJ, "obj_to_char: no obj: player (%s).", GET_NAME(ch));
 		}
-		return;
+		return obj_to_char_result::rejected;
 	}
 
 	if (training_dummy_is(ch))
@@ -1858,14 +1768,14 @@ void obj_to_char(P_obj object, P_char ch)
 		      J_NAME(ch), OBJ_VNUM(object));
 		if (OBJ_NOWHERE(object) && ch->in_room != NOWHERE)
 			obj_to_room(object, ch->in_room);
-		return;
+		return obj_to_char_result::rejected;
 	}
 
 	if (!OBJ_NOWHERE(object))
 	{
 		logit(LOG_DEBUG, "obj_to_char: wonders never cease, obj vnum %d not in NOWHERE",
 		      OBJ_VNUM(object));
-		return;
+		return obj_to_char_result::rejected;
 		/*
 		    act("&+gWith a scurry, bugs appear from nowhere, engulfing $p.", TRUE, ch, object, 0, TO_ROOM);
 		    extract_obj(object, TRUE); // A bug -> eating an arti.. ouch.
@@ -1875,11 +1785,7 @@ void obj_to_char(P_obj object, P_char ch)
 
 	if (IS_OBJ_STAT2(object, ITEM2_CRUMBLELOOT) && IS_PC(ch) && !IS_TRUSTED(ch))
 	{
-		// DEFERRED: use-after-free — extract_obj frees object, but callers in
-		// do_get/give/remove (actobj.c) still dereference the stale pointer.
-		// Setting object=NULL here only clears our local copy; the caller's
-		// pointer is passed by value. Fix requires returning a freed-status
-		// from obj_to_char/obj_to_room, touching hundreds of call sites.
+		// Callers using the checked entry point must not access object after this.
 		if (ch->in_room)
 		{
 			snprintf(
@@ -1889,8 +1795,7 @@ void obj_to_char(P_obj object, P_char ch)
 			send_to_room(Gbuf, ch->in_room);
 		}
 		extract_obj(object, TRUE); // Crumbleloot arti?
-		object = NULL;
-		return;
+		return obj_to_char_result::destroyed;
 	}
 
 	// A persisted generic item may only reach a player after its active ownership row names
@@ -1915,8 +1820,10 @@ void obj_to_char(P_obj object, P_char ch)
 		    ownership.state != item_custody_state::active)
 		{
 			if (!has_authoritative_ownership && creation_candidate &&
-			    item_creation_grant_submit_to_player(ch, object, ch))
-				return;
+			    !economic_gameplay_authority::active() &&
+			    item_creation_grant_submit_to_player(
+				    ch, object, ch, NULL, economic_source_kind::world_generation))
+				return obj_to_char_result::deferred;
 			logit(LOG_FILE,
 			      "obj_to_char refused unowned player publication (uid=%llu vnum=%d pid=%d)",
 			      (unsigned long long)object->obj_uid, OBJ_VNUM(object), GET_PID(ch));
@@ -1930,7 +1837,10 @@ void obj_to_char(P_obj object, P_char ch)
 			 * loaded graph must remain available for recovery.
 			 */
 			if (!has_authoritative_ownership && creation_candidate)
+			{
 				extract_obj(object, FALSE);
+				return obj_to_char_result::destroyed;
+			}
 			else
 				logit(LOG_FILE,
 				      "obj_to_char preserved non-candidate object after publication refusal "
@@ -1940,7 +1850,7 @@ void obj_to_char(P_obj object, P_char ch)
 				      (unsigned int)ownership.owner.type,
 				      (unsigned long long)ownership.owner.id,
 				      (unsigned int)ownership.state);
-			return;
+			return obj_to_char_result::rejected;
 		}
 	}
 
@@ -1979,6 +1889,7 @@ void obj_to_char(P_obj object, P_char ch)
 	object->loc_p = LOC_CARRIED;
 	object->loc.carrying = ch;
 	object->z_cord = 0;
+	world_activity_object_enter(object);
 	GET_CARRYING_W(ch) += encumbrance_weight(GET_OBJ_WEIGHT(object));
 	IS_CARRYING_N(ch)++;
 
@@ -1994,6 +1905,12 @@ void obj_to_char(P_obj object, P_char ch)
 
 	mark_char_or_owner_dirty(ch);
 	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
+	return obj_to_char_result::placed;
+}
+
+void obj_to_char(P_obj object, P_char ch)
+{
+	(void)obj_to_char_checked(object, ch);
 }
 
 /*
@@ -2047,6 +1964,7 @@ void obj_from_char(P_obj object)
 	mark_char_or_owner_dirty(ch);
 	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
 
+	world_activity_object_leave(object);
 	object->loc_p = LOC_NOWHERE;
 	object->loc.carrying = NULL; // must clear full pointer, not just int-sized loc.room
 	object->next_content = NULL;
@@ -2216,9 +2134,16 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
 		return;
 	}
 
+	if (item_restricted_for_player_pet(ch, obj))
+	{
+		obj_to_char(obj, ch);
+		return;
+	}
+
 	ch->equipment[pos] = obj;
 	obj->loc.wearing = ch;
 	obj->loc_p = LOC_WORN;
+	world_activity_object_enter(obj);
 
 	if (IS_ARTIFACT(obj))
 	{
@@ -2275,6 +2200,7 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
 		clear_links(ch, obj, LNKFLG_BREAK_REMOVE);
 	all_affects(ch, FALSE);
 	ch->equipment[pos] = NULL;
+	world_activity_object_leave(obj);
 
 	obj->loc_p = LOC_NOWHERE;
 	obj->loc.wearing = NULL; // must clear full pointer, not just int-sized loc.room
@@ -2293,6 +2219,18 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
 	SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
 
 	return (obj);
+}
+
+void unequip_char_dale(P_obj kala)
+{
+	int a, b;
+
+	b = -1;
+	for (a = 0; a < MAX_WEAR; a++)
+		if (OBJ_WORN_POS(kala, a))
+			b = a;
+	if (b != -1)
+		unequip_char(kala->loc.wearing, b);
 }
 
 void unequip_all(P_char ch)
@@ -2800,7 +2738,8 @@ void obj_to_room(P_obj object, int room)
 	}
 	if (world[room].contents && (world[room].contents->R_num == object->R_num))
 	{
-		if (obj_index[object->R_num].virtual_number == VOBJ_COINS)
+		if (obj_index[object->R_num].virtual_number == VOBJ_COINS &&
+		    !economic_gameplay_authority::active())
 		{
 			/* generic 'pile of coins' object, merge them */
 			add_coins(world[room].contents, object->value[0], object->value[1],
@@ -2823,7 +2762,8 @@ void obj_to_room(P_obj object, int room)
 		{
 			if (o->next_content && (o->next_content->R_num == object->R_num))
 			{
-				if (obj_index[object->R_num].virtual_number == VOBJ_COINS)
+				if (obj_index[object->R_num].virtual_number == VOBJ_COINS &&
+				    !economic_gameplay_authority::active())
 				{
 					/* generic 'pile of coins' object, merge them */
 					add_coins(o->next_content, object->value[0],
@@ -2854,6 +2794,7 @@ void obj_to_room(P_obj object, int room)
 
 	if (object && (object->type == ITEM_CORPSE) && IS_SET(object->value[1], PC_CORPSE))
 		writeCorpse(object);
+	world_activity_object_enter(object);
 
 	if (OBJ_FALLING(object))
 	{
@@ -2914,6 +2855,7 @@ void obj_from_room(P_obj object)
 	    ((object->type == ITEM_LIGHT) && (object->value[2] == -1)))
 		room_light(object->loc.room, REAL);
 
+	world_activity_object_leave(object);
 	object->loc_p = LOC_NOWHERE;
 	object->loc.room = NOWHERE;
 	object->next_content = NULL;
@@ -3071,6 +3013,7 @@ void obj_to_obj(P_obj obj, P_obj obj_to)
 
 	add_weight(obj_to, obj->weight);
 	resync_reducing_container(obj_to);
+	world_activity_object_enter(obj);
 	/* Broken out into a recursive function; neater and more correct for handling negative weights properly.
 	  wgt = GET_OBJ_WEIGHT(obj);
 	  for (tmp_obj = obj->loc.inside; wgt && tmp_obj;
@@ -3151,6 +3094,7 @@ void obj_to_obj_at_end(P_obj obj, P_obj obj_to)
 
 	add_weight(obj_to, obj->weight);
 	resync_reducing_container(obj_to);
+	world_activity_object_enter(obj);
 
 	mark_container_dirty(obj_to);
 }
@@ -3202,6 +3146,7 @@ void obj_to_char_at_end(P_obj object, P_char ch)
 	object->loc_p = LOC_CARRIED;
 	object->loc.carrying = ch;
 	object->z_cord = 0;
+	world_activity_object_enter(object);
 	GET_CARRYING_W(ch) += encumbrance_weight(GET_OBJ_WEIGHT(object));
 	IS_CARRYING_N(ch)++;
 
@@ -3287,6 +3232,7 @@ void obj_from_obj(P_obj obj)
 
 	mark_container_dirty(obj_from);
 
+	world_activity_object_leave(obj);
 	obj->loc_p = LOC_NOWHERE;
 	obj->loc.inside = NULL; // must clear full pointer, not just int-sized loc.room
 	obj->next_content = NULL;
@@ -3552,10 +3498,8 @@ P_obj find_live_object(P_obj expected, uint64_t uid)
 
 P_char find_live_character(P_char expected, uint64_t runtime_id)
 {
-	for (P_char character = character_list; character; character = character->next)
-		if (character == expected && character->runtime_id == runtime_id)
-			return character;
-	return nullptr;
+	P_char character = find_character_by_runtime_id(runtime_id);
+	return character == expected ? character : nullptr;
 }
 
 bool corpse_release_room(P_obj corpse, int *room)
@@ -4598,6 +4542,8 @@ bool submit_corpse_destruction(P_obj corpse)
 	if (!corpse || !corpse->action_description || !*corpse->action_description ||
 	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0)
 		return false;
+	if (corpse_has_death_conflict(corpse))
+		return false;
 	int room = NOWHERE;
 	if (!corpse_release_room(corpse, &room))
 		return false;
@@ -4637,6 +4583,26 @@ void corpse_raise_player_ready(P_char character, bool inventory_reloaded)
 	// reconnect reuses the existing live graph and therefore must not clear a
 	// fence unless a fresh authoritative snapshot was actually loaded.
 	REMOVE_BIT(character->runtime_flags, CHAR_RFLAG_CORPSE_RAISE_SAVE_FENCE);
+}
+
+bool corpse_has_death_conflict(P_obj corpse)
+{
+	if (!corpse || corpse->type != ITEM_CORPSE ||
+	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+		return false;
+	const int pid = corpse->value[CORPSE_PID];
+	if (pid <= 0)
+		return false;
+	const uint32_t save_id = static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]);
+	if (corpse_lifecycle_transaction_busy(static_cast<uint32_t>(pid), save_id))
+		return true;
+	for (P_char temp_ch = character_list; temp_ch; temp_ch = temp_ch->next)
+	{
+		if (IS_PC(temp_ch) && GET_PID(temp_ch) == pid &&
+		    corpse_raise_player_save_fenced(temp_ch))
+			return true;
+	}
+	return false;
 }
 
 namespace
@@ -4948,6 +4914,11 @@ bool persistence_defer_corpse_room_release(P_obj corpse)
 	if (!durable_corpse_lifecycle_enabled() || !corpse || corpse->type != ITEM_CORPSE ||
 	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
 		return false;
+	if (corpse_has_death_conflict(corpse))
+	{
+		rearm_corpse_release(corpse);
+		return true;
+	}
 	if (corpse->value[CORPSE_PID] > 0 && corpse->value[CORPSE_SAVEID] > 0 &&
 	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(corpse->value[CORPSE_PID]),
 					      static_cast<uint32_t>(corpse->value[CORPSE_SAVEID])))
@@ -5109,6 +5080,11 @@ bool persistence_defer_corpse_destruction(P_obj corpse)
 	if (!durable_corpse_lifecycle_enabled() || !corpse || corpse->type != ITEM_CORPSE ||
 	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
 		return false;
+	if (corpse_has_death_conflict(corpse))
+	{
+		rearm_corpse_release(corpse);
+		return true;
+	}
 	if (!submit_corpse_destruction(corpse))
 		persistence_alert(AVATAR, "corpse", "durable_destroy", "none", "none",
 				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
@@ -5144,8 +5120,7 @@ void Decay(P_obj obj)
 		//                 so genericdecay = false -- no need to do a default decay
 		if (obj_index[obj->R_num].func.obj)
 		{
-			genericdecay =
-				!(*obj_index[obj->R_num].func.obj)(obj, NULL, CMD_DECAY, NULL);
+			genericdecay = !invoke_object_special(obj, NULL, CMD_DECAY, NULL);
 		}
 		// Corpse
 		else if (obj->R_num == real_object(VOBJ_CORPSE))
@@ -5493,6 +5468,10 @@ void extract_char(P_char ch)
 	}
 	const bool terminal_items_saved =
 		IS_PC(ch) && IS_SET(ch->runtime_flags, CHAR_RFLAG_TERMINAL_ITEMS_SAVED);
+	// A morph delegates to un_morph, which re-enters extraction for the body.
+	// Retire other identities before any teardown callbacks, including CTF cleanup.
+	if (!IS_MORPH(ch))
+		unregister_character_runtime_id(ch);
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 	while (affected_by_spell(ch, TAG_CTF))
 	{
@@ -5509,6 +5488,8 @@ void extract_char(P_char ch)
 		un_morph(ch);
 		return;
 	}
+
+	character_maintenance_leave(ch);
 
 	if (IS_PC(ch) && !ch->desc)
 	{

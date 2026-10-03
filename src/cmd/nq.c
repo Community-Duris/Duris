@@ -12,6 +12,7 @@
 #include <libxml/xmlmemory.h>
 #include "core/config.h"
 #include "core/defines.h"
+#include "economy/economic_gameplay_authority.h"
 #include "magic/spells.h"
 #include "string.h"
 
@@ -815,6 +816,11 @@ int nq_action_check_all(P_char ch, P_char mob, char *phrase, bool kill)
 	// are met, ie, class, race, level, free quest slots
 	for (action = actor->action; action; action = action->next)
 	{
+		// Cash actions have no durable quest source or NPC holding lifetime yet.
+		// Refuse before nq_test_single_action consumes items, tags, or NPC cash.
+		if (economic_gameplay_authority::active() &&
+		    (action->cash != 0 || (action->reward && action->reward->cash != 0)))
+			continue;
 		for (i = 0, t_instance = quest->instance; t_instance && !was_accepted;
 		     t_instance = t_instance->next)
 		{

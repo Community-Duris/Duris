@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Source contracts for tupor recovery and interruption behavior."""
+import ast
 import re
 from pathlib import Path
 
@@ -14,6 +15,7 @@ SKILLS = (SRC / "classes" / "skills.c").read_text()
 PROTOTYPES = (SRC / "core" / "prototypes.h").read_text()
 PROPERTIES = (ROOT / "lib" / "duris.properties").read_text()
 HELP_INDEX = (ROOT / "lib" / "information" / "help_index").read_text()
+FIXTURE_SOURCE = (ROOT / "tests" / "async" / "pa_item_creation_fixture.py").read_text()
 
 
 def function_body(source, signature):
@@ -69,5 +71,32 @@ assert re.search(
     r"CMD_Y\(CMD_TUPOR, STAT_SLEEPING \+ POS_PRONE, do_assimilate, 0, FALSE\);",
     INTERP,
 )
+
+# The regular status prompt reports GET_POS, not GET_STAT. Preserve the real
+# sleep acknowledgement and gameplay recovery checks; do not wait for a
+# nonexistent "Pos: sleeping" posture label before issuing tupor.
+fixture_tree = ast.parse(FIXTURE_SOURCE)
+recovery_node = next(
+    node for node in fixture_tree.body
+    if isinstance(node, ast.FunctionDef) and node.name == "_restore_wind_blade_cast_slot"
+)
+recovery_source = ast.get_source_segment(FIXTURE_SOURCE, recovery_node)
+assert recovery_source is not None
+recovery_steps = (
+    'client.send("sleep")',
+    'client.expect("You fall asleep.", timeout=15)',
+    'client.pending.clear()',
+    'client.send("tupor")',
+    'client.expect("Your mind drifts into a deep meditation", timeout=30)',
+    'client.expect("restoring your 3rd circle powers!", timeout=180)',
+    'client.send("wake")',
+    'client.expect("You wake up.", timeout=15)',
+    'client.send("stand")',
+    'client.expect("Pos: standing >", timeout=15)',
+)
+position = 0
+for step in recovery_steps:
+    position = recovery_source.index(step, position) + len(step)
+assert '"Pos: sleeping >"' not in recovery_source
 
 print("tupor recovery source contract passed")

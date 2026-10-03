@@ -1,4 +1,5 @@
 #include "account/password_async.h"
+#include "account/account_async.h"
 /*************************************************************
  * account.c
  *************************************************************/
@@ -10,6 +11,8 @@
 #include "world/db.h"
 #include "world/epic_transaction.h"
 #include "world/handler.h"
+#include "world/rested.h"
+#include "world/zone_story_quest_runtime.h"
 #include "world/zone_touch_transaction.h"
 #include "cmd/interp.h"
 #include "economy/auction_transaction.h"
@@ -41,8 +44,12 @@
 #include "core/mm.h"
 #include "item/objmisc.h"
 #include "magic/spells.h"
-#include "sql/sql_player.h"
+#include "sql/sql_account.h"
+#include "sql/sql.h"
+#include "sql/sql_transaction.h"
+#include "sql/sql_player_identity.h"
 #include "player/player_name.h"
+#include "player/player_save_journal.h"
 #include "player/player_load_materialize.h"
 #include "player/player_load_pipeline.h"
 #include "player/player_revision_state.h"
@@ -52,6 +59,7 @@
 #include "persistence/locker_async.h"
 #include "persistence/maintenance_scheduler.h"
 #include "persistence/persistence_observability.h"
+#include "persistence/economic_sql_lifecycle_guard.h"
 #include "flatfile/flatfile_account_adapter.h"
 #include "flatfile/flatfile_account_delete.h"
 #include "persistence/persistence_mode.h"
@@ -60,9 +68,12 @@
 #include "net/ws_handlers.h"
 #include "redis/redis_ship_legacy.h"
 
-#include <unordered_map>
+#include <algorithm>
+#include <cerrno>
+#include <cstdlib>
 #include <new>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -210,6 +221,14 @@ class account_deletion_drain_guard
 void remove_deleted_account_runtime(P_desc deleting_session,
 				    const std::vector<account_deletion_identity> &identities)
 {
+#ifndef _PFILE_
+	{
+		std::string error;
+		if (!zone_story_quest_runtime::refresh_after_erasure(&error))
+			logit(LOG_FILE,
+			      "account deletion: zone-story publication disabled after cache refresh failure");
+	}
+#endif
 	for (const auto &identity : identities)
 	{
 		item_ownership_runtime_forget_player_domain(identity.pid);
@@ -312,6 +331,283 @@ bool account_load_outcome_needs_sync_retry(player_load_outcome outcome)
 	return outcome == player_load_outcome::retryable_failure ||
 	       outcome == player_load_outcome::timed_out ||
 	       outcome == player_load_outcome::cancelled || outcome == player_load_outcome::stale;
+}
+
+constexpr unsigned char PLAYER_LOAD_MODE_ACCOUNT_DEATH_RECOVERY = 3;
+
+bool account_descriptor_is_live(P_desc descriptor)
+{
+	for (P_desc current = descriptor_list; current; current = current->next)
+		if (current == descriptor)
+			return true;
+	return false;
+}
+
+struct acct_chars *account_recovery_character_by_name(P_desc descriptor, const char *name)
+{
+	if (!descriptor || !descriptor->account || !name || !*name)
+		return nullptr;
+	for (struct acct_chars *character = descriptor->account->acct_character_list; character;
+	     character = character->next)
+		if (character->pid > 0 && character->charname &&
+		    !strcasecmp(character->charname, name))
+			return character;
+	return nullptr;
+}
+
+struct acct_chars *account_recovery_character_by_identity(P_desc descriptor, int pid,
+							  const char *name)
+{
+	struct acct_chars *character = account_recovery_character_by_name(descriptor, name);
+	return character && character->pid == pid ? character : nullptr;
+}
+
+void account_death_recovery_prompt(P_desc descriptor)
+{
+	if (!descriptor || !account_descriptor_is_live(descriptor))
+		return;
+	if (!descriptor->selected_char_name)
+	{
+		SEND_TO_Q(
+			"Enter one of your character numbers or names (or 0 for the account menu): ",
+			descriptor);
+		return;
+	}
+	SEND_TO_Q(
+		"\r\nDeath recovery is read-only. Commands: L [after-revision], D <32-hex-case-id>, "
+		"C (choose another character), 0 (account menu).\r\n",
+		descriptor);
+	SEND_TO_Q("Recovery choice: ", descriptor);
+}
+
+void account_death_recovery_clear(P_desc descriptor, bool cancel_pending)
+{
+	if (!descriptor)
+		return;
+	if (cancel_pending && descriptor->player_load_request_id)
+		(void)player_load_pipeline_cancel(descriptor->player_load_request_id);
+	descriptor->player_load_request_id = 0;
+	descriptor->player_load_pid = 0;
+	descriptor->player_load_mode = PLAYER_LOAD_MODE_NONE;
+	if (descriptor->selected_char_name)
+	{
+		str_free(descriptor->selected_char_name);
+		descriptor->selected_char_name = nullptr;
+	}
+}
+
+bool account_death_recovery_submit(P_desc descriptor,
+				   const player_death_recovery_query_request &query)
+{
+	if (!descriptor || !account_descriptor_is_live(descriptor) ||
+	    STATE(descriptor) != CON_ACCT_SELECT_CHAR ||
+	    descriptor->player_load_mode != PLAYER_LOAD_MODE_ACCOUNT_DEATH_RECOVERY ||
+	    descriptor->player_load_request_id || !descriptor->account ||
+	    !descriptor->account->acct_name || !descriptor->selected_char_name)
+		return false;
+	struct acct_chars *character =
+		account_recovery_character_by_name(descriptor, descriptor->selected_char_name);
+	if (!character || character->pid <= 0 || !character->charname)
+		return false;
+	player_load_request request = {};
+	request.request_id = player_load_pipeline_next_request_id();
+	request.pid = character->pid;
+	request.account_name = descriptor->account->acct_name;
+	request.player_name = character->charname;
+	request.include_items = false;
+	request.include_pets = false;
+	request.death_recovery_query = query;
+	request.deadline_usec = persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+	if (!player_load_request_valid(request, persistence_observability_now_usec()) ||
+	    player_load_pipeline_submit(request) != player_load_submit_outcome::accepted)
+		return false;
+	descriptor->player_load_request_id = request.request_id;
+	descriptor->player_load_pid = character->pid;
+	descriptor->player_load_mode = PLAYER_LOAD_MODE_ACCOUNT_DEATH_RECOVERY;
+	SEND_TO_Q("Reading retained death-recovery records...\r\n", descriptor);
+	return true;
+}
+
+struct acct_chars *account_death_recovery_selection(P_desc descriptor, const char *selection)
+{
+	struct acct_chars *sorted[MAX_CHARS_PER_ACCOUNT] = {};
+	int count = 0;
+	for (struct acct_chars *character = descriptor->account->acct_character_list;
+	     character && count < MAX_CHARS_PER_ACCOUNT; character = character->next)
+		sorted[count++] = character;
+	for (int index = 0; index < count; ++index)
+		for (int next = 0; next + 1 < count - index; ++next)
+			if (sorted[next]->last < sorted[next + 1]->last)
+				std::swap(sorted[next], sorted[next + 1]);
+	char *end = nullptr;
+	const long ordinal = strtol(selection, &end, 10);
+	if (end != selection && end && !*end && ordinal > 0 && ordinal <= count)
+		return sorted[ordinal - 1];
+	return account_recovery_character_by_name(descriptor, selection);
+}
+
+bool parse_death_recovery_revision(const char *text, uint64_t *revision)
+{
+	if (!text || !*text || !revision || *text == '-')
+		return false;
+	errno = 0;
+	char *end = nullptr;
+	const unsigned long long value = strtoull(text, &end, 10);
+	if (errno == ERANGE || end == text || !end || *end)
+		return false;
+	*revision = static_cast<uint64_t>(value);
+	return true;
+}
+
+void account_death_recovery_input(P_desc descriptor, char *argument)
+{
+	if (!descriptor || !account_descriptor_is_live(descriptor) ||
+	    STATE(descriptor) != CON_ACCT_SELECT_CHAR ||
+	    descriptor->player_load_mode != PLAYER_LOAD_MODE_ACCOUNT_DEATH_RECOVERY ||
+	    !descriptor->account || !descriptor->account->acct_name)
+		return;
+	const char *begin = argument ? argument : "";
+	while (*begin && isspace(static_cast<unsigned char>(*begin)))
+		++begin;
+	const char *end = begin + strlen(begin);
+	while (end > begin && isspace(static_cast<unsigned char>(end[-1])))
+		--end;
+	const std::string input(begin, static_cast<size_t>(end - begin));
+	if (input == "0")
+	{
+		account_death_recovery_clear(descriptor, true);
+		STATE(descriptor) = CON_DISPLAY_ACCT_MENU;
+		display_account_menu(descriptor, nullptr);
+		return;
+	}
+	if (descriptor->player_load_request_id)
+	{
+		SEND_TO_Q(
+			"Please wait for the current recovery read to finish, or enter 0 to cancel.\r\n",
+			descriptor);
+		return;
+	}
+	if (!descriptor->selected_char_name)
+	{
+		struct acct_chars *character =
+			account_death_recovery_selection(descriptor, input.c_str());
+		if (!character || character->pid <= 0 || !character->charname)
+		{
+			SEND_TO_Q("Choose one of your listed characters by number or name.\r\n",
+				  descriptor);
+			account_death_recovery_prompt(descriptor);
+			return;
+		}
+		descriptor->selected_char_name = str_dup(character->charname);
+		descriptor->player_load_pid = character->pid;
+		player_death_recovery_query_request query = {};
+		query.kind = player_death_recovery_query_kind::list;
+		if (!account_death_recovery_submit(descriptor, query))
+		{
+			SEND_TO_Q(
+				"Recovery records are unavailable; no character state was changed.\r\n",
+				descriptor);
+			account_death_recovery_prompt(descriptor);
+		}
+		return;
+	}
+	if (!strcasecmp(input.c_str(), "C"))
+	{
+		if (descriptor->selected_char_name)
+		{
+			str_free(descriptor->selected_char_name);
+			descriptor->selected_char_name = nullptr;
+		}
+		descriptor->player_load_pid = 0;
+		display_character_list(descriptor, nullptr);
+		if (STATE(descriptor) != CON_ACCT_SELECT_CHAR)
+			descriptor->player_load_mode = PLAYER_LOAD_MODE_NONE;
+		return;
+	}
+	if (!strncasecmp(input.c_str(), "L", 1) &&
+	    (input.size() == 1 || isspace(static_cast<unsigned char>(input[1]))))
+	{
+		uint64_t after_revision = 0;
+		if (input.size() > 1)
+		{
+			const char *cursor = input.c_str() + 1;
+			while (isspace(static_cast<unsigned char>(*cursor)))
+				++cursor;
+			if (!parse_death_recovery_revision(cursor, &after_revision))
+			{
+				SEND_TO_Q(
+					"Use L followed by an optional decimal save-revision cursor.\r\n",
+					descriptor);
+				account_death_recovery_prompt(descriptor);
+				return;
+			}
+		}
+		player_death_recovery_query_request query = {};
+		query.kind = player_death_recovery_query_kind::list;
+		query.after_revision = after_revision;
+		if (!account_death_recovery_submit(descriptor, query))
+		{
+			SEND_TO_Q(
+				"Recovery records are unavailable; no character state was changed.\r\n",
+				descriptor);
+			account_death_recovery_prompt(descriptor);
+		}
+		return;
+	}
+	if (!strncasecmp(input.c_str(), "D", 1) && input.size() > 1 &&
+	    isspace(static_cast<unsigned char>(input[1])))
+	{
+		const char *case_id_text = input.c_str() + 1;
+		while (isspace(static_cast<unsigned char>(*case_id_text)))
+			++case_id_text;
+		critical_operation_id operation_id = {};
+		if (!critical_operation_id_from_hex(case_id_text, &operation_id))
+		{
+			SEND_TO_Q("Enter the exact 32-hex case ID shown by the list.\r\n",
+				  descriptor);
+			account_death_recovery_prompt(descriptor);
+			return;
+		}
+		player_death_recovery_query_request query = {};
+		query.kind = player_death_recovery_query_kind::detail;
+		query.operation_id = operation_id;
+		if (!account_death_recovery_submit(descriptor, query))
+		{
+			SEND_TO_Q(
+				"Recovery details are unavailable; no character state was changed.\r\n",
+				descriptor);
+			account_death_recovery_prompt(descriptor);
+		}
+		return;
+	}
+	SEND_TO_Q("Choose L [after-revision], D <case-id>, C, or 0.\r\n", descriptor);
+	account_death_recovery_prompt(descriptor);
+}
+
+void account_recovery_gate_refused(P_desc descriptor, player_load_recovery_gate gate)
+{
+	if (!descriptor)
+		return;
+	descriptor->player_load_request_id = 0;
+	descriptor->player_load_pid = 0;
+	descriptor->player_load_mode = PLAYER_LOAD_MODE_NONE;
+	if (descriptor->selected_char_name)
+	{
+		str_free(descriptor->selected_char_name);
+		descriptor->selected_char_name = nullptr;
+	}
+	if (gate == player_load_recovery_gate::retained_conflict)
+		SEND_TO_Q(
+			"This character has retained death-recovery evidence. The character was not loaded; "
+			"review account-menu option 9.\r\n",
+			descriptor);
+	else
+		SEND_TO_Q(
+			"Death-recovery history could not be verified. The character was not loaded; "
+			"try again later or review account-menu option 9.\r\n",
+			descriptor);
+	STATE(descriptor) = CON_DISPLAY_ACCT_MENU;
+	display_account_menu(descriptor, nullptr);
 }
 
 bool build_account_load_request(P_desc d, struct acct_chars *c, player_load_request *request_out)
@@ -603,8 +899,39 @@ void select_accountname(P_desc d, char *arg)
 		}
 	}
 
+	account_async_cancel(d);
+	d->account->acct_name = check_and_clear(d->account->acct_name);
 	d->account->acct_name = str_dup(tmp_name);
 
+#ifndef __NO_MYSQL__
+	if (!account_async_start(
+		    d,
+		    [](P_desc completed, account_load_outcome outcome)
+		    {
+			    if (outcome == account_load_outcome::loaded)
+				    send_account_password_prompt(completed);
+			    else if (outcome == account_load_outcome::not_found)
+			    {
+				    verify_account_name(completed, NULL);
+				    STATE(completed) = CON_VERIFY_NEW_ACCT_NAME;
+			    }
+			    else
+			    {
+				    SEND_TO_Q(
+					    "There is an error with your account, please notify an immortal!\r\n",
+					    completed);
+				    statuslog(56, "&+RALERT&n: interactive account load failed");
+				    completed->account = free_account(completed->account);
+				    STATE(completed) = CON_FLUSH;
+			    }
+		    }))
+	{
+		SEND_TO_Q("Login is busy; please reconnect in a moment.\r\n", d);
+		d->account = free_account(d->account);
+		STATE(d) = CON_FLUSH;
+	}
+	return;
+#else
 	if (account_exists("Accounts", tmp_name))
 	{
 		if (read_account(d->account) == -1)
@@ -625,6 +952,7 @@ void select_accountname(P_desc d, char *arg)
 	verify_account_name(d, NULL);
 	STATE(d) = CON_VERIFY_NEW_ACCT_NAME;
 	return;
+#endif
 }
 
 void get_account_password(P_desc d, char *arg)
@@ -797,7 +1125,10 @@ void display_account_menu(P_desc d, char *arg)
 		SEND_TO_Q("&+Y5) Change registered email address&n\r\n", d);
 		SEND_TO_Q("&+Y6) Change account password&n\r\n", d);
 		SEND_TO_Q("&+R7) Delete this account&n\r\n", d);
-		SEND_TO_Q("&+C8) Check rested bonus&n\r\n", d);
+		if (rested_bonus_enabled())
+			SEND_TO_Q("&+C8) Check rested bonus&n\r\n", d);
+		if (persistence_mode_requires_mysql())
+			SEND_TO_Q("&+Y9) Review death-recovery records (read-only)&n\r\n", d);
 		SEND_TO_Q("\r\n", d);
 		SEND_TO_Q("&+L0) Disconnect from this account&n\r\n", d);
 		SEND_TO_Q("&+y------------------------------------------&n\r\n", d);
@@ -812,7 +1143,7 @@ void display_account_menu(P_desc d, char *arg)
 	long selection = strtol(arg, &end, 10);
 	while (end && isspace((unsigned char)*end))
 		end++;
-	if (!*arg || end == arg || (end && *end) || selection < 0 || selection > 8)
+	if (!*arg || end == arg || (end && *end) || selection < 0 || selection > 9)
 	{
 		SEND_TO_Q("Invalid Selection, please try again.\r\n", d);
 		display_account_menu(d, NULL);
@@ -868,7 +1199,34 @@ void display_account_menu(P_desc d, char *arg)
 		break;
 
 	case 8:
+		if (!rested_bonus_enabled())
+		{
+			SEND_TO_Q("\r\nThe rested bonus feature is currently disabled.\r\n", d);
+			display_account_menu(d, NULL);
+			break;
+		}
 		check_rested_bonus(d);
+		break;
+
+	case 9:
+		if (!persistence_mode_requires_mysql() || !d->account ||
+		    !d->account->acct_character_list)
+		{
+			SEND_TO_Q(
+				"Death-recovery records require a database-backed account with characters.\r\n",
+				d);
+			display_account_menu(d, NULL);
+			break;
+		}
+		d->player_load_mode = PLAYER_LOAD_MODE_ACCOUNT_DEATH_RECOVERY;
+		d->player_load_pid = 0;
+		if (d->selected_char_name)
+		{
+			str_free(d->selected_char_name);
+			d->selected_char_name = NULL;
+		}
+		STATE(d) = CON_ACCT_SELECT_CHAR;
+		display_character_list(d, NULL);
 		break;
 
 	default:
@@ -1293,6 +1651,12 @@ void account_select_char(P_desc d, char *arg)
 	long selection = -1;
 	int count = 0, i, j;
 
+	if (d && d->player_load_mode == PLAYER_LOAD_MODE_ACCOUNT_DEATH_RECOVERY)
+	{
+		account_death_recovery_input(d, arg);
+		return;
+	}
+
 	if (!arg)
 	{
 		display_character_list(d);
@@ -1686,34 +2050,38 @@ int load_char_display_data(char *charname, struct char_display_info *info)
 	info->m_class = temp_ch->player.m_class;
 	info->secondary_class = temp_ch->player.secondary_class;
 	info->hometown = GET_HOME(temp_ch);
+	info->rested_status = NULL;
 
-	// Calculate rested status based on offline time (same logic as nanny.c)
-	time_t current_time = time(0);
-	time_t offline_seconds = current_time - temp_ch->player.time.saved;
-	int offline_hours = offline_seconds / 3600;
-	char rested_buf[128];
+	if (rested_bonus_enabled())
+	{
+		// Calculate rested status based on offline time (same logic as nanny.c)
+		time_t current_time = time(0);
+		time_t offline_seconds = current_time - temp_ch->player.time.saved;
+		int offline_hours = offline_seconds / 3600;
+		char rested_buf[128];
 
-	if (offline_hours >= 20)
-	{
-		// Well-rested bonus
-		snprintf(rested_buf, 128, "&+Wwell-rested&n bonus (&+G%d&n hours offline)",
-			 offline_hours);
-		info->rested_status = str_dup(rested_buf);
-	}
-	else if (offline_hours >= 9)
-	{
-		// Rested bonus
-		snprintf(rested_buf, 128, "&+Grested&n bonus (&+Y%d&n hours offline)",
-			 offline_hours);
-		info->rested_status = str_dup(rested_buf);
-	}
-	else
-	{
-		// No bonus yet - show how many more hours needed
-		int hours_needed = 9 - offline_hours;
-		snprintf(rested_buf, 128, "&+LNone&n (&+R%d&n more hour%s needed)", hours_needed,
-			 hours_needed == 1 ? "" : "s");
-		info->rested_status = str_dup(rested_buf);
+		if (offline_hours >= 20)
+		{
+			// Well-rested bonus
+			snprintf(rested_buf, 128, "&+Wwell-rested&n bonus (&+G%d&n hours offline)",
+				 offline_hours);
+			info->rested_status = str_dup(rested_buf);
+		}
+		else if (offline_hours >= 9)
+		{
+			// Rested bonus
+			snprintf(rested_buf, 128, "&+Grested&n bonus (&+Y%d&n hours offline)",
+				 offline_hours);
+			info->rested_status = str_dup(rested_buf);
+		}
+		else
+		{
+			// No bonus yet - show how many more hours needed
+			int hours_needed = 9 - offline_hours;
+			snprintf(rested_buf, 128, "&+LNone&n (&+R%d&n more hour%s needed)",
+				 hours_needed, hours_needed == 1 ? "" : "s");
+			info->rested_status = str_dup(rested_buf);
+		}
 	}
 
 	cleanup_temp_char(temp_ch);
@@ -1738,6 +2106,13 @@ void get_race_name_from_info(struct char_display_info *info, char *race_str, int
 
 void check_rested_bonus(P_desc d)
 {
+	if (!rested_bonus_enabled())
+	{
+		SEND_TO_Q("\r\nThe rested bonus feature is currently disabled.\r\n", d);
+		display_account_menu(d, NULL);
+		return;
+	}
+
 	struct acct_chars *c = d->account->acct_character_list;
 	char buf[512];
 	int count = 0;
@@ -2390,6 +2765,13 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 	player_load_result loaded = {};
 	if (!c || !d || c->pid <= 0 || !d->account || !d->account->acct_name)
 		return NULL;
+	if (player_save_journal_pid_quarantined(c->pid))
+	{
+		SEND_TO_Q(
+			"This character is temporarily unavailable while its save data is under review.\r\n",
+			d);
+		return NULL;
+	}
 	if (!d->player_load_request_id)
 	{
 		player_load_request request = {};
@@ -2454,6 +2836,11 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 		}
 		loaded = std::move(retry);
 	}
+	if (loaded.pid > 0 && player_save_journal_pid_quarantined(loaded.pid))
+	{
+		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+		return NULL;
+	}
 	player = (P_char)mm_get(dead_mob_pool);
 	if (!player)
 	{
@@ -2493,8 +2880,166 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 	return player;
 }
 
+void account_death_recovery_query_complete(P_desc descriptor, player_load_result result)
+{
+	const bool descriptor_live = descriptor && account_descriptor_is_live(descriptor);
+	const bool has_request_identity = !result.request_account_name.empty() &&
+					  !result.request_player_name.empty();
+	const bool result_identity_matches =
+		descriptor_live &&
+		(has_request_identity ? descriptor->account && descriptor->account->acct_name &&
+						descriptor->selected_char_name &&
+						!strcasecmp(descriptor->account->acct_name,
+							    result.request_account_name.c_str()) &&
+						!strcasecmp(descriptor->selected_char_name,
+							    result.request_player_name.c_str()) :
+					result.outcome != player_load_outcome::applied);
+	const bool identity_matches =
+		descriptor_live && STATE(descriptor) == CON_ACCT_SELECT_CHAR &&
+		descriptor->player_load_mode == PLAYER_LOAD_MODE_ACCOUNT_DEATH_RECOVERY &&
+		descriptor->player_load_request_id == result.request_id &&
+		descriptor->player_load_pid > 0 && descriptor->player_load_pid == result.pid &&
+		result_identity_matches &&
+		account_recovery_character_by_identity(descriptor, result.pid,
+						       descriptor->selected_char_name);
+	if (!identity_matches)
+	{
+		player_load_pipeline_note_stale();
+		if (descriptor_live && descriptor->player_load_request_id == result.request_id)
+		{
+			descriptor->player_load_request_id = 0;
+			descriptor->player_load_pid = 0;
+			if (descriptor->player_load_mode == PLAYER_LOAD_MODE_ACCOUNT_DEATH_RECOVERY)
+			{
+				if (descriptor->selected_char_name)
+				{
+					str_free(descriptor->selected_char_name);
+					descriptor->selected_char_name = nullptr;
+				}
+				if (STATE(descriptor) == CON_ACCT_SELECT_CHAR)
+				{
+					SEND_TO_Q(
+						"Recovery read discarded because the account or character context changed.\r\n",
+						descriptor);
+					display_character_list(descriptor, nullptr);
+					if (STATE(descriptor) != CON_ACCT_SELECT_CHAR)
+						descriptor->player_load_mode =
+							PLAYER_LOAD_MODE_NONE;
+				}
+				else
+					descriptor->player_load_mode = PLAYER_LOAD_MODE_NONE;
+			}
+		}
+		return;
+	}
+	descriptor->player_load_request_id = 0;
+	if (result.outcome != player_load_outcome::applied ||
+	    result.death_recovery_query.outcome != player_death_recovery_query_outcome::read)
+	{
+		if (result.death_recovery_query.outcome ==
+		    player_death_recovery_query_outcome::not_found)
+			SEND_TO_Q("That retained recovery case is no longer available.\r\n",
+				  descriptor);
+		else if (result.death_recovery_query.outcome ==
+			 player_death_recovery_query_outcome::unauthorized)
+			SEND_TO_Q("That character is not available to this account.\r\n",
+				  descriptor);
+		else
+			SEND_TO_Q(
+				"Recovery records could not be read. No character state was changed.\r\n",
+				descriptor);
+		account_death_recovery_prompt(descriptor);
+		return;
+	}
+	try
+	{
+		const player_death_recovery_query_result &query = result.death_recovery_query;
+		if (query.kind == player_death_recovery_query_kind::list &&
+		    query.cases.size() <= PLAYER_DEATH_CONFLICT_LIST_LIMIT)
+		{
+			if (query.cases.empty())
+				SEND_TO_Q(
+					"No retained death-recovery records were found for this character.\r\n",
+					descriptor);
+			else
+				SEND_TO_Q(
+					"Status: unresolved archive evidence only; no recovery or item restoration is implied.\r\n",
+					descriptor);
+			for (const player_death_conflict_case &entry : query.cases)
+			{
+				char operation[33] = {};
+				if (!critical_operation_id_to_hex(entry.operation_id, operation,
+								  sizeof operation))
+					continue;
+				char line[256];
+				snprintf(line, sizeof line,
+					 "Case %s | save revision %llu | source revision %llu\r\n",
+					 operation,
+					 static_cast<unsigned long long>(entry.save_revision),
+					 static_cast<unsigned long long>(entry.source_revision));
+				SEND_TO_Q(line, descriptor);
+			}
+			if (query.cases.size() == PLAYER_DEATH_CONFLICT_LIST_LIMIT)
+			{
+				const player_death_conflict_case &last = query.cases.back();
+				char next_page[128];
+				snprintf(next_page, sizeof next_page,
+					 "Open a detail with D <case-id>; next page: L %llu\r\n",
+					 static_cast<unsigned long long>(last.save_revision));
+				SEND_TO_Q(next_page, descriptor);
+			}
+		}
+		else if (query.kind == player_death_recovery_query_kind::detail &&
+			 query.detail_summary.size() <= PLAYER_DEATH_RECOVERY_SUMMARY_MAX &&
+			 !critical_operation_id_is_zero(query.detail_identity.operation_id))
+		{
+			char operation[33] = {};
+			if (critical_operation_id_to_hex(query.detail_identity.operation_id,
+							 operation, sizeof operation))
+			{
+				char heading[96];
+				snprintf(heading, sizeof heading,
+					 "Detail for retained case %s:\r\n", operation);
+				SEND_TO_Q(heading, descriptor);
+				std::string visible;
+				visible.reserve(query.detail_summary.size() + 16);
+				for (char byte : query.detail_summary)
+				{
+					if (byte == '\n')
+						visible += "\r\n";
+					else if (byte >= 0x20 && byte <= 0x7e && byte != '&' &&
+						 byte != '$' && byte != '%')
+						visible.push_back(byte);
+					else if (byte != '\r')
+						visible.push_back(' ');
+				}
+				visible += "\r\n";
+				SEND_TO_Q(visible.c_str(), descriptor);
+			}
+		}
+		else
+			SEND_TO_Q("Recovery records could not be displayed safely.\r\n",
+				  descriptor);
+	}
+	catch (const std::bad_alloc &)
+	{
+		SEND_TO_Q("Recovery records could not be displayed safely.\r\n", descriptor);
+	}
+	account_death_recovery_prompt(descriptor);
+}
+
 void account_player_load_complete(P_desc d, player_load_result result)
 {
+	if (!d || !account_descriptor_is_live(d))
+	{
+		player_load_pipeline_note_stale();
+		return;
+	}
+	if (d->player_load_mode == PLAYER_LOAD_MODE_ACCOUNT_DEATH_RECOVERY)
+	{
+		account_death_recovery_query_complete(d, std::move(result));
+		return;
+	}
 	if (!d || STATE(d) != CON_PLAYER_LOAD || d->player_load_mode != PLAYER_LOAD_MODE_ACCOUNT ||
 	    !d->player_load_request_id || result.request_id != d->player_load_request_id)
 	{
@@ -2506,6 +3051,24 @@ void account_player_load_complete(P_desc d, player_load_result result)
 		player_load_pipeline_note_stale();
 		result.pid = d->player_load_pid;
 		result.outcome = player_load_outcome::stale;
+	}
+	if (result.recovery_gate == player_load_recovery_gate::retained_conflict ||
+	    result.recovery_gate == player_load_recovery_gate::unavailable)
+	{
+		account_recovery_gate_refused(d, result.recovery_gate);
+		return;
+	}
+	if (d->player_load_pid > 0 && player_save_journal_pid_quarantined(d->player_load_pid))
+	{
+		d->player_load_request_id = 0;
+		d->player_load_pid = 0;
+		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+		SEND_TO_Q(
+			"This character is temporarily unavailable while its save data is under review.\r\n",
+			d);
+		STATE(d) = CON_ACCT_SELECT_CHAR;
+		display_character_list(d);
+		return;
 	}
 	if (d->player_load_pid <= 0)
 	{
@@ -2519,7 +3082,7 @@ void account_player_load_complete(P_desc d, player_load_result result)
 		display_character_list(d);
 		return;
 	}
-	if (!player_save_pipeline_save_admitted(d->player_load_pid) &&
+	if (!player_save_pipeline_authoritative_hydration_admitted(d->player_load_pid) &&
 	    (result.outcome == player_load_outcome::applied ||
 	     result.outcome == player_load_outcome::degraded))
 	{
@@ -3050,8 +3613,24 @@ void verify_delete_account(P_desc d, char *arg)
 		return;
 	}
 
+#ifndef __NO_MYSQL__
 	if (!fenced)
 	{
+		// Admit the irreversible request before writing its durable fence. Hold
+		// the native lease through that write, then release it before draining
+		// worker saves; the deletion backend establishes its own admission.
+		economic_sql_currency_writer_guard fence_writer;
+		if (sql_in_transaction() ||
+		    economic_sql_currency_writer_guard::acquire(DB, &fence_writer))
+		{
+			SEND_TO_Q(
+				"\r\nAccount deletion is currently unavailable; no deletion fence "
+				"was written. Please retry or contact an immortal.\r\n",
+				d);
+			STATE(d) = CON_DISPLAY_ACCT_MENU;
+			display_account_menu(d, NULL);
+			return;
+		}
 		const char previous_block = d->account->acct_blocked;
 		d->account->acct_blocked = ACCOUNT_BLOCK_DELETION;
 		if (write_account(d->account) != 1)
@@ -3067,6 +3646,40 @@ void verify_delete_account(P_desc d, char *arg)
 		}
 		statuslog(56, "account deletion fenced (account=redacted)");
 	}
+#else
+	{
+		const char previous_block = d->account->acct_blocked;
+		d->account->acct_blocked = ACCOUNT_BLOCK_DELETION;
+		std::string error;
+		const auto result = flatfile_account_state_fence(d->account, fenced, &error);
+		if (result != flatfile_account_fence_result::ready)
+		{
+			if (!fenced && result == flatfile_account_fence_result::refused)
+			{
+				d->account->acct_blocked = previous_block;
+				SEND_TO_Q(
+					"\r\nAccount deletion could not establish its durable fence; no data "
+					"was deleted. Please contact an immortal.\r\n",
+					d);
+				STATE(d) = CON_DISPLAY_ACCT_MENU;
+				display_account_menu(d, NULL);
+			}
+			else
+			{
+				close_other_account_sessions(d);
+				SEND_TO_Q(
+					"\r\nAccount deletion fence publication is awaiting native "
+					"recovery. The request cannot be cancelled; retry the exact "
+					"account name or contact an immortal.\r\n",
+					d);
+				display_account_deletion_confirmation(d, true);
+			}
+			return;
+		}
+		if (!fenced)
+			statuslog(56, "account deletion fenced (account=redacted)");
+	}
+#endif
 
 	std::vector<account_deletion_identity> identities;
 	if (!capture_account_deletion_identities(d, &identities))

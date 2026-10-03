@@ -1,13 +1,18 @@
 #include "core/structs.h"
 #include "net/websocket.h"
+#include "net/network_readiness.h"
 #include <cjson/cJSON.h>
+#include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <netinet/in.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <vector>
 #include <zlib.h>
 
 extern "C"
@@ -39,14 +44,43 @@ int checked_snprintf(char *destination, size_t destination_size, const char *for
 	va_end(arguments);
 	return result;
 }
-int is_desc_valid(descriptor_data *)
+static descriptor_data *closed_application_descriptor = nullptr;
+int is_desc_valid(descriptor_data *d)
 {
-	return 1;
+	return d != closed_application_descriptor;
 }
-void write_to_q(const char *, txt_q *, int) {}
+static unsigned int queued_input_lines = 0;
+static std::vector<std::string> application_order;
+void write_to_q(const char *text, txt_q *, int mode)
+{
+	if (mode == 0)
+	{
+		++queued_input_lines;
+		application_order.emplace_back(text);
+	}
+}
+void queue_websocket_input(descriptor_data *d, const char *text)
+{
+	write_to_q(text, &d->input, 0);
+}
+bool admit_session_oob(descriptor_data *, size_t)
+{
+	return true;
+}
 void ws_send_system(descriptor_data *, const char *, const char *) {}
-void gmcp_handle_input(descriptor_data *, const char *, size_t) {}
-void ws_handle_command(descriptor_data *, const char *, cJSON *) {}
+void gmcp_handle_input(descriptor_data *, const char *, size_t)
+{
+	application_order.emplace_back("gmcp");
+}
+void ws_handle_command(descriptor_data *d, const char *command, cJSON *)
+{
+	application_order.emplace_back(command);
+	if (!strcmp(command, "logout"))
+	{
+		closed_application_descriptor = d;
+		websocket_free(d);
+	}
+}
 char *json_build_gmcp_message(const char *, const char *)
 {
 	return nullptr;
@@ -57,6 +91,13 @@ static int fail(const char *message)
 {
 	fprintf(stderr, "FAIL: %s\n", message);
 	return 1;
+}
+
+/* Existing parser scenarios model successive simulation pulses. */
+static int pulse_input(descriptor_data *d)
+{
+	d->network_input_remaining = WS_INPUT_BUFFER_SIZE;
+	return websocket_process_input(d);
 }
 
 static int make_compressed_text_frame(const char *text, unsigned char *frame, size_t frame_capacity,
@@ -196,7 +237,7 @@ int main()
 	    handshake_len + (ssize_t)sizeof(ping))
 		return fail("write coalesced handshake and ping");
 
-	if (websocket_process_input(&d) != 0)
+	if (pulse_input(&d) != 0)
 		return fail("coalesced handshake/ping processing");
 	if (!d.ws_handshake_done || d.ws_state != WS_STATE_OPEN)
 		return fail("handshake did not open descriptor");
@@ -259,6 +300,66 @@ int main()
 	close(stale_pair[1]);
 
 	unsetenv("DURIS_TRUSTED_PROXY_IP");
+	// A fragmented trusted PROXY prefix must survive fast accepts and supply
+	// validated IPv4/IPv6 identity before HTTP upgrade or source-site checks.
+	for (int scenario = 0; scenario < 5; ++scenario)
+	{
+		int proxy_listener = socket(AF_INET6, SOCK_STREAM, 0);
+		sockaddr_in6 proxy_address{};
+		proxy_address.sin6_family = AF_INET6;
+		inet_pton(AF_INET6, scenario == 4 ? "::ffff:127.0.0.1" : "::1",
+			  &proxy_address.sin6_addr);
+		if (proxy_listener < 0 ||
+		    bind(proxy_listener, (sockaddr *)&proxy_address, sizeof(proxy_address)) != 0 ||
+		    listen(proxy_listener, 4) != 0)
+			return fail("proxy IPv6 listener");
+		socklen_t proxy_length = sizeof(proxy_address);
+		if (getsockname(proxy_listener, (sockaddr *)&proxy_address, &proxy_length) != 0)
+			return fail("proxy listener address");
+		if (scenario == 3)
+			unsetenv("DURIS_TRUSTED_PROXY_IP");
+		else
+			setenv("DURIS_TRUSTED_PROXY_IP", scenario == 4 ? "127.0.0.1" : "::1", 1);
+		int proxy_peer = socket(AF_INET6, SOCK_STREAM, 0);
+		if (proxy_peer < 0 ||
+		    connect(proxy_peer, (sockaddr *)&proxy_address, sizeof(proxy_address)) != 0)
+			return fail("proxy IPv6 peer");
+		int proxy_socket = accept(proxy_listener, nullptr, nullptr);
+		if (proxy_socket < 0)
+			return fail("proxy accept");
+		fcntl(proxy_socket, F_SETFL, O_NONBLOCK);
+		descriptor_data proxy{};
+		proxy.descriptor = proxy_socket;
+		proxy.websocket = 1;
+		proxy.ws_state = WS_STATE_CONNECTING;
+		strcpy(proxy.host, "::1");
+		char proxy_request[512];
+		const char *source = scenario == 1 ? "2001:db8::7" :
+				     scenario == 2 ? "invalid-address" :
+						     "203.0.113.7";
+		snprintf(proxy_request, sizeof(proxy_request), "PROXY %s %s %s 1234 4050\r\n%s",
+			 scenario == 1 ? "TCP6" : "TCP4", source,
+			 scenario == 1 ? "::1" : "127.0.0.1", handshake);
+		if (write(proxy_peer, proxy_request, 3) != 3 || pulse_input(&proxy) != 0 ||
+		    proxy.ws_handshake_done || strcmp(proxy.host, "::1"))
+			return fail("partial PROXY prefix was consumed at admission");
+		const size_t remaining = strlen(proxy_request) - 3;
+		if (write(proxy_peer, proxy_request + 3, remaining) !=
+		    static_cast<ssize_t>(remaining))
+			return fail("remaining proxy request");
+		const int proxy_result = pulse_input(&proxy);
+		if ((scenario < 2 || scenario == 4) &&
+		    (proxy_result != 0 || !proxy.ws_handshake_done || strcmp(proxy.host, source)))
+			return fail("fragmented trusted PROXY identity or upgrade failed");
+		if ((scenario == 2 || scenario == 3) &&
+		    (proxy_result >= 0 || proxy.ws_handshake_done || strcmp(proxy.host, "::1")))
+			return fail("untrusted or invalid PROXY identity was accepted");
+		websocket_free(&proxy);
+		close(proxy_socket);
+		close(proxy_peer);
+		close(proxy_listener);
+	}
+	unsetenv("DURIS_TRUSTED_PROXY_IP");
 	int untrusted_xff_pair[2];
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, untrusted_xff_pair) != 0)
 		return fail("untrusted X-Forwarded-For socketpair");
@@ -275,7 +376,7 @@ int main()
 					      "X-Forwarded-For: 203.0.113.7\r\n\r\n";
 	if (write(untrusted_xff_pair[1], untrusted_xff_handshake,
 		  strlen(untrusted_xff_handshake)) != (ssize_t)strlen(untrusted_xff_handshake) ||
-	    websocket_process_input(&untrusted_xff_desc) != 0)
+	    pulse_input(&untrusted_xff_desc) != 0)
 		return fail("untrusted X-Forwarded-For handshake");
 	char untrusted_xff_response[512];
 	if (read(untrusted_xff_pair[1], untrusted_xff_response, sizeof(untrusted_xff_response)) <=
@@ -373,7 +474,7 @@ int main()
 		    (ssize_t)compressed_first_len ||
 	    write(pair[1], compressed_second, compressed_second_len) !=
 		    (ssize_t)compressed_second_len ||
-	    websocket_process_input(&d) != 0 || d.ws_message_buffer || d.ws_message_len != 0)
+	    pulse_input(&d) != 0 || d.ws_message_buffer || d.ws_message_len != 0)
 	{
 		inflateEnd(&inbound_inflater);
 		return fail("compressed fragments failed through aggregate message processing");
@@ -543,7 +644,7 @@ int main()
 	if (write(close_pair[1], inbound_close, sizeof(inbound_close)) !=
 	    (ssize_t)sizeof(inbound_close))
 		return fail("write inbound close frame");
-	int close_result = websocket_process_input(&close_desc);
+	int close_result = pulse_input(&close_desc);
 	if (close_result != 0 || close_desc.ws_state != WS_STATE_CLOSING)
 		return fail("inbound close did not enter deferred closing state");
 	unsigned char close_reply[8];
@@ -559,13 +660,13 @@ int main()
 	if (write(close_pair[1], inbound_close, sizeof(inbound_close)) !=
 	    (ssize_t)sizeof(inbound_close))
 		return fail("write simultaneous close frame");
-	if (websocket_process_input(&close_desc) != 0 || close_desc.ws_state != WS_STATE_CLOSING)
+	if (pulse_input(&close_desc) != 0 || close_desc.ws_state != WS_STATE_CLOSING)
 		return fail("simultaneous close changed closing state");
 	unsigned char duplicate_reply[8];
 	if (read(close_pair[1], duplicate_reply, sizeof(duplicate_reply)) >= 0 ||
 	    (errno != EAGAIN && errno != EWOULDBLOCK))
 		return fail("simultaneous close generated duplicate reply");
-	if (shutdown(close_pair[1], SHUT_WR) != 0 || websocket_process_input(&close_desc) != -1)
+	if (shutdown(close_pair[1], SHUT_WR) != 0 || pulse_input(&close_desc) != NETWORK_INPUT_EOF)
 		return fail("peer half-close was not surfaced as EOF");
 	if (close_desc.ws_output_len != 0 || close_desc.ws_control_output_len != 0)
 		return fail("EOF left stale WebSocket output queued");
@@ -578,14 +679,14 @@ int main()
 	if (write(pair[1], first_fragment, sizeof(first_fragment)) !=
 	    (ssize_t)sizeof(first_fragment))
 		return fail("write first fragmented data frame");
-	if (websocket_process_input(&d) != 0 || d.ws_message_len != 1 || !d.ws_message_buffer)
+	if (pulse_input(&d) != 0 || d.ws_message_len != 1 || !d.ws_message_buffer)
 		return fail("did not retain first fragmented data frame");
 
 	if (write(pair[1], ping, sizeof(ping)) != (ssize_t)sizeof(ping) ||
 	    write(pair[1], continuation_fragment, sizeof(continuation_fragment)) !=
 		    (ssize_t)sizeof(continuation_fragment))
 		return fail("write interleaved ping and continuation");
-	if (websocket_process_input(&d) != 0 || d.ws_message_buffer || d.ws_message_len != 0)
+	if (pulse_input(&d) != 0 || d.ws_message_buffer || d.ws_message_len != 0)
 		return fail("did not complete interleaved fragmented message");
 	output_len = read(pair[1], output, sizeof(output));
 	if (output_len <= 0 || !memmem(output, output_len, pong, sizeof(pong)))
@@ -594,12 +695,12 @@ int main()
 	const unsigned char split_frame[] = { 0x82, 0x81, 0x51, 0x52, 0x53, 0x54, 0x31 };
 	if (write(pair[1], split_frame, 4) != 4)
 		return fail("write partial frame");
-	if (websocket_process_input(&d) != 0 || d.ws_fragment_len != 4)
+	if (pulse_input(&d) != 0 || d.ws_fragment_len != 4)
 		return fail("did not retain incomplete frame");
 	if (write(pair[1], split_frame + 4, sizeof(split_frame) - 4) !=
 	    (ssize_t)(sizeof(split_frame) - 4))
 		return fail("complete partial frame");
-	if (websocket_process_input(&d) != 0 || d.ws_fragment_len != 0)
+	if (pulse_input(&d) != 0 || d.ws_fragment_len != 0)
 		return fail("did not consume completed split frame");
 
 	const unsigned char unmasked_ping[] = { 0x89, 0x00 };
@@ -636,7 +737,7 @@ int main()
 	if (write(pair[1], invalid_continuation, sizeof(invalid_continuation)) !=
 	    (ssize_t)sizeof(invalid_continuation))
 		return fail("write invalid continuation");
-	if (websocket_process_input(&d) == 0)
+	if (pulse_input(&d) == 0)
 		return fail("accepted continuation without initial fragmented message");
 
 	const unsigned char aggregate_continuation[] = { 0x80, 0x81, 0x61, 0x62, 0x63, 0x64, 0x65 };
@@ -647,7 +748,7 @@ int main()
 	if (write(pair[1], aggregate_continuation, sizeof(aggregate_continuation)) !=
 	    (ssize_t)sizeof(aggregate_continuation))
 		return fail("write aggregate-limit continuation");
-	if (websocket_process_input(&d) == 0)
+	if (pulse_input(&d) == 0)
 		return fail("accepted message beyond aggregate limit");
 	free(d.ws_message_buffer);
 	d.ws_message_buffer = NULL;
@@ -864,6 +965,77 @@ int main()
 	close(failed_handshake_pair[0]);
 
 	websocket_free(&d);
+	// More complete frames than the parsing budget resume without another
+	// socket read. Partial frames clear the hint and wait for real readiness.
+	int budget_pair[2];
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, budget_pair) != 0)
+		return fail("frame-budget socketpair");
+	fcntl(budget_pair[0], F_SETFL, O_NONBLOCK);
+	descriptor_data budget{};
+	budget.descriptor = budget_pair[0];
+	budget.websocket = 1;
+	budget.ws_handshake_done = 1;
+	budget.ws_state = WS_STATE_OPEN;
+	budget.connected = CON_PLAYING;
+	const unsigned char frame[] = { 0x81, 0x82, 1, 2, 3, 4, 'h' ^ 1, 'i' ^ 2 };
+	unsigned char batch[sizeof(frame) * 100];
+	for (size_t index = 0; index < 100; ++index)
+		memcpy(batch + index * sizeof(frame), frame, sizeof(frame));
+	const unsigned int queued_before = queued_input_lines;
+	if (write(budget_pair[1], batch, sizeof(batch)) != sizeof(batch) ||
+	    pulse_input(&budget) < 0 || !budget.ws_input_pending ||
+	    !websocket_input_paused(&budget) || queued_input_lines != queued_before)
+		return fail(
+			"application work escaped the boundary or failed to apply backpressure");
+	if (pulse_input(&budget) < 0 || queued_input_lines != queued_before)
+		return fail("paused application queue made progress outside the boundary");
+	websocket_dispatch_pending_input(&budget);
+	if (websocket_input_paused(&budget) ||
+	    queued_input_lines - queued_before != WS_MAX_FRAMES_PER_READ)
+		return fail("boundary did not dispatch exactly 64 staged commands");
+	if (pulse_input(&budget) < 0 || budget.ws_input_pending || budget.ws_fragment_len ||
+	    queued_input_lines - queued_before != WS_MAX_FRAMES_PER_READ)
+		return fail("buffered frames needed an extra packet or spun after completion");
+	websocket_dispatch_pending_input(&budget);
+	if (queued_input_lines - queued_before != 100)
+		return fail("buffered application messages were lost");
+	if (write(budget_pair[1], frame, 5) != 5 || pulse_input(&budget) < 0 ||
+	    budget.ws_input_pending || budget.ws_fragment_len != 5)
+		return fail("partial frame incorrectly requested a busy continuation");
+	websocket_free(&budget);
+	// JSON application commands, GMCP and raw commands retain one FIFO. A
+	// handler closing its own descriptor must stop dispatch without a stale use.
+	budget.websocket = 1;
+	budget.ws_handshake_done = 1;
+	budget.ws_state = WS_STATE_OPEN;
+	application_order.clear();
+	for (const char *text : { "{\"type\":\"cmd\",\"cmd\":\"login\"}",
+				  "{\"type\":\"gmcp\",\"package\":\"Core.Hello\"}", "look",
+				  "{\"type\":\"cmd\",\"cmd\":\"logout\"}", "score" })
+	{
+		unsigned char packet[128] = { 0x81, static_cast<unsigned char>(0x80 | strlen(text)),
+					      1,    2,
+					      3,    4 };
+		for (size_t index = 0; index < strlen(text); ++index)
+			packet[index + 6] = text[index] ^ packet[2 + index % 4];
+		if (write(budget_pair[1], packet, strlen(text) + 6) !=
+			    static_cast<ssize_t>(strlen(text) + 6) ||
+		    pulse_input(&budget) < 0)
+			return fail("application boundary fixture failed");
+	}
+	if (!application_order.empty())
+		return fail("login or other application handler ran between simulation pulses");
+	budget.network_input_remaining = 0;
+	if (network_read_interest(&budget) != 0 || websocket_process_input(&budget) < 0 ||
+	    !application_order.empty())
+		return fail(
+			"input allowance did not pause reads without dispatching application work");
+	websocket_dispatch_pending_input(&budget);
+	if (application_order != std::vector<std::string>{ "login", "gmcp", "look", "logout" } ||
+	    budget.ws_pending_application)
+		return fail("application FIFO or closing-handler lifetime changed");
+	close(budget_pair[0]);
+	close(budget_pair[1]);
 	if (d.ws_compressed_message || d.ws_error_code || d.ws_compress || d.ws_inflate_stream ||
 	    d.ws_deflate_stream)
 		return fail("websocket_free left stale compression state");

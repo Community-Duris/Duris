@@ -101,8 +101,8 @@ class CombatOutcomeCutoverTests(unittest.TestCase):
     def test_combat_route_has_no_direct_mutation_io(self):
         fight = (SRC / "fight.c").read_text()
         start = fight.index("void AddFrags(P_char ch, P_char victim)")
-        end = fight.index("unsigned int calculate_ch_state", start)
-        body = fight[start:end]
+        from _paths import extract_function
+        body = extract_function("fight.c", "void AddFrags(P_char ch, P_char victim)")
         self.assertIn("submit_pvp_outcome", body)
         for forbidden in ("sql_modify_frags", "sql_save_pkill", "ADD_MONEY",
                           "redis_invalidate_fraglist", "epic_frag"):

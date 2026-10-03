@@ -14,6 +14,7 @@
 #include "core/utils.h"
 #include "item/objmisc.h"
 #include <string.h>
+#include <stdio.h>
 #include "combat/damage.h"
 
 extern P_room world; /* dyn alloc'ed array of rooms     */
@@ -21,6 +22,61 @@ extern P_room world; /* dyn alloc'ed array of rooms     */
 extern struct zone_data *zone_table;
 extern flagDef weapon_types[];
 extern const char *modenhance_names[];
+
+/* Format food effects for item catalogue and identify output. */
+char *food_modifiers(P_obj food)
+{
+	static char mod_string[MAX_STRING_LENGTH];
+	int sub, mod;
+
+	// Poison is in value[3].
+	if (food->value[3] > 0)
+	{
+		sub = snprintf(mod_string, MAX_STRING_LENGTH, "&+GPOISON&N: %d, HP_REG: %d, ",
+			       food->value[3], -food->value[3]);
+	}
+	else
+	{
+		mod_string[0] = '\0';
+		if ((mod = food->value[1]) == 0)
+		{
+			mod = 1;
+		}
+		sub = snprintf(mod_string, MAX_STRING_LENGTH, "HP_REG: %d, ", mod * 15);
+		if (food->value[2] != 0)
+		{
+			mod = food->value[2];
+		}
+		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH - sub, "MV_REG: %d, ", mod);
+	}
+	if (food->value[4] != 0)
+	{
+		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH - sub, "STR&CON: %d, ",
+				food->value[4]);
+	}
+	if (food->value[5] != 0)
+	{
+		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH - sub, "AGI&DEX: %d, ",
+				food->value[5]);
+	}
+	if (food->value[6] != 0)
+	{
+		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH - sub, "INT&WIS: %d, ",
+				food->value[6]);
+	}
+	if (food->value[7] != 0)
+	{
+		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH - sub, "HIT&DAM: %d, ",
+				food->value[7]);
+	}
+
+	// Duration is in value[0].
+	const int tail = (sub > 0) ? sub - 2 : sub;
+	snprintf(mod_string + tail, MAX_STRING_LENGTH - tail, " for %d ticks", food->value[0]);
+
+	return mod_string;
+}
+
 /*
  * getWeaponDamType
  */
@@ -148,6 +204,57 @@ void event_random_exit(P_char /*ch*/, P_char /*victim*/, P_obj obj, void * /*dat
 	}
 
 	extract_obj(obj);
+}
+
+// Hidden NPC helper equipment must never activate for a player-owned pet.
+// Resolve physical custody as well as the explicit actor: periodic callbacks
+// have no actor, and speech/defensive dispatch may pass someone else. A live
+// holder is authoritative: an NPC defender keeps its helper proc when attacked
+// by a PC pet, even though CMD_GOTHIT passes the attacking pet as the actor.
+bool item_restricted_for_player_pet(P_char actor, P_obj obj)
+{
+	if (!obj || !(obj->extra_flags & ITEM_NOSHOW))
+		return false;
+	P_obj root = obj;
+	for (size_t depth = 0; root && depth < 1024; ++depth)
+	{
+		if (root->loc_p == LOC_CARRIED || root->loc_p == LOC_WORN)
+		{
+			P_char holder = root->loc.carrying;
+			return holder && IS_PC_PET(holder);
+		}
+		if (root->loc_p != LOC_INSIDE)
+			return actor && IS_PC_PET(actor);
+		root = root->loc.inside;
+	}
+	// Fail closed for a malformed/cyclic containment chain; never mutate it.
+	return root != nullptr;
+}
+
+int invoke_object_special(P_obj obj, P_char actor, int command, char *argument)
+{
+	if (!obj || item_restricted_for_player_pet(actor, obj) || obj->R_num < 0 || !obj_index ||
+	    !obj_index[obj->R_num].func.obj)
+		return FALSE;
+	return (*obj_index[obj->R_num].func.obj)(obj, actor, command, argument);
+}
+
+void item_restrict_player_pet_equipment(P_char actor)
+{
+	if (!actor || !IS_PC_PET(actor))
+		return;
+	for (int slot = 0; slot < MAX_WEAR; ++slot)
+	{
+		P_obj obj = actor->equipment[slot];
+		if (obj && item_restricted_for_player_pet(actor, obj))
+		{
+			// Equipment topology changes, not ownership: retain the object UID,
+			// complete child graph and the same pet's custody, without a grant.
+			obj = unequip_char(actor, slot, FALSE);
+			if (obj)
+				obj_to_char(obj, actor);
+		}
+	}
 }
 
 int obj_zone_id(P_obj o)

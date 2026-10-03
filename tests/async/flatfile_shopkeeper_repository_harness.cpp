@@ -1,12 +1,15 @@
 #include "flatfile/flatfile_shopkeeper_repository.h"
 #include "player/player_snapshot_codec.h"
 
+#include <array>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
+#include <openssl/sha.h>
 #include <string>
 #include <vector>
 
@@ -128,6 +131,46 @@ int main(int argc, char **argv)
 			records[1].items[1].parent_index == 0 &&
 			records[1].items[1].dynamic_affects[0].extra2 == 5,
 		"shopkeeper catalog was not canonical or did not round trip state");
+	const fs::path legacy_root = fs::path(argv[1]) / "legacy";
+	prepare_root(legacy_root);
+	auto legacy_shop = shop(0, 500);
+	legacy_shop.cash = 123;
+	legacy_shop.roaming = true;
+	require(flatfile_shopkeeper_establish(legacy_root.string(), { legacy_shop }, &error) ==
+			flatfile_shopkeeper_result::ok,
+		"could not establish legacy catalog fixture");
+	const fs::path legacy_file = legacy_root / "domains/shopkeeper_catalog";
+	std::ifstream legacy_input(legacy_file, std::ios::binary);
+	std::vector<uint8_t> legacy_bytes(std::istreambuf_iterator<char>{ legacy_input }, {});
+	require(legacy_bytes.size() > 97, "legacy catalog fixture was too short");
+	legacy_bytes.erase(legacy_bytes.begin() + 88, legacy_bytes.begin() + 97);
+	legacy_bytes[8] = 1;
+	const uint32_t legacy_payload_size = static_cast<uint32_t>(legacy_bytes.size() - 56);
+	for (size_t index = 0; index < 4; ++index)
+		legacy_bytes[12 + index] = static_cast<uint8_t>(legacy_payload_size >> (8 * index));
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> legacy_digest = {};
+	SHA256(legacy_bytes.data() + 56, legacy_payload_size, legacy_digest.data());
+	std::copy(legacy_digest.begin(), legacy_digest.end(), legacy_bytes.begin() + 24);
+	legacy_input.close();
+	std::ofstream legacy_output(legacy_file, std::ios::binary | std::ios::trunc);
+	legacy_output.write(reinterpret_cast<const char *>(legacy_bytes.data()),
+			    legacy_bytes.size());
+	legacy_output.close();
+	std::vector<flatfile_shopkeeper_record> legacy_records;
+	require(flatfile_shopkeeper_list(legacy_root.string(), &legacy_records, &error) ==
+				flatfile_shopkeeper_result::ok &&
+			legacy_records.size() == 1 && legacy_records[0].cash == -1 &&
+			!legacy_records[0].roaming,
+		"v1 shop catalog did not retain unknown-cash compatibility");
+	legacy_records[0].revision++;
+	legacy_records[0].cash = 123;
+	legacy_records[0].roaming = true;
+	require(flatfile_shopkeeper_replace(legacy_root.string(), legacy_records[0], 2, &error) ==
+				flatfile_shopkeeper_result::ok &&
+			flatfile_shopkeeper_list(legacy_root.string(), &legacy_records, &error) ==
+				flatfile_shopkeeper_result::ok &&
+			legacy_records[0].cash == 123 && legacy_records[0].roaming,
+		"captured cash did not upgrade a v1 shop catalog");
 	auto conflicting = first;
 	conflicting.room_vnum++;
 	require(flatfile_shopkeeper_establish(root.string(), { conflicting, second }, &error) ==

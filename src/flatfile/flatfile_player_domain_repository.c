@@ -1,6 +1,8 @@
 #include "flatfile/flatfile_player_domain_repository.h"
+#include "flatfile/currency_flatfile_mutation_writer.h"
 
 #include "flatfile/flatfile_authority_transaction.h"
+#include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_store.h"
 #include "combat/combat_outcome_command.h"
 #include "economy/currency_command.h"
@@ -9,18 +11,39 @@
 #include <algorithm>
 #include <array>
 #include <cerrno>
+#include <charconv>
 #include <cstring>
+#include <filesystem>
 #include <limits>
 #include <mutex>
 #include <new>
 #include <openssl/crypto.h>
 #include <openssl/sha.h>
+#include <string_view>
 #include <type_traits>
+#include <tuple>
 #include <vector>
+
+__attribute__((weak)) unsigned int
+flatfile_economic_control_read(const std::string &root, const flatfile_authority_lock &lock,
+			       flatfile_economic_control *control, std::string *error)
+{
+	(void)root;
+	(void)lock;
+	if (control)
+		*control = {};
+	if (error)
+		error->clear();
+	return 0;
+}
 
 namespace
 {
-constexpr uint32_t domain_format_version = 3;
+// Native formats 2 and 3 retain their 2048-byte receipt limit independently
+// of the larger in-memory completion buffer. Format 4 adds eight bytes of quest proof.
+constexpr size_t FLATFILE_LEGACY_DOMAIN_RESULT_MAX_BYTES = 2048;
+static_assert(FLATFILE_LEGACY_DOMAIN_RESULT_MAX_BYTES <= CRITICAL_COMPLETION_RESULT_MAX_BYTES);
+constexpr uint32_t domain_format_version = 4;
 constexpr std::array<uint8_t, 8> player_magic = { 'D', 'U', 'R', 'P', 'D', 'O', 'M', 0 };
 constexpr std::array<uint8_t, 8> bank_magic = { 'D', 'U', 'R', 'B', 'A', 'N', 'K', 0 };
 constexpr std::array<uint8_t, 8> transaction_magic = { 'D', 'U', 'R', 'T', 'X', 'N', 0, 0 };
@@ -48,7 +71,9 @@ struct domain_operation
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_digest;
 	unsigned int result_code = 0;
 	uint16_t result_size = 0;
-	std::array<uint8_t, CRITICAL_COMPLETION_RESULT_MAX_BYTES> result = {};
+	std::array<uint8_t, FLATFILE_LEGACY_DOMAIN_RESULT_MAX_BYTES> result = {};
+	uint32_t quest_reward_index = 0;
+	uint32_t quest_reward_amount = 0;
 };
 
 struct player_authority
@@ -545,15 +570,10 @@ recover_authority(const std::string &root, const flatfile_authority_lock &lock, 
 	return recover_transaction(root, error);
 }
 
-flatfile_player_domain_result load_bank(const std::string &root, const std::string &account,
-					int8_t racewar, bank_record *record, std::string *error)
+flatfile_player_domain_result decode_bank_record(const std::vector<uint8_t> &bytes,
+						 const std::string &account, int8_t racewar,
+						 bank_record *record)
 {
-	if (!record)
-		return flatfile_player_domain_result::invalid;
-	std::vector<uint8_t> bytes;
-	const auto read = read_bytes(root, bank_filename(account, racewar), &bytes, error);
-	if (read != flatfile_player_domain_result::ok)
-		return read;
 	decoder payload{ nullptr, 0 };
 	uint64_t revision = 0;
 	uint32_t format_version = 0;
@@ -577,6 +597,18 @@ flatfile_player_domain_result load_bank(const std::string &root, const std::stri
 	return flatfile_player_domain_result::ok;
 }
 
+flatfile_player_domain_result load_bank(const std::string &root, const std::string &account,
+					int8_t racewar, bank_record *record, std::string *error)
+{
+	if (!record)
+		return flatfile_player_domain_result::invalid;
+	std::vector<uint8_t> bytes;
+	const auto read = read_bytes(root, bank_filename(account, racewar), &bytes, error);
+	return read == flatfile_player_domain_result::ok ?
+		       decode_bank_record(bytes, account, racewar, record) :
+		       read;
+}
+
 bool encode_bank_record(const bank_record &record, std::vector<uint8_t> *bytes)
 {
 	encoder payload;
@@ -596,15 +628,9 @@ bool publish_bank(const std::string &root, const bank_record &record, std::strin
 				     error);
 }
 
-flatfile_player_domain_result load_player_authority(const std::string &root, int32_t pid,
-						    player_authority *authority, std::string *error)
+flatfile_player_domain_result decode_player_authority(const std::vector<uint8_t> &bytes,
+						      int32_t pid, player_authority *authority)
 {
-	if (!authority || pid <= 0)
-		return flatfile_player_domain_result::invalid;
-	std::vector<uint8_t> bytes;
-	const auto read = read_bytes(root, player_filename(pid), &bytes, error);
-	if (read != flatfile_player_domain_result::ok)
-		return read;
 	decoder payload{ nullptr, 0 };
 	uint64_t file_revision = 0;
 	uint32_t format_version = 0;
@@ -673,6 +699,7 @@ flatfile_player_domain_result load_player_authority(const std::string &root, int
 			return flatfile_player_domain_result::io_error;
 		}
 		for (domain_operation &operation : decoded.operations)
+		{
 			if (!payload.raw(operation.operation_id.bytes.data(),
 					 operation.operation_id.bytes.size()) ||
 			    !payload.raw(operation.command_digest.data(),
@@ -683,6 +710,18 @@ flatfile_player_domain_result load_player_authority(const std::string &root, int
 			    !payload.raw(operation.result.data(), operation.result_size) ||
 			    critical_operation_id_is_zero(operation.operation_id))
 				return flatfile_player_domain_result::invalid;
+			if (format_version >= 4 &&
+			    (!payload.number(&operation.quest_reward_index) ||
+			     !payload.number(&operation.quest_reward_amount)))
+				return flatfile_player_domain_result::invalid;
+			if ((operation.quest_reward_index == 0) !=
+				    (operation.quest_reward_amount == 0) ||
+			    operation.quest_reward_index > 64 ||
+			    (operation.quest_reward_index &&
+			     (operation.result_code ||
+			      operation.result_size != CURRENCY_RESULT_PAYLOAD_BYTES)))
+				return flatfile_player_domain_result::invalid;
+		}
 	}
 	std::string canonical;
 	if (payload.offset != payload.size || decoded.record.pid != pid ||
@@ -700,6 +739,18 @@ flatfile_player_domain_result load_player_authority(const std::string &root, int
 				return flatfile_player_domain_result::invalid;
 	*authority = std::move(decoded);
 	return flatfile_player_domain_result::ok;
+}
+
+flatfile_player_domain_result load_player_authority(const std::string &root, int32_t pid,
+						    player_authority *authority, std::string *error)
+{
+	if (!authority || pid <= 0)
+		return flatfile_player_domain_result::invalid;
+	std::vector<uint8_t> bytes;
+	const auto read = read_bytes(root, player_filename(pid), &bytes, error);
+	return read == flatfile_player_domain_result::ok ?
+		       decode_player_authority(bytes, pid, authority) :
+		       read;
 }
 
 flatfile_player_domain_result load_player(const std::string &root, int32_t pid,
@@ -745,6 +796,8 @@ bool encode_player_authority(const player_authority &authority, std::vector<uint
 		payload.number(operation.result_code);
 		payload.number(operation.result_size);
 		payload.raw(operation.result.data(), operation.result_size);
+		payload.number(operation.quest_reward_index);
+		payload.number(operation.quest_reward_amount);
 	}
 	const uint64_t revision = std::max(
 		{ record.domains.wallet_revision, record.domains.epic_revision,
@@ -833,6 +886,153 @@ flatfile_player_domain_result establish(const std::string &root,
 }
 } // namespace
 
+unsigned int currency_flatfile_mutation_writer::stage(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_command &command, const currency_prepared_mutation &prepared,
+	std::vector<flatfile_authority_operation> *operations, std::string *error)
+{
+	if (!operations || !lock.matches(root) ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    !critical_command_envelope_valid(command))
+		return EINVAL;
+	try
+	{
+		const auto checked = [](flatfile_player_domain_result result) -> unsigned int
+		{
+			switch (result)
+			{
+			case flatfile_player_domain_result::ok:
+				return 0;
+			case flatfile_player_domain_result::not_found:
+				return ENOENT;
+			case flatfile_player_domain_result::conflict:
+				return ESTALE;
+			case flatfile_player_domain_result::io_error:
+				return EIO;
+			default:
+				return EILSEQ;
+			}
+		};
+		const auto equal =
+			[](const currency_command_result &a, const currency_command_result &b)
+		{
+			return a.wallet.amount == b.wallet.amount &&
+			       a.bank.amount == b.bank.amount &&
+			       a.wallet_revision == b.wallet_revision &&
+			       a.bank_revision == b.bank_revision;
+		};
+		currency_command_payload payload;
+		std::vector<uint8_t> encoded_payload;
+		if (!currency_command_decode_payload(command, &payload) ||
+		    payload.pid > INT32_MAX || payload.racewar > INT8_MAX ||
+		    !currency_command_encode_payload(prepared.payload(), &encoded_payload) ||
+		    encoded_payload != command.payload)
+			return EINVAL;
+		auto status = checked(recover_authority(root, lock, error));
+		if (status)
+			return status;
+		player_authority player;
+		status = checked(load_player_authority(root, payload.pid, &player, error));
+		if (status)
+			return status;
+		for (const auto &receipt : player.operations)
+			if (critical_operation_id_equal(receipt.operation_id, command.operation_id))
+				return EEXIST;
+		std::string account;
+		if (!canonical_account(payload.account_name.data(), &account) ||
+		    player.record.account_name != account ||
+		    player.record.racewar != payload.racewar)
+			return EACCES;
+		bank_record bank;
+		status = checked(load_bank(root, account, payload.racewar, &bank, error));
+		if (status)
+			return status;
+		currency_command_result before;
+		for (size_t part = 0; part < 4; ++part)
+		{
+			if (player.record.domains.wallet[part] > INT_MAX ||
+			    bank.balances[part] > INT_MAX)
+				return EILSEQ;
+			before.wallet.amount[part] = player.record.domains.wallet[part];
+			before.bank.amount[part] = bank.balances[part];
+		}
+		before.wallet_revision = player.record.domains.wallet_revision;
+		before.bank_revision = bank.revision;
+		if (!equal(before, prepared.before()))
+			return ESTALE;
+		std::optional<currency_prepared_mutation> regenerated;
+		status = currency_prepare_mutation(payload, before,
+						   command.expected_revisions[0].revision,
+						   command.expected_revisions[1].revision,
+						   currency_revision_policy::flatfile_legacy,
+						   &regenerated);
+		if (status)
+			return status;
+		if (!equal(regenerated->after(), prepared.after()))
+			return EILSEQ;
+		std::vector<uint8_t> original_player, original_bank;
+		if (!encode_player_authority(player, &original_player) ||
+		    !encode_bank_record(bank, &original_bank))
+			return ENOSPC;
+		const auto &after = prepared.after();
+		for (size_t part = 0; part < 4; ++part)
+		{
+			player.record.domains.wallet[part] = after.wallet.amount[part];
+			bank.balances[part] = after.bank.amount[part];
+		}
+		player.record.domains.wallet_revision = after.wallet_revision;
+		bank.revision = after.bank_revision;
+		std::vector<flatfile_authority_operation> images(2);
+		images[0].filename = bank_filename(account, payload.racewar);
+		images[1].filename = player_filename(payload.pid);
+		if (!encode_bank_record(bank, &images[0].bytes) ||
+		    !encode_player_authority(player, &images[1].bytes))
+			return ENOSPC;
+		// Decode exactly the bytes that will be published. Restore only the
+		// currency fields and compare canonical bytes with the original to prove
+		// that every unrelated domain field and legacy receipt survives intact.
+		bank_record decoded_bank;
+		player_authority decoded_player;
+		status = checked(decode_bank_record(images[0].bytes, account, payload.racewar,
+						    &decoded_bank));
+		if (status)
+			return status;
+		status = checked(
+			decode_player_authority(images[1].bytes, payload.pid, &decoded_player));
+		if (status)
+			return status;
+		currency_command_result decoded;
+		for (size_t part = 0; part < 4; ++part)
+		{
+			if (decoded_player.record.domains.wallet[part] > INT_MAX ||
+			    decoded_bank.balances[part] > INT_MAX)
+				return EILSEQ;
+			decoded.wallet.amount[part] = decoded_player.record.domains.wallet[part];
+			decoded.bank.amount[part] = decoded_bank.balances[part];
+			decoded_player.record.domains.wallet[part] = before.wallet.amount[part];
+			decoded_bank.balances[part] = before.bank.amount[part];
+		}
+		decoded.wallet_revision = decoded_player.record.domains.wallet_revision;
+		decoded.bank_revision = decoded_bank.revision;
+		if (!equal(decoded, after))
+			return EILSEQ;
+		decoded_player.record.domains.wallet_revision = before.wallet_revision;
+		decoded_bank.revision = before.bank_revision;
+		std::vector<uint8_t> preserved_player, preserved_bank;
+		if (!encode_player_authority(decoded_player, &preserved_player) ||
+		    !encode_bank_record(decoded_bank, &preserved_bank))
+			return ENOSPC;
+		if (original_player != preserved_player || original_bank != preserved_bank)
+			return EILSEQ;
+		*operations = std::move(images);
+		return 0;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+}
+
 flatfile_player_domain_result
 flatfile_player_domain_establish(const std::string &root,
 				 const flatfile_player_domain_record &record, std::string *error)
@@ -869,23 +1069,235 @@ flatfile_player_domain_result flatfile_player_domain_load(const std::string &roo
 	flatfile_authority_lock authority;
 	if (!authority.acquire(root, error))
 		return flatfile_player_domain_result::io_error;
-	const auto recovered = recover_authority(root, authority, error);
-	if (recovered != flatfile_player_domain_result::ok)
-		return recovered;
-	flatfile_player_domain_record loaded;
-	const auto player_loaded = load_player(root, pid, &loaded, error);
-	if (player_loaded != flatfile_player_domain_result::ok)
-		return player_loaded;
-	if (loaded.account_name != account || loaded.racewar != racewar)
-		return flatfile_player_domain_result::conflict;
-	bank_record bank;
-	const auto bank_loaded = load_bank(root, account, racewar, &bank, error);
-	if (bank_loaded != flatfile_player_domain_result::ok)
-		return bank_loaded;
-	loaded.domains.bank = bank.balances;
-	loaded.domains.bank_revision = bank.revision;
-	*record = std::move(loaded);
-	return flatfile_player_domain_result::ok;
+	return flatfile_player_domain_load_locked(root, authority, pid, account, racewar, record,
+						  error);
+}
+
+flatfile_player_domain_result
+flatfile_player_domain_recover_locked(const std::string &root, const flatfile_authority_lock &lock,
+				      std::string *error)
+{
+	if (!lock.matches(root))
+		return flatfile_player_domain_result::invalid;
+	try
+	{
+		return recover_authority(root, lock, error);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_player_domain_result::io_error;
+	}
+}
+
+flatfile_player_domain_result
+flatfile_player_domain_load_locked(const std::string &root, const flatfile_authority_lock &lock,
+				   int32_t pid, const std::string &account_name, int8_t racewar,
+				   flatfile_player_domain_record *record, std::string *error)
+{
+	if (!record || pid <= 0 || !lock.matches(root))
+		return flatfile_player_domain_result::invalid;
+	try
+	{
+		std::string account;
+		if (!canonical_account(account_name, &account))
+			return flatfile_player_domain_result::invalid;
+		const auto recovered = recover_authority(root, lock, error);
+		if (recovered != flatfile_player_domain_result::ok)
+			return recovered;
+		flatfile_player_domain_record loaded;
+		const auto player_loaded = load_player(root, pid, &loaded, error);
+		if (player_loaded != flatfile_player_domain_result::ok)
+			return player_loaded;
+		if (loaded.account_name != account || loaded.racewar != racewar)
+			return flatfile_player_domain_result::conflict;
+		bank_record bank;
+		const auto bank_loaded = load_bank(root, account, racewar, &bank, error);
+		if (bank_loaded != flatfile_player_domain_result::ok)
+			return bank_loaded;
+		loaded.domains.bank = bank.balances;
+		loaded.domains.bank_revision = bank.revision;
+		*record = std::move(loaded);
+		return flatfile_player_domain_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_player_domain_result::io_error;
+	}
+}
+
+flatfile_player_domain_result flatfile_player_domain_capture_native_sources_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	flatfile_player_domain_native_sources *sources, std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || !sources)
+		return flatfile_player_domain_result::invalid;
+	try
+	{
+		const auto recovered = recover_authority(root, lock, error);
+		if (recovered != flatfile_player_domain_result::ok)
+			return recovered;
+		flatfile_player_domain_native_sources candidate;
+		const std::filesystem::path directory(domains_directory(root));
+		std::error_code filesystem_error;
+		if (!std::filesystem::exists(directory, filesystem_error))
+		{
+			if (filesystem_error)
+				return flatfile_player_domain_result::io_error;
+			*sources = std::move(candidate);
+			return flatfile_player_domain_result::ok;
+		}
+		for (const auto &entry : std::filesystem::directory_iterator(directory))
+		{
+			const std::string filename = entry.path().filename().string();
+			const bool is_player = filename.rfind("player-", 0) == 0;
+			const bool is_bank = filename.rfind("bank-", 0) == 0;
+			if (!is_player && !is_bank)
+				continue;
+			const auto file_status = entry.symlink_status(filesystem_error);
+			if (filesystem_error)
+				return flatfile_player_domain_result::io_error;
+			if (file_status.type() != std::filesystem::file_type::regular)
+				return flatfile_player_domain_result::invalid;
+			if (is_player)
+			{
+				constexpr std::string_view prefix = "player-";
+				constexpr std::string_view suffix = ".domain";
+				if (filename.size() <= prefix.size() + suffix.size() ||
+				    filename.compare(filename.size() - suffix.size(), suffix.size(),
+						     suffix) != 0)
+					return flatfile_player_domain_result::invalid;
+				const std::string_view digits(filename.data() + prefix.size(),
+							      filename.size() - prefix.size() -
+								      suffix.size());
+				int32_t pid = 0;
+				const auto parsed = std::from_chars(
+					digits.data(), digits.data() + digits.size(), pid);
+				if (digits.empty() || parsed.ec != std::errc{} ||
+				    parsed.ptr != digits.data() + digits.size() || pid <= 0 ||
+				    player_filename(pid) != filename)
+					return flatfile_player_domain_result::invalid;
+				flatfile_player_domain_record record;
+				const auto loaded = load_player(root, pid, &record, error);
+				if (loaded != flatfile_player_domain_result::ok)
+					return loaded;
+				flatfile_player_domain_native_wallet wallet;
+				wallet.pid = pid;
+				wallet.account_name = std::move(record.account_name);
+				wallet.racewar = record.racewar;
+				wallet.balance = record.domains.wallet;
+				wallet.revision = record.domains.wallet_revision;
+				candidate.wallets.push_back(std::move(wallet));
+				continue;
+			}
+			constexpr std::string_view prefix = "bank-";
+			constexpr std::string_view suffix = ".domain";
+			if (filename.size() <= prefix.size() + suffix.size() ||
+			    filename.compare(filename.size() - suffix.size(), suffix.size(),
+					     suffix) != 0)
+				return flatfile_player_domain_result::invalid;
+			const std::string_view contents(filename.data() + prefix.size(),
+							filename.size() - prefix.size() -
+								suffix.size());
+			const size_t separator = contents.rfind('-');
+			if (separator == std::string_view::npos || !separator ||
+			    separator + 1 >= contents.size())
+				return flatfile_player_domain_result::invalid;
+			const std::string account(contents.substr(0, separator));
+			std::string canonical;
+			if (!canonical_account(account, &canonical) || canonical != account)
+				return flatfile_player_domain_result::invalid;
+			const std::string_view racewar_text = contents.substr(separator + 1);
+			int racewar = 0;
+			const auto parsed =
+				std::from_chars(racewar_text.data(),
+						racewar_text.data() + racewar_text.size(), racewar);
+			if (parsed.ec != std::errc{} ||
+			    parsed.ptr != racewar_text.data() + racewar_text.size() ||
+			    racewar < 0 || racewar > INT8_MAX)
+				return flatfile_player_domain_result::invalid;
+			const auto racewar_value = static_cast<int8_t>(racewar);
+			if (bank_filename(account, racewar_value) != filename)
+				return flatfile_player_domain_result::invalid;
+			bank_record record;
+			const auto loaded = load_bank(root, account, racewar_value, &record, error);
+			if (loaded != flatfile_player_domain_result::ok)
+				return loaded;
+			flatfile_player_domain_native_bank bank;
+			bank.account_name = std::move(record.account_name);
+			bank.racewar = record.racewar;
+			bank.balance = record.balances;
+			bank.revision = record.revision;
+			candidate.banks.push_back(std::move(bank));
+		}
+		std::sort(candidate.wallets.begin(), candidate.wallets.end(),
+			  [](const auto &left, const auto &right) { return left.pid < right.pid; });
+		std::sort(candidate.banks.begin(), candidate.banks.end(),
+			  [](const auto &left, const auto &right)
+			  {
+				  return std::tie(left.account_name, left.racewar) <
+					 std::tie(right.account_name, right.racewar);
+			  });
+		for (size_t index = 1; index < candidate.wallets.size(); ++index)
+			if (candidate.wallets[index - 1].pid == candidate.wallets[index].pid)
+				return flatfile_player_domain_result::invalid;
+		for (size_t index = 1; index < candidate.banks.size(); ++index)
+			if (candidate.banks[index - 1].account_name ==
+				    candidate.banks[index].account_name &&
+			    candidate.banks[index - 1].racewar == candidate.banks[index].racewar)
+				return flatfile_player_domain_result::invalid;
+		*sources = std::move(candidate);
+		return flatfile_player_domain_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_player_domain_result::io_error;
+	}
+	catch (const std::filesystem::filesystem_error &)
+	{
+		return flatfile_player_domain_result::io_error;
+	}
+}
+
+flatfile_player_domain_result flatfile_player_domain_legacy_receipt_locked(
+	const std::string &root, const flatfile_authority_lock &lock, int32_t pid,
+	const critical_operation_id &operation_id,
+	std::optional<flatfile_legacy_domain_receipt> *receipt, std::string *error)
+{
+	if (!receipt || pid <= 0 || critical_operation_id_is_zero(operation_id) ||
+	    !lock.matches(root))
+		return flatfile_player_domain_result::invalid;
+	try
+	{
+		const auto recovered = recover_authority(root, lock, error);
+		if (recovered != flatfile_player_domain_result::ok)
+			return recovered;
+		player_authority authority;
+		const auto loaded = load_player_authority(root, pid, &authority, error);
+		if (loaded != flatfile_player_domain_result::ok)
+			return loaded;
+		for (const auto &operation : authority.operations)
+		{
+			if (!critical_operation_id_equal(operation.operation_id, operation_id))
+				continue;
+			flatfile_legacy_domain_receipt retained;
+			retained.operation_id = operation.operation_id;
+			retained.command_digest = operation.command_digest;
+			retained.result_code = operation.result_code;
+			retained.result_size = operation.result_size;
+			retained.quest_reward_index = operation.quest_reward_index;
+			retained.quest_reward_amount = operation.quest_reward_amount;
+			std::copy_n(operation.result.begin(), operation.result_size,
+				    retained.result.begin());
+			*receipt = std::move(retained);
+			return flatfile_player_domain_result::ok;
+		}
+		receipt->reset();
+		return flatfile_player_domain_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_player_domain_result::io_error;
+	}
 }
 
 flatfile_player_domain_result flatfile_player_domain_prepare_wallet(
@@ -1217,6 +1629,14 @@ flatfile_player_domain_prepare_remove(const std::string &root, const flatfile_au
 {
 	if (!operation || !pid || !lock.matches(root))
 		return flatfile_player_domain_result::invalid;
+	// Deletion cannot erase native money or its authority lifetime through a
+	// legacy bundle once accounting is active. Hold the caller's exact lock.
+	const auto admission = flatfile_economic_legacy_domain_gate(root, lock, error);
+	if (admission)
+		return admission == EAGAIN ? flatfile_player_domain_result::conflict :
+		       admission == EIO || admission == ENOMEM ?
+					     flatfile_player_domain_result::io_error :
+					     flatfile_player_domain_result::invalid;
 	*operation = {};
 	const auto recovered = recover_authority(root, lock, error);
 	if (recovered != flatfile_player_domain_result::ok)
@@ -1239,6 +1659,14 @@ flatfile_player_domain_result flatfile_player_domain_prepare_account_remove(
 	std::string account;
 	if (!operations || !lock.matches(root) || !canonical_account(account_name, &account))
 		return flatfile_player_domain_result::invalid;
+	// Deletion cannot erase native money or its authority lifetime through a
+	// legacy bundle once accounting is active. Hold the caller's exact lock.
+	const auto admission = flatfile_economic_legacy_domain_gate(root, lock, error);
+	if (admission)
+		return admission == EAGAIN ? flatfile_player_domain_result::conflict :
+		       admission == EIO || admission == ENOMEM ?
+					     flatfile_player_domain_result::io_error :
+					     flatfile_player_domain_result::invalid;
 	operations->clear();
 	const auto recovered = recover_authority(root, lock, error);
 	if (recovered != flatfile_player_domain_result::ok)
@@ -1360,6 +1788,7 @@ critical_apply_result apply_epic_command(const std::string &root, const critical
 	operation.result_code = result_code;
 	operation.result_size = encoded_result.size();
 	std::copy(encoded_result.begin(), encoded_result.end(), operation.result.begin());
+
 	try
 	{
 		authority.operations.push_back(operation);
@@ -1459,6 +1888,30 @@ critical_apply_result apply_currency_command(const std::string &root,
 				    result.result_payload.begin());
 			return result;
 		}
+	// Preserve exact historical replay above. Epoch selection and this read
+	// hold the same per-root lock, so no new legacy write can follow activation.
+	std::error_code metadata_error;
+	const bool evidence_exists = std::filesystem::exists(
+		std::filesystem::path(root) / "economic-evidence", metadata_error);
+	if (metadata_error)
+		return { critical_apply_outcome::retryable_failure, 0, EIO };
+	if (evidence_exists)
+	{
+		const bool evidence_empty = std::filesystem::is_empty(
+			std::filesystem::path(root) / "economic-evidence", metadata_error);
+		if (metadata_error)
+			return { critical_apply_outcome::retryable_failure, 0, EIO };
+		if (!evidence_empty)
+		{
+			flatfile_economic_control control;
+			const auto status =
+				flatfile_economic_control_read(root, lock, &control, &error);
+			if (status)
+				return { critical_apply_outcome::retryable_failure, 0, status };
+			if (!critical_operation_id_is_zero(control.active_epoch))
+				return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
+		}
+	}
 	if (authority.operations.size() >= domain_maximum_operations)
 		return { critical_apply_outcome::terminal_failure,
 			 std::max(authority.record.domains.wallet_revision, bank.revision),
@@ -1535,6 +1988,27 @@ critical_apply_result apply_currency_command(const std::string &root,
 	operation.result_code = result_code;
 	operation.result_size = encoded_result.size();
 	std::copy(encoded_result.begin(), encoded_result.end(), operation.result.begin());
+	if (!result_code && payload.reason == currency_reason_type::wallet_reward &&
+	    command.source_site == critical_source_site::recovery && payload.reason_id > 0 &&
+	    payload.reason_id <= 64)
+	{
+		uint64_t amount = 0, scale = 1;
+		bool canonical = true;
+		for (size_t index = 0; index < 4; ++index, scale *= 10)
+		{
+			const auto delta = payload.wallet_delta.amount[index];
+			canonical = canonical && !payload.bank_delta.amount[index] && delta >= 0 &&
+				    (index == 3 || delta < 10) &&
+				    static_cast<uint64_t>(delta) <= UINT32_MAX / scale;
+			if (canonical)
+				amount += static_cast<uint64_t>(delta) * scale;
+		}
+		if (canonical && amount && amount <= UINT32_MAX)
+		{
+			operation.quest_reward_index = static_cast<uint32_t>(payload.reason_id);
+			operation.quest_reward_amount = static_cast<uint32_t>(amount);
+		}
+	}
 	try
 	{
 		authority.operations.push_back(operation);
@@ -1609,7 +2083,7 @@ critical_apply_result apply_currency_command(const std::string &root,
 critical_apply_result apply_combat_outcome_command(const std::string &root,
 						   const critical_command &command)
 {
-	static_assert(COMBAT_OUTCOME_RESULT_BYTES <= CRITICAL_COMPLETION_RESULT_MAX_BYTES);
+	static_assert(COMBAT_OUTCOME_RESULT_BYTES <= FLATFILE_LEGACY_DOMAIN_RESULT_MAX_BYTES);
 	combat_outcome_payload payload = {};
 	std::vector<uint8_t> encoded_command;
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};

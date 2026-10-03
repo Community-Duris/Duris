@@ -162,6 +162,10 @@ assert 'obj->type != ITEM_CONTAINER' in transient_policy
 assert 'obj->type != ITEM_QUIVER' in transient_policy
 assert loader.index('add_newbie_keyword(obj)') < loader.index('obj_to_char(obj, ch)')
 assert 'item_creation_grant_defer(' in entry
+assert 'starter_grant_source_id(ch, NEWBIE_GRANT_SOURCE_TAG)' in entry
+assert 'NEWBIE_GRANT_SOURCE_TAG = 0x4e455742' in nanny
+assert 'CHAOS_KIT_SOURCE_TAG = 0x4348414f' in nanny
+assert re.search(r'starter_grant_source_id\s*\(\s*ch\s*,\s*CHAOS_KIT_SOURCE_TAG\s*\)', nanny)
 assert 'P_char' not in text and 'P_obj' not in text and 'object_list' not in text
 boot = (ROOT / 'src/world/db.c').read_text().split('void boot_db(', 1)[1]
 assert boot.index('cache_object_template(vnum)') > boot.index('dead_obj_pool = mm_create')

@@ -5,6 +5,7 @@
 #include "item/enhance.h"
 #include "item/item_movement_transaction.h"
 #include "economy/currency_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "core/utils.h"
 
 #include <stdlib.h>
@@ -132,6 +133,13 @@ static void chaos_side(P_char ch, const char *arg)
 
 static void chaos_pouch_test_seed(P_char ch)
 {
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char(
+			"Pouch test materials cannot be issued while item accounting is active.\r\n",
+			ch);
+		return;
+	}
 	static constexpr int vnums[] = { 400000, 400001, 400291, 18000, 22801 };
 	bool queued = false;
 	for (int vnum : vnums)
@@ -139,7 +147,8 @@ static void chaos_pouch_test_seed(P_char ch)
 		P_obj object = read_object(vnum, VIRTUAL);
 		if (!object)
 			continue;
-		if (item_creation_grant_submit_to_player(ch, object, ch))
+		if (item_creation_grant_submit_to_player(ch, object, ch, NULL,
+							 economic_source_kind::world_generation))
 			queued = true;
 		else
 			extract_obj(object, FALSE);
@@ -261,8 +270,7 @@ void do_chaos(P_char ch, char *arg, int /*cmd*/)
 
 	if (is_abbrev(buff, "platinum") || is_abbrev(buff, "plats"))
 	{
-		ADD_MONEY(ch, 10000000);
-		send_to_char("Here's &+W10k plat&n, enjoy!\n", ch);
+		ADD_MONEY(ch, 10000000, "Here's &+W10k plat&n, enjoy!\n");
 		return;
 	}
 

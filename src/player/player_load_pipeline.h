@@ -59,8 +59,7 @@ bool player_load_pipeline_wait(player_load_request request, player_load_result *
 // timed out. It reads a consistent snapshot directly and never changes login admission policy.
 bool player_load_pipeline_execute_sync(player_load_request request, player_load_result *result_out);
 bool player_load_pipeline_pid_pending(int pid);
-// Identity sanity check only. Secondary persistence fences are represented as degraded
-// admission state and must not deny an otherwise valid player login.
+// Reject invalid identities and PIDs held by the durable journal quarantine fence.
 bool player_load_pipeline_login_admit(int pid);
 player_load_pipeline_health player_load_pipeline_health_copy(void);
 void player_load_pipeline_note_stale(void);

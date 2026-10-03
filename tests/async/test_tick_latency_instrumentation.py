@@ -20,15 +20,63 @@ Three defects made the tick diagnostics lie about where time went:
 Verifies the loop times itself against CLOCK_MONOTONIC and dumps into logs/.
 """
 
-from _paths import SRC
+from _paths import SRC, extract_function
 from pathlib import Path
 import re
 import sys
 
-from contract_text import contains
+from contract_text import contains, index as code_index
 
 ROOT = Path(__file__).resolve().parents[2]
 comm = (SRC / "comm.c").read_text(encoding="utf-8", errors="replace")
+deadline_wait = extract_function("net/comm.c", "static void network_wait_until(")
+pulse_deadline = extract_function("net/network_readiness.h", "inline uint64_t network_next_pulse_us(")
+poll_timeout = extract_function("net/network_readiness.h", "inline int network_timeout_ms(")
+
+
+def guarded_deadline_wait(wait, deadline, timeout):
+    """Require the actual integer deadline path and its clock/expiry guards."""
+    if not contains(wait, "if (!now_us)"):
+        return False
+    clock_guard = re.match(
+        r"if\s*\(!now_us\)\s*\{([^{}]+)\}", wait[code_index(wait, "if (!now_us)"):])
+    return (
+        contains(wait, "static void network_wait_until(game_loop_pulse_context &ctx, uint64_t deadline_us)") and
+        contains(wait, "const uint64_t now_us = loop_monotonic_us();") and
+        clock_guard is not None and
+        contains(clock_guard.group(1), "shutdownflag = 1;") and
+        contains(clock_guard.group(1), "return;") and
+        contains(wait, "if (now_us >= deadline_us) return;") and
+        code_index(wait, "if (!now_us)") < code_index(wait, "network_timeout_ms(") and
+        code_index(wait, "if (now_us >= deadline_us)") < code_index(wait, "network_timeout_ms(") and
+        contains(wait, "poll(&wake, 1, network_timeout_ms(deadline_us, now_us))") and
+        contains(wait, "service_network_turn(ctx, network_timeout_ms(deadline_us, now_us));") and
+        contains(deadline, "inline uint64_t network_next_pulse_us(uint64_t started_us, uint64_t finished_us)") and
+        contains(deadline, "const uint64_t deadline_us = started_us + OPT_USEC;") and
+        contains(deadline, "return finished_us >= deadline_us ? finished_us + OPT_USEC : deadline_us;") and
+        contains(timeout, "inline int network_timeout_ms(uint64_t deadline_us, uint64_t now_us)") and
+        contains(timeout, "if (now_us >= deadline_us) return 0;") and
+        contains(timeout, "const uint64_t remaining = deadline_us - now_us;") and
+        contains(timeout, "return static_cast<int>((remaining > OPT_USEC ? OPT_USEC : remaining) + 999) / 1000;")
+    )
+
+
+# These mutations must fail the source contract even if the expected helper
+# names remain elsewhere in the file. No native/server execution is involved.
+assert not guarded_deadline_wait(
+    deadline_wait.replace("if (!now_us)", "if (false)", 1), pulse_deadline, poll_timeout)
+assert not guarded_deadline_wait(
+    deadline_wait.replace("now_us >= deadline_us", "now_us == deadline_us", 1),
+    pulse_deadline, poll_timeout)
+assert not guarded_deadline_wait(
+    deadline_wait, pulse_deadline,
+    poll_timeout.replace("return 0;", "return 1;", 1))
+assert not guarded_deadline_wait(
+    deadline_wait, pulse_deadline,
+    poll_timeout.replace("const uint64_t remaining", "const double remaining", 1))
+assert not guarded_deadline_wait(
+    deadline_wait, pulse_deadline.replace("uint64_t started_us", "double started_us", 1),
+    poll_timeout)
 
 checks = []
 
@@ -73,13 +121,13 @@ if loop:
     ))
     checks.append((
         "the stall report still names every measured section",
-        all(contains(loop, f'{label}_us=%')
+        all(contains(loop, f'{label}_us=%', literal=True)
             for label in ("connections", "activities", "combat", "commands",
                           "ne_events", "prompts", "affect_and_points"))
     ))
     checks.append((
         "the stall report splits aff/pts into affect_update and point_update",
-        all(contains(loop, f'{label}_us=%')
+        all(contains(loop, f'{label}_us=%', literal=True)
             for label in ("affect_update", "point_update"))
     ))
     checks.append((
@@ -113,7 +161,8 @@ if loop:
         not contains(comm, "latency_us_from_seconds") and
         not contains(comm, "quiet_NaN") and
         not re.search(r"\(uint64_t\)\([^;\n]*1000000\.0", loop) and
-        contains(loop, "MIN(loop_us == LATENCY_TRACE_DURATION_INVALID ? 0 : loop_us, (uint64_t)timeout.tv_usec)")
+        contains(loop, "network_wait_until(ctx, network_next_pulse_us(loop_time_begin_us, loop_monotonic_us()));") and
+        guarded_deadline_wait(deadline_wait, pulse_deadline, poll_timeout)
     ))
     checks.append((
         "command trace timing excludes command-report emission",

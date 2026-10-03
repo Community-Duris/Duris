@@ -29,7 +29,9 @@ using namespace std;
 #include "cmd/interp.h"
 #include "core/utility.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
 #include <ctype.h>
+#include <climits>
 #include <fnmatch.h>
 #include <stdio.h>
 #include <string.h>
@@ -37,6 +39,7 @@ using namespace std;
 #include "world/epic.h"
 #include "net/gmcp.h"
 #include "combat/justice.h"
+#include "economy/economic_gameplay_authority.h"
 #include "world/map.h"
 #include "item/objmisc.h"
 #include "item/item_movement_transaction.h"
@@ -111,13 +114,22 @@ extern Skill skills[];
 extern const mcname multiclass_names[];
 extern void displayShutdownMsg(P_char);
 
+// quest_started is saved on both backends. Retaining the last value after a
+// reset makes it a per-player generation watermark as well as a quest clock.
+static int world_quest_next_started(int previous, time_t proposed)
+{
+	if (previous < 0 || previous >= INT_MAX || proposed <= 0 || proposed > INT_MAX)
+		return 0;
+	const int started = static_cast<int>(proposed);
+	return started > previous ? started : previous + 1;
+}
+
 void resetQuest(P_char ch)
 {
 	ch->only.pc->quest_active = 0;
 	ch->only.pc->quest_mob_vnum = 0;
 	ch->only.pc->quest_type = 0;
 	ch->only.pc->quest_accomplished = 0;
-	ch->only.pc->quest_started = 0;
 	ch->only.pc->quest_zone_number = -1;
 	ch->only.pc->quest_giver = 0;
 	ch->only.pc->quest_level = 0;
@@ -221,11 +233,146 @@ P_obj quest_item_reward(P_char ch)
 	return reward;
 }
 
-static bool grant_world_quest_reward(P_char ch, P_obj reward)
+struct world_quest_reward_context
+{
+	uint64_t source_id;
+	uint64_t item_uid;
+	uint32_t actor_pid;
+	int32_t quest_mob_vnum;
+	int32_t type;
+	bool full_reward;
+};
+
+static_assert(sizeof(world_quest_reward_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
+
+static uint64_t world_quest_reward_source_id(P_char ch)
+{
+	if (!ch || !IS_PC(ch) || !ch->only.pc)
+		return 0;
+	const uint64_t started = ch->only.pc->quest_started > 0 ?
+					 static_cast<uint64_t>(ch->only.pc->quest_started) :
+					 0;
+	return started && started <= UINT32_MAX && GET_PID(ch) > 0 ?
+		       (static_cast<uint64_t>(GET_PID(ch)) << 32) | started :
+		       0;
+}
+
+static void world_quest_reward_completed(P_char ch, bool committed,
+					 const item_transfer_result &result,
+					 unsigned int error_code, const uint8_t *raw_context,
+					 size_t context_size)
+{
+	if (!ch || !IS_PC(ch) || !ch->only.pc || !raw_context ||
+	    context_size != sizeof(world_quest_reward_context))
+		return;
+	world_quest_reward_context context = {};
+	memcpy(&context, raw_context, sizeof(context));
+	if (context.actor_pid != static_cast<uint32_t>(GET_PID(ch)) ||
+	    context.source_id != world_quest_reward_source_id(ch) ||
+	    context.quest_mob_vnum != ch->only.pc->quest_mob_vnum)
+	{
+		logit(LOG_FILE,
+		      "world quest item completion no longer matches quest state (pid=%d uid=%llu committed=%d error=%u)",
+		      GET_PID(ch), (unsigned long long)context.item_uid, committed, error_code);
+		return;
+	}
+	if (!committed)
+	{
+		if (!context.full_reward && ch->only.pc->quest_kill_original > 0 &&
+		    ch->only.pc->quest_kill_how_many >= ch->only.pc->quest_kill_original)
+			ch->only.pc->quest_kill_how_many = ch->only.pc->quest_kill_original - 1;
+		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
+		gmcp_quest_status(ch);
+		send_to_char("Your quest reward was not delivered; your quest remains active.\r\n",
+			     ch);
+		return;
+	}
+	P_obj reward = NULL;
+	for (P_obj item = object_list; item; item = item->next)
+		if (item->obj_uid == context.item_uid)
+		{
+			reward = item;
+			break;
+		}
+	if (result.root_item_uid != context.item_uid || !result.item_count || !reward ||
+	    !OBJ_CARRIED_BY(reward, ch))
+	{
+		logit(LOG_FILE,
+		      "world quest item committed without player publication (pid=%d uid=%llu)",
+		      GET_PID(ch), (unsigned long long)context.item_uid);
+		return;
+	}
+	send_to_char_f(ch, "For completing your quest you receive %s&n.\r\n",
+		       reward->short_description);
+	if (!context.full_reward)
+	{
+		if (ch->only.pc->quest_kill_original <= 0)
+		{
+			logit(LOG_FILE,
+			      "world quest kill count missing at item completion (pid=%d)",
+			      GET_PID(ch));
+			return;
+		}
+		send_to_char("&+WCongratulations&n&n&+W, you finished your quest!&n\r\n", ch);
+		gain_exp(ch, NULL,
+			 quest_exp_reward(ch, FIND_AND_KILL) / ch->only.pc->quest_kill_original,
+			 EXP_WORLD_QUEST);
+	}
+	quest_epic_reward(ch, context.type);
+	if (context.full_reward)
+	{
+		gain_exp(ch, NULL, quest_exp_reward(ch, context.type), EXP_WORLD_QUEST);
+		send_to_char("&+WYou gain some experience.&n\r\n", ch);
+	}
+	sql_world_quest_finished(ch, reward);
+	mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
+	resetQuest(ch);
+	gmcp_quest_status(ch);
+}
+
+static bool grant_world_quest_reward(P_char ch, P_obj reward, int type, bool full_reward)
 {
 	if (!reward)
+	{
+		send_to_char(
+			"No quest reward is available right now; your quest remains active.\r\n",
+			ch);
 		return false;
-	if (item_creation_grant_submit_to_player(ch, reward, ch))
+	}
+	if (economic_gameplay_authority::active() && GET_CLASS(ch, CLASS_MERCENARY) &&
+	    GET_LEVEL(ch) > 24)
+	{
+		extract_obj(reward, FALSE);
+		send_to_char(
+			"This quest's item and coin rewards cannot be settled together right now; your quest remains active.\r\n",
+			ch);
+		return false;
+	}
+	// A command retry can allocate a different item UID. The persisted quest start
+	// and player identity name the completion independently of that allocation.
+	const uint64_t source_id = world_quest_reward_source_id(ch);
+	if (source_id && economic_gameplay_authority::active())
+	{
+		if (!item_movement_transaction_player_busy(ch))
+		{
+			const world_quest_reward_context context = {
+				source_id,
+				reward->obj_uid,
+				static_cast<uint32_t>(GET_PID(ch)),
+				ch->only.pc->quest_mob_vnum,
+				type,
+				full_reward
+			};
+			if (item_creation_grant_submit_to_player_with_completion(
+				    ch, reward, ch, world_quest_reward_completed, &context,
+				    sizeof(context), NULL, economic_source_kind::quest_completion,
+				    source_id))
+				return true;
+		}
+	}
+	else if (source_id &&
+		 item_creation_grant_submit_to_player(
+			 ch, reward, ch, NULL, economic_source_kind::quest_completion, source_id))
 		return true;
 	extract_obj(reward, FALSE);
 	send_to_char("The ownership authority is busy; your quest reward was not created.\r\n", ch);
@@ -240,14 +387,28 @@ void quest_full_reward(P_char ch, P_char quest_mob, int type)
 	{
 		return;
 	}
+	if (economic_gameplay_authority::active() && GET_CLASS(ch, CLASS_MERCENARY) &&
+	    GET_LEVEL(ch) > 24)
+	{
+		send_to_char("This quest's coin reward is unavailable while active accounting "
+			     "is enabled.\r\n",
+			     ch);
+		return;
+	}
+	if (economic_gameplay_authority::active() && item_movement_transaction_player_busy(ch))
+	{
+		send_to_char("Your item ownership change is still settling; try again shortly.\r\n",
+			     ch);
+		return;
+	}
 
 	P_obj reward = quest_item_reward(ch);
-	const bool reward_granted = grant_world_quest_reward(ch, reward);
-	if (reward_granted)
-	{
-		act("$n gives you $q ", TRUE, quest_mob, reward, ch, TO_VICT);
-		act("$n gives $N $q.", FALSE, quest_mob, reward, ch, TO_NOTVICT);
-	}
+	if (!grant_world_quest_reward(ch, reward, type, true))
+		return;
+	if (economic_gameplay_authority::active())
+		return;
+	act("$n gives you $q ", TRUE, quest_mob, reward, ch, TO_VICT);
+	act("$n gives $N $q.", FALSE, quest_mob, reward, ch, TO_NOTVICT);
 
 	if (GET_CLASS(ch, CLASS_MERCENARY))
 	{
@@ -275,7 +436,7 @@ void quest_full_reward(P_char ch, P_char quest_mob, int type)
 	snprintf(Gbuf1, MAX_STRING_LENGTH, "&+WYou gain some experience.&n");
 	act(Gbuf1, FALSE, quest_mob, 0, ch, TO_VICT);
 
-	sql_world_quest_finished(ch, reward_granted ? reward : NULL);
+	sql_world_quest_finished(ch, reward);
 	mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 
 	resetQuest(ch);
@@ -326,6 +487,22 @@ void quest_kill(P_char ch, P_char quest_mob)
 			ch);
 		return;
 	}
+	if (economic_gameplay_authority::active() && GET_CLASS(ch, CLASS_MERCENARY) &&
+	    GET_LEVEL(ch) > 24)
+	{
+		send_to_char("This quest's coin reward is unavailable while active accounting "
+			     "is enabled.\r\n",
+			     ch);
+		return;
+	}
+	if (economic_gameplay_authority::active() && ch->only.pc->quest_kill_original > 0 &&
+	    ch->only.pc->quest_kill_how_many + 1 >= ch->only.pc->quest_kill_original &&
+	    item_movement_transaction_player_busy(ch))
+	{
+		send_to_char("Your item ownership change is still settling; try again shortly.\r\n",
+			     ch);
+		return;
+	}
 
 	ch->only.pc->quest_kill_how_many++;
 
@@ -339,23 +516,25 @@ void quest_kill(P_char ch, P_char quest_mob)
 		ch->only.pc->quest_kill_original = ch->only.pc->quest_kill_how_many;
 	}
 
-	gain_exp(ch, NULL, exp_gain / ch->only.pc->quest_kill_original, EXP_WORLD_QUEST);
-
 	if (ch->only.pc->quest_kill_how_many - ch->only.pc->quest_kill_original == 0)
 	{
-		send_to_char("&+WCongratulations&n&n&+W, you finished your quest!&n\r\n", ch);
-		wizlog(56, "%s finished quest @%s (kill quest)", GET_NAME(ch),
-		       quest_mob->player.short_descr);
-
 		// One reward per completed quest, handed to the player who completed it rather
 		// than rolled onto the corpse of each kill.
 		P_obj reward = quest_item_reward(ch);
-		const bool reward_granted = grant_world_quest_reward(ch, reward);
-		if (reward_granted)
+		if (!grant_world_quest_reward(ch, reward, FIND_AND_KILL, false))
 		{
-			send_to_char_f(ch, "For completing your quest you receive %s&n.\r\n",
-				       reward->short_description);
+			--ch->only.pc->quest_kill_how_many;
+			gmcp_quest_status(ch);
+			return;
 		}
+		if (economic_gameplay_authority::active())
+			return;
+		gain_exp(ch, NULL, exp_gain / ch->only.pc->quest_kill_original, EXP_WORLD_QUEST);
+		send_to_char("&+WCongratulations&n&n&+W, you finished your quest!&n\r\n", ch);
+		wizlog(56, "%s finished quest @%s (kill quest)", GET_NAME(ch),
+		       quest_mob->player.short_descr);
+		send_to_char_f(ch, "For completing your quest you receive %s&n.\r\n",
+			       reward->short_description);
 
 		if (GET_CLASS(ch, CLASS_MERCENARY) && GET_LEVEL(ch) > 24)
 		{
@@ -370,13 +549,14 @@ void quest_kill(P_char ch, P_char quest_mob)
 		}
 
 		quest_epic_reward(ch, FIND_AND_KILL);
-		sql_world_quest_finished(ch, reward_granted ? reward : NULL);
+		sql_world_quest_finished(ch, reward);
 		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 		resetQuest(ch);
 		gmcp_quest_status(ch);
 	}
 	else
 	{
+		gain_exp(ch, NULL, exp_gain / ch->only.pc->quest_kill_original, EXP_WORLD_QUEST);
 		send_to_char(
 			"&+YCongratulations&+y, you found the right mob, but you're not done yet.\r\n",
 			ch);
@@ -658,6 +838,15 @@ void do_quest(P_char ch, char *args, int /*cmd*/)
 				send_to_char("They've already done this quest!\r\n", ch);
 				return;
 			}
+			const int recipient_started = world_quest_next_started(
+				victim->only.pc->quest_started, ch->only.pc->quest_started);
+			if (!recipient_started)
+			{
+				send_to_char(
+					"A unique quest receipt is unavailable; tell a God.\r\n",
+					ch);
+				return;
+			}
 			resetQuest(victim);
 
 			ch->only.pc->quest_shares_left--;
@@ -670,7 +859,7 @@ void do_quest(P_char ch, char *args, int /*cmd*/)
 			victim->only.pc->quest_mob_vnum = ch->only.pc->quest_mob_vnum;
 			victim->only.pc->quest_type = ch->only.pc->quest_type;
 			victim->only.pc->quest_accomplished = ch->only.pc->quest_accomplished;
-			victim->only.pc->quest_started = ch->only.pc->quest_started;
+			victim->only.pc->quest_started = recipient_started;
 			victim->only.pc->quest_zone_number = ch->only.pc->quest_zone_number;
 			victim->only.pc->quest_giver = ch->only.pc->quest_giver;
 			victim->only.pc->quest_level = ch->only.pc->quest_level;
@@ -909,12 +1098,20 @@ bool createQuestForGiverVnum(P_char ch, int giver_vnum, quest_creation_failure *
 
 	const int quest_kill_original =
 		MIN(difficulty_scale_world_quest_kills(number(7, 9)), mob_index[rnum].number - 1);
+	const int next_started = world_quest_next_started(ch->only.pc->quest_started, time(NULL));
+	if (!next_started)
+	{
+		wizlog(56, "Unable to allocate a unique quest start for %s", GET_NAME(ch));
+		if (failure)
+			*failure = QUEST_CREATION_NO_ELIGIBLE_TARGET;
+		return FALSE;
+	}
 	ch->only.pc->quest_shares_left = world_quest_share_limit();
 	ch->only.pc->quest_active = 1;
 	ch->only.pc->quest_mob_vnum = quest_mob;
 	ch->only.pc->quest_type = quest_type;
 	ch->only.pc->quest_accomplished = 0;
-	ch->only.pc->quest_started = time(NULL);
+	ch->only.pc->quest_started = next_started;
 	ch->only.pc->quest_zone_number = zone_table[quest_zone].number;
 	ch->only.pc->quest_giver = giver_vnum;
 	ch->only.pc->quest_level = GET_LEVEL(ch);

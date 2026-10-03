@@ -2,7 +2,7 @@
 
 Duris has two deliberately separate histories:
 
-- `migrations/run_migration.sh` is the legacy additive upgrade path. Its 146 progress
+- `migrations/run_migration.sh` is the legacy additive upgrade path. Its 150 progress
   steps and `mud_schema_migrations` data-copy markers are not complete historical
   execution evidence and are never backfilled as if they were.
 - `migrations/migration_manifest.json` is the authoritative immutable history after
@@ -23,6 +23,19 @@ schema operation. Extra, missing, or renamed tables refuse adoption. This create
 honest observation at the current boundary; it does not invent timestamps or checksums
 for historical steps.
 
+Archive-only `ships` and `account_locker_items` columns are a separate, offline
+reconciliation boundary. The generic legacy runner refuses them *before step 1*, even
+when a database contains a clone marker. Restore the backup into a fresh isolated
+loopback-only disposable clone with no game or other writer attached; record the
+source hash, use `prepare_archive_offline_clone_guard.sql` there, then execute
+`legacy_archive_schema_reconciliation.sql` there before the runner. Verify the full
+source-row sidecars and shared-row equality before using the migrated clone. Because
+MySQL copy and DDL are not atomic, an interrupted attempt or an existing sidecar is
+not automatically resumable: preserve its evidence, discard only the disposable
+clone, restore a *new* clone from the unchanged backup, and repeat. Never clear a
+sidecar or run the archive-column SQL against a live database to force replay.
+A live migration of these columns needs a separately reviewed quiesced procedure.
+
 For a fresh isolated database:
 
 ```sh
@@ -39,9 +52,9 @@ passed on a disposable clone, an owner-authorized production `run` additionally 
 `--production-backup /absolute/path.sql.gz`. Production baseline adoption remains prohibited, and
 the runner refuses to apply while another connection is using the configured database.
 
-The current immutable head is `0012_epic_stone_claim`. After it is applied,
-the database contains the 185-table runtime boot contract, and the history
-singleton records applied count 12 plus the exact history checksum. If a pre-b029
+The current immutable head is `0032_economic_baseline`. After it is applied,
+the database contains the 215-table runtime boot contract, and the history
+singleton records applied count 32 plus the exact history checksum. If a pre-b029
 launcher already created the legacy `server_reboots`
 shape, 0004 copies every lifecycle row into the canonical table and atomically
 swaps it into place; an interrupted conversion can be retried without making the
@@ -79,7 +92,7 @@ correction; its latency benefit is not yet measured on a representative clone,
 which remains the open half of that backlog item.
 
 `kingdom_realms` is part of the boot contract's *table list*:
-`runtime_compatibility_manifest.json` counts 185 runtime tables and both
+`runtime_compatibility_manifest.json` counts 215 runtime tables and both
 normalized metadata fingerprints are sealed over an inventory that includes it,
 so on the database backend the gate proves the table's engine, collation,
 columns and indexes before gameplay publishes. `kingdom_initialize()` still
@@ -87,9 +100,9 @@ disables kingdoms for the boot when it cannot read the table, which remains
 reachable on the flat-file build, where no boot gate stands in front of it. The
 *ledger* is fail-closed too, exactly as it is for every other immutable
 migration: `src/core/runtime_compatibility_contract.h` compiles
-`RUNTIME_MIGRATION_HEAD_ID = "0016_artifact_mana"` with sequence 16, and
+`RUNTIME_MIGRATION_HEAD_ID = "0032_economic_baseline"` with sequence 32, and
 `sql_verify_boot_database()` in `src/sql/sql.c` requires the matching
-`mud_schema_history` row, its two checksums, and `applied_count=15` in
+`mud_schema_history` row, its two checksums, and `applied_count=32` in
 `mud_schema_migration_state`. On the MariaDB/MySQL backend a database left at
 head `0014_telemetry_storage` therefore refuses to boot, aborting with
 `COMPAT-E002`. An operator upgrading an existing database must apply the pending
@@ -103,12 +116,13 @@ committed coin-pile custody payloads (0010), player death disposition and custod
 evidence (0011), and atomic epic-stone reward claims (0012). Migration 0012 adds
 one InnoDB table keyed by the stone's globally allocated UID, with a foreign
 key to the critical-operation inbox. An existing database at head 0011 must
-apply that step before deploying the current server.
+apply that step and all subsequent manifest migrations before deploying the current server.
 
 Migration 0013 preserves generated pet state, and 0014 adds telemetry storage. Migration 0015 adds the independent
 physical-item mana authority, keyed by UID and versioned separately from owner
-snapshots. An existing database at head 0014 must apply 0015 before the updated
-binary boots, even when item actions remain disabled. This additive table has no
+snapshots. An existing database at head 0014 must apply 0015 and all subsequent
+manifest migrations before the current binary boots, even when item actions remain
+disabled. This additive table has no
 owner foreign key or cascade: extraction and old snapshots must not remove its
 replay fence. See [artifact mana](../reference/ARTIFACT_MANA.md) for the resource,
 crash-window and rollback contracts.

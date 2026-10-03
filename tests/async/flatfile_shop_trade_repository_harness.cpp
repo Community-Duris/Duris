@@ -1,4 +1,6 @@
 #include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_item_accounting_reference.h"
+#include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_shop_trade_repository.h"
 #include "flatfile/flatfile_shop_trade_materialization.h"
@@ -16,6 +18,15 @@
 
 namespace fs = std::filesystem;
 
+class flatfile_accounting_test_access
+{
+    public:
+	static constexpr auto bootstrap = &flatfile_accounting_authority_storage::bootstrap;
+	static constexpr auto append_epoch = &flatfile_accounting_authority_storage::append_epoch;
+	static constexpr auto select_epoch = &flatfile_accounting_authority_storage::select_epoch;
+	static constexpr auto commit = &flatfile_accounting_storage::commit;
+};
+
 static void require(bool condition, const std::string &message)
 {
 	if (!condition)
@@ -31,6 +42,50 @@ static critical_operation_id operation(uint8_t value)
 	id.bytes[0] = 0x73;
 	id.bytes.back() = value;
 	return id;
+}
+
+static void activate_accounting(const fs::path &root, std::string *error)
+{
+	fs::create_directories(root / "economic-evidence");
+	fs::permissions(root / "economic-evidence", fs::perms::owner_all,
+			fs::perm_options::replace);
+	flatfile_authority_lock lock;
+	require(lock.acquire(root.string(), error), "could not lock shop accounting setup");
+	std::vector<flatfile_authority_operation> operations;
+	const auto commit = [&]
+	{
+		require(flatfile_accounting_test_access::commit(root.string(), lock, operations,
+								error) ==
+				flatfile_authority_transaction_result::ok,
+			"could not commit shop accounting setup: " + *error);
+		operations.clear();
+	};
+	const auto revision = [&]
+	{
+		flatfile_economic_control control;
+		require(flatfile_economic_control_read(root.string(), lock, &control, error) == 0,
+			"could not read shop accounting control: " + *error);
+		return control.revision;
+	};
+	require(flatfile_accounting_test_access::bootstrap(root.string(), lock, operation(70),
+							   operation(71), &operations, error) == 0,
+		"could not bootstrap shop accounting: " + *error);
+	commit();
+	flatfile_economic_epoch epoch;
+	epoch.epoch = operation(72);
+	epoch.creating_operation = operation(73);
+	epoch.ordinal = 1;
+	epoch.transition_kind = 1;
+	epoch.transition_digest[0] = 42;
+	require(flatfile_accounting_test_access::append_epoch(root.string(), lock, revision(),
+							      epoch, &operations, error) == 0,
+		"could not append shop accounting epoch: " + *error);
+	commit();
+	require(flatfile_accounting_test_access::select_epoch(root.string(), lock, revision(), true,
+							      operation(74), &operations,
+							      error) == 0,
+		"could not activate shop accounting epoch: " + *error);
+	commit();
 }
 
 static player_item_snapshot shop_item()
@@ -67,6 +122,9 @@ static shop_trade_payload purchase(const std::vector<player_item_snapshot> &item
 	payload.racewar = 1;
 	strcpy(payload.account_name.data(), "shop-account");
 	payload.price = 100;
+	payload.keeper_vnum = 1000;
+	payload.expected_keeper_cash = 500;
+	payload.keeper_roaming = 1;
 	payload.expected_wallet_revision = 0;
 	payload.expected_bank_revision = 1;
 	payload.expected_shop_revision = 1;
@@ -158,6 +216,8 @@ int main(int argc, char **argv)
 	shop.room_vnum = 2000;
 	shop.saved_at = 1;
 	shop.revision = 1;
+	shop.cash = 500;
+	shop.roaming = true;
 	shop.items = trade_items;
 	require(flatfile_shopkeeper_establish(root.string(), { shop }, &error) ==
 			flatfile_shopkeeper_result::ok,
@@ -210,16 +270,29 @@ int main(int argc, char **argv)
 	require(applied.outcome == critical_apply_outcome::already_applied &&
 			purchased.wallet.amount == std::array<int64_t, 4>{ 0, 0, 9, 9 } &&
 			purchased.wallet_revision == 1 && purchased.bank_revision == 2 &&
-			purchased.shop_revision == 2 && purchased.player_owner_revision == 2 &&
+			purchased.shop_revision == 2 && purchased.keeper_cash_recorded &&
+			purchased.keeper_cash == 600 && purchased.player_owner_revision == 2 &&
 			purchased.counterparty_owner_revision == 2 && purchased.item_count == 2 &&
 			purchased.item_uids[0] == 200 && purchased.item_revisions[0] == 2 &&
 			purchased.item_uids[1] == 201 && purchased.item_revisions[1] == 2,
 		"recovered purchase did not replay its exact result");
+	for (uint16_t index = 0; index < 2; ++index)
+	{
+		economic_accounting_item_reference ref = {};
+		require(flatfile_item_accounting_reference_find_by_legacy(
+				root.string(), purchase_command.operation_id, index, &ref,
+				&error) == flatfile_item_accounting_status::ok &&
+				ref.operation_id.bytes == purchase_command.operation_id.bytes &&
+				ref.item_uid == purchased.item_uids[index] &&
+				ref.before_revision == 1 && ref.after_revision == 2,
+			"interrupted purchase did not recover exact item references");
+	}
 
 	std::vector<flatfile_shopkeeper_record> shops;
 	require(flatfile_shopkeeper_list(root.string(), &shops, &error) ==
 				flatfile_shopkeeper_result::ok &&
-			shops.size() == 1 && shops[0].revision == 2 && shops[0].items.empty(),
+			shops.size() == 1 && shops[0].revision == 2 && shops[0].cash == 600 &&
+			shops[0].items.empty(),
 		"purchase did not remove the item from shopkeeper inventory");
 	uint64_t player_revision = 0, shop_revision = 0;
 	std::vector<flatfile_item_ownership_record> player_items, remaining_shop_items;
@@ -260,6 +333,64 @@ int main(int argc, char **argv)
 				&error) == flatfile_shop_trade_materialization_result::ok &&
 				stale_snapshot.items[0].cost == 777,
 			"reconciliation overwrote a newer materialized object snapshot");
+		stale_snapshot.items[0].equipment_slot = 7;
+		require(flatfile_shop_trade_materialization_reconcile(
+				root.string(), reconciliation_lock, 42, player_items,
+				&stale_snapshot,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				stale_snapshot.items[0].equipment_slot == 0,
+			"current accounted custody did not clear a stale worn slot");
+	}
+	{
+		// A pre-accounting inbound catalog can outlive later ordinary wear.
+		// Keep the same immutable catalog, but give it no accounting receipts.
+		const fs::path legacy_root = root / "legacy-kit";
+		fs::create_directories(legacy_root / "domains");
+		fs::create_directories(legacy_root / "accounting/item_references");
+		fs::permissions(legacy_root, fs::perms::owner_all, fs::perm_options::replace);
+		fs::permissions(legacy_root / "domains", fs::perms::owner_all,
+				fs::perm_options::replace);
+		fs::permissions(legacy_root / "accounting", fs::perms::owner_all,
+				fs::perm_options::replace);
+		fs::permissions(legacy_root / "accounting/item_references", fs::perms::owner_all,
+				fs::perm_options::replace);
+		fs::copy_file(domains / "shop_trade_materializations",
+			      legacy_root / "domains/shop_trade_materializations");
+		flatfile_authority_lock legacy_lock;
+		require(legacy_lock.acquire(legacy_root.string(), &error),
+			"could not lock legacy placement test: " + error);
+		player_snapshot worn = stale_snapshot;
+		worn.items[0].equipment_slot = 7;
+		const auto legacy_result = flatfile_shop_trade_materialization_reconcile(
+			legacy_root.string(), legacy_lock, 42, player_items, &worn, &error);
+		require(legacy_result == flatfile_shop_trade_materialization_result::ok &&
+				worn.items[0].equipment_slot == 7,
+			"pre-accounting inbound custody erased a saved worn slot: result=" +
+				std::to_string(static_cast<int>(legacy_result)) + " slot=" +
+				std::to_string(worn.items[0].equipment_slot) + " " + error);
+		auto created_items = player_items;
+		created_items[0].item_revision = 1;
+		economic_accounting_item_reference creation_reference = {};
+		creation_reference.operation_id = operation(90);
+		creation_reference.legacy_operation_id = operation(91);
+		creation_reference.item_uid = created_items[0].item_uid;
+		creation_reference.after_revision = 1;
+		require(flatfile_item_accounting_reference_append(legacy_root.string(),
+								  creation_reference, &error) ==
+				flatfile_item_accounting_status::ok,
+			"could not retain initial creation receipt: " + error);
+		require(flatfile_shop_trade_materialization_reconcile(
+				legacy_root.string(), legacy_lock, 42, created_items, &worn,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				worn.items[0].equipment_slot == 7,
+			"initial creation receipt erased a later saved worn slot");
+		auto positioned_items = player_items;
+		positioned_items[0].equipment_slot = 4;
+		require(flatfile_shop_trade_materialization_reconcile(
+				legacy_root.string(), legacy_lock, 42, positioned_items, &worn,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				worn.items[0].equipment_slot == 4,
+			"explicit native equipment placement did not override the snapshot");
 	}
 
 	shop_trade_payload conflicting_payload = payload;
@@ -289,12 +420,50 @@ int main(int argc, char **argv)
 	sale.expected_wallet_revision = 1;
 	sale.expected_bank_revision = 2;
 	sale.expected_shop_revision = 2;
+	sale.expected_keeper_cash = 600;
 	sale.stock_item_uid = 0;
 	sale.expected_stock_item_revision = 0;
 	sale.stock_vnum = 0;
 	for (size_t index = 0; index < sale.item_count; ++index)
 		sale.items[index].expected_item_revision = 2;
-	applied = flatfile_shop_trade_repository_apply(root.string(), command(sale, 3));
+	shop_trade_payload stale_cash_sale = sale;
+	stale_cash_sale.expected_keeper_cash = 599;
+	const auto stale_cash =
+		flatfile_shop_trade_repository_apply(root.string(), command(stale_cash_sale, 9));
+	require(stale_cash.outcome == critical_apply_outcome::terminal_failure &&
+			stale_cash.error_code == ESTALE,
+		"shop trade accepted a stale keeper cash snapshot");
+	shop_trade_payload unfunded_sale = sale;
+	unfunded_sale.price = 1000;
+	const auto unfunded =
+		flatfile_shop_trade_repository_apply(root.string(), command(unfunded_sale, 8));
+	require(unfunded.outcome == critical_apply_outcome::terminal_failure &&
+			unfunded.error_code == ENOSPC,
+		"finite keeper cash did not refuse an unfunded sale");
+	const critical_command sale_command = command(sale, 3);
+	setenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT", "1", 1);
+	applied = flatfile_shop_trade_repository_apply(root.string(), sale_command);
+	unsetenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT");
+	require(applied.outcome == critical_apply_outcome::retryable_failure,
+		"forced sale commit failure was not reported");
+	require(flatfile_player_domain_load(root.string(), 42, "shop-account", 1, &loaded_player,
+					    &error) == flatfile_player_domain_result::ok &&
+			loaded_player.domains.wallet == std::array<uint64_t, 4>{ 0, 0, 9, 9 } &&
+			loaded_player.domains.wallet_revision == 1,
+		"forced sale commit failure changed the wallet");
+	require(flatfile_shopkeeper_list(root.string(), &shops, &error) ==
+				flatfile_shopkeeper_result::ok &&
+			shops.size() == 1 && shops[0].revision == 2 && shops[0].cash == 600 &&
+			shops[0].items.empty(),
+		"forced sale commit failure changed keeper stock");
+	{
+		economic_accounting_item_reference ref = {};
+		require(flatfile_item_accounting_reference_find_by_legacy(
+				root.string(), sale_command.operation_id, 0, &ref, &error) ==
+				flatfile_item_accounting_status::not_found,
+			"forced sale commit failure published an item reference");
+	}
+	applied = flatfile_shop_trade_repository_apply(root.string(), sale_command);
 	require(applied.outcome == critical_apply_outcome::applied,
 		"could not commit retained sale for restart reconciliation");
 	player_items.clear();
@@ -323,6 +492,7 @@ int main(int argc, char **argv)
 	produced.expected_wallet_revision = 2;
 	produced.expected_bank_revision = 3;
 	produced.expected_shop_revision = 3;
+	produced.expected_keeper_cash = 550;
 	produced.selected_item_uid = 300;
 	produced.target_root_item_uid = 700;
 	produced.target_parent_item_uid = 700;
@@ -332,9 +502,19 @@ int main(int argc, char **argv)
 	produced.items[0] = { 300, 300,
 			      0,   ITEM_TRANSFER_ABSENT_REVISION,
 			      800, item_custody_state::absent };
-	applied = flatfile_shop_trade_repository_apply(root.string(), command(produced, 4));
+	const critical_command produced_command = command(produced, 4);
+	applied = flatfile_shop_trade_repository_apply(root.string(), produced_command);
 	require(applied.outcome == critical_apply_outcome::applied,
 		"could not commit produced container purchase");
+	{
+		economic_accounting_item_reference ref = {};
+		require(flatfile_item_accounting_reference_find_by_legacy(
+				root.string(), produced_command.operation_id, 0, &ref, &error) ==
+					flatfile_item_accounting_status::ok &&
+				ref.item_uid == 300 && ref.before_revision == 0 &&
+				ref.after_revision == 1,
+			"produced purchase did not retain its absent-to-created item reference");
+	}
 	player_items.clear();
 	require(flatfile_item_repository_load_owner(root.string(), player_owner, &player_revision,
 						    &player_items, &error) ==
@@ -378,6 +558,7 @@ int main(int argc, char **argv)
 	repurchase.expected_wallet_revision = 3;
 	repurchase.expected_bank_revision = 4;
 	repurchase.expected_shop_revision = 4;
+	repurchase.expected_keeper_cash = 650;
 	repurchase.expected_stock_item_revision = 3;
 	for (size_t index = 0; index < repurchase.item_count; ++index)
 		repurchase.items[index].expected_item_revision = 3;
@@ -412,6 +593,7 @@ int main(int argc, char **argv)
 	resale.expected_wallet_revision = 4;
 	resale.expected_bank_revision = 5;
 	resale.expected_shop_revision = 5;
+	resale.expected_keeper_cash = 750;
 	resale.stock_item_uid = 0;
 	resale.expected_stock_item_revision = 0;
 	resale.stock_vnum = 0;
@@ -426,6 +608,7 @@ int main(int argc, char **argv)
 	cleanup.expected_wallet_revision = 5;
 	cleanup.expected_bank_revision = 6;
 	cleanup.expected_shop_revision = 6;
+	cleanup.expected_keeper_cash = 700;
 	cleanup.stock_item_uid = 200;
 	cleanup.expected_stock_item_revision = 5;
 	cleanup.stock_vnum = 800;
@@ -456,7 +639,8 @@ int main(int argc, char **argv)
 	shops.clear();
 	require(flatfile_shopkeeper_list(root.string(), &shops, &error) ==
 				flatfile_shopkeeper_result::ok &&
-			shops.size() == 1 && shops[0].revision == 7 && shops[0].items.empty(),
+			shops.size() == 1 && shops[0].revision == 7 && shops[0].cash == 700 &&
+			shops[0].items.empty(),
 		"invalid-stock cleanup did not remove the durable shop subtree");
 	player_items.clear();
 	require(flatfile_item_repository_load_owner(root.string(), player_owner, &player_revision,
@@ -537,6 +721,66 @@ int main(int argc, char **argv)
 				flatfile_item_repository_result::ok &&
 			player_items.size() == 2 && remaining_shop_items.empty(),
 		"complimentary purchase did not transfer durable item custody");
+	for (int policy = 0; policy < 2; ++policy)
+	{
+		const fs::path policy_root =
+			fs::path(argv[1]).string() + (policy ? "-stationary" : "-guild-exception");
+		fs::create_directories(policy_root / "domains");
+		fs::permissions(policy_root, fs::perms::owner_all, fs::perm_options::replace);
+		fs::permissions(policy_root / "domains", fs::perms::owner_all,
+				fs::perm_options::replace);
+		require(flatfile_player_domain_establish(policy_root.string(), player, &error) ==
+				flatfile_player_domain_result::ok,
+			"could not establish policy player: " + error);
+		flatfile_shopkeeper_record policy_shop = shop;
+		policy_shop.mob_vnum = policy ? 1000 : 11005;
+		policy_shop.roaming = policy == 0;
+		policy_shop.cash = 0;
+		policy_shop.items.clear();
+		require(flatfile_shopkeeper_establish(policy_root.string(), { policy_shop },
+						      &error) == flatfile_shopkeeper_result::ok,
+			"could not establish policy keeper: " + error);
+		require(flatfile_item_repository_establish_owner(
+				policy_root.string(), player_owner,
+				{ { 200, 200, 0, player_owner, 1, 800, item_custody_state::active },
+				  { 201, 200, 200, player_owner, 1, 801,
+				    item_custody_state::active } },
+				&error) == flatfile_item_baseline_result::applied,
+			"could not establish policy player custody: " + error);
+		require(flatfile_item_repository_establish_owner(policy_root.string(), shop_owner,
+								 {}, &error) ==
+				flatfile_item_baseline_result::applied,
+			"could not establish policy shop custody: " + error);
+		shop_trade_payload policy_sale = purchase(trade_items);
+		policy_sale.action = shop_trade_action::sell_store;
+		policy_sale.price = 50;
+		policy_sale.keeper_vnum = policy_shop.mob_vnum;
+		policy_sale.keeper_roaming = policy_shop.roaming;
+		policy_sale.expected_keeper_cash = 0;
+		policy_sale.stock_item_uid = 0;
+		policy_sale.expected_stock_item_revision = 0;
+		policy_sale.stock_vnum = 0;
+		applied = flatfile_shop_trade_repository_apply(policy_root.string(),
+							       command(policy_sale, 1));
+		require(applied.outcome == critical_apply_outcome::applied &&
+				result_of(applied).keeper_cash == 0,
+			"keeper cash gameplay exception did not retain its unfunded cash state");
+	}
+	activate_accounting(complimentary_root, &error);
+	const auto replay = flatfile_shop_trade_repository_apply(
+		complimentary_root.string(), command(complimentary_purchase, 1));
+	require(replay.outcome == critical_apply_outcome::already_applied,
+		"active epoch refused exact shop trade replay");
+	const auto refused_trade = flatfile_shop_trade_repository_apply(
+		complimentary_root.string(), command(complimentary_purchase, 2));
+	require(refused_trade.outcome == critical_apply_outcome::retryable_failure &&
+			refused_trade.error_code == EAGAIN,
+		"active epoch admitted an unported shop trade");
+	require(flatfile_player_domain_load(complimentary_root.string(), 42, "shop-account", 1,
+					    &loaded_player,
+					    &error) == flatfile_player_domain_result::ok &&
+			loaded_player.domains.wallet == std::array<uint64_t, 4>{ 0, 0, 0, 10 },
+		"refused shop trade changed the buyer wallet");
 	{
 		std::fstream catalog(domains / "shop_trade_materializations",
 				     std::ios::binary | std::ios::in | std::ios::out);

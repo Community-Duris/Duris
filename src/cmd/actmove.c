@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "cmd/track.h"
 #include "telemetry/telemetry_runtime.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -77,8 +78,9 @@ static P_obj find_key_break_object(uint64_t item_uid)
 	return NULL;
 }
 
-static bool publish_key_break(P_char actor, bool committed, const item_transfer_result &,
-			      unsigned int, const uint8_t *encoded, size_t encoded_size)
+static bool publish_key_break(const critical_operation_id & /*operation_id*/, P_char actor,
+			      bool committed, const item_transfer_result &, unsigned int,
+			      const uint8_t *encoded, size_t encoded_size)
 {
 	key_break_context context = {};
 	if (encoded && encoded_size == sizeof(context))
@@ -142,10 +144,10 @@ static bool break_key(P_char actor, P_obj key)
 	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
 	const key_break_context context = { key->obj_uid };
 	item_movement_reject reject = item_movement_reject::none;
-	if (!item_movement_transaction_submit(actor, key, NULL, player_owner, destruction,
-					      item_transfer_reason::destruction, OBJ_VNUM(key),
-					      NULL, &context, sizeof(context), NULL, &reject,
-					      publish_key_break))
+	if (!item_movement_transaction_submit(
+		    actor, key, NULL, player_owner, destruction, item_transfer_reason::destruction,
+		    OBJ_VNUM(key), NULL, &context, sizeof(context), NULL, &reject,
+		    publish_key_break, economic_source_kind::intentional_destruction))
 	{
 		persistence_alert(AVATAR, "item_movement", "key_break", "none", "none",
 				  item_movement_reject_name(reject), "item_uid=%llu", key->obj_uid);

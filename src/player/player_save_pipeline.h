@@ -4,6 +4,7 @@
 #include "player/player_revision_state.h"
 #include "persistence/critical_command.h"
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 
@@ -11,6 +12,8 @@ struct char_data;
 typedef struct char_data *P_char;
 struct obj_data;
 typedef struct obj_data *P_obj;
+struct player_quest_xp_receipt_snapshot;
+struct player_spell_effect_receipt_snapshot;
 
 constexpr size_t PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS = 256;
 constexpr size_t PLAYER_SAVE_PIPELINE_MAX_BYTES = 32 * 1024 * 1024;
@@ -34,6 +37,7 @@ enum class player_save_terminal_result : uint8_t
 	invalid,
 	unavailable,
 	timed_out,
+	not_pending,
 };
 
 struct player_save_pipeline_health
@@ -54,6 +58,7 @@ struct player_save_pipeline_health
 	uint64_t durable_spills;
 	uint64_t completions;
 	uint64_t terminal_fences;
+	uint64_t terminal_death_requeues;
 	uint64_t terminal_database_acks;
 	uint64_t terminal_journal_handoffs;
 	uint64_t terminal_timeouts;
@@ -66,7 +71,35 @@ struct player_save_pipeline_health
 	bool replay_blocked;
 };
 
-bool player_save_pipeline_init(const char *journal_directory);
+// Resident coordinator metadata only; journal/worker/revision observations are separate.
+struct player_save_pipeline_diagnostic
+{
+	player_save_pipeline_health health = {};
+	bool available = false, pid_admission_open = false, retained_save = false;
+};
+player_save_pipeline_diagnostic player_save_pipeline_diagnostic_copy(int pid);
+
+// Publishes startup replay readiness to normal player-load callers. False
+// covers not-started, in-progress, failed, and stopped pipeline states.
+class player_save_pipeline_replay_gate
+{
+    public:
+	void begin_replay() noexcept { replay_complete_.store(false, std::memory_order_release); }
+	void finish_replay(bool succeeded) noexcept
+	{
+		replay_complete_.store(succeeded, std::memory_order_release);
+	}
+	bool loads_allowed() const noexcept
+	{
+		return replay_complete_.load(std::memory_order_acquire);
+	}
+
+    private:
+	std::atomic<bool> replay_complete_{ false };
+};
+
+bool player_save_pipeline_init(const char *journal_directory,
+			       void (*verify_resolved_recovery)() = nullptr);
 void player_save_pipeline_shutdown(void);
 bool player_save_pipeline_mark(int pid, player_component_mask_t components);
 player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int save_intent,
@@ -74,12 +107,73 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
 player_save_pipeline_result player_save_pipeline_request(P_char ch,
 							 player_component_mask_t components,
 							 int save_intent, int room_vnum);
+// An opt-in SQL ordinary-drop checkpoint retains literal capture policy through
+// newer saves and coalescing. Database acknowledgment is separate from the
+// physical source proof required by the eventual transfer transaction.
+struct player_literal_inventory_token
+{
+	int32_t pid = 0;
+	uint64_t actor_runtime_id = 0;
+	uint64_t root_uid = 0;
+	uint64_t generation = 0;
+	bool operator==(const player_literal_inventory_token &) const = default;
+};
+
+enum class player_literal_inventory_state : uint8_t
+{
+	pending,
+	database_acknowledged,
+	refused,
+};
+
+player_literal_inventory_state
+player_save_pipeline_literal_inventory_begin(P_char actor, P_obj root, int room_vnum,
+					     player_literal_inventory_token *token_out);
+player_literal_inventory_state
+player_save_pipeline_literal_inventory_poll(const player_literal_inventory_token &token,
+					    P_char actor);
+// Hold blocks inventory capture, while dirty marks continue advancing normally.
+// Release requires the bound original operation ID; pre-admission cancel cannot
+// release an operation's publication obligation.
+bool player_save_pipeline_literal_inventory_hold(const player_literal_inventory_token &token,
+						 const critical_operation_id &operation_id);
+bool player_save_pipeline_literal_inventory_release(const player_literal_inventory_token &token,
+						    const critical_operation_id &operation_id);
+bool player_save_pipeline_literal_inventory_cancel(const player_literal_inventory_token &token);
+// Critical replay restores a SQL ordinary-drop obligation without inventing a
+// live runtime token or checkpoint revision. Identical immutable commands are
+// idempotent; conflicting identity or capacity refuses before admission.
+bool player_save_pipeline_restore_sql_drop_obligation(const critical_command &command);
+// A restored drop may hydrate authoritative state while saves/lifecycle remain
+// held. All other recovery, target-login and pinned-death fences still refuse.
+bool player_save_pipeline_authoritative_hydration_admitted(int pid);
+// Called only after the coordinator has durably acknowledged publication. This
+// original-ID release needs no live actor and cannot allocate or fail afterward.
+void player_save_pipeline_sql_drop_publication_acknowledged(
+	const critical_operation_id &operation_id) noexcept;
+
+// Capture progression and its quest reward identities in one save-journal frame.
+// SQL applies the experience snapshot and receipt mask in the same transaction.
+player_save_pipeline_result
+player_save_pipeline_request_quest_xp(P_char ch, player_component_mask_t components,
+				      const player_quest_xp_receipt_snapshot *receipts,
+				      size_t receipt_count, int room_vnum);
+player_save_pipeline_result
+player_save_pipeline_request_spell_effect(P_char ch, player_component_mask_t components,
+					  const player_spell_effect_receipt_snapshot *receipt,
+					  int room_vnum);
 player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_intent, int room_vnum,
 							  uint64_t timeout_msec,
 							  bool allow_journal_handoff);
-// Capture the immutable death disposition for ch and wait for it to become
-// durable. wallet_pile may be null; when the wallet still holds coins it must be
-// an unattached pile carrying the complete remaining wallet.
+// Resume the exact in-memory format-8 death request for corpse_uid (zero uses
+// the pinned corpse). Returns not_pending only when no pinned death exists;
+// journal durability never releases it.
+player_save_terminal_result
+player_save_pipeline_terminal_death_resume(P_char ch, uint64_t corpse_uid, uint64_t timeout_msec);
+// Capture the immutable death disposition for ch and wait for its database ACK.
+// wallet_pile may be null; when the wallet still holds coins it must be an
+// unattached pile carrying the complete remaining wallet. allow_journal_handoff
+// is retained for call compatibility; death requests never accept journal-only ACKs.
 player_save_terminal_result
 player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
 				    const critical_operation_id &operation_id, int room_vnum,
@@ -89,11 +183,17 @@ void player_save_pipeline_quiesce(void);
 void player_save_pipeline_resume(void);
 bool player_save_pipeline_drain(uint64_t timeout_msec);
 player_save_pipeline_health player_save_pipeline_health_copy(void);
+// Normal account, legacy, and copyover materialization is forbidden until the
+// startup save-journal replay has completed successfully.
+bool player_save_pipeline_loads_allowed(void);
 size_t player_save_pipeline_dirty_count(void);
 bool player_save_pipeline_is_nonterminal_type(int save_intent);
 // Exact-PID save/login barrier used by offline critical commands.  A target
 // fence rejects new saves for that PID without quiescing unrelated players.
 bool player_save_pipeline_target_save_pending(int pid);
+// Game-thread creation admission waits for sealed saves, while dirty components
+// remain eligible for capture after the grant is published.
+bool player_save_pipeline_sealed_save_pending(int pid);
 bool player_save_pipeline_acquire_target_save_login_fence(int pid,
 							  player_revision_t expected_revision);
 void player_save_pipeline_release_target_save_login_fence(int pid,

@@ -1,8 +1,10 @@
 #include "flatfile/flatfile_authority_transaction.h"
 
 #include "flatfile/flatfile_store.h"
+#include "flatfile/flatfile_accounting_store.h"
 
 #include <array>
+#include <cerrno>
 #include <cstdlib>
 #include <cstring>
 #include <limits>
@@ -19,7 +21,7 @@ constexpr uint32_t transaction_version = 2;
 constexpr uint32_t transaction_legacy_version = 1;
 constexpr size_t transaction_maximum_images = flatfile_authority_transaction_maximum_operations;
 constexpr size_t transaction_maximum_filename = 192;
-constexpr size_t transaction_maximum_bytes = 256 * 1024 * 1024;
+constexpr size_t transaction_maximum_bytes = flatfile_authority_transaction_maximum_bytes;
 constexpr const char *transaction_filename = ".critical-authority-transaction";
 constexpr const char *lock_filename = ".critical-authority.lock";
 std::mutex authority_mutex;
@@ -45,6 +47,10 @@ std::string operation_directory(const std::string &root, flatfile_authority_stor
 		return root + "/metadata";
 	case flatfile_authority_store::player_deaths:
 		return root + "/player-deaths";
+	case flatfile_authority_store::economic_evidence:
+		return root + "/economic-evidence";
+	case flatfile_authority_store::item_accounting_references:
+		return root + "/accounting/item_references";
 	}
 	return {};
 }
@@ -70,6 +76,8 @@ struct encoder
 
 	template <typename T> void number(T value)
 	{
+		if (!valid)
+			return;
 		using unsigned_type = std::make_unsigned_t<T>;
 		unsigned_type bits = static_cast<unsigned_type>(value);
 		try
@@ -82,6 +90,7 @@ struct encoder
 		}
 		catch (const std::bad_alloc &)
 		{
+			errno = ENOMEM;
 			valid = false;
 		}
 	}
@@ -99,6 +108,7 @@ struct encoder
 		}
 		catch (const std::bad_alloc &)
 		{
+			errno = ENOMEM;
 			valid = false;
 		}
 	}
@@ -222,6 +232,7 @@ decode_transaction(const std::vector<uint8_t> &bytes,
 	}
 	catch (const std::bad_alloc &)
 	{
+		errno = ENOMEM;
 		return flatfile_authority_transaction_result::io_error;
 	}
 	for (size_t index = 0; index < operations->size(); ++index)
@@ -251,6 +262,7 @@ decode_transaction(const std::vector<uint8_t> &bytes,
 		}
 		catch (const std::bad_alloc &)
 		{
+			errno = ENOMEM;
 			return flatfile_authority_transaction_result::io_error;
 		}
 		payload.offset += filename_size;
@@ -267,6 +279,7 @@ decode_transaction(const std::vector<uint8_t> &bytes,
 		}
 		catch (const std::bad_alloc &)
 		{
+			errno = ENOMEM;
 			return flatfile_authority_transaction_result::io_error;
 		}
 		if (image_size && !payload.raw(operation.bytes.data(), operation.bytes.size()))
@@ -312,16 +325,30 @@ flatfile_authority_lock::flatfile_authority_lock() noexcept
 flatfile_authority_lock::~flatfile_authority_lock() = default;
 
 bool flatfile_authority_lock::acquire(const std::string &root, std::string *error)
+try
 {
 	if (!state_ || state_->process_lock.owns_lock() || root.empty())
-		return false;
-	state_->process_lock.lock();
-	if (flatfile_lock_acquire(domains_directory(root), lock_filename, &state_->fd, error))
 	{
-		state_->root = root;
+		errno = !state_ ? ENOMEM : EINVAL;
+		return false;
+	}
+	// Allocate before taking either lock; failures leave the object reusable.
+	std::string owned_root(root);
+	const std::string directory = domains_directory(root);
+	state_->process_lock.lock();
+	if (flatfile_lock_acquire(directory, lock_filename, &state_->fd, error))
+	{
+		state_->root.swap(owned_root);
 		return true;
 	}
 	state_->process_lock.unlock();
+	return false;
+}
+catch (const std::bad_alloc &)
+{
+	if (state_ && state_->process_lock.owns_lock())
+		state_->process_lock.unlock();
+	errno = ENOMEM;
 	return false;
 }
 
@@ -339,6 +366,7 @@ bool flatfile_authority_lock::matches(const std::string &root) const
 flatfile_authority_transaction_result
 flatfile_authority_transaction_recover(const std::string &root, const flatfile_authority_lock &lock,
 				       std::string *error)
+try
 {
 	if (!lock.owns(root))
 		return flatfile_authority_transaction_result::invalid;
@@ -363,6 +391,11 @@ flatfile_authority_transaction_recover(const std::string &root, const flatfile_a
 		       flatfile_authority_transaction_result::ok :
 		       flatfile_authority_transaction_result::io_error;
 }
+catch (const std::bad_alloc &)
+{
+	errno = ENOMEM;
+	return flatfile_authority_transaction_result::io_error;
+}
 
 flatfile_authority_transaction_result
 flatfile_authority_transaction_commit(const std::string &root, const flatfile_authority_lock &lock,
@@ -380,29 +413,86 @@ flatfile_authority_transaction_commit(const std::string &root, const flatfile_au
 	}
 	catch (const std::bad_alloc &)
 	{
+		errno = ENOMEM;
 		return flatfile_authority_transaction_result::io_error;
 	}
 	return flatfile_authority_transaction_commit_operations(root, lock, operations, error);
 }
 
-flatfile_authority_transaction_result flatfile_authority_transaction_commit_operations(
-	const std::string &root, const flatfile_authority_lock &lock,
-	const std::vector<flatfile_authority_operation> &operations, std::string *error)
+flatfile_authority_transaction_result
+flatfile_accounting_storage::commit(const std::string &root, const flatfile_authority_lock &lock,
+				    const std::vector<flatfile_authority_operation> &operations,
+				    std::string *error)
 {
+	return commit_with_outcome(root, lock, operations, error, nullptr);
+}
+
+flatfile_authority_transaction_result flatfile_accounting_storage::commit_with_outcome(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const std::vector<flatfile_authority_operation> &operations, std::string *error,
+	flatfile_authority_commit_outcome *outcome)
+try
+{
+	if (outcome)
+		*outcome = flatfile_authority_commit_outcome::not_published;
 	std::vector<uint8_t> bytes;
-	if (!lock.owns(root) || !encode_transaction(operations, &bytes))
+	if (!lock.owns(root))
 		return flatfile_authority_transaction_result::invalid;
+	// Never overwrite a pending journal or recover after the caller staged images.
+	// The caller must recover and resolve fresh state before retrying.
+	std::vector<uint8_t> pending;
+	const auto read = flatfile_read(domains_directory(root), transaction_filename,
+					transaction_maximum_bytes, &pending, error);
+	if (read != flatfile_read_result::not_found)
+		return read == flatfile_read_result::io_error ?
+			       flatfile_authority_transaction_result::io_error :
+			       flatfile_authority_transaction_result::invalid;
+	errno = 0;
+	if (!encode_transaction(operations, &bytes))
+		return errno == ENOMEM ? flatfile_authority_transaction_result::io_error :
+					 flatfile_authority_transaction_result::invalid;
 #ifdef DURIS_FLATFILE_AUTHORITY_FAULT_TEST
 	if (getenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT"))
 		return flatfile_authority_transaction_result::io_error;
 #endif
-	if (!flatfile_atomic_write(domains_directory(root), transaction_filename, bytes, error))
+	bool published = false;
+	bool durable = false;
+	try
+	{
+		durable = flatfile_atomic_write_with_publication(
+			domains_directory(root), transaction_filename, bytes, error, &published);
+	}
+	catch (const std::bad_alloc &)
+	{
+		if (outcome && published)
+			*outcome = flatfile_authority_commit_outcome::publication_uncertain;
+		throw;
+	}
+	if (!durable)
+	{
+		if (outcome && published)
+			*outcome = flatfile_authority_commit_outcome::publication_uncertain;
 		return flatfile_authority_transaction_result::io_error;
+	}
+	if (outcome)
+		*outcome = flatfile_authority_commit_outcome::committed;
+#ifdef DURIS_FLATFILE_AUTHORITY_FAULT_TEST
+	if (getenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_JOURNAL"))
+		return flatfile_authority_transaction_result::io_error;
+#endif
 	for (size_t index = 0; index < operations.size(); ++index)
 	{
 		if (!apply_operation(root, operations[index], error))
 			return flatfile_authority_transaction_result::io_error;
 #ifdef DURIS_FLATFILE_AUTHORITY_FAULT_TEST
+		if (const char *stop =
+			    getenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_OPERATION"))
+		{
+			char *end = nullptr;
+			const auto boundary = strtoul(stop, &end, 10);
+			if (end && !*end && boundary == index + 1)
+				return flatfile_authority_transaction_result::io_error;
+		}
 		if (getenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE") && index == 0)
 			return flatfile_authority_transaction_result::io_error;
 #endif
@@ -410,4 +500,31 @@ flatfile_authority_transaction_result flatfile_authority_transaction_commit_oper
 	return flatfile_atomic_remove(domains_directory(root), transaction_filename, false, error) ?
 		       flatfile_authority_transaction_result::ok :
 		       flatfile_authority_transaction_result::io_error;
+}
+catch (const std::bad_alloc &)
+{
+	errno = ENOMEM;
+	return flatfile_authority_transaction_result::io_error;
+}
+
+flatfile_authority_transaction_result flatfile_authority_transaction_commit_operations(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const std::vector<flatfile_authority_operation> &operations, std::string *error)
+{
+	return flatfile_authority_transaction_commit_operations_with_outcome(root, lock, operations,
+									     error, nullptr);
+}
+
+flatfile_authority_transaction_result flatfile_authority_transaction_commit_operations_with_outcome(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const std::vector<flatfile_authority_operation> &operations, std::string *error,
+	flatfile_authority_commit_outcome *outcome)
+{
+	if (outcome)
+		*outcome = flatfile_authority_commit_outcome::not_published;
+	for (const auto &operation : operations)
+		if (operation.store == flatfile_authority_store::economic_evidence)
+			return flatfile_authority_transaction_result::invalid;
+	return flatfile_accounting_storage::commit_with_outcome(root, lock, operations, error,
+								outcome);
 }

@@ -10,6 +10,8 @@
  */
 
 #include "core/prototypes.h"
+#include "combat/damage.h"
+#include "world/rested.h"
 #include "telemetry/telemetry_runtime.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
@@ -917,6 +919,11 @@ void display_gain(P_char ch, int gain, int type)
 		snprintf(buffer, MAX_STRING_LENGTH, "&+CEXP:&+G %d \r\n", gain);
 		send_to_char(buffer, ch);
 	}
+	else if (IS_SET(ch->specials.act2, PLR2_EXP) && type == EXP_WORLD_QUEST && gain > 0)
+	{
+		snprintf(buffer, MAX_STRING_LENGTH, "&+CQuest EXP:&+G %d \r\n", gain);
+		send_to_char(buffer, ch);
+	}
 }
 
 void update_exp_table()
@@ -1218,12 +1225,12 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 	{
 		;
 	}
-	else if (affected_by_spell(ch, TAG_WELLRESTED))
+	else if (has_active_rested_bonus(ch, TAG_WELLRESTED))
 	{
 		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_WELLRESTED;
 		XP *= 2;
 	}
-	else if (affected_by_spell(ch, TAG_RESTED))
+	else if (has_active_rested_bonus(ch, TAG_RESTED))
 	{
 		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_RESTED;
 		XP *= 1.5;
@@ -1574,7 +1581,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 			static_cast<std::int64_t>(before_exp), static_cast<std::int64_t>(after_exp),
 			static_cast<std::uint16_t>(GET_LEVEL(ch)), progression_modifier_flags,
 			TELEMETRY_QUALITY_NONE));
-	display_gain(ch, (int)XP_final, type);
+	display_gain(ch, type == EXP_WORLD_QUEST ? after_exp - before_exp : (int)XP_final, type);
 	if (GET_LEVEL(ch) >= MINLVLIMMORTAL)
 	{
 		return 0;

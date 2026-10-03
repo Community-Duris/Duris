@@ -48,7 +48,7 @@ class CurrencyTransactionContractTests(unittest.TestCase):
 
     def test_repository_commits_both_states_ledger_result_and_outbox(self):
         repository = (SRC / "critical_command_repository.c").read_text()
-        start = repository.index("bool execute_currency_state")
+        start = repository.index("bool write_currency_state")
         apply = repository.index("critical_apply_result critical_command_repository_apply")
         state = repository[start:apply]
         for token in (
@@ -69,7 +69,7 @@ class CurrencyTransactionContractTests(unittest.TestCase):
         )
         self.assertLess(bank_ensure, bank_lock)
         branch = repository[apply:]
-        currency = branch[branch.index("if (currency_command)") :]
+        currency = branch[branch.index("if (currency_command || accounted_bank)") :]
         commit = currency.index('execute(connection, "COMMIT")')
         self.assertLess(currency.index("insert_outbox"), commit)
         self.assertLess(currency.index("finish_inbox"), commit)
@@ -102,9 +102,11 @@ class CurrencyTransactionContractTests(unittest.TestCase):
         self.assertIn("currency_command_is_rebasable_wallet_reward", command)
         self.assertIn("currency_command_is_rebasable_bank_reward", command)
         self.assertIn("currency_command_is_rebasable_reward", transaction)
-        self.assertIn("currency_command_is_rebasable_bank_reward", transaction)
-        self.assertIn("!rebasable_reward &&", repository)
-        self.assertIn("currency_command_is_rebasable_reward", repository)
+        self.assertIn("currency_command_is_rebasable_wallet_reward(payload) ||", command)
+        self.assertIn("currency_command_is_rebasable_bank_reward(payload)", command)
+        self.assertIn("!rebase &&", command)
+        self.assertIn("currency_prepare_mutation", repository)
+        self.assertIn("currency_revision_policy::sql_legacy", repository)
 
     def test_checkpoint_handoff_captures_but_cannot_overwrite_currency(self):
         capture = (SRC / "player_snapshot_capture.c").read_text()
@@ -161,13 +163,39 @@ class CurrencyTransactionContractTests(unittest.TestCase):
             "GET_GOLD(pet) = wallet[2];",
             "GET_PLATINUM(pet) = wallet[3];",
         }
+        # These NPC vendor resets moved out of specs.mobile.c. Keep the
+        # exceptions to their exact statements rather than exempting the new
+        # area files (which may also contain player-facing procedures).
+        moved_npc_resets = {
+            "economy/shop.c": {
+                "GET_PLATINUM(keeper) = remaining / 1000;",
+                "GET_GOLD(keeper) = remaining / 100;",
+                "GET_SILVER(keeper) = remaining / 10;",
+                "GET_COPPER(keeper) = remaining % 10;",
+            },
+            "flatfile/flatfile_shopkeeper_materialize.c": {
+                "GET_PLATINUM(character) = remaining / 1000;",
+                "GET_GOLD(character) = remaining / 100;",
+                "GET_SILVER(character) = remaining / 10;",
+                "GET_COPPER(character) = remaining % 10;",
+            },
+            "specs/specs.clfhaven.c": {
+                "GET_PLATINUM(ch) = 0;", "GET_GOLD(ch) = 0;",
+                "GET_SILVER(ch) = 0;", "GET_COPPER(ch) = 0;",
+            },
+            "specs/specs.heavens.c": {"GET_PLATINUM(witch) = 0;"},
+        }
         violations = []
         for path in SRC.rglob("*.c"):
             if path.name in allowed:
                 continue
             relative = path.relative_to(SRC).as_posix()
+            remaining_npc_resets = set(moved_npc_resets.get(relative, ()))
             for number, line in enumerate(path.read_text(errors="replace").splitlines(), 1):
                 if line.lstrip().startswith("//"):
+                    continue
+                if line.strip() in remaining_npc_resets:
+                    remaining_npc_resets.remove(line.strip())
                     continue
                 if (
                     relative == "world/generated_npc_runtime.c"

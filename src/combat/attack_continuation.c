@@ -55,6 +55,7 @@ attack_continuation begin_attack_continuation(P_char actor, P_char target, P_obj
 	continuation.target_runtime_id = target->runtime_id;
 	continuation.room = actor->in_room;
 	continuation.height = actor->specials.z_cord;
+	continuation.target_height = target->specials.z_cord;
 	continuation.weapon_slot = weapon_slot >= 0 ? weapon_slot :
 						      locate_weapon_slot(actor, weapon);
 	if (weapon)
@@ -79,7 +80,7 @@ check_attack_continuation(const attack_continuation &continuation) noexcept
 
 	if (actor->in_room != continuation.room || target->in_room != continuation.room ||
 	    actor->specials.z_cord != continuation.height ||
-	    target->specials.z_cord != continuation.height)
+	    target->specials.z_cord != continuation.target_height)
 		return rejected(attack_continuation_outcome::relocated);
 
 	if (continuation.weapon_slot < -1 || continuation.weapon_slot >= MAX_WEAR)

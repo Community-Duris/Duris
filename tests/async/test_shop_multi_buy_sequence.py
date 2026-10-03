@@ -45,6 +45,12 @@ assert "strtol" in COUNT
 assert "parsed < 1 || parsed > 50" in COUNT
 assert "*end" in COUNT
 assert "nothing was purchased" in BUY
+assert BUY.index("shop_purchase_parse(arg, request)") < BUY.index("get_obj_in_list_vis(")
+assert BUY.count("request.quantity") == 1
+assert "request.batch" in BUY
+assert "!sequence.batch || sequence.completed == 0" in COMPLETE
+assert "shop_purchase_stop_reason" in COMPLETE
+assert "nullptr, true" in COMPLETE
 assert "delivered to your inventory" not in BUY
 
 # Payment commits before a held grant only after cloning/capacity checks, and
@@ -73,9 +79,9 @@ assert "shop_trade_container_accepts(ch, selected, destination)" in SUBMIT
 assert "++sequence.completed" in COMPLETE and "--sequence.remaining" in COMPLETE
 assert "the remaining %d were not charged" in SHOP
 
-# Starter/pre-entry grants remain callback-free; the callback API is limited to
-# ordinary player grants whose actor is in normal command processing.
+# Shop purchases use the ordinary player API. Starter grant admission is
+# independently qualified through the pre-entry lifecycle tests.
 assert "item_creation_grant_submit_to_player_with_completion" in MOVEMENT_H
-assert "before_entry_with_completion" not in MOVEMENT_H
+assert "before_entry_with_completion" not in SUBMIT
 
 print("completion-driven multi-buy contracts passed")

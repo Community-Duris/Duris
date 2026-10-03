@@ -13,7 +13,7 @@ nanny = (SRC / "nanny.c").read_text()
 ws = (SRC / "ws_handlers.c").read_text()
 skills = (SRC / "skills.c").read_text()
 specs = (SRC / "specializations.c").read_text()
-start = (SRC / "actwiz.c").read_text()
+start = (SRC / "wiz_newchar.c").read_text()
 defines = (SRC / "defines.h").read_text()
 
 

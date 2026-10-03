@@ -62,7 +62,7 @@ assert contains(identity, "corpse->str_mask |= STRUNG_DESC3;")
 
 outer_columns = ("name", "weight", "value0", "value1", "value2", "value3", "value4", "value5", "value7")
 for column in outer_columns:
-    assert contains(migration, f"table_name = 'corpses' AND column_name = '{column}'")
+    assert contains(migration, f"table_name = 'corpses' AND column_name = '{column}'", literal=True)
     assert contains(bootstrap, f"`{column}`")
     assert contains(combined, column)
 
@@ -82,10 +82,10 @@ assert contains(loader, "row[CORPSE_COL_VALUE7]")
 assert contains(loader, "cur_corpse->value[CORPSE_SAVEID] = save_id;")
 
 # Legacy repair is intentionally narrow and does not invent unknown death-time state.
-assert contains(migration, "TRIM(short_descr) REGEXP '^[0-9]+$'")
-assert contains(migration, "LOWER(TRIM(description)) = LOWER(CONCAT('the corpse of ', player_name))")
+assert contains(migration, "TRIM(short_descr) REGEXP '^[0-9]+$'", literal=True)
+assert contains(migration, "LOWER(TRIM(description)) = LOWER(CONCAT('the corpse of ', player_name))", literal=True)
 assert contains(migration, "WHERE value1 IS NULL")
-assert not contains(migration, "SET value2 =")
-assert not contains(migration, "SET value4 =")
+assert not contains(migration, "SET value2 =", literal=True)
+assert not contains(migration, "SET value4 =", literal=True)
 
 print("player corpse persistence contracts passed")

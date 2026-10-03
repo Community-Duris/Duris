@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "combat/defense_resolution.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -692,4 +693,202 @@ int reliance_pegasus(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 	}
 	return (FALSE);
+}
+
+/* Jotunheim mobile procedures */
+
+int jotun_thrym(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	P_char vict;
+	struct affected_type af;
+
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (cmd)
+		return FALSE;
+
+	if (ch && IS_FIGHTING(ch))
+		if (!number(0, 2))
+		{
+			vict = GET_OPPONENT(ch);
+			if (!vict || check_freedom_of_movement(vict, true))
+				return FALSE;
+
+			act("&+BA blue bolt of energy streaks from&n $N's&n&+B hands, encasing&n $n &n&+Bin a solid block of ice!",
+			    0, vict, 0, ch, TO_NOTVICT);
+			act("&+BA blue bolt of energy streaks from&n $n's&n&+B hands, encasing you in a solid block of ice!",
+			    0, ch, 0, vict, TO_VICT);
+			act("&+BA blue bolt of energy streaks from your hands, encasing&n $N &+Bin a solid block of ice!",
+			    0, ch, 0, vict, TO_CHAR);
+
+			/*
+			 * Shut em down!
+			 */
+
+			StopCasting(vict);
+			if (IS_FIGHTING(vict))
+				stop_fighting(vict);
+			bzero(&af, sizeof(af));
+			af.type = SPELL_MAJOR_PARALYSIS;
+			af.flags = AFFTYPE_SHORT;
+			af.duration = 120 * WAIT_SEC;
+			af.bitvector2 = AFF2_MAJOR_PARALYSIS;
+			affect_to_char(vict, &af);
+			CharWait(vict, af.duration);
+
+			return TRUE;
+		}
+	return FALSE;
+}
+
+int jotun_utgard_loki(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	P_char vict, next;
+
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (cmd)
+		return FALSE;
+
+	if (IS_FIGHTING(ch) && !number(0, 2))
+	{
+		act("$n &N&+Lcalls forth visions of immense horror!", 0, ch, 0, 0, TO_ROOM);
+		for (vict = world[ch->in_room].people; vict; vict = next)
+		{
+			next = vict->next_in_room;
+			if (!IS_GIANT(vict) && (vict != ch))
+			{
+				if (GET_LEVEL(vict) < 19)
+				{ /*
+				   * 20 and below, see ya...
+				   */
+					do_flee(vict, 0, 2);
+					act("&+LThe fear of it all overwhelms you!", 0, vict, 0, 0,
+					    TO_VICT);
+				}
+				if (GET_LEVEL(vict) < 31) /*
+				                           * 21-30, slight chance
+				                           */
+					if (!NewSaves(vict, SAVING_FEAR, -2) && !fear_check(vict))
+					{
+						do_flee(vict, 0, 2);
+						act("&+LThe fear of it all overwhelms you!", 0,
+						    vict, 0, 0, TO_VICT);
+					}
+				if (GET_LEVEL(vict) <= MAXLVLMORTAL) /*
+				                                      * 31-56, good chance of staying
+				                                      */
+					if (!NewSaves(vict, SAVING_FEAR, 0) && !fear_check(vict))
+					{
+						do_flee(vict, 0, 1);
+						act("&+LThe fear of it all overwhelms you!", 0,
+						    vict, 0, 0, TO_VICT);
+					}
+				if (ch->in_room != vict->in_room)
+					if (IS_FIGHTING(vict))
+						stop_fighting(vict);
+			}
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+int jotun_balor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	P_char vict, next;
+	int dam;
+	struct affected_type af;
+
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (cmd == CMD_DEATH)
+	{ /*
+	   * explode upon death
+	   */
+		act("$n &N&+rEXPLODES in a mass of fire and energy!", 0, ch, 0, 0, TO_ROOM);
+		for (vict = world[ch->in_room].people; vict; vict = next)
+		{
+			next = vict->next_in_room;
+			if ((ch == vict) || IS_TRUSTED(vict))
+				continue;
+
+			if (!IS_AFFECTED(vict, AFF_BLIND) && IS_AFFECTED(ch, AFF_INFRAVISION))
+			{
+				bzero(&af, sizeof(af));
+				if (vict->in_room != NOWHERE)
+					send_to_char("Aaarrrggghhh!!  The heat blinds you!!\n", ch);
+				blind(ch, vict, 30 * WAIT_SEC);
+			}
+
+			if (IS_AFFECTED(vict, AFF_PROT_FIRE))
+				dam = 150; /*
+				            * Allow a slight help, but not just fire
+				            */
+			else
+				dam = 250; /*
+				            * so skip all the elemental type checks
+				            */
+			if ((GET_HIT(vict) - dam) < -10)
+			{
+				act("Your wounds prove too much for you!", FALSE, ch, 0, 0,
+				    TO_CHAR);
+				act("$n's wounds prove too much for $m!", TRUE, ch, 0, 0, TO_ROOM);
+				logit(LOG_DEATH, "%s died from jotun_balor() explosion in room %d.",
+				      GET_NAME(vict), world[vict->in_room].number);
+				die(vict, ch);
+			}
+			else
+				GET_HIT(vict) -= dam;
+		}
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int jotun_mimer(P_char ch, P_char pl, int cmd, char * /*arg*/)
+{
+	char Gbuf1[MAX_STRING_LENGTH];
+
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch)
+		return FALSE;
+
+	if ((ch->in_room != real_room(GET_BIRTHPLACE(ch))) || (ch->in_room == NOWHERE))
+	{
+		if (!IS_AWAKE(ch) || IS_FIGHTING(ch))
+			return FALSE;
+		act("$N looks around frantically, then vanishes in a small puff of smoke", FALSE,
+		    ch, 0, 0, TO_ROOM);
+		char_from_room(ch);
+		char_to_room(ch, real_room(GET_BIRTHPLACE(ch)), -1);
+		return FALSE;
+	}
+	if (pl && cmd)
+	{
+		if (cmd == CMD_WEST)
+		{
+			if (GET_LEVEL(pl) < 51 && !IS_GIANT(pl))
+				mobsay(ch, "None but giants may pass through to my well.");
+			else
+			{
+				snprintf(Gbuf1, MAX_STRING_LENGTH,
+					 "$N bows before you, saying 'Right this way, My %s'",
+					 (GET_SEX(pl) == SEX_FEMALE) ? "Lady" : "Lord");
+				act(Gbuf1, FALSE, pl, 0, ch, TO_CHAR);
+				snprintf(Gbuf1, MAX_STRING_LENGTH,
+					 "$N bows before $n, saying 'Right this way, My %s'",
+					 (GET_SEX(pl) == SEX_FEMALE) ? "Lady" : "Lord");
+				act(Gbuf1, FALSE, pl, 0, ch, TO_ROOM);
+				return FALSE;
+			}
+			return TRUE;
+		}
+	}
+	return FALSE;
 }

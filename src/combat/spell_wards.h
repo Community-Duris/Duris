@@ -5,6 +5,9 @@
 
 #include <stddef.h>
 
+// Persistent capacity is measured in millionths of one point of damage.
+constexpr int64_t SPELL_WARD_CAPACITY_SCALE = 1000000;
+
 enum spell_ward_source_type
 {
 	SPELL_WARD_SOURCE_NONE = 0,
@@ -32,19 +35,17 @@ void spell_ward_equipment_sync(P_char ch);
 void spell_ward_cancel_events(P_char ch, struct affected_type *af);
 
 /* Apply or refresh a finite cast-sourced ward. */
-struct affected_type *spell_ward_apply_cast(P_char victim,
-						   const struct affected_type *prototype,
-						   int duration_ticks);
+struct affected_type *spell_ward_apply_cast(P_char victim, const struct affected_type *prototype,
+					    int duration_ticks);
 
 /* Called by event_short_affect for managed wards. */
 void spell_ward_expire(P_char ch, struct affected_type *af);
 
 /* Consume at most one eligible ward; overflow is returned to spell_damage. */
 spell_ward_absorb_result spell_ward_absorb(P_char attacker, P_char victim, double damage,
-							 unsigned int flags);
+					   unsigned int flags);
 
-/* NPC spell selection and explicit object callbacks use this distinction. */
-bool spell_ward_has_available(P_char victim, int spell);
+/* Automatic object callbacks cannot bypass an equipment deadline. */
 bool spell_ward_item_callback_allowed(P_char victim, int spell);
 
 /* Human-readable status for score/GMCP and tests. */

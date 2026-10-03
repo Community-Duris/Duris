@@ -15,14 +15,16 @@
  * carried by the locker character after LockerToPFile transitions.
  */
 
+#include "net/network_wakeup.h"
 #include "core/prototypes.h"
 #include "sql/sql_thread_init.h"
 #include "core/structs.h"
 #include "core/utils.h"
 #include "core/utility.h"
 #include "sql/sql.h"
+#include "sql/sql_locker.h"
 #include "sql/sql_pool.h"
-#include "sql/sql_player.h"
+#include "sql/sql_player_identity.h"
 #include "sql/item_extra_descr_codec.h"
 #include "item/storage_lockers.h"
 #include "persistence/locker_async.h"
@@ -169,11 +171,12 @@ int locker_async_player_obj_locked(P_char ch)
 	pid = GET_PID(ch);
 	if (pid <= 0)
 		return 0;
-	/* Only lock while DIRTY (waiting for / during the main-thread snapshot
-	 * start). Once INFLIGHT the SQL payload is sealed; unlock the player. */
+	/* Keep object commands fenced until the worker's sealed snapshot commits.
+	 * An in-flight snapshot from before a custody transfer could otherwise
+	 * delete the newly committed locker row when it finishes later. */
 	for (i = 0; i < LOCKER_ASYNC_SLOTS; i++)
 	{
-		if (g_slots[i].state == LCHK_DIRTY && g_slots[i].user_pid == pid)
+		if (g_slots[i].state != LCHK_FREE && g_slots[i].user_pid == pid)
 			return 1;
 	}
 	return 0;
@@ -231,6 +234,7 @@ static void result_push_locked(const struct locker_async_result *r)
 		{
 			g_results[i] = *r;
 			g_results[i].used = 1;
+			network_wakeup_notify();
 			return;
 		}
 	}
@@ -690,9 +694,8 @@ static int repair_failed_connection(MYSQL **conn_io)
 	 * example, a dropped socket or a failed statement in a batch).  Discard
 	 * it rather than returning it to the shared worker pool. */
 	replacement = sql_pool_replace_connection(conn);
-	if (replacement)
-		*conn_io = replacement;
-	else
+	*conn_io = replacement;
+	if (!replacement)
 		logit(LOG_FILE, "locker_async: failed to replace poisoned persistence connection");
 	return 0;
 }

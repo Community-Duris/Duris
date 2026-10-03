@@ -10,6 +10,7 @@ import hmac
 import json
 import os
 import re
+import selectors
 import shutil
 import stat
 import subprocess
@@ -25,6 +26,7 @@ DEFAULT_MANIFEST = ROOT / "migrations" / "migration_manifest.json"
 MAX_MANIFEST_BYTES = 1024 * 1024
 MAX_MIGRATION_BYTES = 8 * 1024 * 1024
 MAX_PRODUCTION_BACKUP_AGE_SECONDS = 2 * 60 * 60
+MYSQL_COMMAND_TIMEOUT_SECONDS = 120
 MANIFEST_FIELDS = {"manifest_version", "runner_version", "baseline", "migrations"}
 BASELINE_FIELDS = {
     "id", "required_table_count", "required_table_fingerprint", "required_tables",
@@ -236,6 +238,29 @@ def history_checksum(rows: list[AppliedMigration]) -> str:
     return digest.hexdigest()
 
 
+def runtime_history_sql(max_rows: int) -> str:
+    """Return bounded hex records using the exact history-checksum framing.
+
+    SQL serializes lengths as eight-byte big-endian integers and values as UTF-8.
+    Readers hash decoded records in sequence order; one extra row detects a
+    history that extends beyond the supported manifest.
+    """
+    if type(max_rows) is not int or not 1 <= max_rows <= 10000:
+        raise MigrationContractError("invalid runtime history row bound")
+    fields = (
+        "migration_id", "CAST(sequence_number AS CHAR)", "description",
+        "LOWER(HEX(apply_checksum))", "LOWER(HEX(verify_checksum))",
+        "compatibility", "CAST(runner_version AS CHAR)",
+    )
+    parts = []
+    for field in fields:
+        encoded = f"CONVERT({field} USING utf8mb4)"
+        parts.extend((f"UNHEX(LPAD(HEX(OCTET_LENGTH({encoded})),16,'0'))", encoded))
+    return ("SELECT HEX(CONCAT(" + ",".join(parts) +
+            ")) FROM mud_schema_history ORDER BY sequence_number "
+            f"LIMIT {max_rows}")
+
+
 def validate_history_state(rows: list[AppliedMigration], applied_count: int,
                            expected_checksum: str) -> None:
     if type(applied_count) is not int or applied_count != len(rows) or \
@@ -279,11 +304,19 @@ def run_pending(manifest: Manifest, executor: Executor) -> list[str]:
         for migration in pending:
             try:
                 executor.apply(migration)
+            except MigrationContractError as error:
+                raise MigrationContractError(
+                    f"migration {migration.migration_id} apply failed: {error}") from error
+            try:
                 executor.verify(migration)
+            except MigrationContractError as error:
+                raise MigrationContractError(
+                    f"migration {migration.migration_id} verify failed: {error}") from error
+            try:
                 executor.record(migration, manifest.runner_version)
             except MigrationContractError as error:
                 raise MigrationContractError(
-                    f"migration {migration.migration_id} failed: {error}") from error
+                    f"migration {migration.migration_id} history record failed: {error}") from error
             completed.append(migration.migration_id)
         return completed
     finally:
@@ -347,24 +380,104 @@ class MysqlExecutor:
                     "database client cannot verify the remote server identity")
             connection = ["--protocol=tcp", "-h", host, "-P",
                           os.environ.get("DB_PORT", "3306"), *tls]
-        self.command = ["mysql", *connection, "-u", os.environ["DB_USER"],
-                        "-N", "-B", database]
+        self.command = ["mysql", "--no-defaults", *connection, "-u", os.environ["DB_USER"],
+                        "-N", "-B", "--raw", "--unbuffered", "--skip-reconnect",
+                        "--connect-timeout=10", "--default-character-set=utf8mb4", database]
+        self._client = None
+        self._session_closed = False
 
     def sql(self, statement: str, input_payload: bytes | None = None) -> str:
-        environment = dict(os.environ)
-        environment["MYSQL_PWD"] = os.environ["DB_PASSWD"]
-        result = subprocess.run(self.command + (["-e", statement] if input_payload is None
-                                                else []), input=input_payload,
-                                capture_output=True, env=environment, check=False)
-        if result.returncode:
-            detail = result.stderr.decode(errors="replace").strip().splitlines()
-            raise MigrationContractError(
-                "database migration command failed" +
-                (f": {detail[-1]}" if detail else ""))
-        return result.stdout.decode().strip()
+        """Execute on the session that owns the lock, including receipt commits.
+
+        mysql's unbuffered batch mode flushes each result. A nonce row delimits
+        one bounded request while the client remains connected for the next one.
+        Any timeout, SQL error, or disconnect closes this executor permanently;
+        reconnecting could run a migration after losing the advisory lock.
+        """
+        if self._session_closed:
+            raise MigrationContractError("migration SQL session is closed")
+        payload = input_payload if input_payload is not None else statement.encode("utf-8")
+        if len(payload) > MAX_MIGRATION_BYTES:
+            raise MigrationContractError("migration SQL request exceeds limit")
+        marker = ("duris_migration_end_" + os.urandom(16).hex()).encode("ascii")
+        payload += b"\n;\nSELECT '" + marker + b"';\n"
+        try:
+            if self._client is None:
+                environment = dict(os.environ)
+                environment["MYSQL_PWD"] = os.environ["DB_PASSWD"]
+                self._client = subprocess.Popen(
+                    self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL, env=environment, bufsize=0)
+                os.set_blocking(self._client.stdin.fileno(), False)
+                os.set_blocking(self._client.stdout.fileno(), False)
+            if self._client.poll() is not None:
+                raise MigrationContractError("migration SQL session exited")
+            output = bytearray()
+            sent = 0
+            deadline = time.monotonic() + MYSQL_COMMAND_TIMEOUT_SECONDS
+            with selectors.DefaultSelector() as selector:
+                selector.register(self._client.stdin, selectors.EVENT_WRITE)
+                selector.register(self._client.stdout, selectors.EVENT_READ)
+                while True:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise MigrationContractError("migration SQL command timed out")
+                    events = selector.select(remaining)
+                    if not events:
+                        raise MigrationContractError("migration SQL command timed out")
+                    for key, _ in events:
+                        if key.fileobj is self._client.stdin:
+                            try:
+                                count = os.write(key.fd, payload[sent:sent + 65536])
+                            except BlockingIOError:
+                                continue
+                            if not count:
+                                raise MigrationContractError("migration SQL session stopped reading")
+                            sent += count
+                            if sent == len(payload):
+                                selector.unregister(self._client.stdin)
+                        else:
+                            try:
+                                chunk = os.read(key.fd, 65536)
+                            except BlockingIOError:
+                                continue
+                            if not chunk:
+                                raise MigrationContractError("migration SQL command failed or session lost")
+                            output.extend(chunk)
+                            if len(output) > MAX_MIGRATION_BYTES:
+                                raise MigrationContractError("migration SQL result exceeds limit")
+                            terminator = marker + b"\n"
+                            if output == terminator or output.endswith(b"\n" + terminator):
+                                if sent != len(payload):
+                                    raise MigrationContractError("migration SQL result arrived before request completed")
+                                return output[:-len(terminator)].decode("utf-8").strip()
+        except BaseException as error:
+            self._close_session()
+            if isinstance(error, MigrationContractError):
+                raise
+            if isinstance(error, (OSError, UnicodeError, MemoryError)):
+                raise MigrationContractError("migration SQL transport failed") from error
+            raise
+
+    def _close_session(self) -> None:
+        self._session_closed = True
+        client, self._client = self._client, None
+        if client is None:
+            return
+        if client.poll() is None:
+            client.terminate()
+            try:
+                client.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                client.kill()
+                client.wait(timeout=5)
+        for stream in (client.stdin, client.stdout):
+            if stream is not None:
+                stream.close()
 
     def acquire_lock(self) -> None:
         if self.sql("SELECT GET_LOCK('duris_immutable_migration',5);") != "1":
+            self._close_session()
             raise MigrationContractError("migration lock unavailable")
 
     def release_lock(self) -> None:
@@ -372,6 +485,8 @@ class MysqlExecutor:
             self.sql("SELECT RELEASE_LOCK('duris_immutable_migration');")
         except MigrationContractError:
             pass
+        finally:
+            self._close_session()
 
     def require_quiescent(self) -> None:
         connections = self.sql(
@@ -463,9 +578,11 @@ class MysqlExecutor:
                  "UPDATE mud_schema_migration_state "
                  f"SET applied_count={migration.sequence},history_checksum=UNHEX('{new_checksum}') "
                  f"WHERE state_id=1 AND applied_count={len(existing)} AND "
-                 f"history_checksum=UNHEX('{old_checksum}'); SELECT ROW_COUNT(); COMMIT;")
+                 f"history_checksum=UNHEX('{old_checksum}'); SELECT ROW_COUNT();")
         if result.splitlines()[-1:] != ["1"]:
+            self.sql("ROLLBACK;")
             raise MigrationContractError("migration history head changed during record")
+        self.sql("COMMIT;")
 
     def adopt(self, kind: str) -> None:
         tables = self.live_tables()
@@ -492,6 +609,7 @@ def main() -> int:
     parser.add_argument("command", choices=("inspect", "adopt", "run"))
     parser.add_argument("--kind", choices=("fresh_bootstrap", "verified_legacy_adoption"))
     arguments = parser.parse_args()
+    executor = None
     try:
         manifest = load_manifest(arguments.manifest)
         if arguments.command == "inspect":
@@ -525,6 +643,9 @@ def main() -> int:
     except MigrationContractError as error:
         print(f"migration runner blocked: {error}", file=sys.stderr)
         return 2
+    finally:
+        if executor is not None:
+            executor._close_session()
 
 
 if __name__ == "__main__":

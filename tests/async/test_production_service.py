@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import subprocess
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -39,6 +40,13 @@ class ProductionServiceTest(unittest.TestCase):
         ):
             self.assertIn(token, self.template)
 
+    def test_watchdog_startup_failure_stops_automatic_boot_retries(self) -> None:
+        self.assertIn("RestartPreventExitStatus=78", self.template)
+        self.assertIn("python3 scripts/game_loop_watchdog.py --check-config || exit 78", self.cycle)
+        self.assertIn('python3 scripts/game_loop_watchdog.py -- "$RUNTIME_BINARY"', self.cycle)
+        self.assertIn("if (( RESULT == 78 )); then", self.cycle)
+        self.assertIn("refusing a boot loop", self.cycle)
+
     def test_service_uses_a_dedicated_account_and_baseline_hardening(self) -> None:
         for token in (
             "User=@DURIS_USER@",
@@ -66,25 +74,28 @@ class ProductionServiceTest(unittest.TestCase):
         )
 
     def test_rendered_unit_is_valid(self) -> None:
-        rendered = subprocess.run(
-            [
-                str(ROOT / "scripts/install-production-service.sh"),
-                "--render",
-                "--user",
-                subprocess.check_output(["id", "-un"], text=True).strip(),
-            ],
-            cwd=ROOT,
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout
-        self.assertNotIn("@DURIS_", rendered)
-        self.assertIn(f"WorkingDirectory={ROOT}", rendered)
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".service") as unit:
-            unit.write(rendered)
-            unit.flush()
+        # Render against a disposable deployment path, including when the
+        # development worktree's path contains spaces unsupported by systemd.
+        with tempfile.TemporaryDirectory(prefix="duris-production-unit-") as directory:
+            fixture = Path(directory)
+            (fixture / "scripts").mkdir()
+            (fixture / "deploy/systemd").mkdir(parents=True)
+            for relative in ("scripts/cycle_mud.sh", "deploy/systemd/duris-mud-production.service.in"):
+                shutil.copy2(ROOT / relative, fixture / relative)
+            rendered = subprocess.run(
+                [
+                    str(ROOT / "scripts/install-production-service.sh"),
+                    "--render", "--root", str(fixture), "--user",
+                    subprocess.check_output(["id", "-un"], text=True).strip(),
+                ],
+                cwd=ROOT, check=True, capture_output=True, text=True,
+            ).stdout
+            self.assertNotIn("@DURIS_", rendered)
+            self.assertIn(f"WorkingDirectory={fixture}", rendered)
+            unit = fixture / "duris-mud-production.service"
+            unit.write_text(rendered)
             subprocess.run(
-                ["systemd-analyze", "verify", unit.name],
+                ["systemd-analyze", "verify", str(unit)],
                 check=True,
                 capture_output=True,
                 text=True,

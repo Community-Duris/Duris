@@ -51,6 +51,8 @@ bool currency_transaction_player_busy(P_char character);
 bool currency_transaction_coin_item_busy(uint64_t item_uid);
 bool currency_transaction_coin_wallet(P_char character, int64_t value_delta,
 				      coin_transfer_endpoint *endpoint);
+bool currency_transaction_coin_wallet_exact(P_char character, uint8_t denomination, int32_t amount,
+					    bool debit, coin_transfer_endpoint *endpoint);
 bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload &payload,
 				      coin_completion_fn completion, const void *context,
 				      size_t context_size);
@@ -72,10 +74,18 @@ bool currency_transaction_submit_identified(
 	currency_reason_type reason, int64_t reason_id, critical_source_site source_site,
 	critical_deadline_class deadline_class, currency_completion_fn completion,
 	const void *context, size_t context_size);
+bool currency_transaction_submit_wallet_value_identified(
+	P_char character, const critical_operation_id &operation_id, int64_t value_delta,
+	currency_reason_type reason, int64_t reason_id, critical_source_site source_site,
+	critical_deadline_class deadline_class, currency_completion_fn completion,
+	const void *context, size_t context_size);
 // Prepare an immutable locker payment without submitting it. A durable receipt
-// must store this exact command before submit_prepared is called.
+// must store this exact command before submit_prepared is called. Admission is
+// checked before that durable boundary; unsupported active-mode payments refuse.
 bool currency_transaction_prepare_identify(P_char character, int64_t cost,
 					   critical_command *command);
+// New prepared submissions in active mode must already contain typed intent.
+// Producer-written timestamps never authorize a schema-1 admission bypass.
 bool currency_transaction_submit_prepared(P_char character, const critical_command &command,
 					  currency_completion_fn completion, const void *context,
 					  size_t context_size);
@@ -98,6 +108,9 @@ bool currency_transaction_submit_bank_payment(P_char character, int64_t value,
 					      currency_completion_fn completion,
 					      const void *context, size_t context_size);
 void currency_transaction_handle_completions(const critical_completion *completions, size_t count);
+// Called only from the coordinator's validated journal-replay observer under
+// its mutex. Must not call coordinator APIs or issue a replacement operation.
+bool currency_transaction_restore_replayed_command(const critical_command &command);
 void currency_transaction_player_ready(P_char character);
 currency_transaction_health currency_transaction_health_copy(void);
 void currency_transaction_reset_for_tests(void);

@@ -4,6 +4,7 @@
 #include "economy/boon_shop_command.h"
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_player_domain_repository.h"
+#include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_store.h"
 
 #include <algorithm>
@@ -13,6 +14,7 @@
 #include <climits>
 #include <cmath>
 #include <cstring>
+#include <filesystem>
 #include <limits>
 #include <new>
 #include <openssl/crypto.h>
@@ -23,6 +25,7 @@
 namespace
 {
 constexpr std::array<uint8_t, 8> catalog_magic = { 'D', 'U', 'R', 'B', 'O', 'O', 'N', 0 };
+static_assert(BOON_REWARD_RESULT_BYTES <= CRITICAL_COMPLETION_RESULT_MAX_BYTES);
 constexpr uint32_t catalog_version = 3;
 constexpr uint32_t catalog_reward_event_version = 2;
 constexpr uint32_t catalog_legacy_version = 1;
@@ -1081,6 +1084,8 @@ critical_apply_result flatfile_boon_repository_apply(const std::string &root,
 		if (critical_operation_id_equal(operation.operation_id, command.operation_id))
 			return { critical_apply_outcome::terminal_failure, catalog.revision,
 				 EEXIST };
+	if (const auto gate = flatfile_economic_legacy_domain_gate(root, lock, &error))
+		return { critical_apply_outcome::retryable_failure, 0, gate };
 	if (catalog.operations.size() >= operation_maximum ||
 	    catalog.revision == std::numeric_limits<uint64_t>::max())
 		return { critical_apply_outcome::terminal_failure, catalog.revision, ENOSPC };
@@ -1292,6 +1297,8 @@ critical_apply_result flatfile_boon_shop_repository_apply(const std::string &roo
 		if (critical_operation_id_equal(operation.operation_id, command.operation_id))
 			return { critical_apply_outcome::terminal_failure, catalog.revision,
 				 EEXIST };
+	if (const auto gate = flatfile_economic_legacy_domain_gate(root, lock, &error))
+		return { critical_apply_outcome::retryable_failure, 0, gate };
 	if (catalog.shop_operations.size() >= operation_maximum ||
 	    catalog.revision == std::numeric_limits<uint64_t>::max())
 		return { critical_apply_outcome::terminal_failure, catalog.revision, ENOSPC };

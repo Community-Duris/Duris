@@ -64,7 +64,7 @@
 #include <type_traits>
 #else
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_transaction.h"
 
 #include <mysqld_error.h>
 #endif

@@ -19,11 +19,14 @@
 #include <string.h>
 #include <time.h>
 #include "combat/damage.h"
+#include "combat/death_messages.h"
 #include "combat/guard.h"
 #include "combat/justice.h"
 #include "combat/training_dummy.h"
 #include "item/objmisc.h"
+#include "item/item_command_policy.h"
 #include "item/item_movement_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 #include "magic/spells.h"
 #include "world/weather.h"
 /*
@@ -107,7 +110,17 @@ static void retire_other_summoned_items(P_char actor, uint64_t keep_uid,
 					     summoned_book_matches(object, actor) :
 					     summoned_totem_matches(object, actor);
 		if (object->obj_uid != keep_uid && matches)
-			extract_obj(object);
+		{
+			if (economic_gameplay_authority::active() &&
+			    item_command_uses_durable_ownership(object))
+			{
+				logit(LOG_FILE,
+				      "summoned item retirement withheld without item custody (uid=%llu)",
+				      (unsigned long long)object->obj_uid);
+			}
+			else
+				extract_obj(object);
+		}
 		object = next;
 	}
 }
@@ -202,9 +215,9 @@ static bool submit_summoned_replacement(P_char actor, P_obj object, summoned_rep
 		static_cast<uint32_t>(GET_PID(actor)),
 		static_cast<uint8_t>(kind),
 	};
-	if (item_creation_grant_submit_to_player_with_completion(actor, object, actor,
-								 summoned_replacement_completed,
-								 &context, sizeof(context)))
+	if (item_creation_grant_submit_to_player_with_completion(
+		    actor, object, actor, summoned_replacement_completed, &context, sizeof(context),
+		    NULL, economic_source_kind::world_generation))
 		return true;
 
 	extract_obj(object, FALSE);
@@ -2016,6 +2029,13 @@ void do_OLD_bandage(P_char ch, char *arg, int /*cmd*/)
 
 void event_summon_book(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		send_to_char(
+			"The spellbook cannot be summoned while item accounting is active.\r\n",
+			ch);
+		return;
+	}
 	P_obj book;
 	char bookname[512];
 	char namebuf[512];
@@ -2040,12 +2060,25 @@ void event_summon_book(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*dat
 
 void do_summon_book(P_char ch, char * /*arg*/, int /*cmd*/)
 {
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		send_to_char(
+			"The spellbook cannot be summoned while item accounting is active.\r\n",
+			ch);
+		return;
+	}
 	send_to_char("You utter a magical formula summoning your spellbook..\r\n", ch);
 	add_event(event_summon_book, PULSE_VIOLENCE, ch, 0, 0, 0, 0, 0);
 }
 
 void event_summon_totem(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		send_to_char("The totem cannot be summoned while item accounting is active.\r\n",
+			     ch);
+		return;
+	}
 	P_obj totem;
 	char totemname[512];
 	char namebuf[512];
@@ -2093,6 +2126,12 @@ void event_summon_totem(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*da
 
 void do_summon_totem(P_char ch, char * /*arg*/, int /*cmd*/)
 {
+	if (economic_gameplay_authority::active() && IS_PC(ch))
+	{
+		send_to_char("The totem cannot be summoned while item accounting is active.\r\n",
+			     ch);
+		return;
+	}
 	send_to_char(
 		"You thrust your arms skyward, uttering an incantation to &+GMaglubiyet&n.\r\n",
 		ch);
@@ -2743,6 +2782,17 @@ void do_ogre_roar(P_char ch, char *argument, int /*cmd*/)
 
 			return;
 		}
+}
+
+bool isCarved(P_obj corpse)
+{
+	int i;
+
+	for (i = 0; i < numCarvables; i++)
+		if (corpse->value[1] & carve_part_flag[i])
+			return TRUE;
+
+	return FALSE;
 }
 
 /* Krov: carving procedure. checks in value[3] of a corpse which body

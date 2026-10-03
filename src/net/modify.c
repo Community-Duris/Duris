@@ -23,8 +23,9 @@
 #include "core/mm.h"
 #include "ships/ships.h"
 #include "magic/spells.h"
+#include "economy/economic_gameplay_authority.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_player_identity.h"
 
 /*
    external variables
@@ -1474,6 +1475,13 @@ int mob_do_rename_hook(P_char npc, P_char ch, int cmd, char *arg)
 		if (!CAN_SEE(npc, ch))
 		{
 			mobsay(npc, "How may I be of help if I cannot see you?");
+			return TRUE;
+		}
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char(
+				"Paid renaming is unavailable while active accounting is enabled.\r\n",
+				ch);
 			return TRUE;
 		}
 

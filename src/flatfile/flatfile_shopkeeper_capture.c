@@ -5,6 +5,7 @@
 #include "core/structs.h"
 #include "core/utils.h"
 
+#include <limits>
 #include <new>
 #include <unordered_set>
 #include <utility>
@@ -13,16 +14,20 @@ extern P_index mob_index;
 extern P_room world;
 extern int top_of_mobt;
 extern int top_of_world;
+extern struct shop_data *shop_index;
+extern int number_of_shops;
 
 player_snapshot_capture_result flatfile_shopkeeper_capture(P_char shopkeeper, uint32_t shop_id,
 							   uint64_t revision, int64_t saved_at,
 							   flatfile_shopkeeper_record *record_out)
 {
-	if (!shopkeeper || !record_out || IS_PC(shopkeeper) || !revision || saved_at < 0)
+	if (!shopkeeper || !record_out || IS_PC(shopkeeper) || !revision || saved_at < 0 ||
+	    !shop_index || number_of_shops < 0 || shop_id >= static_cast<uint32_t>(number_of_shops))
 		return player_snapshot_capture_result::invalid_identity;
 	const int mob_rnum = GET_RNUM(shopkeeper);
-	if (mob_rnum < 0 || mob_rnum > top_of_mobt || !IS_SHOPKEEPER(shopkeeper) ||
-	    shopkeeper->in_room <= NOWHERE || shopkeeper->in_room > top_of_world)
+	if (mob_rnum < 0 || mob_rnum > top_of_mobt || shop_index[shop_id].keeper != mob_rnum ||
+	    !IS_SHOPKEEPER(shopkeeper) || shopkeeper->in_room <= NOWHERE ||
+	    shopkeeper->in_room > top_of_world)
 		return player_snapshot_capture_result::invalid_identity;
 	try
 	{
@@ -32,6 +37,12 @@ player_snapshot_capture_result flatfile_shopkeeper_capture(P_char shopkeeper, ui
 		record.room_vnum = world[shopkeeper->in_room].number;
 		record.saved_at = saved_at;
 		record.revision = revision;
+		record.roaming = shop_index[shop_id].shop_is_roaming != 0;
+		record.cash = static_cast<int64_t>(GET_COPPER(shopkeeper)) +
+			      10LL * GET_SILVER(shopkeeper) + 100LL * GET_GOLD(shopkeeper) +
+			      1000LL * GET_PLATINUM(shopkeeper);
+		if (record.cash < 0 || record.cash > std::numeric_limits<int>::max())
+			return player_snapshot_capture_result::malformed_source;
 		std::unordered_set<const struct affected_type *> seen;
 		for (const struct affected_type *affect = shopkeeper->affected; affect;
 		     affect = affect->next)

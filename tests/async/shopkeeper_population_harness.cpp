@@ -1,13 +1,16 @@
 // The Python runner inserts production code; these doubles model only its I/O.
 #include <algorithm>
 #include <cassert>
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <new>
 #include <string>
 #include <vector>
 
 #include "economy/shopkeeper_save_policy.h"
+#include "player/player_snapshot_codec.h"
 
 constexpr int MAX_WEAR = 4, MAX_OBJ_AFFECT = 4, NOWHERE = -1;
 constexpr int VIRTUAL = 0, REAL = 1, LOG_DEBUG = 0, LOG_MOB = 1;
@@ -23,14 +26,23 @@ struct object_affect
 {
 	int location, modifier;
 };
+struct obj_affect
+{
+	short type, data;
+	unsigned long extra2;
+	obj_affect *next = nullptr;
+};
+constexpr short TAG_ALTERED_EXTRA2 = 32000;
 struct Object
 {
 	int R_num = 0, weight = 0, cost = 0, value[8] = {}, str_mask = 0, loc_p = 0, wear_flags = 0,
-	    type = 0, material = 0, db_item_id = 0;
+	    type = 0, material = 0, db_item_id = 0, condition = 100;
+	unsigned long obj_uid = 0;
 	unsigned char runtime_flags = 0;
 	long timer[1] = {};
 	unsigned long extra_flags = 0, bitvector = 0, bitvector2 = 0, bitvector3 = 0,
-		      bitvector4 = 0, bitvector5 = 0;
+		      bitvector4 = 0, bitvector5 = 0, extra2_flags = 0;
+	obj_affect *affects = nullptr;
 	char *name = nullptr, *short_description = nullptr, *description = nullptr,
 	     *action_description = nullptr;
 	object_affect affected[MAX_OBJ_AFFECT] = {};
@@ -44,6 +56,7 @@ struct Object
 struct Character
 {
 	int rnum = 0, in_room = NOWHERE, birthplace = 0, affects = 0;
+	int copper = 0, silver = 0, gold = 4, platinum = 0;
 	bool npc = true, shopkeeper = true;
 	P_char next = nullptr, next_in_room = nullptr, master = nullptr;
 	struct npc_data
@@ -85,11 +98,31 @@ ShopIndex *shop_index = shop_indexes;
 int number_of_shops = 4, top_of_world = 2;
 P_char character_list = nullptr;
 std::vector<P_obj> objects;
+unsigned long next_obj_uid = 500;
 int births = 0;
 void extract_obj(P_obj obj, int = 0);
+void set_obj_affected_extra(P_obj obj, int, short type, short data, unsigned long extra2)
+{
+	obj->affects = new obj_affect{ type, data, extra2, obj->affects };
+	bool has_baseline = false;
+	for (const obj_affect *affect = obj->affects; affect; affect = affect->next)
+		if (affect->type == TAG_ALTERED_EXTRA2)
+			has_baseline = true;
+	if (extra2 && !has_baseline && type != TAG_ALTERED_EXTRA2)
+		set_obj_affected_extra(obj, -1, TAG_ALTERED_EXTRA2, 0, obj->extra2_flags);
+	obj->extra2_flags |= extra2;
+}
+void set_obj_affected(P_obj obj, int time, short type, short data)
+{
+	set_obj_affected_extra(obj, time, type, data, 0);
+}
 #define GET_RNUM(ch) ((ch)->rnum)
 #define GET_BIRTHPLACE(ch) ((ch)->birthplace)
 #define GET_MASTER(ch) ((ch)->master)
+#define GET_COPPER(ch) ((ch)->copper)
+#define GET_SILVER(ch) ((ch)->silver)
+#define GET_GOLD(ch) ((ch)->gold)
+#define GET_PLATINUM(ch) ((ch)->platinum)
 #define IS_NPC(ch) ((ch)->npc)
 #define IS_SHOPKEEPER(ch) ((ch)->npc && (ch)->shopkeeper)
 int singleton_shop_id(P_char keeper)
@@ -209,6 +242,7 @@ P_obj read_object(int rnum, int)
 		return nullptr;
 	P_obj obj = new Object;
 	obj->R_num = rnum;
+	obj->obj_uid = next_obj_uid++;
 	objects.push_back(obj);
 	return obj;
 }
@@ -241,6 +275,12 @@ void extract_obj(P_obj obj, int)
 	free(obj->short_description);
 	free(obj->description);
 	free(obj->action_description);
+	while (obj->affects)
+	{
+		obj_affect *next = obj->affects->next;
+		delete obj->affects;
+		obj->affects = next;
+	}
 	objects.erase(found);
 	delete obj;
 }
@@ -277,6 +317,36 @@ struct MYSQL_RES
 };
 using MYSQL_ROW = char **;
 bool DB = true;
+struct
+{
+	int virtual_number = 0;
+} obj_index[128];
+bool allow_save_queries = false;
+unsigned long next_insert_id = 1;
+std::vector<std::string> save_queries;
+char *sql_escape_string(const char *value)
+{
+	return strdup(value);
+}
+void sql_format_item_diff_fields_and_free_proto(P_obj, char *wear, char *type, char *material,
+						char *bv1, char *bv2, char *bv3, char *bv4,
+						char *bv5)
+{
+	for (char *field : { wear, type, material, bv1, bv2, bv3, bv4, bv5 })
+		strcpy(field, "NULL");
+}
+unsigned long mysql_insert_id(bool)
+{
+	return next_insert_id++;
+}
+bool sql_save_shopkeeper_item_affects(int, P_obj)
+{
+	return true;
+}
+bool sql_save_item_extra_descr(int, P_obj, const char *)
+{
+	return true;
+}
 MYSQL_RES *db_query(const char *query, ...)
 {
 	if (fail_affects_query && strstr(query, "FROM shopkeeper_affects sa"))
@@ -298,17 +368,18 @@ MYSQL_ROW mysql_fetch_row(MYSQL_RES *result)
 		return nullptr;
 	result->cells.clear();
 	for (auto &value : result->rows[result->index++])
-		result->cells.push_back(value.data());
+		result->cells.push_back(value.empty() ? nullptr : value.data());
 	return result->cells.data();
 }
 void mysql_free_result(MYSQL_RES *result)
 {
 	delete result;
 }
-bool sql_run_query(const char *)
+bool sql_run_query(const char *query)
 {
-	assert(false && "restore must not delete the durable snapshots");
-	return false;
+	assert(allow_save_queries && "restore must not delete the durable snapshots");
+	save_queries.emplace_back(query);
+	return true;
 }
 
 bool is_replicated_shop(int shop)
@@ -324,6 +395,8 @@ bool is_replicated_shop(int shop)
 	return false;
 }
 
+// PRODUCTION_ITEM_PROPERTIES
+// PRODUCTION_SAVE_ITEM
 // PRODUCTION_RESTORE
 // PRODUCTION_HELPER
 
@@ -338,6 +411,13 @@ int number(int low, int)
 	return low;
 }
 void apply_zone_modifier(P_char) {}
+// The reset branch invokes this separate world producer after room placement.
+// This harness exercises shopkeeper population, not alchemist item generation.
+static int alchemist_spawn_calls = 0;
+void npc_alchemist_world_spawn(P_char)
+{
+	++alchemist_spawn_calls;
+}
 void reset_mobile(int force_item_repop, bool expect_skip)
 {
 	int zone = 0, last_cmd = 1, last_mob_load = 1, configured_shop = -1, replicated_shop = -1;
@@ -366,11 +446,15 @@ P_char spawn(int room, int rnum = 0)
 }
 void add_item(int keeper, int vnum, int slot = 0)
 {
-	std::vector<std::string> row(29, "0");
+	std::vector<std::string> row(33, "0");
 	row[0] = std::to_string(saved_items.size() + 1);
 	row[1] = std::to_string(keeper);
 	row[2] = std::to_string(vnum);
 	row[3] = std::to_string(slot);
+	row[29] = std::to_string(10000 + saved_items.size() + 1);
+	row[30].clear(); // An old snapshot has no condition witness.
+	row[31].clear(); // An old snapshot has no dynamic state witness.
+	row[32].clear();
 	for (int i = 16; i <= 19; ++i)
 		row[i] = "";
 	saved_items.push_back(row);
@@ -382,9 +466,17 @@ bool has_item(P_char ch, int rnum)
 			return true;
 	return false;
 }
+P_obj carried_item(P_char ch, int rnum)
+{
+	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+		if (obj->R_num == rnum)
+			return obj;
+	return nullptr;
+}
 int main(int argc, char **argv)
 {
 	assert(argc == 2);
+	assert(!reset_command_issues_item('M'));
 	const std::string scenario = argv[1];
 	for (int i = 0; i < 3; ++i)
 	{
@@ -454,10 +546,13 @@ int main(int argc, char **argv)
 		P_char elsewhere = spawn(2);
 		P_char player = spawn(0);
 		player->npc = false;
-		saved_keepers = { { "0", "10", "100", "200" }, { "1", "11", "100", "201" } };
+		saved_keepers = { { "0", "10", "100", "200", "1234" },
+				  { "1", "11", "100", "201", "0" } };
 		add_item(10, 70);
 		add_item(11, 71);
 		add_item(11, 72, 1);
+		saved_items[0][30] = "37";
+		saved_items[2][30] = "82";
 		saved_affects = { { "11", "1", "2", "3", "4", "0", "0", "0", "0", "0" } };
 		saved_item_affects = { { "2", "3", "4" } };
 		shop_index[0].number_items_produced = shop_index[1].number_items_produced = 1;
@@ -469,40 +564,151 @@ int main(int argc, char **argv)
 		assert(!second->next_in_room && world[2].people == elsewhere);
 		assert(has_item(first, 70) && has_item(first, 80) && !has_item(first, 81));
 		assert(has_item(second, 71) && has_item(second, 81) && !has_item(second, 80));
+		assert(carried_item(first, 70)->obj_uid == 10001 &&
+		       carried_item(second, 71)->obj_uid == 10002);
+		assert(carried_item(first, 70)->condition == 37 &&
+		       carried_item(second, 71)->condition == 100);
 		assert(second->equipment[0]->R_num == 72 && second->affects == 1);
+		assert(second->equipment[0]->condition == 82);
+		assert(second->equipment[0]->obj_uid == 10003 && next_obj_uid > 10003);
+		assert(first->platinum == 1 && first->gold == 2 && first->silver == 3 &&
+		       first->copper == 4);
+		assert(second->platinum == 0 && second->gold == 0 && second->silver == 0 &&
+		       second->copper == 0);
 		assert(shop_index[0].dirty && shop_index[1].dirty);
 		assert(mob_index[0].number == 6);
 	}
 	else if (scenario == "duplicate")
 	{
 		// DB orders newest snapshot first; only its stock should materialize.
-		saved_keepers = { { "1", "11", "100", "201" }, { "1", "12", "100", "201" } };
+		saved_keepers = { { "1", "11", "100", "201", "25" },
+				  { "1", "12", "100", "201", "999" } };
 		add_item(11, 71);
 		assert(sql_restore_shopkeepers());
 		assert(births == 1 && objects.size() == 1 && world[1].people &&
 		       !world[1].people->next_in_room);
 		assert(has_item(world[1].people, 71) && !has_item(world[1].people, 72));
+		assert(world[1].people->silver == 2 && world[1].people->copper == 5);
 		assert(shop_index[1].dirty && !shop_index[0].dirty);
+	}
+	else if (scenario == "duplicate_uid")
+	{
+		saved_keepers = { { "0", "10", "100", "200", "25" } };
+		add_item(10, 70);
+		add_item(10, 71);
+		saved_items[1][29] = saved_items[0][29];
+		assert(!sql_restore_shopkeepers());
+		assert(objects.empty() && !character_list && !world[0].people);
+	}
+	else if (scenario == "legacy_uid")
+	{
+		saved_keepers = { { "0", "10", "100", "200", "25" } };
+		add_item(10, 70);
+		saved_items[0][29].clear();
+		assert(sql_restore_shopkeepers());
+		assert(carried_item(world[0].people, 70)->obj_uid >= 500 && shop_index[0].dirty);
+	}
+	else if (scenario == "invalid_uid")
+	{
+		saved_keepers = { { "0", "10", "100", "200", "25" } };
+		add_item(10, 70);
+		saved_items[0][29] = "0";
+		assert(!sql_restore_shopkeepers());
+		assert(objects.empty() && !character_list && !world[0].people);
+		saved_items[0][29] = std::to_string(ULONG_MAX) + "0";
+		assert(!sql_restore_shopkeepers());
+		assert(objects.empty() && !character_list && !world[0].people);
 	}
 	else if (scenario == "cleanup")
 	{
-		saved_keepers = { { "0", "10", "100", "200" } };
+		saved_keepers = { { "0", "10", "100", "200", "" } };
 		add_item(10, 60);
 		fail_affects_query = true;
 		assert(!sql_restore_shopkeepers());
 		assert(!character_list && objects.empty() && !world[0].people &&
 		       mob_index[0].number == 0);
 	}
+	else if (scenario == "cash")
+	{
+		// A legacy NULL retains the prototype; invalid persisted cash aborts
+		// the whole restore without publishing the earlier staged keeper.
+		saved_keepers = { { "0", "10", "100", "200", "" } };
+		assert(sql_restore_shopkeepers());
+		assert(world[0].people && world[0].people->gold == 4);
+		extract_char(world[0].people);
+		saved_keepers = { { "0", "10", "100", "200", "12" },
+				  { "1", "11", "100", "201", "-1" } };
+		assert(!sql_restore_shopkeepers());
+		assert(!character_list && !world[0].people && !world[1].people);
+		saved_keepers[1][4] = std::to_string(static_cast<long long>(INT_MAX) + 1);
+		assert(!sql_restore_shopkeepers());
+		assert(!character_list);
+	}
 	else if (scenario == "invalid")
 	{
-		saved_keepers = { { "0", "10", "100", "200" }, { "-1", "11", "100", "201" },
-				  { "4", "12", "100", "201" }, { "1", "13", "101", "201" },
-				  { "2", "14", "100", "999" }, { "3", "15", "999", "201" } };
+		saved_keepers = { { "0", "10", "100", "200", "" }, { "-1", "11", "100", "201", "" },
+				  { "4", "12", "100", "201", "" }, { "1", "13", "101", "201", "" },
+				  { "2", "14", "100", "999", "" }, { "3", "15", "999", "201", "" } };
 		for (int id = 10; id <= 15; ++id)
 			add_item(id, id + 50);
 		assert(!sql_restore_shopkeepers());
 		assert(!character_list && objects.empty() && !world[0].people && !world[1].people &&
 		       !world[2].people && mob_index[0].number == 0);
+	}
+	else if (scenario == "uid_save")
+	{
+		obj_index[70].virtual_number = 70;
+		obj_index[71].virtual_number = 71;
+		P_obj root = read_object(70, REAL);
+		P_obj child = read_object(71, REAL);
+		root->obj_uid = 123456;
+		child->obj_uid = 123457;
+		root->condition = 37;
+		child->condition = 82;
+		root->extra2_flags = 73;
+		set_obj_affected_extra(root, -1, 15, 7, 81);
+		root->contains = child;
+		allow_save_queries = true;
+		assert(sql_save_shopkeeper_item(10, root, 0, 0) == 1);
+		assert(save_queries.size() == 2);
+		assert(save_queries[0].find("obj_uid") != std::string::npos &&
+		       save_queries[0].find("123456") != std::string::npos);
+		assert(save_queries[0].find("item_condition") != std::string::npos &&
+		       save_queries[0].find("123456, 37") != std::string::npos);
+		std::string properties;
+		assert(player_item_properties_encode(
+			       89, { { TAG_ALTERED_EXTRA2, 0, 73 }, { 15, 7, 81 } }, &properties) ==
+		       player_snapshot_codec_result::ok);
+		assert(save_queries[0].find("item_properties") != std::string::npos &&
+		       save_queries[0].find(properties) != std::string::npos);
+		assert(save_queries[1].find("obj_uid") != std::string::npos &&
+		       save_queries[1].find("123457") != std::string::npos &&
+		       save_queries[1].find("123457, 82") != std::string::npos &&
+		       save_queries[1].find("10, 71, 0, 1, 1") != std::string::npos);
+		root->obj_uid = 0;
+		assert(sql_save_shopkeeper_item(10, root, 0, 0) == 0 && save_queries.size() == 2);
+	}
+	else if (scenario == "dynamic_properties")
+	{
+		saved_keepers = { { "0", "10", "100", "200", "25" } };
+		add_item(10, 70);
+		std::string properties;
+		assert(player_item_properties_encode(
+			       89, { { TAG_ALTERED_EXTRA2, 0, 73 }, { 15, 7, 81 } }, &properties) ==
+		       player_snapshot_codec_result::ok);
+		saved_items[0][31] = properties;
+		saved_items[0][32] = std::to_string(properties.size());
+		assert(sql_restore_shopkeepers());
+		P_obj item = carried_item(world[0].people, 70);
+		assert(item && item->extra2_flags == 89 && item->affects &&
+		       item->affects->type == TAG_ALTERED_EXTRA2 && item->affects->extra2 == 73 &&
+		       item->affects->next && item->affects->next->type == 15 &&
+		       item->affects->next->data == 7 && item->affects->next->extra2 == 81);
+		extract_char(world[0].people);
+		saved_items[0][31] = "bad";
+		saved_items[0][32] = "3";
+		assert(!sql_restore_shopkeepers());
+		assert(!character_list && objects.empty());
 	}
 	else
 		assert(false);
@@ -510,6 +716,12 @@ int main(int argc, char **argv)
 		extract_char(character_list);
 	for (P_obj obj : objects)
 	{
+		while (obj->affects)
+		{
+			obj_affect *next = obj->affects->next;
+			delete obj->affects;
+			obj->affects = next;
+		}
 		free(obj->name);
 		free(obj->short_description);
 		free(obj->description);

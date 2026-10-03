@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Reproduce and verify NPC container claims on a disposable flat-file game server."""
 import os
+import json
 from pathlib import Path
 import re
 import signal
@@ -10,7 +11,19 @@ import time
 import test_flatfile_combat_journey as journey
 
 
-def run(binary: Path, expect_abort: bool = False) -> None:
+def inspect_items(state: Path) -> dict:
+    return json.loads(subprocess.check_output(
+        [str(journey.INSPECTOR), str(state), "inspect-items", "1"], text=True, timeout=15))
+
+
+def inspect_item(state: Path, uid: int) -> dict:
+    return json.loads(subprocess.check_output(
+        [str(journey.INSPECTOR), str(state), "inspect-item", str(uid)],
+        text=True, timeout=15))
+
+
+def run(binary: Path, expect_abort: bool = False, restart_only: bool = False,
+        key_break: bool = False) -> None:
     with tempfile.TemporaryDirectory(prefix="npc-claim-state-") as state_dir:
         with tempfile.TemporaryDirectory(prefix="npc-claim-game-") as game_dir:
             state, game = Path(state_dir), Path(game_dir)
@@ -22,8 +35,27 @@ def run(binary: Path, expect_abort: bool = False) -> None:
             object_path = game / "areas_mini/mini.obj"
             objects = object_path.read_text()
             assert objects.count("12 28 0 0 7 0 0 16385 0 0 0") == 1
-            object_path.write_text(objects.replace("12 28 0 0 7 0 0 16385 0 0 0",
-                                                   "12 28 0 0 7 0 0 1 0 0 0"))
+            objects = objects.replace("12 28 0 0 7 0 0 16385 0 0 0",
+                                      "12 28 0 0 7 0 0 1 0 0 0")
+            if key_break:
+                objects = objects.replace("$~", """#22802
+regression brass key~
+a regression brass key~
+A regression brass key lies here.~
+~
+18 0 0 0 7 0 0 1 0 0 0
+0 100 0 0 0 0 0 0
+1 0 100
+#22803
+regression chest~
+a regression chest~
+A regression chest stands here.~
+~
+15 0 0 0 7 0 0 0 0 0 0
+100 12 22802 100 0 0 0 0
+5 0 100
+$~""")
+            object_path.write_text(objects)
             journey.generate_certificate(game)
             mobile_path = game / "areas_mini/mini.mob"
             mobile_path.write_text(mobile_path.read_text().replace("$~", """#22801
@@ -41,9 +73,12 @@ $~"""))
             zone = "\n".join(line for line in zone_path.read_text().splitlines()
                              if not line.startswith(("M 0 11 ", "G 1 15 ", "G 1 3 ",
                                                      "M 0 22800 "))) + "\n"
-            zone_path.write_text(zone.replace(
-                "\nS\n", "\nO 0 48 1 22800 100 0 0 0 * takeable container\n"
-                         "P 1 11 1 48 100 0 0 0 * nested ordinary item\nS\n"))
+            reset = ("\nO 0 22802 1 22800 100 0 0 0 * breaking key\n"
+                     "O 0 22803 1 22800 100 0 0 0 * locked chest\n"
+                     if key_break else
+                     "\nO 0 48 1 22800 100 0 0 0 * takeable container\n"
+                     "P 1 11 1 48 100 0 0 0 * nested ordinary item\n")
+            zone_path.write_text(zone.replace("\nS\n", reset + "S\n"))
             for name in ("players", "critical"):
                 (game / "journals" / name).mkdir(parents=True, mode=0o700)
             port, tls_port, ws_port = journey.available_ports()
@@ -92,6 +127,93 @@ $~"""))
                 boot()
                 client = journey.MudClient(port)
                 journey.create_character(client)
+                if key_break:
+                    client.pending.clear()
+                    client.send("drop all")
+                    client.expect("Pos: standing >", timeout=20)
+                    client.send("get brass")
+                    client.expect("get a regression brass key", timeout=20)
+                    before = inspect_items(state)
+                    keys = [item for item in before["player_items"] if item["vnum"] == 22802]
+                    assert len(keys) == 1, before["player_items"]
+                    key_uid = keys[0]["uid"]
+                    active_key = inspect_item(state, key_uid)
+                    assert active_key["state"] == 1 and active_key["owner_type"] == 1
+                    client.pending.clear()
+                    client.send("unlock chest")
+                    client.expect("Damn!  You broke your key!", timeout=30)
+                    deadline = time.monotonic() + 20
+                    while time.monotonic() < deadline:
+                        retired = inspect_item(state, key_uid)
+                        if retired["state"] == 2:
+                            break
+                        time.sleep(.1)
+                    assert retired["state"] == 2 and retired["owner_type"] == 8, retired
+                    assert retired["root"] == key_uid and retired["parent"] == 0, retired
+                    assert retired["revision"] > active_key["revision"], retired
+                    assert not any(item["uid"] == key_uid for item in
+                                   inspect_items(state)["player_items"])
+                    client.send("save")
+                    client.expect("Save complete for Taverek.", timeout=20)
+                    client.send("quit")
+                    client.expect("ACCOUNT MENU", timeout=20)
+                    stop()
+                    zone_path.write_text("\n".join(
+                        line for line in zone_path.read_text().splitlines()
+                        if not line.startswith(("O 0 22802 ", "O 0 22803 "))) + "\n")
+                    output_path.write_text("")
+                    boot()
+                    client = journey.reconnect_character(port)
+                    assert inspect_item(state, key_uid) == retired
+                    assert not any(item["uid"] == key_uid for item in
+                                   inspect_items(state)["player_items"])
+                    client.send("inventory")
+                    assert "regression brass key" not in client.expect(
+                        "Pos: standing >", timeout=20)
+                    print("flatfile: key retired with retained UID and topology through restart",
+                          flush=True)
+                    return
+                if restart_only:
+                    client.pending.clear()
+                    client.send("drop all")
+                    client.expect("Pos: standing >", timeout=20)
+                    client.send("get miles backpack")
+                    client.expect("get a 1000 frequent flier miles", timeout=20)
+                    client.send("get backpack")
+                    client.expect("get a large leather backpack", timeout=20)
+                    client.send("put miles backpack")
+                    client.expect("Ok.", timeout=20)
+                    before = inspect_items(state)
+                    bags = [item for item in before["player_items"] if item["vnum"] == 48]
+                    contents = [item for item in before["player_items"] if item["vnum"] == 11]
+                    assert len(bags) == len(contents) == 1, before["player_items"]
+                    assert contents[0]["parent"] == bags[0]["uid"]
+                    client.send("save")
+                    client.expect("Save complete for Taverek.", timeout=20)
+                    client.send("quit")
+                    client.expect("ACCOUNT MENU", timeout=20)
+                    stop()
+                    # The reset supplied the claimed items; avoid another copy.
+                    zone_path.write_text("\n".join(
+                        line for line in zone_path.read_text().splitlines()
+                        if not line.startswith(("O 0 48 ", "P 1 11 "))) + "\n")
+                    output_path.write_text("")
+                    boot()
+                    client = journey.reconnect_character(port)
+                    after = inspect_items(state)
+                    after_bags = [item for item in after["player_items"] if item["vnum"] == 48]
+                    after_contents = [item for item in after["player_items"] if item["vnum"] == 11]
+                    assert len(after_bags) == len(after_contents) == 1, after["player_items"]
+                    assert after_bags[0]["uid"] == bags[0]["uid"]
+                    assert after_contents[0]["uid"] == contents[0]["uid"]
+                    assert after_contents[0]["parent"] == after_bags[0]["uid"]
+                    assert after["player_owner_revision"] == before["player_owner_revision"]
+                    assert not any(item["uid"] in (bags[0]["uid"], contents[0]["uid"])
+                                   for item in after["room_items"])
+                    client.send("look in backpack")
+                    client.expect("a 1000 frequent flier miles")
+                    print("flatfile: nested player UIDs and custody survived save/restart", flush=True)
+                    return
                 client.send("save")
                 client.expect("Save complete for Taverek.", timeout=20)
                 client.send("quit")
@@ -113,7 +235,7 @@ $~"""))
                 client.send("drop backpack")
                 client.expect("drop a large leather backpack", timeout=20)
                 print("player: get miles backpack -> get backpack -> put miles backpack -> drop backpack (committed)", flush=True)
-                before = journey.inspect_authority(state)
+                before = inspect_items(state)
                 bags = [item for item in before["room_items"] if item["vnum"] == 48]
                 contents = [item for item in before["room_items"] if item["vnum"] == 11]
                 assert len(bags) == len(contents) == 1, before["room_items"]
@@ -149,7 +271,7 @@ $~"""))
                 else:
                     assert process.poll() is None, output_path.read_text(errors="replace")[-3000:]
                     assert moved, "NPC did not move the nested item"
-                    after = journey.inspect_authority(state)
+                    after = inspect_items(state)
                     assert after["room_owner_revision"] == before["room_owner_revision"] + 1, (
                         before["room_owner_revision"], after["room_owner_revision"])
                     after_bags = [item for item in after["room_items"] if item["vnum"] == 48]
@@ -191,4 +313,5 @@ $~"""))
 
 if __name__ == "__main__":
     import sys
-    run(Path(sys.argv[1]).resolve(), "--expect-abort" in sys.argv[2:])
+    run(Path(sys.argv[1]).resolve(), "--expect-abort" in sys.argv[2:],
+        "--restart-only" in sys.argv[2:], "--key-break" in sys.argv[2:])

@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+from _object_special_fixture import object_special_functions
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -31,6 +32,7 @@ fixture = fixture.replace("int main() {", "void foundation_regression_main() {")
 fixture = fixture.replace("void send_to_char(const char *, P_char) {}", "")
 fixture = fixture.replace("void act(const char *, int, P_char, P_obj, void *, int) {}", "")
 fixture = fixture.replace("// INSERT_PRODUCTION_ABORT", function(ROOT / "src/net/sparser.c", "void do_abort(P_char ch,"))
+fixture += "\n" + object_special_functions()
 commands = "\n".join([
     function(ROOT / "src/core/utility.c", "void cast_as_area("),
     function(ROOT / "src/cmd/actoth.c", "void do_use("),
@@ -286,6 +288,7 @@ static void staff_area() {
         auto ally=new char_data{}; ally->runtime_id=allocate_character_runtime_id();
         ally->only.pc=s.actor->only.pc; ally->in_room=0; SET_POS(ally,STAT_NORMAL+POS_STANDING);
         ally->next=character_list; character_list=ally;
+        register_character_runtime_id(ally);
         ally->next_in_room=world[0].people; world[0].people=ally;
         std::remove_pointer_t<decltype(s.actor->group)> group{}; s.actor->group=ally->group=&group;
         s.use(); advance(); assert(calls.size()==1 && calls[0].target==s.target->runtime_id);
@@ -296,6 +299,7 @@ static void staff_area() {
         auto newcomer=new char_data{}; newcomer->runtime_id=allocate_character_runtime_id();
         newcomer->only.pc=s.actor->only.pc; newcomer->in_room=0; SET_POS(newcomer,STAT_NORMAL+POS_STANDING);
         newcomer->next=character_list; character_list=newcomer;
+        register_character_runtime_id(newcomer);
         newcomer->next_in_room=world[0].people; world[0].people=newcomer;
         advance(); assert(calls.size()==1 && calls[0].target==newcomer->runtime_id);
     }

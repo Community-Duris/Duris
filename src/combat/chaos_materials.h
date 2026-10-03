@@ -2,21 +2,13 @@
 #define CHAOS_MATERIALS_H
 
 #include "combat/chaos_config.h"
+#include "combat/chaos_pouch_types.h"
 #include "core/structs.h"
 #include "core/utils.h"
 #include "world/vnum.obj.h"
 
 #include <cstddef>
 #include <cstdint>
-
-constexpr size_t CHAOS_MATERIAL_POUCH_LEDGER_MAX_CHUNKS = 8;
-constexpr size_t CHAOS_MATERIAL_POUCH_LEDGER_CHUNK_BYTES = 3500;
-
-struct chaos_material_pouch_usage
-{
-	int vnum;
-	uint64_t count;
-};
 
 static inline bool chaos_material_pouch_is(P_obj object)
 {

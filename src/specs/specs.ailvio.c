@@ -187,3 +187,24 @@ int bandage_reward_mob(P_char ch, P_char tch, int cmd, char * /*arg*/)
 	}
 	return FALSE;
 }
+
+int newbie_portal(P_obj obj, P_char ch, int cmd, char *arg)
+{
+	P_char dummy;
+	P_obj dummyobj;
+
+	if (cmd == CMD_ENTER)
+	{
+		generic_find(arg, FIND_OBJ_ROOM, ch, &dummy, &dummyobj);
+		if (dummyobj == obj)
+		{
+			find_starting_location(ch, 0);
+			GET_BIRTHPLACE(ch) = GET_HOME(ch);
+			GET_ORIG_BIRTHPLACE(ch) = GET_HOME(ch);
+			teleport_to(ch, real_room(GET_HOME(ch)), 0);
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}

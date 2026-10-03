@@ -52,7 +52,8 @@ static P_obj find_slip_item(uint64_t item_uid)
 	return NULL;
 }
 
-static bool slip_transfer_publication(P_char /*callback_actor*/, bool committed,
+static bool slip_transfer_publication(const critical_operation_id & /*operation_id*/,
+				      P_char /*callback_actor*/, bool committed,
 				      const item_transfer_result &result, unsigned int error_code,
 				      const uint8_t *encoded, size_t encoded_size)
 {

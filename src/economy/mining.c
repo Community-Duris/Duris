@@ -7,6 +7,7 @@
 #include "core/utility.h"
 #include "core/utils.h"
 #include "economy/tradeskill.h"
+#include "economy/economic_gameplay_authority.h"
 #include "economy/mining.h"
 #include "economy/mining_config.h"
 #include "world/achievements.h"
@@ -278,6 +279,8 @@ int mine(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 
 	if (cmd == CMD_PERIODIC)
 	{
+		if (economic_gameplay_authority::active())
+			return TRUE;
 		if (obj->value[0] <= 0)
 		{
 			extract_obj(obj, TRUE); // Not an arti, but 'in game.'
@@ -290,6 +293,12 @@ int mine(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 		if (!ch || !IS_PC(ch) || !IS_ALIVE(ch))
 		{
 			return FALSE;
+		}
+		if (economic_gameplay_authority::active())
+		{
+			send_to_char("Mining is unavailable while item accounting is active.\r\n",
+				     ch);
+			return TRUE;
 		}
 
 		if (GET_CHAR_SKILL(ch, SKILL_MINE) == 0)
@@ -389,6 +398,11 @@ void event_mine_check(P_char ch, P_char /*victim*/, P_obj, void *data)
 	    IS_STUNNED(ch) || IS_CASTING(ch) || IS_AFFECTED2(ch, AFF2_CASTING))
 	{
 		send_to_char("You stop mining.\n", ch);
+		return;
+	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("Mining stopped while item accounting is active.\r\n", ch);
 		return;
 	}
 
@@ -626,6 +640,8 @@ bool invalid_mine_room(int rroom_id)
 
 bool load_one_mine(int map)
 {
+	if (economic_gameplay_authority::active())
+		return FALSE;
 	P_obj mine = read_object(mine_data[map].type, VIRTUAL);
 
 	if (!mine)
@@ -800,6 +816,14 @@ void do_mine(P_char ch, char *arg, int /*cmd*/)
 	char buf2[MAX_STRING_LENGTH];
 	char arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH];
 	half_chop(arg, arg1, arg2);
+	if (economic_gameplay_authority::active() && IS_TRUSTED(ch) &&
+	    (!strcmp(arg1, "reset") || !strcmp(arg1, "load") || !strcmp(arg1, "purge")))
+	{
+		send_to_char(
+			"Mine administration is unavailable while item accounting is active.\r\n",
+			ch);
+		return;
+	}
 
 	if (!strcmp(arg1, "reset") && IS_TRUSTED(ch))
 	{

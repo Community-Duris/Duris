@@ -52,7 +52,6 @@ using namespace std;
 #include "persistence/persistence_mode.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
 
 extern P_desc descriptor_list;
 extern P_room world;

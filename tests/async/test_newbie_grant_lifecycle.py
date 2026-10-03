@@ -15,12 +15,15 @@ PRELUDE = r'''
 #include "core/utils.h"
 #include "core/prototypes.h"
 #include "classes/necromancy.h"
+#include "economy/economic_gameplay_authority.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
 #include "player/player_snapshot_capture.h"
+#include "player/player_save_pipeline.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_load_items.h"
+#include "world/handler.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
@@ -30,6 +33,13 @@ PRELUDE = r'''
 #include <map>
 #include <string>
 #include <utility>
+
+bool economic_gameplay_authority::active() { return false; }
+economic_accounting_error economic_gameplay_authority::prepare_item_transfer(
+    critical_command *, uint32_t, economic_source_kind)
+{
+    return economic_accounting_error::ok;
+}
 
 P_obj object_list = nullptr;
 P_char character_list = nullptr;
@@ -43,6 +53,8 @@ static std::deque<critical_command> submitted;
 static critical_submit_result submit_result = critical_submit_result::accepted;
 static std::map<uint64_t, int> publications, extractions;
 static std::map<int, int> dirty, commands;
+static std::map<int, bool> sealed_saves;
+bool player_save_pipeline_sealed_save_pending(int pid) { return sealed_saves[pid]; }
 static std::string fixture_messages;
 static bool recover_creation = false;
 static obj_data recovered_creation = {};
@@ -83,9 +95,15 @@ bool player_load_item_graph_materialize_creation(const item_transfer_payload &,
     roots->push_back(&recovered_creation);
     return true;
 }
+struct craft_pouch_mutation;
+bool chaos_pouch_publish_committed(P_obj, const craft_pouch_mutation &) { assert(false); return false; }
 void __free(void *p, const char *, int) { free(p); }
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...) { abort(); }
 bool currency_transaction_coin_item_busy(uint64_t) { return false; }
+bool spell_component_retirement_waiting_for_effect(const critical_operation_id &)
+{
+    return false;
+}
 void send_to_char(const char *text, P_char ch)
 {
     if (ch && ch->desc) fixture_messages += text;
@@ -101,7 +119,14 @@ P_char find_player_by_pid(int pid)
             return ch;
     return nullptr;
 }
-void obj_to_char(P_obj obj, P_char ch)
+P_char find_character_by_runtime_id(uint64_t runtime_id)
+{
+    for (P_char ch = character_list; runtime_id && ch; ch = ch->next)
+        if (ch->runtime_id == runtime_id)
+            return ch;
+    return nullptr;
+}
+obj_to_char_result obj_to_char_checked(P_obj obj, P_char ch)
 {
     assert(OBJ_NOWHERE(obj));
     // Execute the production publication guard; only the world-list mutation
@@ -116,7 +141,9 @@ void obj_to_char(P_obj obj, P_char ch)
     obj->loc.carrying = ch;
     obj->next_content = ch->carrying;
     ch->carrying = obj;
+    return obj_to_char_result::placed;
 }
+void obj_to_char(P_obj obj, P_char ch) { (void)obj_to_char_checked(obj, ch); }
 void obj_from_char(P_obj obj)
 {
     assert(OBJ_CARRIED(obj));
@@ -198,6 +225,7 @@ struct fixture
         item_movement_transaction_reset_for_tests();
         item_ownership_runtime_reset();
         submitted.clear(); publications.clear(); extractions.clear(); dirty.clear(); commands.clear();
+        sealed_saves.clear();
         fixture_messages.clear(); submit_result = critical_submit_result::accepted;
         pc.pid = 42; other_pc.pid = 43;
         actor.only.pc = &pc; other.only.pc = &other_pc;
@@ -248,6 +276,27 @@ static void deliver(const critical_completion &completion)
 }
 int main()
 {
+    // A grant waits for the recipient's immutable save, then publishes once.
+    // A distinct actor must not make us consult the wrong player's seal.
+    for (bool other_recipient : {false, true})
+    {
+        fixture f;
+        P_char recipient = other_recipient ? &f.other : &f.actor;
+        const int recipient_pid = GET_PID(recipient);
+        sealed_saves[recipient_pid] = true;
+        assert(item_creation_grant_submit_to_player(&f.actor, &f.bag, recipient));
+        for (int pulse = 0; pulse < 5; ++pulse)
+            item_movement_transaction_handle_completions(nullptr, 0);
+        assert(submitted.empty() && publications.empty() && extractions.empty());
+        assert(OBJ_NOWHERE(&f.bag) && item_movement_transaction_player_busy(&f.actor));
+        sealed_saves[recipient_pid] = false;
+        item_movement_transaction_handle_completions(nullptr, 0);
+        assert(submitted.size() == 1);
+        const auto completed = next_completion(critical_apply_outcome::applied);
+        deliver(completed); deliver(completed);
+        assert(OBJ_CARRIED_BY(&f.bag, recipient) && publications[100] == 1);
+        assert(extractions.empty() && !item_movement_transaction_player_busy(&f.actor));
+    }
     // A final-publication callback runs exactly once and may safely enqueue the
     // next creation after the completed request releases its queue slot.
     {
@@ -282,12 +331,13 @@ int main()
     {
         fixture f;
         int calls = 0;
+        constexpr uint64_t source_id = (uint64_t{42} << 32) | 0x4e455742;
         assert(item_creation_grant_defer(&f.actor, [&](P_char, P_obj *root) {
             ++calls;
             if (calls == 1) *root = &f.bag;
             if (calls == 9) *root = &f.food;
             return calls == 9 ? item_creation_prepare_result::ready : item_creation_prepare_result::more;
-        }));
+        }, economic_source_kind::starter_grant, source_id));
         item_creation_grant_prepare_pulse();
         assert(item_creation_grant_submit_to_player(&f.actor, &f.extra, &f.actor));
         assert(submitted.empty() && extractions.empty());
@@ -295,6 +345,7 @@ int main()
         item_transfer_payload payload{};
         assert(submitted.size() == 1 && item_transfer_command_decode_payload(submitted.front(), &payload));
         assert(payload.item_count == 2);
+        assert(payload.logical_source_id == source_id);
         deliver(next_completion(commit ? critical_apply_outcome::applied : critical_apply_outcome::terminal_failure));
         assert(submitted.size() == 1 && extractions[102] == 0);
         assert(item_transfer_command_decode_payload(submitted.front(), &payload));
@@ -531,6 +582,32 @@ int main()
         assert(!item_movement_transaction_player_busy(&f.actor));
         recover_creation = false;
     }
+    // A committed purchase awaiting reconstruction stays charged and pending:
+    // notify once, retain its final callback, and publish before continuation.
+    {
+        fixture f;
+        grant_callback_count = 0; grant_callback_committed = false;
+        grant_callback_successor = nullptr;
+        assert(item_creation_grant_submit_to_player_with_completion(
+            &f.actor, &f.bag, &f.actor, nullptr, grant_callback));
+        const auto completed = next_completion(critical_apply_outcome::applied);
+        object_list = &f.extra; f.extra.next = &f.food; f.food.next = nullptr;
+        deliver(completed);
+        assert(grant_callback_count == 0 && extractions.empty() && publications.empty());
+        assert(item_movement_transaction_player_busy(&f.actor));
+        assert(fixture_messages ==
+            "Your items are safe but are still being delivered.\r\n"
+            "Please wait a moment or reconnect; do not request them again.\r\n");
+        const std::string delay_notice = fixture_messages;
+        deliver(completed);
+        assert(grant_callback_count == 0 && fixture_messages == delay_notice);
+        recover_creation = true;
+        item_movement_transaction_player_ready(&f.actor);
+        assert(grant_callback_count == 1 && grant_callback_committed);
+        assert(publications[100] == 1 && extractions.empty());
+        assert(!item_movement_transaction_player_busy(&f.actor));
+        recover_creation = false;
+    }
     // A held grant does not publish early or hold an unrelated player's dispatch.
     // After disconnect, publish to the retained character and continue its queue.
     {
@@ -587,12 +664,14 @@ int main()
         submit_result = critical_submit_result::unavailable;
         assert(item_creation_grant_submit_to_player(&f.actor, &f.bag, &f.actor));
         assert(item_movement_transaction_player_busy(&f.actor));
+        assert(item_movement_transaction_player_creation_busy(&f.actor));
         assert(OBJ_NOWHERE(&f.bag) && extractions.empty() && submitted.empty());
         submit_result = critical_submit_result::accepted;
         item_movement_transaction_handle_completions(nullptr, 0);
         assert(submitted.size() == 1);
         deliver(next_completion(critical_apply_outcome::applied));
         assert(publications[100] == 1 && !item_movement_transaction_player_busy(&f.actor));
+        assert(!item_movement_transaction_player_creation_busy(&f.actor));
     }
     // Capacity and coordinator availability are admission back-pressure: retain the
     // detached kit, keep the player gated, and retry once the coordinator recovers.
@@ -737,7 +816,7 @@ int main()
 
 
 def main() -> int:
-    to_char = extract_function("handler.c", "void obj_to_char(")
+    to_char = extract_function("handler.c", "obj_to_char_result obj_to_char_checked(")
     guard = to_char[to_char.index("// A persisted generic item"):
                     to_char.index("if (ch->carrying &&")]
     harness = "\n".join([PRELUDE.replace("PUBLICATION_GUARD", guard), extract_function(
@@ -750,7 +829,7 @@ def main() -> int:
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-g", "-O1",
             "-ffunction-sections", "-fdata-sections", "-fsanitize=address,undefined",
             "-Isrc", str(source), rel("item_movement_transaction.c"),
-            rel("item_ownership_runtime.c"), rel("item_transfer_command.c"),
+            rel("item_ownership_runtime.c"), rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
             rel("critical_command.c"), rel("player_snapshot_capture.c"),
             rel("player_snapshot_codec.c"), "-Wl,--gc-sections", "-lcrypto", "-o", str(binary),
         ], cwd=ROOT, check=True)

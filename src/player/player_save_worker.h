@@ -2,9 +2,11 @@
 #define PLAYER_SAVE_WORKER_H
 
 #include "player/player_snapshot.h"
+#include "persistence/persistence_diagnostics.h"
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 constexpr size_t PLAYER_SAVE_WORKER_MAX_PIDS = 256;
 constexpr size_t PLAYER_SAVE_WORKER_MAX_RESULTS = 256;
@@ -15,6 +17,65 @@ constexpr unsigned int PLAYER_SAVE_WORKER_DEFAULT_THREADS = 2;
 /* Application-specific repository error: a replacement player-item graph did
  * not exactly match authoritative active custody. */
 constexpr unsigned int PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH = 10001;
+
+// Low-cardinality, redacted reasons for rejecting a custody payload. These are
+// diagnostic context only; the public save error remains the generic mismatch.
+enum class player_save_custody_diagnosis : uint8_t
+{
+	none = 0,
+	invalid_snapshot_item = 1,
+	invalid_snapshot_parent = 2,
+	duplicate_snapshot_uid = 3,
+	malformed_active_custody_row = 4,
+	duplicate_equipment_slot = 5,
+	active_custody_absent_from_snapshot = 6,
+	custody_vnum_mismatch = 7,
+	duplicate_custody_match = 8,
+	snapshot_item_absent_from_custody = 9,
+	invalid_custody_topology = 10,
+	invalid_death_payload = 11,
+	saved_item_absent_from_death_payload = 12,
+	orphaned_saved_item = 13,
+	orphaned_saved_pet_item = 14,
+};
+
+inline const char *player_save_custody_diagnosis_name(player_save_custody_diagnosis diagnosis)
+{
+	switch (diagnosis)
+	{
+	case player_save_custody_diagnosis::invalid_snapshot_item:
+		return "invalid_snapshot_item";
+	case player_save_custody_diagnosis::invalid_snapshot_parent:
+		return "invalid_snapshot_parent";
+	case player_save_custody_diagnosis::duplicate_snapshot_uid:
+		return "duplicate_snapshot_uid";
+	case player_save_custody_diagnosis::malformed_active_custody_row:
+		return "malformed_active_custody_row";
+	case player_save_custody_diagnosis::duplicate_equipment_slot:
+		return "duplicate_equipment_slot";
+	case player_save_custody_diagnosis::active_custody_absent_from_snapshot:
+		return "active_custody_absent_from_snapshot";
+	case player_save_custody_diagnosis::custody_vnum_mismatch:
+		return "custody_vnum_mismatch";
+	case player_save_custody_diagnosis::duplicate_custody_match:
+		return "duplicate_custody_match";
+	case player_save_custody_diagnosis::snapshot_item_absent_from_custody:
+		return "snapshot_item_absent_from_custody";
+	case player_save_custody_diagnosis::invalid_custody_topology:
+		return "invalid_custody_topology";
+	case player_save_custody_diagnosis::invalid_death_payload:
+		return "invalid_death_payload";
+	case player_save_custody_diagnosis::saved_item_absent_from_death_payload:
+		return "saved_item_absent_from_death_payload";
+	case player_save_custody_diagnosis::orphaned_saved_item:
+		return "orphaned_saved_item";
+	case player_save_custody_diagnosis::orphaned_saved_pet_item:
+		return "orphaned_saved_pet_item";
+	case player_save_custody_diagnosis::none:
+	default:
+		return "none";
+	}
+}
 
 enum class player_save_apply_outcome : uint8_t
 {
@@ -31,7 +92,25 @@ struct player_save_apply_result
 	player_save_apply_outcome outcome;
 	player_revision_t durable_revision;
 	unsigned int error_code;
+	player_save_custody_diagnosis custody_diagnosis = player_save_custody_diagnosis::none;
+	// Replay may retire an obsolete non-death frame only after the repository
+	// verifies every attached operation receipt. This does not ACK a live save.
+	bool operation_receipts_verified = false;
+	persistence_custody_witness custody_witness = {};
 };
+
+// A newer revision alone cannot prove that death disposition or an attached
+// operation receipt committed. Only the exact successful save can ACK live state.
+inline bool player_save_result_matches_exact_request(const player_snapshot &snapshot,
+						     const player_save_apply_result &result)
+{
+	const bool exact_required = snapshot.death || !snapshot.quest_xp_receipts.empty() ||
+				    !snapshot.spell_effect_receipts.empty() ||
+				    !snapshot.craft_receipts.empty();
+	return !exact_required || ((result.outcome == player_save_apply_outcome::applied ||
+				    result.outcome == player_save_apply_outcome::already_applied) &&
+				   result.durable_revision == snapshot.revision);
+}
 
 struct player_save_completion
 {
@@ -41,10 +120,20 @@ struct player_save_completion
 	player_save_apply_outcome outcome;
 	player_revision_t durable_revision;
 	unsigned int error_code;
+	player_save_custody_diagnosis custody_diagnosis = player_save_custody_diagnosis::none;
 	unsigned int retry_count;
 	uint64_t queued_at_usec;
 	uint64_t started_at_usec;
 	uint64_t completed_at_usec;
+	// Populated only after the exact snapshot succeeds and its revision is
+	// acknowledged. Owners can match operation IDs without inferring from a counter.
+	std::vector<player_quest_xp_receipt_snapshot> quest_xp_receipts;
+	std::vector<player_spell_effect_receipt_snapshot> spell_effect_receipts;
+	// A final failed attempt releases the owner's retry gate without granting an ACK.
+	std::vector<player_spell_effect_receipt_snapshot> failed_spell_effect_receipts;
+	std::vector<player_craft_receipt_snapshot> craft_receipts = {};
+	std::vector<player_craft_receipt_snapshot> failed_craft_receipts = {};
+	persistence_custody_witness custody_witness = {};
 };
 
 enum class player_save_submit_result : uint8_t
@@ -74,6 +163,7 @@ struct player_save_worker_health
 	uint64_t applied;
 	uint64_t stale;
 	uint64_t retryable_failures;
+	uint64_t journal_ack_failures;
 	uint64_t terminal_failures;
 	uint64_t custody_payload_mismatches;
 	uint64_t retries_exhausted;
@@ -90,13 +180,19 @@ struct player_save_worker_health
 using player_save_apply_fn = player_save_apply_result (*)(const player_snapshot &snapshot,
 							  void *context);
 using player_save_journal_append_fn = bool (*)(const player_snapshot &snapshot, void *context);
-using player_save_journal_ack_fn = bool (*)(int pid, player_revision_t revision, void *context);
+using player_save_journal_ack_fn = bool (*)(const player_snapshot &snapshot,
+					    player_revision_t durable_revision, void *context);
+// A terminal hook must establish a login/save fence even when archive I/O
+// fails. It runs on the worker before publishing the completion.
+using player_save_journal_terminal_fn = void (*)(const player_snapshot &snapshot,
+						 void *context) noexcept;
 
 bool player_save_worker_init(player_save_apply_fn apply, void *context,
 			     unsigned int worker_threads = PLAYER_SAVE_WORKER_DEFAULT_THREADS);
 void player_save_worker_shutdown(void);
 bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
-					  player_save_journal_ack_fn acknowledge, void *context);
+					  player_save_journal_ack_fn acknowledge, void *context,
+					  player_save_journal_terminal_fn terminal = nullptr);
 player_save_submit_result player_save_worker_submit(player_snapshot snapshot);
 player_save_submit_result player_save_worker_submit_retained(player_snapshot *snapshot);
 size_t player_save_worker_pulse(player_save_completion *completions_out, size_t capacity);

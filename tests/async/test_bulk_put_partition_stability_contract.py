@@ -76,9 +76,11 @@ assert put_finish.count("++state.total") == 1, (
 )
 
 # defer_durable_put() is the reason the return value is not enough: both its submit
-# failure path and its success path leave put() returning TRUE.
+# failure path and its success path claim the candidate and leave put() returning TRUE.
 defer = body("defer_durable_put")
-assert "item_put_deferred = true" in defer and "report_movement_reject" in defer, (
+assert ("item_movement_transaction_submit" in defer
+        and "report_movement_reject" in defer
+        and "return true;" in defer), (
     "defer_durable_put() must still both defer and reject while claiming the candidate"
 )
 

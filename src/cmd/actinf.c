@@ -9,6 +9,9 @@
  */
 
 #include "persistence/persistence_log.h"
+#include "persistence/persistence_diagnostic_report.h"
+#include "item/item_ownership_runtime.h"
+#include "player/player_revision_state.h"
 #include <ctype.h>
 #include <fnmatch.h>
 #include <iostream>
@@ -23,6 +26,8 @@
 using namespace std;
 
 #include "core/prototypes.h"
+#include "cmd/track.h"
+#include "world/rested.h"
 #include "cmd/information_cache.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -47,6 +52,7 @@ using namespace std;
 #include "world/zone_story_quest_runtime.h"
 #include "economy/nexus_stones.h"
 #include "economy/currency_transaction.h"
+#include "item/item_movement_transaction.h"
 #include "item/objmisc.h"
 #include "classes/paladins.h"
 #include "persistence/persistence_checkpoint.h"
@@ -4124,8 +4130,152 @@ static void show_world_redis_operation(P_char ch, const char *name, const char *
 	send_to_char(line, ch);
 }
 
+// Staff inspection copies resident state only. Native authority and recovery proof
+// must be inspected separately on a coherent stopped clone by the doctor tool.
+static void show_world_persistence_diagnosis(P_char ch, const char *argument)
+try
+{
+	if (IS_NPC(ch) || GET_LEVEL(ch) < AVATAR)
+	{
+		send_to_char("Persistence diagnosis requires avatar access.\n", ch);
+		return;
+	}
+	std::istringstream input(argument ? argument : "");
+	std::string verb, kind, value, extra;
+	persistence_trace_filter filter;
+	if (!(input >> verb >> kind >> value) || verb != "diagnose" || (input >> extra) ||
+	    !persistence_trace_parse_target(kind, value, &filter))
+	{
+		send_to_char(
+			"Usage: world persistence diagnose player <pid> | item <uid> | operation <32-hex-id>\n",
+			ch);
+		return;
+	}
+	const uint64_t observation_begin = persistence_trace_now();
+	const auto trace = persistence_trace_copy(filter);
+	const int target_pid = kind == "player" ? static_cast<int>(filter.id) : 0;
+	const auto archive = player_save_journal_diagnostic_copy(target_pid);
+	const auto save = player_save_pipeline_diagnostic_copy(target_pid);
+	const auto &journal = archive.health;
+	const auto &pipeline = save.health;
+	const auto worker = player_save_worker_health_copy();
+	std::ostringstream out;
+	out << "{\"schema_version\":1,\"report_type\":\"duris-persistence-diagnostic\",\"complete\":false,"
+	    << "\"backend\":\"" << persistence_mode_name() << "\",\"target\":{\"kind\":\"" << kind
+	    << "\",\"value\":\"" << value << "\"},\"observation_begin\":" << observation_begin
+	    << ",\"state\":{\"journal_available\":" << archive.available << ",\"global_fence\":"
+	    << (archive.available ? (archive.global_fence ? "1" : "0") : "null")
+	    << ",\"pipeline_available\":" << save.available
+	    << ",\"journal_initialized\":" << journal.initialized
+	    << ",\"journal_corrupt\":" << journal.corrupt_records
+	    << ",\"journal_unsupported\":" << journal.unsupported_records
+	    << ",\"journal_quarantined_bytes\":" << journal.quarantined_bytes
+	    << ",\"pipeline_accepting\":" << pipeline.accepting
+	    << ",\"replay_complete\":" << pipeline.replay_complete
+	    << ",\"worker_running\":" << worker.running;
+	if (kind == "player")
+	{
+		const int pid = static_cast<int>(filter.id);
+		player_revision_snapshot revision = {};
+		const bool revision_known = player_revision_snapshot_copy(pid, &revision);
+		const bool quarantined = archive.global_fence || archive.pid_fence;
+		const bool save_pending =
+			quarantined || save.retained_save || player_save_worker_pid_pending(pid) ||
+			revision.overflowed || revision.dirty_components ||
+			revision.unacknowledged_components || revision.queued_components ||
+			revision.inflight_components ||
+			revision.current_revision != revision.acknowledged_revision;
+		bool live = false, degraded = false;
+		for (P_char actor = character_list; actor; actor = actor->next)
+			if (IS_PC(actor) && GET_PID(actor) == pid)
+			{
+				live = true;
+				degraded = IS_SET(actor->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED);
+				break;
+			}
+		out << ",\"archive_available\":" << archive.available
+		    << ",\"policy_fence\":" << archive.policy_fence
+		    << ",\"archived_frames\":" << archive.archived_frames
+		    << ",\"archived_bytes\":" << archive.archived_bytes
+		    << ",\"recovery_prepared\":" << archive.recovery_prepared
+		    << ",\"recovery_resolved\":" << archive.recovery_resolved
+		    << ",\"recovery_revoked\":" << archive.recovery_revoked
+		    << ",\"replacement_revision\":" << archive.replacement_revision
+		    << ",\"pid\":" << pid << ",\"live\":" << live
+		    << ",\"load_degraded\":" << degraded << ",\"quarantined\":"
+		    << (archive.available ? (quarantined ? "1" : "0") : "null")
+		    << ",\"login_admitted\":"
+		    << (archive.available ? (quarantined ? "0" : "1") : "null")
+		    << ",\"save_admitted\":"
+		    << (archive.available && save.available ?
+				(!quarantined && save.pid_admission_open ? "1" : "0") :
+				"null")
+		    << ",\"save_pending\":"
+		    << (archive.available && save.available ? (save_pending ? "1" : "0") : "null")
+		    << ",\"revision_known\":" << revision_known
+		    << ",\"current_revision\":" << revision.current_revision
+		    << ",\"acknowledged_revision\":" << revision.acknowledged_revision
+		    << ",\"queued_revision\":" << revision.queued_revision
+		    << ",\"inflight_revision\":" << revision.inflight_revision
+		    << ",\"dirty_components\":" << revision.dirty_components
+		    << ",\"unacknowledged_components\":" << revision.unacknowledged_components;
+	}
+	else if (kind == "item")
+	{
+		item_ownership_runtime_entry item = {};
+		const bool known = item_ownership_runtime_lookup(filter.id, &item);
+		out << ",\"item_known\":" << known << ",\"item_uid\":" << filter.id
+		    << ",\"root_uid\":" << item.root_item_uid
+		    << ",\"parent_uid\":" << item.parent_item_uid
+		    << ",\"owner_type\":" << static_cast<unsigned>(item.owner.type)
+		    << ",\"owner_id\":" << item.owner.id
+		    << ",\"owner_context\":" << item.owner.context_id
+		    << ",\"item_revision\":" << item.item_revision
+		    << ",\"owner_revision\":" << item.owner_revision
+		    << ",\"custody_state\":" << static_cast<unsigned>(item.state);
+	}
+	else
+	{
+		critical_completion completion = {};
+		const bool known =
+			critical_command_coordinator_get_completed(filter.operation, &completion);
+		out << ",\"operation_result_known\":" << known
+		    << ",\"operation_outcome\":" << static_cast<unsigned>(completion.outcome)
+		    << ",\"operation_error\":" << completion.error_code
+		    << ",\"operation_revision\":" << completion.durable_revision;
+	}
+	out << "},\"observation_end\":" << persistence_trace_now() << ',';
+	persistence_trace_snapshot_json(out, trace);
+	out << "}\n";
+	std::string report = out.str();
+	// The non-paged text queue rejects messages >= MAX_STRING_LENGTH. Keep
+	// each send bounded, and keep private identities out of per-player logs.
+	for (size_t offset = 0; offset < report.size(); offset += 16384)
+	{
+		const size_t end = std::min(offset + 16384, report.size());
+		const char saved = report[end];
+		report[end] = '\0';
+		send_to_char(report.data() + offset, ch, LOG_NONE);
+		report[end] = saved;
+	}
+}
+catch (const std::bad_alloc &)
+{
+	send_to_char("Persistence diagnostic capture unavailable; retry.\n", ch);
+}
+
 static void show_world_persistence(P_char ch)
 {
+	const auto trace = persistence_trace_copy({});
+	char trace_line[256];
+	snprintf(
+		trace_line, sizeof(trace_line),
+		"diagnostics available=%d retained=%llu overwritten=%llu dropped=%llu incidents_evicted=%llu\n",
+		trace.available, (unsigned long long)trace.retained,
+		(unsigned long long)trace.overwritten, (unsigned long long)trace.dropped,
+		(unsigned long long)trace.incidents_evicted);
+	send_to_char(trace_line, ch);
+
 	const auto reporting = persistence_log_snapshot();
 	char reporting_line[256];
 	snprintf(
@@ -4167,6 +4317,7 @@ static void show_world_persistence(P_char ch)
 	const epic_transaction_health epic_transactions = epic_transaction_health_copy();
 	const currency_transaction_health currency_transactions =
 		currency_transaction_health_copy();
+	const item_movement_health item_movements = item_movement_transaction_health_copy();
 	const world_recovery_health world_recovery = world_recovery_pipeline_health_copy();
 	const maintenance_scheduler_health maintenance =
 		maintenance_scheduler_health_copy(ne_event_tick);
@@ -4472,6 +4623,32 @@ static void show_world_persistence(P_char ch)
 		 (unsigned long long)currency_transactions.submission_failures,
 		 (unsigned long long)currency_transactions.malformed_completions,
 		 (unsigned long long)currency_transactions.publication_abandoned);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "item_movements state=%s pending=%llu retained_offline=%llu "
+		 "publication_retrying=%llu publication_owner_waiting=%llu "
+		 "publication_blocked=%llu ack_pending=%llu submitted=%llu committed=%llu "
+		 "rejected=%llu submit_failures=%llu stale_publications=%llu\n",
+		 item_movements.publication_blocked || item_movements.publication_ack_pending ||
+				 item_movements.submission_failures ||
+				 item_movements.stale_publications ?
+			 "degraded" :
+		 item_movements.pending || item_movements.publication_retrying ||
+				 item_movements.publication_owner_waiting ?
+			 "pending" :
+			 "ready",
+		 (unsigned long long)item_movements.pending,
+		 (unsigned long long)item_movements.retained_offline,
+		 (unsigned long long)item_movements.publication_retrying,
+		 (unsigned long long)item_movements.publication_owner_waiting,
+		 (unsigned long long)item_movements.publication_blocked,
+		 (unsigned long long)item_movements.publication_ack_pending,
+		 (unsigned long long)item_movements.submitted,
+		 (unsigned long long)item_movements.committed,
+		 (unsigned long long)item_movements.rejected,
+		 (unsigned long long)item_movements.submission_failures,
+		 (unsigned long long)item_movements.stale_publications);
 	send_to_char(line, ch);
 
 	snprintf(line, sizeof(line),
@@ -4783,7 +4960,7 @@ static void show_world_telemetry(P_char ch)
 		 (unsigned long long)health.retryable_failures,
 		 (unsigned long long)health.ambiguous_commits,
 		 (unsigned long long)health.circuit_open_count,
-		 (unsigned long long)(status.active_alert_duration_usec / 1'000U));
+		 (unsigned long long)(status.active_alert_duration_usec / 1000U));
 	send_to_char(line, ch);
 	snprintf(line, sizeof(line),
 		 "coverage gaps=%llu unclosed_tails=%llu attributable_us=%llu unknown_us=%llu\n",
@@ -5129,7 +5306,10 @@ void do_world(P_char ch, char *argument, int /*cmd*/)
 		break;
 
 	case WORLD_PERSISTENCE:
-		show_world_persistence(ch);
+		if (*argument)
+			show_world_persistence_diagnosis(ch, argument);
+		else
+			show_world_persistence(ch);
 		break;
 
 	case WORLD_TELEMETRY:
@@ -6903,6 +7083,9 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 
 		for (aff = ch->affected; aff; aff = aff->next)
 		{
+			if ((aff->type == TAG_RESTED || aff->type == TAG_WELLRESTED) &&
+			    !rested_bonus_effect_active(aff))
+				continue;
 			if ((aff->type > 0) && skills[aff->type].name &&
 			    (aff->type <= LAST_SKILL || aff->type == TAG_CTF ||
 			     aff->type == TAG_RESTED || aff->type == TAG_WELLRESTED ||

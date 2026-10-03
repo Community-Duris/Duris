@@ -61,12 +61,6 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-if ! command -v valgrind >/dev/null 2>&1; then
-  echo "ERROR: valgrind is not installed." >&2
-  echo "       Debian/Ubuntu: sudo apt-get install valgrind" >&2
-  exit 1
-fi
-
 case "$TOOL" in
   memcheck|helgrind|drd|massif|callgrind) ;;
   *) echo "ERROR: unsupported tool '$TOOL'." >&2; exit 2 ;;
@@ -86,6 +80,12 @@ if (( PORT == 7777 )); then
   echo "ERROR: port 7777 is the production port/database; refusing to run." >&2
   echo "       Pick a development port, e.g. --port 4000." >&2
   exit 2
+fi
+
+if ! command -v valgrind >/dev/null 2>&1; then
+  echo "ERROR: valgrind is not installed." >&2
+  echo "       Debian/Ubuntu: sudo apt-get install valgrind" >&2
+  exit 1
 fi
 
 STAGED_BINARY="bin/server/dms_new"

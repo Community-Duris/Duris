@@ -21,32 +21,84 @@ HARNESS = r'''
 #include "world/vnum.obj.h"
 
 #include <cassert>
+#include <algorithm>
+#include <array>
+#include <bit>
+#include <cerrno>
 #include <cstdint>
 #include <fcntl.h>
 #include <string>
+#include <stdexcept>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
+
+bool fail_one_directory_sync = false;
+extern "C" int __real_fsync(int fd);
+extern "C" int __wrap_fsync(int fd)
+{
+    struct stat status{};
+    if (fail_one_directory_sync && fstat(fd, &status) == 0 && S_ISDIR(status.st_mode)) {
+        fail_one_directory_sync = false;
+        errno = EIO;
+        return -1;
+    }
+    return __real_fsync(fd);
+}
 
 struct replay_state
 {
     std::vector<std::pair<int, player_revision_t>> applied;
     bool blocked = false;
+    bool ambiguous = false;
+    bool block_death_only = false;
     bool stale_death = false;
+    bool newer_death = false;
+    bool stale_receipt = false;
+    bool newer_receipt = false;
+    bool verified_receipt = false;
+    bool custody_failure = false;
+    bool throw_failure = false;
     std::vector<uint8_t> expected_death;
 };
 
 player_save_apply_result replay_apply(const player_snapshot &snapshot, void *raw)
 {
     auto &state = *static_cast<replay_state *>(raw);
+    if (state.throw_failure)
+        throw std::runtime_error("fixture exception prose must not enter diagnostics");
+    if (state.custody_failure) {
+        player_save_apply_result failure{player_save_apply_outcome::terminal_failure, 0,
+                                        PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH};
+        failure.custody_diagnosis = player_save_custody_diagnosis::active_custody_absent_from_snapshot;
+        failure.custody_witness.item_uid = 7051;
+        failure.custody_witness.observed_present = true;
+        failure.custody_witness.observed_root = 7051;
+        failure.custody_witness.observed_item_revision = 3;
+        failure.custody_witness.source_line = 123;
+        return failure;
+    }
     if (snapshot.death) {
         std::vector<uint8_t> bytes;
         assert(player_snapshot_encode(snapshot, &bytes) == player_snapshot_codec_result::ok);
         assert(bytes == state.expected_death);
         if (state.stale_death)
             return {player_save_apply_outcome::stale_revision, snapshot.revision + 1, 0};
+        if (state.newer_death)
+            return {player_save_apply_outcome::already_applied, snapshot.revision + 1, 0};
     }
-    if (state.blocked)
+    if (!snapshot.quest_xp_receipts.empty() || !snapshot.spell_effect_receipts.empty() || !snapshot.craft_receipts.empty()) {
+        if (state.verified_receipt)
+            return {player_save_apply_outcome::stale_revision, snapshot.revision + 1, 0,
+                    player_save_custody_diagnosis::none, true};
+        if (state.stale_receipt)
+            return {player_save_apply_outcome::stale_revision, snapshot.revision + 1, 0};
+        if (state.newer_receipt)
+            return {player_save_apply_outcome::already_applied, snapshot.revision + 1, 0};
+    }
+    if (state.ambiguous)
+        return {player_save_apply_outcome::ambiguous_commit, snapshot.revision - 1, 2013};
+    if (state.blocked && (!state.block_death_only || snapshot.death))
         return {player_save_apply_outcome::retryable_failure, snapshot.revision - 1, 1205};
     state.applied.push_back({snapshot.pid, snapshot.revision});
     return {player_save_apply_outcome::applied, snapshot.revision, 0};
@@ -119,6 +171,61 @@ uint64_t read_u64(const unsigned char *bytes)
     return value;
 }
 
+uint32_t crc_payload(const std::vector<uint8_t> &bytes)
+{
+    uint32_t crc = UINT32_MAX;
+    for (uint8_t byte : bytes) {
+        crc ^= byte;
+        for (unsigned bit = 0; bit < 8; ++bit)
+            crc = (crc >> 1) ^ (UINT32_C(0xedb88320) & (0U - (crc & 1U)));
+    }
+    return ~crc;
+}
+
+// CRC32 is a corruption check, not a proof that two operation bodies match.
+// Solve its 32-bit linear correction using a second quest value, producing two
+// codec-valid snapshots with different bytes at the exact same save identity.
+player_snapshot checksum_collision(const player_snapshot &original)
+{
+    auto changed = original;
+    changed.quest_values[0] ^= 1;
+    changed.quest_values[1] = 0;
+    std::vector<uint8_t> original_bytes, baseline_bytes, probe_bytes;
+    assert(player_snapshot_encode(original, &original_bytes) == player_snapshot_codec_result::ok);
+    assert(player_snapshot_encode(changed, &baseline_bytes) == player_snapshot_codec_result::ok);
+    const uint32_t baseline = crc_payload(baseline_bytes);
+    std::array<uint32_t, 32> basis{}, coefficients{};
+    for (unsigned bit = 0; bit < 32; ++bit) {
+        changed.quest_values[1] = std::bit_cast<int32_t>(UINT32_C(1) << bit);
+        assert(player_snapshot_encode(changed, &probe_bytes) == player_snapshot_codec_result::ok);
+        uint32_t value = crc_payload(probe_bytes) ^ baseline;
+        uint32_t coefficient = UINT32_C(1) << bit;
+        for (int pivot = 31; pivot >= 0; --pivot) {
+            if (!(value & (UINT32_C(1) << pivot))) continue;
+            if (basis[pivot]) {
+                value ^= basis[pivot];
+                coefficient ^= coefficients[pivot];
+            } else {
+                basis[pivot] = value;
+                coefficients[pivot] = coefficient;
+                break;
+            }
+        }
+    }
+    uint32_t remaining = crc_payload(original_bytes) ^ baseline, correction = 0;
+    for (int pivot = 31; pivot >= 0; --pivot) {
+        if (!(remaining & (UINT32_C(1) << pivot))) continue;
+        assert(basis[pivot]);
+        remaining ^= basis[pivot];
+        correction ^= coefficients[pivot];
+    }
+    assert(remaining == 0);
+    changed.quest_values[1] = std::bit_cast<int32_t>(correction);
+    assert(player_snapshot_encode(changed, &probe_bytes) == player_snapshot_codec_result::ok);
+    assert(probe_bytes != original_bytes && crc_payload(probe_bytes) == crc_payload(original_bytes));
+    return changed;
+}
+
 void corrupt_first_payload(const std::string &path)
 {
     const int fd = open(path.c_str(), O_RDWR);
@@ -128,6 +235,52 @@ void corrupt_first_payload(const std::string &path)
     value ^= 0x5a;
     assert(pwrite(fd, &value, 1, 72 + 10) == 1);
     assert(fsync(fd) == 0);
+    close(fd);
+}
+
+size_t append_frame_copies(const std::string &path, size_t count)
+{
+    int fd = open(path.c_str(), O_RDONLY);
+    struct stat status{};
+    assert(fd >= 0 && fstat(fd, &status) == 0 && status.st_size > 72);
+    std::vector<unsigned char> frame(status.st_size);
+    assert(read(fd, frame.data(), frame.size()) == static_cast<ssize_t>(frame.size()));
+    close(fd);
+    fd = open(path.c_str(), O_WRONLY | O_APPEND);
+    assert(fd >= 0);
+    for (size_t index = 0; index < count; ++index)
+        assert(write(fd, frame.data(), frame.size()) == static_cast<ssize_t>(frame.size()));
+    assert(fdatasync(fd) == 0);
+    close(fd);
+    return frame.size();
+}
+
+std::vector<unsigned char> read_file_bytes(const std::string &path)
+{
+    const int fd = open(path.c_str(), O_RDONLY);
+    struct stat status{};
+    assert(fd >= 0 && fstat(fd, &status) == 0 && status.st_size >= 0);
+    std::vector<unsigned char> bytes(status.st_size);
+    size_t offset = 0;
+    while (offset < bytes.size()) {
+        const ssize_t count = read(fd, bytes.data() + offset, bytes.size() - offset);
+        assert(count > 0);
+        offset += count;
+    }
+    close(fd);
+    return bytes;
+}
+
+void corrupt_last_payload(const std::string &path)
+{
+    const int fd = open(path.c_str(), O_RDWR);
+    assert(fd >= 0);
+    const off_t last = lseek(fd, -1, SEEK_END);
+    assert(last > 72);
+    unsigned char value = 0;
+    assert(pread(fd, &value, 1, last) == 1);
+    value ^= 0x5a;
+    assert(pwrite(fd, &value, 1, last) == 1 && fsync(fd) == 0);
     close(fd);
 }
 
@@ -165,7 +318,65 @@ int main(int argc, char **argv)
     assert(argc == 2);
     const std::string directory = argv[1];
     const std::string journal = directory + "/player-save.journal";
-    const std::string quarantine = directory + "/player-save.journal.quarantine";
+    const std::string quarantine = directory + "/player-save.journal.quarantine.archive";
+
+    // Startup replay bypasses the live worker. Its original result must reach
+    // diagnostics before quarantining, including exceptions, without changing
+    // the native archive or losing a witness after the rolling history wraps.
+    for (int failure_case : {0, 1, 2}) {
+        const int pid = 9101 + failure_case;
+        const std::string isolated = directory + "-diagnostic-replay-" + std::to_string(failure_case);
+        assert(player_save_journal_init(isolated.c_str()));
+        auto pending = make_snapshot(pid, 42);
+        if (failure_case == 2) {
+            pending.schema_version = PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION;
+            player_quest_xp_receipt_snapshot receipt{};
+            receipt.offering_operation.bytes[0] = 0x42;
+            receipt.reward_index = 1; receipt.amount = 1234;
+            pending.quest_xp_receipts.push_back(receipt);
+        }
+        assert(player_save_journal_append(pending) == player_save_journal_result::ok);
+        const auto frame = read_file_bytes(isolated + "/player-save.journal");
+        player_save_journal_shutdown();
+        assert(player_save_journal_init(isolated.c_str()));
+        replay_state failure;
+        failure.custody_failure = failure_case == 0;
+        failure.throw_failure = failure_case == 1;
+        failure.stale_receipt = failure_case == 2;
+        assert(player_save_journal_replay(replay_apply, &failure) == player_save_journal_result::ok);
+        assert(player_save_journal_pid_quarantined(pid));
+        const auto archive = player_save_journal_diagnostic_copy(pid);
+        assert(archive.available && archive.pid_fence && !archive.global_fence);
+        assert(archive.archived_frames == 1 && archive.archived_bytes == frame.size());
+        const auto bytes = read_file_bytes(isolated + "/player-save.journal.quarantine.archive");
+        assert(std::search(bytes.begin(), bytes.end(), frame.begin(), frame.end()) != bytes.end());
+        auto trace = persistence_trace_copy({critical_entity_type::player, static_cast<uint64_t>(pid)});
+        assert(trace.available && trace.count == 3 && trace.incident_count == 1);
+        assert(trace.events[0].stage == persistence_trace_stage::save_replay_apply);
+        assert(trace.events[1].stage == persistence_trace_stage::save_replay_result);
+        assert(trace.events[2].stage == persistence_trace_stage::save_replay_fence);
+        const auto first = trace.incidents[0];
+        assert(first.revision == 42 && first.outcome == static_cast<unsigned>(player_save_apply_outcome::terminal_failure));
+        assert(first.error == (failure_case == 0 ? PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH :
+                              static_cast<unsigned>(failure_case == 1 ? EFAULT : ESTALE)));
+        assert(first.stage == (failure_case == 2 ? persistence_trace_stage::save_replay_fence :
+                               persistence_trace_stage::save_replay_result));
+        if (failure_case == 0) {
+            assert(first.diagnosis == 6 && first.witness.item_uid == 7051);
+            assert(first.witness.observed_item_revision == 3 && first.witness.source_line == 123);
+        }
+        for (size_t i = 0; i < PERSISTENCE_TRACE_CAPACITY; ++i) {
+            persistence_trace_event noise; noise.pid = 9300; persistence_trace_record(noise);
+        }
+        trace = persistence_trace_copy({critical_entity_type::player, static_cast<uint64_t>(pid)});
+        assert(trace.count == 0 && trace.incident_count == 1);
+        assert(trace.incidents[0].sequence == first.sequence && trace.incidents[0].error == first.error);
+        if (failure_case == 0) {
+            const auto item = persistence_trace_copy({critical_entity_type::item, 7051});
+            assert(item.incident_count == 1 && item.incidents[0].sequence == first.sequence);
+        }
+        player_save_journal_shutdown();
+    }
 
     player_snapshot original = make_snapshot(10, 1);
     std::vector<uint8_t> encoded;
@@ -185,13 +396,63 @@ int main(int argc, char **argv)
     assert(player_snapshot_decode(truncated.data(), truncated.size(), &decoded) ==
            player_snapshot_codec_result::truncated);
 
+    player_snapshot quest_xp = make_snapshot(11, 2);
+    quest_xp.schema_version = PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION;
+    quest_xp.encoded_size_bound += 4 + 24;
+    player_quest_xp_receipt_snapshot xp_receipt = {};
+    xp_receipt.offering_operation.bytes[0] = 0x42;
+    xp_receipt.reward_index = 63;
+    xp_receipt.amount = 1234;
+    quest_xp.quest_xp_receipts.push_back(xp_receipt);
+    std::vector<uint8_t> quest_xp_bytes;
+    assert(player_snapshot_encode(quest_xp, &quest_xp_bytes) ==
+           player_snapshot_codec_result::ok);
+    assert(player_snapshot_decode(quest_xp_bytes.data(), quest_xp_bytes.size(), &decoded) ==
+           player_snapshot_codec_result::ok);
+    assert(decoded.schema_version == PLAYER_SNAPSHOT_QUEST_REWARD_SCHEMA_VERSION &&
+           decoded.quest_xp_receipts.size() == 1 &&
+           decoded.quest_xp_receipts[0].offering_operation.bytes ==
+               xp_receipt.offering_operation.bytes &&
+           decoded.quest_xp_receipts[0].reward_index == 63 &&
+           decoded.quest_xp_receipts[0].amount == 1234);
+    quest_xp.quest_xp_receipts.push_back(xp_receipt);
+    assert(player_snapshot_encode(quest_xp, &quest_xp_bytes) ==
+           player_snapshot_codec_result::invalid_value);
+    for (size_t size = 0; size < quest_xp_bytes.size(); ++size) {
+        decoded.pid = 999;
+        assert(player_snapshot_decode(quest_xp_bytes.data(), size, &decoded) != player_snapshot_codec_result::ok);
+        assert(decoded.pid == 999);
+    }
+
+    player_snapshot spell = make_snapshot(12, 3);
+    spell.schema_version = PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION;
+    player_spell_effect_receipt_snapshot spell_receipt = {};
+    spell_receipt.operation_id.bytes[0] = 0xa5;
+    spell_receipt.effect_id = 6;
+    spell.spell_effect_receipts.push_back(spell_receipt);
+    std::vector<uint8_t> spell_bytes;
+    assert(player_snapshot_encode(spell, &spell_bytes) ==
+           player_snapshot_codec_result::ok);
+    assert(player_snapshot_decode(spell_bytes.data(), spell_bytes.size(), &decoded) ==
+           player_snapshot_codec_result::ok);
+    assert(decoded.schema_version == PLAYER_SNAPSHOT_SPELL_EFFECT_RECEIPT_SCHEMA_VERSION &&
+           decoded.spell_effect_receipts.size() == 1 &&
+           decoded.spell_effect_receipts[0].operation_id.bytes ==
+               spell_receipt.operation_id.bytes &&
+           decoded.spell_effect_receipts[0].effect_id == spell_receipt.effect_id);
+    spell.spell_effect_receipts.push_back(spell_receipt);
+    assert(player_snapshot_encode(spell, &spell_bytes) ==
+           player_snapshot_codec_result::invalid_value);
+    for (size_t size = 0; size < spell_bytes.size(); ++size) {
+        decoded.pid = 999;
+        assert(player_snapshot_decode(spell_bytes.data(), size, &decoded) != player_snapshot_codec_result::ok);
+        assert(decoded.pid == 999);
+    }
+
     player_snapshot death = make_snapshot(80, 4);
     death.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
     death.items.clear();
     death.pets.clear();
-    // Wire versions 1-8 predate the renewable-ward affect columns. Keep this
-    // death frame free of affects so the downgrade below models that format.
-    death.affects.clear();
     death.status_integers.push_back({player_status_field::deaths, 7, 0, false});
     death.death.emplace();
     auto &recovery = *death.death;
@@ -301,13 +562,36 @@ int main(int argc, char **argv)
     assert(player_save_journal_health_copy().duplicates == 1);
     assert(player_save_journal_health_copy().records == 0);
 
+    spell.spell_effect_receipts.pop_back();
+    quest_xp.quest_xp_receipts.pop_back();
+    for (const auto &original : {make_snapshot(91, 1), spell, quest_xp}) {
+        const auto colliding = checksum_collision(original);
+        const auto duplicates_before = player_save_journal_health_copy().duplicates;
+        assert(player_save_journal_append(original) == player_save_journal_result::ok);
+        assert(player_save_journal_append(colliding) == player_save_journal_result::ok);
+        replay_state collision_replay;
+        assert(player_save_journal_replay(replay_apply, &collision_replay) == player_save_journal_result::ok);
+        assert(collision_replay.applied.size() == 2);
+        assert(player_save_journal_health_copy().duplicates == duplicates_before);
+        assert(player_save_journal_health_copy().records == 0);
+    }
+    // The same CRC collision bucket still suppresses a genuine duplicate only.
+    const auto duplicate_source = make_snapshot(92, 1);
+    const auto duplicate_collision = checksum_collision(duplicate_source);
+    const auto duplicates_before = player_save_journal_health_copy().duplicates;
+    for (const auto &snapshot : {duplicate_source, duplicate_collision, duplicate_source})
+        assert(player_save_journal_append(snapshot) == player_save_journal_result::ok);
+    replay_state collision_with_duplicate;
+    assert(player_save_journal_replay(replay_apply, &collision_with_duplicate) == player_save_journal_result::ok);
+    assert(collision_with_duplicate.applied.size() == 2);
+    assert(player_save_journal_health_copy().duplicates == duplicates_before + 1);
+    assert(player_save_journal_health_copy().records == 0);
+
     // Existing journal envelopes retain their original schema number while
     // decoding normalizes their snapshots. Exercise all four previous versions.
     for (uint8_t version : {1, 2, 3, 4}) {
         auto legacy = version % 2 ? make_snapshot(90, 1) : death;
         legacy.pets.clear();
-        // All legacy wire versions predate the renewable-ward affect columns.
-        legacy.affects.clear();
         auto prefix = legacy;
         prefix.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
         prefix.death.reset();
@@ -328,8 +612,9 @@ int main(int argc, char **argv)
         assert(player_save_journal_health_copy().records == 0);
     }
 
-    // A later player checkpoint cannot discard an unresolved death. Restart and
-    // replay retain its complete payload until its own disposition is acknowledged.
+    // A later player checkpoint cannot discard an unresolved death. If replay
+    // cannot prove that death's own disposition, quarantine the complete PID
+    // group durably rather than acknowledging or retrying it forever.
     assert(player_save_journal_append(death) == player_save_journal_result::ok);
     assert(player_save_journal_append(make_snapshot(80, 5)) == player_save_journal_result::ok);
     assert(player_save_journal_checkpoint(80, 5) == player_save_journal_result::ok);
@@ -338,27 +623,161 @@ int main(int argc, char **argv)
     assert(player_save_journal_init(directory.c_str()));
     replay.expected_death = death_bytes;
     replay.stale_death = true;
-    assert(player_save_journal_replay(replay_apply, &replay) == player_save_journal_result::replay_blocked);
-    assert(player_save_journal_health_copy().records == 1);
-    replay.stale_death = false;
-    replay.blocked = true;
-    assert(player_save_journal_replay(replay_apply, &replay) == player_save_journal_result::replay_blocked);
-    assert(player_save_journal_health_copy().records == 1);
-    replay.blocked = false;
+    replay.applied.clear();
     assert(player_save_journal_replay(replay_apply, &replay) == player_save_journal_result::ok);
     assert(player_save_journal_health_copy().records == 0);
+    assert(player_save_journal_pid_quarantined(death.pid));
+    assert(replay.applied.empty());
+    player_save_journal_shutdown();
+    assert(player_save_journal_init(directory.c_str()));
+    assert(player_save_journal_health_copy().records == 0);
+    assert(player_save_journal_pid_quarantined(death.pid));
+    player_save_journal_shutdown();
 
+    // A newer already-applied revision also cannot prove death custody.
+    const std::string newer_death_directory = directory + "-newer-death-unproven";
+    assert(player_save_journal_init(newer_death_directory.c_str()));
+    assert(player_save_journal_append(death) == player_save_journal_result::ok);
+    replay.newer_death = true;
+    replay.stale_death = false;
+    replay.applied.clear();
+    assert(player_save_journal_replay(replay_apply, &replay) == player_save_journal_result::ok);
+    assert(player_save_journal_health_copy().records == 0);
+    assert(player_save_journal_pid_quarantined(death.pid));
+    assert(replay.applied.empty());
+    player_save_journal_shutdown();
+
+    // Retryable errors remain retryable: they do not ACK or quarantine the PID.
+    const std::string retry_death_directory = directory + "-retry-death";
+    assert(player_save_journal_init(retry_death_directory.c_str()));
+    assert(player_save_journal_append(death) == player_save_journal_result::ok);
+    replay.newer_death = false;
+    replay.blocked = true;
+    replay.block_death_only = true;
+    replay.applied.clear();
+    assert(player_save_journal_replay(replay_apply, &replay) ==
+           player_save_journal_result::replay_blocked);
+    assert(player_save_journal_health_copy().records == 1);
+    assert(!player_save_journal_pid_quarantined(death.pid));
+    replay.blocked = false;
+    replay.block_death_only = false;
+    assert(player_save_journal_replay(replay_apply, &replay) == player_save_journal_result::ok);
+    assert(player_save_journal_health_copy().records == 0);
+    assert(!player_save_journal_pid_quarantined(death.pid));
+    player_save_journal_shutdown();
+
+    // Protect modern death frames with spell and XP receipts through checkpoints.
+    death.schema_version = PLAYER_SNAPSHOT_DEATH_SPELL_RECEIPT_SCHEMA_VERSION;
+    death.spell_effect_receipts.push_back(spell_receipt);
+    death.encoded_size_bound += 24;
+    unsigned int case_number = 0;
+    for (bool with_xp : {false, true}) {
+        if (with_xp) {
+            death.schema_version = PLAYER_SNAPSHOT_DEATH_QUEST_RECEIPT_SCHEMA_VERSION;
+            death.quest_xp_receipts.push_back(xp_receipt);
+            death.encoded_size_bound += 28;
+        }
+        for (int outcome : {0, 1, 2, 3}) {
+            const std::string isolated = directory + "-receipt-death-" + std::to_string(++case_number);
+            assert(player_save_journal_init(isolated.c_str()));
+            assert(player_save_journal_append(death) == player_save_journal_result::ok);
+            assert(player_save_journal_checkpoint(death.pid, death.revision) == player_save_journal_result::ok);
+            assert(player_save_journal_health_copy().records == 1);
+            replay_state proof;
+            assert(player_snapshot_encode(death, &proof.expected_death) == player_snapshot_codec_result::ok);
+            proof.stale_death = outcome == 0;
+            proof.newer_death = outcome == 1;
+            proof.blocked = outcome == 2;
+            proof.ambiguous = outcome == 3;
+            const bool retry = outcome >= 2;
+            assert(player_save_journal_replay(replay_apply, &proof) ==
+                   (retry ? player_save_journal_result::replay_blocked : player_save_journal_result::ok));
+            assert(player_save_journal_health_copy().records == (retry ? 1 : 0));
+            assert(player_save_journal_pid_quarantined(death.pid) == !retry);
+            player_save_journal_shutdown();
+            assert(player_save_journal_init(isolated.c_str()));
+            assert(player_save_journal_pid_quarantined(death.pid) == !retry);
+            if (retry) {
+                proof.blocked = proof.ambiguous = false;
+                assert(player_save_journal_replay(replay_apply, &proof) == player_save_journal_result::ok);
+                assert(player_save_journal_health_copy().records == 0);
+            }
+            player_save_journal_shutdown();
+        }
+    }
+    auto craft = spell;
+    craft.schema_version = PLAYER_SNAPSHOT_CRAFT_RECEIPT_SCHEMA_VERSION;
+    craft.components = PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_SKILLS | PLAYER_COMPONENT_AFFECTS | PLAYER_COMPONENT_TROPHIES;
+    craft.spell_effect_receipts.clear();
+    player_craft_receipt_snapshot craft_receipt = {};
+    craft_receipt.operation_id.bytes[0] = 99;
+    craft_receipt.discipline = 2;
+    craft_receipt.experience = 7000;
+    craft.craft_receipts.push_back(craft_receipt);
+    craft.encoded_size_bound += 1024;
+    for (const player_snapshot &receipt_save : {spell, quest_xp, craft}) {
+        for (int outcome : {0, 1, 2, 3, 4}) {
+            const std::string isolated = directory + "-receipt-operation-" + std::to_string(++case_number);
+            assert(player_save_journal_init(isolated.c_str()));
+            assert(player_save_journal_append(receipt_save) == player_save_journal_result::ok);
+            assert(player_save_journal_checkpoint(receipt_save.pid, receipt_save.revision + 1) == player_save_journal_result::ok);
+            assert(player_save_journal_health_copy().records == 1);
+            replay_state proof;
+            proof.stale_receipt = outcome == 0;
+            proof.newer_receipt = outcome == 1;
+            proof.verified_receipt = outcome == 2;
+            proof.blocked = outcome == 3;
+            proof.ambiguous = outcome == 4;
+            if (proof.verified_receipt)
+                assert(!player_save_result_matches_exact_request(receipt_save, replay_apply(receipt_save, &proof)));
+            const bool retry = outcome >= 3;
+            assert(player_save_journal_replay(replay_apply, &proof) ==
+                   (retry ? player_save_journal_result::replay_blocked : player_save_journal_result::ok));
+            assert(player_save_journal_health_copy().records == (retry ? 1 : 0));
+            assert(player_save_journal_pid_quarantined(receipt_save.pid) == (outcome < 2));
+            player_save_journal_shutdown();
+            assert(player_save_journal_init(isolated.c_str()));
+            assert(player_save_journal_pid_quarantined(receipt_save.pid) == (outcome < 2));
+            if (retry) {
+                proof.blocked = proof.ambiguous = false;
+                assert(player_save_journal_replay(replay_apply, &proof) == player_save_journal_result::ok);
+                assert(player_save_journal_health_copy().records == 0);
+            }
+            player_save_journal_shutdown();
+        }
+        const std::string isolated = directory + "-receipt-exact-ack-" + std::to_string(++case_number);
+        assert(player_save_journal_init(isolated.c_str()));
+        assert(player_save_journal_append(receipt_save) == player_save_journal_result::ok);
+        assert(player_save_journal_checkpoint(receipt_save.pid, receipt_save.revision) == player_save_journal_result::ok);
+        assert(player_save_journal_health_copy().records == 1);
+        auto mismatch = receipt_save;
+        mismatch.room_vnum += 1;
+        assert(!player_save_journal_worker_ack(mismatch, mismatch.revision, nullptr));
+        assert(player_save_journal_health_copy().records == 1);
+        assert(player_save_journal_worker_ack(receipt_save, receipt_save.revision, nullptr));
+        assert(player_save_journal_health_copy().records == 0);
+        player_save_journal_shutdown();
+    }
+
+    assert(player_save_journal_init(directory.c_str()));
     assert(player_save_journal_append(make_snapshot(30, 3)) == player_save_journal_result::ok);
     assert(player_save_journal_append(make_snapshot(31, 4)) == player_save_journal_result::ok);
     player_save_journal_shutdown();
     corrupt_first_payload(journal);
-    assert(player_save_journal_init(directory.c_str()));
+    const auto corrupt_original = read_file_bytes(journal);
+    assert(!player_save_journal_init(directory.c_str()));
     auto health = player_save_journal_health_copy();
-    assert(health.corrupt_records == 1 && health.records == 1);
+    assert(health.corrupt_records == 1);
     assert(stat(quarantine.c_str(), &status) == 0 && (status.st_mode & 0777) == 0600);
-    replay.applied.clear();
-    assert(player_save_journal_replay(replay_apply, &replay) == player_save_journal_result::ok);
-    assert((replay.applied == std::vector<std::pair<int, player_revision_t>>{{31, 4}}));
+    assert(status.st_size > 0 && player_save_journal_health_copy().quarantined_bytes > 0);
+    assert(read_file_bytes(journal) == corrupt_original);
+    assert(player_save_journal_pid_quarantined(30));
+    assert(player_save_journal_pid_quarantined(31));
+    player_save_journal_shutdown();
+    // Disposable fixture-only reset after proving the raw evidence is preserved.
+    assert(unlink(quarantine.c_str()) == 0);
+    assert(truncate(journal.c_str(), 0) == 0);
+    assert(player_save_journal_init(directory.c_str()));
 
     assert(player_save_journal_append(make_snapshot(40, 5)) == player_save_journal_result::ok);
     replay.blocked = true;
@@ -375,11 +794,14 @@ int main(int argc, char **argv)
     const uint64_t record_size = read_u64(header + 16);
     assert(record_size > 10);
     assert(truncate(journal.c_str(), record_size - 10) == 0);
-    assert(player_save_journal_init(directory.c_str()));
+    const auto truncated_original = read_file_bytes(journal);
+    assert(!player_save_journal_init(directory.c_str()));
     assert(player_save_journal_health_copy().corrupt_records >= 1);
-    assert(player_save_journal_health_copy().records == 0);
+    assert(read_file_bytes(journal) == truncated_original);
+    assert(player_save_journal_pid_quarantined(40));
     player_save_journal_shutdown();
 
+    assert(unlink(quarantine.c_str()) == 0);
     assert(truncate(journal.c_str(), 0) == 0);
     assert(player_save_journal_init(directory.c_str()));
     assert(player_save_journal_append(make_snapshot(50, 6)) == player_save_journal_result::ok);
@@ -390,9 +812,11 @@ int main(int argc, char **argv)
     assert(pwrite(fd, &unsupported_version, 1, 8) == 1);
     assert(fsync(fd) == 0);
     close(fd);
-    assert(player_save_journal_init(directory.c_str()));
+    const auto unsupported_original = read_file_bytes(journal);
+    assert(!player_save_journal_init(directory.c_str()));
     assert(player_save_journal_health_copy().unsupported_records == 1);
-    assert(player_save_journal_health_copy().records == 0);
+    assert(read_file_bytes(journal) == unsupported_original);
+    assert(player_save_journal_pid_quarantined(50));
     player_save_journal_shutdown();
 
     const std::string unsafe_directory = directory + "-unsafe";
@@ -407,6 +831,184 @@ int main(int argc, char **argv)
            player_save_journal_result::quota_exceeded);
     assert(player_save_journal_health_copy().quota_exceeded);
     player_save_journal_shutdown();
+
+    const std::string death_directory = directory + "-death-identity";
+    auto other_death = death;
+    other_death.death->operation_id.bytes[0] = 3;
+    assert(player_save_journal_init(death_directory.c_str()));
+    assert(player_save_journal_append(death) == player_save_journal_result::ok);
+    assert(player_save_journal_append(other_death) == player_save_journal_result::ok);
+    assert(player_save_journal_checkpoint(death.pid, death.revision) ==
+           player_save_journal_result::ok);
+    assert(player_save_journal_health_copy().records == 2);
+    assert(!player_save_journal_worker_ack(death, death.revision + 1, nullptr));
+    assert(player_save_journal_worker_ack(death, death.revision, nullptr));
+    assert(player_save_journal_health_copy().records == 1);
+    player_save_journal_shutdown();
+    assert(player_save_journal_init(death_directory.c_str()));
+    replay_state remaining_death;
+    assert(player_snapshot_encode(other_death, &remaining_death.expected_death) ==
+           player_snapshot_codec_result::ok);
+    remaining_death.blocked = true;
+    assert(player_save_journal_replay(replay_apply, &remaining_death) ==
+           player_save_journal_result::replay_blocked);
+    assert(player_save_journal_health_copy().records == 1);
+    remaining_death.blocked = false;
+    assert(player_save_journal_replay(replay_apply, &remaining_death) ==
+           player_save_journal_result::ok);
+    assert(player_save_journal_health_copy().records == 0);
+    player_save_journal_shutdown();
+
+    assert(player_snapshot_encode(death, &death_bytes) == player_snapshot_codec_result::ok);
+    const std::string synced_directory = directory + "-renamed-before-sync";
+    const std::string synced_file = synced_directory + "/player-save.journal";
+    assert(player_save_journal_init(synced_directory.c_str()));
+    assert(player_save_journal_append(death) == player_save_journal_result::ok);
+    assert(player_save_journal_append(make_snapshot(81, 1)) == player_save_journal_result::ok);
+    const auto original_deaths = read_file_bytes(synced_file);
+    fail_one_directory_sync = true;
+    assert(!player_save_journal_worker_ack(death, death.revision, nullptr));
+    assert(!fail_one_directory_sync);
+    const auto after_rename = read_file_bytes(synced_file);
+    assert(after_rename.size() < original_deaths.size() && !after_rename.empty());
+    assert(player_save_journal_worker_ack(death, death.revision, nullptr));
+    assert(player_save_journal_health_copy().records == 1);
+    player_save_journal_shutdown();
+    assert(player_save_journal_init(synced_directory.c_str()));
+    replay_state synced_remaining;
+    synced_remaining.blocked = true;
+    assert(player_save_journal_replay(replay_apply, &synced_remaining) ==
+           player_save_journal_result::replay_blocked);
+    assert(player_save_journal_health_copy().records == 1);
+    player_save_journal_shutdown();
+
+    const std::string partial_directory = directory + "-partial-proof";
+    const std::string partial_file = partial_directory + "/player-save.journal";
+    assert(player_save_journal_init(partial_directory.c_str()));
+    assert(player_save_journal_append(make_snapshot(70, 1)) == player_save_journal_result::ok);
+    assert(player_save_journal_append(make_snapshot(71, 1)) == player_save_journal_result::ok);
+    assert(player_save_journal_append(death) == player_save_journal_result::ok);
+    const auto partial_original = read_file_bytes(partial_file);
+    replay_state partial;
+    partial.expected_death = death_bytes;
+    partial.blocked = true;
+    partial.block_death_only = true;
+    const std::string partial_temp = partial_file + ".tmp";
+    assert(mkdir(partial_temp.c_str(), 0700) == 0);
+    assert(player_save_journal_replay(replay_apply, &partial) ==
+           player_save_journal_result::io_failure);
+    assert(partial.applied.size() == 2);
+    assert(read_file_bytes(partial_file) == partial_original);
+    assert(rmdir(partial_temp.c_str()) == 0);
+    partial.applied.clear();
+    assert(player_save_journal_replay(replay_apply, &partial) ==
+           player_save_journal_result::replay_blocked);
+    assert((partial.applied == std::vector<std::pair<int, player_revision_t>>{{70, 1}, {71, 1}}));
+    assert(player_save_journal_health_copy().records == 1);
+    player_save_journal_shutdown();
+    assert(player_save_journal_init(partial_directory.c_str()));
+    assert(player_save_journal_health_copy().records == 1);
+    partial.blocked = false;
+    partial.applied.clear();
+    assert(player_save_journal_replay(replay_apply, &partial) == player_save_journal_result::ok);
+    assert((partial.applied == std::vector<std::pair<int, player_revision_t>>{{80, 4}}));
+    assert(player_save_journal_health_copy().records == 0);
+    player_save_journal_shutdown();
+
+    // The writer must not create a valid journal which checkpoint/startup cannot
+    // read. Use distinct PIDs to exercise the many-player replay cost.
+    const std::string capacity_directory = directory + "-many-pids";
+    assert(player_save_journal_init(capacity_directory.c_str()));
+    for (int index = 0; index < 4841; ++index)
+        assert(player_save_journal_append(make_snapshot(10000 + index, 1)) ==
+               player_save_journal_result::ok);
+    assert(player_save_journal_health_copy().records == 4841);
+    assert(player_save_journal_checkpoint(10000, 1) == player_save_journal_result::ok);
+    assert(player_save_journal_health_copy().records == 4840);
+    player_save_journal_shutdown();
+    assert(player_save_journal_init(capacity_directory.c_str()));
+    assert(player_save_journal_health_copy().records == 4840);
+    replay_state many;
+    assert(player_save_journal_replay(replay_apply, &many) == player_save_journal_result::ok);
+    assert(many.applied.size() == 4840);
+    assert(many.applied.front().first == 10001 && many.applied.back().first == 14840);
+    assert(player_save_journal_health_copy().records == 0);
+    player_save_journal_shutdown();
+
+    // The legacy writer may have exceeded the new admission bound already.
+    const std::string legacy_directory = directory + "-legacy-over-limit";
+    const std::string legacy_file = legacy_directory + "/player-save.journal";
+    assert(player_save_journal_init(legacy_directory.c_str()));
+    assert(player_save_journal_append(make_snapshot(6000, 1)) ==
+           player_save_journal_result::ok);
+    player_save_journal_shutdown();
+    const size_t frame_size = append_frame_copies(legacy_file, PLAYER_SAVE_JOURNAL_MAX_RECORDS);
+    assert(player_save_journal_init(legacy_directory.c_str()));
+    assert(player_save_journal_health_copy().records == PLAYER_SAVE_JOURNAL_MAX_RECORDS + 1);
+    assert(player_save_journal_health_copy().record_limit_exceeded);
+    assert(player_save_journal_append(make_snapshot(6001, 1)) ==
+           player_save_journal_result::quota_exceeded);
+    assert(player_save_journal_health_copy().backpressure == 1);
+    assert(stat(legacy_file.c_str(), &status) == 0 &&
+           status.st_size == static_cast<off_t>(frame_size *
+                                                (PLAYER_SAVE_JOURNAL_MAX_RECORDS + 1)));
+    const auto protected_legacy_bytes = read_file_bytes(legacy_file);
+    const std::string temporary_path = legacy_directory + "/player-save.journal.tmp";
+    assert(mkdir(temporary_path.c_str(), 0700) == 0);
+    assert(player_save_journal_checkpoint(6000, 1) == player_save_journal_result::io_failure);
+    assert(read_file_bytes(legacy_file) == protected_legacy_bytes);
+    assert(rmdir(temporary_path.c_str()) == 0);
+    replay_state legacy_replay;
+    legacy_replay.blocked = true;
+    assert(player_save_journal_replay(replay_apply, &legacy_replay) ==
+           player_save_journal_result::replay_blocked);
+    assert(player_save_journal_health_copy().records == PLAYER_SAVE_JOURNAL_MAX_RECORDS + 1);
+    assert(read_file_bytes(legacy_file) == protected_legacy_bytes);
+    legacy_replay.blocked = false;
+    assert(player_save_journal_replay(replay_apply, &legacy_replay) ==
+           player_save_journal_result::ok);
+    assert(player_save_journal_health_copy().records == 0);
+    player_save_journal_shutdown();
+
+    // Verify a corrupt frame beyond the old boundary is examined/quarantined.
+    assert(player_save_journal_init(legacy_directory.c_str()));
+    assert(player_save_journal_append(make_snapshot(6002, 1)) ==
+           player_save_journal_result::ok);
+    player_save_journal_shutdown();
+    append_frame_copies(legacy_file, 4096);
+    corrupt_last_payload(legacy_file);
+    const auto late_corrupt_original = read_file_bytes(legacy_file);
+    assert(!player_save_journal_init(legacy_directory.c_str()));
+    assert(player_save_journal_health_copy().corrupt_records == 1);
+    assert(player_save_journal_health_copy().quarantined_bytes == frame_size);
+    assert(read_file_bytes(legacy_file) == late_corrupt_original);
+    assert(player_save_journal_pid_quarantined(6002));
+    assert(player_save_journal_pid_quarantined(6003));
+    player_save_journal_shutdown();
+
+    const std::string unsupported_directory = legacy_directory + "-unsupported";
+    const std::string unsupported_file = unsupported_directory + "/player-save.journal";
+    assert(player_save_journal_init(unsupported_directory.c_str()));
+    assert(player_save_journal_append(make_snapshot(6003, 1)) ==
+           player_save_journal_result::ok);
+    player_save_journal_shutdown();
+    append_frame_copies(unsupported_file, 4096);
+    int last_fd = open(unsupported_file.c_str(), O_RDWR);
+    assert(last_fd >= 0);
+    const unsigned char late_unsupported_version = 2;
+    assert(pwrite(last_fd, &late_unsupported_version, 1, frame_size * 4096 + 8) == 1);
+    assert(fsync(last_fd) == 0);
+    close(last_fd);
+    const auto late_unsupported_original = read_file_bytes(unsupported_file);
+    assert(!player_save_journal_init(unsupported_directory.c_str()));
+    assert(player_save_journal_health_copy().unsupported_records == 1);
+    assert(read_file_bytes(unsupported_file) == late_unsupported_original);
+    assert(player_save_journal_pid_quarantined(6003));
+    const std::string legacy_archive = unsupported_directory + "/player-save.journal.quarantine.archive";
+    assert(stat(legacy_archive.c_str(), &status) == 0 &&
+           status.st_size > static_cast<off_t>(frame_size));
+    assert(player_save_journal_health_copy().quarantined_bytes == frame_size);
+    player_save_journal_shutdown();
     return 0;
 }
 '''
@@ -417,7 +1019,7 @@ with tempfile.TemporaryDirectory(prefix="duris-player-journal-") as temp_dir:
     source = Path(temp_dir) / "journal_test.cpp"
     binary = Path(temp_dir) / "journal_test"
     source.write_text(HARNESS)
-    subprocess.run(
+    compiled = subprocess.run(
         [
             "g++",
             "-std=c++20",
@@ -426,6 +1028,7 @@ with tempfile.TemporaryDirectory(prefix="duris-player-journal-") as temp_dir:
             "-Wpedantic",
             "-Werror",
             "-pthread",
+            "-Wl,--wrap=fsync",
             "-Isrc",
             str(source),
             rel("player_snapshot_codec.c"),
@@ -434,11 +1037,13 @@ with tempfile.TemporaryDirectory(prefix="duris-player-journal-") as temp_dir:
             str(binary),
         ],
         cwd=ROOT,
-        check=True,
         capture_output=True,
         text=True,
     )
-    subprocess.run([str(binary), str(journal_dir)], check=True, timeout=15)
+    if compiled.returncode:
+        print(compiled.stderr)
+        compiled.check_returncode()
+    subprocess.run([str(binary), str(journal_dir)], check=True, timeout=180)
 
 for contract in (
     "JOURNAL_MAGIC",
@@ -451,7 +1056,8 @@ for contract in (
 ):
     assert contract in JOURNAL + CODEC
 assert "sizeof(player_snapshot)" not in CODEC
-assert "sql" not in CODEC.lower()
+assert "MYSQL *" not in CODEC
+assert "mysql_query" not in CODEC
 print("[PASS] snapshot codec is typed, endian-stable, bounded, and host-layout independent")
 
 for contract in (
@@ -473,7 +1079,8 @@ print("[PASS] append, permissions, quota, and sync boundaries fail closed")
 
 for contract in (
     "find_next_magic",
-    "append_quarantine",
+    "commit_quarantine_archive",
+    "sha256",
     "JOURNAL_TEMP_NAME",
     "O_EXCL",
     "rename(temporary.c_str(), journal_path.c_str())",

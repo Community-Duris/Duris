@@ -10,6 +10,7 @@ root = Path(__file__).resolve().parents[2]
 copyover = (SRC / "copyover.c").read_text()
 comm = (SRC / "comm.c").read_text()
 db = (SRC / "db.c").read_text()
+fight = (SRC / "combat/fight.c").read_text()
 
 body = copyover[copyover.index("bool copyover_save("):copyover.index(
     "static P_char copyover_load_player", copyover.index("bool copyover_save(")
@@ -28,13 +29,33 @@ save = body.index("persistence_save_character_terminal")
 flush = body.index("persistence_flush_all_character_saves")
 drain = body.index("player_save_pipeline_drain")
 publish = body.index("rename(copyover_tmp, COPYOVER_FILE)")
+codec = (SRC / "persistence/copyover_codec.c").read_text()
 close = body.index("close(d->descriptor)")
 prepare_client = body.index("copyover_prepare_socket(d->descriptor)")
 progress_notice = body.index("*** Copyover in progress... ***")
 execute = body.index("execl(")
 
 checks = {
+    "copyover restores the durable account identity":
+        "copyover_load_account(result.account_name, result.pid, GET_NAME(player))" in recover and
+        "str_dup(desc_entry.player_name)" not in recover,
+    "copyover releases Redis only after durable handoff and before transports close":
+        publish < body.index("redis_world_recovery_prepare_copyover()") < close,
+    "failed exec resumes Redis recovery":
+        "redis_world_recovery_resume_after_copyover()" in copyover,
     "copyover returns failure": body.count("return false;") >= 10,
+    "connected death retries are serialized and disconnected retries block copyover":
+        "death_extract_retry_pending(pending_character)" in body and
+        "copyover_descriptor_is_eligible(pending_desc)" in body and
+        "a death recovery cannot be preserved" in body and
+        "death_extract_retry_copy_state(ch" in descriptor_capture,
+    "retry query covers scheduled and fallback retries":
+        "death_retry_delay > 0 || ch->only.pc->death_retry_due_usec ||" in fight[
+            fight.index("bool death_extract_retry_pending(P_char ch)"):].split("}", 1)[0] and
+        "get_scheduled(ch, event_death_extract_retry)" in fight[
+            fight.index("bool death_extract_retry_pending(P_char ch)"):].split("}", 1)[0] and
+        "ch->only.pc->death_retry_delay = delay;" in fight[
+            fight.index("static void schedule_death_extract_retry("):].split("}", 1)[0],
     "copyover refuses sessions that cannot survive exec before any save or close":
         body.index("non-preservable connection") < save and
         body.index("non-preservable connection") < close,
@@ -87,6 +108,20 @@ checks = {
     "copyover keeps materialized inventory attached": "reset_char(ch);" not in recover,
     "descriptor capture requires the player's actual pet link":
         "GET_MASTER(f->follower) == ch" in descriptor_capture,
+    "portable file validates completely before descriptor allocation":
+        "#define COPYOVER_VERSION 18" in (SRC / "copyover.h").read_text() and
+        recover.index("copyover_codec_read(fp, &state") < recover.index("mm_get(dead_desc_pool)"),
+    "legacy v12-v17 reads require the known ABI":
+        "version < 12 || version > 17" in codec and
+        "copyover_codec_legacy_abi_compatible()" in codec,
+    "file and directory sync precede socket mutation":
+        body.index("copyover_codec_finish(fp") < publish <
+        body.index("copyover_codec_sync_parent(COPYOVER_FILE)") < prepare_client,
+    "death retry state is validated and restored after player placement":
+        "invalid descriptor identity or death retry state" in codec and
+        recover.index("player_load_pets_place(ch);") <
+        recover.index("death_extract_retry_restore(ch,") <
+        recover.index("raw_write_to_fd(d->descriptor"),
     "world mob capture excludes every linked pet":
         "ch->in_room >= 0 && !GET_MASTER(ch)" in body,
     "minimal copyover preserves its world dataset":
@@ -99,7 +134,7 @@ assert all(checks.values())
 
 HARNESS = r'''
 #include "core/utils.h"
-#include "persistence/copyover.h"
+#include "persistence/copyover_codec.h"
 #include <cassert>
 #include <cstdlib>
 #include <cstdio>
@@ -117,6 +152,13 @@ P_char get_linked_char(P_char ch, ush_int type)
     for (char_link_data *link = ch->linking; link; link = link->next_linking)
         if (link->type == type) return link->linked;
     return nullptr;
+}
+bool retry_pending = false;
+bool death_extract_retry_copy_state(P_char, uint64_t *corpse_uid, int *delay)
+{
+    *corpse_uid = retry_pending ? 987654321ULL : 0;
+    *delay = retry_pending ? 8 : 0;
+    return true;
 }
 ''' + descriptor_capture + r'''
 int main()
@@ -150,13 +192,39 @@ int main()
     descriptor.character = &owner;
     FILE *file = tmpfile();
     assert(file);
+    copyover_header header = {};
+    header.num_descriptors = 1;
+    const int listeners[3] = {-1, -1, -1};
+    assert(copyover_codec_begin(file, header, listeners));
     assert(write_desc_entry(file, &descriptor));
+    telemetry_copyover_entry telemetry = {};
+    telemetry.fd = 10;
+    strcpy(telemetry.player_name, "owner");
+    assert(copyover_codec_write(file, telemetry));
+    assert(copyover_codec_finish(file, nullptr));
     rewind(file);
-    copyover_desc saved = {};
-    assert(fread(&saved, sizeof(saved), 1, file) == 1);
+    copyover_decoded_state state;
+    const char *error = nullptr;
+    assert(copyover_codec_read(file, &state, &error));
+    copyover_desc saved = state.descriptors[0];
     fclose(file);
     assert(saved.num_pets == 1);
     assert(saved.pet_vnums[0] == 1201);
+
+    retry_pending = true;
+    file = tmpfile();
+    assert(file);
+    assert(copyover_codec_begin(file, header, listeners));
+    assert(write_desc_entry(file, &descriptor));
+    assert(copyover_codec_write(file, telemetry));
+    assert(copyover_codec_finish(file, nullptr));
+    rewind(file);
+    assert(copyover_codec_read(file, &state, &error));
+    saved = state.descriptors[0];
+    fclose(file);
+    assert(saved.death_retry_pending == 1);
+    assert(saved.death_retry_delay == 8);
+    assert(saved.death_retry_corpse_uid == 987654321ULL);
 }
 '''
 with tempfile.TemporaryDirectory(prefix="duris-copyover-pet-owner-") as directory:
@@ -164,7 +232,10 @@ with tempfile.TemporaryDirectory(prefix="duris-copyover-pet-owner-") as director
     binary = Path(directory) / "copyover_pet_owner"
     source.write_text(HARNESS)
     subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-Isrc",
-                    str(source), "-lbsd", "-o", str(binary)], cwd=root, check=True)
+                    str(source), "src/persistence/copyover_codec.c", "src/world/world_recovery_codec.c",
+                    "src/world/generated_npc_state.c", "src/player/pet_restore_state.c",
+                    "src/item/item_transfer_command.c", "-ffunction-sections", "-fdata-sections",
+                    "-Wl,--gc-sections", "-lbsd", "-o", str(binary)], cwd=root, check=True)
     subprocess.run([str(binary)], check=True)
 
 print("copyover save guards passed")

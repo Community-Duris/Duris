@@ -19,6 +19,34 @@ The example values approved for this PR are:
 | Local budget | 20 GiB, including publication headroom |
 | Required free space | 1 GiB |
 | Restore drill | Every week |
+| Published-generation recovery | Disabled unless explicitly approved |
+| Unchanged blocked-state retry | One hour |
+
+The optional `restore_database_engine` policy field selects `mariadb` (the
+existing default) or `mysql` for a fresh isolated SQL restore candidate. MySQL
+requires a MySQL 8.0 `mysqld` in the clean tool PATH; a missing binary, a MariaDB
+compatibility symlink or another MySQL family refuses before datadir
+initialization. The resolved installation supplies its own basedir. Both choices
+use private datadirs, socket-only daemons, schema-only import credentials,
+runtime/history/value qualification and an engine-labelled qualification
+receipt. The SQL persistence mode remains `mariadb-primary` for both engines.
+Qualification is version-specific; the current disposable evidence covers
+MariaDB 10.11.14 and MySQL 8.0.46.
+
+Existing version-1 policies remain valid. The optional `resume_published` field
+defaults to `false`; only set it to `true` after the custodian approves scheduled
+continuation. With it enabled, a scheduled call continues a published generation
+only when every generation verifies, the newest is within the capture-age RPO,
+there are no staging/trash remnants, and the previous `status.json` is a valid
+`ok` receipt for the immediately preceding generation. It then uses the normal
+replication, capacity, retention, and completion path under the existing job
+lock. Any uncertainty remains a refusal. `blocked_retry_seconds` defaults to
+3600 and accepts 60â€“604800 seconds; it limits repeated full content verification
+for an unchanged protected refusal. Its metadata fingerprint can only defer the
+same refusal: it never establishes integrity or authorizes capture, rotation,
+replication, or a healthy status. A metadata change or expiry triggers a fresh
+full verification. Manual `finalize` always bypasses this throttle and verifies
+the generations again.
 
 The newest generation in each UTC epoch-aligned bucket is retained. Overlapping
 tiers share a generation. Always preserve the two newest valid generations.
@@ -69,7 +97,7 @@ service template preserves the expected root mapping. Custom user services must
 qualify the backup under their actual service restrictions before cutover.
 
 Flatfile capture preserves identity
-ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ critical authority ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ account locking, pending-transaction evidence, and the
+ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ critical authority ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ account locking, pending-transaction evidence, and the
 complete durable file tree.
 
 Journal trees are copied before the authority snapshot and compared again after
@@ -97,6 +125,21 @@ busy condition is reported as a fixed error. The systemd backup, health, and dri
 units declare mutual conflicts, and the pre-cycle launcher retries a busy backup
 before refusing to boot.
 
+The systemd backup timer's one-minute activity is not proof that a backup is due,
+completed, or healthy: `schedule_seconds` independently controls capture cadence,
+and failed runs do not advance `schedule.json`. The health command checks the
+verified generation age, capacity, completion/replication receipt, and (with
+`--require-drill`) drill qualification, but it does not inspect whether either
+timer is enabled or running. On the host, separately check
+`systemctl is-enabled duris-backup-backup.timer duris-backup-health.timer`,
+`systemctl is-active duris-backup-backup.timer duris-backup-health.timer`, and
+`systemctl list-timers --all 'duris-backup-*'`; also monitor each oneshot's exit
+status and alert path. The pre-cycle gate is separate again: inspect the
+actual `cycle_mud.sh` environment for `SKIP_PREBOOT_BACKUP=1`, which is printed
+explicitly when active. That opt-out does not disable the scheduled timer, and a
+scheduled timer does not compensate for the skipped pre-cycle check. Do not infer
+or change a host's opt-out setting from this repository policy.
+
 Sample inactive systemd units are in deploy/systemd/duris-backup-*. Copy them,
 adapt User, WorkingDirectory, ReadWritePaths, paths, and permissions, and connect
 OnFailure to the custodian's existing alerting service before enabling the
@@ -114,13 +157,39 @@ receipts. Monitor timer/unit availability too: a stopped scheduler cannot
 report its own failure.
 
 A failed post-publication step leaves a complete generation and preserves prior
-ones. Resolve the cause and explicitly retry verification/replication/rotation:
+ones. With `resume_published=true`, the next scheduled call may safely continue
+the narrow verified state above. Otherwise a mismatch is reported as
+`published_generation_requires_finalize_command`; this is protected refusal,
+not a healthy backup. Unchanged integrity/inspection refusals are re-reported
+without repeating full checksum reads until the configured retry window expires.
+Changed metadata invalidates that throttle and forces verification; corruption
+is never accepted from a cached result.
 
+For manual recovery, first preserve and inspect the backup root's generation
+directories, `status.json`, and `schedule.json`. Compare the receipt's generation
+to the verified generation timestamps. Run `finalize` only when the newest
+generation is fully verifiable and there are no `.staging-*` or `.trash-*`
+remnants. If any remnant, checksum failure, uncertain replica, or capacity issue
+exists, stop and investigate; do not delete or rename evidence to clear the gate.
+Then run `status` (and `status --require-drill` for the health gate) and check the
+capture age. Finalization never changes the manifest's capture-start time and
+refuses a generation already outside its RPO; a successful receipt therefore
+cannot make an old capture appear fresh.
+
+    BACKUP_ENV_FILE=/etc/duris/backup.env scripts/backup_pfiles.sh status
     BACKUP_ENV_FILE=/etc/duris/backup.env scripts/backup_pfiles.sh finalize
+    BACKUP_ENV_FILE=/etc/duris/backup.env scripts/backup_pfiles.sh status --require-drill
 
-Never delete an unexplained staging/trash directory automatically. Inspect
-ownership and boundaries, preserve incident evidence, and reconcile it under
-the custodian's control. finalize does not overwrite generations.
+The manual command preserves every generation unless the normal, approved
+retention rotation applies; preserve any snapshots that rotation may remove
+before invoking it. It refuses with `interrupted_job_requires_inspection` when
+staging/trash remnants remain, and does not overwrite their evidence.
+
+If a scheduled post-publication continuation returns `replication_pending`,
+replication is still retryable; the schedule deadline is not advanced. Keep the
+replica mount and capacity gates intact and let the next due invocation retry,
+or use the documented `finalize` command after inspection. Do not treat the
+local generation alone as a successful off-host backup.
 
 ## Separate/off-host storage
 
@@ -142,7 +211,7 @@ A disconnected mount must fail; never replace it with an ordinary local folder.
 
 ## Isolated restore and qualification
 
-Install Python 3.11+, MariaDB 10.11 server/client tools, OpenSSL, iproute2, and
+Install Python 3.11+, the selected MariaDB 10.11 or MySQL 8.0 server/client tools, OpenSSL, iproute2, and
 util-linux. Build the native verifier and the matching server binaries:
 
     make -C src
@@ -156,6 +225,12 @@ A bounded tmpfs or a dedicated small recovery volume is suitable. A directory
 on the live filesystem is rejected, even if its pathname is different. This
 bounds compressed-dump expansion without risking the live filesystem. Mount
 provisioning belongs to the operator and is never performed by restore.
+
+For MariaDB, the encoded absolute socket pathname
+`<restore-root>/candidate-<32 hex digits>/mysql.sock` must fit Linux's 107-byte
+Unix socket limit. Use a sufficiently short restore mount path. An overlong
+candidate reports `isolated_database_socket_path_too_long` before datadir
+creation, database initialization or daemon startup.
 
 Supply independently current erasure evidence, held outside backups/candidates:
 
@@ -190,21 +265,48 @@ restore an older schema, use its matching reviewed code/toolchain in a separate
 recovery workspace, then plan a separate migration on another candidate.
 Never bypass the compatibility check or edit backup metadata.
 
-MariaDB restore initializes a new private datadir with networking disabled,
+SQL restore initializes a new private datadir on the selected engine with networking disabled,
 imports through a schema-only account with no global/FILE privileges, validates
 the runtime schema, recomputes the complete migration history, and reconciles
-account/character, wallet, bank, and epic evidence. Runtime boot uses only the
+account/character, wallet, bank, and epic evidence. Epic qualification also
+requires the saved revision to match the last immutable event and every
+revision after its opening baseline to be present; cancelling missing events
+cannot qualify from an unchanged aggregate balance. Wallet and bank revisions
+also require a complete post-opening history. Their witnesses include successful
+native currency receipts and committed economic account effects resolved through
+retained native mappings. A native and economic witness counts once only for
+the same root and the same one-step wallet/bank transition. A native child
+receipt resolves to its declared economic root; an unrelated operation claiming
+the same revision refuses. Unwitnessed future counters, missing revisions,
+conflicting transitions and stale saved counters refuse.
+Revision comparison retains the full unsigned 64-bit range. Denomination value
+qualification then walks those same committed native/economic before/after
+witnesses from the opening cut to the saved balance. Every before-image must
+match the previous after-image and the final vector must match native authority.
+Matching bridges share a witness only when their root, revisions and all coin
+vectors agree. NULL/negative vectors, conflicting bridges and weighted copper
+totals beyond signed 64-bit refuse using wide decimal arithmetic. Pre-opening
+history is excluded. An economic-only shop effect needs no invented legacy
+currency row. These checks do not replace full economic source/custody
+reconciliation or route qualification.
+Runtime boot uses only the
 new socket. Flatfile restore verifies copied bytes before mutation, runs native
 authority replay, and validates existing account, snapshot, and world catalog bytes.
 Full player/domain loads run after WAL replay, allowing a durable first snapshot
 to materialize its missing projection. These loads reject lossy topology repair.
-Before boot, both journal types are scanned with the production codecs. Any
-corrupt/unsupported frame, quarantine evidence, or interrupted temporary journal
-blocks qualification. Both modes then boot the matching server against copied mini-world assets in a
+Before boot, both journal types are scanned with the production codecs. A
+corrupt/unsupported frame or interrupted temporary journal blocks qualification.
+Validated quarantine archives and admission fences are preserved. An unreplayable
+player save may move from the active WAL into that archive during boot; qualification
+does not release its player's fence or claim that the save was applied. Both modes
+then boot the matching server against copied mini-world assets in a
 new user/network/PID namespace, exercise HTTP readiness, reject persistence startup
 failure messages, wait for both journals to drain, and require clean shutdown.
-Native postflight requires zero remaining records and no corruption/quarantine;
-authority reconciliation runs again after replay. Namespaces must be available;
+Native postflight requires zero active records, valid protected archive/policy bytes,
+and native proof for resolved flat-file recovery records. Authority reconciliation
+runs again after replay. Recovering a fenced player remains a separate stopped
+operation described in [PLAYER_QUARANTINE_RECOVERY.md](../persistence/PLAYER_QUARANTINE_RECOVERY.md).
+Namespaces must be available;
 there is no fallback to a host-network boot.
 The server executable and qualification script are copied into the private
 candidate before entering the namespace, so recovery also works from a checkout
@@ -252,8 +354,10 @@ recovery as a gameplay feature.
     python3 tests/async/test_flatfile_launcher.py
     DURIS_RUN_BACKUP_INTEGRATION=1 python3 tests/async/test_persistence_backup_integration.py
 
-The integration test uses synthetic identities, private MariaDB daemons, a
-bounded temporary restore mount, and isolated service namespaces. It requires
+Add `DURIS_RUN_MYSQL_BACKUP_INTEGRATION=1` when an independently installed
+MySQL 8.0 executable is available to include its full dump/restore case.
+The integration test uses synthetic identities, private MariaDB and optionally
+MySQL daemons, a bounded temporary restore mount, and isolated service namespaces. It requires
 mount/unshare privileges; run on a disposable Linux host/container (for Docker,
 CAP_SYS_ADMIN and an appropriate seccomp profile). No production environment,
 credentials, existing database, or live game connection is used.

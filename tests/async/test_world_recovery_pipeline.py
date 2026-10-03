@@ -13,6 +13,7 @@ HEADER = (SRC / "world_recovery_pipeline.h").read_text()
 REDIS = (SRC / "redis.c").read_text()
 WORLD_RUNTIME = (SRC / "redis_world_runtime.c").read_text()
 STORE = (SRC / "redis_world_store.c").read_text()
+STORE_HEADER = (SRC / "redis_world_store.h").read_text()
 REGISTRY = (SRC / "redis_key_registry.def").read_text()
 COMM = (SRC / "comm.c").read_text()
 COPYOVER = (SRC / "copyover.c").read_text()
@@ -36,7 +37,7 @@ HARNESS = r'''
 #include "core/prototypes.h"
 #include <cstdio>
 #include "world/world_recovery_codec.h"
-#include "persistence/copyover.h"
+#include "persistence/copyover_codec.h"
 #include "item/item_ownership_runtime.h"
 #include <array>
 #include <atomic>
@@ -711,7 +712,8 @@ int main()
         lookup_entry.item_uid = mode == 3 ? 900 : 902;
         lookup_entry.root_item_uid = mode == 3 ? 900 : 901;
         lookup_entry.parent_item_uid = mode == 3 ? 0 : 901;
-        lookup_entry.vnum = OBJ_VNUM(&corpse);
+        P_obj corpse_pointer = &corpse;
+        lookup_entry.vnum = OBJ_VNUM(corpse_pointer);
         lookup_entry.owner = {mode == 5 ? item_owner_type::room : item_owner_type::corpse,
                               mode == 5 ? 100U : 77U, 12};
         lookup_entry.state = item_custody_state::active;
@@ -726,7 +728,12 @@ int main()
         P_obj restored = nullptr;
         if (file_copyover) {
             FILE *file = std::tmpfile(); assert(file);
-            assert(write_obj_entry(file, &corpse, buffer)); std::rewind(file);
+            copyover_header header = {};
+            header.num_objects = 1;
+            const int listeners[3] = {-1, -1, -1};
+            assert(copyover_codec_begin(file, header, listeners));
+            assert(write_obj_entry(file, &corpse, buffer));
+            assert(copyover_codec_finish(file, nullptr)); std::rewind(file);
             size_t consumed = 99;
             assert(!copyover_restore_obj_from_buffer(buffer.data(), size - 1, &consumed));
             assert(consumed == 0 && object_list == nullptr);
@@ -741,7 +748,9 @@ int main()
                 assert(!copyover_restore_obj_from_buffer(buffer.data(), size, &consumed));
                 assert(consumed == 0 && object_list == nullptr);
             }
-            restored = read_obj_entry(file);
+            copyover_decoded_state decoded;
+            assert(copyover_codec_read(file, &decoded, nullptr) && decoded.objects.size() == 1);
+            restored = copyover_restore_obj_from_buffer(decoded.objects[0].data(), decoded.objects[0].size(), &consumed);
             assert(hydrated_entries.size() == (lookup_succeeds ? 1U : 0U));
             if (lookup_succeeds) {
                 const auto &entry = hydrated_entries.front();
@@ -753,10 +762,10 @@ int main()
             }
             assert(std::fgetc(file) == EOF); std::fclose(file);
             FILE *truncated = std::tmpfile(); assert(truncated);
-            uint32_t length = size;
-            assert(std::fwrite(&length, sizeof(length), 1, truncated) == 1);
-            assert(std::fwrite(buffer.data(), size - 1, 1, truncated) == 1);
-            std::rewind(truncated); assert(!read_obj_entry(truncated)); std::fclose(truncated);
+            assert(copyover_codec_begin(truncated, header, listeners));
+            assert(write_obj_entry(truncated, &corpse, buffer));
+            // Incomplete/unsealed files are rejected before gameplay materialization.
+            assert(!copyover_codec_read(truncated, &decoded, nullptr)); std::fclose(truncated);
         } else {
             world_recovery_object_record record = {};
             std::memcpy(&record, buffer.data(), sizeof(record));
@@ -799,6 +808,82 @@ int main()
         extract_obj(restored, FALSE);
         assert(!object_list);
     }
+    // Capture and validate a real framed generation above the former 64 MiB cap.
+    struct large_capture_result {
+        std::mutex mutex;
+        std::condition_variable changed;
+        bool called = false;
+        bool valid = false;
+        size_t size = 0;
+        uint32_t objects = 0;
+    } large_result;
+    const auto validate_large_capture = +[](const unsigned char *data, size_t size,
+                                            const world_recovery_header *header,
+                                            redis_shared_command_outcome *outcome,
+                                            void *context) -> bool {
+        auto &result = *static_cast<large_capture_result *>(context);
+        world_recovery_header decoded = {};
+        const bool valid = header && world_recovery_validate(
+                                         data, size, 300, header->sequence, &decoded);
+        {
+            std::lock_guard<std::mutex> lock(result.mutex);
+            result.called = true;
+            result.valid = valid;
+            result.size = size;
+            result.objects = decoded.object_count;
+        }
+        *outcome = valid ? REDIS_SHARED_OUTCOME_SUCCESS : REDIS_SHARED_OUTCOME_ERROR_REPLY;
+        result.changed.notify_all();
+        return valid;
+    };
+    constexpr size_t large_tree_count = 40;
+    constexpr size_t items_per_tree = WORLD_RECOVERY_MAX_ITEM_TREE;
+    std::vector<obj_data> large_objects(large_tree_count * items_per_tree);
+    for (size_t index = 0; index < large_objects.size(); ++index) {
+        obj_data &object = large_objects[index];
+        object.obj_uid = 10000 + index;
+        object.R_num = 0;
+        object.type = ITEM_CONTAINER;
+        object.next = index + 1 < large_objects.size() ? &large_objects[index + 1] : nullptr;
+        const size_t tree_offset = (index / items_per_tree) * items_per_tree;
+        if (index == tree_offset) {
+            object.loc_p = LOC_ROOM;
+            object.loc.room = 0;
+            object.contains = &large_objects[index + 1];
+        } else {
+            object.loc_p = LOC_INSIDE;
+            object.loc.inside = &large_objects[tree_offset];
+            object.next_content = index + 1 < (tree_offset + items_per_tree) ?
+                                      &large_objects[index + 1] : nullptr;
+        }
+    }
+    character_list = nullptr;
+    object_list = large_objects.data();
+    top_of_zone_table = -1;
+    assert(world_recovery_pipeline_init(validate_large_capture, &large_result));
+    assert(world_recovery_pipeline_request());
+    for (int pulse = 0; pulse < 10000 &&
+                        world_recovery_pipeline_health_copy().capture_active; ++pulse) {
+        world_recovery_pipeline_pulse();
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    assert(world_recovery_pipeline_health_copy().capture_failures == 0);
+    {
+        std::unique_lock<std::mutex> lock(large_result.mutex);
+        assert(large_result.changed.wait_for(lock, std::chrono::seconds(20),
+                                              [&] { return large_result.called; }));
+        assert(large_result.valid);
+        assert(large_result.size > 64 * 1024 * 1024);
+        assert(large_result.objects == large_tree_count);
+        std::printf("[PASS] capture/encode/validate generation bytes=%zu (>64 MiB)\n",
+                    large_result.size);
+    }
+    world_recovery_pipeline_shutdown();
+    object_list = nullptr;
+    large_objects.clear();
+    std::vector<unsigned char> maximum_plus_one(WORLD_RECOVERY_MAX_BYTES + 1);
+    assert(!world_recovery_validate(maximum_plus_one.data(), maximum_plus_one.size(),
+                                    300, 0, nullptr));
     return 0;
 }
 '''
@@ -898,6 +983,7 @@ void run_artifact_boot()
 }
 void reconcile_shopkeepers(bool) {}
 void initialize_transport() {}
+void world_activity_rebuild() {}
 void run_recovery_boot()
 {
 @RECOVERY_BOOT@
@@ -947,9 +1033,9 @@ with tempfile.TemporaryDirectory(prefix="duris-world-recovery-") as temp_dir:
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror",
             "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
             "-ffunction-sections", "-fdata-sections", "-Isrc", str(source),
-            rel("world_recovery_pipeline.c"), rel("world_recovery_codec.c"), rel("generated_npc_state.c"), rel("generated_npc_runtime.c"), rel("pet_restore_state.c"),
+            rel("copyover_codec.c"), rel("world_recovery_pipeline.c"), rel("world_recovery_codec.c"), rel("generated_npc_state.c"), rel("generated_npc_runtime.c"), rel("pet_restore_state.c"),
             rel("redis_command_observability.c"),
-            "-Wl,--gc-sections", "-lz", "-pthread",
+            "-Wl,--gc-sections", "-lz", "-lbsd", "-pthread",
             "-o", str(binary),
         ],
         cwd=ROOT,
@@ -962,7 +1048,7 @@ print("[PASS] duplicate/moved items and custody failures fail closed with rollba
 print("[PASS] failed recovery and forced zone reset restore exactly one owned ground artifact")
 
 for token in (
-    "WORLD_RECOVERY_MAX_BYTES = 64 * 1024 * 1024",
+    "WORLD_RECOVERY_MAX_BYTES = 128 * 1024 * 1024",
     "WORLD_RECOVERY_MAX_RECORD_BYTES = 2 * 1024 * 1024",
     "WORLD_RECOVERY_MAX_FLOOR_BYTES = 16 * 1024 * 1024",
     "WORLD_RECOVERY_MAX_FLOOR_RECORDS = 32768",
@@ -975,6 +1061,8 @@ for token in (
     "WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED",
 ):
     assert token in HEADER
+assert "REDIS_WORLD_GENERATION_MAX_CHUNKS = 128" in STORE_HEADER
+assert "REDIS_WORLD_GENERATION_CHUNK_BYTES = 1024 * 1024" in STORE_HEADER
 capture = section(PIPELINE, "void world_recovery_pipeline_pulse", "bool world_recovery_pipeline_take_completion")
 assert "WORLD_RECOVERY_CAPTURE_RECORD_BUDGET" in capture
 assert "WORLD_RECOVERY_CAPTURE_TIME_BUDGET_USEC" in capture

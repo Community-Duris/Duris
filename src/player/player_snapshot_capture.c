@@ -283,7 +283,7 @@ bool capture_skills(P_char ch, player_snapshot &snapshot, capture_budget &budget
 }
 
 player_snapshot_capture_result capture_affects(P_char ch, player_snapshot &snapshot,
-						       capture_budget &budget)
+					       capture_budget &budget)
 {
 #if defined(__GNUC__) || defined(__clang__)
 	if (spell_ward_sync_timers)
@@ -338,7 +338,7 @@ player_snapshot_capture_result
 capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 		  std::vector<player_item_snapshot> &target, capture_budget &budget,
 		  std::unordered_set<const obj_data *> &seen, size_t depth, bool omit_norent,
-		  bool audit_ownership)
+		  bool audit_ownership, bool full_literal = false)
 {
 	if (!object)
 		return player_snapshot_capture_result::ok;
@@ -393,6 +393,8 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 	row.type = object->type;
 	row.string_mask = object->str_mask &
 			  (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3);
+	if (full_literal)
+		row.string_mask = STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3;
 	row.wear_flags = object->wear_flags;
 	row.extra_flags = object->extra_flags;
 	row.anti_flags = object->anti_flags;
@@ -405,13 +407,13 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 	row.craftsmanship = object->craftsmanship;
 	row.bitvectors = { object->bitvector, object->bitvector2, object->bitvector3,
 			   object->bitvector4, object->bitvector5 };
-	if ((IS_SET(object->str_mask, STRUNG_KEYS) &&
+	if ((IS_SET(row.string_mask, STRUNG_KEYS) &&
 	     !copy_string(object->name, row.name, budget)) ||
-	    (IS_SET(object->str_mask, STRUNG_DESC2) &&
+	    (IS_SET(row.string_mask, STRUNG_DESC2) &&
 	     !copy_string(object->short_description, row.short_description, budget)) ||
-	    (IS_SET(object->str_mask, STRUNG_DESC1) &&
+	    (IS_SET(row.string_mask, STRUNG_DESC1) &&
 	     !copy_string(object->description, row.description, budget)) ||
-	    (IS_SET(object->str_mask, STRUNG_DESC3) &&
+	    (IS_SET(row.string_mask, STRUNG_DESC3) &&
 	     !copy_string(object->action_description, row.action_description, budget)))
 		return player_snapshot_capture_result::limit_exceeded;
 	for (size_t index = 0; index < row.values.size(); ++index)
@@ -470,7 +472,40 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 	for (const obj_data *content = object->contains; content; content = content->next_content)
 	{
 		const auto result = capture_item_tree(content, row_index, 0, target, budget, seen,
-						      depth + 1, omit_norent, audit_ownership);
+						      depth + 1, omit_norent, audit_ownership,
+						      full_literal);
+		if (result != player_snapshot_capture_result::ok)
+			return result;
+	}
+	return player_snapshot_capture_result::ok;
+}
+
+// Scoped literal captures audit the complete physical item graph, including
+// ordinary no-rent siblings omitted by the existing save policy. A second copy
+// of a selected UID must not hide behind that omission.
+struct literal_identity_audit
+{
+	std::unordered_set<const obj_data *> objects;
+	std::unordered_set<uint64_t> uids;
+};
+
+player_snapshot_capture_result audit_literal_identities(const obj_data *object,
+							literal_identity_audit &audit, size_t depth,
+							bool require_uid)
+{
+	if (!object)
+		return player_snapshot_capture_result::ok;
+	if (depth > PLAYER_SNAPSHOT_MAX_DEPTH ||
+	    audit.objects.size() >= PLAYER_SNAPSHOT_MAX_OBJECTS)
+		return player_snapshot_capture_result::limit_exceeded;
+	if (!audit.objects.insert(object).second)
+		return player_snapshot_capture_result::object_cycle;
+	if ((require_uid && !object->obj_uid) || object->obj_uid == UINT64_MAX ||
+	    (object->obj_uid && !audit.uids.insert(object->obj_uid).second))
+		return player_snapshot_capture_result::malformed_source;
+	for (const obj_data *child = object->contains; child; child = child->next_content)
+	{
+		const auto result = audit_literal_identities(child, audit, depth + 1, require_uid);
 		if (result != player_snapshot_capture_result::ok)
 			return result;
 	}
@@ -480,8 +515,38 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 player_snapshot_capture_result capture_items(P_char owner,
 					     std::vector<player_item_snapshot> &target,
 					     capture_budget &budget, bool equipment, bool inventory,
-					     bool omit_norent, bool audit_ownership)
+					     bool omit_norent, bool audit_ownership,
+					     uint64_t literal_inventory_root_uid = 0)
 {
+	const obj_data *literal_root = nullptr;
+	if (literal_inventory_root_uid)
+	{
+		if (!equipment || !inventory || literal_inventory_root_uid == UINT64_MAX)
+			return player_snapshot_capture_result::invalid_identity;
+		literal_identity_audit audit;
+		for (const obj_data *object : owner->equipment)
+		{
+			const auto result = audit_literal_identities(object, audit, 1, false);
+			if (result != player_snapshot_capture_result::ok)
+				return result;
+		}
+		for (const obj_data *object = owner->carrying; object;
+		     object = object->next_content)
+		{
+			const bool selected = object->obj_uid == literal_inventory_root_uid;
+			const auto result = audit_literal_identities(object, audit, 1, selected);
+			if (result != player_snapshot_capture_result::ok)
+				return result;
+			if (selected)
+			{
+				if (!OBJ_CARRIED_BY(object, owner))
+					return player_snapshot_capture_result::malformed_source;
+				literal_root = object;
+			}
+		}
+		if (!literal_root)
+			return player_snapshot_capture_result::invalid_identity;
+	}
 	std::unordered_set<const obj_data *> seen;
 	if (equipment)
 	{
@@ -500,9 +565,11 @@ player_snapshot_capture_result capture_items(P_char owner,
 		for (const obj_data *object = owner->carrying; object;
 		     object = object->next_content)
 		{
+			const bool full_literal = object == literal_root;
 			const auto result = capture_item_tree(object, PLAYER_SNAPSHOT_NO_PARENT, 0,
-							      target, budget, seen, 1, omit_norent,
-							      audit_ownership);
+							      target, budget, seen, 1,
+							      full_literal ? false : omit_norent,
+							      audit_ownership, full_literal);
 			if (result != player_snapshot_capture_result::ok)
 				return result;
 		}
@@ -647,19 +714,26 @@ player_item_snapshot_list_capture(P_char owner, bool equipment, bool inventory, 
 	return player_snapshot_capture_result::ok;
 }
 
-player_snapshot_capture_result
-player_item_snapshot_tree_capture(P_obj root, std::vector<player_item_snapshot> *items_out,
-				  size_t *estimated_bytes_out)
+static player_snapshot_capture_result
+capture_tree_snapshot(P_obj root, std::vector<player_item_snapshot> *items_out,
+		      size_t *estimated_bytes_out, bool full_literal)
 {
 	if (!root || !items_out)
 		return player_snapshot_capture_result::invalid_identity;
 	try
 	{
+		if (full_literal)
+		{
+			literal_identity_audit audit;
+			const auto result = audit_literal_identities(root, audit, 1, true);
+			if (result != player_snapshot_capture_result::ok)
+				return result;
+		}
 		capture_budget budget;
 		std::vector<player_item_snapshot> items;
 		std::unordered_set<const obj_data *> seen;
 		const auto result = capture_item_tree(root, PLAYER_SNAPSHOT_NO_PARENT, 0, items,
-						      budget, seen, 1, false, false);
+						      budget, seen, 1, false, false, full_literal);
 		if (result != player_snapshot_capture_result::ok)
 			return result;
 		*items_out = std::move(items);
@@ -673,13 +747,40 @@ player_item_snapshot_tree_capture(P_obj root, std::vector<player_item_snapshot> 
 	return player_snapshot_capture_result::ok;
 }
 
+player_snapshot_capture_result
+player_item_snapshot_tree_capture(P_obj root, std::vector<player_item_snapshot> *items_out,
+				  size_t *estimated_bytes_out)
+{
+	return capture_tree_snapshot(root, items_out, estimated_bytes_out, false);
+}
+
+player_snapshot_capture_result
+player_item_snapshot_tree_capture_literal(P_obj root, std::vector<player_item_snapshot> *items_out,
+					  size_t *estimated_bytes_out)
+{
+	return capture_tree_snapshot(root, items_out, estimated_bytes_out, true);
+}
+
 player_snapshot_capture_result player_snapshot_capture(P_char ch, player_revision_t revision,
 						       player_component_mask_t components,
 						       int save_intent, int room_vnum,
 						       player_snapshot *snapshot_out)
 {
+	return player_snapshot_capture_literal_inventory(ch, revision, components, save_intent,
+							 room_vnum, 0, snapshot_out);
+}
+
+player_snapshot_capture_result player_snapshot_capture_literal_inventory(
+	P_char ch, player_revision_t revision, player_component_mask_t components, int save_intent,
+	int room_vnum, uint64_t inventory_root_uid, player_snapshot *snapshot_out)
+{
 	if (!ch || !snapshot_out || IS_NPC(ch) || !ch->only.pc || GET_PID(ch) <= 0 || !revision ||
 	    !components || (components & ~PLAYER_CHECKPOINT_COMPONENT_ALL))
+		return player_snapshot_capture_result::invalid_identity;
+	if (inventory_root_uid &&
+	    ((components & (PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY)) !=
+		     (PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY) ||
+	     inventory_root_uid == UINT64_MAX))
 		return player_snapshot_capture_result::invalid_identity;
 
 	try
@@ -715,7 +816,7 @@ player_snapshot_capture_result player_snapshot_capture(P_char ch, player_revisio
 			const auto result = capture_items(ch, snapshot.items, budget,
 							  components & PLAYER_COMPONENT_EQUIPMENT,
 							  components & PLAYER_COMPONENT_INVENTORY,
-							  true, true);
+							  true, true, inventory_root_uid);
 			if (result != player_snapshot_capture_result::ok)
 				return result;
 		}

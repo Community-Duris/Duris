@@ -14,7 +14,7 @@ make -C src OBJDIR=/tmp/restitution-project-objects \
 g++ -std=c++20 -O1 -Wall -Wextra -Wpedantic -Werror \
     -ffunction-sections -fdata-sections -Isrc -I/usr/include/mysql -I/usr/include/libxml2 \
     tests/async/player_death_restitution_runtime_check.cpp \
-    src/player/player_load_repository.c src/player/player_load_topology.c \
+    src/player/player_load_repository.c src/player/player_load_topology.c src/player/player_death_recovery_query.c src/player/player_death_conflict_repository.c src/persistence/critical_command.c \
     src/player/player_load_items.c src/player/player_snapshot_codec.c \
     src/player/player_snapshot_repository.c src/persistence/persistence_observability.c \
     src/persistence/player_death_restitution_command.c \

@@ -2,6 +2,7 @@
 // ship migration for pfile migration tool
 
 #include "migrate_common.h"
+#include "../../src/sql/sql_ship.h"
 
 // count ships in index file
 static int count_ships(void)

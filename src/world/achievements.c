@@ -1,10 +1,13 @@
 #include "core/prototypes.h"
 #include "core/structs.h"
+#include "core/utility.h"
 #include "world/db.h"
 #include "core/utils.h"
 #include "world/achievements.h"
 #include "world/zone_story_quest_runtime.h"
+#include "economy/economic_gameplay_authority.h"
 #include "combat/chaos_config.h"
+#include "economy/economic_gameplay_authority.h"
 #include <string.h>
 #include "world/epic.h"
 #include "ships/ships.h"
@@ -399,7 +402,8 @@ void update_achievements(P_char ch, P_char victim, int cmd, int ach)
 	if (!(paf = get_spell_from_char(ch, AIP_LEVELACHIEVEMENT)) || paf->modifier < GET_LEVEL(ch))
 	{
 		// The Journey Begins
-		if (GET_LEVEL(ch) >= 5 && (!paf || paf->modifier < 5))
+		if (!economic_gameplay_authority::active() && GET_LEVEL(ch) >= 5 &&
+		    (!paf || paf->modifier < 5))
 		{
 			send_to_char(
 				"&+rCon&+Rgra&+Wtula&+Rtio&+rns! You have completed the &+RThe Journey Begins&+r achievement!&n\r\n",
@@ -420,8 +424,17 @@ void update_achievements(P_char ch, P_char victim, int cmd, int ach)
 			paf->modifier = 5;
 		}
 		// The Sailor's Tattoo
-		if (GET_LEVEL(ch) >= 20 && (!paf || paf->modifier < 20))
+		if (!economic_gameplay_authority::active() && GET_LEVEL(ch) >= 20 &&
+		    (!paf || paf->modifier < 20))
 		{
+			if (economic_gameplay_authority::active() &&
+			    get_ship_from_owner(GET_NAME(ch)))
+			{
+				send_to_char("This achievement's coin reward is unavailable while "
+					     "active accounting is enabled.\r\n",
+					     ch);
+				return;
+			}
 			send_to_char(
 				"&+rCon&+Rgra&+Wtula&+Rtio&+rns! You have completed the &+RThe Sailor's Tattoo&+r achievement!&n\r\n",
 				ch);
@@ -614,6 +627,13 @@ void grant_chaos_tattoo_achievement(P_char ch)
 			progress = apply_achievement(ch, AIP_LEVELACHIEVEMENT);
 		if (progress && progress->modifier < 30)
 			progress->modifier = 30;
+		return;
+	}
+	if (economic_gameplay_authority::active() && get_ship_from_owner(GET_NAME(ch)))
+	{
+		send_to_char("This achievement's coin reward is unavailable while active "
+			     "accounting is enabled.\r\n",
+			     ch);
 		return;
 	}
 

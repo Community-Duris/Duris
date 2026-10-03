@@ -77,6 +77,7 @@
 #include <string.h>
 #include "combat/ctf.h"
 #include "net/gmcp.h"
+#include "economy/economic_gameplay_authority.h"
 #include "world/map.h"
 #include "ships/ship_auto.h"
 #include "ships/ship_npc.h"
@@ -1794,6 +1795,13 @@ int claim_coffer(P_char ch, P_ship ship)
 	if (ship->money == 0)
 	{
 		send_to_char("The ship's coffers are empty!\r\n", ch);
+		return TRUE;
+	}
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char(
+			"Ship coffer claims are unavailable while active accounting is enabled.\r\n",
+			ch);
 		return TRUE;
 	}
 	send_to_char_f(ch, "You get %s from the ship coffers.\r\n", coin_stringv(ship->money));

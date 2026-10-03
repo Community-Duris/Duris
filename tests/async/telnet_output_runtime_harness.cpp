@@ -1,5 +1,6 @@
 #include "core/structs.h"
 #include "net/mccp.h"
+#include "net/network_readiness.h"
 #include <gnutls/gnutls.h>
 #include <algorithm>
 #include <cassert>
@@ -16,6 +17,14 @@ extern "C"
 	long sentbytes = 0;
 }
 void logit(const char *, const char *, ...) {}
+bool admit_session_oob(P_desc, size_t)
+{
+	return true;
+}
+bool websocket_input_paused(P_desc)
+{
+	return false;
+}
 void panic_corruption(const char *, const char *, ...)
 {
 	abort();
@@ -35,6 +44,7 @@ static std::string delivered, retry_record;
 static std::vector<int> results;
 static size_t call_index;
 static bool tls;
+static int tls_direction = 1;
 
 static ssize_t send_bytes(const void *data, size_t len)
 {
@@ -69,6 +79,10 @@ extern "C" const char *gnutls_strerror(int)
 {
 	return "injected TLS failure";
 }
+extern "C" int gnutls_record_get_direction(gnutls_session_t)
+{
+	return tls_direction;
+}
 extern "C" ssize_t __wrap_write(int, const void *data, size_t len)
 {
 	return send_bytes(data, len);
@@ -94,6 +108,9 @@ int main()
 			d.sslses = (gnutls_session_t)1;
 		reset(use_tls, {});
 		assert(raw_write_to_descriptor(&d, banner.data(), banner.size()) == 0);
+		assert(delivered.size() <= 16384 && d.telnet_output_len);
+		for (int turn = 0; turn < 10 && d.telnet_output_len; ++turn)
+			assert(telnet_flush_output(&d) == 0);
 		assert(delivered == banner && sentbytes == (long)banner.size());
 		assert(!d.telnet_output_buffer && !d.telnet_output_len);
 
@@ -101,6 +118,7 @@ int main()
 				 use_tls ? GNUTLS_E_INTERRUPTED : -EINTR, 7, 0, 13 });
 		assert(raw_write_to_descriptor(&d, banner.data(), banner.size()) == 0);
 		assert(delivered == banner.substr(0, 101));
+		assert(network_write_interest(&d) == POLLOUT);
 		assert(raw_write_to_descriptor(&d, "\0END", 4) == 0);
 		assert(d.telnet_output_len && !d.write_failed);
 		for (int tick = 0; tick < 10 && d.telnet_output_len; ++tick)
@@ -167,11 +185,28 @@ int main()
 			expected += use_cp437 ? "abc\r\n\x82\r\n" : "abc\r\né\r\n";
 		}
 		assert(write_to_descriptor(&d, large.c_str()) == 0);
-		assert(telnet_flush_output(&d) == 0);
+		for (int turn = 0; turn < 32 && d.telnet_output_len; ++turn)
+			assert(telnet_flush_output(&d) == 0);
 		assert(delivered == expected && !d.telnet_output_buffer);
 		std::string oversized(1024 * 1024 + 1, 'a');
 		assert(write_to_descriptor(&d, oversized.c_str()) < 0 && d.write_failed);
 		telnet_free_output(&d);
+	}
+	// A send can need READ readiness. Later receive calls must not overwrite
+	// the captured send direction, and a fully drained socket has no write interest.
+	for (int direction : { 0, 1 })
+	{
+		descriptor_data d{};
+		d.sslses = (gnutls_session_t)1;
+		tls_direction = direction;
+		reset(true, { GNUTLS_E_AGAIN });
+		assert(raw_write_to_descriptor(&d, "retry", 5) == 0);
+		assert(d.telnet_tls_retry);
+		assert(network_write_interest(&d) == (direction ? POLLOUT : POLLIN));
+		tls_direction = !direction;
+		assert(network_write_interest(&d) == (direction ? POLLOUT : POLLIN));
+		assert(telnet_flush_output(&d) == 0 && delivered == "retry");
+		assert(network_write_interest(&d) == 0 && !d.tls_write_interest);
 	}
 	puts("Telnet/TLS short-write, backpressure, failure, cleanup and MCCP tests passed");
 }

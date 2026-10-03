@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+from _object_special_fixture import object_special_functions
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -33,6 +34,7 @@ fixture = fixture.replace("void send_to_char(const char *, P_char) {}", "")
 fixture = fixture.replace("void act(const char *, int, P_char, P_obj, void *, int) {}", "")
 fixture = fixture.replace("void affect_from_char(P_char, int) {}", "")
 fixture = fixture.replace("// INSERT_PRODUCTION_ABORT", function(ROOT / "src/net/sparser.c", "void do_abort(P_char ch,"))
+fixture += "\n" + object_special_functions(dispatch=True)
 boundary = literal(ROOT / "tests/async/test_device_actions_runtime.py", "HARNESS").split("// INSERT_COMMANDS", 1)[0]
 boundary = boundary.replace('#include "item/device_actions.c"', '')
 boundary = boundary.replace('#include "sql/sql.h"', '')
@@ -348,8 +350,8 @@ int main() {
 
 callbacks = '\n'.join(function(ROOT / 'src/specs/specs.underworld.c', signature) for signature in (
     'void event_tsunamiwave(', 'int SeaKingdom_Tsunami(', 'int deflect_ioun('))
-callbacks += '\n' + function(ROOT / 'src/specs/specs.object.c', 'int living_necroplasm(')
-callbacks += '\n' + function(ROOT / 'src/magic/magic.c', 'void spell_vampire(')
+callbacks += '\n' + function(ROOT / 'src/specs/specs.unique.c', 'int living_necroplasm(')
+callbacks += '\n' + function(ROOT / 'src/magic/spell_transformations.c', 'void spell_vampire(')
 affects = '\n'.join(function(ROOT / 'src/magic/affects.c', signature) for signature in (
     'void clear_links(P_char ch, P_obj obj, int flag)',
     'void unlink_char_obj_affect(P_char ch, struct affected_type *af)'))

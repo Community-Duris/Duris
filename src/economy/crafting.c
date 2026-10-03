@@ -11,29 +11,155 @@
 #include "world/events.h"
 #include "cmd/interp.h"
 #include "item/item_movement_transaction.h"
+#include "player/craft_progression_hooks.h"
 #include "item/objmisc.h"
 #include "persistence/persistence_mode.h"
 #include "magic/spells.h"
 #include "world/vnum.obj.h"
 #include "economy/crafting.h"
+#include "economy/economic_gameplay_authority.h"
 #include "combat/chaos_materials.h"
 #include "core/utils.h"
-#include "sql/sql_player.h"
+#include "sql/sql_player_recipes.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <climits>
+#include <cmath>
+#include <new>
+#include <vector>
 
 namespace
 {
-bool grant_crafted_item(P_char ch, P_obj object)
+struct recipe_craft_context
 {
-	if (object && item_creation_grant_submit_to_player(ch, object, ch))
-		return true;
-	if (object)
-		extract_obj(object, FALSE);
-	send_to_char("The ownership authority is busy; the crafted item was not created.\r\n", ch);
-	return false;
+	uint64_t output_uid;
+};
+
+void complete_recipe_craft(P_char actor, bool committed, const item_transfer_result &, unsigned int,
+			   const uint8_t *data, size_t size)
+{
+	if (!actor || !data || size != sizeof(recipe_craft_context))
+		return;
+	recipe_craft_context context = {};
+	memcpy(&context, data, sizeof(context));
+	if (!committed)
+	{
+		send_to_char(
+			"Your work could not be committed; your requirements were retained.\r\n",
+			actor);
+		return;
+	}
+	P_obj output = nullptr;
+	for (P_obj object = actor->carrying; object; object = object->next_content)
+		if (object->obj_uid == context.output_uid)
+		{
+			output = object;
+			break;
+		}
+	// The durable progression publisher has already acknowledged this award.
+	if (output)
+	{
+		act("&+W$n &+Lfinishes their work, admiring their new $p.&N", TRUE, actor, output,
+		    nullptr, TO_ROOM);
+		act("&+WYou &+Lfinish your work, admiring your new $p.&N", FALSE, actor, output,
+		    nullptr, TO_CHAR);
+	}
+}
+
+// Select without touching inventory. The shared owner freezes and retires the
+// complete input forest, admits the output, and advances any retained pouch in
+// one native transaction. A refused submission leaves every requirement live.
+bool submit_recipe_craft(P_char actor, P_obj output, const crafting_plan &plan, crafting_mode mode,
+			 bool use_pouch)
+{
+	std::vector<P_obj> inputs;
+	int low = use_pouch ? 0 : plan.low_material_count;
+	int high = use_pouch ? 0 : plan.high_material_count;
+	bool essence = plan.magical;
+	bool tool = true;
+	const int64_t experience =
+		static_cast<int64_t>(plan.item_value) * crafting_experience_per_ival();
+	if (!output || experience < 0 || experience > INT_MAX)
+		return false;
+	try
+	{
+		inputs.reserve(ITEM_TRANSFER_MAX_ITEMS);
+		for (P_obj object = actor->carrying; object; object = object->next_content)
+		{
+			const int vnum = OBJ_VNUM(object);
+			bool selected = false;
+			if (low > 0 && vnum == plan.low_material_vnum)
+			{
+				--low;
+				selected = true;
+			}
+			else if (high > 0 && vnum == plan.high_material_vnum)
+			{
+				--high;
+				selected = true;
+			}
+			else if (essence && vnum == crafting_essence_vnum(mode))
+			{
+				essence = false;
+				selected = true;
+			}
+			else if (tool && vnum == crafting_tool_vnum(mode))
+			{
+				tool = false;
+				selected = true;
+			}
+			if (selected)
+			{
+				if (inputs.size() == ITEM_TRANSFER_MAX_ITEMS)
+					return false;
+				inputs.push_back(object);
+			}
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (low || high || essence || tool)
+		return false;
+	chaos_material_pouch_usage usage[2] = {};
+	size_t usage_count = 0;
+	if (use_pouch)
+	{
+		if (plan.low_material_count > 0)
+			usage[usage_count++] = { plan.low_material_vnum,
+						 static_cast<uint64_t>(plan.low_material_count) };
+		if (plan.high_material_count > 0)
+			usage[usage_count++] = { plan.high_material_vnum,
+						 static_cast<uint64_t>(plan.high_material_count) };
+	}
+	P_obj pouch = use_pouch ? chaos_material_pouch_find(actor) : nullptr;
+	if (use_pouch && (!pouch || !usage_count))
+		return false;
+	const recipe_craft_context context = { output->obj_uid };
+	craft_recipe_continuation recipe;
+	recipe.player_pid = static_cast<uint32_t>(GET_PID(actor));
+	recipe.discipline = mode == CRAFTING_MODE_CRAFT ? craft_recipe_discipline::craft :
+							  craft_recipe_discipline::forge;
+	recipe.experience = static_cast<uint32_t>(experience);
+	recipe.recipe_vnum = static_cast<uint32_t>(OBJ_VNUM(output));
+	recipe.output_uid = output->obj_uid;
+	item_movement_reject reject = item_movement_reject::none;
+	if (!item_movement_transaction_submit_craft(actor, inputs.data(), inputs.size(), &output, 1,
+						    OBJ_VNUM(output), complete_recipe_craft,
+						    &context, sizeof(context), &reject, pouch,
+						    use_pouch ? usage : nullptr, usage_count,
+						    chaos_pouch_usage_mode::generated, &recipe))
+	{
+		logit(LOG_DEBUG, "Recipe craft submission refused: %s",
+		      item_movement_reject_name(reject));
+		return false;
+	}
+	send_to_char("Your requirements have been reserved while your work is committed.\r\n",
+		     actor);
+	return true;
 }
 }
 
@@ -225,33 +351,44 @@ bool has_affect(P_obj obj)
 	return FALSE;
 }
 
+static int crafting_required_level(int item_value)
+{
+	return static_cast<int>((static_cast<int64_t>(item_value) + crafting_level_gate - 1) /
+				crafting_level_gate);
+}
+
+static bool crafting_scale_material_count(int64_t count, int *scaled)
+{
+	if (count < 0 || !std::isfinite(crafting_material_quantity_multiplier) ||
+	    crafting_material_quantity_multiplier <= 0.0)
+		return false;
+	const double quote =
+		std::ceil(static_cast<double>(count) * crafting_material_quantity_multiplier);
+	if (!std::isfinite(quote) || quote < 0.0 || quote > INT_MAX)
+		return false;
+	*scaled = static_cast<int>(quote);
+	return true;
+}
+
 bool crafting_build_plan(P_obj item, struct crafting_plan *plan)
 {
-	int item_value;
-	int low_material_vnum;
-	int high_material_count;
-
 	if (item == NULL || plan == NULL)
-	{
 		return FALSE;
-	}
-
-	item_value = itemvalue(item);
-	low_material_vnum = get_matstart(item);
-	if (item_value < 1 || low_material_vnum <= 0)
-	{
+	const int item_value = itemvalue(item);
+	const int low_material_vnum = get_matstart(item);
+	if (item_value < 1 || low_material_vnum <= 0 || low_material_vnum > INT_MAX - 4)
 		return FALSE;
-	}
 
-	high_material_count = (item_value + 4) / 5;
-	plan->item_value = item_value;
-	plan->low_material_vnum = low_material_vnum;
-	plan->high_material_vnum = low_material_vnum + 4;
-	plan->high_material_count =
-		(int)ceil(high_material_count * crafting_material_quantity_multiplier);
-	plan->low_material_count = (int)ceil(((item_value + 4) - high_material_count * 5) *
-					     crafting_material_quantity_multiplier);
-	plan->magical = has_affect(item);
+	const int64_t total = static_cast<int64_t>(item_value) + 4;
+	crafting_plan quoted = {};
+	if (!crafting_scale_material_count(total / 5, &quoted.high_material_count) ||
+	    !crafting_scale_material_count(total % 5, &quoted.low_material_count))
+		return FALSE;
+	quoted.item_value = item_value;
+	quoted.low_material_vnum = low_material_vnum;
+	quoted.high_material_vnum = low_material_vnum + 4;
+	quoted.magical = has_affect(item);
+	*plan = quoted;
 	return TRUE;
 }
 
@@ -271,7 +408,7 @@ bool crafting_recipe_target_is_available(P_obj item)
 	    (!crafting_craft_enabled && !crafting_forge_enabled) ||
 	    !crafting_build_plan(item, &plan))
 		return FALSE;
-	return plan.item_value <= crafting_level_gate * crafting_recipe_max_player_level;
+	return crafting_required_level(plan.item_value) <= crafting_recipe_max_player_level;
 }
 
 void crafting_configure_recipe_scroll(P_obj recipe, P_obj target)
@@ -327,6 +464,7 @@ void crafting_configure_recipe_scroll(P_obj recipe, P_obj target)
 
 void boot_crafting_system(void)
 {
+	craft_progression_initialize();
 	load_crafting_config();
 	chaos_materials_initialize();
 }
@@ -451,7 +589,10 @@ int *crafting_get_player_recipes(P_char ch, int *count)
 			recipes = grown;
 		}
 		recipes[(*count)++] = recipe_vnum;
-		sql_add_player_recipe(GET_PID(ch), recipe_vnum);
+		// Active accounting may read the legacy recipe book without migrating it
+		// during an unrelated craft admission.
+		if (!economic_gameplay_authority::active())
+			sql_add_player_recipe(GET_PID(ch), recipe_vnum);
 	}
 	fclose(fp);
 	return recipes;
@@ -675,6 +816,10 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 			      (matLowest == NULL) ? "NULL" : matLowest->short_description,
 			      (matHighest == NULL) ? "NULL" : matHighest->short_description,
 			      tobj->short_description, selected);
+			if (matLowest != NULL)
+				extract_obj(matLowest);
+			if (matHighest != NULL)
+				extract_obj(matHighest);
 			extract_obj(tobj);
 			return;
 		}
@@ -755,7 +900,7 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 			return;
 		}
 		int iVal = plan.item_value;
-		if (iVal > GET_LEVEL(ch) * crafting_level_gate_multiplier() ||
+		if (GET_LEVEL(ch) < crafting_required_level(iVal) ||
 		    IS_OBJ_STAT2(tobj, ITEM2_QUESTITEM))
 		{
 			if (IS_OBJ_STAT2(tobj, ITEM2_QUESTITEM))
@@ -767,9 +912,7 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 				snprintf(
 					buf1, sizeof buf1,
 					"You need level %d to craft this recipe (you are level %d).\r\n",
-					(iVal + crafting_level_gate_multiplier() - 1) /
-						crafting_level_gate_multiplier(),
-					GET_LEVEL(ch));
+					crafting_required_level(iVal), GET_LEVEL(ch));
 				send_to_char(buf1, ch);
 			}
 			extract_obj(tobj);
@@ -795,6 +938,10 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 			      (matLowest == NULL) ? "NULL" : matLowest->short_description,
 			      (matHighest == NULL) ? "NULL" : matHighest->short_description,
 			      tobj->short_description, selected);
+			if (matLowest != NULL)
+				extract_obj(matLowest);
+			if (matHighest != NULL)
+				extract_obj(matHighest);
 			extract_obj(tobj);
 			return;
 		}
@@ -872,49 +1019,6 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 			}
 		}
 
-		// Remove the materials from inventory...  Since we are changing the inventory
-		//   list, we need to use nextObj instead of just going to inventory->next_content.
-		P_obj nextObj;
-		// If for some reason we want more than 1 box of tools, change gotTools from boolean to int...
-		//   For right now, gotTools -> TRUE when we extract a set of tools from inventory.
-		bool gotTools = FALSE;
-		for (P_obj inventory = ch->carrying; inventory; inventory = nextObj)
-		{
-			nextObj = inventory->next_content;
-			invVnum = OBJ_VNUM(inventory);
-
-			if (!chaos_pouch && (numLowest > 0) && (invVnum == lowQualityMaterialVnum))
-			{
-				obj_from_char(inventory);
-				extract_obj(inventory);
-				numLowest--;
-			}
-			else if (!chaos_pouch && (numHighest > 0) &&
-				 (invVnum == highQualityMaterialVnum))
-			{
-				obj_from_char(inventory);
-				extract_obj(inventory);
-				numHighest--;
-			}
-			// If we're requiring multiple essences, need to change this if clause.
-			else if (hasAffect &&
-				 (invVnum == crafting_essence_vnum(CRAFTING_MODE_CRAFT)))
-			{
-				obj_from_char(inventory);
-				extract_obj(inventory);
-				hasAffect = FALSE;
-			}
-			// If we're requiring multiple tools, need to change this if clause.
-			else if (!gotTools && (invVnum == crafting_tool_vnum(CRAFTING_MODE_CRAFT)))
-			{
-				obj_from_char(inventory);
-				extract_obj(inventory);
-				gotTools = TRUE;
-			}
-		}
-
-		notch_skill(ch, SKILL_CRAFT, 50);
-
 		SET_BIT(tobj->extra2_flags, ITEM2_CRAFTED);
 		SET_BIT(tobj->extra_flags, ITEM_NOREPAIR);
 		REMOVE_BIT(tobj->extra_flags, ITEM_SECRET);
@@ -930,37 +1034,15 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 		wizlog(56, "%s crafted '%s' (%d) ival %d.", GET_NAME(ch), tobj->short_description,
 		       selected, itemvalue(tobj));
 
-		if (!grant_crafted_item(ch, tobj))
+		if (!submit_recipe_craft(ch, tobj, plan, CRAFTING_MODE_CRAFT, chaos_pouch))
 		{
-			extract_obj(matLowest);
-			extract_obj(matHighest);
-			return;
+			extract_obj(tobj);
+			send_to_char(
+				"Your work could not be submitted; your requirements were retained.\r\n",
+				ch);
 		}
-		if (chaos_pouch)
-		{
-			const chaos_material_pouch_usage generated[] = {
-				{ lowQualityMaterialVnum, static_cast<uint64_t>(numLowest) },
-				{ highQualityMaterialVnum, static_cast<uint64_t>(numHighest) },
-			};
-			if (!chaos_material_pouch_record_generated(ch, generated,
-								   ARRAY_SIZE(generated)))
-				chaos_material_pouch_report_generated_failure(ch, "craft");
-		}
-		act("&+W$n &+Ldelicately opens their &+ybox &+mof &+Rgnomish &+rcrafting &+mtools&+L and starts their work...\r\n"
-		    "&+W$n &+Lremoves the &+Wim&+wpur&+Lities &+Lfrom their &+ymaterials &+Land gently assembles a masterpiece...\r\n"
-		    "&+L...hands shaking, &+W$n &+Lraises their head and &+Ysmiles&+L, admiring their new $p.&N",
-		    TRUE, ch, tobj, 0, TO_ROOM);
-		act("You &+Ldelicately open your &+ybox &+mof &+Rgnomish &+rcrafting &+mtools&+L and get to work...\r\n"
-		    "you &+Lremove the &+Wim&+wpur&+Lities &+Lfrom your &+ymaterials &+Land gently assemble a masterpiece...\r\n"
-		    "&+L...hands shaking, &+Wyou &+Lraise your head and &+Ysmile&+L, admiring your new $p.&N",
-		    FALSE, ch, tobj, 0, TO_CHAR);
-
-		gain_exp(ch, NULL, iVal * crafting_experience_per_ival(), EXP_BOON);
 		extract_obj(matLowest);
 		extract_obj(matHighest);
-		// Save the character! 1 -> in game.
-		if (!do_save_silent(ch, 1))
-			logit(LOG_DEBUG, "Failed to save %s after heroics reward.", GET_NAME(ch));
 	}
 	else
 	{
@@ -1116,7 +1198,7 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int /*cmd*/
 	char short_desc[MAX_STRING_LENGTH];
 	char *rest;
 	bool hasAffect, hasFlux;
-	P_obj obj, lowQualityMaterial, highQualityMaterial, inventory, invNextObj;
+	P_obj obj, lowQualityMaterial, highQualityMaterial, inventory;
 
 	if (!(skillLevel = GET_CHAR_SKILL(ch, SKILL_FORGE)))
 	{
@@ -1368,7 +1450,7 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int /*cmd*/
 			return;
 		}
 		iVal = plan.item_value;
-		if (iVal > GET_LEVEL(ch) * crafting_level_gate_multiplier() ||
+		if (GET_LEVEL(ch) < crafting_required_level(iVal) ||
 		    IS_OBJ_STAT2(obj, ITEM2_QUESTITEM))
 		{
 			if (IS_OBJ_STAT2(obj, ITEM2_QUESTITEM))
@@ -1380,9 +1462,7 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int /*cmd*/
 				snprintf(
 					buf, sizeof(buf),
 					"You need level %d to forge this recipe (you are level %d).\r\n",
-					(iVal + crafting_level_gate_multiplier() - 1) /
-						crafting_level_gate_multiplier(),
-					GET_LEVEL(ch));
+					crafting_required_level(iVal), GET_LEVEL(ch));
 				send_to_char(buf, ch);
 			}
 			extract_obj(obj);
@@ -1462,38 +1542,6 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int /*cmd*/
 			}
 		}
 
-		// Ok, ch has the materials needed to create obj in inventory.. Now take them away, muahahah!
-		for (inventory = ch->carrying; inventory; inventory = invNextObj)
-		{
-			invNextObj = inventory->next_content;
-			invVnum = OBJ_VNUM(inventory);
-
-			if (!chaos_pouch && (invVnum == lowQualityMaterialVnum) &&
-			    (numLowQuality > 0))
-			{
-				extract_obj(inventory, TRUE); // Not an arti, but 'in game.'
-				numLowQuality--;
-			}
-			else if (!chaos_pouch && (invVnum == highQualityMaterialVnum) &&
-				 (numHighQuality > 0))
-			{
-				extract_obj(inventory, TRUE); // Not an arti, but 'in game.'
-				numHighQuality--;
-			}
-			else if (hasAffect &&
-				 (invVnum == crafting_essence_vnum(CRAFTING_MODE_FORGE)))
-			{
-				extract_obj(inventory, TRUE); // Not an arti, but 'in game.'
-				hasAffect = FALSE;
-			}
-			else if (hasFlux && (invVnum == crafting_tool_vnum(CRAFTING_MODE_FORGE)))
-			{
-				extract_obj(inventory, TRUE); // Not an arti, but 'in game.'
-				hasFlux = FALSE;
-			}
-		}
-
-		notch_skill(ch, SKILL_FORGE, 50);
 		SET_BIT(obj->extra2_flags, ITEM2_CRAFTED);
 		SET_BIT(obj->extra_flags, ITEM_NOREPAIR);
 		REMOVE_BIT(obj->extra_flags, ITEM_SECRET);
@@ -1506,29 +1554,13 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int /*cmd*/
 
 		wizlog(56, "%s forged '%s' (%d) ival %d.", GET_NAME(ch), obj->short_description,
 		       objVnum, itemvalue(obj));
-		if (!grant_crafted_item(ch, obj))
-			return;
-		if (chaos_pouch)
+		if (!submit_recipe_craft(ch, obj, plan, CRAFTING_MODE_FORGE, chaos_pouch))
 		{
-			const chaos_material_pouch_usage generated[] = {
-				{ lowQualityMaterialVnum, static_cast<uint64_t>(numLowQuality) },
-				{ highQualityMaterialVnum, static_cast<uint64_t>(numHighQuality) },
-			};
-			if (!chaos_material_pouch_record_generated(ch, generated,
-								   ARRAY_SIZE(generated)))
-				chaos_material_pouch_report_generated_failure(ch, "forge");
+			extract_obj(obj);
+			send_to_char(
+				"Your work could not be submitted; your requirements were retained.\r\n",
+				ch);
 		}
-
-		act("&+W$n &+Lgently takes their &+ymaterials&+L, their &nflux&+L, and places them into the &+rf&+Ro&+Yr&+Rg&+re&+L.\r\n"
-		    "&+W$n &+Lremoves the &+yitems &+Lfrom the &+rheat &+Land starts to &nhammer &+Laway at the mixture..\r\n"
-		    "&+L...after shedding plenty of &+Wsweat&+L, &+W$n &+Lsteps back, admiring their new $p.&N",
-		    TRUE, ch, obj, 0, TO_ROOM);
-		act("You &+Lgently take your &+ymaterials&+L, the &nflux&+L, and place them into the &+rf&+Ro&+Yr&+Rg&+re&+L.\r\n"
-		    "You &+Lremove the &+yitems &+Lfrom the &+rheat &+Land start to &nhammer &+Laway at the mixture..\r\n"
-		    "&+L...after shedding plenty of &+Wsweat&+L, you &+Lstep back, admiring your new $p.&N",
-		    FALSE, ch, obj, 0, TO_CHAR);
-
-		gain_exp(ch, NULL, iVal * crafting_experience_per_ival(), EXP_BOON);
 	}
 	else
 	{

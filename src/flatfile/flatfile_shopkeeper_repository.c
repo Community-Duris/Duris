@@ -19,7 +19,7 @@
 namespace
 {
 constexpr std::array<uint8_t, 8> catalog_magic = { 'D', 'U', 'R', 'S', 'H', 'O', 'P', 0 };
-constexpr uint32_t catalog_version = 1;
+constexpr uint32_t catalog_version = 2;
 constexpr size_t catalog_maximum_bytes = 256 * 1024 * 1024;
 constexpr size_t shopkeeper_maximum = 262144;
 constexpr size_t affect_maximum = 4096;
@@ -170,6 +170,7 @@ bool valid_catalog(const shopkeeper_catalog &catalog)
 		{
 			const auto &record = catalog.records[index];
 			if (record.mob_vnum <= 0 || record.room_vnum <= 0 || record.saved_at < 0 ||
+			    record.cash < -1 || record.cash > std::numeric_limits<int>::max() ||
 			    !record.revision || record.affects.size() > affect_maximum ||
 			    (index && !record_less(catalog.records[index - 1], record)) ||
 			    !std::is_sorted(record.affects.begin(), record.affects.end(),
@@ -217,6 +218,8 @@ bool encode_catalog(const shopkeeper_catalog &catalog, std::vector<uint8_t> *byt
 		payload.number(record.room_vnum);
 		payload.number(record.saved_at);
 		payload.number(record.revision);
+		payload.number(record.cash);
+		payload.number<uint8_t>(record.roaming ? 1 : 0);
 		payload.number<uint32_t>(record.affects.size());
 		for (const auto &affect : record.affects)
 		{
@@ -257,8 +260,8 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, shopkeeper_catalog *catal
 	uint32_t version = 0, payload_size = 0;
 	uint64_t revision = 0;
 	if (!header.number(&version) || !header.number(&payload_size) ||
-	    !header.number(&revision) || version != catalog_version || !revision ||
-	    payload_size != bytes.size() - header_size)
+	    !header.number(&revision) || (version != 1 && version != catalog_version) ||
+	    !revision || payload_size != bytes.size() - header_size)
 		return false;
 	const uint8_t *payload_bytes = bytes.data() + header_size;
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
@@ -277,12 +280,19 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, shopkeeper_catalog *catal
 		for (auto &record : decoded.records)
 		{
 			uint32_t affect_count = 0;
+			uint8_t roaming = 0;
 			if (!payload.number(&record.shop_id) || !payload.number(&record.mob_vnum) ||
 			    !payload.number(&record.room_vnum) ||
 			    !payload.number(&record.saved_at) ||
-			    !payload.number(&record.revision) || !payload.number(&affect_count) ||
+			    !payload.number(&record.revision) ||
+			    (version == catalog_version && !payload.number(&record.cash)) ||
+			    (version == catalog_version && !payload.number(&roaming)) ||
+			    roaming > 1 || !payload.number(&affect_count) ||
 			    affect_count > affect_maximum)
 				return false;
+			if (version == 1)
+				record.cash = -1;
+			record.roaming = roaming != 0;
 			record.affects.resize(affect_count);
 			for (auto &affect : record.affects)
 			{
@@ -652,6 +662,13 @@ flatfile_shopkeeper_prepare_trade(const std::string &root, const flatfile_author
 		*result_code = ESTALE;
 		return flatfile_shopkeeper_result::ok;
 	}
+	if (payload.keeper_vnum && (record->mob_vnum != payload.keeper_vnum || record->cash < 0 ||
+				    record->cash != payload.expected_keeper_cash ||
+				    record->roaming != static_cast<bool>(payload.keeper_roaming)))
+	{
+		*result_code = ESTALE;
+		return flatfile_shopkeeper_result::ok;
+	}
 	if (record->revision == std::numeric_limits<uint64_t>::max() ||
 	    catalog.revision == std::numeric_limits<uint64_t>::max())
 	{
@@ -705,6 +722,26 @@ flatfile_shopkeeper_prepare_trade(const std::string &root, const flatfile_author
 		*result_code = EINVAL;
 		return flatfile_shopkeeper_result::ok;
 	}
+	if (payload.keeper_vnum && payload.action != shop_trade_action::discard_invalid)
+	{
+		if (payload.action == shop_trade_action::buy_existing ||
+		    payload.action == shop_trade_action::buy_produced)
+		{
+			if (record->cash > std::numeric_limits<int>::max() - payload.price)
+			{
+				*result_code = ERANGE;
+				return flatfile_shopkeeper_result::ok;
+			}
+			record->cash += payload.price;
+		}
+		else if (record->cash >= payload.price)
+			record->cash -= payload.price;
+		else if (record->roaming && record->mob_vnum != 11005)
+		{
+			*result_code = ENOSPC;
+			return flatfile_shopkeeper_result::ok;
+		}
+	}
 	++record->revision;
 	++catalog.revision;
 	if (!valid_catalog(catalog))
@@ -713,6 +750,7 @@ flatfile_shopkeeper_prepare_trade(const std::string &root, const flatfile_author
 		return flatfile_shopkeeper_result::ok;
 	}
 	mutation->shop_revision = record->revision;
+	mutation->keeper_cash = record->cash;
 	mutation->after_image.filename = catalog_filename;
 	if (!encode_catalog(catalog, &mutation->after_image.bytes))
 		return flatfile_shopkeeper_result::io_error;

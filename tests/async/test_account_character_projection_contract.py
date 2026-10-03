@@ -46,7 +46,7 @@ checks.append(
             mapping,
             "if (!ch->desc || !ch->desc->account || !ch->desc->account->acct_name ||",
         )
-        and contains(mapping, "outcome=skipped_no_account")
+        and contains(mapping, "outcome=skipped_no_account", literal=True)
         and mapping.index("outcome=skipped_no_account")
         < mapping.index("INSERT INTO account_characters "),
     )
@@ -85,24 +85,28 @@ checks.append(
 )
 
 repair = body(
-    mysql_sql_player,
-    "int sql_repair_account_character_projection(const char *account_name)",
+    (SRC / "account_load.c").read_text(encoding="utf-8"),
+    "int account_load_repair(",
+)
+assert contains(
+    body(mysql_sql_player, "int sql_repair_account_character_projection(const char *account_name)"),
+    "account_load_repair(DB, account_name)",
 )
 checks.append(
     (
         "repair is sourced from active durable player ownership and honors tombstones",
-        contains(repair, "FROM player_data pd")
-        and contains(repair, "pd.active=1")
-        and contains(repair, "pd.account_name")
-        and contains(repair, "tombstone.deleted_at IS NOT NULL")
-        and contains(repair, "ON DUPLICATE KEY UPDATE"),
+        contains(repair, "FROM player_data pd", literal=True)
+        and contains(repair, "pd.active=1", literal=True)
+        and contains(repair, "pd.account_name", literal=True)
+        and contains(repair, "tombstone.deleted_at IS NOT NULL", literal=True)
+        and contains(repair, "ON DUPLICATE KEY UPDATE", literal=True),
     )
 )
 checks.append(
     (
         "account projection establishes safe baselines before making a character selectable",
         all(
-            contains(repair, token)
+            contains(repair, token, literal=True)
             for token in (
                 "INSERT INTO currency_wallet_baseline",
                 "INSERT INTO epic_balance_baseline",

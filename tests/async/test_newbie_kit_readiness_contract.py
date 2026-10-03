@@ -12,7 +12,7 @@ header = (SRC / "item_movement_transaction.h").read_text()
 nanny = (SRC / "nanny.c").read_text()
 comm = (SRC / "comm.c").read_text()
 
-queue = movement.split("struct creation_grant_queue", 1)[1].split("};", 1)[0]
+queue = movement.split("struct creation_grant_queue", 1)[1].split("\n};", 1)[0]
 assert contains(queue, "bool blocks_actor_commands = false")
 assert "item_creation_grant_mark_blocking" in header
 assert "item_creation_grant_blocks_commands" in header

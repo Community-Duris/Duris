@@ -13,6 +13,7 @@
 #include <thread>
 #include <vector>
 
+unsigned long next_obj_uid = 1;
 extern "C" MYSQL *sql_pool_acquire(void)
 {
 	return nullptr;

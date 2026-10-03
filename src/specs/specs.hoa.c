@@ -37,6 +37,7 @@ extern P_desc descriptor_list;
 extern P_index mob_index;
 extern P_index obj_index;
 extern P_room world;
+extern P_obj object_list;
 extern char *coin_names[];
 extern char *command[];
 extern const char *dirs[];
@@ -137,10 +138,24 @@ int trap_tower2_sleep(P_obj /*obj*/, P_char ch, int cmd, char * /*arg*/)
 #define LIMB_LEG 2
 #define LAST_LIMB 2
 
+static P_obj find_illesarus_object_by_uid(uint64_t object_uid)
+{
+	if (!object_uid)
+		return NULL;
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == object_uid)
+			return object;
+	return NULL;
+}
+
 int illesarus(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict;
 	int limb, curr_time;
+	int damage_result;
+	uint64_t ch_runtime_id;
+	uint64_t victim_runtime_id;
+	uint64_t object_uid;
 	struct affected_type af;
 
 	struct damage_messages messages = {
@@ -163,7 +178,7 @@ int illesarus(P_obj obj, P_char ch, int cmd, char *arg)
 		return TRUE;
 	}
 
-	if (!IS_ALIVE(ch) || !obj)
+	if (!char_in_list(ch) || !IS_ALIVE(ch) || !obj)
 	{
 		return FALSE;
 	}
@@ -179,7 +194,7 @@ int illesarus(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	vict = legacy_proc_arg<P_char>(arg);
-	if (cmd != CMD_MELEE_HIT || !IS_ALIVE(vict))
+	if (cmd != CMD_MELEE_HIT || !char_in_list(vict) || !IS_ALIVE(vict))
 	{
 		return FALSE;
 	}
@@ -194,8 +209,19 @@ int illesarus(P_obj obj, P_char ch, int cmd, char *arg)
 		    vict, TO_VICT);
 		act("$n &+Lswings&n $q &+Lwith a broad two-handed arch at&n $N.&n", FALSE, ch, obj,
 		    vict, TO_NOTVICT);
-		raw_damage(ch, vict, (BOUNDED(0, (GET_HIT(vict) + 9), 100) * 4), RAWDAM_DEFAULT,
-			   &messages);
+		ch_runtime_id = ch->runtime_id;
+		victim_runtime_id = vict->runtime_id;
+		object_uid = obj->obj_uid;
+		damage_result = raw_damage(ch, vict, (BOUNDED(0, (GET_HIT(vict) + 9), 100) * 4),
+					   RAWDAM_DEFAULT, &messages);
+		if (damage_result != DAM_NONEDEAD)
+			return TRUE;
+
+		ch = find_character_by_runtime_id(ch_runtime_id);
+		vict = find_character_by_runtime_id(victim_runtime_id);
+		obj = find_illesarus_object_by_uid(object_uid);
+		if (!ch || !IS_ALIVE(ch) || !vict || !IS_ALIVE(vict) || !obj)
+			return TRUE;
 
 		// The severing.. going to use grapple code here since it already exists
 		// and does exactly what I'm looking for.

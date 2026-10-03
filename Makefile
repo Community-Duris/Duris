@@ -5,6 +5,8 @@ SHELL := /bin/sh
 PYTHON ?= python3
 TEST_JOBS ?= 0
 TEST_MATCH ?=
+TEST_TIMEOUT ?=
+TEST_REPORT ?= bin/test-results.json
 PACKAGE_DIR := bin/packages
 BUILD_DEPS_PACKAGE := $(PACKAGE_DIR)/duris-build-deps_1.0_all.deb
 
@@ -138,7 +140,7 @@ world: build-area-tools
 	fi
 
 test-python: world
-	$(PYTHON) tests/run_regression_tests.py --jobs "$(TEST_JOBS)" $(if $(strip $(TEST_MATCH)),--match "$(TEST_MATCH)",)
+	$(PYTHON) tests/run_regression_tests.py --jobs "$(TEST_JOBS)" $(if $(strip $(TEST_MATCH)),--match "$(TEST_MATCH)",) $(if $(strip $(TEST_TIMEOUT)),--timeout "$(TEST_TIMEOUT)",) --report "$(TEST_REPORT)"
 
 test-native:
 	tests/async/run_signal_handlers.sh
@@ -177,7 +179,19 @@ test-db:
 	tests/async/run_corpse_lifecycle_repository_schema_mysql.sh
 	tests/async/run_lookup_dataset_mysql.sh
 	tests/async/run_runtime_compatibility_mysql.sh
+	tests/async/run_legacy_archive_columns_mysql.sh
+	ARCHIVE_COLUMN_DB_IMAGE=mariadb:10.11 tests/async/run_legacy_archive_columns_mysql.sh
+	tests/async/run_legacy_material_order_mysql.sh
+	MATERIAL_ORDER_DB_IMAGE=mariadb:10.11 tests/async/run_legacy_material_order_mysql.sh
+	tests/async/run_legacy_locker_index_mysql.sh
+	LOCKER_INDEX_DB_IMAGE=mariadb:10.11 tests/async/run_legacy_locker_index_mysql.sh
+	bash tests/async/run_legacy_affect_index_mysql.sh
+	AFFECT_INDEX_DB_IMAGE=mariadb:10.11 bash tests/async/run_legacy_affect_index_mysql.sh
+	bash tests/async/run_legacy_character_index_mysql.sh
+	CHARACTER_INDEX_DB_IMAGE=mariadb:10.11 bash tests/async/run_legacy_character_index_mysql.sh
 	tests/async/run_legacy_migration_mysql.sh
+	TELEMETRY_REPOSITORY_DB_IMAGE=mysql:8.0.46 tests/async/run_telemetry_repository_sql.sh
+	TELEMETRY_REPOSITORY_DB_IMAGE=mariadb:10.11.14 tests/async/run_telemetry_repository_sql.sh
 	$(PYTHON) tests/async/run_epic_zone_seed_mysql.py --image mysql:8.0
 	$(PYTHON) tests/async/run_epic_zone_seed_mysql.py --image mariadb:11.4
 	tests/async/run_pet_repository_mysql.sh

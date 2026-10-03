@@ -20,6 +20,7 @@
 #include <string.h>
 #include <time.h>
 #include "combat/arena.h"
+#include "combat/attack_continuation.h"
 #include "core/config.h"
 #include "combat/damage.h"
 #include "combat/training_dummy.h"
@@ -33,6 +34,7 @@
 #include "sql/sql.h"
 #include "world/vnum.obj.h"
 #include "economy/crafting.h"
+#include "economy/economic_gameplay_authority.h"
 
 /*
  * external variables
@@ -825,6 +827,9 @@ void do_flurry_of_blows(P_char ch, char *arg)
 	char buf[MAX_STRING_LENGTH];
 	int num_attacks, max_num_attacks, hit_all, num_targets = 0, count = 0,
 						   num_hits_per_target = 0;
+	int room, actor_height;
+	uint64_t actor_runtime_id;
+	bool actor_continues = true;
 
 	if (!GET_CHAR_SKILL(ch, SKILL_FLURRY_OF_BLOWS))
 	{
@@ -877,15 +882,20 @@ void do_flurry_of_blows(P_char ch, char *arg)
 	num_targets = MAX(1, num_targets);
 	num_hits_per_target = int(max_num_attacks / num_targets);
 	num_hits_per_target = BOUNDED(1, num_hits_per_target, num_attacks);
+	room = ch->in_room;
+	actor_height = ch->specials.z_cord;
+	actor_runtime_id = ch->runtime_id;
 
 	act("&+gFlowing into the stance of the &+Gviper &+gyou unleash a flurry of blows!&n", FALSE,
 	    ch, 0, 0, TO_CHAR);
 	act("Placing $s weight low $n shifts into a more aggressive stance.", FALSE, ch, 0, 0,
 	    TO_ROOM);
 
-	for (tch = world[ch->in_room].people; tch; tch = next_tch)
+	for (tch = world[room].people; tch; tch = next_tch)
 	{
 		next_tch = tch->next_in_room;
+		const uint64_t next_tch_runtime_id = next_tch ? next_tch->runtime_id : 0;
+		bool hit_callback_invoked = false;
 
 		if (!should_area_hit(ch, tch))
 			continue;
@@ -915,11 +925,51 @@ void do_flurry_of_blows(P_char ch, char *arg)
 		for (int i = 1; i <= num_hits_per_target && count <= max_num_attacks; i++, count++)
 		{
 			if (!should_not_kill(ch, tch) && (GET_STAT(tch) != STAT_DEAD))
+			{
+				const attack_continuation continuation =
+					begin_attack_continuation(ch, tch);
 				hit(ch, tch, NULL);
+				hit_callback_invoked = true;
+
+				const attack_continuation_result after_hit =
+					check_attack_continuation(continuation);
+				P_char live_actor = find_character_by_runtime_id(actor_runtime_id);
+				if (!live_actor || !IS_ALIVE(live_actor) ||
+				    live_actor->in_room != room ||
+				    live_actor->specials.z_cord != actor_height)
+				{
+					actor_continues = false;
+					break;
+				}
+
+				ch = live_actor;
+				if (!after_hit.can_continue())
+				{
+					++count;
+					break;
+				}
+				tch = after_hit.target;
+			}
+		}
+
+		if (!actor_continues)
+			break;
+
+		if (hit_callback_invoked && next_tch_runtime_id)
+		{
+			P_char live_next_tch = find_character_by_runtime_id(next_tch_runtime_id);
+			if (live_next_tch != next_tch || live_next_tch->in_room != room)
+				break;
+			next_tch = live_next_tch;
 		}
 	}
-	CharWait(ch, PULSE_VIOLENCE * 3);
-	set_short_affected_by(ch, SKILL_FLURRY_OF_BLOWS, 10 * WAIT_SEC);
+
+	ch = find_character_by_runtime_id(actor_runtime_id);
+	if (ch && IS_ALIVE(ch) && ch->in_room == room && ch->specials.z_cord == actor_height)
+	{
+		CharWait(ch, PULSE_VIOLENCE * 3);
+		set_short_affected_by(ch, SKILL_FLURRY_OF_BLOWS, 10 * WAIT_SEC);
+	}
 }
 
 /*
@@ -929,8 +979,9 @@ void do_flurry_of_blows(P_char ch, char *arg)
 void do_hitall(P_char ch, char *arg, int /*cmd*/)
 {
 	::byte percent;
-	int count, hit_all;
+	int count, hit_all, room;
 	P_char mob, next_mob;
+	uint64_t actor_runtime_id, next_mob_runtime_id;
 	char Gbuf2[MAX_STRING_LENGTH];
 
 	if (!ch)
@@ -985,10 +1036,15 @@ void do_hitall(P_char ch, char *arg, int /*cmd*/)
 	/* Hit all aggressive monsters in room */
 
 	count = 0;
+	room = ch->in_room;
+	actor_runtime_id = ch->runtime_id;
 
-	for (mob = world[ch->in_room].people; mob; mob = next_mob)
+	for (mob = world[room].people; mob; mob = next_mob)
 	{
 		next_mob = mob->next_in_room;
+		next_mob_runtime_id = next_mob ? next_mob->runtime_id : 0;
+		bool hit_callback_invoked = false;
+		bool target_continues = true;
 
 		if (!should_area_hit(ch, mob))
 			continue;
@@ -1010,26 +1066,57 @@ void do_hitall(P_char ch, char *arg, int /*cmd*/)
 		if (!hit_all && !IS_AGGRESSIVE(mob))
 			continue;
 
-		if (GET_CHAR_SKILL(ch, SKILL_HITALL) >= percent)
-			if (!should_not_kill(ch, mob))
-				hit(ch, mob, ch->equipment[PRIMARY_WEAPON]);
-		if (GET_CLASS(ch, CLASS_BERSERKER) && GET_STAT(mob) != STAT_DEAD)
+		if (GET_CHAR_SKILL(ch, SKILL_HITALL) >= percent && !should_not_kill(ch, mob))
+		{
+			P_obj weapon = ch->equipment[PRIMARY_WEAPON];
+			const attack_continuation continuation =
+				begin_attack_continuation(ch, mob, weapon, PRIMARY_WEAPON);
+			hit(ch, mob, weapon);
+			hit_callback_invoked = true;
+
+			const attack_continuation_result after_hit =
+				check_attack_continuation(continuation);
+			ch = find_character_by_runtime_id(actor_runtime_id);
+			if (!ch || !IS_ALIVE(ch) || ch->in_room != room)
+				break;
+
+			target_continues = after_hit.can_continue();
+			if (target_continues)
+			{
+				ch = after_hit.actor;
+				mob = after_hit.target;
+			}
+		}
+		if (target_continues && GET_CLASS(ch, CLASS_BERSERKER) &&
+		    GET_STAT(mob) != STAT_DEAD)
 		{
 			if (affected_by_spell(ch, SKILL_BERSERK))
 			{
-				hit(ch, mob, ch->equipment[PRIMARY_WEAPON]);
+				P_obj weapon = ch->equipment[PRIMARY_WEAPON];
+				hit(ch, mob, weapon);
+				hit_callback_invoked = true;
+
+				ch = find_character_by_runtime_id(actor_runtime_id);
+				if (!ch || !IS_ALIVE(ch) || ch->in_room != room)
+					break;
 			}
 		} // new zerker stuff
 
-		// riposte, damage shield, etc can kill the character
-		// and it appears we've had a crash due to this, so adding this
-		// check here
-		if (!IS_ALIVE(ch))
-			break;
+		if (hit_callback_invoked && next_mob_runtime_id)
+		{
+			P_char live_next_mob = find_character_by_runtime_id(next_mob_runtime_id);
+			if (live_next_mob != next_mob || live_next_mob->in_room != room)
+			{
+				count++;
+				break;
+			}
+			next_mob = live_next_mob;
+		}
 
 		count++;
 	}
 
+	ch = find_character_by_runtime_id(actor_runtime_id);
 	if (char_in_list(ch))
 	{
 		if (!count)
@@ -4143,6 +4230,13 @@ void do_home(P_char ch, char * /*argument*/, int /*cmd*/)
 		send_to_char(
 			"You can't really see yourself living in such an awful place as this.\n",
 			ch);
+		return;
+	}
+
+	if (economic_gameplay_authority::active())
+	{
+		send_to_char("Home changes are unavailable while active accounting is enabled.\r\n",
+			     ch);
 		return;
 	}
 

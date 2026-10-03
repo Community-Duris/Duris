@@ -14,7 +14,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-player-domain-test-") as tem
     compile_result = subprocess.run(
         [
             "g++",
-            "-std=c++20",
+            "-std=c++20", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
             "-Wall",
             "-Wextra",
             "-Wpedantic",

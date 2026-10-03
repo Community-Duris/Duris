@@ -39,10 +39,12 @@
 #include "specs/specs.winterhaven.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "sql/sql_player.h"
+#include "sql/sql_locker.h"
+#include "sql/sql_transaction.h"
 #include "world/vnum.room.h"
 #include "persistence/locker_async.h"
 #include "item/item_movement_transaction.h"
+#include "economy/economic_gameplay_authority.h"
 
 extern P_index obj_index;
 extern P_index mob_index;
@@ -61,6 +63,15 @@ static int save_locker_char(P_char chInLocker, int bTerminal);
 static void free_locker(int roomNum);
 static bool check_for_artisInRoom(P_char ch, int rroom);
 static void event_deferredTerminalSave(P_char chLocker, P_char ch, P_obj obj, void *data);
+
+static bool locker_paid_service_refused(P_char ch)
+{
+	if (!economic_gameplay_authority::active())
+		return false;
+	send_to_char("Paid locker services are unavailable while active accounting is enabled.\r\n",
+		     ch);
+	return true;
+}
 
 static long locker_elapsed_ms(const struct timespec *start, const struct timespec *end)
 {
@@ -1900,6 +1911,8 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 	}
 
 	checked_snprintf(lockerName, 500, "%s.locker", enterWho);
+	if (locker_paid_service_refused(ch))
+		return TRUE;
 
 	chLocker = load_locker_char(ch, lockerName, bValidate);
 
@@ -3271,6 +3284,7 @@ static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAc
 	// insert in list
 	vict->next = character_list;
 	character_list = vict;
+	register_character_runtime_id(vict);
 
 	// saving info for teleport return command
 	vict->specials.was_in_room = vict->in_room;
@@ -3877,6 +3891,8 @@ static int locker_chestcmd(P_char ch, char *arg)
 			send_to_char("Chest passwords must be at most 72 bytes.\r\n", ch);
 			return TRUE;
 		}
+		if (locker_paid_service_refused(ch))
+			return TRUE;
 
 		auto finish = [locker_id, name = std::string(arg2)](P_desc completed_desc, int,
 								    const char *hash)
@@ -3886,6 +3902,8 @@ static int locker_chestcmd(P_char ch, char *arg)
 			if (!locker || locker->GetLockerId() != locker_id ||
 			    !locker_require_owner(locker, actor,
 						  "Only the locker owner can manage chests.\r\n"))
+				return;
+			if (locker_paid_service_refused(actor))
 				return;
 			int chest_cost = 500000;
 			int result = sql_create_private_chest_hashed(locker_id, name.c_str(), hash);

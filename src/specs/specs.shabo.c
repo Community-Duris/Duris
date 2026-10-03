@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "item/objmisc.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -846,8 +847,8 @@ void event_shabo_racechange(P_char ch, P_char /*victim*/, [[maybe_unused]] P_obj
 			if (temp_obj)
 			{
 				if (obj_index[temp_obj->R_num].func.obj != NULL)
-					(*obj_index[temp_obj->R_num].func.obj)(
-						temp_obj, ch, CMD_REMOVE, (char *)"all");
+					invoke_object_special(temp_obj, ch, CMD_REMOVE,
+							      (char *)"all");
 				obj_to_char(unequip_char(ch, k), ch);
 			}
 		}
@@ -1057,4 +1058,491 @@ int shaboath_enchantment_tower(int room, P_char /*ch*/, int cmd, char * /*argume
 	}
 
 	return FALSE;
+}
+
+int shabo_butler(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	P_char i, i_next, tempchar = NULL, tempchar2 = NULL, was_fighting = NULL;
+	P_desc d;
+	P_obj item, next_item;
+	P_char gunnadie;
+	int pos;
+
+	/*
+	 * check for periodic event calls
+	 */
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch || !IS_AWAKE(ch))
+		return FALSE;
+
+	/*
+	 * if it's some command besides a periodic event call, return
+	 */
+	if (cmd)
+		return FALSE;
+
+	if (IS_FIGHTING(ch))
+	{
+		was_fighting = GET_OPPONENT(ch);
+		gunnadie = GET_OPPONENT(ch);
+		stop_fighting(ch);
+
+		tempchar = read_mobile(32844, VIRTUAL);
+
+		if (!tempchar)
+		{
+			logit(LOG_EXIT, "assert: mob load failed in shabo_butler()");
+			wizlog(MINLVLIMMORTAL, "error in proc shabo_butler");
+			return FALSE;
+		}
+		char_to_room(tempchar, ch->in_room, -2);
+		for (item = ch->carrying; item; item = next_item)
+		{
+			next_item = item->next_content;
+			obj_from_char(item);
+			obj_to_char(item, tempchar); /*
+			                              * transfer any eq and inv
+			                              */
+		}
+		for (pos = 0; pos < MAX_WEAR; pos++)
+		{
+			if (ch->equipment[pos] != NULL)
+			{
+				item = unequip_char(ch, pos);
+				equip_char(tempchar, item, pos, TRUE);
+			}
+		}
+
+		act("The $n suddenly drops to the floor, howling in pain!", 0, ch, 0, 0, TO_ROOM);
+		act("A moment later, $e trasforms into $N!", 1, ch, 0, tempchar, TO_ROOM);
+		act("$n throws back $s head, and lets out a long howl.", 0, tempchar, 0, 0,
+		    TO_ROOM);
+
+		extract_char(ch);
+		ch = NULL;
+
+		/*
+		 * Howl for help, similar to echoz
+		 */
+		for (d = descriptor_list; d; d = d->next)
+		{
+			if (d->connected == CON_PLAYING)
+			{
+				if (world[tempchar->in_room].zone ==
+				    world[d->character->in_room].zone)
+				{
+					send_to_char("A bloodcurdling howl is heard!",
+						     d->character);
+					send_to_char("\r\n", d->character);
+				}
+			}
+		}
+
+		/*
+		 * Assistants in other room change now, and begin to come help
+		 */
+		for (i = character_list; i; i = i_next)
+		{
+			i_next = i->next;
+			if (IS_NPC(i) && (GET_VNUM(i) == 32841))
+			{
+				tempchar2 = read_mobile(32844, VIRTUAL);
+				if (!tempchar2)
+				{
+					logit(LOG_EXIT,
+					      "assert: second mob load failed in shabo_butler()");
+					wizlog(MINLVLIMMORTAL,
+					       "error in proc shabo_butler (second mobs)");
+					return FALSE;
+				}
+				act("The $n suddenly drops to the floor, howling in pain!", 0, i, 0,
+				    0, TO_ROOM);
+				act("A moment later, $e trasforms into $N!", 1, i, 0, tempchar2,
+				    TO_ROOM);
+				act("$n throws back $s head, and lets out a long howl.", 0,
+				    tempchar2, 0, 0, TO_ROOM);
+
+				char_to_room(tempchar2, i->in_room, -2);
+				if (!IS_SET(tempchar2->specials.act, ACT_HUNTER))
+					SET_BIT(tempchar2->specials.act, ACT_HUNTER);
+
+				for (item = i->carrying; item; item = next_item)
+				{
+					next_item = item->next_content;
+					obj_from_char(item);
+					obj_to_char(item, tempchar2);
+				}
+				for (pos = 0; pos < MAX_WEAR; pos++)
+				{
+					if (i->equipment[pos] != NULL)
+					{
+						item = unequip_char(i, pos);
+						equip_char(tempchar2, item, pos, TRUE);
+					}
+				}
+
+				/*
+				 * Code for memory (from set_fighting), this will make the converted
+				 * werewolves hunt.
+				 */
+
+				if (tempchar2 && was_fighting)
+				{
+					if (HAS_MEMORY(tempchar2))
+					{
+						if (IS_PC(was_fighting))
+						{
+							if (!(IS_TRUSTED(was_fighting) &&
+							      IS_SET(was_fighting->specials.act,
+								     PLR_AGGIMMUNE)))
+								if ((GET_STAT(tempchar2) >
+								     STAT_INCAP))
+									remember(tempchar2,
+										 was_fighting);
+						}
+						else if (IS_PC_PET(was_fighting) &&
+							 (GET_MASTER(was_fighting)->in_room ==
+							  was_fighting->in_room) &&
+							 CAN_SEE(tempchar2,
+								 GET_MASTER(was_fighting)))
+						{
+							if (!(IS_TRUSTED(GET_MASTER(was_fighting)) &&
+							      IS_SET(GET_MASTER(was_fighting)
+									     ->specials.act,
+								     PLR_AGGIMMUNE)))
+								if ((GET_STAT(tempchar2) >
+								     STAT_INCAP))
+									remember(
+										tempchar2,
+										GET_MASTER(
+											was_fighting));
+						}
+					}
+				}
+				extract_char(i); /*
+				                  * Set them hunting players, wherever they may
+				                  * be
+				                  */
+			}
+		}
+
+		//    if (was_fighting)
+		MobStartFight(tempchar, gunnadie);
+
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int shabo_caran(P_char ch, P_char tch, int cmd, char * /*arg*/)
+{
+	int helpers[] = { 32835, 32836, 0 };
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+	if (!tch && !number(0, 4))
+		return shout_and_hunt(
+			ch, 100,
+			"&+MBrethren, we have been invaded, come to me and dispose of this filth!!&N",
+			NULL, helpers, 0, 0);
+	return FALSE;
+}
+
+int strychnesch_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
+{
+	int helpers[] = { 32830, 32829, 32831, 32832, 0 };
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+	if (!tch && !number(0, 4))
+		return shout_and_hunt(
+			ch, 100,
+			"&+WRaveners come to my aid, there are intruders within our domain! Kill %s!",
+			NULL, helpers, 0, 0);
+	return FALSE;
+}
+
+int morgoor_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
+{
+	int helpers[] = { 32828, 32829, 32831, 32832, 0 };
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+	if (!tch && !number(0, 4))
+		return shout_and_hunt(
+			ch, 100,
+			"&+WRaveners come to my aid, there are intruders within our domain! Kill %s!",
+			NULL, helpers, 0, 0);
+	return FALSE;
+}
+
+int jabulanth_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
+{
+	int helpers[] = { 32828, 32830, 32831, 32832, 0 };
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+	if (!tch && !number(0, 4))
+		return shout_and_hunt(
+			ch, 100,
+			"&+WRaveners come to my aid, there are intruders within our domain! Kill %s!",
+			NULL, helpers, 0, 0);
+	return FALSE;
+}
+
+int redpal_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
+{
+	int helpers[] = { 32828, 32830, 32829, 32832, 0 };
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+	if (!tch && !number(0, 4))
+		return shout_and_hunt(
+			ch, 100,
+			"&+WRaveners come to my aid, there are intruders within our domain! Kill %s!",
+			NULL, helpers, 0, 0);
+	return FALSE;
+}
+
+int cyvrand_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
+{
+	int helpers[] = { 32828, 32830, 32829, 32831, 0 };
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+	if (!tch && !number(0, 4))
+		return shout_and_hunt(
+			ch, 100,
+			"&+WRaveners come to my aid, there are intruders within our domain! Kill %s!",
+			NULL, helpers, 0, 0);
+	return FALSE;
+}
+
+int overseer_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
+{
+	int helpers[] = { 32804, 32805, 32806, 0 };
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+	if (!tch && !number(0, 4))
+		return shout_and_hunt(ch, 100,
+				      "&+MInvaders!!!  Guards, come and help me destroy %s!", NULL,
+				      helpers, 0, 0);
+	return FALSE;
+}
+
+int shabo_petre(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
+{
+	P_char i, i_next, tempchar2 = NULL;
+	P_obj item, next_item;
+	P_char gunnadie;
+	int pos;
+
+	/*
+	 * check for periodic event calls
+	 */
+	if (cmd == CMD_SET_PERIODIC)
+		return FALSE; // TRUE;
+
+	if (!ch || !IS_AWAKE(ch) || cmd)
+	{
+		return FALSE;
+	}
+
+	if (IS_FIGHTING(ch) && ch->in_room != real_room(32885))
+	{
+		gunnadie = GET_OPPONENT(ch);
+
+		act("\n&+YHELP! Anyone please help! $N just hit me! HELP!\n&n", 0, ch, 0, gunnadie,
+		    TO_ROOM);
+		stop_fighting(ch);
+		act("$n fades from sight!!!", 0, ch, 0, 0, TO_ROOM);
+
+		/* move the mob */
+		char_from_room(ch);
+		char_to_room(ch, real_room(32885), 0);
+		GET_HOME(ch) = GET_BIRTHPLACE(ch) = GET_ORIG_BIRTHPLACE(ch) = real_room(32885);
+
+		/* in target room make it look like a recall */
+		act("$n &+WFades into the room with a nasty expression.&n", 0, ch, 0, 0, TO_ROOM);
+
+		/*  I have no idea why this proc loads an earth elemental and starts fighting with it.
+		    I've commented this portion out. Apr09 -Lucrot
+		    tempchar2 = read_mobile(1101, VIRTUAL);
+		    char_to_room(tempchar2, real_room(32885), 0);
+
+		    MobStartFight(ch, tempchar2);
+		    shout_and_hunt(ch, 100,"&+YHELP! Anyone please help! %s just hit me! HELP!&n", NULL,
+		                   helpers, tempchar2, 0); */
+
+		for (i = character_list; i; i = i_next)
+		{
+			i_next = i->next;
+
+			if (IS_NPC(i) && (GET_VNUM(i) == 32841))
+			{
+				tempchar2 = read_mobile(32844, VIRTUAL);
+
+				if (!tempchar2)
+				{
+					logit(LOG_EXIT,
+					      "assert: second mob load failed in shabo_petre()");
+					wizlog(MINLVLIMMORTAL, "error in proc shabo_petre");
+					return FALSE;
+				}
+
+				act("The $n suddenly drops to the floor, howling in pain!", 0, i, 0,
+				    0, TO_ROOM);
+				act("A moment later, $e trasforms into $N!", 1, i, 0, tempchar2,
+				    TO_ROOM);
+				act("$n throws back $s head, and lets out a long howl.", 0,
+				    tempchar2, 0, 0, TO_ROOM);
+
+				char_to_room(tempchar2, i->in_room, -2);
+
+				if (!IS_SET(tempchar2->specials.act, ACT_HUNTER))
+				{
+					SET_BIT(tempchar2->specials.act, ACT_HUNTER);
+				}
+
+				for (item = i->carrying; item; item = next_item)
+				{
+					next_item = item->next_content;
+					obj_from_char(item);
+					obj_to_char(item, tempchar2);
+				}
+
+				for (pos = 0; pos < MAX_WEAR; pos++)
+				{
+					if (i->equipment[pos] != NULL)
+					{
+						item = unequip_char(i, pos);
+						equip_char(tempchar2, item, pos, TRUE);
+					}
+				}
+			}
+		}
+	}
+	return FALSE;
+}
+
+int shabo_evilpetre(P_char /*ch*/, P_char /*pl*/, int /*cmd*/, char * /*arg*/)
+{
+	return FALSE;
+}
+
+int shabo_palle(P_char ch, P_char /*vict*/, int cmd, char *arg)
+{
+	char asked[MAX_STRING_LENGTH];
+	P_char tempchar2 = NULL;
+	P_obj item, next_item;
+	static bool askedquestion = FALSE;
+	static int timerr = 0;
+	int pos, rr;
+
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+
+	if (!ch)
+		return FALSE;
+
+	if (arg && cmd == CMD_ASK)
+	{
+		snprintf(asked, MAX_STRING_LENGTH, "%s", arg);
+		for (rr = 0; *(asked + rr) != '\0'; rr++)
+			asked[rr] = LOWER(*(asked + rr));
+	}
+
+	timerr++;
+
+	if (((timerr == 10) || isname(arg, "pallistren darkaland")) && (askedquestion))
+	{
+		tempchar2 = read_mobile(32847, VIRTUAL);
+		timerr = 0;
+
+		if (!tempchar2)
+			return FALSE;
+
+		stop_fighting(ch);
+		tempchar2 = read_mobile(32847, VIRTUAL);
+		if (!tempchar2)
+		{
+			logit(LOG_EXIT, "assert: second mob load failed in shabo_palle()");
+			wizlog(MINLVLIMMORTAL, "error in proc shabo_pelle");
+			return FALSE;
+		}
+		char_to_room(tempchar2, ch->in_room, -2);
+		for (item = ch->carrying; item; item = next_item)
+		{
+			next_item = item->next_content;
+			obj_from_char(item);
+			obj_to_char(item, tempchar2);
+		}
+		for (pos = 0; pos < MAX_WEAR; pos++)
+		{
+			if (ch->equipment[pos] != NULL)
+			{
+				item = unequip_char(ch, pos);
+				equip_char(tempchar2, item, pos, TRUE);
+			}
+		}
+		mobsay(ch, "You know, on second thought, I dont think you belong here.. DIE!");
+		extract_char(ch);
+		return TRUE;
+	}
+	if ((timerr == 10) && !(askedquestion))
+		timerr = 0;
+
+	if (!isname(arg, "pallistren darkaland"))
+		return FALSE;
+
+	if (isname(arg, "pallistren darkaland") && !askedquestion)
+	{
+		mobsay(ch,
+		       "Greetings.  I am Pallistren, representative to Shaboath.  It is obvious");
+		mobsay(ch,
+		       "that you are no friends of the aboleth, and are here under less than welcome");
+		mobsay(ch, "circumstances.  Oh, don't worry, I won't alert the aboleth, they are");
+		mobsay(ch, "more than capable of taking care of themselves.");
+		mobsay(ch,
+		       "I care little of what goes on on this plane, but the weaving of the magical");
+		mobsay(ch,
+		       "arts that are taking place in the great towers of this city intigue me.  To");
+		mobsay(ch,
+		       "date I have been unable to scry into them, however.  Unfortunately, I have");
+		mobsay(ch,
+		       "not yet figured out how to enter them, to examine the magical undergoings");
+		mobsay(ch, "more closely myself.");
+		askedquestion = TRUE;
+	}
+
+	return 0;
+}
+
+int shabo_derro_savant(P_char ch, P_char pl, int cmd, char * /*arg*/)
+{
+	int allowed = 0;
+
+	if (cmd == CMD_SET_PERIODIC)
+		return TRUE;
+	allowed = 0;
+	if (!ch)
+		return 0;
+	if (!pl)
+		return 0;
+
+	if (!(cmd == CMD_EAST) && !(cmd == CMD_WEST) && !(cmd == CMD_NORTH) && !(cmd == CMD_NE) &&
+	    !(cmd == CMD_NORTHEAST))
+		return 0;
+
+	if (IS_TRUSTED(pl) || IS_NPC(pl))
+		allowed = 1;
+	else
+		allowed = 0;
+
+	if (allowed)
+	{
+		act("$N nods, stands aside and lets $n pass.", FALSE, pl, 0, ch, TO_ROOM);
+		act("$N nods and stands aside to let you pass.", FALSE, pl, 0, ch, TO_CHAR);
+		return (FALSE);
+	}
+	/* BLOCK! */
+	act("$N &+yjumps in your path blocking the exit!&n.", FALSE, pl, 0, ch, TO_CHAR);
+	act("$N &+yjumps in the way of $n blocking the exit!&n.", FALSE, pl, 0, ch, TO_NOTVICT);
+	return (TRUE);
 }

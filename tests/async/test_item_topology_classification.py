@@ -83,6 +83,16 @@ class ItemTopologyClassificationTest(unittest.TestCase):
         disagreement = row(2, current_owner_id=8)
         self.assertEqual(self.categories([disagreement]), ["owner_disagreement"])
 
+    def test_post_baseline_revision_uses_creation_and_transfer_events(self):
+        """A UID created after baseline still needs a contiguous event history."""
+        statement = topology.classification_sql()
+        self.assertIn("baseline.item_uid IS NULL AND ledger.item_uid IS NULL", statement)
+        self.assertIn("COALESCE(baseline.opening_item_revision,0)+"
+                      "COALESCE(ledger.event_count,0)", statement)
+        post_baseline = row(9, item_revision=2, expected_item_revision=3)
+        self.assertEqual(self.categories([post_baseline]),
+                         ["item_revision_mismatch"])
+
     def test_orphaned_corpse_owner_remains_in_candidate_population(self):
         """Retain and classify a corpse item whose player owner is absent."""
         output = "\t".join((
@@ -99,6 +109,54 @@ class ItemTopologyClassificationTest(unittest.TestCase):
         rows = topology.load_rows(query)
         self.assertIsNone(rows[0].payload_owner_id)
         self.assertEqual(self.categories(rows), ["missing_payload_owner"])
+
+    def test_pet_payload_uses_pet_uid_and_player_context(self):
+        """Keep pet payloads in the same repair inventory as player items."""
+        statement = topology.classification_sql()
+        self.assertIn("FROM player_pet_items i JOIN player_pets pp", statement)
+        self.assertIn("CAST(pp.pet_uid AS UNSIGNED),CAST(pp.owner_pid AS UNSIGNED)",
+                      statement)
+        pet = row(8, source_table="player_pet_items", payload_owner_type=11,
+                  payload_owner_id=80, payload_owner_context_id=7,
+                  current_owner_type=11, current_owner_id=80,
+                  current_owner_context_id=7)
+        self.assertEqual(self.categories([pet]), [])
+        self.assertEqual(self.categories([replace(pet, current_owner_id=None)]),
+                         ["owner_disagreement"])
+
+    def test_shopkeeper_and_siege_payloads_are_included(self):
+        """Use the runtime shop ID offset and room custody for legacy stores."""
+        statement = topology.classification_sql()
+        self.assertIn("FROM shopkeeper_items i LEFT JOIN shopkeepers s", statement)
+        self.assertIn("CAST(s.shop_id AS UNSIGNED)+1", statement)
+        self.assertIn("FROM siege_items i LEFT JOIN siege_items p", statement)
+        self.assertNotIn("WHERE i.obj_uid>0", statement)
+        shop = row(8, source_table="shopkeeper_items", payload_owner_type=9,
+                   payload_owner_id=42, current_owner_type=9, current_owner_id=42)
+        siege = row(9, source_table="siege_items", payload_owner_type=3,
+                    payload_owner_id=3001, current_owner_type=3,
+                    current_owner_id=3001)
+        self.assertEqual(self.categories([shop, siege]), [])
+
+    def test_null_and_zero_uids_remain_distinct_protected_cases(self):
+        """Do not discard unidentified physical payload rows from the inventory."""
+        null_uid = replace(row(1), source_row_id=30, item_uid=None)
+        zero_uid = replace(row(2), source_row_id=31, item_uid=0)
+        findings = topology.classify([null_uid, zero_uid])
+        self.assertEqual([finding.category for finding in findings],
+                         ["missing_item_uid", "missing_item_uid"])
+        self.assertIn("\tNULL\t", findings[0].artifact_row())
+        self.assertIn("\t0\t", findings[1].artifact_row())
+        self.assertIn("null_uids=1 zero_uids=1", topology.summary(
+            [null_uid, zero_uid], findings))
+        sample = "\t".join((
+            "siege_items", "31", "NULL", "NULL", "3", "3001", "0", "101",
+            "0", "0", "NULL", "NULL", "NULL", "NULL", "NULL", "NULL",
+            "NULL", "NULL", "NULL", "NULL", "NULL", "NULL", "NULL",
+        ))
+        parsed = topology.load_rows(lambda _statement: sample)
+        self.assertIsNone(parsed[0].item_uid)
+        self.assertEqual(self.categories(parsed), ["missing_item_uid"])
 
     def test_quarantine_and_inactive_state_are_expected_transitions(self):
         """Treat only otherwise-consistent lifecycle states as expected."""
@@ -138,28 +196,25 @@ class ItemTopologyClassificationTest(unittest.TestCase):
             {"missing_current_parent", "foreign_or_inactive_parent"},
         )
 
-    def test_duplicate_identical_custody_rows_are_corruption(self):
-        """Report duplicate custody sources even when their payloads agree."""
+    def test_duplicate_uid_preserves_every_physical_payload_row(self):
+        """A repair case must include both source IDs, including conflicts."""
         duplicate = row(1)
-        self.assertEqual(
-            self.categories([duplicate, replace(duplicate, source_row_id=2)]),
-            ["duplicate_custody_rows"],
-        )
-        self.assertEqual(
-            self.categories([
-                duplicate,
-                replace(duplicate, source_row_id=2, payload_owner_id=8),
-            ]),
-            ["ambiguous_payload"],
-        )
-        self.assertEqual(
-            self.categories([
-                duplicate,
-                replace(duplicate, source_row_id=2, broken_parent=True),
-            ]),
-            ["missing_payload_parent"],
-        )
+        for second, category in (
+                (replace(duplicate, source_row_id=2), "duplicate_payload_uid"),
+                (replace(duplicate, source_row_id=2, payload_owner_id=8),
+                 "ambiguous_payload"),
+                (replace(duplicate, source_row_id=2, broken_parent=True),
+                 "missing_payload_parent")):
+            rows = [duplicate, second]
+            findings = topology.classify(rows)
+            self.assertEqual([finding.category for finding in findings],
+                             [category, category])
+            self.assertEqual([finding.row.source_row_id for finding in findings],
+                             [1, 2])
+            self.assertEqual(len({finding.artifact_row() for finding in findings}), 2)
+            self.assertIn("duplicate_uid_rows=2", topology.summary(rows, findings))
 
+    @unittest.skipUnless(hasattr(os, "getuid"), "Unix owner-only permissions required")
     def test_exact_rows_are_written_only_to_owner_only_artifact(self):
         """Write protected row evidence with a stable digest and safe mode."""
         findings = topology.classify([
@@ -174,6 +229,7 @@ class ItemTopologyClassificationTest(unittest.TestCase):
             self.assertIn(
                 "repairable_projection_lag", artifact.read_text(encoding="utf-8"))
 
+    @unittest.skipUnless(hasattr(os, "getuid"), "Unix owner-only permissions required")
     def test_clean_main_writes_header_only_artifact_and_succeeds(self):
         """Preserve clean post-repair evidence without returning blocked."""
         with tempfile.TemporaryDirectory() as temporary:

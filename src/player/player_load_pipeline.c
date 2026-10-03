@@ -1,16 +1,22 @@
+#include "net/network_wakeup.h"
 #include "player/player_load_pipeline.h"
+#include "player/player_save_pipeline.h"
+#include "player/player_save_journal.h"
 #include "sql/sql_thread_init.h"
 
 #include "flatfile/flatfile_player_repository.h"
+#include "item/item_movement_transaction.h"
 #include "persistence/persistence_observability.h"
 #include "sql/sql_pool.h"
 
 #ifndef __NO_MYSQL__
 #include <mysql/mysql.h>
+#include <mysql/errmsg.h>
 #endif
 
 #include <algorithm>
 #include <atomic>
+#include <cerrno>
 #include <chrono>
 #include <condition_variable>
 #include <ctime>
@@ -56,6 +62,12 @@ struct pool_connection_guard
 {
 	MYSQL *connection;
 
+	void discard()
+	{
+		if (connection)
+			sql_pool_discard_connection(connection);
+	}
+
 	~pool_connection_guard()
 	{
 		if (connection)
@@ -64,11 +76,66 @@ struct pool_connection_guard
 };
 
 #ifndef __NO_MYSQL__
+constexpr unsigned int mysql_client_error_min = CR_MIN_ERROR;
+
+bool connection_requires_discard(MYSQL *connection, const player_load_result &result)
+{
+	return (connection->server_status & SERVER_STATUS_IN_TRANS) ||
+	       !(connection->server_status & SERVER_STATUS_AUTOCOMMIT) ||
+	       result.error_code >= mysql_client_error_min ||
+	       result.death_recovery_query.error_code >= mysql_client_error_min ||
+	       mysql_errno(connection) >= mysql_client_error_min;
+}
+
+void invalidate_uncertain_result(player_load_result *result, unsigned int error)
+{
+	const player_death_recovery_query_kind query_kind = result->death_recovery_query.kind;
+	result->outcome = player_load_outcome::retryable_failure;
+	result->recovery_gate = player_load_recovery_gate::unavailable;
+	result->death_recovery_query = {};
+	result->death_recovery_query.kind = query_kind;
+	result->death_recovery_query.outcome = player_death_recovery_query_outcome::failed;
+	result->snapshot = {};
+	result->domains = {};
+	result->degraded_components = 0;
+	result->error_code = error ? error : EIO;
+	result->item_owner_revision = 0;
+	result->authoritative_item_count = 0;
+	result->authoritative_pet_item_count = 0;
+	result->stale_item_rows = 0;
+	result->missing_payload_rows = 0;
+	result->promoted_item_rows = 0;
+	result->repaired_item_rows = 0;
+	result->item_identities.clear();
+	result->pet_identities.clear();
+	result->pending_quest_rewards.clear();
+	result->read_components = 0;
+	result->recent_pvp_deaths.clear();
+	result->completed_epic_zones.clear();
+	result->metrics = {};
+	result->failed_component = nullptr;
+	result->saved_at = 0;
+}
+#endif
+
+#ifndef __NO_MYSQL__
 player_load_result execute_repository(const player_load_request &request, void *)
 {
 	player_load_result result = {};
 	result.request_id = request.request_id;
 	result.pid = request.pid;
+	// Fence reads as well as materialization: a snapshot fetched during replay
+	// could otherwise sit in an account-menu cache until readiness opens.
+	// Recovery queries never materialize a player and retain their own auth gate.
+	if (request.death_recovery_query.kind == player_death_recovery_query_kind::none &&
+	    !player_save_pipeline_loads_allowed())
+	{
+		result.outcome = player_load_outcome::component_failure;
+		result.recovery_gate = player_load_recovery_gate::unavailable;
+		result.error_code = EAGAIN;
+		result.failed_component = "save_journal_replay";
+		return result;
+	}
 	MYSQL *connection = sql_pool_acquire();
 	if (!connection)
 	{
@@ -82,8 +149,20 @@ player_load_result execute_repository(const player_load_request &request, void *
 	}
 	catch (...)
 	{
-		mysql_rollback(connection);
+		guard.discard();
 		throw;
+	}
+	if (connection_requires_discard(connection, result))
+	{
+		const unsigned int client_error = mysql_errno(connection);
+		const unsigned int error =
+			client_error >= mysql_client_error_min ? client_error :
+			result.error_code		       ? result.error_code :
+			result.death_recovery_query.error_code ?
+					    result.death_recovery_query.error_code :
+					    client_error;
+		guard.discard();
+		invalidate_uncertain_result(&result, error);
 	}
 	return result;
 }
@@ -112,6 +191,17 @@ void refresh_health_locked()
 
 void record_result_locked(const player_load_result &result)
 {
+	persistence_trace_event trace;
+	trace.stage = persistence_trace_stage::load_result;
+	trace.pid = result.pid;
+	trace.revision = result.snapshot.revision;
+	trace.components = result.degraded_components;
+	trace.request_id = result.request_id;
+	trace.outcome = static_cast<uint32_t>(result.outcome);
+	trace.error = result.error_code;
+	trace.incident = result.outcome == player_load_outcome::degraded ||
+			 result.outcome == player_load_outcome::component_failure;
+	persistence_trace_record(trace);
 	switch (result.outcome)
 	{
 	case player_load_outcome::applied:
@@ -234,6 +324,7 @@ void worker_main()
 			inflight_pid = 0;
 			record_result_locked(result);
 			completions.push_back(std::move(result));
+			network_wakeup_notify();
 			refresh_health_locked();
 			completion_available.notify_all();
 		}
@@ -307,8 +398,18 @@ void player_load_pipeline_shutdown(void)
 
 player_load_submit_outcome player_load_pipeline_submit(player_load_request request)
 {
+	if (request.pid > 0 && player_save_journal_pid_quarantined(request.pid))
+		return player_load_submit_outcome::unavailable;
 	const uint64_t now = now_usec();
 	const uint64_t request_id = request.request_id;
+	if (request.pid > 0 && request.include_items &&
+	    !item_movement_transaction_pending_spell_effects(
+		    static_cast<uint32_t>(request.pid), &request.pending_spell_effect_operations))
+		return player_load_submit_outcome::unavailable;
+	if (request.pid > 0 && request.include_items &&
+	    !item_movement_transaction_pending_craft_progression(static_cast<uint32_t>(request.pid),
+								 &request.pending_craft_operations))
+		return player_load_submit_outcome::unavailable;
 	if (!player_load_request_valid(request, now))
 		return player_load_submit_outcome::invalid;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
@@ -412,6 +513,16 @@ bool player_load_pipeline_wait(player_load_request request, player_load_result *
 
 bool player_load_pipeline_execute_sync(player_load_request request, player_load_result *result_out)
 {
+	if (request.pid > 0 && player_save_journal_pid_quarantined(request.pid))
+		return false;
+	if (request.pid > 0 && request.include_items &&
+	    !item_movement_transaction_pending_spell_effects(
+		    static_cast<uint32_t>(request.pid), &request.pending_spell_effect_operations))
+		return false;
+	if (request.pid > 0 && request.include_items &&
+	    !item_movement_transaction_pending_craft_progression(static_cast<uint32_t>(request.pid),
+								 &request.pending_craft_operations))
+		return false;
 	if (!result_out || !player_load_request_valid(request, now_usec()))
 		return false;
 	player_load_execute_fn execute = nullptr;
@@ -483,7 +594,7 @@ bool player_load_pipeline_pid_pending(int pid)
 
 bool player_load_pipeline_login_admit(int pid)
 {
-	return pid > 0;
+	return pid > 0 && !player_save_journal_pid_quarantined(pid);
 }
 
 player_load_pipeline_health player_load_pipeline_health_copy(void)

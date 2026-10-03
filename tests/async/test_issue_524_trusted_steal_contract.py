@@ -89,13 +89,13 @@ class TrustedStealCustodyContractTests(unittest.TestCase):
         defines = source("core/defines.h").read_text()
         database = source("world/db.c").read_text()
         handler = function_body(
-            source("world/handler.c").read_text(), r"void obj_to_char\("
+            source("world/handler.c").read_text(), r"obj_to_char_result obj_to_char_checked\("
         )
         self.assertIn("OBJ_RFLAG_CREATION_CANDIDATE", defines)
         self.assertIn("SET_BIT(obj->runtime_flags, OBJ_RFLAG_CREATION_CANDIDATE)", database)
         self.assertIn("creation_candidate", handler)
         self.assertIn(
-            "!has_authoritative_ownership && creation_candidate &&\n\t\t\t    item_creation_grant_submit_to_player",
+            "!has_authoritative_ownership && creation_candidate &&\n\t\t\t    !economic_gameplay_authority::active() &&\n\t\t\t    item_creation_grant_submit_to_player",
             handler,
         )
         self.assertIn(
@@ -106,11 +106,11 @@ class TrustedStealCustodyContractTests(unittest.TestCase):
 
     def test_shared_publication_refusal_does_not_extract_authoritative_graphs(self):
         handler = function_body(
-            source("world/handler.c").read_text(), r"void obj_to_char\("
+            source("world/handler.c").read_text(), r"obj_to_char_result obj_to_char_checked\("
         )
         self.assertIn("has_authoritative_ownership", handler)
         self.assertIn(
-            "!has_authoritative_ownership && creation_candidate &&\n\t\t\t    item_creation_grant_submit_to_player",
+            "!has_authoritative_ownership && creation_candidate &&\n\t\t\t    !economic_gameplay_authority::active() &&\n\t\t\t    item_creation_grant_submit_to_player",
             handler,
         )
         self.assertIn("if (!has_authoritative_ownership && creation_candidate)", handler)

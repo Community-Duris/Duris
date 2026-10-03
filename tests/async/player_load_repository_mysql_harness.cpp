@@ -16,6 +16,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+extern "C" void sql_pool_discard_connection(MYSQL *connection)
+{
+	mysql_close(connection);
+}
+
 namespace
 {
 const char *required_env(const char *name)
@@ -63,7 +68,8 @@ uint64_t session_rows_sent(MYSQL *connection)
 			    "WHERE NAME='statement/sql/select' AND ENABLED='YES'),"
 			    "(SELECT SUM(SUM_ROWS_SENT) FROM "
 			    "performance_schema.events_statements_summary_by_thread_by_event_name "
-			    "WHERE THREAD_ID=PS_CURRENT_THREAD_ID()),NULL)");
+			    "WHERE THREAD_ID=(SELECT THREAD_ID FROM performance_schema.threads "
+			    "WHERE PROCESSLIST_ID=CONNECTION_ID())),NULL)");
 		rows = mysql_store_result(connection);
 		value_column = 0;
 	}
@@ -138,7 +144,7 @@ void verify_manifest_repository_loads(MYSQL *connection, const char *path)
 		const player_load_result result = execute_load(connection, request, request_id++);
 		if (result.outcome != player_load_outcome::applied || result.pid != pid ||
 		    result.snapshot.pid != pid ||
-		    result.metrics.query_count != PLAYER_LOAD_QUERY_MAX ||
+		    result.metrics.query_count != PLAYER_LOAD_PID_QUERY_MAX ||
 		    result.read_components != PLAYER_LOAD_SESSION04_READS)
 		{
 			const std::string category =
@@ -187,10 +193,12 @@ int main()
 	mysql_free_result(rows);
 
 	const uint64_t now = persistence_observability_now_usec();
-	player_load_request request = {
-		PLAYER_LOAD_SCHEMA_VERSION,	77, pid, required_env("GAME_ACCOUNT_NAME"),
-		now + PLAYER_LOAD_TIMEOUT_USEC, {}
-	};
+	player_load_request request = {};
+	request.schema_version = PLAYER_LOAD_SCHEMA_VERSION;
+	request.request_id = 77;
+	request.pid = pid;
+	request.account_name = required_env("GAME_ACCOUNT_NAME");
+	request.deadline_usec = now + PLAYER_LOAD_TIMEOUT_USEC;
 	assert(player_load_request_valid(request, now));
 	player_load_result result = player_load_repository_execute(connection, request);
 	if (result.outcome != player_load_outcome::applied)
@@ -202,7 +210,7 @@ int main()
 	assert(result.request_id == request.request_id && result.pid == pid);
 	assert(result.snapshot.pid == pid);
 	assert(result.snapshot.components == PLAYER_LOAD_SESSION03_COMPONENTS);
-	assert(result.metrics.query_count == PLAYER_LOAD_QUERY_MAX);
+	assert(result.metrics.query_count == PLAYER_LOAD_PID_QUERY_MAX);
 	assert(result.read_components == PLAYER_LOAD_SESSION04_READS);
 	assert(result.recent_pvp_deaths.size() <= GAMEPLAY_READ_RECENT_DURABLE_MAX);
 	assert(result.completed_epic_zones.size() <= GAMEPLAY_READ_COMPLETED_ZONE_MAX);
@@ -243,6 +251,7 @@ int main()
 	player_load_result name_result = player_load_repository_execute(connection, by_name);
 	assert(name_result.outcome == player_load_outcome::applied);
 	assert(name_result.pid == pid && name_result.request_id == by_name.request_id);
+	assert(name_result.metrics.query_count == PLAYER_LOAD_NAME_QUERY_MAX);
 
 	player_load_request wrong_account = request;
 	wrong_account.request_id = 79;
@@ -306,8 +315,10 @@ int main()
 	assert(trophy.snapshot.trophies[1].experience == INT_MAX);
 	execute_sql(connection, "UPDATE zone_trophy SET exp=-1 WHERE pid=" + std::to_string(pid) +
 					" AND zone_number=12");
-	assert(execute_load(connection, request, 811).outcome ==
-	       player_load_outcome::component_failure);
+	const auto invalid_trophy = execute_load(connection, request, 811);
+	assert(invalid_trophy.outcome == player_load_outcome::degraded);
+	assert(invalid_trophy.degraded_components & PLAYER_LOAD_DEGRADED_COMPONENTS);
+	assert(invalid_trophy.snapshot.trophies.empty());
 	execute_sql(connection, "DELETE FROM zone_trophy WHERE pid=" + std::to_string(pid));
 	std::string trophy_rows = "INSERT INTO zone_trophy(pid,zone_number,exp) VALUES ";
 	for (size_t index = 0; index < ZONE_TROPHY_MAX_ZONES; ++index)
@@ -325,11 +336,12 @@ int main()
 	const uint64_t before_rows = session_rows_sent(connection);
 	const auto oversized_trophy = execute_load(connection, request, 814);
 	const uint64_t sent_rows = session_rows_sent(connection) - before_rows;
-	assert(oversized_trophy.outcome == player_load_outcome::limit_exceeded);
-	// Count rows sent by the server, not just rows visited by our callback. The
-	// first status query itself contributes one row. mysql_store_result must not
+	assert(oversized_trophy.outcome == player_load_outcome::degraded);
+	assert(oversized_trophy.degraded_components & PLAYER_LOAD_DEGRADED_COMPONENTS);
+	assert(oversized_trophy.snapshot.trophies.empty());
+	// Each status sample returns one row itself. mysql_store_result must not
 	// buffer an unbounded result before the application detects the extra entry.
-	assert(sent_rows <= oversized_trophy.metrics.row_count + 1);
+	assert(sent_rows <= oversized_trophy.metrics.row_count + 2);
 	execute_sql(connection, "DELETE FROM zone_trophy WHERE pid=" + std::to_string(pid));
 	trophy = execute_load(connection, request, 813);
 	assert(trophy.outcome == player_load_outcome::applied && trophy.snapshot.trophies.empty());
@@ -395,7 +407,7 @@ int main()
 			  << " error=" << fixture.error_code << " stage="
 			  << (fixture.failed_component ? fixture.failed_component : "none") << '\n';
 	assert(fixture.outcome == player_load_outcome::applied);
-	assert(fixture.metrics.query_count == PLAYER_LOAD_QUERY_MAX &&
+	assert(fixture.metrics.query_count == PLAYER_LOAD_PID_QUERY_MAX &&
 	       fixture.snapshot.items.size() == 3);
 	assert(fixture.recent_pvp_deaths.size() == 20);
 	assert(fixture.recent_pvp_deaths.front() == 2000000000 &&
@@ -466,8 +478,10 @@ int main()
 	player_load_result promoted = execute_load(connection, request, 92);
 	assert(promoted.outcome == player_load_outcome::applied);
 	assert(promoted.snapshot.items.size() == 2 && promoted.authoritative_item_count == 2);
+	// Custody normalization already clears the nested item's stale worn slot;
+	// topology reconciliation only promotes the surviving child.
 	assert(promoted.stale_item_rows == 1 && promoted.promoted_item_rows == 1 &&
-	       promoted.repaired_item_rows == 1);
+	       promoted.repaired_item_rows == 0);
 	for (size_t index = 0; index < promoted.item_identities.size(); ++index)
 	{
 		assert(promoted.snapshot.items[index].parent_index == PLAYER_SNAPSHOT_NO_PARENT);
@@ -511,7 +525,7 @@ int main()
 		    "(3102,CONVERT(0x030103 USING utf8mb4),CONVERT(0x02 USING utf8mb4))");
 	player_load_result pet_fixture = execute_load(connection, request, 88);
 	assert(pet_fixture.outcome == player_load_outcome::applied);
-	assert(pet_fixture.metrics.query_count == PLAYER_LOAD_QUERY_MAX &&
+	assert(pet_fixture.metrics.query_count == PLAYER_LOAD_PID_QUERY_MAX &&
 	       pet_fixture.snapshot.pets.size() == 1);
 	assert(pet_fixture.pet_identities.size() == 1 &&
 	       pet_fixture.pet_identities[0].database_id == 3001);
@@ -581,17 +595,21 @@ int main()
 		    "item_condition) VALUES(1003," +
 			    std::to_string(pid) + ",102,1,1,4,5,-1,0,0,0,0,0,0,0,0,0,900003,98)");
 
-	// Payload/custody vnum disagreement fails before publication.
+	// Payload/custody vnum disagreement degrades and clears items before publication.
 	execute_sql(connection, "UPDATE item_current_owner SET vnum=999 WHERE item_uid=900003");
-	assert(execute_load(connection, request, 83).outcome ==
-	       player_load_outcome::component_failure);
+	const auto mismatched_payload = execute_load(connection, request, 83);
+	assert(mismatched_payload.outcome == player_load_outcome::degraded);
+	assert(mismatched_payload.degraded_components & PLAYER_LOAD_DEGRADED_ITEMS);
+	assert(mismatched_payload.snapshot.items.empty());
 	execute_sql(connection, "UPDATE item_current_owner SET vnum=102 WHERE item_uid=900003");
 
-	// More than four distinct static affects is an explicit limit outcome.
+	// More than four distinct static affects degrades and clears item data.
 	execute_sql(connection, "INSERT INTO player_item_affects(item_id,location,modifier) VALUES"
 				"(1002,3,1),(1002,4,1),(1002,5,1)");
-	assert(execute_load(connection, request, 84).outcome ==
-	       player_load_outcome::limit_exceeded);
+	const auto too_many_affects = execute_load(connection, request, 84);
+	assert(too_many_affects.outcome == player_load_outcome::degraded);
+	assert(too_many_affects.degraded_components & PLAYER_LOAD_DEGRADED_ITEMS);
+	assert(too_many_affects.snapshot.items.empty());
 	execute_sql(connection, "DELETE FROM player_item_affects WHERE location>=3");
 
 	// Empty ownership still carries and validates its owner revision.
@@ -602,13 +620,13 @@ int main()
 	player_load_result empty = execute_load(connection, request, 85);
 	assert(empty.outcome == player_load_outcome::applied && empty.snapshot.items.empty());
 	assert(empty.item_owner_revision == 7 &&
-	       empty.metrics.query_count == PLAYER_LOAD_QUERY_MAX);
+	       empty.metrics.query_count == PLAYER_LOAD_PID_QUERY_MAX);
 	execute_sql(connection, "DELETE FROM item_owner_revision");
 	player_load_result never_owned = execute_load(connection, request, 86);
 	assert(never_owned.outcome == player_load_outcome::applied &&
 	       never_owned.snapshot.items.empty());
 	assert(never_owned.item_owner_revision == 0 &&
-	       never_owned.metrics.query_count == PLAYER_LOAD_QUERY_MAX);
+	       never_owned.metrics.query_count == PLAYER_LOAD_PID_QUERY_MAX);
 
 	// Serialized payload without any custody row is the orphan that used to lock the
 	// character out for good. It is skipped and counted, and the load still applies.

@@ -9,6 +9,7 @@
 #include "net/gmcp.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/specs.prototypes.h"
 
 #include <algorithm>
 #include <cmath>
@@ -19,6 +20,7 @@
 
 extern unsigned long long ne_event_tick;
 extern P_nevent current_nevent;
+extern int top_of_objt;
 
 namespace
 {
@@ -39,23 +41,14 @@ struct ward_source
 	uint64_t uid;
 };
 
-const int ward_spells[WARD_KIND_COUNT] = {
-	SPELL_MINOR_GLOBE,
-	SPELL_SPIRIT_WARD,
-	SPELL_GREATER_SPIRIT_WARD,
-	SPELL_GLOBE};
+const int ward_spells[WARD_KIND_COUNT] = { SPELL_MINOR_GLOBE, SPELL_SPIRIT_WARD,
+					   SPELL_GREATER_SPIRIT_WARD, SPELL_GLOBE };
 
-const unsigned int ward_flags[WARD_KIND_COUNT] = {
-	SPLDAM_MINORGLOBE,
-	SPLDAM_SPIRITWARD,
-	SPLDAM_GRSPIRIT,
-	SPLDAM_GLOBE};
+const unsigned int ward_flags[WARD_KIND_COUNT] = { SPLDAM_MINORGLOBE, SPLDAM_SPIRITWARD,
+						   SPLDAM_GRSPIRIT, SPLDAM_GLOBE };
 
-const char *ward_names[WARD_KIND_COUNT] = {
-	"Minor Globe",
-	"Spirit Ward",
-	"Greater Spirit Ward",
-	"Globe"};
+const char *ward_names[WARD_KIND_COUNT] = { "Minor Globe", "Spirit Ward", "Greater Spirit Ward",
+					    "Globe" };
 
 bool is_ward_spell(int spell)
 {
@@ -112,6 +105,41 @@ int duration_pulses(int ticks)
 	return std::max(1, ticks) * PULSES_IN_TICK;
 }
 
+int64_t fresh_capacity(int spell)
+{
+	// Duration bonuses extend lifetime, not the opening damage budget. In
+	// particular a level-56 spirit ward must not get 56 ticks of capacity.
+	return static_cast<int64_t>(equipment_duration_ticks(spell)) * ward_budget_per_tick(spell) *
+	       SPELL_WARD_CAPACITY_SCALE;
+}
+
+int remaining_pulses(const struct affected_type *af)
+{
+	if (af->ward_capacity <= 0 || af->ward_capacity_max <= 0)
+		return 0;
+	return static_cast<int>(std::ceil(static_cast<long double>(af->ward_capacity) *
+					  af->ward_full_duration / af->ward_capacity_max));
+}
+
+void assign_ward_bits(struct affected_type *af)
+{
+	switch (af->type)
+	{
+	case SPELL_MINOR_GLOBE:
+		af->bitvector = AFF_MINOR_GLOBE;
+		break;
+	case SPELL_GLOBE:
+		af->bitvector2 = AFF2_GLOBE;
+		break;
+	case SPELL_SPIRIT_WARD:
+		af->bitvector3 = AFF3_SPIRIT_WARD;
+		break;
+	case SPELL_GREATER_SPIRIT_WARD:
+		af->bitvector3 = AFF3_GR_SPIRIT_WARD;
+		break;
+	}
+}
+
 uint64_t object_uid(P_obj object)
 {
 	if (!object)
@@ -131,16 +159,13 @@ bool equipment_slot_is_eligible(P_char ch, int slot)
 		return false;
 
 	P_obj object = ch->equipment[slot];
-	if ((slot == HOLD || slot == WIELD || slot == WIELD2 || slot == WIELD3 ||
-	     slot == WIELD4) &&
+	if ((slot == HOLD || slot == WIELD || slot == WIELD2 || slot == WIELD3 || slot == WIELD4) &&
 	    object->type != ITEM_WEAPON && object->type != ITEM_FIREWEAPON &&
 	    (object->wear_flags & ~(ITEM_TAKE | ITEM_HOLD | ITEM_ATTACH_BELT)))
 		return false;
-	if (slot == HOLD &&
-	    (object->type == ITEM_WEAPON || object->type == ITEM_FIREWEAPON))
+	if (slot == HOLD && (object->type == ITEM_WEAPON || object->type == ITEM_FIREWEAPON))
 		return false;
-	if ((slot == WEAR_ATTACH_BELT_2 || slot == WEAR_ATTACH_BELT_3) &&
-	    !IS_ARTIFACT(object))
+	if ((slot == WEAR_ATTACH_BELT_2 || slot == WEAR_ATTACH_BELT_3) && !IS_ARTIFACT(object))
 		return false;
 	return true;
 }
@@ -149,6 +174,10 @@ bool object_has_ward(P_obj object, int spell)
 {
 	if (!object)
 		return false;
+	// Vapor's legacy on-hit proc is an equipment grant, not a manual cast.
+	if (spell == SPELL_GLOBE && obj_index && object->R_num >= 0 &&
+	    object->R_num <= top_of_objt && obj_index[object->R_num].func.obj == vapor)
+		return true;
 	switch (spell)
 	{
 	case SPELL_MINOR_GLOBE:
@@ -166,13 +195,13 @@ bool object_has_ward(P_obj object, int spell)
 
 ward_source find_equipment_source(P_char ch, int spell)
 {
-	ward_source result = {NULL, 0};
+	ward_source result = { NULL, 0 };
 	for (int slot = 0; slot < MAX_WEAR; ++slot)
 	{
 		if (!equipment_slot_is_eligible(ch, slot) ||
 		    !object_has_ward(ch->equipment[slot], spell))
 			continue;
-		ward_source candidate = {ch->equipment[slot], object_uid(ch->equipment[slot])};
+		ward_source candidate = { ch->equipment[slot], object_uid(ch->equipment[slot]) };
 		if (!result.object || candidate.uid < result.uid)
 			result = candidate;
 	}
@@ -187,8 +216,7 @@ struct affected_type *find_ward_affect(P_char ch, int spell, int source_type)
 	{
 		if (!spell_ward_is_managed(af) || af->type != spell)
 			continue;
-		if (source_type == SPELL_WARD_SOURCE_NONE ||
-		    af->ward_source_type == source_type)
+		if (source_type == SPELL_WARD_SOURCE_NONE || af->ward_source_type == source_type)
 			return af;
 	}
 	return NULL;
@@ -265,7 +293,7 @@ void schedule_short_event(P_char ch, struct affected_type *af)
 		return;
 	if (find_short_event(ch, af))
 		return;
-	struct event_short_affect_data data = {ch, af};
+	struct event_short_affect_data data = { ch, af };
 	add_event(event_short_affect, std::max(1, af->duration), ch, NULL, NULL, 0, &data,
 		  sizeof(data));
 }
@@ -302,8 +330,8 @@ void set_ward_bits(P_char ch, const struct affected_type *af, bool enabled)
 	{
 		/* A cast and an equipment source may coexist. Do not clear a shared
 		 * aggregate bit when only one source has broken or expired. */
-		unsigned long clear_bits[5] = {af->bitvector, af->bitvector2, af->bitvector3,
-					       af->bitvector4, af->bitvector5};
+		unsigned long clear_bits[5] = { af->bitvector, af->bitvector2, af->bitvector3,
+						af->bitvector4, af->bitvector5 };
 		for (const struct affected_type *other = ch->affected; other; other = other->next)
 		{
 			if (other == af || !spell_ward_is_active(other))
@@ -371,15 +399,16 @@ void normalize_legacy_cast_wards(P_char ch)
 	{
 		if (spell_ward_is_managed(af) || !is_ward_spell(af->type))
 			continue;
-		const int duration = af->duration > 0 ? af->duration : equipment_duration_ticks(af->type);
-		const int ticks = IS_SET(af->flags, AFFTYPE_SHORT) ?
-			std::max(1, duration / PULSES_IN_TICK) : std::max(1, duration);
+		const int duration = af->duration > 0 ? af->duration :
+							equipment_duration_ticks(af->type);
+		const int pulses = IS_SET(af->flags, AFFTYPE_SHORT) ? std::max(1, duration) :
+								      duration_pulses(duration);
 		af->flags |= AFFTYPE_SPELL_WARD | AFFTYPE_SHORT;
 		af->ward_source_type = SPELL_WARD_SOURCE_CAST;
 		af->ward_source_worn = 1;
 		af->ward_active = 1;
-		af->ward_full_duration = duration_pulses(ticks);
-		af->ward_capacity_max = static_cast<int64_t>(ticks) * ward_budget_per_tick(af->type);
+		af->ward_full_duration = pulses;
+		af->ward_capacity_max = fresh_capacity(af->type);
 		af->ward_capacity = af->ward_capacity_max;
 		af->ward_refresh_remaining = 0;
 		af->ward_last_tick = ne_event_tick;
@@ -401,21 +430,18 @@ struct affected_type *find_absorb_candidate(P_char victim, unsigned int flags)
 {
 	/* Preserve the historical precedence: spirit wards before globes, with
 	 * the lesser ward selected before the greater ward in the same family. */
-	for (int kind : {WARD_KIND_SPIRIT, WARD_KIND_GREATER_SPIRIT, WARD_KIND_MINOR,
-			 WARD_KIND_GLOBE})
+	for (int kind :
+	     { WARD_KIND_SPIRIT, WARD_KIND_GREATER_SPIRIT, WARD_KIND_MINOR, WARD_KIND_GLOBE })
 	{
 		if (!(flags & ward_flags[kind]))
 			continue;
-		for (struct affected_type *af = victim->affected; af; af = af->next)
-			if (af->type == ward_spells[kind] && eligible_for_flags(af, flags))
-				return af;
+		for (int source : { SPELL_WARD_SOURCE_CAST, SPELL_WARD_SOURCE_EQUIPMENT })
+			for (struct affected_type *af = victim->affected; af; af = af->next)
+				if (af->type == ward_spells[kind] &&
+				    af->ward_source_type == source && eligible_for_flags(af, flags))
+					return af;
 	}
 	return NULL;
-}
-
-bool has_available_for_flags(P_char victim, unsigned int flags)
-{
-	return victim && find_absorb_candidate(victim, flags) != NULL;
 }
 
 void append_status(char *buffer, size_t buffer_size, size_t *used, const char *format, ...)
@@ -475,28 +501,39 @@ void spell_ward_sync_timers(P_char ch)
 	{
 		if (!spell_ward_is_managed(af))
 			continue;
-		if (af->ward_last_tick == 0)
-			af->ward_last_tick = now;
-		else
+		const unsigned long long elapsed =
+			now > af->ward_last_tick ? now - af->ward_last_tick : 0;
+		if (elapsed > 0)
 		{
-			const unsigned long long elapsed = now > af->ward_last_tick ?
-				now - af->ward_last_tick : 0;
 			if (spell_ward_is_equipment(af) && af->ward_source_worn && elapsed > 0 &&
 			    af->ward_refresh_remaining > 0)
 			{
 				const int spent = static_cast<int>(std::min<unsigned long long>(
-					 elapsed, static_cast<unsigned long long>(af->ward_refresh_remaining)));
+					elapsed, static_cast<unsigned long long>(
+							 af->ward_refresh_remaining)));
 				af->ward_refresh_remaining -= spent;
 			}
-			af->ward_last_tick = now;
+			if (spell_ward_is_active(af) && af->ward_full_duration > 0)
+			{
+				const int before = af->duration;
+				const int after =
+					before - static_cast<int>(std::min<unsigned long long>(
+							 elapsed, std::max(0, before)));
+				// Subtract the difference between absolute pulse boundaries so
+				// frequent status queries cannot discard fractional time wear.
+				const auto capacity_at = [&](int pulses)
+				{
+					return static_cast<int64_t>(
+						static_cast<long double>(pulses) *
+						af->ward_capacity_max / af->ward_full_duration);
+				};
+				af->ward_capacity = std::max<int64_t>(
+					0, af->ward_capacity -
+						   (capacity_at(before) - capacity_at(after)));
+				af->duration = after;
+			}
 		}
-
-		if (spell_ward_is_active(af))
-		{
-			P_nevent event = find_short_event(ch, af);
-			if (event)
-				af->duration = ne_event_time(event);
-		}
+		af->ward_last_tick = now;
 	}
 }
 
@@ -518,19 +555,19 @@ void spell_ward_equipment_sync(P_char ch)
 			prototype.type = spell;
 			prototype.flags = AFFTYPE_SPELL_WARD | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL |
 					  AFFTYPE_NOAPPLY;
-			af = affect_to_char(ch, &prototype);
 			const int ticks = equipment_duration_ticks(spell);
-			af->ward_source_type = SPELL_WARD_SOURCE_EQUIPMENT;
-			af->ward_source_uid = source.uid;
-			af->ward_source_worn = 1;
-			af->ward_full_duration = duration_pulses(ticks);
-			af->ward_capacity_max = static_cast<int64_t>(ticks) * ward_budget_per_tick(spell);
-			af->ward_capacity = af->ward_capacity_max;
-			af->ward_refresh_remaining =
-				std::max(1, af->ward_full_duration / WARD_REFRESH_FRACTION);
-			af->duration = af->ward_full_duration;
-			af->ward_last_tick = ne_event_tick;
-			af->ward_active = 0;
+			prototype.ward_source_type = SPELL_WARD_SOURCE_EQUIPMENT;
+			prototype.ward_source_uid = source.uid;
+			prototype.ward_source_worn = 1;
+			prototype.ward_full_duration = duration_pulses(ticks);
+			prototype.ward_capacity_max = fresh_capacity(spell);
+			prototype.ward_capacity = prototype.ward_capacity_max;
+			prototype.ward_refresh_remaining =
+				std::max(1, prototype.ward_full_duration / WARD_REFRESH_FRACTION);
+			prototype.duration = prototype.ward_full_duration;
+			prototype.ward_last_tick = ne_event_tick;
+			assign_ward_bits(&prototype);
+			af = affect_to_char(ch, &prototype);
 		}
 
 		if (!af)
@@ -550,7 +587,7 @@ void spell_ward_equipment_sync(P_char ch)
 		{
 			const int ticks = equipment_duration_ticks(spell);
 			af->ward_full_duration = duration_pulses(ticks);
-			af->ward_capacity_max = static_cast<int64_t>(ticks) * ward_budget_per_tick(spell);
+			af->ward_capacity_max = fresh_capacity(spell);
 			if (af->ward_refresh_remaining <= 0)
 				af->ward_refresh_remaining =
 					std::max(1, af->ward_full_duration / WARD_REFRESH_FRACTION);
@@ -572,9 +609,8 @@ void spell_ward_equipment_sync(P_char ch)
 	}
 }
 
-struct affected_type *spell_ward_apply_cast(P_char victim,
-						   const struct affected_type *prototype,
-						   int duration_ticks)
+struct affected_type *spell_ward_apply_cast(P_char victim, const struct affected_type *prototype,
+					    int duration_ticks)
 {
 	if (!victim || !prototype || !is_ward_spell(prototype->type))
 		return NULL;
@@ -601,7 +637,7 @@ struct affected_type *spell_ward_apply_cast(P_char victim,
 	struct affected_type *af = find_ward_affect(victim, spell, SPELL_WARD_SOURCE_CAST);
 	const int ticks = std::max(1, duration_ticks);
 	const int pulses = duration_pulses(ticks);
-	const int64_t capacity = static_cast<int64_t>(ticks) * ward_budget_per_tick(spell);
+	const int64_t capacity = fresh_capacity(spell);
 
 	if (af)
 	{
@@ -609,6 +645,9 @@ struct affected_type *spell_ward_apply_cast(P_char victim,
 		spell_ward_cancel_events(victim, af);
 		all_affects(victim, FALSE);
 		af->flags = prototype->flags | AFFTYPE_SPELL_WARD | AFFTYPE_SHORT;
+		af->modifier = prototype->modifier;
+		af->location = prototype->location;
+		af->level = prototype->level;
 		REMOVE_BIT(af->flags, AFFTYPE_NOAPPLY);
 		af->bitvector = prototype->bitvector;
 		af->bitvector2 = prototype->bitvector2;
@@ -662,10 +701,10 @@ void spell_ward_expire(P_char ch, struct affected_type *af)
 }
 
 spell_ward_absorb_result spell_ward_absorb(P_char attacker, P_char victim, double damage,
-							 unsigned int flags)
+					   unsigned int flags)
 {
-	spell_ward_absorb_result result = {damage, 0.0, false};
-	if (!attacker || !victim || attacker == victim || damage <= 0.0)
+	spell_ward_absorb_result result = { damage, 0.0, false };
+	if (!attacker || !victim || attacker == victim || damage <= 0.0 || !std::isfinite(damage))
 		return result;
 
 	spell_ward_sync_timers(victim);
@@ -675,13 +714,16 @@ spell_ward_absorb_result spell_ward_absorb(P_char attacker, P_char victim, doubl
 	if (!af)
 		return result;
 
-	const double available = static_cast<double>(std::max<int64_t>(0, af->ward_capacity));
+	const double available = static_cast<double>(std::max<int64_t>(0, af->ward_capacity)) /
+				 SPELL_WARD_CAPACITY_SCALE;
 	result.blocked = std::min(damage, available);
 	result.remaining = damage - result.blocked;
 	if (result.blocked <= 0.0)
 		return result;
 
-	const int64_t debit = static_cast<int64_t>(std::ceil(result.blocked));
+	const int64_t debit = std::min(
+		af->ward_capacity,
+		static_cast<int64_t>(std::ceil(result.blocked * SPELL_WARD_CAPACITY_SCALE)));
 	af->ward_capacity = std::max<int64_t>(0, af->ward_capacity - debit);
 	result.fully_blocked = result.remaining <= 0.000001;
 	if (af->ward_capacity <= 0)
@@ -699,31 +741,12 @@ spell_ward_absorb_result spell_ward_absorb(P_char attacker, P_char victim, doubl
 	}
 	else
 	{
+		cancel_short_event(victim, af);
+		af->duration = remaining_pulses(af);
+		schedule_short_event(victim, af);
 		gmcp_char_affects(victim);
 	}
 	return result;
-}
-
-bool spell_ward_has_available(P_char victim, int spell)
-{
-	if (!victim)
-		return false;
-	const int circle = GetLowestSpellCircle_p(spell);
-	unsigned int flags = 0;
-	if (circle < 4)
-		flags |= SPLDAM_MINORGLOBE;
-	if (circle < 5)
-		flags |= SPLDAM_SPIRITWARD;
-	if (circle < 6)
-		flags |= SPLDAM_GRSPIRIT;
-	/* Keep the NPC/prediction helper's historical Negative Energy Barrier
-	 * exception. The damage wrapper still supplies its explicit Greater Spirit
-	 * Ward flag when the attack is actually resolved. */
-	if (circle < 7 && spell != SPELL_DETONATE && spell != SPELL_NEG_ENERGY_BARRIER)
-		flags |= SPLDAM_GLOBE;
-	if (spell == SPELL_NEG_ENERGY_BARRIER)
-		flags |= SPLDAM_GRSPIRIT;
-	return has_available_for_flags(victim, flags);
 }
 
 bool spell_ward_item_callback_allowed(P_char victim, int spell)
@@ -736,9 +759,8 @@ bool spell_ward_item_callback_allowed(P_char victim, int spell)
 			continue;
 		if (spell_ward_is_active(af))
 			return true;
-		/* Keep a persistent source down until its scheduled renewal unless an
-		 * operator explicitly opts into the legacy immediate callback. */
-		return get_property("spell.ward.callbacks.ignoreDowntime", 0) != 0;
+		/* A persistent source stays down until its scheduled renewal. */
+		return false;
 	}
 	return true;
 }
@@ -754,7 +776,8 @@ void spell_ward_status(P_char ch, char *buffer, size_t buffer_size)
 	size_t used = 0;
 	for (int kind = 0; kind < WARD_KIND_COUNT; ++kind)
 	{
-		struct affected_type *af = find_ward_affect(ch, ward_spells[kind], SPELL_WARD_SOURCE_NONE);
+		struct affected_type *af =
+			find_ward_affect(ch, ward_spells[kind], SPELL_WARD_SOURCE_NONE);
 		if (!af)
 			continue;
 		const bool active = spell_ward_is_active(af);
@@ -762,15 +785,17 @@ void spell_ward_status(P_char ch, char *buffer, size_t buffer_size)
 			append_status(buffer, buffer_size, &used, "; ");
 		if (active)
 		{
-			append_status(buffer, buffer_size, &used, "%s %lld/%lld damage, %ds",
-				       ward_names[kind], static_cast<long long>(af->ward_capacity),
-				       static_cast<long long>(af->ward_capacity_max),
-				       std::max(0, af->duration / WAIT_SEC));
+			append_status(buffer, buffer_size, &used, "%s %.2f/%.2f damage, %ds",
+				      ward_names[kind],
+				      double(af->ward_capacity) / SPELL_WARD_CAPACITY_SCALE,
+				      double(af->ward_capacity_max) / SPELL_WARD_CAPACITY_SCALE,
+				      std::max(0, af->duration / WAIT_SEC));
 		}
 		else if (spell_ward_is_equipment(af))
 		{
-			append_status(buffer, buffer_size, &used, "%s equipment ward broken, refresh %ds",
-				       ward_names[kind], std::max(0, af->ward_refresh_remaining / WAIT_SEC));
+			append_status(buffer, buffer_size, &used,
+				      "%s equipment ward broken, refresh %ds", ward_names[kind],
+				      std::max(0, af->ward_refresh_remaining / WAIT_SEC));
 		}
 		else
 		{

@@ -18,6 +18,10 @@ scheduler = next(ast.literal_eval(node.value) for node in fixture.body
                  and any(isinstance(t, ast.Name) and t.id == "HARNESS" for t in node.targets))
 platform = scheduler.split("struct record_payload\n", 1)[0]
 platform = platform.replace("DEFINE_LABEL_CALLBACK(event_item_action_active)", "")
+platform = platform.replace("P_char get_linked_char(P_char, ush_int)\n{\n\treturn nullptr;\n}",
+                            "extern P_char fixture_pet_master;\n"
+                            "P_char get_linked_char(P_char, ush_int type) { "
+                            "return type == LNK_PET ? fixture_pet_master : nullptr; }")
 platform = platform.replace('void panic_corruption(const char *, const char *, ...)\n{\n\tthrow panic_signal{};\n}',
                            'void panic_corruption(const char *, const char *format, ...) { '
                            'va_list args; va_start(args, format); vfprintf(stderr, format, args); '
@@ -38,12 +42,14 @@ def function_body(text, signature):
 abort_command = function_body((ROOT / "src/net/sparser.c").read_text(), "void do_abort(P_char ch,")
 
 HARNESS = r'''
+P_char fixture_pet_master = nullptr;
 #define clock_gettime nevent_test_clock_gettime
 #include "item/item_actions.c"
 #undef clock_gettime
-#include "account/character_identity.c"
 #include "magic/spells.h"
 #include <cassert>
+#include <thread>
+#include <tuple>
 
 void event_wait(P_char, P_char, P_obj, void *) {}
 void event_ward_regen(P_char, P_char, P_obj, void *) {}
@@ -65,6 +71,8 @@ float get_property(const char *key, double fallback, bool) {
 struct evidence {
     int commits = 0, announces = 0, progress = 0, effects = 0, finishes = 0, destroys = 0;
     int reserve = 0, spent = 0;
+    uint64_t referenced_uid = 0;
+    int reference_queries = 0;
     bool permitted = true, reject_cost = false;
     int mutation = 0;
     uint64_t target_id = 0;
@@ -82,6 +90,7 @@ static void depart(P_char ch) {
 }
 static void remove_character(P_char ch) {
     item_actions_character_leaving(ch);
+    unregister_character_runtime_id(ch);
     disarm_char_nevents(ch, nullptr);
     while (ch->linked) {
         auto *link = ch->linked;
@@ -108,6 +117,11 @@ struct probe_adapter final : item_action_adapter {
     evidence &report;
     explicit probe_adapter(evidence &value) : report(value) {}
     ~probe_adapter() override { ++report.destroys; }
+    bool references_object(uint64_t uid) const noexcept override {
+        assert(nevent_is_game_thread());
+        ++report.reference_queries;
+        return uid == report.referenced_uid;
+    }
     bool validate(const item_action_context &) const noexcept override {
         return report.permitted;
     }
@@ -180,6 +194,8 @@ struct scene {
         actor->in_room = target->in_room = 0;
         actor->next = target;
         character_list = actor;
+        register_character_runtime_id(actor);
+        register_character_runtime_id(target);
         object_list = source;
         source->obj_uid = 100;
         source->loc_p = LOC_WORN;
@@ -202,6 +218,7 @@ struct scene {
             P_char ch = character_list;
             assert(!ch->nevents && !ch->linked && !ch->linking);
             character_list = ch->next;
+            unregister_character_runtime_id(ch);
             delete ch;
         }
         while (object_list) {
@@ -309,7 +326,11 @@ static void test_completion_validation() {
         switch (kind) {
         case 0: s.report.permitted = false; break;
         case 1: SET_POS(s.target, STAT_DEAD); break;
-        case 2: s.target->runtime_id = allocate_character_runtime_id(); break;
+        case 2:
+            unregister_character_runtime_id(s.target);
+            s.target->runtime_id = allocate_character_runtime_id();
+            register_character_runtime_id(s.target);
+            break;
         case 3: s.source->obj_uid = 777; break;
         case 4: s.source->loc.wearing = s.target; break;
         }
@@ -562,6 +583,162 @@ static void test_bounded_telemetry() {
       } }
 }
 
+static void test_hidden_pet_selection_and_completion() {
+    for (bool active : {false, true}) {
+        {
+            scene s(active);
+            fixture_pet_master = s.target;
+            SET_BIT(s.actor->specials.act, ACT_ISNPC);
+            SET_BIT(s.source->extra_flags, ITEM_NOSHOW);
+            assert(s.start() == item_action_start::suppressed);
+            assert(!item_actions_pending() && !s.report.commits && !s.report.effects);
+            fixture_pet_master = nullptr;
+        }
+        {
+            scene s(active);
+            SET_BIT(s.source->extra_flags, ITEM_NOSHOW);
+            assert(s.start() == item_action_start::scheduled);
+            // The source remains worn at the same UID: independently of the
+            // charm-time normalization, completion must re-check pet policy.
+            fixture_pet_master = s.target;
+            SET_BIT(s.actor->specials.act, ACT_ISNPC);
+            advance();
+            assert(!item_actions_pending() && !s.report.effects && s.report.finishes == 1);
+            fixture_pet_master = nullptr;
+        }
+    }
+}
+
+static auto busy_resource_state(const scene &s) {
+    return std::make_tuple(s.report.commits, s.report.announces, s.report.progress,
+                          s.report.effects, s.report.finishes, s.report.destroys,
+                          s.report.reserve, s.report.spent, s.report.outcome,
+                          pending.size(), active_actors, ne_event_counter,
+                          test_pool.objs_used, ne_event_sequence, fake_clock_ns,
+                          item_action_active(s.actor), IS_AFFECTED2(s.actor, AFF2_CASTING),
+                          s.actor->nevents, s.target->nevents, s.source->nevents);
+}
+
+static auto busy_entry_state(const pending_item_action &entry) {
+    const auto &id = entry.identity;
+    return std::make_tuple(entry.selected.get(), entry.expected_source,
+                          id.action_id, id.source_uid, id.actor_id, id.target_id,
+                          id.ability_id, id.revision, id.origin_room, id.source_slot,
+                          id.deadline_tick, entry.event.event, entry.event.sequence,
+                          entry.payload_generation, entry.deadline_us, entry.progress_us,
+                          entry.consumption, entry.terminal, entry.resolving,
+                          entry.effect_started, entry.effects_invoked,
+                          entry.progress_emitted, entry.cleanup_reason);
+}
+
+static void busy_off_thread_queries(const scene &s) {
+    const auto before = busy_resource_state(s);
+    const int queries = s.report.reference_queries;
+    std::thread worker([] {
+        assert(!nevent_is_game_thread());
+        for (uint64_t uid : {0ULL, 100ULL, 200ULL, 300ULL})
+            assert(item_actions_object_busy(uid));
+    });
+    worker.join();
+    assert(s.report.reference_queries == queries);
+    assert(busy_resource_state(s) == before);
+}
+
+static void test_busy_query_completion_and_read_only_state() {
+    scene s(true);
+    s.report.cost = item_action_consumption::reserved;
+    s.report.referenced_uid = 200;
+    assert(item_actions_object_busy(0));
+    assert(!item_actions_object_busy(100) && !item_actions_object_busy(200));
+    busy_off_thread_queries(s); // Empty pending map must still fail closed off-thread.
+    assert(s.start() == item_action_start::scheduled);
+    assert(s.report.reserve == 1 && !s.report.spent);
+    const auto entry = pending.begin()->second;
+    const auto before = busy_resource_state(s);
+    const auto entry_before = busy_entry_state(*entry);
+    const int queries = s.report.reference_queries;
+    for (int i = 0; i < 8; ++i) {
+        assert(item_actions_object_busy(0));
+        assert(item_actions_object_busy(100)); // Actual invocation source.
+        assert(item_actions_object_busy(200)); // Actual adapter reference callback.
+        assert(!item_actions_object_busy(300));
+        assert(busy_resource_state(s) == before);
+        assert(busy_entry_state(*entry) == entry_before);
+    }
+    assert(s.report.reference_queries == queries + 16); // Source/zero short-circuit.
+    busy_off_thread_queries(s);
+    assert(busy_entry_state(*entry) == entry_before);
+    advance();
+    assert(!item_actions_pending() && s.report.finishes == 1 && s.report.effects == 1);
+    assert(!s.report.reserve && s.report.spent == 1);
+    assert(s.report.outcome == item_action_outcome::completed);
+    const auto completed = busy_resource_state(s);
+    assert(!item_actions_object_busy(100) && !item_actions_object_busy(200));
+    assert(busy_resource_state(s) == completed);
+}
+
+static void test_busy_query_cancellation_and_all_entries() {
+    for (bool adapter_reference : {false, true}) {
+        scene s;
+        s.report.cost = item_action_consumption::reserved;
+        s.report.referenced_uid = 200;
+        assert(s.start() == item_action_start::scheduled);
+        auto *second = new obj_data{};
+        *second = *s.source;
+        second->obj_uid = 101;
+        second->nevents = second->nevents_tail = nullptr;
+        s.source->next = second;
+        s.actor->equipment[WIELD + 1] = second;
+        assert(start_item_action(1, s.actor, s.target, second) == item_action_start::scheduled);
+        assert(s.report.reserve == 2 && item_actions_pending() == 2);
+        const auto before = busy_resource_state(s);
+        assert(item_actions_object_busy(101)); // Must inspect later entries too.
+        assert(item_actions_object_busy(100) && item_actions_object_busy(200));
+        assert(!item_actions_object_busy(300));
+        assert(busy_resource_state(s) == before);
+        obj_data referenced = {};
+        referenced.obj_uid = 200;
+        item_actions_source_leaving(adapter_reference ? &referenced : s.source);
+        if (!adapter_reference) {
+            assert(!item_actions_object_busy(100) && item_actions_object_busy(101));
+            assert(item_actions_object_busy(200));
+            assert(s.report.reserve == 1 && s.report.finishes == 1);
+            item_actions_source_leaving(second);
+        }
+        assert(!item_actions_pending() && s.report.finishes == 2);
+        assert(!s.report.reserve && !s.report.spent && !s.report.effects);
+        assert(s.report.outcome == item_action_outcome::interrupted);
+        const auto cancelled = busy_resource_state(s);
+        assert(!item_actions_object_busy(100) && !item_actions_object_busy(101));
+        assert(!item_actions_object_busy(200));
+        assert(busy_resource_state(s) == cancelled);
+    }
+}
+
+static void test_busy_query_incomplete_metadata() {
+    scene s;
+    const auto before = busy_resource_state(s);
+    const int queries = s.report.reference_queries;
+    pending.emplace(12345, nullptr);
+    assert(item_actions_object_busy(300));
+    assert(pending.size() == 1 && !pending.at(12345));
+    pending.erase(12345);
+    auto missing_ability = std::make_shared<pending_item_action>(
+        nullptr, item_action_identity{}, s.source, definition());
+    pending.emplace(12345, missing_ability);
+    assert(item_actions_object_busy(300));
+    assert(pending.at(12345) == missing_ability);
+    pending.erase(12345);
+    auto missing_adapter = std::make_shared<ability>(ability{definition(), nullptr, true});
+    auto incomplete = std::make_shared<pending_item_action>(
+        missing_adapter, item_action_identity{}, s.source, definition());
+    pending.emplace(12345, incomplete);
+    assert(item_actions_object_busy(300));
+    assert(pending.at(12345) == incomplete && !incomplete->terminal);
+    pending.erase(12345);
+    assert(s.report.reference_queries == queries && busy_resource_state(s) == before);
+}
+
 int main() {
     nevent_bind_game_thread();
     ne_dead_event_pool = &test_pool;
@@ -578,14 +755,21 @@ int main() {
     test_effect_transitions();
     test_carry_self_reload_and_rearm_rejection();
     test_bounded_telemetry();
+    test_hidden_pet_selection_and_completion();
+    test_busy_query_completion_and_read_only_state();
+    test_busy_query_cancellation_and_all_entries();
+    test_busy_query_incomplete_metadata();
     std::puts("Item actions: scheduler, identities, costs, cancellation, timing and effect lifetime passed");
+    std::puts("Item-action busy query: read-only source/reference scans, completion/cancellation and thread guards passed");
 }
 '''
 
 with tempfile.TemporaryDirectory(prefix="duris-item-actions-") as directory:
     source = Path(directory) / "harness.cpp"
     binary = Path(directory) / "harness"
-    source.write_text(platform + HARNESS.replace("// INSERT_PRODUCTION_ABORT", abort_command))
+    source.write_text(platform + function_body((ROOT / "src/item/objmisc.c").read_text(),
+                                                   "bool item_restricted_for_player_pet(") +
+                      HARNESS.replace("// INSERT_PRODUCTION_ABORT", abort_command))
     subprocess.run([
         "g++", "-std=c++20", "-O1", "-g", "-ffunction-sections", "-fdata-sections",
         "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-pthread",
@@ -608,9 +792,17 @@ for signature, hook in [("void char_from_room(", "item_actions_character_leaving
                         ("P_obj unequip_char(", "item_actions_source_leaving(obj)"),
                         ("void extract_obj(", "item_actions_source_leaving(obj)")]:
     assert hook in handler.split(signature, 1)[1].split("\n}", 1)[0]
-assert "item_action_active(ch)" in (ROOT / "src/combat/fight.c").read_text()
+assert "item_action_active(ch)" in (ROOT / "src/combat/attack_cadence.c").read_text()
 properties = (ROOT / "src/world/properties.c").read_text()
 assert "update_item_action_properties();" in properties.split("void apply_properties()", 1)[1]
 assert "item_actions_reload();" in properties.split("void initialize_properties()", 1)[1]
 assert "itemActions.enabled=0" in (ROOT / "lib/duris.properties").read_text()
 print("Item-action transition/configuration hooks and default-off routing passed")
+
+# Supplement the worker-thread runtime assertions with the actual container-access
+# ordering. Sanitizers here are ASan/UBSan, not a substitute for a race detector.
+busy_query = function_body((ROOT / "src/item/item_actions.c").read_text(),
+                           "bool item_actions_object_busy(")
+assert busy_query.index("!object_uid || !nevent_is_game_thread()") < busy_query.index(" : pending)")
+assert "return true;" in busy_query.split(" : pending)", 1)[0]
+print("Item-action busy query checks the thread/UID guard before traversing pending work")

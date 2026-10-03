@@ -1,0 +1,13 @@
+# Immutable migration checksums cover canonical LF bytes on every checkout.
+migrations/immutable/*.sql text eol=lf
+*.sh text eol=lf
+scripts/mysql_socket_bin/mysql text eol=lf
+migrations/immutable/*.sh text eol=lf
+tests/async/run_item_transfer_schema_mysql.sh text eol=lf
+tests/async/run_shop_trade_sql_lock_schema_mysql.sh text eol=lf
+tests/async/run_death_resurrection_mysql_journey.sh text eol=lf
+scripts/mysql_socket_bin/mysql text eol=lf
+areas/m_slow text eol=lf
+areas/make_all text eol=lf
+areas/moveall text eol=lf
+areas/make_lookup text eol=lf
