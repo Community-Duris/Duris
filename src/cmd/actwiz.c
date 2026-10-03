@@ -722,9 +722,7 @@ void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 
 			// setting the reboot_time to 0 forces the reboot to occur next event
 			shutdownData.reboot_time = 0;
-			secs *= WAIT_SEC;
-			if (!secs)
-				secs = 1;
+			secs = MAX(1, secs * WAIT_SEC);
 			add_event(timedShutdown, secs, NULL, NULL, NULL, 0, NULL, 0);
 			return;
 		}
@@ -733,9 +731,7 @@ void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 			// no restore since no ch.
 			// setting the reboot_time to 0 forces the reboot to occur next event
 			shutdownData.reboot_time = 0;
-			secs *= WAIT_SEC;
-			if (!secs)
-				secs = 1;
+			secs = MAX(1, secs * WAIT_SEC);
 			add_event(timedShutdown, secs, NULL, NULL, NULL, 0, NULL, 0);
 			return;
 		}

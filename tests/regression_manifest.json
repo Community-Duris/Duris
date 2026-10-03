@@ -715,6 +715,7 @@
   "test_ship_save_guards.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.658,"purpose":"ship save guards"},
   "test_ship_save_queue_dedup.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.079,"purpose":"ship save queue dedup"},
   "test_ship_shop_list_contract.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.03,"purpose":"ship shop list contract"},
+  "test_shutdown_followup_runtime.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":1.0,"timeout_seconds":60.0,"purpose":"Execute production shutdown scheduling branches at eight expired-deadline and online/offline boundaries."},
   "test_ship_shutdown_txn.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.071,"purpose":"ship shutdown txn"},
   "test_shop_multi_buy_sequence.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.131,"purpose":"Regression contracts for completion-driven produced-item shop purchases (#537)."},
   "test_shop_trade_accounting_context.py": {"profile":"native","mode":"unittest","minimum_cases":2,"cpu":1,"memory_mb":512,"seconds":9.485,"purpose":"Contract and validation tests for shop trade double-entry item custody accounting."},
