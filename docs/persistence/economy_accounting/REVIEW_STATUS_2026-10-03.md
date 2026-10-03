@@ -710,3 +710,28 @@ guards remain RED. Owner/dependency and RED/GREEN hashes were verified against
 the same contract-drift-two evidence above. This is static contract evidence,
 separate from previously measured native listener/cadence budgets and the
 unfinished accounting workload and broad-suite gates. No production code changed.
+
+## Frozen transport-integrated broad regression final result
+
+The unchanged frozen 70aaa41384cb40ae786d06241ec5313ccafef822 run finished:
+831 passed, 11 skipped and 17 failed across 859 owners in 7,988.520 seconds.
+Results remain failed; later component fixes do not relabel this run. Actual
+account recovery, persistent transport, network readiness, player quarantine
+and static quest journeys passed within that scope. Original failed owners
+and all original logs remain in tmp/qualified-70aaa4138-results.local.json and
+tmp/qualified-70aaa4138-broad.local.log. Current-head broad qualification,
+flatfile combat/first-session investigation and writer-census refresh remain open.
+
+## Deferred item-output native fixture dependency repair
+
+The maintained prompt fixture reproduced unresolved native runtime lookup and
+TLS direction dependencies. It now links the production runtime identity map,
+registers and retires actor/body identities, checks retired-ID and worker refusal,
+and supplies an abort boundary for unexpected TLS use. The unchanged deferred
+item/currency, ambient bytes, auxiliary prompt and switched-descriptor parity
+matrix passes under ASan/UBSan with the existing compile/runtime time gates.
+The added TLS boundary supplies linkage; no native TLS handshake is claimed.
+Native direct dependencies equal published e36644777a9a0c88a631317e590394d2f1582163.
+This is component evidence, not live player/database publication or a broad pass.
+Evidence: tmp/prompt-dependencies-summary.local.json SHA-256
+45eddac2d2943c4f72aa3e3d3a7d0656a1bf038faa4771f9c51da59cb30dd310.
