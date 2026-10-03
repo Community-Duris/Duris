@@ -65,3 +65,5 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/persistence/persistence_observability.c \
     "${MYSQL_LIBS[@]}" -o "$ROOT/bin/tests/player_death_disposition_mysql_harness"
 "$ROOT/bin/tests/player_death_disposition_mysql_harness"
+export DB_ALLOWED_TARGETS="$DB_HOST/$DB_NAME" DURIS_RECOVERY_SYNTHETIC_FIXTURE=1
+python3 tests/async/test_death_recovery_visibility_sql.py
