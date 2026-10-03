@@ -9,20 +9,21 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass, field
+import hashlib
 from typing import Any, Callable, Mapping, Sequence
 
 try:
     from . import battle_contract as battle, battle_contribution_contract as contribution, incident
     from .rollup_definitions import (ROLLUP_QUALITY_PROCESS_GAP, ROLLUP_QUALITY_CONTEXT_UNAVAILABLE,
         ROLLUP_QUALITY_INCIDENT_GAP, ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN,
-        ROLLUP_QUALITY_UTC_UNKNOWN, ROLLUP_QUALITY_UTC_BACKWARD)
+        ROLLUP_QUALITY_UTC_UNKNOWN, ROLLUP_QUALITY_UTC_BACKWARD, ROLLUP_QUALITY_UTC_MISMATCH)
 except ImportError:
     import battle_contract as battle
     import battle_contribution_contract as contribution
     import incident
     from rollup_definitions import (ROLLUP_QUALITY_PROCESS_GAP, ROLLUP_QUALITY_CONTEXT_UNAVAILABLE,
         ROLLUP_QUALITY_INCIDENT_GAP, ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN,
-        ROLLUP_QUALITY_UTC_UNKNOWN, ROLLUP_QUALITY_UTC_BACKWARD)
+        ROLLUP_QUALITY_UTC_UNKNOWN, ROLLUP_QUALITY_UTC_BACKWARD, ROLLUP_QUALITY_UTC_MISMATCH)
 
 MAX_INPUTS = 16_384
 MAX_BATTLES = 512
@@ -38,6 +39,8 @@ COUNTERS = tuple("bc_" + name for _bit, names in contribution.COUNTER_FAMILIES f
 SCOPE = tuple("battle_" + name for name in (
     "environment_id", "season_id", "config_id", "classifier_version", "policy_version",
     "scope_zone_vnum", "scope_group_key"))
+EXPOSURE_CONTEXT = (*SCOPE, *ACTOR_CONTEXT, "battle_actor_roles", "battle_actor_side", "battle_mode",
+    "battle_side_status", "observed_side_owners", "observed_opposing_owners", "observed_roster_digest", "quality_flags")
 
 
 class HistoryError(ValueError):
@@ -96,6 +99,9 @@ class _State:
     edges: dict[int, set[tuple[int, int]]] = field(default_factory=lambda: {1: set(), 2: set(), 3: set()})
     last: dict[str, int] | None = None
     cut: int | None = None
+    cut_utc: int | None = None
+    exposures: list[dict[str, Any]] = field(default_factory=list)
+    last_exposure: dict[int, dict[str, Any]] = field(default_factory=dict)
     revision: int = 0
     last_sequence: int = 0
     quality: int = 0
@@ -116,6 +122,7 @@ class BattleHistory:
     battles: tuple[Mapping[str, Any], ...]
     actors: tuple[Mapping[str, Any], ...]
     contributions: tuple[Mapping[str, Any], ...]
+    exposures: tuple[Mapping[str, Any], ...]
 
 
 def _group(actor: _Actor) -> bool:
@@ -175,16 +182,37 @@ def _classify(state: _State, quality: int) -> tuple[int, int]:
     return status, 3 if pvp and pve else 2 if pvp else 1 if pve else 0
 
 
-def _seal(state: _State, at: int) -> None:
+def _roster_digest(state: _State) -> str:
+    """Commit the observed active composition and relationships, not a census."""
+    digest = hashlib.sha256(b"duris-battle-exposure-roster-v1:")
+    active = {actor_id for actor_id, actor in state.actors.items() if actor.active}
+    for actor_id in sorted(active):
+        actor = state.actors[actor_id]
+        digest.update(b"A")
+        for value in (*tuple(actor.context[name] for name in ACTOR_CONTEXT), actor.roles, actor.side):
+            digest.update(value.to_bytes(9, "big", signed=True))
+    for relation, edges in sorted(state.edges.items()):
+        for first, last in sorted(edges):
+            if first in active and last in active:
+                digest.update(b"E" + bytes((relation,)) + first.to_bytes(8, "big") + last.to_bytes(8, "big"))
+    return digest.hexdigest()
+
+
+def _seal(state: _State, boundary: Mapping[str, int], budget: _Budget, *, terminal: bool = False) -> None:
+    clock = "observed_through" if terminal else "at"
+    at = boundary["battle_" + clock + "_monotonic_usec"]
+    utc = boundary["battle_" + clock + "_utc_usec"]
     if state.cut is None:
         state.cut = at
+        state.cut_utc = utc
         return
     _require(at >= state.cut, "history_observed_clock_reversal")
     elapsed = at - state.cut
-    if state.replay_verified and state.last is not None:
+    if elapsed and state.replay_verified and state.last is not None:
         owners = {side: {actor.context["battle_actor_owner_subject_id"] for actor in state.actors.values()
             if actor.active and actor.side == side and actor.context["battle_actor_owner_subject_id"]} for side in (1, 2)}
         mode = state.last["battle_mode"]
+        roster_digest = _roster_digest(state)
         for actor in state.actors.values():
             if not actor.active:
                 continue
@@ -194,10 +222,41 @@ def _seal(state: _State, at: int) -> None:
                 "battle_unknown_side_usec": elapsed if state.last["battle_side_status"] != 1 else 0,
                 "battle_outnumbered_owner_usec": elapsed if mode == 2 and actor.context["battle_actor_owner_subject_id"] and
                     actor.side in (1, 2) and len(owners[actor.side]) < len(owners[3 - actor.side]) else 0}
+            quality = state.quality | _utc_quality((state.cut_utc, utc), state.quality)
+            if state.cut_utc != contribution.UTC_UNKNOWN and utc != contribution.UTC_UNKNOWN and utc - state.cut_utc != elapsed:
+                quality |= ROLLUP_QUALITY_UTC_MISMATCH
+            exposure = {"source_battle": state.identity,
+                "start_association": (*state.identity, state.last["battle_revision"], state.last["battle_fact_sequence"]),
+                "through_association": (*battle.battle_id(boundary), boundary["battle_revision"], boundary["battle_fact_sequence"]),
+                "start_record_seq": state.last["record_seq"], "through_record_seq": boundary["record_seq"],
+                **{name: state.last[name] for name in SCOPE}, **actor.context,
+                "battle_actor_roles": actor.roles, "battle_actor_side": actor.side,
+                "battle_mode": mode, "battle_side_status": state.last["battle_side_status"],
+                "start_monotonic_usec": state.cut, "observed_through_monotonic_usec": at,
+                "start_utc_usec": state.cut_utc, "observed_through_utc_usec": utc,
+                "observed_side_owners": len(owners[actor.side]) if actor.side in (1, 2) else None,
+                "observed_opposing_owners": len(owners[3 - actor.side]) if actor.side in (1, 2) else None,
+                "observed_roster_digest": roster_digest,
+                **{name: additions.get(name, 0) for name in battle.EFFORT},
+                "quality_flags": quality, "history_verified": True,
+                "complete_population_coverage_implied": False}
+            previous = state.last_exposure.get(actor.context["battle_actor_id"])
+            if previous is not None and previous["observed_through_monotonic_usec"] == state.cut and all(
+                    previous[name] == exposure[name] for name in EXPOSURE_CONTEXT):
+                for name in battle.EFFORT:
+                    _require(exposure[name] <= battle.UINT64_MAX - previous[name], "history_exposure_capacity")
+                    previous[name] += exposure[name]
+                previous.update({name: exposure[name] for name in (
+                    "through_association", "through_record_seq", "observed_through_monotonic_usec", "observed_through_utc_usec")})
+            else:
+                budget.output()
+                state.exposures.append(exposure)
+                state.last_exposure[actor.context["battle_actor_id"]] = exposure
             for name, amount in additions.items():
                 _require(amount <= battle.UINT64_MAX - actor.effort[name], "history_effort_capacity")
                 actor.effort[name] += amount
     state.cut = at
+    state.cut_utc = utc
 
 
 def _accept_actor(state: _State, row: Mapping[str, int], trusted: bool, budget: _Budget) -> None:
@@ -385,7 +444,7 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
         state.replay_verified &= state.start_seen
         terminal = complete and last["battle_fact_kind"] == 7
         at = last["battle_observed_through_monotonic_usec"] if terminal else first["battle_at_monotonic_usec"]
-        _seal(state, at)
+        _seal(state, last, budget, terminal=terminal)
         if complete and first["battle_fact_kind"] == 5:
             donor_id = tuple(first[name] for name in battle.RELATED_BATTLE)
             _require(donor_id not in aliases, "history_alias_conflict")
@@ -404,7 +463,7 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
                 elif not connects:
                     state.integrity = state.replay_verified = False
                     state.quality |= ROLLUP_QUALITY_PROCESS_GAP
-                _seal(donor, at)
+                _seal(donor, last, budget)
                 _require(not state.actors.keys() & donor.actors.keys(), "history_alias_duplicate_actor")
                 _require(len(state.actors) + len(donor.actors) <= battle.MAX_ACTORS, "history_alias_actor_capacity")
                 budget.reserve(len(donor.actors) * ACTOR_BYTE_BOUND)
@@ -565,7 +624,7 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
             _require(end is None or first >= end, "history_contribution_overlap")
             end = last
 
-    battle_rows, actor_rows = [], []
+    battle_rows, actor_rows, exposure_rows = [], [], []
     for identity, state in sorted(states.items()):
         budget.output()
         root = _canonical(identity, aliases)
@@ -578,6 +637,16 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
         quality |= _coverage_quality(incident_coverage, identity[:2], 10,
             min(occurrences) if comparable else None, max(occurrences) if comparable else None,
             min(row["record_seq"] for row in source), max(row["record_seq"] for row in source))
+        for exposure in state.exposures:
+            check_deadline()
+            flags = exposure["quality_flags"]
+            comparable = not flags & (battle.QUALITY_CLOCK_DISCONTINUITY | ROLLUP_QUALITY_UTC_UNKNOWN |
+                ROLLUP_QUALITY_UTC_BACKWARD | ROLLUP_QUALITY_UTC_MISMATCH)
+            flags |= _coverage_quality(incident_coverage, identity[:2], 10,
+                exposure["start_utc_usec"] if comparable else None,
+                exposure["observed_through_utc_usec"] if comparable else None,
+                exposure["start_record_seq"], exposure["through_record_seq"])
+            exposure_rows.append(dict(exposure, canonical_battle=root, quality_flags=flags))
         canonical = identity == root
         metric_totals = {}
         for bit, names in contribution.COUNTER_FAMILIES:
@@ -621,13 +690,25 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
             "quality_flags": contribution_quality[root] | ROLLUP_QUALITY_PROCESS_GAP,
             "outcome": None, "complete_metric_coverage_implied": False,
             "account_or_controller_identity_implied": False})
+    exposure_spans: dict[tuple[int, int, int], list[tuple[int, int]]] = defaultdict(list)
+    for row in exposure_rows:
+        stream = (*row["source_battle"][:2], row["battle_actor_id"])
+        exposure_spans[stream].append((row["start_monotonic_usec"], row["observed_through_monotonic_usec"]))
+    for spans in exposure_spans.values():
+        end = None
+        for first, last in sorted(spans):
+            check_deadline()
+            _require(end is None or first >= end, "history_actor_exposure_overlap")
+            end = last
     summary = {"input_count": len(rows), "source_fact_count": len(facts), "contribution_count": len(segments),
         "identical_receipt_retries": retries, "complete_packet_count": packet_count,
         "incomplete_packet_count": incomplete_count, "alias_count": len(aliases),
         "canonical_battle_count": len({row["canonical_battle"] for row in battle_rows}),
         "verified_contribution_links": linked, "partial_contribution_links": unlinked,
+        "exposure_count": len(exposure_rows),
+        "verified_exposure_present_usec": sum(row["battle_present_usec"] for row in exposure_rows),
         "reserved_bytes": budget.used, "output_rows": budget.outputs,
         "atomic_publication_implied": False, "complete_metric_coverage_implied": False,
         "decisive_outcomes_available": False, "account_or_controller_identity_implied": False,
         "zero_activity_implied": False}
-    return BattleHistory(summary, tuple(battle_rows), tuple(actor_rows), tuple(contribution_rows))
+    return BattleHistory(summary, tuple(battle_rows), tuple(actor_rows), tuple(contribution_rows), tuple(exposure_rows))

@@ -16,7 +16,7 @@ import sys
 import tempfile
 
 from test_telemetry_gameplay_adapters import ROOT, compile_gameplay
-from test_telemetry_battle_history import qualify_native_history
+from test_telemetry_battle_history import qualify_native_history, qualify_retained_native_source
 from test_telemetry_repository import prepare_sql_fixture, drop_sql_fixture
 from test_telemetry_incidents import runtime_fingerprint
 
@@ -118,6 +118,8 @@ def qualify() -> None:
             assert sum(row["bc_casting_aborts"] for row in contributions) == 1
             assert sum(row["bc_casting_unresolved"] for row in contributions) == 4
             history = qualify_native_history(stored + contributions)
+            source_window, _retained_inputs = qualify_retained_native_source(stored + contributions,
+                (stored[0]["battle_environment_id"], stored[0]["battle_season_id"]), history)
             unavailable_opponent = [row for row in contributions if row["bc_actor_id"] == 8951]
             assert len(unavailable_opponent) == 1
             assert unavailable_opponent[0]["bc_end_reason"] == 4
@@ -163,6 +165,11 @@ def qualify() -> None:
                 history_partial_links=history.summary["partial_contribution_links"],
                 history_alias_count=history.summary["alias_count"],
                 history_reserved_bytes=history.summary["reserved_bytes"],
+                history_exposure_count=history.summary["exposure_count"],
+                history_verified_exposure_present_usec=history.summary["verified_exposure_present_usec"],
+                history_source_value_contract=True,
+                history_persisted_source_checkpoint=False,
+                history_source_reserved_bytes=source_window.reserved_bytes,
                 history_atomic_publication=False,
                 complete_association_references=True, exact_damage_total=112,
                 unavailable_opponent_source_gap=True,

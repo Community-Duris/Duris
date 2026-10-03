@@ -6,8 +6,10 @@ association engine, portable definition-1 packets and independent kind-10 writer
 preserve battle history and conservative uncertainty. This establishes live
 association capture. The native contribution accumulator, portable segment
 contract and canonical kind-11 writer are qualified separately below. A bounded
-history reducer also verifies retained lineage, effective contribution context
-and measured lifecycle boundaries. Expanded context/control/prevention/faction
+history reducer also verifies retained lineage, effective contribution context,
+measured lifecycle boundaries and historical exposure intervals. A canonical
+source contract binds selected kind-9/10/11 values to a cursor checkpoint and
+rolling digest. Expanded context/control/prevention/faction
 sources, dated identity linkage and atomic balance projections remain under
 implementation.
 [Implementation status](IMPLEMENTATION_STATUS.md) retains the full accepted scope
@@ -603,8 +605,9 @@ family has NULL aggregate metrics; an available family's sum describes the
 observed segments and does not prove complete coverage or a missing actor's zero.
 Actor effort outputs are the latest absolute cumulative values for a canonical
 battle actor. Their latest context is not an attribution of all historical effort
-to that class, faction, group or configuration. Historical exposure cells still
-need the publication integration. This reducer establishes neither an account/
+to that class, faction, group or configuration. Historical exposure intervals are
+qualified below; dated identity/day/report cells still need the publication
+integration. This reducer establishes neither an account/
 controller association nor a decisive battle outcome. Empty input does not imply
 zero live activity.
 
@@ -619,8 +622,9 @@ snapshots and 64 actors per merged state. Explicit output-row, byte and deadline
 budgets fail before returning a result. The internal reservation accounts 8,192
 bytes per normalized input, 2,048 per retained actor/trace and 4,096 per output;
 the default is 32 MiB. A caller must separately reserve buffering SQL fetches and
-its complete invocation. The native fixture reserves 2,230,272 bytes internally;
-this is reservation accounting, not a measured Python heap or server budget.
+its complete invocation. The original reducer-only native fixture reserved
+2,230,272 bytes internally. Historical exposure adds the output reservations
+below. These are reservation accounts, not measured Python heap or server budgets.
 
 Twenty focused tests passed, including 6,468 emitted facts from 23 existing pure
 association journeys. Normal and ASan/UBSan native gameplay exports reduced 123
@@ -645,3 +649,95 @@ adds no migration and enables no report definition. The catalog remains 1/2/3.
 Retained source/cursor digests, atomic public stores, reserved dated identity,
 complete published loss/lineage coverage, remaining native evidence, the four
 balance suites and the real personal-local qualification remain required.
+
+## Historical exposure and retained source checkpoint
+
+The reducer's `exposures` values seal positive observed intervals under the actor
+context, roles, configuration, battle mode, conservative side and observed owner
+counts that applied during that interval. All eight effort fields are separate
+interval amounts: present, contributor, PvE, PvP, mixed, unknown mode,
+outnumbered owner and unknown side. They reconcile exactly to native cumulative
+actor effort in the fully replay-verified fixture. Presence-only actors contribute
+measured presence without acquiring a damage/healing/casting stream. Unknown
+sides retain NULL side-owner denominators. These counts identify observed character
+owners, not accounts or confirmed human controllers.
+
+Original source battle keys and complete start/through association references
+remain attached to each interval. An alias resolves these prefixes to one
+canonical battle without copying the retired intervals. The actual observed
+monotonic/UTC cut seals inactivity; the later closure decision supplies no extra
+effort. A zero-duration cut emits no exposure row. Missing whole/middle packet
+evidence stops further verified exposure and retains earlier known prefixes;
+later cumulative snapshots cannot fill the missing interval. Overlapping exposure
+for one actor in one producer incarnation refuses reduction, including
+association-only streams with no contribution records.
+
+An independent digest commits the observed active actor context/roles/sides and
+active hostile/support/presence relationships. Its domain is
+`duris-battle-exposure-roster-v1:`. Numeric actor values use fixed signed 9-byte
+encodings in the sealed `ACTOR_VALUES` order; roles and side follow each actor.
+Relation records use the relation byte and two unsigned 8-byte actor identities.
+Actor/relationship sorting and record tags make the digest deterministic. The
+digest is observed roster evidence, not a reviewed team or controller identity.
+Adjacent intervals coalesce only when this digest, all captured actor/scope
+context, roles/sides, owner counts and clock quality match. An opponent's class
+change splits the unchanged actor's exposure as well. Coalescing preserves the
+original start and final actual through reference and cannot hide a composition
+or coverage change.
+
+UTC unknown, backward or inconsistent labels preserve measured monotonic amounts
+and cannot establish a dated comparison. Independent incident-schema-4 coverage
+uses kind 10 and the interval's matching producer/transport range. Contribution
+loss uses kind 11 independently. The output-row/byte/deadline limits cover these
+intervals and their coalesced values. Stress fixtures explicitly permit 10,000
+output rows with a 128 MiB reservation; the default remains 2,000 rows/32 MiB.
+Source clocks and zero-duration cuts make the native row count and reservation
+vary between executions. This variation changes neither conserved effort nor
+the source identities.
+
+`scripts/telemetry/battle_source.py` supplies the exact input/checkpoint contract
+for the following atomic SQL integration. Each retained row pins the generation,
+ingestion ID, producer receipt, family, canonical numeric payload and SHA-256
+payload digest. The payload preserves kind-9 ownership observations, all sealed
+kind-10/11 values, the original occurrence label and the independent SQL arrival
+label when available. Export-only input has an explicit unknown arrival label;
+it does not borrow occurrence UTC. Typed projection quality remains separate
+from the original fields. Decoder/type/exact-column/canonical-JSON checks refuse
+conflicting envelopes, duplicate JSON keys, unexpected fields and changed values.
+
+The generation seed uses `duris-battle-source-v1:` and its exact four-part scope.
+Every selected ingestion ID and payload digest advances the rolling source
+digest. Family counts conserve the selected total, and verification requires the
+exact expected scope/watermark from the locked generation state. Cursor advancement
+over unselected families adds no fact. Missing/reordered/repeated receipts,
+changed payloads/counts/digests, scope/checkpoint mismatches and quality regression
+refuse the whole source value result. A published checkpoint cannot advance.
+Identity registry authority, token issuance and reviewed incident snapshots must
+be validated by the existing restricted transaction path. This codec supplies no
+review authority or identity attribution.
+
+Limits are 16,384 selected inputs and 8,192 payload bytes. Encoded input buffering
+reserves 12,288 bytes per row. Source verification reserves 32,768 bytes per input
+plus a 4,096-byte header before returning decoded values; its default is 32 MiB.
+The native 151-input window reserves 4,952,064 bytes for this stage. The SQL caller
+must reserve its buffering fetch, history reduction, review/incident evidence,
+dated exposure cells and complete publication invocation separately. A capacity
+or deadline refusal returns no source result and mutates no caller values.
+
+The contract names definition 5 for the existing independent incident-schema-4
+reservation seam. It does not enable definition 5: the maintained catalog remains
+1/2/3, and no SQL source checkpoint or public battle table is created by these pure
+helpers. Thirty-nine focused regressions qualify context/composition changes,
+alias/inactivity/missing-history cuts, all eight effort counters, unknown clocks/
+sides, source receipt/digest/cursor negatives, kind-9 value retention and budgets.
+The native and private-writer readback fixtures invoke the same source and
+exposure checks. Persisted source/checkpoint atomicity, reserved dated identity,
+independent reviewed loss snapshots, publication/report transactions and the full
+accepted remaining scope stay required under #258.
+
+The final MySQL 8.0.46 readback used an owned, auto-removed disposable fixture
+with `mysqld --skip-innodb-use-native-aio`: the host's shared kernel AIO quota
+prevented the default fixture from starting. MariaDB 10.11.14 used its normal
+disposable setup. Both full 62-step chains and actual private-writer readbacks
+passed without changing sealed metadata. This fixture setting qualifies SQL
+correctness and supplies no default-engine or real-server performance proof.
