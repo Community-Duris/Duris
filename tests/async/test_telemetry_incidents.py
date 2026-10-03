@@ -425,7 +425,8 @@ def sql_qualification() -> None:
             assert measured.returncode != 0 and output.count("FAILED:") == 1, "runtime contract failed outside fingerprint measurement"
             fingerprint = match[1]
         artifact = {"engine": os.environ["TELEMETRY_REPOSITORY_DB_IMAGE"], "status": "passed",
-                    "migration_head": "0054_telemetry_incident_coverage", "normalized_metadata_fingerprint": fingerprint}
+                    "migration_head": json.loads((ROOT / "migrations/migration_manifest.json").read_text())["migrations"][-1]["id"],
+                    "normalized_metadata_fingerprint": fingerprint}
         (ROOT / "bin").mkdir(exist_ok=True)
         engine = "mariadb" if "mariadb" in artifact["engine"] else "mysql"
         (ROOT / f"bin/telemetry-incident-{engine}.json").write_text(json.dumps(artifact, indent=2)+"\n")

@@ -5,14 +5,14 @@ contract that a report consumer (#269) can import without importing the worker.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 import math
 from types import MappingProxyType
 from typing import Any, Mapping
 
 DEFINITION_VERSION = 1
-SUPPORTED_DEFINITION_VERSIONS = frozenset({DEFINITION_VERSION})
+SUPPORTED_DEFINITION_VERSIONS = frozenset({DEFINITION_VERSION, 2})
 
 PUBLICATION_BUILDING = 0
 PUBLICATION_PUBLISHED = 1
@@ -57,7 +57,7 @@ COHORT_DIMENSION_FIELDS = (
 SESSION_ID_FIELDS = ("session_boot_id", "session_process_id", "session_seq")
 SCOPE_FIELDS = ("definition_version", "generation", "environment_id", "season_id")
 
-# Raw quality flags are bits 0..8 in telemetry_types.h.  Bits 16+ belong to the
+# Raw quality flags are bits 0..9 in telemetry_types.h.  Bits 16+ belong to the
 # external rollup only and are intentionally documented rather than overloaded.
 ROLLUP_QUALITY_UTC_UNKNOWN = 1 << 16
 ROLLUP_QUALITY_UTC_MISMATCH = 1 << 17
@@ -72,7 +72,7 @@ ROLLUP_QUALITY_LATE_INPUT = 1 << 25
 ROLLUP_QUALITY_SESSION_GAP = 1 << 26
 ROLLUP_QUALITY_INCIDENT_GAP = 1 << 27
 ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN = 1 << 28
-ROLLUP_QUALITY_KNOWN_MASK = (1 << 9) - 1
+ROLLUP_QUALITY_KNOWN_MASK = (1 << 10) - 1
 ROLLUP_QUALITY_MASK = (
     ROLLUP_QUALITY_KNOWN_MASK
     | ROLLUP_QUALITY_UTC_UNKNOWN
@@ -463,24 +463,83 @@ REPORT_ALIASES = MappingProxyType(
     }
 )
 
+OBSERVATION_REPORT_DEFINITIONS = MappingProxyType({
+    "progression_observations": ReportDefinition(
+        name="progression_observations", definition_version=2, grain="subject_session_day_and_exact_source_dimensions",
+        table="telemetry_rollup_progression_day",
+        dimensions=("utc_day", "subject_id", "pid", *SESSION_ID_FIELDS, "level", "level_band", "class_id", "race_id",
+                    "faction_id", "zone_vnum", "group_size", "config_id", "classifier_version", "policy_version",
+                    "source", "reason", "observation_status", "modifier_flags"),
+        metrics=("observations", "zero_applied_observations", "negative_applied_observations", "requested_xp",
+                 "computed_xp", "applied_xp", "earned_positive_xp", "death_loss_xp", "restored_positive_xp", "quality_flags"),
+        denominator="Amounts observed at the XP storage boundary. No hourly rate or persisted reward is inferred; keep observation statuses and configurations separate.",
+        distinct_semantics="Subjects are characters; sessions, accounts and humans are different grains. No account/controller association is available.",
+        distribution_semantics="Daily source cells support source totals, not per-award distributions. Level thresholds are excluded from all XP amounts.",
+        unavailable_metrics=("xp_per_hour", "durable_reward_total", "account_distinct_count", "controller_distinct_count", "controller_union_time"),
+        rate_unit="not_computed"),
+    "level_observations": ReportDefinition(
+        name="level_observations", definition_version=2, grain="observed_level_transition_replay_key",
+        table="telemetry_rollup_level_event", dimensions=("subject_id", "pid", *SESSION_ID_FIELDS, "kind", "source", "reason", "observation_status"),
+        metrics=("before_level", "after_level", "threshold_xp", "modifier_flags", "at_monotonic_usec", "occurrence_utc_usec", "quality_flags"),
+        denominator="Observed transition points. threshold_xp is threshold consumption, never an XP reward. Missing beginning or end exposure is censored.",
+        distinct_semantics="A row is a transition observation, not an independently observed player or attained milestone cohort.",
+        distribution_semantics="Transitions are retained for later milestones; time to level is unavailable without compatible covered exposure and censoring.",
+        unavailable_metrics=("xp_reward", "time_to_level", "controller_time_to_level"), rate_unit="not_computed"),
+    "encounter_observations": ReportDefinition(
+        name="encounter_observations", definition_version=2, grain="original_observed_encounter",
+        table="telemetry_rollup_encounter", dimensions=("encounter_boot_id", "encounter_process_id", "encounter_seq", "config_id", "zone_vnum", "group_key"),
+        metrics=("start_seen", "close_seen", "elapsed_usec", "outcome", "mode", "mode_mask", "participant_count", "expected_credit_count", "source_events", "quality_flags"),
+        denominator="Independent start and close observations are retained. Only actual close supplies elapsedness. Expected reward credit is separate from participation.",
+        distinct_semantics="Each row is one producer encounter; opposing encounters are not a shared battle, and a generic success is not a full zone clear.",
+        distribution_semantics="Closed elapsed durations retain known termination reasons; unclosed rows have NULL elapsedness. Copyover, shutdown and unknown close are censored outcomes.",
+        unavailable_metrics=("battle_win_rate", "zone_clear_rate", "unique_human_count"), rate_unit="not_computed"),
+    "encounter_participants": ReportDefinition(
+        name="encounter_participants", definition_version=2, grain="encounter_subject_and_pid",
+        table="telemetry_rollup_encounter_participant", dimensions=("encounter_boot_id", "encounter_process_id", "encounter_seq", "subject_id", "pid"),
+        metrics=("participant_usec", "effort_revision", "join_seen", "leave_seen", "summary_seen", "outcome", "quality_flags"),
+        denominator="Latest absolute cumulative measured effort. Leave and summary are not summed, rejoins do not reset effort, and join-only effort is NULL.",
+        distinct_semantics="Character participation is distinct from expected credit, account ownership and reviewed human control.",
+        distribution_semantics="Participant effort distributions require complete declared encounter cohorts; unmeasured effort remains unknown.",
+        unavailable_metrics=("expected_credit_effort", "controller_union_time", "unique_human_count"), rate_unit="not_computed"),
+    "combat_contributions": ReportDefinition(
+        name="combat_contributions", definition_version=2, grain="encounter_actor_with_captured_ownership",
+        table="telemetry_rollup_combat_actor", dimensions=("encounter_boot_id", "encounter_process_id", "encounter_seq", "actor_kind", "actor_id", "actor_pid", "owner_subject_id", "mode", "config_id"),
+        metrics=("damage_dealt", "damage_taken", "healing_attempted", "effective_healing", "overhealing", "control_applications",
+                 "casting_attempts", "casting_completions", "casting_aborts", "casting_elapsed_usec", "tanking_usec", "quality_flags"),
+        denominator="Latest absolute actor contribution snapshot. Actor counts and unique_player_count are captured per-encounter context and cannot be summed across actor rows.",
+        distinct_semantics="Pets retain their captured owner; NPCs have no player owner. Neither is an extra human. power_band is a captured level proxy, not gear or skill strength.",
+        distribution_semantics="Damage, effective healing, control and tanking remain distinct measures. No universal contribution or power score is computed.",
+        unavailable_metrics=("battle_win_rate", "gear_strength", "skill_strength", "unique_human_count", "universal_power_score"), rate_unit="not_computed"),
+})
 
-def report_definition(name: str) -> ReportDefinition:
+
+def report_definition(name: str, definition_version: int | None = None) -> ReportDefinition:
     canonical = REPORT_ALIASES.get(name, name)
     try:
-        return REPORT_DEFINITIONS[canonical]
+        definition = REPORT_DEFINITIONS.get(canonical) or OBSERVATION_REPORT_DEFINITIONS[canonical]
     except KeyError as error:
         raise ValueError(
             f"unknown report definition {name!r}; "
-            f"available={sorted(REPORT_DEFINITIONS)}"
+            f"available={sorted((*REPORT_DEFINITIONS, *OBSERVATION_REPORT_DEFINITIONS))}"
         ) from error
+    if definition_version is None:
+        return definition
+    if isinstance(definition_version, bool) or not isinstance(definition_version, int) or definition_version not in SUPPORTED_DEFINITION_VERSIONS:
+        raise ValueError("unsupported report definition version")
+    if definition.definition_version > definition_version:
+        raise ValueError("report requires definition version 2")
+    return replace(definition, definition_version=definition_version)
 
 
-def report_definitions() -> tuple[ReportDefinition, ...]:
-    return tuple(REPORT_DEFINITIONS[name] for name in sorted(REPORT_DEFINITIONS))
+def report_definitions(definition_version: int = 1) -> tuple[ReportDefinition, ...]:
+    names = set(REPORT_DEFINITIONS)
+    if definition_version == 2:
+        names.update(OBSERVATION_REPORT_DEFINITIONS)
+    return tuple(report_definition(name, definition_version) for name in sorted(names))
 
 
-def report_catalog() -> tuple[dict[str, Any], ...]:
-    return tuple(definition.public_dict() for definition in report_definitions())
+def report_catalog(definition_version: int = 1) -> tuple[dict[str, Any], ...]:
+    return tuple(definition.public_dict() for definition in report_definitions(definition_version))
 
 
 def unknown_dimensions() -> dict[str, int]:

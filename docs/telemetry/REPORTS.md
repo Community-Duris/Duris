@@ -3,6 +3,10 @@
 This document describes the repository-local report interface built on the
 frozen #268 rollup outputs. It is a read-only administrator/reporting path, not
 a game command and not a second ingestion or schema system.
+The version 2 [typed observation reports](OBSERVATION_PROJECTIONS.md) are available
+through the existing rollup Python API and `rollup.py report` command. This
+administrator catalog retains its version 1 definitions while the four complete
+balance report suites are implemented.
 
 ## Boundary and connection policy
 

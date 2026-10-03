@@ -111,6 +111,33 @@ class ReviewSemanticsTest(unittest.TestCase):
                 self.assertEqual(member.attributable_usec, 0)
                 self.assertEqual(row["duration_usec"], 100)
 
+    def test_valid_progression_does_not_stop_legacy_playtime_cursor(self):
+        row = self.interval(record_kind=6, at_monotonic_usec=100, at_utc_usec=100,
+                            connection_boot_id=100, connection_process_id=200, connection_seq=1,
+                            progression_kind=1, progression_source=3, progression_reason=1,
+                            progression_observation_status=1, progression_modifier_flags=0,
+                            progression_requested_xp=50, progression_computed_xp=50,
+                            progression_applied_xp=50, progression_before_exp=100,
+                            progression_after_exp=150, progression_before_level=20,
+                            progression_after_level=20, progression_threshold_xp=0)
+        contribution = build_page_contributions([row], self.target)
+        self.assertEqual(contribution.page_last_ingest_id, 1)
+        self.assertFalse(contribution.sessions)
+        self.assertFalse(contribution.player_days)
+        self.assertFalse(contribution.cohorts)
+
+    def test_current_quarantine_gap_and_cardinality_quality_remain_consumable(self):
+        row = self.interval(quality_flags=1 << 9)
+        contribution = build_page_contributions([row], self.target)
+        self.assertEqual(next(iter(contribution.sessions.values())).covered["covered_active_usec"], 100)
+        self.assertTrue(contribution.state_quality_flags & (1 << 9))
+        gap = self.interval(record_kind=4, gap_reason=7, quality_flags=1 << 9)
+        contribution = build_page_contributions([gap], self.target)
+        self.assertEqual(contribution.page_last_ingest_id, 1)
+        self.assertTrue(contribution.state_quality_flags & ROLLUP_QUALITY_SESSION_GAP)
+        self.assertTrue(contribution.state_quality_flags & (1 << 9))
+        self.assertFalse(contribution.player_days)
+
     def test_derived_late_uses_header_occurrence_and_reaches_all_affected_rows(self):
         first = self.interval()
         second = self.interval(

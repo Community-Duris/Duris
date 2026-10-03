@@ -18,9 +18,10 @@ import math
 from typing import Any, Callable, Mapping, Sequence
 
 try:
-    from . import incident
+    from . import incident, observation_semantics as observations
 except ImportError:
     import incident
+    import observation_semantics as observations
 
 try:  # Running as a package.
     from .rollup_definitions import (
@@ -413,7 +414,7 @@ RAW_COLUMNS = (
     "pulse_slot_count",
     "backend",
     "enabled",
-)
+) + observations.PROGRESSION_RAW_COLUMNS + observations.ENCOUNTER_RAW_COLUMNS + observations.COMBAT_RAW_COLUMNS
 
 SESSION_COLUMNS = (
     "definition_version",
@@ -531,6 +532,11 @@ MEMBER_KEY_WHERE = (
 REPORT_TABLES = {
     "session_playtime": ("telemetry_rollup_session", SESSION_COLUMNS),
     "cohort_activity": ("telemetry_cohort_day", COHORT_COLUMNS),
+    "progression_observations": ("telemetry_rollup_progression_day", observations.XP_COLUMNS),
+    "level_observations": ("telemetry_rollup_level_event", observations.LEVEL_COLUMNS),
+    "encounter_observations": ("telemetry_rollup_encounter", observations.EPISODE_COLUMNS),
+    "encounter_participants": ("telemetry_rollup_encounter_participant", observations.PARTICIPANT_COLUMNS),
+    "combat_contributions": ("telemetry_rollup_combat_actor", observations.ACTOR_COLUMNS),
 }
 REPORT_ORDER_BY = {
     "session_playtime": (
@@ -542,6 +548,10 @@ REPORT_ORDER_BY = {
         "level_band,class_id,race_id,faction_id,zone_vnum,config_id,category"
     ),
 }
+REPORT_ORDER_BY.update({name: ",".join(keys) for name, keys in (
+    ("progression_observations", observations.XP_KEY), ("level_observations", observations.LEVEL_KEY),
+    ("encounter_observations", observations.EPISODE_KEY), ("encounter_participants", observations.PARTICIPANT_KEY),
+    ("combat_contributions", observations.ACTOR_KEY))})
 REPORT_ROW_LIMIT_DEFAULT = 10_000
 REPORT_ROW_LIMIT_HARD_MAX = 100_000
 # Aggregate rows contain only bounded integer/date columns.  Reserve a
@@ -582,12 +592,12 @@ def _bounded_report_runtime(value: float) -> float:
     return float(value)
 
 
-def _report_fetch_limits(max_rows: int, max_bytes: int) -> tuple[int, int]:
+def _report_fetch_limits(max_rows: int, max_bytes: int, row_byte_bound: int = REPORT_ROW_BYTE_BOUND) -> tuple[int, int]:
     """Return result and SQL fetch limits without exceeding the byte budget."""
 
     row_limit = _bounded_report_limit(max_rows)
     byte_limit = _bounded_report_bytes(max_bytes)
-    capacity = byte_limit // REPORT_ROW_BYTE_BOUND
+    capacity = byte_limit // row_byte_bound
     if capacity < REPORT_MIN_FETCH_ROWS:
         raise BoundsExceeded(
             "report byte budget cannot reserve one result row and a truncation sentinel"
@@ -1169,7 +1179,49 @@ class PyMySQLRollupDatabase:
             existed = self._write_member(delta)
             if not existed:
                 self._increment_cohort_count(delta)
+        self._apply_observations(contribution)
         self._update_state(target, state, contribution)
+
+    def _apply_observations(self, contribution: PageContribution) -> None:
+        """Bounded projection reads/writes share the locked input cursor commit.
+
+        Identifiers come only from these fixed repository families. Every read
+        is one PK cell; exact merges check immutable dimensions/ownership and
+        cumulative revisions before a write. A conflict rolls back the page.
+        """
+        families = (
+            ("telemetry_rollup_progression_day", observations.XP_KEY, observations.XP_COLUMNS,
+             contribution.observations.progression, observations.merge_progression),
+            ("telemetry_rollup_level_event", observations.LEVEL_KEY, observations.LEVEL_COLUMNS,
+             contribution.observations.levels, None),
+            ("telemetry_rollup_encounter", observations.EPISODE_KEY, observations.EPISODE_COLUMNS,
+             contribution.observations.episodes, observations.merge_episode),
+            ("telemetry_rollup_encounter_participant", observations.PARTICIPANT_KEY, observations.PARTICIPANT_COLUMNS,
+             contribution.observations.participants, observations.merge_participant),
+            ("telemetry_rollup_combat_actor", observations.ACTOR_KEY, observations.ACTOR_COLUMNS,
+             contribution.observations.actors, observations.merge_actor),
+        )
+        for table, keys, columns, deltas, merge in families:
+            for key in sorted(deltas, key=repr):
+                rows, _, _ = self._execute(
+                    "SELECT " + ",".join(columns) + " FROM " + table + " FORCE INDEX(PRIMARY) WHERE " +
+                    " AND ".join(name + "=%s" for name in keys) + " LIMIT 1 FOR UPDATE", key)
+                existing = rows[0] if rows else None
+                try:
+                    if merge is None:
+                        projected = deltas[key]
+                        if existing is not None and dict(existing) != projected:
+                            raise observations.ObservationError("level_replay_conflict")
+                    else:
+                        projected = merge(existing, deltas[key])
+                except observations.ObservationError as error:
+                    raise SemanticError(str(error)) from error
+                # Values are absolute after the Python merge, so SQL never
+                # adds a repeated leave/summary or an actor snapshot.
+                update = ",".join(name + "=VALUES(" + name + ")" for name in columns if name not in keys)
+                self._execute("INSERT INTO " + table + " (" + ",".join(columns) + ") VALUES (" +
+                              ",".join(["%s"] * len(columns)) + ") ON DUPLICATE KEY UPDATE " + update,
+                              tuple(projected[name] for name in columns))
 
     def _materialize_page(
         self,
@@ -1745,12 +1797,13 @@ class PyMySQLRollupDatabase:
         max_rows: int = REPORT_ROW_LIMIT_DEFAULT,
         max_bytes: int = REPORT_BYTE_LIMIT_DEFAULT,
     ) -> tuple[list[Mapping[str, Any]], bool]:
-        definition = report_definition(report_name)
+        definition = report_definition(report_name, target.definition_version)
         table_and_columns = REPORT_TABLES.get(definition.name)
         if table_and_columns is None:
             raise ValueError(f"report has no executable aggregate query: {definition.name}")
-        limit, fetch_limit = _report_fetch_limits(max_rows, max_bytes)
         table, columns = table_and_columns
+        row_bound = max(REPORT_ROW_BYTE_BOUND, 32 + sum(len(name) + 8 + 32 for name in columns))
+        limit, fetch_limit = _report_fetch_limits(max_rows, max_bytes, row_bound)
         order_by = REPORT_ORDER_BY[definition.name]
         rows, _count, _ = self._execute(
             "SELECT " + ",".join(columns) + " FROM " + table
@@ -1786,7 +1839,7 @@ class PyMySQLRollupDatabase:
                 if not available:
                     for name in COUNTER_FIELDS:
                         row[name] = None
-            elif report_name == "cohort_activity":
+            elif report_name in ("cohort_activity", "progression_observations"):
                 if row.get("utc_day") == UNKNOWN_DAY:
                     row["utc_day"] = None
                     row["bucket_kind"] = "unknown"
@@ -1805,7 +1858,7 @@ class PyMySQLRollupDatabase:
         max_runtime_s: float = REPORT_RUNTIME_DEFAULT_S,
     ) -> ReportSnapshot:
         target.__post_init__()
-        definition = report_definition(report_name)
+        definition = report_definition(report_name, target.definition_version)
         _report_fetch_limits(max_rows, max_bytes)
         self._prepare_report_budget(max_runtime_s, max_bytes, reserve_sentinel=True)
         # The writer uses READ COMMITTED, but report metadata and contributions

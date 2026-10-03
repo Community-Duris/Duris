@@ -9,6 +9,11 @@ Migration 0054 adds [reviewed incident coverage](INCIDENT_COVERAGE.md): publicat
 atomically copies a bounded registry version, and report coverage displays its
 known and possible gaps without creating missing activity or synthetic exits.
 It must use a dedicated rollup database identity.
+Definition 2 additionally publishes the existing progression/encounter/combat
+families into five bounded stores. The [observation contracts and executable
+reports](OBSERVATION_PROJECTIONS.md) preserve cumulative effort, ownership, source
+status and unknown tails. Definition 1 validates and advances over those records
+without changing its playtime totals.
 
 ## Public Python API
 
@@ -53,7 +58,7 @@ finally:
 ```
 
 `RollupTarget` validates all four identity fields and currently accepts only
-`definition_version=1`. `origin_ingest_id` is immutable per generation and is
+`definition_version=1` or `2`. `origin_ingest_id` is immutable per generation and is
 the initial cursor for a newly bootstrapped state row. `through_ingest_id` is a
 fixed inclusive high-water bound; rows arriving later are intentionally left
 for a later invocation. A generation can be processed in pages while a
@@ -181,7 +186,8 @@ not defined here.
   by the state row). Reaching a fixed input watermark does not prove a crash
   tail was observed or that arbitrarily late facts can never arrive.
 
-Raw quality bits 0..8 are preserved. The engine reserves these v1 rollup bits:
+Raw quality bits 0..9 are preserved, including cardinality overflow bit 9.
+The engine reserves these rollup bits:
 
 | Bit | Meaning |
 | ---: | --- |

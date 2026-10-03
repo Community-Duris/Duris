@@ -718,6 +718,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "87910e4bfdff86b1557ca5d390a58a15bf9373336b09dc8a6d15f36bebb6795b",
       "verify_checksum": "7082566a54e2acd60496a90971761ff36fb606c0d9ccbd0eded9fc908b736e0d"
+    },
+    {
+      "id": "0055_telemetry_observation_projections",
+      "sequence": 55,
+      "description": "Project collected progression encounter and combat observations at definition 2",
+      "apply": "immutable/0055_telemetry_observation_projections.sql",
+      "verify": "immutable/0055_telemetry_observation_projections.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "b39e37286927c8f94cb32e3ca3aff73658a1a8f317e13f6d99d3b065ee04063c",
+      "verify_checksum": "6f5e2dd39410bb4a2417ecef028cecb2906abf15408b51dd9cfdff0ade630ce9"
     }
   ]
 }

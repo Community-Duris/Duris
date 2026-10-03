@@ -6,7 +6,10 @@ stores described below. Migration `0030_telemetry_quarantine` adds a durable,
 operator-controlled quarantine for record-specific SQL failures. Migration
 `0054_telemetry_incident_coverage` adds the four reviewed/published incident stores.
 Existing immutable migrations retain their original content and checksums; the
-current complete runtime inventory is 229 tables through migration 0054.
+current complete runtime inventory is 234 tables through migration 0055.
+Migration `0055_telemetry_observation_projections` adds five bounded definition 2
+stores for already collected progression, encounter and combat facts. See
+[OBSERVATION_PROJECTIONS.md](OBSERVATION_PROJECTIONS.md) for their grains and limits.
 
 | Table | Grain and ownership |
 | --- | --- |
@@ -22,6 +25,8 @@ current complete runtime inventory is 229 tables through migration 0054.
 | `telemetry_reward_projection` / `telemetry_reward_projection_state` | Versioned committed reward projection and its external source/publication cursors; see [REWARD_PROJECTION.md](REWARD_PROJECTION.md). |
 | `telemetry_incident_registry` / `telemetry_incident` | Consecutive retained reviewed inventories at environment/season/version grain, with bounded incident identities, nullable ends, verified post-fix replay references and explicit backlog/provenance. Restricted registrar owns append-only insertion. |
 | `telemetry_rollup_incident_coverage` / `telemetry_rollup_incident` | Bounded reviewed coverage copied at report definition/generation/environment/season grain during atomic publication. Reports read these copies without registry/raw access. |
+| `telemetry_rollup_progression_day` / `telemetry_rollup_level_event` | Definition 2 XP source cells and original level-transition observations; mutable status and threshold consumption remain explicit. |
+| `telemetry_rollup_encounter` / `telemetry_rollup_encounter_participant` / `telemetry_rollup_combat_actor` | Original encounter start/close evidence, absolute cumulative participant effort and latest ownership-aware actor contributions; no inferred shared battle or zone clear. |
 
 The tagged fact stream stores named columns, with SQL NULL for fields absent from
 the selected kind. Allowed all-zero session and connection references remain zero
@@ -57,7 +62,9 @@ atomically. Provisional defaults to 1; nullable occurrence bounds mean unknown.
 Count columns represent the declared daily grain and cannot be summed to infer
 multi-day distinct subjects or accounts. `observed_intervals` counts duration
 facts only; lifecycle/gap/config/checkpoint rows contribute no interval duration.
-Future rollup implementation and report activation remain separate issues.
+Definition 1 activity semantics remain unchanged. Definition 2 publishes additional
+typed observations through the same cursor and publication transaction; full
+balance reports and final local activation qualification remain in progress.
 
 ## Roles and activation
 
@@ -97,7 +104,11 @@ sequential writer with ambiguous commits resolved before later batches.
 
 ## Lifecycle and recovery
 
-All fifteen SQL telemetry stores are registered in `migrations/data_lifecycle_manifest.json` with
+Definition 2 additionally requires rollup SELECT/INSERT/UPDATE and report SELECT
+on the five stores listed in [OBSERVATION_PROJECTIONS.md](OBSERVATION_PROJECTIONS.md).
+Writer and incident-registrar permissions do not expand.
+
+All twenty SQL telemetry stores are registered in `migrations/data_lifecycle_manifest.json` with
 season and terminal action `retain`, pending retention/archive/controller/export
 decisions, and destructive rules disabled. The fact/config/state stores protect
 replay and rebuild evidence. Telemetry is observational and never an economic or

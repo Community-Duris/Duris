@@ -8511,6 +8511,166 @@
       "dependencies": [
         "database:telemetry_rollup_incident_coverage"
       ]
+    },
+    {
+      "id": "database:telemetry_rollup_progression_day",
+      "kind": "database_table",
+      "locator": "telemetry_rollup_progression_day",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "environment_season_subject_id_and_pid_or_captured_actor_owner",
+      "technical_purpose": "Published definition 2 typed observations with source status, replay and cumulative effort evidence",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_rollup_state",
+        "database:telemetry_interval"
+      ]
+    },
+    {
+      "id": "database:telemetry_rollup_level_event",
+      "kind": "database_table",
+      "locator": "telemetry_rollup_level_event",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "environment_season_subject_id_and_pid_or_captured_actor_owner",
+      "technical_purpose": "Published definition 2 typed observations with source status, replay and cumulative effort evidence",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_rollup_state",
+        "database:telemetry_interval"
+      ]
+    },
+    {
+      "id": "database:telemetry_rollup_encounter",
+      "kind": "database_table",
+      "locator": "telemetry_rollup_encounter",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "environment_season_encounter_identity_related_participants",
+      "technical_purpose": "Published definition 2 typed observations with source status, replay and cumulative effort evidence",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_rollup_state",
+        "database:telemetry_interval"
+      ]
+    },
+    {
+      "id": "database:telemetry_rollup_encounter_participant",
+      "kind": "database_table",
+      "locator": "telemetry_rollup_encounter_participant",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "environment_season_subject_id_and_pid_or_captured_actor_owner",
+      "technical_purpose": "Published definition 2 typed observations with source status, replay and cumulative effort evidence",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_rollup_state",
+        "database:telemetry_interval"
+      ]
+    },
+    {
+      "id": "database:telemetry_rollup_combat_actor",
+      "kind": "database_table",
+      "locator": "telemetry_rollup_combat_actor",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "environment_season_subject_id_and_pid_or_captured_actor_owner",
+      "technical_purpose": "Published definition 2 typed observations with source status, replay and cumulative effort evidence",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_rollup_state",
+        "database:telemetry_interval"
+      ]
     }
   ]
 }
