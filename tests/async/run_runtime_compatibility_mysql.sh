@@ -33,12 +33,10 @@ for step in m.load_manifest().migrations:
 PYTHON
 )
 mapfile -t MIGRATION_FILES <<< "$migration_files"
-for file in bootstrap_multithread_safe.sql "${MIGRATION_FILES[@]}" runtime_compatibility_manifest.json verify_runtime_compatibility.sh; do
-    docker cp "$ROOT/migrations/$file" "$NAME:/tmp/$(basename "$file")" >/dev/null
-    if [[ "$file" == *.sh ]]; then
-        docker exec "$NAME" chmod +x "/tmp/$(basename "$file")"
-    fi
-done
+# Sealed verifiers can call siblings by relative path. Preserve their layout
+# instead of flattening the manifest into /tmp and breaking those dependencies.
+docker exec "$NAME" mkdir -p /tmp/migrations
+docker cp "$ROOT/migrations/." "$NAME:/tmp/migrations/" >/dev/null
 
 # The pre-b029 launcher created server_reboots outside the migration system.
 # Prove that 0004 converts that exact shape, preserves every row, removes its
@@ -69,10 +67,10 @@ VALUES
 "
 for _ in 1 2; do
     docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
-        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/0004_server_reboots.sql"
+        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/migrations/immutable/0004_server_reboots.sql"
     docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
         -e DB_PASSWD="$PASSWORD" -e DB_NAME="$LEGACY_DB_NAME" \
-        "$NAME" /tmp/0004_server_reboots.sh >/dev/null
+        "$NAME" bash /tmp/migrations/immutable/0004_server_reboots.sh >/dev/null
 done
 LEGACY_MYSQL=(docker exec -i -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -N -B "$LEGACY_DB_NAME")
 legacy_rows=$("${LEGACY_MYSQL[@]}" -e "
@@ -125,10 +123,10 @@ WHERE table_schema=DATABASE() AND table_name='kingdom_realms';")
 [[ "$legacy_realm_collation" == utf8mb4_general_ci ]]
 for _ in 1 2; do
     docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
-        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/0006_kingdom_realms.sql"
+        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/migrations/immutable/0006_kingdom_realms.sql"
     docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
         -e DB_PASSWD="$PASSWORD" -e DB_NAME="$LEGACY_DB_NAME" \
-        "$NAME" /tmp/0006_kingdom_realms.sh >/dev/null
+        "$NAME" bash /tmp/migrations/immutable/0006_kingdom_realms.sh >/dev/null
 done
 legacy_realm_row=$("${LEGACY_MYSQL[@]}" -e "
 SELECT CONCAT_WS(':',assoc_id,realm_id,hall_vnum,highest_claim,res_mineral,
@@ -187,17 +185,17 @@ VALUES (UNHEX(REPEAT('11',16)),UNHEX(REPEAT('22',32)),UNHEX(REPEAT('33',32)),
         17,1,1,3,116,4,'');"
 for _ in 1 2; do
     docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
-        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/0029_critical_failure_stage.sql"
+        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/migrations/immutable/0029_critical_failure_stage.sql"
     docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
         -e DB_PASSWD="$PASSWORD" -e DB_NAME="$LEGACY_DB_NAME" \
-        "$NAME" /tmp/0029_critical_failure_stage.sh >/dev/null
+        "$NAME" bash /tmp/migrations/immutable/0029_critical_failure_stage.sh >/dev/null
 done
 legacy_failure_stage=$("${LEGACY_MYSQL[@]}" -e "
 SELECT CONCAT(COUNT(*),':',SUM(failure_stage=0),':',MIN(result_code),':',MIN(durable_revision))
 FROM critical_operation_inbox;")
 [[ "$legacy_failure_stage" == "1:1:116:4" ]]
 
-docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c "mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/bootstrap_multithread_safe.sql"
+docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c "mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/migrations/bootstrap_multithread_safe.sql"
 # Apply every registered step and its verifier, including an exact replay.
 for replay in 1 2; do
     for file in "${MIGRATION_FILES[@]}"; do
@@ -210,11 +208,11 @@ for replay in 1 2; do
         fi
         if [[ "$file" == *.sql ]]; then
             docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
-                "mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/$(basename "$file")"
+                "mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/migrations/$file"
         else
             docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
                 -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" \
-                "$NAME" "/tmp/$(basename "$file")" >/dev/null
+                "$NAME" bash "/tmp/migrations/$file" >/dev/null
         fi
     done
 done
@@ -246,7 +244,7 @@ MYSQL=(docker exec -i -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot 
 history_checksum=$("${MYSQL[@]}" -e "SELECT LOWER(HEX(history_checksum)) FROM mud_schema_migration_state WHERE state_id=1;")
 "${MYSQL[@]}" -e "CREATE TABLE imported_extension_probe (id INT PRIMARY KEY, note VARCHAR(32)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; INSERT INTO imported_extension_probe VALUES (1, 'preserved');"
 
-verify() { docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" -e RUNTIME_COMPATIBILITY_MANIFEST=/tmp/runtime_compatibility_manifest.json "$NAME" /tmp/verify_runtime_compatibility.sh; }
+verify() { docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" -e RUNTIME_COMPATIBILITY_MANIFEST=/tmp/migrations/runtime_compatibility_manifest.json "$NAME" bash /tmp/migrations/verify_runtime_compatibility.sh; }
 expect_reject() { if verify >/dev/null 2>&1; then echo "runtime drift was accepted: $1" >&2; exit 1; fi; }
 verify >/dev/null
 for table in player_death_disposition player_death_custody kingdom_garrison epic_stone_claim telemetry_session telemetry_interval telemetry_config telemetry_player_day telemetry_cohort_day telemetry_rollup_state; do
