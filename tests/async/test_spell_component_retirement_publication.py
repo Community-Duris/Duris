@@ -89,14 +89,18 @@ def main() -> None:
     assert "target_pid" in faerie_publish
     assert "spell_component_retirement_save_effect(" in faerie_publish
     assert "operation_id, victim" in " ".join(faerie_publish.split())
+    identity_source = source("character_identity.c").read_text(encoding="utf-8")
+    identity = identity_source[identity_source.index("static uint64_t next_runtime_id = 0;"):]
     program = r'''
 #include <array>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <cstdlib>
 #include <new>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -122,6 +126,10 @@ constexpr size_t ITEM_MOVEMENT_PENDING_MAX = 1024;
 constexpr size_t ITEM_MOVEMENT_CONTEXT_MAX_BYTES = 256;
 constexpr size_t ITEM_TRANSFER_MAX_ITEMS = 16;
 P_char character_list = nullptr;
+static const auto game_thread = std::this_thread::get_id();
+bool nevent_require_game_thread(const char *) { return std::this_thread::get_id() == game_thread; }
+void panic_corruption(const char *, const char *, ...) { std::abort(); }
+@IDENTITY@
 constexpr int LOG_FILE = 1;
 enum class item_spell_component_effect { faerie_sight = 1, spore_burst_initial, spore_burst_repeat, summon_insects, wall_of_bones, vines };
 struct critical_operation_id {
@@ -255,6 +263,21 @@ spell_component_effect_status spell_vines_component_retirement_completed(const c
 int main() {
     character actor;
     character other;
+    actor.runtime_id = allocate_character_runtime_id();
+    register_character_runtime_id(&actor);
+    character_list = &actor;
+    const auto stale_actor_id = actor.runtime_id;
+    unregister_character_runtime_id(&actor);
+    assert(find_character_by_runtime_id(stale_actor_id) == nullptr);
+    actor.runtime_id = allocate_character_runtime_id();
+    register_character_runtime_id(&actor);
+    assert(find_character_by_runtime_id(stale_actor_id) == nullptr);
+    assert(find_character_by_runtime_id(actor.runtime_id) == &actor);
+    bool worker_refused = false;
+    std::thread worker([&] { worker_refused = find_character_by_runtime_id(actor.runtime_id) == nullptr; });
+    worker.join();
+    assert(worker_refused);
+    character_list = nullptr;
     object first {10, nullptr, &actor};
     object second {20, nullptr, &actor};
     first.next = &second;
@@ -372,6 +395,11 @@ int main() {
     character recipient;
     recipient.pid = 43;
     recipient.runtime_id = 200;
+    register_character_runtime_id(&recipient);
+    unregister_character_runtime_id(&recipient);
+    ++recipient.runtime_id;
+    register_character_runtime_id(&recipient);
+    assert(find_character_by_runtime_id(200) == nullptr);
     character_list = &recipient;
     std::vector<uint8_t> terms;
     auto put = [&](uint64_t value, size_t bytes) {
@@ -406,6 +434,7 @@ int main() {
     assert(!spell_component_retirement_replayed_publication(operation_id, &actor, true,
         result, 0, restored_context.data(), restored_size));
     spell_component_retirement_save_completed(43, true, &target_receipt, 1);
+    unregister_character_runtime_id(&recipient);
     character_list = nullptr;
     assert(spell_component_retirement_replayed_publication(operation_id, &actor, true,
         result, 0, restored_context.data(), restored_size));
@@ -417,6 +446,7 @@ int main() {
     assert(!spell_component_retirement_replayed_publication(operation_id, &actor, true,
         result, 0, restored_context.data(), restored_size));
     assert(spell_component_retirement_waiting_for_effect(operation_id));
+    register_character_runtime_id(&recipient);
     character_list = &recipient;
     assert(!spell_component_retirement_replayed_publication(operation_id, &actor, true,
         result, 0, restored_context.data(), restored_size));
@@ -443,6 +473,7 @@ int main() {
     assert(spell_component_retirement_restore_replayed_effect(operation_id, 42, 1, 43));
     player_load_spell_effect_receipt loaded_target {operation_id, 1};
     spell_component_retirement_recover_receipts(43, &loaded_target, 1);
+    unregister_character_runtime_id(&recipient);
     character_list = nullptr;
     assert(spell_component_retirement_replayed_publication(operation_id, &actor, true,
         result, 0, restored_context.data(), restored_size));
@@ -451,6 +482,7 @@ int main() {
     // Moving away preserves the existing fizzle outcome with a durable receipt.
     assert(spell_component_retirement_restore_replayed_effect(operation_id, 42, 1, 43));
     recipient.in_room = 1;
+    register_character_runtime_id(&recipient);
     character_list = &recipient;
     assert(!spell_component_retirement_replayed_publication(operation_id, &actor, true,
         result, 0, restored_context.data(), restored_size));
@@ -567,17 +599,23 @@ int main() {
         payload.items[index] = {100 + index, 100 + index, 0};
     assert(!spell_component_retirement_restore_context(payload, &restored_context,
         &restored_size, &restored_effect, &restored_owner));
+    unregister_character_runtime_id(&recipient);
+    unregister_character_runtime_id(&actor);
+    character_list = nullptr;
+    assert(character_runtime_index_is_consistent());
 }
 '''
+    program = program.replace("@IDENTITY@", identity)
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory)
         source_file = path / "spell_component_retirement.cpp"
         binary = path / "spell_component_retirement"
         source_file.write_text(program, encoding="utf-8")
         subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Werror",
+                        "-g", "-Og", "-pthread", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
                         "-fsanitize=address,undefined", str(source_file), "-o", str(binary)],
-                       check=True)
-        subprocess.run([str(binary)], check=True)
+                       check=True, timeout=120)
+        subprocess.run([str(binary)], check=True, timeout=30)
     print("spell component publication: ok")
 
 

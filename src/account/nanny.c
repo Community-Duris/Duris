@@ -2648,7 +2648,7 @@ void nanny_player_load_complete(P_desc d, player_load_result result)
 		STATE(d) = CON_NAME;
 		return;
 	}
-	if (!player_save_pipeline_save_admitted(result.pid))
+	if (!player_save_pipeline_authoritative_hydration_admitted(result.pid))
 	{
 		result.outcome = player_load_outcome::degraded;
 		result.degraded_components |= PLAYER_LOAD_DEGRADED_RECOVERY;

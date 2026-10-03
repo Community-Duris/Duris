@@ -33,8 +33,8 @@ def authored(vnum):
     raise AssertionError(f'missing authored object {vnum}')
 
 
-def run(binary, mode='file', creation_save_only=False, recipe_only=False, material_downgrade=False):
-    assert mode in ('file', 'redis')
+def run(binary, mode='file', creation_save_only=False, recipe_only=False, material_downgrade=False, active_alchemy_only=False):
+    assert mode in ('file', 'redis', 'sql')
     assert not (creation_save_only and recipe_only), 'select one focused journey'
     assert not material_downgrade or recipe_only, 'material downgrade extends the recipe journey'
     with tempfile.TemporaryDirectory(prefix='alchemist-crafting-journey-') as temporary:
@@ -102,7 +102,7 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False, materi
             DURIS_TLS_PORT=str(tls), DURIS_WEBSOCKET_PORT=str(ws),
             DURIS_WEBSOCKET_LISTEN_ADDRESS='127.0.0.1', DURIS_NEVENT_TRACE_PLAYER='1')
         database = None
-        if mode == 'redis':
+        if mode != 'file':
             host = os.environ['TEST_DB_HOST']
             assert host in ('127.0.0.1', 'localhost')
             assert os.environ.get('TEST_DB_DISPOSABLE') == '1', 'disposable database opt-in required'
@@ -151,6 +151,19 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False, materi
             'assert(flatfile_atomic_write(flatfile_player_snapshot_file::player_directory(root),'
             'flatfile_player_snapshot_file::player_filename(pid),bytes,&error)); return 0; } '
             'for (auto &field : snapshot.status_integers) {')
+        if active_alchemy_only:
+            source = source.replace('snapshot.skills.push_back({1308,100,100});',
+                                    'snapshot.skills.push_back({1308,70,100});')
+            # Give this fixture the real Rogue/Assassin skill entitlement. The
+            # older staff control used 100% granted skills on a Warrior.
+            source = source.replace('for (auto &field : snapshot.status_integers) {',
+                'for (auto &field : snapshot.status_integers) { '
+                'if (field.field==player_status_field::class_primary) field.signed_value=field.unsigned_value=4096; '
+                'if (field.field==player_status_field::specialization) field.signed_value=field.unsigned_value=1; ')
+            source = source.replace('if (argc==3) { for (auto &field:',
+                'if (argc==3 && std::string(argv[2])=="skill") { for (auto &skill:snapshot.skills) '
+                'if (skill.skill_id==1308) { std::cout << static_cast<int>(skill.learned) << std::endl; return 0; } } '
+                'if (argc==3) { for (auto &field:')
         cpp = root / 'staff.cpp'
         cpp.write_text(source)
         fixture = root / 'staff'
@@ -179,8 +192,10 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False, materi
         def boot():
             nonlocal process, output
             output = (runtime / 'server.out').open('w')
-            process = subprocess.Popen([str(runtime / 'bin/server/dms'), '--minimal', '-s', str(port)],
-                cwd=runtime, env=env, stdout=output, stderr=subprocess.STDOUT)
+            arguments = ['--minimal', '--persistent-transport'] if active_alchemy_only else ['--minimal', '-s']
+            process = subprocess.Popen([str(runtime / 'bin/server/dms'), *arguments, str(port)],
+                cwd=runtime, env=env, stdout=output, stderr=subprocess.STDOUT,
+                start_new_session=True)
             deadline = time.monotonic() + 90
             while 'Entering game loop.' not in (runtime / 'server.out').read_text(errors='replace'):
                 assert process.poll() is None and time.monotonic() < deadline, 'boot failed'
@@ -207,9 +222,10 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False, materi
                 save_items()
             return result
 
-        def save_items():
-            client.send('save')
-            client.expect('Save complete for Taverek.', timeout=30)
+        def save_items(checkpoint=True):
+            if checkpoint:
+                client.send('save')
+                client.expect('Save complete for Taverek.', timeout=30)
             if mode == 'file':
                 return journey.inspect_authority(state)['player_items']
             rows = sql("SELECT own.item_uid,own.vnum,own.root_item_uid,COALESCE(own.parent_item_uid,0) "
@@ -239,7 +255,11 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False, materi
                         f"SELECT pid,{skill_id},100,100 FROM player_data WHERE name='Taverek' "
                         "ON DUPLICATE KEY UPDATE learned=100,taught=100")
                 sql("INSERT INTO player_recipes(pid,recipe_vnum) SELECT pid,30101 FROM player_data WHERE name='Taverek'")
-                env.update(REDIS='TRUE', REDIS_HOST='127.0.0.1', REDIS_PORT=str(redis_port),
+                if active_alchemy_only:
+                    sql("UPDATE player_data SET m_class=4096,spec=1 WHERE name='Taverek'")
+                    sql("UPDATE player_skills s JOIN player_data p ON p.pid=s.pid SET s.learned=70 WHERE p.name='Taverek' AND s.skill_id=1308")
+                if mode == 'redis':
+                    env.update(REDIS='TRUE', REDIS_HOST='127.0.0.1', REDIS_PORT=str(redis_port),
                     REDIS_NAMESPACE='duris:local:alchemist-' + database.split('_')[-1],
                     REDIS_WORLD_STATE='TRUE',
                     REDIS_WORLD_STATE_INTERVAL='5',
@@ -247,6 +267,154 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False, materi
             boot()
             client = journey.reconnect_character(port)
             command('toggle paging')
+            if active_alchemy_only:
+                # Account creation and staff setup are inactive fixture preparation;
+                # #568 and the separate NPC vial producer are outside this journey.
+                for vnum, count in ((102, 3), (806, 3), (808, 3), (677, 3),
+                                    (400291, 3), (400230, 3)):
+                    for _ in range(count):
+                        command(f'load obj {vnum}', .1)
+                seeded = save_items()
+                client.send('quit')
+                client.expect('ACCOUNT MENU', timeout=30)
+                stop()
+                marker = runtime / 'active-551.fixture'
+                gate = runtime / 'publication-551.gate'
+                env.update(DURIS_551_ACTIVE_FIXTURE=str(marker),
+                           DURIS_551_PUBLICATION_GATE=str(gate),
+                           DURIS_551_ENCRUST_FAILURE=str(runtime / "encrust-failure.fixture"))
+                if mode == 'file':
+                    subprocess.run([str(journey.ROOT / 'bin/tests/issue551-flatfile-fixture'),
+                                    '--activate-fixture', str(state)], check=True)
+                else:
+                    sql("INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,command_type,schema_version,payload_version,status,result_payload) VALUES(UNHEX('4a000000000000000000000000000000'),REPEAT(CHAR(1),32),REPEAT(CHAR(2),32),1,1,1,1,X'')")
+                    sql("INSERT INTO economic_epoch(lineage,epoch,ordinal,predecessor,transition_kind,transition_digest,creating_operation_id) VALUES(UNHEX('47000000000000000000000000000000'),UNHEX('48000000000000000000000000000000'),1,NULL,1,REPEAT(CHAR(0),32),UNHEX('4a000000000000000000000000000000'))")
+                    sql("INSERT INTO economic_lineage_state(lineage,active_epoch,revision) VALUES(UNHEX('47000000000000000000000000000000'),NULL,0)")
+                marker.write_text('isolated #551 active route qualification\n')
+                boot()
+                client = journey.reconnect_character(port)
+                def pairs(items):
+                    return {(item['uid'], item['vnum']) for item in items}
+                def learned():
+                    if mode == 'file':
+                        return int(subprocess.check_output([str(fixture), str(state), 'skill'], text=True))
+                    return int(sql("SELECT learned FROM player_skills s JOIN player_data p ON p.pid=s.pid WHERE p.name='Taverek' AND skill_id=1308"))
+                assert pairs(save_items()) == pairs(seeded)
+                if mode != 'file':
+                    assert sql("SELECT HEX(active_epoch) FROM economic_lineage_state") == '48000000000000000000000000000000'
+                observations = []
+                before = save_items()
+                poison_inputs = {item['uid'] for item in before if item['vnum'] in (102,806,808)}
+                assert len(poison_inputs) == 9
+                gate.write_text('refuse the publication checkpoint after durable skill save\n')
+                client.send('mixpoison')
+                client.expect('You finish mixing 3 poisons.', timeout=60)
+                deadline = time.monotonic() + 10
+                while 'ISSUE551_FIXTURE_PUBLICATION_REFUSED' not in (runtime / 'server.out').read_text(errors='replace'):
+                    assert time.monotonic() < deadline, 'publication fault fixture was not linked'
+                    time.sleep(.02)
+                committed = save_items(False)
+                poison_outputs = {item['uid'] for item in committed if item['vnum'] == 470}
+                assert len(poison_outputs) == 3
+                observations.append((3, poison_inputs, poison_outputs))
+                assert poison_inputs.isdisjoint({item['uid'] for item in committed})
+                frozen_learned = learned()
+                assert 70 <= frozen_learned <= 100
+                # The durable operation is still retained: refuse ACK, kill the
+                # server, then recover the exact result and saved notch receipt.
+                os.killpg(process.pid, signal.SIGKILL)
+                process.wait(timeout=30)
+                stop()
+                gate.unlink()
+                boot()
+                client = journey.reconnect_character(port)
+                assert pairs(save_items()) == pairs(committed)
+                assert learned() == frozen_learned
+                command('mixpoison', .2)
+                assert pairs(save_items()) == pairs(committed)
+                print('PASS active three-unit poison batch: exact 9-input retirement, 3 output UIDs, frozen skill, retained ACK/crash replay and retry', flush=True)
+                before = save_items()
+                # Refuse publication acknowledgement, then disconnect after
+                # the committed result is observed. The owner must reconnect
+                # while the operation is still retained.
+                shard_inputs = {item['uid'] for item in before if item['vnum'] == 400230}
+                gate.write_text('retain committed exchange across disconnect\n')
+                client.send('buy 1')
+                client.expect('The Harvester accepts the soul shards', timeout=60)
+                client.close()
+                client = None
+                time.sleep(.5)
+                client = journey.reconnect_character(port, allow_linkdead=True)
+                gate.unlink()
+                exchanged = save_items()
+                assert shard_inputs.isdisjoint({item['uid'] for item in exchanged})
+                orb_outputs = {item['uid'] for item in exchanged if item['vnum'] == 400231}
+                assert len(orb_outputs) == 1
+                observations.append((6, shard_inputs, orb_outputs))
+                command('buy 1', .2)
+                assert pairs(save_items()) == pairs(exchanged)
+                print('PASS active Harvester exchange: exact shard retirement, one orb UID, retained disconnect/reconnect and retry', flush=True)
+                for attempt in range(3):
+                    before = save_items()
+                    client.send('encrust mace green')
+                    result, _ = client.expect_any(('Hurrah! Hurrah!', 'You broke your item in the process.'), 60)
+                    after = save_items()
+                    retired = {item['uid'] for item in before} - {item['uid'] for item in after}
+                    fresh = [item for item in after if item['uid'] not in {old['uid'] for old in before}]
+                    assert len(retired) == 2
+                    assert len(fresh) == (1 if result == 'Hurrah! Hurrah!' else 0)
+                    observations.append((4 if fresh else 5, retired, {item['uid'] for item in fresh}))
+                    if result == 'Hurrah! Hurrah!':
+                        break
+                else:
+                    raise AssertionError('three active Encrust rolls failed')
+                before = save_items()
+                (runtime / 'encrust-failure.fixture').write_text('freeze failed roll 110 before admission\n')
+                gate.write_text('retain zero-output failure until restart\n')
+                # The successful replacement also has the mace keyword and is
+                # first in live inventory. Select the next original carried root.
+                client.send('encrust 2.mace green')
+                client.expect('You broke your item in the process.', timeout=60)
+                failed = save_items(False)
+                retired = {item['uid'] for item in before} - {item['uid'] for item in failed}
+                assert len(retired) == 2
+                assert pairs(failed) <= pairs(before), 'zero-output failure admitted an asset'
+                observations.append((5, retired, set()))
+                os.killpg(process.pid, signal.SIGKILL)
+                process.wait(timeout=30)
+                stop()
+                gate.unlink()
+                (runtime / 'encrust-failure.fixture').unlink()
+                boot()
+                client = journey.reconnect_character(port)
+                assert pairs(save_items()) == pairs(failed)
+                print('PASS active Encrust zero-output failure: exact two-input retirement and retained crash replay without reroll', flush=True)
+                expected = pairs(save_items())
+                process.send_signal(signal.SIGUSR1)
+                client.expect('Copyover complete!', timeout=90)
+                assert pairs(save_items()) == expected and learned() == frozen_learned
+                for _ in range(2):
+                    client.send('quit')
+                    client.expect('ACCOUNT MENU', timeout=30)
+                    stop()
+                    boot()
+                    client = journey.reconnect_character(port)
+                    assert pairs(save_items()) == expected and learned() == frozen_learned
+                if mode != 'file':
+                    # Native craft reason34 maps to accounting crafting_cost17.
+                    receipts = sql("SELECT HEX(p.operation_id),p.discipline,p.applied_revision FROM player_craft_progression p JOIN economic_accounting_operation o ON o.operation_id=p.operation_id WHERE o.reason=17 ORDER BY o.recorded_at,o.operation_id")
+                    rows = [row.split('\t') for row in receipts.splitlines()]
+                    assert len(rows) == len(observations), (rows, observations)
+                    for (operation_id, discipline, revision), (expected_discipline, inputs, outputs) in zip(rows, observations):
+                        assert int(discipline) == expected_discipline and int(revision) > 0
+                        clause = "operation_id=UNHEX('" + operation_id + "')"
+                        referenced = {int(uid) for uid in sql("SELECT item_uid FROM economic_accounting_item_reference WHERE " + clause).splitlines()}
+                        assert referenced == inputs | outputs, (operation_id, referenced, inputs, outputs)
+                        assert sql("SELECT COUNT(*) FROM economic_accounting_source_claim WHERE " + clause) == '1'
+                    assert sql("SELECT COUNT(*) FROM player_craft_progression WHERE discipline IN(3,4,5,6) AND applied_revision=0") == '0'
+                    print('PASS exact source claims, accounting root/input/output references and durable player publication receipts', flush=True)
+                print('PASS active poison/Encrust/Harvester identities and conservation through copyover and two cold restarts', flush=True)
+                return
             if not recipe_only:
                 granted = []
                 for index in range(200):
@@ -601,4 +769,4 @@ def run(binary, mode='file', creation_save_only=False, recipe_only=False, materi
 if __name__ == '__main__':
     run(Path(sys.argv[1]).resolve(), sys.argv[2] if len(sys.argv) > 2 else 'file',
         '--creation-save-only' in sys.argv[3:], '--recipe-only' in sys.argv[3:],
-        '--material-downgrade' in sys.argv[3:])
+        '--material-downgrade' in sys.argv[3:], '--active-alchemy-only' in sys.argv[3:])

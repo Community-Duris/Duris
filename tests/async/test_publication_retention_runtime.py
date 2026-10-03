@@ -8,6 +8,8 @@ import tempfile
 from _paths import ROOT, rel
 
 HARNESS = r'''
+#define DURIS_CHARACTER_IDENTITY_TEST_PANIC_STUB
+#include "character_identity_test_fixture.h"
 #include "core/utils.h"
 #include "economy/economic_gameplay_authority.h"
 #include "economy/item_transfer_accounting.h"
@@ -84,7 +86,7 @@ void send_to_char(const char *, P_char) {}
 void persistence_alert(int, const char *, const char *, const char *, const char *, const char *, const char *, ...) {}
 void logit(const char *, const char *, ...) {}
 void statuslog(int, const char *, ...) {}
-int panic_corruption_int(const char *, const char *, ...) { return 0; }
+int panic_corruption_int(const char *, const char *, ...) { std::abort(); }
 void mark_player_dirty_components(int, uint64_t) {}
 bool player_save_pipeline_sealed_save_pending(int) { return false; }
 void collector_catalog_cache_invalidate() {}
@@ -216,6 +218,7 @@ void completion_callback(P_char actor, bool committed, const item_transfer_resul
 
 int main(int argc, char **argv)
 {
+    fixture_check_runtime_identity_retirement();
     assert(argc == 2);
     index_data indexes[2] = {};
     indexes[0].virtual_number = 42;
@@ -227,6 +230,7 @@ int main(int argc, char **argv)
     char_data actor = {};
     actor.only.pc = &player;
     actor.runtime_id = 7001;
+    fixture_character_registration identity(&actor);
     character_list = &actor;
 
     obj_data object = {};
@@ -282,6 +286,7 @@ int main(int argc, char **argv)
     assert(critical_command_coordinator_is_fenced(
         {critical_entity_type::player, 1001}, nullptr));
 
+    fixture_retire_character(&actor);
     character_list = nullptr;
     item_movement_transaction_handle_completions(nullptr, 0);
     assert(publication_attempts == 1);
@@ -289,6 +294,7 @@ int main(int argc, char **argv)
 
     char_data replacement = actor;
     replacement.runtime_id = 7002;
+    fixture_register_character(&replacement);
     character_list = &replacement;
     item_movement_transaction_handle_completions(nullptr, 0);
     assert(publication_attempts == 1);
@@ -296,6 +302,8 @@ int main(int argc, char **argv)
     assert(critical_command_coordinator_is_fenced(
         {critical_entity_type::item, object.obj_uid}, nullptr));
 
+    fixture_retire_character(&replacement);
+    fixture_register_character(&actor);
     character_list = &actor;
     item_movement_transaction_handle_completions(nullptr, 0);
     assert(publication_attempts == 2);
@@ -337,6 +345,7 @@ int main(int argc, char **argv)
     accounting_active = true;
     assert(item_movement_transaction_submit_craft(&actor, inputs, 1, outputs, 2,
         551, craft_callback, nullptr, 0, &reject));
+    fixture_retire_character(&actor);
     character_list = nullptr;
     bool craft_completed = false;
     for (int spin = 0; spin < 1000 && !craft_completed; ++spin) {
@@ -348,6 +357,7 @@ int main(int argc, char **argv)
     assert(craft_completed && craft_callbacks == 0 && extractions == 0);
     // Simulate an output lost from the live world after durable commit.
     output_a.next = &object;
+    fixture_register_character(&actor);
     character_list = &actor;
     item_movement_transaction_handle_completions(nullptr, 0);
     assert(restores == 1 && extractions == 0 && craft_callbacks == 0);
@@ -375,6 +385,7 @@ int main(int argc, char **argv)
     expected_craft_inputs = 2;
     assert(item_movement_transaction_submit_craft(&actor, inputs, 1, nullptr, 0,
         400291, craft_callback, nullptr, 0, &reject, &pouch, &usage, 1));
+    fixture_retire_character(&actor);
     character_list = nullptr;
     craft_completed = false;
     for (int spin = 0; spin < 1000 && !craft_completed; ++spin) {
@@ -385,6 +396,7 @@ int main(int argc, char **argv)
     }
     assert(craft_completed && pouch.ex_description == nullptr && extractions == 1 && craft_callbacks == 1);
     assert(critical_command_coordinator_is_fenced({critical_entity_type::item, pouch.obj_uid}, nullptr));
+    fixture_register_character(&actor);
     character_list = &actor;
     publication_malloc_fail = true;
     item_movement_transaction_handle_completions(nullptr, 0);
@@ -490,7 +502,10 @@ with tempfile.TemporaryDirectory(prefix="duris-publication-retention-") as tempo
         [
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
             "-D__NO_MYSQL__", "-pthread", "-ffunction-sections", "-fdata-sections",
-            "-Isrc", "-Isrc/no_mysql", str(source),
+            "-Isrc", "-Isrc/no_mysql", "-Itests/async", str(source),
+            rel("account/character_identity.c"),
+            "-g", "-Og", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
+            "-fno-pie", "-no-pie",
             rel("item/item_movement_transaction.c"), rel("item/item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"), rel("chaos_pouch_publication.c"), rel("player_snapshot_codec.c"),
             rel("item_transfer_accounting.c"), rel("economic_accounting_types.c"),
             rel("economic_accounting_plan.c"), rel("economic_accounting_intent.c"),

@@ -3,6 +3,7 @@
 #include "player/player_snapshot_codec.h"
 #include "core/structs.h"
 #include "item/craft_pouch_mutation.h"
+#include "item/craft_recipe_continuation.h"
 
 #include <cassert>
 #include <utility>
@@ -760,6 +761,73 @@ static void retained_pouch_is_an_update_and_never_a_source_lifetime()
 					    critical_deadline_class::interactive));
 }
 
+void bounded_poison_batch_has_exact_accounting_events()
+{
+	for (uint32_t count : { 1u, 2u, 64u })
+	{
+		item_transfer_payload payload = {};
+		payload.from_owner = payload.to_owner = { item_owner_type::player, 10, 0 };
+		payload.reason = item_transfer_reason::craft;
+		payload.reason_id = 470;
+		payload.expected_from_revision = payload.expected_to_revision = 3;
+		payload.selected_item_uid = 1000;
+		payload.multi_root = true;
+		payload.item_count = static_cast<uint16_t>(count * 3);
+		std::vector<economic_item_snapshot> inputs;
+		for (uint32_t index = 0; index < count * 3; ++index)
+		{
+			const uint64_t uid = 100 + index;
+			payload.items[index] = { uid, uid, 0, 2, 9001, item_custody_state::active };
+			inputs.push_back(
+				{ uid,
+				  { payload.from_owner, uid, 0, 2, item_custody_state::active } });
+		}
+		std::vector<player_item_snapshot> outputs(count);
+		for (uint32_t index = 0; index < count; ++index)
+		{
+			outputs[index].object_uid = 1000 + index;
+			outputs[index].vnum = 470;
+			outputs[index].parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+			outputs[index].equipment_slot = -1;
+		}
+		std::vector<uint8_t> bytes;
+		assert(player_item_snapshot_list_encode(outputs, &bytes) ==
+		       player_snapshot_codec_result::ok);
+		payload.item_blob_size = bytes.size();
+		std::copy(bytes.begin(), bytes.end(), payload.item_blob.begin());
+		craft_recipe_continuation terms;
+		terms.player_pid = 10;
+		terms.discipline = craft_recipe_discipline::poison;
+		terms.recipe_vnum = 470;
+		terms.output_uid = 1000;
+		terms.output_count = count;
+		terms.notch = { 70, 72, 100, 300 };
+		payload.continuation.kind = item_transfer_continuation_kind::craft_recipe;
+		assert(craft_recipe_continuation_encode(terms, &payload.continuation.data));
+		critical_command command;
+		assert(item_transfer_command_build(&command, id(90), payload,
+						   critical_source_site::command,
+						   critical_deadline_class::interactive));
+		std::vector<uint8_t> intent_bytes;
+		assert(item_transfer_accounting_intent(command, id(1), id(2), 10, &intent_bytes,
+						       economic_source_kind::crafting) ==
+		       error::ok);
+		command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+		command.accounting_intent = intent_bytes;
+		assert(item_transfer_accounting_command_supported(command));
+		economic_accounting_plan plan;
+		assert(item_transfer_craft_accounting_effects(payload, inputs, &plan) == error::ok);
+		assert(plan.item_events.size() == count * 4);
+		for (uint32_t index = 0; index < count * 3; ++index)
+			assert(plan.item_events[index].before.state == item_custody_state::active &&
+			       plan.item_events[index].after.state ==
+				       item_custody_state::destroyed);
+		for (uint32_t index = count * 3; index < count * 4; ++index)
+			assert(plan.item_events[index].before.state == item_custody_state::absent &&
+			       plan.item_events[index].after.state == item_custody_state::active);
+	}
+}
+
 int main()
 {
 	ordinary_moves_are_bound_to_actor_and_payload();
@@ -772,6 +840,7 @@ int main()
 	sourced_room_creation_and_item_retirement_are_bound_to_lifecycle_events();
 	corpse_custody_roots_bind_the_actor_and_exact_corpse();
 	craft_intent_and_native_effects_share_one_root();
+	bounded_poison_batch_has_exact_accounting_events();
 	retained_pouch_is_an_update_and_never_a_source_lifetime();
 	return 0;
 }

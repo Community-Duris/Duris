@@ -14,12 +14,22 @@ Current integration and native qualification are recorded in the
 [October 3 review status](REVIEW_STATUS_2026-10-03.md), with earlier results in the
 [October 2 review status](REVIEW_STATUS_2026-10-02.md) and
 [October 1 review status](REVIEW_STATUS_2026-10-01.md). Canonical, staging, and
-master-prefix histories now retain 53 receipts. The staging fork preserves its
-first 45 and appends eight; the master fork preserves its first 31 and appends
-22, retaining the existing runtime-state payloads. All three converge on the
-pinned 225-table schema on disposable MySQL 8.0.46 and MariaDB 10.11.14 targets.
-The writer inventory covers 864 routes, 2,815 occurrences and 2,756 unique sites
+master-prefix histories now retain 55 receipts, preserving published alchemy
+migration 0054 and adding exact room-item payload migration 0055. The staging
+fork preserves its first 45 and appends ten; the master fork preserves its first
+31 and appends 24, retaining existing runtime-state payloads. All three converge
+on the pinned 226-table schema on disposable MySQL 8.0.46 and MariaDB 10.11.14 targets.
+The writer inventory covers 868 routes, 2,817 occurrences and 2,758 unique sites
 with zero unmapped sites. These counts do not replace route qualification.
+
+Restored SQL ordinary-drop obligation registration and clean authoritative
+hydration now have bounded component qualification on both engines. Original
+operation release is actor independent and allocation-free, but production
+critical replay/publication ACK callers remain unwired. Current strict inactive
+flatfile creation/save/restart/relog journeys pass; initial production build
+deadline failures and component fixture setup failures remain preserved. The
+October 3 review status pins this milestone and its limits. Complete ordinary-drop
+producer/replay/copyover, historical receipt proof and all R1-R8 gates remain open.
 
 Independent reconciliation now checks every native item's parent edge even when
 lineage history replaces its epoch-local history or its opening origin is
@@ -236,7 +246,7 @@ roll boundaries. Both production profiles pass; compound salvage remains open.
 | Area | Implemented | Still required |
 | --- | --- | --- |
 | Player journal and staging fences | Staging's archive/PID policy, replay-prefix draining, and ACK retry are integrated with full-payload death/XP/spell proofs. Ordinary checkpoints retain operation frames. Unproven or terminal groups remain archived and fenced across restarts; transient/ambiguous results retain active frames. Allocation failures refuse initialization without marking valid frames corrupt. Native restore and lifecycle checks preserve archives and policies. Both production builds and SQL/flatfile offering/XP-ACK cold crash journeys pass after integration. | The completed staging generation is now privately captured and checksum-verified; its SQL restore/migration and native copied recovery-file qualification pass on MariaDB 10.11.14. The exact SQL candidate also reaches healthy persistence and shuts down normally with all captured recovery bytes unchanged in the existing isolated mini-world service test. Full-world boot and existing-character login/save on that clone, a fresh rollback generation, the dedicated staging restore mount, and integrated disconnect/database interruption/copyover qualification remain. The migration runner now retains its advisory lock on one non-reconnecting connection, rolls back a receipt when the state comparison fails, and passes native connection-loss, timeout, SQL-error, allocation, and cancellation faults on both supported engines. The explicit staging 0045 fork manifest now appends eight steps without changing the first 45 receipts; both disposable engines converge on the canonical 0053 schema and pass shell/compiled history, state, and expression checks. The earlier 0052 transition also passes on the verified staging-derived clone with all original 45 receipts and checked native data preserved; remote rollout remains pending. These local proofs do not open production or clear ownership holds. |
-| Writer inventory | The generated matrix covers 864 routes, 2,815 lexical occurrences, and 2,756 unique sites with zero unmapped sites. Material downgrade has its own batch route; ordinary salvage remains separately classified. The helper, its call sites, its declaration, and four temporary material-probe cleanup sites are classified. | Executable route evidence and full native coverage; the release validator remains blocked. The scanner alone is not release proof. |
+| Writer inventory | The generated matrix covers 868 routes, 2,817 lexical occurrences, and 2,758 unique sites with zero unmapped sites. Material downgrade has its own batch route; ordinary salvage remains separately classified. The helper, its call sites, its declaration, and four temporary material-probe cleanup sites are classified. | Executable route evidence and full native coverage; the release validator remains blocked. The scanner alone is not release proof. |
 | Physical crafting | Schema-2 craft admission now records one crafting source from the consumed input lifetime, exact native input retirement and output admission, and matching item references. Native MySQL/MariaDB and flatfile tests pass success, nested output state, deliberately empty output, replay and rollback; flatfile also passes separate-process interrupted authority recovery. Publication keeps its operation fence until outputs can be restored and the original actor can receive them. Poison mixing, physical and virtual Encrust, Chaos-pouch collection and Harvester shard exchange use this owner. Retained pouch counters share the native craft commit without changing UID or custody; native dual-engine SQL rollback/stale-counter tests and flatfile interrupted recovery pass. Real server pouch collection/virtual Encrust passes copyover and cold reload on both SQL engines and flatfile. Mortal Craft/Forge using one frozen leather recipe also passes physical and retained-pouch input retirement, fresh output identity, exact saved XP, copyover and two cold restarts on all three backends. | Complete active-epoch server journeys, other recipe/forge variants, paid enhancement writers, and their progression/publication recovery. Existing component/native proofs and legacy server journeys do not qualify every active player route. |
 | Quest rewards | Durable offering continuations, item/cash recovery, eligible skills, and SQL-primary XP entitlements use stable operation IDs. Admission freezes in-game group members present in the room. A linkdead character still present receives its reward in the same completion pass. Live quest XP completion requires the exact successful revision. Journal replay can retire an obsolete non-death attempt only after the repository verifies every attached operation receipt; a newer player revision alone remains insufficient. SQL verifies the applied entitlement or solo reward mask, and flatfile verifies its catalog markers and immutable spell receipts. Recovery now matches operation, recipient, reward index, and amount from a successful save completion instead of inferring receipt success from a later player revision. Flatfile ordinary saves now commit exact frozen XP award markers with the player snapshot, load owner masks and peer entitlements, and reject missing/conflicting replay markers. Native solo/group fault tests include mixed spell/XP commits and peer recovery after owner acknowledgment. Applied live XP is retained before save admission and collected by later ordinary or death saves with its progression components. Schemas 15/16 carry XP and optional spell receipts through immutable death requests and conflict evidence. Flatfile death custody and XP markers share one catalog after-image. SQL accepts an exact already-applied peer receipt after owner acknowledgment and refuses a new application under an acknowledged obligation. Group XP admission and linkdead completion are enabled on both backends and pass the live helper harness. | The isolated SQL offering-publication crash journey now passes recovery and a second cold restart with original offering UID tombstones, one reward UID, exact cash, retained XP, and a closed obligation. The flatfile offering crash also passes recovery and a second cold restart after fixing an inactive-accounting boon fence. The XP-commit/lost-completion journey now passes on both backends through a second cold restart after load verifies original native item/cash delivery and skips paid frozen slots. SQL checks native inbox/ledger witnesses; flatfile formats 8/4 retain creation and cash provenance, and ambiguous older obligations stay held for review. The SQL recovery budget boundary is now fixed and natively qualified: three fixed obligation/witness SELECTs plus one XP entitlement SELECT, with complete query/row/byte metrics on success and refusal. Disposable MySQL 8.0.46 and MariaDB 10.11.14 tests pass 64 obligations and 4,096 slots within the maintained load budget; see [review continuation](REVIEW_CONTINUATION_2026-09-30.md). Integrated production workload and concurrent publication/save recovery remain unqualified. Group, copyover, database interruption, and further save/custody race journeys remain. This is partial qualification. |
 | Item publication | Quest, forced-drop, and soulbind owners have replay paths. Actor-owned `vines` and player-target `faerie sight` hold component publication until the effect owner's affect and operation receipt share an acknowledged player snapshot. Faerie sight records a stable target PID, survives runtime-ID changes, and records a fizzle when the target moves away. Failed saves reopen the request without repeating the effect; replay consults the loaded receipt for the pending operation. The loader fetches receipts for both source and effect owners of pending spell publications, so retained historical receipts do not exhaust its row budget. Old self-target faerie commands remain recoverable; old other-target commands without a stable PID remain held. Other committed spell effects retain their publication fence. Snapshot schema 12 and migration 0049 store receipts in the owning player save transaction; death schema 13 and conflict schema 14 retain those receipts through terminal saves and immutable retries; SQL replay verifies the exact receipt. A disposable MariaDB fixture proves affect/receipt atomicity and rejects missing or conflicting receipts. Flatfile player saves now retain immutable per-operation spell receipts in the same recoverable authority transaction as affects and, for death, disposition and custody. Native fault tests prove separate-process recovery, scoped receipt loading, exact replay, and corruption/conflict refusal. | End-to-end server restart and save/custody race journeys for `vines` and player-target `faerie sight`. NPC, room, and event effects need their own durable application policy. Integrated flatfile spell gameplay/restart qualification remains pending. |
@@ -485,3 +495,76 @@ Actual typed coordinator integration with the production pool is the next
 bounded qualification; supplied factories and manual ACKs do not establish
 production factory contention or live item/pile publication. Full R1-R8 remains
 open. Room payload/season-fence implementation is separate unqualified WIP.
+
+
+The bounded coin/item coordinator matrices now also pass both engines with
+actual production sql_pool.c linked under ASan/UBSan, including successful
+COMMIT reply loss, fresh replacement, clean reborrow and shutdown. Native source
+c60330b58de9063dc1ad8510ced36310324d5d4c is pinned separately from room-payload
+WIP. The configured factory and ACK remain supplied by the fixture; typed bank,
+production boot/contention and ordinary gameplay cold-boot publication remain
+open. See the October 3 status for exact binary and evidence hashes.
+
+Six focused broad-fixture dependency/lifetime repairs now pass strict native
+ASan/UBSan (corpse/input/retention/spell/dispatcher/zone). Actual runtime identity
+and wakeup dependencies replace missing fixture linkage. Production inactive
+spell behavior is unchanged. The frozen broad run retains its original failures;
+focused repairs do not qualify a complete rerun. Details/pins are in October 3 status.
+
+### Exact SQL room source-properties refusal
+
+Native preparation now refuses a NULL physical properties projection instead of
+accepting it as evidence for captured extra2/dynamic effects. Fresh actual-pool
+MySQL and MariaDB rollback, real COMMIT reply-loss, exact-ID reconciliation/ACK
+and cold component reads pass; both strict production backend builds pass. The
+October 3 review status records the reproduced failure and source/binary hashes.
+Ordinary player-drop literal checkpoint, held publication and replay integration
+remain unfinished. The current inactive behavior and activation gates remain.
+
+### Scoped full-literal checkpoint prerequisite
+
+The opt-in literal scope now preserves selected complete bytes through ordinary
+recapture/coalescing and exact worker database ACK. Original-operation holds
+retain capture, terminal/death and target-login obligations while permitting dirty
+marks. Fresh actual-pool MySQL/MariaDB native pipeline/repository/journal/identity
+qualification and both strict production builds pass; see the October 3 review
+for exact source/binary evidence. The four existing save/creation/death owners pass against final source, including
+the real flatfile refusal guards. Flatfile begin/poll/hold refuse before side
+effects; an ordinary local journal completion cannot grant a database ACK. Plan 1 records remaining actual drop preparation,
+handler/action preflight, retained publication, ACK and restored lifecycle work.
+No gameplay route has been promoted and no accounting activation is authorized.
+
+
+Published fixture milestones f787dc9be and 5f83fbc78 repair exact 0055/226-table
+inventory and real room-payload native linkage; focused inventory, immutable
+history, sanitizer and direct SQL gates pass. Published 009085e12 retains bounded
+redacted creation failure evidence before cleanup, qualified with three controlled
+failures on the verified frozen native binary. The original failed broad run is
+preserved. Actual starter-kit and unchanged-budget build/inspector reproduction,
+current-head integrated qualification and all full R1-R8 gates remain open.
+See the October 3 review for exact scope, source and evidence pins.
+
+
+The read-only pending item-action reference query now passes the complete native
+scheduler/runtime sanitizer owner, six assertion-rejected guard/reference/mutation
+negatives and both strict production backend builds. It refuses before a drop
+could trigger resource-changing departure cleanup, but no drop caller uses it
+yet. Plan 1 retains actual preparation/publication/replay work and the separate
+restored-obligation hydration design. A repeat of the frozen failing creation
+scenario passes unchanged waits; intermittent/current-head qualification remains
+open. Exact evidence and scope are in the October 3 review status.
+
+
+Final dependent player-save/locker teardown now retains their operation owners
+when critical shutdown refuses, preserving successful shutdown and pwipe rules.
+The new native conditional-fragment test reproduces refusal loss before the
+fix and passes afterward, alongside all existing contracts, both strict
+production builds and real minimal flat boot/shutdown. Restored-drop obligation
+registration/hydration/publication remains open.
+
+The frozen e58bb3296 broad run is complete: 840 PASS/11 SKIP/10 FAIL. Six focused
+schema/link-owner fixes are published; serial original-source recovery/pickup/
+creation/network follow-ups pass with unchanged runtime/build assertions and
+verified artifact reuse. The failed broad report remains unchanged, intermittent
+starter-kit readiness and current-head integrated qualification remain open,
+and no R1-R8 release gate is promoted. See October 3 status for exact proof pins.
