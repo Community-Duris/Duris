@@ -284,13 +284,21 @@ not a cosmetic post-ACK notification. Complete runtime item/owner revision
 publication needs an atomic primitive; generic placement/extraction hooks and
 fallible live string replacement require separate staged verification.
 
-Separate craft ACK-retry cleanup issue (source-established, unqualified): the
-first craft publication notifies its completion before ACK; if ACK fails, the
-generic ack_pending retry can notify completion again and omit the progression
-owner's acknowledged hook. After the definite-admission disposition repair,
-reproduce the actual owner sequence, retain physical/progression exactly once,
-run the acknowledgement cleanup once after its durable ACK and preserve rejection
-semantics. This is not fixed by the bounded coin publication repair or inventory.
+Separate craft ACK-retry cleanup is solved locally with before/after native
+proof: all30 valid before-source cases fail semantically; afterward30 cases per
+backend pass1990 combined assertions, including real journal ACK refusal/repair,
+progression cleanup, runtime identity, reentrant business hooks and bound receipt
+conflicts. The shared finalizer waits for the original durable ACK, extracts
+before external hooks and rechecks native actor identity. Physical/progression
+effects survive retry; definite never-admission disposes only staged output and
+skips progression cleanup. Both strict builds,68 existing admission cases and
+eight maintained owner suites pass. Actual inactive mortal Craft/Forge retains
+UIDs and exact XP through copyover/two cold restarts; inactive creation/relog and
+three pickup controls pass. Component saved() injection is not actual SQL save
+completion; arbitrary pre-ACK progression hook throw/reentry is outside this
+proof. This does not wire ordinary-drop recovery or qualify active accounting,
+combined remote source or full R1-R8 gates. October3 review pins final evidence.
+
 ## Restored-drop competing save projection dependency
 
 Read-only repository tracing establishes two distinct current boundaries. Normal
@@ -335,3 +343,17 @@ An in-flight SQL transaction retains native custody checks; any stricter start/
 registration boundary needs defined PID ownership and wakeup without holding
 pipeline/worker mutexes across SQL or using coordinator cutover drain. Test both
 transaction orders and unrelated-PID progress on MySQL and MariaDB.
+
+
+Legacy partial replacement also has a source-established destructive scope gap:
+children of equipped containers have physical equip_slot0, so inventory-only
+DELETE currently removes them while leaving their equipment root. The partial
+planner must select complete roots from current custody and verified legacy
+slot evidence, validate incoming graph and physical deletion/cascade closure,
+and reject cross-PID/duplicate/foreign or incomplete closure before any DELETE.
+Keep the untouched component's complete payload and metadata unchanged; do not
+construct a missing component. Reuse the current custody diagnoses and preserve
+revision/no-op, rollback, inline-coin and inactive legacy equipment rules. New
+actual-repository/direct-SQL regression preparation is separate from a genuine
+pooled schema-2 drop and two-session lock-order proof. Both engines, journal
+exact-frame quarantine/restart and unrelated-PID controls remain required.

@@ -66,8 +66,20 @@ creation/save/coldrestart/relog and three area pickup commands pass unchanged
 budgets. Exact pins and preserved setup/driver failures are in the October 3
 review. This bounded cleanup issue is solved locally; publication still awaits
 local Git integration authorization and combined-source qualification. Separate
-craft ACK-retry completion/progression cleanup is next; ordinary-drop replay/save
-integration and every full R1-R8 gate remain open.
+craft ACK-retry completion/progression cleanup is also solved locally. The
+original ACK now precedes independent cleanup and business notifications; effects
+and the original authoritative receipt survive retries without duplicate work.
+Thirty valid before-source semantic failures become60 native passes across both
+backend modes, with1990 assertions and16 supplied-artifact guards. Sixty-eight
+existing admission cases, eight maintained owner suites and both strict
+production builds pass. Actual inactive mortal Craft/Forge preserves pouch,
+material/tool UIDs and exact XP through copyover and two cold restarts; inactive
+creation/relog and three area-pickup controls also pass. These bounded results do
+not qualify injected saved() hooks as SQL persistence completion, arbitrary
+pre-ACK progression-hook throw/reentry, active gameplay, combined remote source
+or a full route. Ordinary-drop replay/save integration and every full R1-R8 gate
+remain open. Exact pins and preserved invalid fixture attempts are in October3
+review; local Git integration authorization still blocks publication.
 
 Independent reconciliation now checks every native item's parent edge even when
 lineage history replaces its epoch-local history or its opening origin is

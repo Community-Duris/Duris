@@ -837,7 +837,7 @@ flatfile production binary SHA-256
 f0c37cd6d62caef1a5481ba90b28c74592cd5a4206f10f473481fc4ff2414964.
 The separate observer binary supplies exact native readback only under a test
 macro; production does not enable it. The original frozen broad result remains
-831 passed, 11 skipped and 17 failed; a current-head broad run and full R1Ã¢â‚¬â€œR8
+831 passed, 11 skipped and 17 failed; a current-head broad run and full R1ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“R8
 qualification remain required. Release and activation remain blocked.
 
 
@@ -1578,3 +1578,127 @@ not counted as production failures. Source review additionally requires immutabl
 receipt binding before physical/progression effects. Final native/production/
 gameplay qualification of that fix is not yet claimed. Local publication remains
 blocked by the pending local Git integration decision under the no-merge rule.
+
+
+### Craft completion: final qualification in progress
+
+The actual native before-source owner now reaches every one of the 19 valid
+scenario paths. Original strict sanitizer compile passes in 83.443 seconds of
+300; binary b204a12a75302c84f68916ee4a5e7abf9752b456d6ec9a4f1342bdbd8fb1882f.
+All 19 cases fail semantic assertions, with 621 passing control assertions and
+no sanitizer fault. Applied recipe effects occur once but completion runs twice
+and the real progression attempt survives ACK repair. Declaration
+`tmp/craft-publication-ack-before-attempt3-artifact.local.json` has SHA-256
+6974fe63ef35e6f94862db6543ac540c9ea75ef0d208e20156e59a9302471213.
+Attempt1/2 recipe fixture admission failures remain separately preserved; they
+are not valid recipe production failures. The final 30-case fixture removes the
+artificial rejected progression seed and preserves real applied map-erasure
+proof. It adds changed/malformed receipts during ACK retention and progression-
+save waiting, contradiction batches, exact repair, and equivalent durable
+success with changed diagnostic timing/attempt fields.
+
+The draft finalizer waits for the original ACK (or validated never-admission),
+then extracts the domain owner before independent progression cleanup, recipe
+notification and business completion. Native actor registration is required;
+post-hook actor lookup uses the original runtime identity. Independent readiness
+and authoritative receipt binding preserve effects across retries and refuse
+changed outcomes before publication. Arbitrary pre-ACK progression hook throw/
+reentry is outside this bounded proof; the current production progression hook
+catches allocation failure and has no identified item-owner recursion.
+
+Both strict production builds pass -j2/original600 after rebuilding the changed
+native item unit: SQL13 seconds, binary
+92f0e7ea6419f03d69b884a014e69efe90e09d6cb2c0593805682de88267b19f;
+flatfile11 seconds, binary
+8b23635f306846fbece9f32c300119e9d7a76ef2f83b380fb6b3beccf3ae7a95.
+All1232 source inputs are verified before testing. Actual inactive creation/save/
+cold restart/relog passes in136.878 seconds; all three unchanged area coin-pickup
+controls pass after the original180-second inspector budget. These controls do
+not qualify active craft or native drop publication. Five maintained final test
+inputs and the expanded30-case/21-unit harness are frozen before native compile.
+Runner SHA-256 a44539745b2ce6275e2ac693ae7dadfddb710381dc7f5e57f146f00e785120fa;
+generated harness c1f3f83295c599aa335c77f1576d9018fb7fdd734c6436d2ab5543163685e3ed.
+Final native SQL-header/flatfile and existing owner qualification remain pending.
+
+The seven root scheduler checks pass on Linux; a Windows launch lacked make and
+is an environment failure. The19 live movement,54 writer coverage,2727 site,
+craft module/persistence contracts and Linux route-evidence checks pass. Windows
+route evidence hit its python3 App Execution Alias; its Linux rerun passes.
+Matrix reproduction passes with unchanged868routes/2817occurrences/2758unique,
+zero unmapped, coverage=false/releaseBLOCKED. A fresh explicit remote read still
+finds100bee62f; local history has four commits and21 incoming commits since the
+common base. Local Git integration authorization remains pending; no merge,
+history workaround, divergent push, activation or production mutation occurred.
+
+
+Expanded before-source proof preserves30 valid native semantic failures,
+861 passing control assertions and242 failed assertions, with no sanitizer fault.
+Original strict compile passes82.574/300 seconds, binary
+d3683ec6f45b78995a78203d3084d20e362634546174d67d12e50f5a9e988ecc.
+Declaration `tmp/craft-publication-ack-expanded-before-artifact.local.json` has
+SHA-256 f19cdded9cede34cc3e38c74416c168aa170bc96a0766da8f25d99083562fbd6.
+The unseeded rejected recipe does no progression work; applied recipes prove
+actual map erasure. No recipe admission setup error is counted in this cohort.
+
+Final SQL-header component now passes all30 native cases and995 assertions with
+no sanitizer fault. Original strict compile83.966/300 seconds; binary
+0afd9351ecfb1ee7969c68409a3c3770d09017ca61dcc6afb1ac033c250bb6c4.
+Actual journal ACK returns false four times then succeeds once; recipe physical
+and progression effects, cleanup and business/recipe notifications each occur
+once. Changed/malformed authority, full contradiction batches, progression-save
+waiting and exact repair controls all pass. Final flatfile and existing native
+owners plus actual mortal Craft/Forge/copyover/restart proof remain pending.
+These native fixtures inject the matching saved hook; they do not prove a real
+SQL save completion or active gameplay qualification.
+
+
+Final flatfile component also passes30/30 cases and995 assertions: original
+strict sanitizer compile77.102/300 seconds, binary
+024357a08b3a2a82542ae46d0e21013fbc06aa57bc461cb6346cec6a2e3db2b1.
+The immutable combined declaration
+`tmp/craft-publication-ack-qualified-artifact.local.json`, SHA-256
+1d0d990ca81a596f367fab401e96a7995fcf088ee4d85ccb129ef1e37dd82b5b,
+records60 native passes/1990 assertions, exact pre/post native/harness/runner
+pins and16 supplied-artifact guards (14 refusals/two valid controls). No service,
+SQL, actual save completion, gameplay restart or full route proof is implied.
+Both current item/craft definite-admission owners also pass34/34 per build mode,
+including disposition-conflict repair without repeated callbacks or output
+disposal. Remaining existing owners and real recipe journey are still running/
+pending before this separate issue can be committed as solved.
+
+
+### Craft ACK-retry issue: final local qualification
+
+The bounded craft completion/progression-cleanup issue is solved locally. The
+final immutable component declaration above remains unchanged:60 native passes,
+1990 assertions and16 artifact guards. All68 existing item/craft admission cases
+pass. Existing publication-retention, progression, progression restore, recipe
+transaction, input queue, ACK checkpoint, copyover-drain source contract and real
+flatfile craft/pouch persistence owners all pass unchanged assertions and budgets.
+The copyover-drain source contract alone is not an actual copyover journey.
+
+The actual inactive mortal Craft/Forge journey now also passes on the final strict
+flatfile binary: retained pouch, material/tool UID conservation, exact XP,
+copyover and two cold restarts. The inspector builds in90.445 seconds within its
+original600-second budget; recipe owner prompts/recovery waits are unchanged.
+The two strict production builds and inactive creation/relog/three-pickup controls
+above remain verified. The complete1232 raw native source inputs remain unchanged
+through final qualification, and maintained final test pins are checked again.
+
+Primary aggregate declaration `tmp/craft-ack-final-primary-summary.local.json`
+SHA-256 27327027c8cb604f46067ed0a2364b73ab0f3f673f0aa08e10c0793f3acae548 verifies the component declaration/log hashes, current
+source/test pins, native binary/metadata hashes, strict production binary hashes
+and all native/gameplay owner pass markers. It preserves invalid recipe setup
+attempts separately from valid19/30-case semantic failures. Private artifacts
+and logs remain protected locally; the source and maintained fixture are committed.
+
+Native saved() callback injection does not prove actual SQL save completion.
+Arbitrary pre-ACK progression hook throw/reentry, active accounting, ordinary-drop
+producer/replay/save/copyover, combined remote source and current-head broad
+qualification remain open. Coverage remains false/release BLOCKED; no route or
+R1-R8 acceptance gate is promoted. The separate eleven-case partial-save fixture
+is preparation only until actual-engine RED/GREEN and recovery checks pass.
+This solved issue is a separate local milestone; normal publication still awaits
+explicit local Git integration authorization after automatic approval review
+rejected merging under the retained no-merge instruction. No history workaround,
+divergent push, accounting activation or production-data mutation occurred.
