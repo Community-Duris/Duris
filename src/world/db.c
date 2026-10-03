@@ -2790,6 +2790,8 @@ P_char read_mobile(int nr, int type, bool apply_mob_gold)
 	if (!mobile_probe_mode && IS_AFFECTED(mob, AFF_STONE_SKIN | AFF_BIOFEEDBACK))
 		add_event(event_mob_skin_spell, number(1, 5), mob, 0, 0, 0, 0, 0);
 
+	// The legacy list is linked early; publish identity only after initialization.
+	register_character_runtime_id(mob);
 	return (mob);
 }
 
@@ -4271,6 +4273,7 @@ void free_char(P_char ch)
 		logit(LOG_DEBUG, "free_char called with no char!");
 		return;
 	}
+	unregister_character_runtime_id(ch);
 	++character_removal_generation;
 	if ((GET_OPPONENT(ch)))
 	{
