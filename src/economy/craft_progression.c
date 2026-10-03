@@ -6,6 +6,7 @@
 #include "magic/spells.h"
 #include "player/craft_progression_hooks.h"
 #include "player/player_save_pipeline.h"
+#include "net/comm.h"
 
 #include <algorithm>
 #include <chrono>
@@ -46,8 +47,8 @@ bool valid_receipt(const player_craft_receipt_snapshot &receipt)
 {
 	return std::any_of(receipt.operation_id.bytes.begin(), receipt.operation_id.bytes.end(),
 			   [](uint8_t byte) { return byte != 0; }) &&
-	       (receipt.discipline == 1 || receipt.discipline == 2) &&
-	       receipt.experience <= INT_MAX;
+	       receipt.discipline >= 1 && receipt.discipline <= 6 &&
+	       (receipt.discipline <= 2 || !receipt.experience) && receipt.experience <= INT_MAX;
 }
 
 bool pending_receipts(uint32_t pid, std::vector<player_craft_receipt_snapshot> *receipts)
@@ -164,7 +165,8 @@ craft_progression_publication_result publish(const critical_operation_id &operat
 	    static_cast<uint32_t>(GET_PID(actor)) != terms.player_pid ||
 	    terms.experience > INT_MAX ||
 	    (terms.discipline != craft_recipe_discipline::craft &&
-	     terms.discipline != craft_recipe_discipline::forge))
+	     terms.discipline != craft_recipe_discipline::forge &&
+	     !craft_recipe_is_alchemy(terms.discipline)))
 		return craft_progression_publication_result::failed;
 	try
 	{
@@ -204,11 +206,14 @@ craft_progression_publication_result publish(const critical_operation_id &operat
 			// Retain identity before gameplay effects. Capture/journal failures can
 			// retry the checkpoint without rerolling a notch or granting XP twice.
 			attempt.applied = true;
-			notch_skill(actor,
-				    terms.discipline == craft_recipe_discipline::craft ?
-					    SKILL_CRAFT :
-					    SKILL_FORGE,
-				    50);
+			if (terms.discipline == craft_recipe_discipline::poison)
+				skill_notch_apply(actor, SKILL_MIXPOISON, terms.notch);
+			else if (!craft_recipe_is_alchemy(terms.discipline))
+				notch_skill(actor,
+					    terms.discipline == craft_recipe_discipline::craft ?
+						    SKILL_CRAFT :
+						    SKILL_FORGE,
+					    50);
 			if (terms.experience)
 				gain_exp(actor, nullptr, static_cast<int>(terms.experience),
 					 EXP_BOON);
@@ -237,11 +242,50 @@ void acknowledged(const critical_operation_id &operation)
 {
 	attempts.erase(operation_key(operation));
 }
+
+void notify(P_char actor, bool committed, const craft_recipe_continuation &terms)
+{
+	if (!craft_recipe_is_alchemy(terms.discipline))
+		return;
+	if (!committed)
+	{
+		send_to_char(
+			terms.discipline == craft_recipe_discipline::harvester ?
+				"The Harvester's craft could not be committed; your soul shards were preserved.\r\n" :
+				"The craft could not be committed; your ingredients were preserved.\r\n",
+			actor);
+		return;
+	}
+	switch (terms.discipline)
+	{
+	case craft_recipe_discipline::poison:
+		send_to_char_f(actor, "You finish mixing %u poison%s.\r\n", terms.output_count,
+			       terms.output_count == 1 ? "" : "s");
+		break;
+	case craft_recipe_discipline::encrust:
+		act("...creating a real masterpiece!", TRUE, actor, 0, 0, TO_ROOM);
+		act("Hurrah! Hurrah!", FALSE, actor, 0, 0, TO_CHAR);
+		wizlog(56, "Encrust committed for %s.", GET_NAME(actor));
+		break;
+	case craft_recipe_discipline::encrust_failure:
+		act("You broke your item in the process.", FALSE, actor, 0, 0, TO_CHAR);
+		act("...and breaks it in the process.", TRUE, actor, 0, 0, TO_ROOM);
+		wizlog(56, "%s ruined an encrust attempt.", GET_NAME(actor));
+		break;
+	case craft_recipe_discipline::harvester:
+		send_to_char(
+			"The Harvester accepts the soul shards and gives you a greater orb.\r\n",
+			actor);
+		break;
+	default:
+		break;
+	}
+}
 }
 
 void craft_progression_initialize(void)
 {
 	attempts.clear();
-	craft_progression_hooks = { publish, pending_receipts, save_completed, recover_receipts,
-				    acknowledged };
+	craft_progression_hooks = { publish,	      pending_receipts, save_completed,
+				    recover_receipts, acknowledged,	notify };
 }

@@ -30,6 +30,7 @@ HARNESS = r'''
 #include <vector>
 
 P_char character_list = nullptr;
+P_char find_character_by_runtime_id(uint64_t) { return nullptr; }
 P_obj object_list = nullptr;
 P_room world = nullptr;
 P_index obj_index = nullptr;
