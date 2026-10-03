@@ -193,6 +193,14 @@ int main()
 		execute(connection, "START TRANSACTION");
 		assert(!sql_room_item_payload_prepare(connection, altered, &prepared));
 		execute(connection, "ROLLBACK");
+		// A missing physical properties projection cannot prove that the native
+		// literal checkpoint wrote its extra2/dynamic-effect payload.
+		execute(connection, "START TRANSACTION");
+		execute(connection, "UPDATE player_items SET item_properties=NULL WHERE obj_uid=" +
+					    std::to_string(root_uid));
+		assert(!sql_room_item_payload_prepare(connection, drop, &prepared) &&
+		       errno == ESTALE);
+		execute(connection, "ROLLBACK");
 		// Fail after earlier payload rows, then after physical deletion begins. Each
 		// failure must roll back custody, immutable rows, source projection and root
 		// evidence together before a successful lost-reply run.

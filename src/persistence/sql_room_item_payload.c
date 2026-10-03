@@ -445,9 +445,7 @@ bool sql_room_item_payload_prepare(MYSQL *connection, const item_transfer_payloa
 							  &properties) !=
 			    player_snapshot_codec_result::ok)
 				return refuse(EBADMSG);
-			matches +=
-				" AND (pi.item_properties IS NULL OR BINARY pi.item_properties=" +
-				text_literal(properties) + ")";
+			matches += " AND BINARY pi.item_properties=" + text_literal(properties);
 			auto rows = query(
 				connection,
 				"SELECT pi.id,COALESCE(pi.container_id,0),IF(" + matches +
