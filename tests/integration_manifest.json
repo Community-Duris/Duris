@@ -1528,7 +1528,10 @@
       "covers": [
         "run_legacy_migration_mysql.sh"
       ],
-      "required_markers": []
+      "required_markers": [
+        "missing immutable adoption evidence: rejected without legacy DDL or state changes",
+        "legacy migration, replay, bootstrap equivalence, and runtime compatibility: ok"
+      ]
     },
     {
       "id": "telemetry_repository_sql",

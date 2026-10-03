@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import json
 import os
 import re
@@ -226,10 +227,14 @@ def parse_args() -> argparse.Namespace:
 
 
 def write_report(path: Path, results: list[TestResult], elapsed: float, interrupted: bool,
-                 *, profile="core", planned: list[Path] | None = None) -> None:
+                 *, profile="core", planned: list[Path] | None = None,
+                 excluded: list[Path] | None = None, inventory_sha256=None) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     completed = {result.path for result in results}
     payload = {"version": 2, "profile": profile, "elapsed": elapsed, "interrupted": interrupted,
+               "inventory_sha256": inventory_sha256,
+               "selected": [relative(item) for item in (planned or [])],
+               "excluded": [relative(item) for item in (excluded or [])],
                "pending": [relative(item) for item in (planned or []) if item not in completed],
                "results": [
         {**{key: value for key, value in asdict(result).items() if key not in {"path", "output"}},
@@ -328,11 +333,14 @@ def schedule(specs: list[TestSpec], jobs: int, cpu_budget: int, memory_mb: int,
 def main() -> int:
     args = parse_args()
     try:
-        specs = select(inventory(TEST_DIRECTORY, MANIFEST), args.profile, args.match)
+        all_specs = inventory(TEST_DIRECTORY, MANIFEST)
+        specs = select(all_specs, args.profile, args.match)
+        inventory_sha256 = hashlib.sha256(MANIFEST.read_bytes()).hexdigest()
     except (OSError, ValueError, KeyError, TypeError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
     tests = [spec.path for spec in specs]
+    excluded = [spec.path for spec in all_specs if spec not in specs]
     if args.list:
         for path in tests:
             print(relative(path))
@@ -374,7 +382,8 @@ def main() -> int:
 
     def snapshot():
         write_report(args.report, results, time.monotonic()-started, interrupted,
-                     profile=args.profile, planned=tests)
+                     profile=args.profile, planned=tests, excluded=excluded,
+                     inventory_sha256=inventory_sha256)
 
     def report(result: TestResult) -> None:
         results.append(result)

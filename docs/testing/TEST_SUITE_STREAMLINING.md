@@ -39,8 +39,8 @@ tombstone, one ownership-ledger entry and no reappearance after restart/replay.
 Active-accounting food acceptance and interrupted effect publication remain outside
 this qualification.
 
-The inventory now contains 885 Python entries: 861 automatic and 24 manual.
-The remaining 24 manual entries have explicit providers in the integration matrix. Automatic entries
+The inventory now contains 890 Python entries: 865 automatic and 25 manual.
+The 25 manual entries have explicit providers in the integration matrix. Automatic entries
 with optional SQL checks remain in core, and their skips remain visible.
 
 | Profile | Scope | Evidence boundary |
@@ -72,7 +72,9 @@ arguments, working directory and import path. Unittest results include case name
 outcomes, durations and skip reasons. Collected and executed identities must agree;
 a successful zero-case suite or a failed suite with a successful process exit is
 rejected. Observed skips remain visible when unittest redirects its console
-summary. Successful entries must acknowledge completed observation; os._exit(0)
+summary, including subtests. Class/module cleanup failures are retained even if
+the script ignores the returned unittest result. Successful entries must
+acknowledge completed observation; os._exit(0)
 cannot bypass final validation, including after successful cases. A recorded
 minimum protects against accidental removal from a suite.
 
@@ -84,7 +86,8 @@ unresolved. The adapter does not establish that every C++ assertion is reached.
 That evidence requires the behavioral work below.
 
 JSON records are atomically updated after each completed entry, with pending
-entries retained. Reports omit captured output and environment values; skip
+entries retained. Selected and excluded identities and the inventory checksum
+make filtered scope explicit. Reports omit captured output and environment values; skip
 reasons are supplied by the tests. JUnit XML exposes the same observed outcomes.
 A module failure after successful cases remains a separate entry failure in XML.
 The JSON case list mixes named unittest cases, function invocations and opaque
@@ -201,6 +204,15 @@ retains locker row counts, imported extensions and archive values, and compares
 the upgraded schema with a fresh bootstrap. A missing equipment slot must be
 rejected without legacy repair or migration-history changes. Replay attempts keep
 unique, redacted diagnostic logs, including when the driver fails.
+Missing adoption rows also remain under the immutable owner if history rows or a
+nonzero history-state marker remain; neither corruption can restart legacy DDL.
+
+The current workload has 148 required identities: 66 on each pinned engine and
+16 shared rows. It includes the real SQL pool's bank, coin and item coordination,
+literal checkpoint recovery and exact room payload recovery. The room row reuses
+its qualified seed executable for two complete SQL cold boots and requires the
+native publication witness. Literal checkpoint qualification compiles and pins
+its executable before exercising the supplied disposable schema.
 
 The currency wrapper no longer rebuilds and reruns the complete item-transfer
 executable after mutating its schema with unrelated coin and loader fixtures.
@@ -292,16 +304,16 @@ optional SQL/systemd skips; the complete matrix requires its declared integratio
 checks to execute. Local executable verification remains the merge evidence;
 AGENTS.md does not require waiting for CI.
 
-## Validation record
+## Qualification through 22514903d, before final review
 
 Qualification uses private Git exports in owned Linux containers. Each imported
 commit and tree is verified before execution; unchanged source mtimes preserve
 incremental builds. Maintained world inputs are generated there. No configured
 account, checkout .env, shared game or production database is selected.
 
-The inventory declares 885 entries: 861 automatic and 24 manual, with 372 in fast.
-The reviewed integration workload has 138 required rows: 61 per SQL engine and
-16 shared rows. The branch incorporates one bounded target snapshot through
+That inventory declared 885 entries: 861 automatic and 24 manual, with 372 in fast.
+That integration workload had 138 required rows: 61 per SQL engine and
+16 shared rows. That qualification incorporated a bounded target snapshot through
 a209af827, including persistent transport, resumable native compilation,
 transactional SQL quest erasure, native account-fence faults, network readiness,
 portable copyover, quest allocation faults and Telnet fragmentation checks.
