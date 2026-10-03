@@ -198,6 +198,17 @@ def load_evidence_packet(path: Path, *, max_bytes: int = MAX_PACKET_BYTES) -> An
     """Shared bounded JSON decoding for reviewed evidence packet families."""
     if type(max_bytes) is not int or not 1 <= max_bytes <= 1_048_576:
         raise IncidentError("invalid_packet_bound")
+    with path.open("rb") as stream:
+        data = stream.read(max_bytes + 1)
+    return decode_evidence_packet(data, max_bytes=max_bytes)
+
+
+def decode_evidence_packet(data: bytes, *, max_bytes: int = MAX_PACKET_BYTES) -> Any:
+    """Decode bounded file evidence or a retained canonical projection input."""
+    if type(max_bytes) is not int or not 1 <= max_bytes <= 1_048_576:
+        raise IncidentError("invalid_packet_bound")
+    if type(data) is not bytes or len(data) > max_bytes:
+        raise IncidentError("packet_capacity")
     def integer(text: str) -> int:
         # Evidence families have only signed/unsigned 64-bit integer fields.
         # Reserve at most 20 magnitude digits before int(), independently of
@@ -215,10 +226,6 @@ def load_evidence_packet(path: Path, *, max_bytes: int = MAX_PACKET_BYTES) -> An
             result[key] = value
         return result
     try:
-        with path.open("rb") as stream:
-            data = stream.read(max_bytes + 1)
-        if len(data) > max_bytes:
-            raise IncidentError("packet_capacity")
         packet = json.loads(data, object_pairs_hook=unique_pairs, parse_int=integer,
                             parse_float=invalid_number, parse_constant=invalid_number)
         return packet

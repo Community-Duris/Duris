@@ -768,6 +768,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "86d2e75f02cf3cc634f44d828eb4c80031ad6490348f55af7750aebaf7907b26",
       "verify_checksum": "680ac451a977c2bd8d2deda428b40d499a80ca445211efef663832ffe63479a6"
+    },
+    {
+      "id": "0060_telemetry_identity_publication",
+      "sequence": 60,
+      "description": "Retain exact identity inputs and publish reviewed effort and XP portfolios atomically",
+      "apply": "immutable/0060_telemetry_identity_publication.sql",
+      "verify": "immutable/0060_telemetry_identity_publication.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "2645843d3c3f5182278ae2a1746efa2f3428309f4f8d9b7cc79c3fecb2a186de",
+      "verify_checksum": "95ae27a6871fbd34e353c970749cc8f9f29068268caca50a1513c9b0ae5fed71"
     }
   ]
 }

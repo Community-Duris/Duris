@@ -12,7 +12,7 @@ from types import MappingProxyType
 from typing import Any, Mapping
 
 DEFINITION_VERSION = 1
-SUPPORTED_DEFINITION_VERSIONS = frozenset({DEFINITION_VERSION, 2})
+SUPPORTED_DEFINITION_VERSIONS = frozenset({DEFINITION_VERSION, 2, 3})
 
 PUBLICATION_BUILDING = 0
 PUBLICATION_PUBLISHED = 1
@@ -181,6 +181,7 @@ class RollupCoverage:
     rebuild_from_ingest_id: int
     rebuild_through_ingest_id: int
     incident_coverage: Mapping[str, Any] | None = None
+    identity_coverage: Mapping[str, Any] | None = None
 
     @property
     def input_complete_to_snapshot(self) -> bool:
@@ -217,6 +218,7 @@ class RollupCoverage:
             "rebuild_from_ingest_id": self.rebuild_from_ingest_id,
             "rebuild_through_ingest_id": self.rebuild_through_ingest_id,
             "incident_coverage": self.incident_coverage,
+            **({"identity_coverage": self.identity_coverage} if self.target.definition_version >= 3 else {}),
         }
 
 
@@ -512,22 +514,53 @@ OBSERVATION_REPORT_DEFINITIONS = MappingProxyType({
         unavailable_metrics=("battle_win_rate", "gear_strength", "skill_strength", "unique_human_count", "universal_power_score"), rate_unit="not_computed"),
 })
 
+IDENTITY_REPORT_DEFINITIONS = MappingProxyType({
+    "identity_effort": ReportDefinition(
+        name="identity_effort", definition_version=3, grain="dated_configuration_cell_and_explicit_identity_basis",
+        table="telemetry_rollup_identity_effort",
+        dimensions=("utc_day", "partition_kind", "basis", "identity_token", "config_id", "classifier_version",
+                    "policy_version", "faction_id", "level_band", "group_context_mode", "category"),
+        metrics=("character_usec", "utc_covered_character_usec", "unknown_clock_character_usec", "covered_union_usec",
+                 "union_usec", "distinct_characters", "distinct_accounts", "quality_flags"),
+        denominator="Exact observed input-derived intervals, split at ownership/review/day boundaries. Account and confirmed-controller clocks use interval unions; summed character effort remains separate. Unknown identity populations have NULL union clocks. Presence is a separate category when observed.",
+        distinct_semantics="Characters, accounts and confirmed controllers are separate bases. Unknown controllers are not combined into one person. Portfolio and faction/level/observed-group partitions overlap and cannot be summed; union cells are not additive.",
+        distribution_semantics="These aggregate union and summed-effort cells are not per-session duration samples or a complete human census.",
+        account_metrics_available=True, unavailable_metrics=("continuous_human_attention", "complete_controller_population",
+            "battle_presence_effort", "xp_per_hour"), rate_unit="not_computed"),
+    "portfolio_progression": ReportDefinition(
+        name="portfolio_progression", definition_version=3, grain="dated_configuration_identity_and_exact_xp_source_cell",
+        table="telemetry_rollup_portfolio_xp",
+        dimensions=("utc_day", "partition_kind", "basis", "identity_token", "config_id", "classifier_version",
+                    "policy_version", "faction_id", "level_band", "group_context_mode", "source", "reason",
+                    "observation_status", "modifier_flags"),
+        metrics=("observations", "zero_applied_observations", "negative_applied_observations", "requested_xp", "computed_xp",
+                 "applied_xp", "earned_positive_xp", "death_loss_xp", "restored_positive_xp", "linked_observations",
+                 "clock_unknown_observations", "incident_affected_observations", "quality_flags"),
+        denominator="XP observations attributed at their actual producer-clock point using retained authenticated ownership and the reserved dated review. Earned, lost, restored and administrative/source/status cells retain their separate meanings. No canonical economic reward or hourly rate is inferred.",
+        distinct_semantics="Character, account and confirmed-controller bases are separate projections of the same observations; summing bases or overlapping partitions duplicates XP. Missing ownership and linkage stay explicit unknown populations.",
+        distribution_semantics="Source aggregates support portfolio amount comparisons, not award distributions, milestones or causal rotation effects.",
+        account_metrics_available=True, unavailable_metrics=("xp_per_hour", "durable_economic_reward_total", "time_to_milestone",
+            "causal_rotation_advantage", "complete_controller_population"), rate_unit="not_computed"),
+})
+
 
 def report_definition(name: str, definition_version: int | None = None) -> ReportDefinition:
     canonical = REPORT_ALIASES.get(name, name)
     try:
-        definition = REPORT_DEFINITIONS.get(canonical) or OBSERVATION_REPORT_DEFINITIONS[canonical]
+        definition = REPORT_DEFINITIONS.get(canonical) or OBSERVATION_REPORT_DEFINITIONS.get(canonical) or IDENTITY_REPORT_DEFINITIONS[canonical]
     except KeyError as error:
         raise ValueError(
             f"unknown report definition {name!r}; "
-            f"available={sorted((*REPORT_DEFINITIONS, *OBSERVATION_REPORT_DEFINITIONS))}"
+            f"available={sorted((*REPORT_DEFINITIONS, *OBSERVATION_REPORT_DEFINITIONS, *IDENTITY_REPORT_DEFINITIONS))}"
         ) from error
     if definition_version is None:
         return definition
     if isinstance(definition_version, bool) or not isinstance(definition_version, int) or definition_version not in SUPPORTED_DEFINITION_VERSIONS:
         raise ValueError("unsupported report definition version")
     if definition.definition_version > definition_version:
-        raise ValueError("report requires definition version 2")
+        raise ValueError(f"report requires definition version {definition.definition_version}")
+    if canonical in OBSERVATION_REPORT_DEFINITIONS and definition_version != 2:
+        raise ValueError("observation report requires definition version 2")
     return replace(definition, definition_version=definition_version)
 
 
@@ -535,6 +568,8 @@ def report_definitions(definition_version: int = 1) -> tuple[ReportDefinition, .
     names = set(REPORT_DEFINITIONS)
     if definition_version == 2:
         names.update(OBSERVATION_REPORT_DEFINITIONS)
+    if definition_version >= 3:
+        names.update(IDENTITY_REPORT_DEFINITIONS)
     return tuple(report_definition(name, definition_version) for name in sorted(names))
 
 

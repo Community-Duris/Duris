@@ -11,9 +11,11 @@ Unknown schema versions, record families, reserved quality bits, partial require
 identities and malformed active payloads fail before cursor acknowledgement.
 
 This layer supplies observations for the accepted balance expansion. Shared
-battles, full zone attempts, durable reward linkage, account/controller portfolios
+battles, full zone attempts, durable reward linkage, complete progression portfolios
 and the four balance suites remain separate requirements tracked in
 [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
+Definition 3 separately supplies [dated identity effort and observed XP portfolios](IDENTITY_PUBLICATION.md).
+The five reports below remain definition 2 and keep their sealed storage contracts.
 
 ## Published grains and interpretation
 

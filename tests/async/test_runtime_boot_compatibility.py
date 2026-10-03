@@ -70,7 +70,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         """
         report = runtime.validate()
         # Includes death evidence/recovery, SQL lifecycle, and identity review tables.
-        self.assertEqual(report["current_table_count"], 242)
+        self.assertEqual(report["current_table_count"], 246)
         for table in ("player_death_disposition", "player_death_custody",
                       "player_death_conflict_evidence"):
             self.assertIn("'" + table + "'", self.header)
@@ -85,10 +85,12 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertIn("'economic_sql_global_activation'", self.header)
         for table in ("telemetry_identity_reviewer", "telemetry_identity_registry",
                       "telemetry_identity_association", "telemetry_generation_identity",
-                      "telemetry_incident_registry_v2", "telemetry_incident_v2"):
+                      "telemetry_incident_registry_v2", "telemetry_incident_v2",
+                      "telemetry_rollup_identity_coverage", "telemetry_identity_input",
+                      "telemetry_rollup_identity_effort", "telemetry_rollup_portfolio_xp"):
             self.assertIn("'" + table + "'", self.header)
         self.assertEqual(report["migration_head"],
-                         "0059_telemetry_ownership_incident_coverage")
+                         "0060_telemetry_identity_publication")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)
@@ -117,15 +119,15 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         import tempfile
         from unittest import mock
         value = runtime.load()
-        self.assertEqual(value["migration_head"]["sequence"], 59)
-        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 59)
+        self.assertEqual(value["migration_head"]["sequence"], 60)
+        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 60)
         self.assertEqual(value["staging_0045_migration_head"]["id"],
-                         "0059_telemetry_ownership_incident_coverage")
+                         "0060_telemetry_identity_publication")
         self.assertNotEqual(value["migration_head"]["history_checksum"],
                             value["staging_0045_migration_head"]["history_checksum"])
-        self.assertEqual(value["master_0031_migration_head"]["sequence"], 59)
+        self.assertEqual(value["master_0031_migration_head"]["sequence"], 60)
         self.assertEqual(value["master_0031_migration_head"]["id"],
-                         "0059_telemetry_ownership_incident_coverage")
+                         "0060_telemetry_identity_publication")
         self.assertEqual(len({value[field]["history_checksum"] for field in (
             "migration_head", "staging_0045_migration_head", "master_0031_migration_head")}), 3)
         with tempfile.TemporaryDirectory() as directory:

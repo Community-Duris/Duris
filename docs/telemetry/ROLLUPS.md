@@ -14,6 +14,12 @@ families into five bounded stores. The [observation contracts and executable
 reports](OBSERVATION_PROJECTIONS.md) preserve cumulative effort, ownership, source
 status and unknown tails. Definition 1 validates and advances over those records
 without changing its playtime totals.
+Definition 3 retains selected activity, progression and authenticated ownership
+facts with its cursor and atomically publishes dated character/account/controller
+effort and observed XP portfolios. See [IDENTITY_PUBLICATION.md](IDENTITY_PUBLICATION.md)
+for exact source retention, review/incident snapshots, uncertainty and role grants.
+Its catalog exposes the two new identity reports and established session/cohort
+activity reports; the five observation reports remain definition 2.
 
 ## Public Python API
 
@@ -58,11 +64,16 @@ finally:
 ```
 
 `RollupTarget` validates all four identity fields and currently accepts only
-`definition_version=1` or `2`. `origin_ingest_id` is immutable per generation and is
+`definition_version=1`, `2` or `3`. Definition 3 requires an immutable identity
+reservation before processing. `origin_ingest_id` is immutable per generation and is
 the initial cursor for a newly bootstrapped state row. `through_ingest_id` is a
 fixed inclusive high-water bound; rows arriving later are intentionally left
 for a later invocation. A generation can be processed in pages while a
 previous published generation remains readable.
+For definition 3, the source window freezes at publication; processing later
+input requires a new generation. Explicit superseded generation reads preserve
+their earlier reports and identity/incident coverage. Definitions 1 and 2 retain
+their existing incremental and publication behavior.
 
 Pure helpers require only named mappings and are useful in offline/fake tests:
 
@@ -132,7 +143,8 @@ CLI/API report read is bounded (10,000 rows by default) and exposes
 a partial distribution as complete. The typed checkpoint/member contribution
 readers instead raise `BoundsExceeded` if their row limit would truncate a
 population; they never return an apparently complete partial distribution.
-`read_report()` serves only published generations and reads state plus rows in
+`read_report()` serves published generations (and explicitly selected superseded
+definition-3 generations) and reads state plus rows in
 one read-only REPEATABLE READ snapshot, even while an incremental writer advances.
 The default report caps are 10,000 rows, 32 MiB, and 30 seconds; callers can
 lower them explicitly as shown above.

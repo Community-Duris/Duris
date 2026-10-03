@@ -379,10 +379,13 @@ association or reviewer evidence. No current/latest-registry join is required.
 A reservation reports `balance_report_published=false` and
 `complete_identity_coverage_implied=false`. It does not calculate or publish effort,
 count controllers, authorize causal claims, or establish source/incident completeness.
-The remaining balance generation must consume authenticated retained ownership
-facts, the reserved association version and kind-9 loss/incident coverage in its
-atomic published effort and portfolio reports. The actual personal-local gameplay
-journeys remain required.
+Definition 3 now consumes authenticated retained ownership facts, the reserved
+association version and kind-9 loss/incident coverage in its atomic published
+effort and observed XP portfolio reports. See [IDENTITY_PUBLICATION.md](IDENTITY_PUBLICATION.md)
+for selected input retention, conserved coverage, union clocks and public report
+permissions. The reservation metadata itself retains the unpublished flag; only
+the committed publication header establishes publication. The actual personal-local
+gameplay journeys and the other complete balance requirements remain required.
 
 The focused SQL qualification uses disposable MySQL 8.0.46 and MariaDB 10.11.14,
 including the complete immutable migration chain. It exercises absent, disabled,

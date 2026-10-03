@@ -146,16 +146,18 @@ The incident registrar additionally needs SELECT/INSERT on the two v2 input
 tables; the rollup needs SELECT. The report reader's authority stays on the same
 two published snapshot tables. It cannot read either private review history or
 raw ownership facts. Both new tables are protected in the retained lifecycle
-inventory, which now includes 242 database tables.
+inventory, which now includes 246 database tables.
 
 Report definitions 1 and 2 use the v1 history. New balance definitions beginning
 with 3 use the v2 history and preserve the chosen reviewed inventory in the
 existing `(definition, generation, environment, season)` snapshot. The common
 snapshot/read seam supports kind 9 and atomic parent/detail rollback. Definition
-3 is still disabled in the maintained rollup/report catalog until effort and
-portfolio publication are implemented. A qualified incident snapshot alone does
-not publish a balance report, establish complete ownership coverage or supply
-an account/controller effort denominator.
+3 now integrates this snapshot into [atomic identity effort and observed XP
+portfolio publication](IDENTITY_PUBLICATION.md). The input retention header,
+incident snapshot, identity outputs and published status commit together. A
+qualified incident snapshot alone does not publish a balance report or establish
+complete ownership coverage. Known-ended ownership loss also requires a real
+same-producer anchor with comparable clocks before attribution can recover.
 
 The following qualification uses disposable local databases, both supported SQL
 engines, synthetic identities and committed facts. It reads no personal setup

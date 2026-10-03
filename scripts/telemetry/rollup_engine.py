@@ -14,9 +14,10 @@ import math
 from typing import Any, Callable, Mapping, MutableMapping, Protocol, Sequence, cast
 
 try:
-    from . import observation_semantics as observations
+    from . import observation_semantics as observations, identity_publication as identity_publication
 except ImportError:
     import observation_semantics as observations
+    import identity_publication
 
 try:  # Running as a package.
     from .rollup_definitions import (
@@ -315,6 +316,7 @@ class PageContribution:
     cohorts: dict[tuple[Any, ...], CohortDelta] = field(default_factory=dict)
     members: dict[tuple[Any, ...], MemberDelta] = field(default_factory=dict)
     observations: observations.ObservationPage = field(default_factory=observations.ObservationPage)
+    identity_inputs: list[Mapping[str, Any]] = field(default_factory=list)
     state_quality_flags: int = 0
     coverage_start_utc_usec: int | None = None
     coverage_end_utc_usec: int | None = None
@@ -914,6 +916,13 @@ def build_page_contributions(
     coverage_end_seen: int | None = prior_coverage_end_utc_usec
     seen_replay_keys: set[tuple[int, int, int]] = set()
 
+    def retain_identity_input(row, quality):
+        if target.definition_version == identity_publication.DEFINITION_VERSION:
+            contribution.identity_inputs.append(identity_publication.retain_input(row, target, quality))
+            contribution.estimated_bytes += identity_publication.INPUT_ROW_BYTE_BOUND
+            if max_page_bytes is not None and contribution.estimated_bytes > max_page_bytes:
+                raise BoundsExceeded("retained identity input exceeds page byte budget")
+
     for row in rows:
         ingest_id = _validate_common_row(row, previous_ingest)
         previous_ingest = ingest_id
@@ -938,6 +947,11 @@ def build_page_contributions(
                 # Ownership is retained for the identity generation. It adds
                 # no duration or new metrics to the existing v1/v2 definitions.
                 if kind == 9:
+                    if target.definition_version == identity_publication.DEFINITION_VERSION and (
+                        observation["environment_id"], observation["season_id"]) == (target.environment_id, target.season_id):
+                        _day, quality, _occurrence = observations.point_day(observation)
+                        contribution.state_quality_flags |= quality
+                        retain_identity_input(row, quality)
                     continue
                 # Version 1 keeps its playtime meaning while advancing over
                 # every valid family in the immutable mixed-kind input stream.
@@ -955,8 +969,14 @@ def build_page_contributions(
                     contribution.coverage_end_utc_usec = max(ends)
                     coverage_end_seen = occurrence if coverage_end_seen is None else max(coverage_end_seen, occurrence)
                 contribution.state_quality_flags |= quality
-                contribution.observations.add(observation, target, day, quality, occurrence)
-            except observations.ObservationError as error:
+                # Definition 2 owns the sealed observation tables. Definition 3
+                # retains progression facts for identity publication; its
+                # catalog does not offer the version-2 observation reports.
+                if target.definition_version == observations.DEFINITION_VERSION:
+                    contribution.observations.add(observation, target, day, quality, occurrence)
+                if kind == 6:
+                    retain_identity_input(row, quality)
+            except (observations.ObservationError, identity_publication.PublicationError) as error:
                 raise SemanticError(str(error)) from error
             continue
         _validate_optional_enums(row)
@@ -1081,6 +1101,10 @@ def build_page_contributions(
             interval_quality |= ROLLUP_QUALITY_LATE_INPUT
         session.quality_flags |= interval_quality
         contribution.state_quality_flags |= interval_quality
+        try:
+            retain_identity_input(row, interval_quality)
+        except identity_publication.PublicationError as error:
+            raise SemanticError(str(error)) from error
         for item in slices:
             attributable = item.duration_usec if item.known_utc and context_known else 0
             session.attributable_usec = _checked_add(
@@ -1126,6 +1150,7 @@ def build_page_contributions(
         + len(contribution.cohorts)
         + len(contribution.members)
         + contribution.observations.output_fanout
+        + len(contribution.identity_inputs)
     )
     if max_output_fanout is not None and contribution.output_fanout > max_output_fanout:
         raise BoundsExceeded(
@@ -1293,6 +1318,7 @@ def coverage_from_state_row(
     *,
     snapshot_high_watermark: int | None = None,
     incident_coverage: Mapping[str, Any] | None = None,
+    identity_coverage: Mapping[str, Any] | None = None,
 ) -> RollupCoverage:
     snapshot = (
         int(row.get("rebuild_through_ingest_id", 0))
@@ -1306,11 +1332,13 @@ def coverage_from_state_row(
         publication_status=int(row["publication_status"]),
         coverage_start_utc_usec=row.get("coverage_start_utc_usec"),
         coverage_end_utc_usec=row.get("coverage_end_utc_usec"),
-        quality_flags=int(row["quality_flags"]) | (0 if incident_coverage is None else int(incident_coverage["quality_flags"])),
+        quality_flags=int(row["quality_flags"]) | (0 if incident_coverage is None else int(incident_coverage["quality_flags"])) |
+            (0 if identity_coverage is None else int(identity_coverage["quality_flags"])),
         provisional=bool(row["provisional"]),
         rebuild_from_ingest_id=int(row["rebuild_from_ingest_id"]),
         rebuild_through_ingest_id=int(row["rebuild_through_ingest_id"]),
         incident_coverage=incident_coverage,
+        identity_coverage=identity_coverage,
     )
 
 

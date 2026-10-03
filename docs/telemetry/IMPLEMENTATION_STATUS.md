@@ -19,11 +19,12 @@ work. A future production deployment is a separate operational decision.
 | Native account lifetime and scoped token preparation | Implemented and locally qualified | Migration 0056 retains retired lifetimes, follows actual renames and issues one opaque token per scoped lifetime. Account-load caching, transaction/entropy/allocation failures, ambiguity, simultaneous preparation, deletion/recreation and restricted permissions passed on both local SQL engines. Preparation itself emits no authentication or participation evidence. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
 | Authenticated ownership observations | Implemented and locally qualified | Kind 9 observes scoped cached identity only on an authenticated playing descriptor with matching current account membership. Bounded admission recovery preserves original clock/payload, explicit loss spans and fresh transport key order. Reconnect/copyover, missing identity, logout retention, native writer replay/permissions, mixed-stream report compatibility and ownership outage export are qualified. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
 | Restricted reviewed identity registration and generation reservation | Implemented and locally qualified | Migration 0058 authenticates a provisioned SQL reviewer through the maintained registrar, verifies scoped issued account tokens, retains dated correction histories and reserves an immutable reviewed version/digest or explicit unknown identity per new balance generation. Both final 58-step chains, CLI, read-transaction release, capacity, permissions, rollback/ambiguity and exact fresh/restored fingerprints passed. Reservations are metadata and do not publish effort or imply complete identity. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
-| Copyover ownership context and ownership-loss review | Implemented and locally qualified | Outer copyover 18/telemetry-v2 retains last observed account context without importing an old monotonic clock or using the token as current authority. Legacy framing, overflow/unknown context and actual reloaded-token/scope/deletion changes passed native and ASan/UBSan fixtures. Migration 0059 adds independent incident schema-v2 inputs for families 1–9 and reuses existing snapshots; both 59-step chains, CLI, capacity, replay, private roles, atomic snapshot rollback and exact fresh/restored fingerprints passed. Balance definition 3 remains disabled until effort publication qualifies. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md) and [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
-| Character/account/confirmed controller association | In progress | Offline dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation, authenticated source capture and identity wire handoff are qualified; reviewed SQL registration, generation reservations and kind-9 incident snapshots are implemented. Remaining: atomic effort/report publication consuming the reserved review version and qualified ownership incident snapshot, plus real personal source journeys. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
+| Copyover ownership context and ownership-loss review | Implemented and locally qualified | Outer copyover 18/telemetry-v2 retains last observed account context without importing an old monotonic clock or using the token as current authority. Legacy framing, overflow/unknown context and actual reloaded-token/scope/deletion changes passed native and ASan/UBSan fixtures. Migration 0059 adds independent incident schema-v2 inputs for families 1–9 and reuses existing snapshots; both 59-step chains, CLI, capacity, replay, private roles, atomic snapshot rollback and exact fresh/restored fingerprints passed. Definition-3 integration is qualified below. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md) and [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
+| Atomic identity effort and observed XP portfolio publication | Implemented and locally qualified | Migration 0060 adds exact bounded source retention tied to the cursor, a conserved publication header and two reports. Definition 3 consumes the reserved dated review and incident schema 2 in the same publication transaction. Both 60-step chains qualified the actual CLI, corrections, old generations, explicit unknown identity, source/publication rollback, real committed writes with lost acknowledgements, private roles, budget refusal, guarded reruns and exact fresh/restored fingerprints. Definitions 1/2 retain their earlier amounts. See [IDENTITY_PUBLICATION.md](IDENTITY_PUBLICATION.md). |
+| Character/account/confirmed controller association | In progress | Dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation, authenticated source capture, identity wire handoff, reviewed SQL registration and immutable generation reservations are qualified. Atomic identity effort/report publication now consumes the reserved review and qualified ownership incident snapshot. Real personal source journeys and linkage coverage in the complete balance suites remain required. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
 | Shared battles and changing rosters | Pending | Link opponents and support actors to a shared battle, retain mode/roster segments, ownership-aware pets, compact context, observed outcomes and censored boundaries. |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
-| Progression and portfolios | In progress | Observed XP/level projections and offline exact account/controller effort union are qualified. Rested/assistance provenance, milestone exposure/censoring, published portfolio amounts, switching and comparable rates remain required. |
+| Progression and portfolios | In progress | Observed XP/level projections and published exact account/controller effort unions and observed XP portfolio amounts are qualified. Rested/assistance provenance, milestone exposure/censoring, switching, canonical comparable rewards and rates remain required. |
 | Four balance report suites and study exports | Pending | Racewar, solo/group PvP, zone and progression reports from published aggregates; uncertainty, repeated-team influence and coverage visible. Preserve existing report definitions. |
 | #487: economic projection compatibility | Pending audit and implementation | Reuse current accounting reconciliation where it meets acceptance; project canonical earned receipts without counting compatibility ledgers, transfers or openings as new rewards. |
 | #258: local observational acceptance and final runbook | In progress | Initial readiness/capacity recovery is implemented and qualified in executable fixtures. Remaining: dedicated roles/catalog, real session/progression readback, normal gameplay/save, failure/recovery and a single reproducible local qualification command. |
@@ -424,9 +425,10 @@ fingerprint before and after restoring deliberate drift.
 
 The existing incident snapshot tables atomically retain v2 metadata and details
 without widening the report role into either private review history or raw facts.
-This proof executes the common snapshot/read seam at definition-3 scope inside
-the bounded transaction. Definition 3 remains disabled in the public rollup/report
-catalog. It does not constitute atomic account/controller effort publication.
+This proof executed the common snapshot/read seam at definition-3 scope inside
+the bounded transaction. At this qualification point, definition 3 was disabled
+in the public rollup/report catalog. That incident-only proof did not constitute
+atomic account/controller effort publication; migration 0060 supplies it below.
 The three histories, compiled runtime metadata and lifecycle inventory now target
 head 59 and 242 database tables, with both measured engine fingerprints sealed.
 
@@ -440,8 +442,67 @@ boot schema preflight, 24 immutable-history tests and 22 lifecycle tests passed.
 The focused Python checks passed: 27 identity, 16 incident, 14 report and seven
 rollup-budget tests. Qualification used disposable task-owned local databases.
 
-The next identity work is the atomic effort/portfolio publisher: consume retained
-ownership observations, the reserved reviewed association version, kind-9 incident
-coverage, uncertainty and corrections. The real personal-local gameplay/save/
+The identity publisher is qualified below. The real personal-local gameplay/save/
 readback gate and the other complete balance requirements remain in issue #258.
 No production or staging access is required.
+
+## Qualified atomic identity effort and observed XP portfolios
+
+Definition 3 retains selected activity, progression and authenticated ownership
+facts in the existing cursor transaction. The ordered count and rolling digest
+bind those facts to its processed watermark. Publication verifies that retained
+source, consumes the reserved exact identity review and incident-schema-v2
+snapshot, writes both reports and seals the coverage header in the same commit.
+Published source windows freeze; corrections or later input require a new
+generation. Explicit reads preserve superseded generations and their reviews.
+
+Both MySQL 8.0.46 and MariaDB 10.11.14 passed the full 60-step immutable chain
+through `0060_telemetry_identity_publication`. Actual dedicated-role CLI journeys
+qualified ownership transfers, revised reviews, preserved old generations,
+explicit unknown identity, known/unknown ownership-loss windows, complete source
+digest checks, refusal before an unreserved buffering fetch, and read-only/private
+role boundaries. Later-family publication failure rolls back outputs, incident
+snapshot, header and published state; source-page failure rolls back retained
+inputs, header and cursor. Real committed source and publication writes with
+lost replies reconcile without duplication. Invalid SQL CHECK combinations fail.
+Guarded DDL reruns preserve inputs, the exact verifier refuses changed family
+constraints, and restoring drift returns the fresh whole-schema fingerprint.
+
+The same real mixed raw window also qualified definitions 1 and 2: their observed
+activity and XP amounts retain their earlier meanings, and no identity metadata
+is added. The five observation reports remain definition 2; definition 3 offers
+the new identity reports and established session/cohort activity reports. The
+separate administrator `report.py` catalog remains definition 1.
+
+Fifteen focused publication tests and the existing 27 identity tests passed,
+including six overlapping characters yielding six character effort units and
+one confirmed-controller union, transfers, review/day cuts, separate source and
+status XP cells, unknown clock/identity, threshold exclusion, capacity, replay,
+and conflicting clocks that cannot close a loss window. Existing incident,
+observation, report, rollup-engine and budget checks passed. These tests establish
+observations and atomicity; canonical economics, causal rotation effects,
+milestones and complete controller populations are not inferred.
+
+The measured fingerprints are:
+
+- MySQL 8.0.46: `df6b5bac2c6fd755651fd1be0e3f0c34f0e567fb679c5cdc9a1a7fbc453b10c6`.
+- MariaDB 10.11.14: `3f0b33ab825cca6506fbc4b7ea73b19e47bbe12e7ed7da71dcb2710a5abff221`.
+
+All three retained histories and the compiled runtime contract target head 60.
+The protected inventory covers 246 database tables and retains both coverage
+foreign-key dependencies; destructive policies remain disabled. Sealed migrations
+0054–0059 are unchanged. The focused runner is
+`bash tests/async/run_telemetry_repository_sql.sh --identity-publication` with
+either supported disposable engine image; exact commands and permissions are in
+[IDENTITY_PUBLICATION.md](IDENTITY_PUBLICATION.md). The maintained
+`make -C src -j2` server build, changed C/C++ formatting, runtime compatibility
+validation, nine telemetry preflight checks, 24 immutable-history checks,
+ten boot compatibility checks and 22 lifecycle checks passed with the final
+head and fingerprints.
+
+The complete accepted expansion remains active. Shared battles and changing
+rosters/context/support, PvE objectives and canonical rewards, rested/assistance/
+milestones/switching, four balance suites and study exports, #487 compatibility,
+and the final real personal-local gameplay/persistence/performance qualification
+remain required in the single issue #258 expectation. Production and staging
+access are unnecessary.

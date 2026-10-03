@@ -11,7 +11,7 @@ confirmed-controller effort. Names, email, IP and devices are not inputs.
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import hashlib
 import json
 from pathlib import Path
@@ -22,12 +22,12 @@ try:
     from .incident import IncidentError, load_evidence_packet
     from .rollup_definitions import (UTC_UNKNOWN, UINT64_MAX, ROLLUP_QUALITY_MASK,
         ROLLUP_QUALITY_UTC_UNKNOWN, ROLLUP_QUALITY_UTC_MISMATCH,
-        ROLLUP_QUALITY_UTC_BACKWARD, ROLLUP_QUALITY_UTC_FANOUT)
+        ROLLUP_QUALITY_UTC_BACKWARD, ROLLUP_QUALITY_UTC_FANOUT, ROLLUP_QUALITY_INCIDENT_GAP)
 except ImportError:
     from incident import IncidentError, load_evidence_packet
     from rollup_definitions import (UTC_UNKNOWN, UINT64_MAX, ROLLUP_QUALITY_MASK,
         ROLLUP_QUALITY_UTC_UNKNOWN, ROLLUP_QUALITY_UTC_MISMATCH,
-        ROLLUP_QUALITY_UTC_BACKWARD, ROLLUP_QUALITY_UTC_FANOUT)
+        ROLLUP_QUALITY_UTC_BACKWARD, ROLLUP_QUALITY_UTC_FANOUT, ROLLUP_QUALITY_INCIDENT_GAP)
 
 REGISTRY_SCHEMA_VERSION = 1
 MAX_ASSOCIATIONS = 1_024
@@ -378,6 +378,8 @@ class OwnershipObservation:
     at_monotonic_usec: int
     account_token: int | None
     source: str
+    at_utc_usec: int | None = None
+    quality_flags: int = 0
 
     def __post_init__(self) -> None:
         _identity_tuple(self.scope, 2, "scope")
@@ -390,6 +392,10 @@ class OwnershipObservation:
         _integer(self.account_token, "account_token", nullable=True)
         if type(self.source) is not str or self.source not in OWNERSHIP_SOURCES or (self.source == "unavailable") != (self.account_token is None):
             raise IdentityError("ownership_source_identity")
+        _utc(self.at_utc_usec, "ownership_utc", nullable=True)
+        _integer(self.quality_flags, "ownership_quality", zero=True)
+        if self.quality_flags & ~ROLLUP_QUALITY_MASK:
+            raise IdentityError("unknown_ownership_quality")
 
 
 @dataclass(frozen=True, slots=True)
@@ -442,7 +448,7 @@ class ObservedInterval:
 @dataclass(frozen=True, slots=True)
 class AttributedSlice:
     interval: ObservedInterval
-    registry_version: int
+    registry_version: int | None
     start_monotonic_usec: int
     end_monotonic_usec: int
     start_utc_usec: int | None
@@ -451,11 +457,15 @@ class AttributedSlice:
     controller_token: int | None
     association_id: int | None
     linkage_status: str
+    quality_flags: int = 0
 
     def __post_init__(self) -> None:
         if type(self.interval) is not ObservedInterval:
             raise IdentityError("invalid_effort_interval")
-        _integer(self.registry_version, "registry_version")
+        _integer(self.registry_version, "registry_version", nullable=True)
+        _integer(self.quality_flags, "slice_quality", zero=True)
+        if self.quality_flags & ~ROLLUP_QUALITY_MASK:
+            raise IdentityError("unknown_slice_quality")
         for name in ("start_monotonic_usec", "end_monotonic_usec"):
             _integer(getattr(self, name), name, zero=True)
         for name in ("start_utc_usec", "end_utc_usec"):
@@ -465,7 +475,7 @@ class AttributedSlice:
         i = self.interval
         if not i.start_monotonic_usec <= self.start_monotonic_usec < self.end_monotonic_usec <= i.end_monotonic_usec:
             raise IdentityError("invalid_effort_slice")
-        if i.comparable_utc:
+        if self.comparable_utc:
             if self.start_utc_usec != i.start_utc_usec + self.start_monotonic_usec - i.start_monotonic_usec or (
                 self.end_utc_usec != i.start_utc_usec + self.end_monotonic_usec - i.start_monotonic_usec):
                 raise IdentityError("effort_clock_conflict")
@@ -474,12 +484,14 @@ class AttributedSlice:
         status = self.linkage_status
         if self.account_token is None:
             valid = status == "unknown_account" and self.controller_token is None and self.association_id is None
-        elif not i.comparable_utc:
+        elif not self.comparable_utc:
             valid = status == "clock_unknown" and self.controller_token is None and self.association_id is None
         elif status in ("confirmed", "unknown"):
             valid = self.association_id is not None and (self.controller_token is not None) == (status == "confirmed")
         else:
             valid = status in ("outside_reviewed_window", "no_reviewed_mapping") and self.controller_token is None and self.association_id is None
+        if self.registry_version is None and (self.controller_token is not None or self.association_id is not None):
+            valid = False
         if not valid:
             raise IdentityError("invalid_linkage_status")
 
@@ -487,43 +499,83 @@ class AttributedSlice:
     def duration_usec(self) -> int:
         return self.end_monotonic_usec - self.start_monotonic_usec
 
+    @property
+    def attribution_quality(self) -> int:
+        return self.interval.attribution_quality | self.quality_flags
 
-def attribute_interval(interval: ObservedInterval, ownership: Sequence[OwnershipObservation], registry: Registry) -> tuple[AttributedSlice, ...]:
+    @property
+    def comparable_utc(self) -> bool:
+        return not self.attribution_quality & UTC_ATTRIBUTION_FLAGS
+
+
+def ordered_ownership(scope: tuple[int, int], session: tuple[int, int, int], subject_id: int,
+                      pid: int, producer: tuple[int, int],
+                      ownership: Sequence[OwnershipObservation]) -> tuple[OwnershipObservation, ...]:
+    """Validate and order one character/session's observed producer clock."""
+    _identity_tuple(scope, 2, "scope")
+    _identity_tuple(session, 3, "session")
+    _identity_tuple(producer, 2, "producer")
+    _integer(subject_id, "subject_id")
+    if type(pid) is not int or not 0 < pid < (1 << 31):
+        raise IdentityError("invalid_pid")
+    if len(ownership) > MAX_OWNERSHIP_OBSERVATIONS:
+        raise IdentityError("invalid_or_oversized_attribution")
+    by_replay: dict[tuple[int, int, int], OwnershipObservation] = {}
+    for row in ownership:
+        if type(row) is not OwnershipObservation:
+            raise IdentityError("invalid_ownership_type")
+        if row.scope != scope or row.session != session or (row.subject_id, row.pid) != (subject_id, pid):
+            raise IdentityError("ownership_session_mismatch")
+        if row.replay in by_replay and by_replay[row.replay] != row:
+            raise IdentityError("ownership_replay_conflict")
+        by_replay[row.replay] = row
+    by_clock: dict[int, OwnershipObservation] = {}
+    for row in sorted(by_replay.values(), key=lambda r: (r.at_monotonic_usec, r.replay[2])):
+        if row.replay[:2] != producer:
+            continue
+        prior = by_clock.get(row.at_monotonic_usec)
+        if prior is not None:
+            if prior.account_token != row.account_token:
+                raise IdentityError("ambiguous_ownership_boundary")
+            quality = prior.quality_flags | row.quality_flags
+            if prior.at_utc_usec is not None and row.at_utc_usec is not None and prior.at_utc_usec != row.at_utc_usec:
+                quality |= ROLLUP_QUALITY_UTC_MISMATCH
+            row = replace(row, quality_flags=quality)
+        by_clock[row.at_monotonic_usec] = row
+    return tuple(by_clock[point] for point in sorted(by_clock))
+
+
+def attribute_interval(interval: ObservedInterval, ownership: Sequence[OwnershipObservation],
+                       registry: Registry | None, *,
+                       ownership_gap_windows: Sequence[tuple[int, int]] = ()) -> tuple[AttributedSlice, ...]:
     """Split at observed ownership and reviewed linkage boundaries, conserving time.
 
     Monotonic clocks are usable only within the interval's producer incarnation.
     An inherited original session ID does not make a previous process's clock
     comparable. Ownership before the first matching observation stays unknown.
     """
-    if type(interval) is not ObservedInterval or type(registry) is not Registry or len(ownership) > MAX_OWNERSHIP_OBSERVATIONS:
+    if type(interval) is not ObservedInterval or (registry is not None and type(registry) is not Registry):
         raise IdentityError("invalid_or_oversized_attribution")
-    if interval.scope != (registry.environment_id, registry.season_id):
+    if registry is not None and interval.scope != (registry.environment_id, registry.season_id):
         raise IdentityError("registry_scope_mismatch")
-    by_replay: dict[tuple[int, int, int], OwnershipObservation] = {}
-    observations = []
-    for row in ownership:
-        if type(row) is not OwnershipObservation:
-            raise IdentityError("invalid_ownership_type")
-        if row.scope != interval.scope or row.session != interval.session or (row.subject_id, row.pid) != (interval.subject_id, interval.pid):
-            raise IdentityError("ownership_session_mismatch")
-        if row.replay in by_replay and by_replay[row.replay] != row:
-            raise IdentityError("ownership_replay_conflict")
-        by_replay[row.replay] = row
-    for row in by_replay.values():
-        if row.replay[:2] == interval.replay[:2]:
-            observations.append(row)
-    observations.sort(key=lambda row: (row.at_monotonic_usec, row.replay[2]))
-    accounts_at: dict[int, int | None] = {}
-    for row in observations:
-        if row.at_monotonic_usec in accounts_at and accounts_at[row.at_monotonic_usec] != row.account_token:
-            raise IdentityError("ambiguous_ownership_boundary")
-        accounts_at[row.at_monotonic_usec] = row.account_token
+    observations = ordered_ownership(interval.scope, interval.session, interval.subject_id, interval.pid,
+                                     interval.replay[:2], ownership)
     start, end = interval.start_monotonic_usec, interval.end_monotonic_usec
     cuts = {start, end}
-    cuts.update(point for point in accounts_at if start < point < end)
-    if interval.comparable_utc:
+    cuts.update(row.at_monotonic_usec for row in observations if start < row.at_monotonic_usec < end)
+    if len(ownership_gap_windows) > 64:
+        raise IdentityError("ownership_gap_capacity")
+    for window in ownership_gap_windows:
+        if type(window) is not tuple or len(window) != 2:
+            raise IdentityError("invalid_ownership_gap")
+        _integer(window[0], "gap_start", zero=True)
+        _integer(window[1], "gap_end", zero=True)
+        if window[0] >= window[1]:
+            raise IdentityError("invalid_ownership_gap")
+        cuts.update(point for point in window if start < point < end)
+    if interval.comparable_utc and registry is not None:
         review_cuts = {registry.reviewed_from_utc_usec, registry.reviewed_through_utc_usec}
-        relevant_accounts = set(accounts_at.values()) - {None}
+        relevant_accounts = {row.account_token for row in observations} - {None}
         for row in registry.associations:
             if row.status != "withdrawn" and row.account_token in relevant_accounts:
                 review_cuts.add(row.valid_from_utc_usec)
@@ -534,25 +586,40 @@ def attribute_interval(interval: ObservedInterval, ownership: Sequence[Ownership
     sorted_cuts = sorted(cuts)
     result = []
     observation_index = 0
-    account = None
+    sample = None
     for first, last in zip(sorted_cuts, sorted_cuts[1:]):
         while observation_index < len(observations) and observations[observation_index].at_monotonic_usec <= first:
-            account = observations[observation_index].account_token
+            sample = observations[observation_index]
             observation_index += 1
-        utc_first = interval.start_utc_usec + first - start if interval.comparable_utc else None
-        utc_last = interval.start_utc_usec + last - start if interval.comparable_utc else None
-        controller, association, status = registry.linkage_at(account, utc_first)
-        result.append(AttributedSlice(interval, registry.registry_version, first, last, utc_first, utc_last,
-                                      account, controller, association, status))
+        quality = 0 if sample is None else sample.quality_flags
+        account = None if sample is None else sample.account_token
+        if sample is not None and sample.at_utc_usec is not None and interval.comparable_utc and (
+            sample.at_utc_usec != interval.start_utc_usec + sample.at_monotonic_usec - start):
+            quality |= ROLLUP_QUALITY_UTC_MISMATCH
+        if any(gap_first <= first < gap_last for gap_first, gap_last in ownership_gap_windows):
+            account = None
+            quality |= ROLLUP_QUALITY_INCIDENT_GAP
+        comparable = not (interval.attribution_quality | quality) & UTC_ATTRIBUTION_FLAGS
+        utc_first = interval.start_utc_usec + first - start if comparable else None
+        utc_last = interval.start_utc_usec + last - start if comparable else None
+        controller, association, status = linkage_at(registry, account, utc_first)
+        result.append(AttributedSlice(interval, None if registry is None else registry.registry_version,
+            first, last, utc_first, utc_last, account, controller, association, status, quality))
     if sum(row.duration_usec for row in result) != end - start:
         raise IdentityError("attribution_duration_conflict")
     return tuple(result)
 
 
+def linkage_at(registry: Registry | None, account: int | None, utc: int | None) -> tuple[int | None, int | None, str]:
+    if registry is not None:
+        return registry.linkage_at(account, utc)
+    return None, None, "unknown_account" if account is None else "clock_unknown" if utc is None else "no_reviewed_mapping"
+
+
 @dataclass(frozen=True, slots=True)
 class EffortTotals:
     scope: tuple[int, int]
-    registry_version: int
+    registry_version: int | None
     config_id: int
     category: str
     basis: str
@@ -583,17 +650,18 @@ def _sum(values: Sequence[int]) -> int:
     return total
 
 
-def union_effort(slices: Sequence[AttributedSlice], *, category: str = "active") -> tuple[EffortTotals, ...]:
+def union_effort(slices: Sequence[AttributedSlice], *, category: str = "active",
+                 include_characters: bool = False) -> tuple[EffortTotals, ...]:
     """Account and confirmed-controller union time in compatible cells.
 
     Results describe exactly the supplied covered input. The report caller must
     publish input/retention completeness. Presence never becomes input-derived
     activity, and an unknown-controller population has no combined human clock.
     """
-    if type(category) is not str or category not in CATEGORIES or len(slices) > MAX_EFFORT_SLICES:
+    if type(category) is not str or category not in CATEGORIES or len(slices) > MAX_EFFORT_SLICES or type(include_characters) is not bool:
         raise IdentityError("invalid_effort_category_or_capacity")
     seen: dict[tuple[Any, ...], AttributedSlice] = {}
-    versions: dict[tuple[int, int], int] = {}
+    versions: dict[tuple[int, int], int | None] = {}
     for row in slices:
         if type(row) is not AttributedSlice or type(row.interval) is not ObservedInterval:
             raise IdentityError("invalid_effort_type")
@@ -633,6 +701,8 @@ def union_effort(slices: Sequence[AttributedSlice], *, category: str = "active")
         if i.category != category:
             continue
         identities = (("account", row.account_token), ("controller", row.controller_token))
+        if include_characters:
+            identities = (("character", i.subject_id), *identities)
         for basis, token in identities:
             if token is None:
                 basis = "unknown_" + basis
@@ -640,14 +710,19 @@ def union_effort(slices: Sequence[AttributedSlice], *, category: str = "active")
             cells.setdefault(key, []).append(row)
     result = []
     for key, rows in sorted(cells.items(), key=lambda item: item[0]):
-        covered = [row for row in rows if row.start_utc_usec is not None]
-        unknown = [row for row in rows if row.start_utc_usec is None]
-        known_identity = key[4] in ("account", "controller")
-        covered_union = _union([(row.start_utc_usec, row.end_utc_usec) for row in covered]) if known_identity else None
+        def clock(row):
+            if key[4] == "character" and row.interval.comparable_utc:
+                origin = row.interval.start_utc_usec - row.interval.start_monotonic_usec
+                return row.start_monotonic_usec + origin, row.end_monotonic_usec + origin
+            return None if row.start_utc_usec is None else (row.start_utc_usec, row.end_utc_usec)
+        covered = [row for row in rows if clock(row) is not None]
+        unknown = [row for row in rows if clock(row) is None]
+        known_identity = key[4] in ("character", "account", "controller")
+        covered_union = _union([clock(row) for row in covered]) if known_identity else None
         character = _sum([row.duration_usec for row in rows])
         quality = 0
         for row in rows:
-            quality |= row.interval.attribution_quality
+            quality |= row.attribution_quality
         result.append(EffortTotals(*key, character, _sum([row.duration_usec for row in covered]),
             _sum([row.duration_usec for row in unknown]), covered_union, covered_union if known_identity and not unknown else None,
             len({row.interval.subject_id for row in rows}), len({row.account_token for row in rows if row.account_token is not None}), quality))

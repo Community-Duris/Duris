@@ -244,7 +244,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     definitions = subparsers.add_parser("definitions", help="print stable report definitions without SQL")
-    definitions.add_argument("--definition-version", type=int, default=1, choices=(1, 2))
+    definitions.add_argument("--definition-version", type=int, default=1, choices=(1, 2, 3))
     definitions.set_defaults(handler=_definitions)
 
     run = subparsers.add_parser("run", help="process one explicit generation through one fixed raw high-water mark")
