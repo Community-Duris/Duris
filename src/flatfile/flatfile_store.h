@@ -17,6 +17,10 @@ enum class flatfile_read_result
 
 bool flatfile_atomic_write(const std::string &directory, const std::string &name,
 			   const std::vector<uint8_t> &bytes, std::string *error);
+// Reports rename separately: a false return after publication is uncertain.
+bool flatfile_atomic_write_with_publication(const std::string &directory, const std::string &name,
+					    const std::vector<uint8_t> &bytes, std::string *error,
+					    bool *published);
 bool flatfile_atomic_remove(const std::string &directory, const std::string &name, bool missing_ok,
 			    std::string *error);
 flatfile_read_result flatfile_read(const std::string &directory, const std::string &name,

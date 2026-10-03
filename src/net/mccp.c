@@ -148,7 +148,13 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 			return 0;
 		int len = 3;
 		while (len + 1 < buflen && !(p[len] == IAC && p[len + 1] == SE))
-			len++;
+		{
+			/* IAC IAC is an escaped payload byte, not a possible IAC SE. */
+			if (p[len] == IAC && p[len + 1] == IAC)
+				len += 2;
+			else
+				len++;
+		}
 
 		/* incomplete, wait for more */
 		if (len + 1 >= buflen)
@@ -157,12 +163,25 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 		len += 2; /* include IAC SE */
 		if (!admit_session_oob(player, len))
 			return len;
+		int payload_len = len - 5;
+		if (p[2] == TELOPT_TTYPE || p[2] == TELOPT_GMCP)
+		{
+			/* Remove Telnet's doubled-IAC quoting before protocol dispatch. */
+			int unescaped_len = 0;
+			for (int i = 0; i < payload_len; i++)
+			{
+				if (p[3 + i] == IAC && i + 1 < payload_len && p[4 + i] == IAC)
+					i++;
+				p[3 + unescaped_len++] = p[3 + i];
+			}
+			payload_len = unescaped_len;
+		}
 
 		if (p[2] == TELOPT_TTYPE)
 		{
 			if (p[3] == TELQUAL_IS)
 			{
-				ttype_handle_subnegotiation(player, p + 3, len - 5);
+				ttype_handle_subnegotiation(player, p + 3, payload_len);
 			}
 			else
 			{
@@ -173,7 +192,7 @@ int parse_telnet_options(P_desc player, char *buf, int buflen)
 		/* If GMCP subnegotiation, pass data to handler */
 		else if (p[2] == TELOPT_GMCP && len > 5)
 		{
-			gmcp_handle_input(player, (const char *)(p + 3), len - 5);
+			gmcp_handle_input(player, (const char *)(p + 3), payload_len);
 		}
 		return len;
 	}
