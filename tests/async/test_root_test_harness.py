@@ -149,6 +149,42 @@ print("root build and test harness contracts passed")
 
 
 class RunnerBehavior(unittest.TestCase):
+    @unittest.skipUnless(os.name == "posix", "SQL shell fixtures require Bash")
+    def test_legacy_sql_cleanup_uses_owned_container_id(self):
+        # Exercise the actual wrapper with a private Docker CLI boundary. A name
+        # collision must preserve the existing container; a later setup failure
+        # must remove only the ID returned by this invocation's successful run.
+        docker = self.root / "docker"
+        docker.write_text(f"#!{sys.executable}\n" + '''
+import json, os, sys
+args = sys.argv[1:]
+with open(os.environ["DOCKER_TRACE"], "a") as trace:
+    trace.write(json.dumps(args[:1] + (args[1:] if args[0] == "rm" else [])) + "\\n")
+if args[0] == "run":
+    if os.environ["DOCKER_SCENARIO"] == "collision":
+        sys.exit(125)
+    print("a" * 64)
+elif args[0] == "exec":
+    sys.exit(0 if "SELECT 1" in args else 87)
+elif args[0] != "rm":
+    sys.exit(88)
+''')
+        docker.chmod(0o755)
+        sleep = self.root / "sleep"
+        sleep.write_text("#!/bin/sh\nexit 0\n")
+        sleep.chmod(0o755)
+        for scenario, expected_exit in (("collision", 125), ("setup-failure", 87)):
+            with self.subTest(scenario=scenario):
+                trace = self.root / (scenario + ".jsonl")
+                environment = dict(os.environ, PATH=str(self.root) + os.pathsep + os.environ["PATH"],
+                                   DOCKER_TRACE=str(trace), DOCKER_SCENARIO=scenario)
+                result = subprocess.run(["bash", str(ROOT / "tests/async/run_runtime_compatibility_mysql.sh")],
+                                        env=environment, capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, expected_exit, result.stdout + result.stderr)
+                calls = [json.loads(line) for line in trace.read_text().splitlines()]
+                removals = [call for call in calls if call[0] == "rm"]
+                self.assertEqual(removals, [] if scenario == "collision" else [["rm", "-f", "a" * 64]])
+
     def test_explicit_arguments_and_fixture_environment_reach_observed_child(self):
         path = self.script("test_arguments.py", "import sys, os\n"
                            "assert sys.argv[1:] == ['--fixture', 'literal space']\n"

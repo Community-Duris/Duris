@@ -697,7 +697,7 @@
   "test_rested_toggle_ui.py": {"profile":"journey","mode":"script","minimum_cases":1,"cpu":2,"memory_mb":2048,"seconds":1.312,"purpose":"Focused account/WebSocket presentation checks for the rested feature gate."},
   "test_riposte_lifetime.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":0.905,"purpose":"Production riposte control flow with destructive attack callbacks under sanitizers."},
   "test_room_leave_veto_contract.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.284,"purpose":"Regression contract for room-hook leave veto and duplicate room insertion."},
-  "test_root_test_harness.py": {"profile":"fast","mode":"unittest","minimum_cases":22,"cpu":1,"memory_mb":256,"seconds":2.118,"purpose":"Contracts for the repository-level build and regression harness."},
+  "test_root_test_harness.py": {"profile":"fast","mode":"unittest","minimum_cases":23,"cpu":1,"memory_mb":256,"seconds":2.118,"purpose":"Contracts for the repository-level build and regression harness."},
   "test_runtime_boot_compatibility.py": {"profile":"fast","mode":"unittest","minimum_cases":10,"cpu":1,"memory_mb":256,"seconds":0.342,"purpose":"Source and manifest contracts for pre-mutation boot compatibility."},
   "test_runtime_connection_trust.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.029,"purpose":"Runtime database and listener trust-boundary source contracts."},
   "test_safe_format.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":0.086,"purpose":"Runtime coverage for overlap-safe, checked fixed-buffer formatting."},

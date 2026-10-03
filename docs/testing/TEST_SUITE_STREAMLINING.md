@@ -224,7 +224,11 @@ its actual service. The existing 90-second readiness limit remains unchanged.
 The shared SQL owner creates only new labelled containers with generated
 credentials. A container runner shares only its own validated network namespace;
 a native Linux runner publishes exclusively on loopback. Legacy wrappers retain
-their existing SQL harnesses and now receive the selected engine. Original client
+their existing SQL harnesses and now receive the selected engine. Their cleanup
+uses the created container ID, so failed creation cannot remove an existing
+container with the requested name. The fast gate exercises both name-collision
+refusal and cleanup after a later setup failure through a simulated Docker CLI.
+Original client
 errors, setup/query events, source and synthetic journal digests, and outcomes are
 written before cleanup. Credentials are redacted. Every attempt gets a new evidence
 directory; a passing rerun cannot replace the original failure.

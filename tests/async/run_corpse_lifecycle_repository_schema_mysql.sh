@@ -7,7 +7,8 @@ cd "$ROOT"
 NAME="duris-corpse-lifecycle-repository-$$-$RANDOM"
 PASSWORD="corpse-lifecycle-repository-$$-$RANDOM"
 IMAGE="${CORPSE_LIFECYCLE_REPOSITORY_DB_IMAGE:-mariadb:10.11}"
-cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
+SQL_FIXTURE_CONTAINER_ID=
+cleanup() { [[ "${SQL_FIXTURE_CONTAINER_ID:-}" =~ ^[0-9a-f]{64}$ ]] && docker rm -f "$SQL_FIXTURE_CONTAINER_ID" >/dev/null 2>&1 || true; }
 trap cleanup EXIT HUP INT TERM
 if [[ "$IMAGE" == mariadb:* ]]; then
 	PASSWORD_ENV=MARIADB_ROOT_PASSWORD
@@ -16,8 +17,8 @@ else
 fi
 source "$ROOT/tests/async/_sql_fixture_network.sh"
 sql_fixture_network
-docker run -d --name "$NAME" "${SQL_FIXTURE_NETWORK[@]}" \
-	-e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}" >/dev/null
+SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$NAME" "${SQL_FIXTURE_NETWORK[@]}" \
+	-e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}")
 mapping="$(sql_fixture_mapping "$NAME")"
 export ENVIRONMENT=test DB_HOST="${CORPSE_LIFECYCLE_REPOSITORY_DB_HOST:-127.0.0.1}" \
 	DB_PORT="${mapping##*:}"

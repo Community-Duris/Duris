@@ -6,7 +6,8 @@ PASSWORD=$(printf 'runtime-contract-%s-%s' "$$" "$RANDOM")
 DB_NAME="runtime_contract_test"
 LEGACY_DB_NAME="runtime_contract_legacy_test"
 DB_IMAGE="${RUNTIME_DB_IMAGE:-mysql:8.0}"
-cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
+SQL_FIXTURE_CONTAINER_ID=
+cleanup() { [[ "${SQL_FIXTURE_CONTAINER_ID:-}" =~ ^[0-9a-f]{64}$ ]] && docker rm -f "$SQL_FIXTURE_CONTAINER_ID" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
 trap 'printf "runtime schema proof failed at line %s (replay=%s step=%s)\n" "$LINENO" "${replay:-legacy}" "${file:-setup}" >&2' ERR
 if [[ "$DB_IMAGE" == mariadb:* ]]; then
@@ -14,7 +15,7 @@ if [[ "$DB_IMAGE" == mariadb:* ]]; then
 else
     ROOT_PASSWORD_ENV="MYSQL_ROOT_PASSWORD"
 fi
-docker run -d --name "$NAME" -e "$ROOT_PASSWORD_ENV=$PASSWORD" "$DB_IMAGE" --innodb-use-native-aio=OFF >/dev/null
+SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$NAME" -e "$ROOT_PASSWORD_ENV=$PASSWORD" "$DB_IMAGE" --innodb-use-native-aio=OFF)
 ready=0
 for _ in $(seq 1 90); do
     if docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -N -e 'SELECT 1' >/dev/null 2>&1; then

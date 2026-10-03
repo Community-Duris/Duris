@@ -31,13 +31,14 @@ IMAGE="${ATM_PUBLICATION_DB_IMAGE:-mariadb:10.11}"
 PROXY_PID=""
 PORT_FILE=""
 export MARIADB_ROOT_PASSWORD="$PASSWORD"
+SQL_FIXTURE_CONTAINER_ID=
 cleanup() {
     if [[ -n "$PROXY_PID" ]]; then
         kill "$PROXY_PID" >/dev/null 2>&1 || true
         wait "$PROXY_PID" >/dev/null 2>&1 || true
     fi
     if [[ -n "$PORT_FILE" ]]; then rm -f "$PORT_FILE"; fi
-    docker rm -fv "$NAME" >/dev/null 2>&1 || true
+    [[ "${SQL_FIXTURE_CONTAINER_ID:-}" =~ ^[0-9a-f]{64}$ ]] && docker rm -fv "$SQL_FIXTURE_CONTAINER_ID" >/dev/null 2>&1 || true
     if docker container inspect "$NAME" >/dev/null 2>&1; then
         printf 'ATM SQL disposable container remains after cleanup: %s\n' "$NAME" >&2
         return 1
@@ -53,8 +54,8 @@ if [[ "$IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PA
 export "$PASSWORD_ENV=$PASSWORD"
 source "$ROOT/tests/async/_sql_fixture_network.sh"
 sql_fixture_network
-docker run -d --name "$NAME" --cpus=2 --memory=2g --memory-swap=2g \
-    "${SQL_FIXTURE_NETWORK[@]}" -e "$PASSWORD_ENV" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}" >/dev/null
+SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$NAME" --cpus=2 --memory=2g --memory-swap=2g \
+    "${SQL_FIXTURE_NETWORK[@]}" -e "$PASSWORD_ENV" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}")
 mapping="$(sql_fixture_mapping "$NAME")"
 if [[ "$mapping" != 127.0.0.1:* ]]; then
     printf 'ATM SQL fixture published outside loopback: %s\n' "$mapping" >&2

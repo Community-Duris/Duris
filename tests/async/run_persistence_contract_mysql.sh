@@ -7,15 +7,16 @@ PASSWORD="contract-test-only"
 DB_NAME="persistence_contract_test"
 REF_DB="persistence_contract_bootstrap_reference"
 
+SQL_FIXTURE_CONTAINER_ID=
 cleanup() {
-    docker rm -f "$NAME" >/dev/null 2>&1 || true
+    [[ "${SQL_FIXTURE_CONTAINER_ID:-}" =~ ^[0-9a-f]{64}$ ]] && docker rm -f "$SQL_FIXTURE_CONTAINER_ID" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
 IMAGE="${DURIS_TEST_DB_IMAGE:-mysql:8.0}"
 if [[ "$IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PASSWORD_ENV=MYSQL_ROOT_PASSWORD; fi
-docker run -d --name "$NAME" \
-    -e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" --innodb-use-native-aio=OFF >/dev/null
+SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$NAME" \
+    -e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" --innodb-use-native-aio=OFF)
 
 for _ in $(seq 1 60); do
     if docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -N -e 'SELECT 1' >/dev/null 2>&1; then
