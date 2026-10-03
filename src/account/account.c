@@ -3604,9 +3604,9 @@ void verify_delete_account(P_desc d, char *arg)
 		return;
 	}
 
+#ifndef __NO_MYSQL__
 	if (!fenced)
 	{
-#ifndef __NO_MYSQL__
 		// Admit the irreversible request before writing its durable fence. Hold
 		// the native lease through that write, then release it before draining
 		// worker saves; the deletion backend establishes its own admission.
@@ -3622,7 +3622,6 @@ void verify_delete_account(P_desc d, char *arg)
 			display_account_menu(d, NULL);
 			return;
 		}
-#endif
 		const char previous_block = d->account->acct_blocked;
 		d->account->acct_blocked = ACCOUNT_BLOCK_DELETION;
 		if (write_account(d->account) != 1)
@@ -3638,6 +3637,40 @@ void verify_delete_account(P_desc d, char *arg)
 		}
 		statuslog(56, "account deletion fenced (account=redacted)");
 	}
+#else
+	{
+		const char previous_block = d->account->acct_blocked;
+		d->account->acct_blocked = ACCOUNT_BLOCK_DELETION;
+		std::string error;
+		const auto result = flatfile_account_state_fence(d->account, fenced, &error);
+		if (result != flatfile_account_fence_result::ready)
+		{
+			if (!fenced && result == flatfile_account_fence_result::refused)
+			{
+				d->account->acct_blocked = previous_block;
+				SEND_TO_Q(
+					"\r\nAccount deletion could not establish its durable fence; no data "
+					"was deleted. Please contact an immortal.\r\n",
+					d);
+				STATE(d) = CON_DISPLAY_ACCT_MENU;
+				display_account_menu(d, NULL);
+			}
+			else
+			{
+				close_other_account_sessions(d);
+				SEND_TO_Q(
+					"\r\nAccount deletion fence publication is awaiting native "
+					"recovery. The request cannot be cancelled; retry the exact "
+					"account name or contact an immortal.\r\n",
+					d);
+				display_account_deletion_confirmation(d, true);
+			}
+			return;
+		}
+		if (!fenced)
+			statuslog(56, "account deletion fenced (account=redacted)");
+	}
+#endif
 
 	std::vector<account_deletion_identity> identities;
 	if (!capture_account_deletion_identities(d, &identities))

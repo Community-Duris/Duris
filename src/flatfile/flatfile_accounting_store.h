@@ -80,9 +80,10 @@ class flatfile_accounting_storage
 	friend class flatfile_accounting_test_access;
 #endif
 	friend flatfile_authority_transaction_result
-	flatfile_authority_transaction_commit_operations(
+	flatfile_authority_transaction_commit_operations_with_outcome(
 		const std::string &, const flatfile_authority_lock &,
-		const std::vector<flatfile_authority_operation> &, std::string *);
+		const std::vector<flatfile_authority_operation> &, std::string *,
+		flatfile_authority_commit_outcome *);
 	static flatfile_accounting_status
 	initialize_bucket(const std::string &, const flatfile_authority_lock &,
 			  const critical_operation_id &, size_t bucket,
@@ -103,6 +104,10 @@ class flatfile_accounting_storage
 	static flatfile_authority_transaction_result
 	commit(const std::string &, const flatfile_authority_lock &,
 	       const std::vector<flatfile_authority_operation> &, std::string *);
+	static flatfile_authority_transaction_result
+	commit_with_outcome(const std::string &, const flatfile_authority_lock &,
+			    const std::vector<flatfile_authority_operation> &, std::string *,
+			    flatfile_authority_commit_outcome *);
 };
 
 #endif
