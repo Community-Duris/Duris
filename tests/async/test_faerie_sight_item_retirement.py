@@ -78,6 +78,11 @@ enum class item_spell_component_effect { faerie_sight = 1 };
 #define GET_LEVEL(ch) ((ch)->level)
 #define OBJ_VNUM(obj) ((obj)->vnum)
 P_char character_list = nullptr;
+P_char find_character_by_runtime_id(uint64_t id) {
+    for (P_char ch = character_list; ch; ch = ch->next)
+        if (ch->runtime_id == id) return ch;
+    return nullptr;
+}
 bool active_epoch = false;
 int submitted = 0, direct_removed = 0, durable_removed = 0;
 int added_affects = 0, messages = 0;

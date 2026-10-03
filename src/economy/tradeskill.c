@@ -995,14 +995,6 @@ struct bandage_consumption_context
 
 void event_bandage_check(P_char ch, P_char victim, P_obj object, void *data);
 
-static P_char bandage_target(uint64_t runtime_id)
-{
-	for (P_char victim = character_list; victim; victim = victim->next)
-		if (victim->runtime_id == runtime_id)
-			return victim;
-	return NULL;
-}
-
 static bool publish_bandage_consumption(const critical_operation_id & /*operation_id*/,
 					P_char actor, bool committed, const item_transfer_result &,
 					unsigned int, const uint8_t *encoded, size_t encoded_size)
@@ -1053,7 +1045,7 @@ static void complete_bandage_consumption(P_char actor, bool committed, const ite
 		send_to_char("The bandage could not be used. Please try again.\r\n", actor);
 		return;
 	}
-	P_char victim = bandage_target(context.victim_runtime_id);
+	P_char victim = find_character_by_runtime_id(context.victim_runtime_id);
 	if (!victim || actor->in_room != context.room || victim->in_room != context.room)
 	{
 		send_to_char("Your target is no longer here to bandage.\r\n", actor);
