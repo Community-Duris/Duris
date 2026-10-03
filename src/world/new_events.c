@@ -17,6 +17,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <algorithm>
+#include <array>
 #include <map>
 #include <new>
 #include <thread>
@@ -133,6 +134,7 @@ struct nevent_pending_reschedule
 	unsigned long long due_tick;
 };
 static std::map<P_nevent, struct nevent_pending_reschedule> nevent_pending_reschedules;
+static unsigned int nevent_reschedule_batch_depth = 0;
 static std::thread::id nevent_game_thread;
 static bool nevent_game_thread_bound = false;
 static long nevent_last_pulse_total_us = 0;
@@ -661,6 +663,51 @@ static bool nevent_apply_pending_reschedule(P_nevent event)
 
 static void nevent_process_pending_reschedules()
 {
+	if (nevent_pending_reschedules.size() > 1)
+	{
+		std::array<std::vector<P_nevent>, PULSES_IN_TICK> batches;
+		bool collected = true;
+		try
+		{
+			for (const auto &[event, request] : nevent_pending_reschedules)
+				if (event->sequence == request.sequence &&
+				    event->lifecycle_state == NEVENT_LIFECYCLE_ACTIVE)
+					batches[nevent_bucket_for_tick(request.due_tick)].push_back(
+						event);
+		}
+		catch (const std::bad_alloc &)
+		{
+			collected = false; // Keep the individual, allocation-free fallback.
+		}
+		if (collected)
+		{
+			// Collect before mutating so allocation failure can retain the old path.
+			// Each changed event is detached once and each destination bucket is
+			// merged once, rather than repeatedly walking it for every early wake.
+			for (const auto &[event, request] : nevent_pending_reschedules)
+				if (event->sequence == request.sequence &&
+				    event->lifecycle_state == NEVENT_LIFECYCLE_ACTIVE)
+				{
+					nevent_unlink_schedule(event);
+					if (event->deferral_count > 0)
+					{
+						nevent_complete_deferred(event);
+						event->deferral_count = 0;
+					}
+					event->due_tick = request.due_tick;
+					event->element = nevent_bucket_for_tick(request.due_tick);
+				}
+			nevent_pending_reschedules.clear();
+			for (unsigned int loc = 0; loc < batches.size(); ++loc)
+				if (!batches[loc].empty())
+				{
+					std::sort(batches[loc].begin(), batches[loc].end(),
+						  nevent_sorts_before);
+					nevent_merge_sorted_batch(batches[loc], loc);
+				}
+			return;
+		}
+	}
 	while (!nevent_pending_reschedules.empty())
 	{
 		auto pending = nevent_pending_reschedules.begin();
@@ -671,6 +718,19 @@ static void nevent_process_pending_reschedules()
 		    event->lifecycle_state == NEVENT_LIFECYCLE_ACTIVE)
 			nevent_apply_reschedule(event, request.due_tick);
 	}
+}
+
+nevent_reschedule_batch::nevent_reschedule_batch()
+	: active(nevent_require_game_thread("nevent_reschedule_batch"))
+{
+	if (active)
+		++nevent_reschedule_batch_depth;
+}
+
+nevent_reschedule_batch::~nevent_reschedule_batch()
+{
+	if (active && --nevent_reschedule_batch_depth == 0 && !current_nevent)
+		nevent_process_pending_reschedules();
 }
 
 bool nevent_reschedule_at(nevent_handle handle, unsigned long long due_tick)
@@ -687,11 +747,20 @@ bool nevent_reschedule_at(nevent_handle handle, unsigned long long due_tick)
 	if (due_tick < first_eligible_tick)
 		due_tick = first_eligible_tick;
 
-	if (current_nevent)
+	if (current_nevent || nevent_reschedule_batch_depth)
 	{
 		if (event == current_nevent)
 			return FALSE;
-		nevent_pending_reschedules[event] = { event->sequence, due_tick };
+		try
+		{
+			nevent_pending_reschedules[event] = { event->sequence, due_tick };
+		}
+		catch (const std::bad_alloc &)
+		{
+			if (current_nevent)
+				return FALSE; // Do not mutate the active dispatch traversal.
+			nevent_apply_reschedule(event, due_tick);
+		}
 		return TRUE;
 	}
 
@@ -1916,6 +1985,7 @@ void ne_init_event_pool(void)
 	nevent_deferred_due_counts.clear();
 	nevent_pending_cancellations.clear();
 	nevent_pending_reschedules.clear();
+	nevent_reschedule_batch_depth = 0;
 	nevent_periodic_reset();
 	memset(ne_schedule, 0, sizeof(ne_schedule));
 	memset(ne_schedule_tail, 0, sizeof(ne_schedule_tail));
