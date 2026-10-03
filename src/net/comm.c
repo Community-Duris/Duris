@@ -5173,7 +5173,7 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 	int j, tbp, which_z, sil = type & ACT_SILENCEABLE;
 	bool ignore_zcoord = type & ACT_IGNORE_ZCOORD;
 	char *point;
-	const char *strp, *i;
+	const char *strp, *i = nullptr;
 	int terseonly = type & ACT_TERSE;
 	int notterse = type & ACT_NOTTERSE;
 	bool no_eol = type & ACT_NOEOL;
@@ -5295,6 +5295,7 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 				if (*strp == '$')
 				{
 					j = 0;
+					i = nullptr;
 
 					switch (*(++strp))
 					{

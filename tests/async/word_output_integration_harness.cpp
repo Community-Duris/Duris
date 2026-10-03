@@ -427,6 +427,14 @@ int main()
 	assert(AnsiString(drain(&desc3).c_str()) ==
 	       AnsiString("Someone sees &+Bwater&n in a &+gforest&n.\n"));
 	assert(!desc.output.head);
+	// An unsupported $w audience must neither use an uninitialized pointer nor
+	// repeat the text from a preceding substitution.
+	act("$w waits.", false, &actor, nullptr, nullptr, TO_ROOM);
+	assert(drain(&desc2) == " waits.\n\r");
+	assert(drain(&desc3) == " waits.\n\r");
+	act("$n$w waits.", false, &actor, nullptr, nullptr, TO_ROOM);
+	assert(drain(&desc2) == "Water waits.\n\r");
+	assert(drain(&desc3) == "Someone waits.\n\r");
 	act("water", false, &actor, nullptr, nullptr, TO_CHAR, style);
 	assert(AnsiString(drain(&desc).c_str()) == AnsiString("&+BWater&n\n"));
 	act("water", false, &actor, nullptr, nullptr, TO_CHAR);
