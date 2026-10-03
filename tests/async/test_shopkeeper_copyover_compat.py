@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Exercise actual copyover version gates and historical NPC record sizes."""
+"""Shopkeeper provenance requires a complete, validated compatible copyover."""
 from pathlib import Path
 import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 source = (ROOT / "src/persistence/copyover.c").read_text()
-header = (ROOT / "src/persistence/copyover.h").read_text()
 
 def function(signature):
     start = source.index(signature)
@@ -17,41 +16,48 @@ def function(signature):
         cursor += 1
     return source[start:cursor]
 
-legacy = header[header.index("struct copyover_mob\n"):header.index("// affect data for copyover")]
-legacy = legacy.replace("struct copyover_mob", "struct copyover_mob_v15")
-legacy = "\n".join(line for line in legacy.splitlines() if "shopkeeper_shop_id" not in line)
 program = r'''
-#include "persistence/copyover.h"
+#include "persistence/copyover_codec.h"
 #include <cassert>
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
 const char *copyover_state_file() { return "compat-copyover.dat"; }
-'''+legacy+"\n"+"\n".join(function(s) for s in (
-    "static bool copyover_version_supported(",
-    "static size_t copyover_mob_bytes_for_version(",
-    "bool copyover_has_durable_shopkeepers(",
-))+r'''
+void logit(const char *, const char *, ...) {}
+'''+function("bool copyover_has_durable_shopkeepers(")+r'''
 int main() {
-    static_assert(sizeof(copyover_mob_v15) == offsetof(copyover_mob, shopkeeper_shop_id));
-    assert(!copyover_version_supported(11));
-    assert(!copyover_version_supported(COPYOVER_VERSION+1));
-    for (int version=12; version<=COPYOVER_VERSION; ++version) {
-        assert(copyover_version_supported(version));
-        assert(copyover_mob_bytes_for_version(version) ==
-               (version==12 ? offsetof(copyover_mob_v15, transport) :
-                version<16 ? sizeof(copyover_mob_v15) : sizeof(copyover_mob)));
+    assert(copyover_codec_legacy_abi_compatible());
+    for (int version=11; version<=17; ++version) {
         copyover_header h={};
         memcpy(h.magic, COPYOVER_MAGIC, 4); h.version=version;
         FILE *f=fopen(COPYOVER_FILE,"wb"); assert(f);
-        assert(fwrite(&h,sizeof(h),1,f)==1); assert(fclose(f)==0);
+        assert(fwrite(&h,sizeof(h),1,f)==1);
+        const int listeners[3]={-1,-1,-1};
+        assert(fwrite(listeners,sizeof(listeners),1,f)==1);
+        if (version>=15) {
+            const unsigned char trailer[12]={'T','L','M','Y',1};
+            assert(fwrite(trailer,1,12,f)==12);
+        }
+        assert(fclose(f)==0);
         assert(copyover_has_durable_shopkeepers() == (version>=13));
     }
+    FILE *f=fopen(COPYOVER_FILE,"w+b"); assert(f);
+    copyover_header h={}; const int listeners[3]={-1,-1,-1};
+    assert(copyover_codec_begin(f,h,listeners));
+    assert(copyover_codec_finish(f,nullptr)); assert(fclose(f)==0);
+    assert(copyover_has_durable_shopkeepers());
+    f=fopen(COPYOVER_FILE,"r+b"); assert(f);
+    assert(fseek(f,32,SEEK_SET)==0); assert(fputc(0,f)!=EOF); assert(fclose(f)==0);
+    assert(!copyover_has_durable_shopkeepers());
     assert(remove(COPYOVER_FILE)==0);
-    puts("copyover versions 12-16: record widths and durable shopkeeper provenance PASS");
+    puts("copyover versions 12-18: validated durable shopkeeper provenance PASS");
 }
 '''
 with tempfile.TemporaryDirectory(prefix="duris-shop-copyover-") as tmp:
     p=Path(tmp); (p/"test.cpp").write_text(program)
-    subprocess.run(["g++","-std=c++20","-Wall","-Wextra","-Werror","-I",str(ROOT/"src"),str(p/"test.cpp"),"-o",str(p/"test")],check=True)
+    subprocess.run(["g++","-std=c++20","-Wall","-Wextra","-Werror","-I",str(ROOT/"src"),str(p/"test.cpp"),
+                    "src/persistence/copyover_codec.c", "src/world/world_recovery_codec.c",
+                    "src/world/generated_npc_state.c", "src/player/pet_restore_state.c",
+                    "src/item/item_transfer_command.c", "-ffunction-sections", "-fdata-sections",
+                    "-Wl,--gc-sections", "-o",str(p/"test")],cwd=ROOT,check=True)
     subprocess.run([str(p/"test")],cwd=p,check=True)
