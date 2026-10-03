@@ -12,9 +12,9 @@
 const char *copyover_state_file();
 #define COPYOVER_FILE copyover_state_file()
 #define COPYOVER_MAGIC "COPY"
-#define COPYOVER_VERSION 17 // death retry handoff; reads versions 12-16 too
+#define COPYOVER_VERSION 18 // portable file codec; reads compatible native versions 12-17
 
-// copyover file header
+// In-memory state and legacy ABI declarations. Never write these structures to a file.
 struct copyover_header
 {
 	char magic[4];
