@@ -9,11 +9,12 @@ python3 tests/async/test_pa_typed_coin_contract.py
 NAME="duris-currency-$$-$RANDOM"
 PASSWORD="currency-$$-$RANDOM"
 IMAGE="${CURRENCY_DB_IMAGE:-mariadb:10.11}"
-cleanup() { docker rm -fv "$NAME" >/dev/null 2>&1 || true; }
+SQL_FIXTURE_CONTAINER_ID=
+cleanup() { [[ "${SQL_FIXTURE_CONTAINER_ID:-}" =~ ^[0-9a-f]{64}$ ]] && docker rm -fv "$SQL_FIXTURE_CONTAINER_ID" >/dev/null 2>&1 || true; }
 trap cleanup EXIT HUP INT TERM
 if [[ "$IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PASSWORD_ENV=MYSQL_ROOT_PASSWORD; fi
 if [[ "$IMAGE" == mariadb:* ]]; then DB_CLIENT=mariadb; else DB_CLIENT=mysql; fi
-docker run -d --name "$NAME" -p 127.0.0.1::3306 -e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" --innodb-use-native-aio=OFF >/dev/null
+SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$NAME" -p 127.0.0.1::3306 -e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" --innodb-use-native-aio=OFF)
 mapping="$(docker port "$NAME" 3306/tcp)"
 published_host=127.0.0.1
 published_port="${mapping##*:}"

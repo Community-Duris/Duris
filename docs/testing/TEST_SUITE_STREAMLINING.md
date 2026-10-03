@@ -211,7 +211,9 @@ The current workload has 148 required identities: 66 on each pinned engine and
 16 shared rows. It includes the real SQL pool's bank, coin and item coordination,
 literal checkpoint recovery and exact room payload recovery. The room row reuses
 its qualified seed executable for two complete SQL cold boots and requires the
-native publication witness. Literal checkpoint qualification compiles and pins
+native publication witness. This row builds a separate complete SQL observer
+binary with the existing post-publication observation hook, using its own object
+directory, recorded build flags and executable checksum. Literal checkpoint qualification compiles and pins
 its executable before exercising the supplied disposable schema.
 
 The currency wrapper no longer rebuilds and reruns the complete item-transfer
@@ -224,7 +226,11 @@ its actual service. The existing 90-second readiness limit remains unchanged.
 The shared SQL owner creates only new labelled containers with generated
 credentials. A container runner shares only its own validated network namespace;
 a native Linux runner publishes exclusively on loopback. Legacy wrappers retain
-their existing SQL harnesses and now receive the selected engine. Original client
+their existing SQL harnesses and now receive the selected engine. Their cleanup
+uses the created container ID, so failed creation cannot remove an existing
+container with the requested name. The fast gate exercises both name-collision
+refusal and cleanup after a later setup failure through a simulated Docker CLI.
+Original client
 errors, setup/query events, source and synthetic journal digests, and outcomes are
 written before cleanup. Credentials are redacted. Every attempt gets a new evidence
 directory; a passing rerun cannot replace the original failure.
