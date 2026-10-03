@@ -3,7 +3,18 @@
 This follow-up to [the suite audit](TEST_SUITE_AUDIT.md) implements execution
 accounting, explicit profiles, native artifact reuse and resource scheduling.
 It also upgrades five behavioral pilots and supplies the disposable database and
-recovery matrix. Production code, schemas and runtime protocols are unchanged.
+recovery matrix. Qualification also exposed and repaired an expired-deadline
+shutdown scheduling bug that could lose a live copyover callback, a legacy
+migration replay that reapplied old schema definitions after immutable adoption,
+food consumption that removed a live item while leaving its SQL custody active,
+and permanent account deletion that left retained quest-name aliases behind.
+The food defect made the next inventory save fail its ownership guard. Account
+deletion now requires durable quest erasure before destroying the character
+identities needed for retry. A persistence refusal preserves the irreversible
+fence and those identities; retry completes after recovery.
+The operational persistence verifier now recognizes equivalent MySQL/MariaDB
+metadata while retaining rejection of signed UIDs and incorrect defaults. Its
+disposable tests include corruption, rejection, guarded repair and data preservation.
 
 ## Execution and profiles
 
@@ -14,8 +25,20 @@ A newly discovered or missing file fails inventory validation, including filtere
 runs. Metadata changes are intentional review decisions, rather than a naming
 heuristic that silently decides whether to run a new test.
 
-The default core profile retains every previously automatic entry and adds the
-native-artifact regression. The remaining 24 manual entries have explicit providers in the integration matrix. Automatic entries
+The default core profile retains the independent automatic owners and adds the
+native-artifact regression. The obsolete S05 source guard that pinned an exact
+four-migration list is replaced by the required item-flags SQL journey, using the
+maintained migration owner and actual save/reconnect assertions on both engines.
+The obsolete mushroom source-order guard required saving before extraction.
+Its replacement executes actual food effects and admission/publication functions:
+refused admission or commit grants no benefit, successful retirement consumes one
+UID, duplicate publication does not repeat the effect, and a level mushroom saves
+only after extraction. The SQL player journey additionally requires a destruction
+tombstone, one ownership-ledger entry and no reappearance after restart/replay.
+Active-accounting food acceptance and interrupted effect publication remain outside
+this qualification.
+
+The remaining 24 manual entries have explicit providers in the integration matrix. Automatic entries
 with optional SQL checks remain in core, and their skips remain visible.
 
 | Profile | Scope | Evidence boundary |
@@ -36,6 +59,11 @@ make test-python TEST_PROFILE=journey TEST_JOBS=2
 make test-list TEST_PROFILE=database
 python3 tests/run_regression_tests.py --profile fast --match training
 ~~~
+
+The clock regression executes the production shutdown scheduling branches at eight
+expired/immediate deadline and online/offline issuer boundaries. It rejects the
+original negative delay that lost copyover callbacks, and preserves restoration
+and the positive follow-up after the repair.
 
 The runner launches each entry through a private adapter while preserving its
 arguments, working directory and import path. Unittest results include case names,
@@ -72,6 +100,12 @@ objects where compiler/options match. Their sanitizer flags, macros, linker
 wrappers and private native-filesystem state remain intact. The player inspector's
 actual build recipe has a shared owner used by its native regression and journeys.
 Automatic inspector users bind to immutable cached binaries or private copies.
+The inspector takes the authority lock before reading and refuses all pending
+recovery journals. It cannot complete recovery while observing a failed journey.
+A valid native after-image regression requires byte-preserving refusal; the old
+inspector installed that image and returned success. The combat journey relies
+on this locked observer instead of racing an unlocked global journal check
+against unrelated world/corpse cleanup.
 
 Cache keys conservatively include native source/header/fixture contents, compiler
 and installed-toolchain bytes, flags, environment and selected link inputs.
@@ -159,6 +193,20 @@ containers bind to the recorded tools image ID. Fresh schemas apply the maintain
 bootstrap and migration owner twice and check runtime compatibility; empty-schema
 fixtures receive their explicit guarded prefixes instead.
 
+The legacy upgrade retains its full first-pass checks. Once a baseline is adopted,
+replay uses the validating immutable runner and the current schema contract. It
+retains locker row counts, imported extensions and archive values, and compares
+the upgraded schema with a fresh bootstrap. A missing equipment slot must be
+rejected without legacy repair or migration-history changes. Replay attempts keep
+unique, redacted diagnostic logs, including when the driver fails.
+
+The currency wrapper no longer rebuilds and reruns the complete item-transfer
+executable after mutating its schema with unrelated coin and loader fixtures.
+The dedicated item-transfer row remains required on both engines and keeps every
+native assertion. The four archive wrappers that used socket readiness now wait
+for TCP; the pinned MySQL initializer starts a temporary socket-only server before
+its actual service. The existing 90-second readiness limit remains unchanged.
+
 The shared SQL owner creates only new labelled containers with generated
 credentials. A container runner shares only its own validated network namespace;
 a native Linux runner publishes exclusively on loopback. Legacy wrappers retain
@@ -166,6 +214,12 @@ their existing SQL harnesses and now receive the selected engine. Original clien
 errors, setup/query events, source and synthetic journal digests, and outcomes are
 written before cleanup. Credentials are redacted. Every attempt gets a new evidence
 directory; a passing rerun cannot replace the original failure.
+
+SQL pool metadata observations respect MySQL 8.0.46's 100 ms transaction-cache
+idle interval, documented in [the pinned server implementation](https://github.com/mysql/mysql-server/blob/mysql-8.0.46/storage/innobase/trx/trx0i_s.cc).
+The retirement deadline remains five seconds; lease exclusion, rollback and
+replacement-connection assertions remain required. Faster metadata polling could
+prevent refresh and report a transaction after its session had closed.
 
 The same command runs locally and in the development/master branch
 [workflow](../../.github/workflows/integration-matrix.yml):
@@ -177,6 +231,21 @@ make test-integration TEST_ENGINE=mariadb TEST_MATCH=player_death_recovery
 python3 tests/qualify_behavioral_faults.py --family offline \
   --evidence-dir bin/behavioral-faults-new-attempt
 ~~~
+
+The death/resurrection matrix row explicitly selects `--legacy-persistence`
+because its fresh schema has accounting inactive. It executes real combat death,
+reconnection and resurrection, verifies exact item custody and wallet restoration,
+and retires the coin pile. Before and after the journey it requires empty activation,
+installation and accounting evidence tables. Every emitted legacy event must remain
+uncovered; partial accounting is a failure. The row requires both the persistence
+completion witness and `RELEASE ACCOUNTING COVERAGE BLOCKED:` with actual gap counts.
+
+The journey's default mode remains the strict accounting release acceptance. It
+fails if an item event lacks an accounting reference or a currency operation lacks
+a balanced root and postings. A passing inactive persistence row supplies no
+accounting release qualification. The original strict failures remain retained
+evidence, and enabling accounting for this journey requires separate implementation
+and successful strict acceptance.
 
 The matrix requires Linux, Docker, maintained build dependencies and native
 MariaDB recovery tools. The checked-in tools image provides them without reading
@@ -205,8 +274,15 @@ docker cp "$fixture:/suite/bin/integration-results" bin/
 docker rm --force "$fixture"
 ~~~
 
-Recovery explicitly requires namespace/mount capabilities and all nine backup
-cases. The copied-journal owner now generates a synthetic capture with real
+Recovery explicitly requires namespace/mount capabilities and all ten backup
+cases. Both private restore initializers and live daemons disable native InnoDB
+AIO, and the MySQL daemon disables its extra X listener. A retained native MySQL
+execution failed its second initialization with io_setup EAGAIN and data-dictionary
+abort when the shared host kernel exhausted its AIO pool. The new flags avoid that
+reservation while preserving the restore owner's schema, value, replay, corruption
+and isolated service-boot requirements. The tools image keeps MySQL message files
+under its actual basedir lookup and records the resolved restore executable's
+version and SHA-256 in each matrix freeze. The copied-journal owner now generates a synthetic capture with real
 codec/journal APIs and matching hashed manifests; historical private captures
 remain supported only with all four explicit inputs. No configured game, existing
 account, shared database or production state is selected. Core retains visible
@@ -216,42 +292,107 @@ AGENTS.md does not require waiting for CI.
 
 ## Validation record
 
-The implementation is qualified with private exported sources in an owned Linux
-container. Maintained world inputs are generated there; no configured account,
-repository .env, shared game or production database is used.
+Qualification uses private Git exports in owned Linux containers. Each imported
+commit and tree is verified before execution; unchanged source mtimes preserve
+incremental builds. Maintained world inputs are generated there. No configured
+account, checkout .env, shared game or production database is selected.
 
-The native-artifact suite executes the real compiler and binaries for object reuse,
-content/flag/toolchain invalidation, corruption, concurrent publication, cache-off
-execution and failed input stability. Installed-header/library hashing is also
-protected by the existing server-artifact suite. The outer runner exercises real
-child processes for discovery, missing entry points, named results, strict skips,
-resource/lock overlap, duration priority, timeout and cancellation.
+The inventory declares 878 entries: 854 automatic and 24 manual, with 370 in fast.
+The reviewed integration workload has 138 required rows: 61 per SQL engine and
+16 shared rows. The branch incorporates target changes through 3b5247aa9,
+including the native account-fence faults, network readiness, portable copyover,
+quest serialization allocation faults and executable Telnet fragmentation checks.
+The retired select ceiling guard now protects connection admission before TLS;
+the native readiness owner uses a socket above FD_SETSIZE. Boot ordering protects
+recovery before the first connection phase, and latency uses the current monotonic
+deadline.
 
-The complete safe gate ran against 886bd827 after merging development base
-4d027735. make test-all -j2 TEST_JOBS=2 TEST_CPU_BUDGET=4 TEST_MEMORY_MB=4096
-passed all maintained builds/native checks and completed 835 Python entries:
-824 passed, 11 explicitly skipped, no failures or pending work. The Python phase
-took 3402.24 seconds (56 minutes 42 seconds); preceding build/world setup is
-outside that timing. It recorded 1846 observations, including function invocations
-and opaque entries, rather than 1846 independent native assertions.
+Results retain their source boundaries. They are not one complete green core or
+integration run at the final review commit.
 
-Review during qualification reproduced two reporting defects: hidden unittest
-summaries lost skip accounting, and premature zero exits bypassed observation.
-Both were fixed in subsequent focused commits. The final executable test code is
-5360389f; its src tree remains c8804d6b and its tests tree is 0762828c.
-Every automatic unittest entry was rerun after the completion protocol change:
-129 passed, 9 explicitly skipped, no failures across 138 entries in 187.68 seconds.
-The run includes all 14 runner cases and all 6 real native-artifact cases. The
-complete gate's 697 script entries each had their final entry record; this is
-compatibility evidence for the added acknowledgement, not a fresh body execution.
-The final fast profile was also rerun separately: 366 passed, 1 whole-entry skip,
-no failures across 367 entries in 32.08 seconds after world/tool setup. It recorded
-986 observations, with the additional partial SQL/systemd skips visible. Raw reports identify the
-separate attempts; no passing rerun replaces the initial failure evidence.
+| Source cohort | Scope | Recorded outcome |
+| --- | --- | --- |
+| be73f72c69 | Complete core Python stage and maintained builds | All 849 automatic entries attempted in 4,903.46 s: 832 passed, six failed, 11 whole entries skipped. Maintained world, editor, SQL server and native stages passed. |
+| 18d69b437 | Explicit compatibility subset and full fast profile | All 32 selected entries passed without skips in 958.89 s; fast passed all 370 without skips in 56.52 s. Selection and clean-source records retain the exclusions. |
+| d2b747fa6 | Explicit native account/storage/quest subset | All 12 entries passed without skips in 520.74 s; character deletion used ASan and UBSan and passed in 172.25 s. |
+| f88aa2a54 | Account cleanup and Telnet compatibility | All 370 fast entries passed without skips in 39.51 s; the three focused account/network owners passed in 308.38 s. Both maintained server backends, formatting, and ordinary/durable/uncertain flat-file deletion journeys also passed. |
+| 2f4c9e6b6 | Expanded required SQL account journey | All 370 fast entries passed without skips in 45.87 s. Both pinned engines passed the strengthened real account/character journey, including quest persistence refusal, restart, permanent erasure and safe name reuse. |
+| 5f4c2b7c8 | Complete MariaDB engine workload | All 61 required rows passed, with zero skips and no pending workload. |
+| cec2329ac | Complete MySQL engine workload | All 61 rows attempted: 60 passed and the earlier staff fixture failed, with zero skips or pending rows. Revised staff recovery passed on both engines in the later cohorts. |
+| be73f72c69 | Complete shared workload | 15 of 16 rows passed; the MySQL backup case exposed host AIO exhaustion. |
+| 7a532a685 | Revised staff and backup owners | Both engine staff journeys passed; the backup owner passed all ten required cases, including genuine MySQL 8.0.46 restore. |
+| 4f2fa5138 | Eight refreshed compatibility journeys | All eight passed without skips: playtime, SQL copyover, Issue331 player and staff recovery on both engines. |
 
-The unchanged player-repository driver, including native and quarantine recovery
-assertions, was measured under the same frozen sources, compiler/options,
-environment and container limits with a fresh private cache:
+The original core report contains 30 skipped checks: the 11 whole-entry skips and
+partial integration skips inside five passing entries. Its six failures were the
+copyover watchdog link, writer line anchors, launcher watchdog script, formatting
+against an older target tree, retired checkpoint placement and an incomplete
+command-queue initializer. Each original failure remains retained. The fast and
+explicit 32-entry reruns at 18d69b437 close all six. That subset also passes all
+21 real-process runner cases, six real-compiler cache cases, 52 writer cases,
+three census cases, production food/deadline fixtures and the new network owners.
+Its combat driver passes all three variants in 894.42 s, including a fresh server
+build. Opaque native entry counts do not enumerate internal C++ assertions.
+
+The v30 fast attempt started before source import completed. It is retained as
+preliminary and excluded. The subsequent v31 run verifies the same clean commit
+and tree before and after execution. JSON/XML, selection records, actual
+qualification drivers and per-step provenance keep these distinctions reviewable.
+
+At d2b747fa6, both maintained server backends built and ordinary character
+deletion passed. The durable and uncertain account-fence crash/recovery journeys
+both failed because permanent account deletion retained the global quest-name
+alias after removing the player and account. The prior confirmation fixture
+captured an empty identity vector and missed this defect. Its replacement supplies
+two stable PIDs, refuses the second quest erasure, requires no destructive backend
+call on refusal, preserves the non-cancellable fence, then verifies idempotent
+cleanup and exactly one completion on retry. It fails against the original
+production function and passes with the repair under ASan and UBSan.
+
+The repaired flat-file journeys additionally refuse real quest-state persistence,
+require unchanged account identities, snapshot and aliases, cold restart and retry,
+and verify erasure after a further restart. The SQL owner refuses actual persistence
+by withholding only its synthetic schema's quest table. It checks the durable
+fence and retained identities, restarts, completes permanent deletion, then safely
+reuses the name with a distinct PID before running the original character-deletion
+rollback/retry checks. The matrix requires this new account-cleanup witness on
+both engines; the row count stays 138.
+
+The evidence index accepts historical manifests only after checking that every
+requirement is identical except for that added SQL account-cleanup witness.
+Earlier passing deletion rows cannot supply it: the strengthened owner must pass
+on both engines. Every selected positive row must have zero skips, all named cases,
+the required native witnesses, and matching hashed original/result logs. The index
+records earlier failures and the source revision of each selected result. Verification
+finds passing evidence for all 138 required identities: 61 MySQL, 61 MariaDB and
+16 shared rows. Every required case and completion witness is present, with zero
+skips or pending coverage in the selected positive records. Each of the 33
+behavioral control/fault phases also has its own validated outcome and log hash.
+The six source cohorts remain explicit; this is not a single complete matrix run
+at the final review commit.
+
+A separate native probe starts two authenticated MySQL 8.0.46 daemons concurrently
+with native AIO and the extra X listener disabled. The original failed backup and
+initialization diagnostics remain retained. The QA container keeps its original
+image identity; separately installed native tool payloads record their archive,
+executable hashes and versions. A transferred tools payload is not reported as
+the QA container's image.
+
+The writer classification comparison with the target differs only in this PR's
+explicit food-consumption route. The four account source anchors shifted by its
+new include are remapped with unchanged-excerpt proofs. The census remains 2,816
+occurrences and 2,757 mapped unique sites, with zero unmatched sites. Accounting
+release coverage remains blocked.
+
+Both inactive-accounting death/resurrection engine rows pass their gameplay and
+persistence assertions and report 27 uncovered item events and two unaccounted
+currency operations. The retained strict runs reject that gap. A passing inactive
+row does not qualify accounting release. Active-accounting food acceptance and
+interrupted effect publication remain unqualified.
+
+The unchanged player-repository driver, including native and quarantine recovery,
+was measured at f66e715df225c68110faf8e696dd4886e5f91904 under the same frozen
+inputs, compiler/options, environment and container limits with a private cache:
 
 | Build setting | Entire entry | Compilation | Linking | Lookup |
 | --- | ---: | ---: | ---: | ---: |
@@ -259,24 +400,27 @@ environment and container limits with a fresh private cache:
 | cold | 42.77 s | 25.58 s | 0.46 s | 4.01 s |
 | warm | 15.14 s | 0 s | 0 s | 1.98 s |
 
-All three attempts passed. The warm run reused all 55 inspector objects and ran
-the existing runtime assertions. Runtime/setup/remainder stayed approximately
-13 seconds; the removed work was compilation. In the complete gate the accounting
-store reused 13 authority objects and compiled its own driver in 4.42 seconds.
-These measurements qualify this fixture improvement; they are not a controlled
-before/after comparison of the entire historical suite.
+All three attempts pass. The warm run reuses all 55 inspector objects and runs the
+existing runtime assertions. Runtime/setup/remainder stays approximately 13 s;
+the removed work is compilation. These measurements qualify this fixture
+improvement, not a controlled before/after comparison of the complete suite.
 
-The interrupted-builder regression was also run with a deliberately injected
-early-publication fault. It rejected stale value 99 where reverted source required
-42. Runner regressions reject zero-case collection, disconnected entry points,
-ignored unittest failures, hidden skips, and premature exits before/during/after
-cases. Real child-process tests qualify resource overlap, locks, timing priority,
-timeout cleanup and cancellation.
+The cache's early-publication fault rejects stale value 99 when reverted source
+requires 42. Runner regressions reject zero-case collection, disconnected entry
+points, ignored unittest failures, hidden skips and premature successful exits.
+Real child processes qualify resource overlap, locks, duration priority, timeout
+cleanup and cancellation. Eight reviewed fault families supply 33
+before/fault/after phases across the offline family and both SQL engines. This
+scoped detection is not a suite-wide mutation score.
 
-The 11 whole-entry skips and additional partial skips are integration boundaries:
-disposable SQL, privileged restore, and non-root user-systemd capabilities were
-not provisioned. The 25 manual entries remain excluded from core. Their complete
-execution belongs to the prepared matrix above.
+Core's skips identify prerequisites supplied by the separate required integration
+matrix. The 24 manual entries remain excluded from core. A filtered run records
+its excluded identities and qualifies only its selected scope. Earlier historical
+core and benchmark attempts remain retained without being promoted to current
+whole-suite evidence.
 
-Raw JSON/XML/logs remain ignored artifacts under bin/streamline and are retained
-outside the owned qualification container before cleanup.
+Raw JSON/XML/logs, qualification drivers and the source-bound review index remain
+ignored artifacts under bin/streamline-review-evidence, with earlier benchmark
+material under bin/streamline. All exported bytes are SHA-256 verified before
+owned qualification containers are removed. The review branch remains a draft;
+no PR merge or auto-merge is performed.

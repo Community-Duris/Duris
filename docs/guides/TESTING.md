@@ -267,6 +267,13 @@ it does not prove first-session currency or boon-enabled death/reward behavior.
 No single command proves release readiness. Use the narrowest applicable row while
 iterating, then run every row required by the session or release gate.
 
+The disposable integration matrix runs death/resurrection with accounting explicitly
+inactive (`--legacy-persistence`). It proves durable gameplay and requires empty
+accounting authority/evidence before and after execution, then reports the uncovered
+legacy events. The journey's default strict mode still rejects those missing roots,
+postings and item references. Passing the inactive row does not qualify an accounting
+release; retain and review its `RELEASE ACCOUNTING COVERAGE BLOCKED:` evidence.
+
 | Evidence boundary | Command | What it proves | What it does not prove |
 |---|---|---|---|
 | Documentation | `python3 tests/async/test_documentation_contract.py` | Maintained links, paths, commands, configuration names, safety language, and diagram contracts | Runtime or database behavior |
