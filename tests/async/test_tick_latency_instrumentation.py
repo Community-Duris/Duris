@@ -113,7 +113,7 @@ if loop:
         not contains(comm, "latency_us_from_seconds") and
         not contains(comm, "quiet_NaN") and
         not re.search(r"\(uint64_t\)\([^;\n]*1000000\.0", loop) and
-        contains(loop, "MIN(loop_us == LATENCY_TRACE_DURATION_INVALID ? 0 : loop_us, (uint64_t)timeout.tv_usec)")
+        contains(loop, "network_wait_until(ctx, network_next_pulse_us(loop_time_begin_us, loop_monotonic_us()))")
     ))
     checks.append((
         "command trace timing excludes command-report emission",

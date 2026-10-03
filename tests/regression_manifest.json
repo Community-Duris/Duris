@@ -210,7 +210,7 @@
   "test_deferred_save_flush.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.041,"purpose":"Contracts for truthful deferred flush and save helper results."},
   "test_deferred_save_retry.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":0.162,"purpose":"Runtime policy and source contracts for retryable deferred player saves."},
   "test_delete_corpses_retired.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.041,"purpose":"Regression coverage for the retired corpse cleanup script."},
-  "test_descriptor_fdset_bound_contract.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.037,"purpose":"descriptor fdset bound contract"},
+  "test_descriptor_admission_contract.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.037,"purpose":"Live-connection admission precedes TLS initialization; poll supports large descriptor numbers."},
   "test_dev_dependency_manifest.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.021,"purpose":"Contracts for the Debian/Ubuntu developer dependency manifest."},
   "test_device_actions_runtime.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":11.606,"purpose":"Real use/recite commands, device adapters and scheduler under ASan/UBSan."},
   "test_difficulty_dials.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":0.932,"purpose":"Contracts for the server-wide difficulty dials."},
