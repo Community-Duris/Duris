@@ -1768,6 +1768,12 @@ struct descriptor_data
 	char *out_compress_buf; /* MCCP output buffer */
 	z_stream *z_str; /* zlib internal state */
 	gnutls_session_t sslses; /* gnutls data, 0 if plain text */
+	short network_revents; /* current poll turn, never shared with workers */
+	int network_close_pending; /* 1: close at boundary; 2: first offer staged input */
+	size_t network_input_remaining; /* existing byte allowance per simulation pulse */
+	short tls_read_interest; /* handshake/receive retry direction */
+	short tls_write_interest; /* retained record-send retry direction */
+	uint64_t tls_handshake_deadline_us; /* monotonic admission timeout */
 	int movement_noise;
 	char client_str[MAX_INPUT_LENGTH]; /* CLIENT SPECIFIC STRING */
 	int last_map_update; /* CLIENT SPECIFIC INT */
@@ -1784,6 +1790,8 @@ struct descriptor_data
 	time_t ws_handshake_started;
 	char *ws_fragment_buffer;
 	size_t ws_fragment_len;
+	int ws_input_pending; /* frame budget left buffered parsing work */
+	struct websocket_pending_application *ws_pending_application;
 	unsigned char *ws_output_buffer;
 	size_t ws_output_len;
 	size_t ws_output_offset;

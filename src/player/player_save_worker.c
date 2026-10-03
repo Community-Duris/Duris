@@ -1,3 +1,4 @@
+#include "net/network_wakeup.h"
 #include "player/player_save_worker.h"
 #include "sql/sql_thread_init.h"
 
@@ -286,7 +287,10 @@ void worker_main()
 								     PLAYER_SAVE_WORKER_MAX_RESULTS;
 					      });
 			if (results.size() < PLAYER_SAVE_WORKER_MAX_RESULTS)
+			{
 				results.push_back(completion);
+				network_wakeup_notify();
+			}
 		}
 	}
 	std::lock_guard<std::mutex> lock(worker_mutex);

@@ -8,6 +8,7 @@
  * -lcurl -lcrypto -pthread.
  */
 
+#include "net/network_wakeup.h"
 #include "net/mail_sender.h"
 
 #include <curl/curl.h>
@@ -96,6 +97,7 @@ void worker_main()
 			health.inflight = 0;
 			record_result_locked(result);
 			completions.push_back(result);
+			network_wakeup_notify();
 			refresh_health_locked();
 		}
 	}
