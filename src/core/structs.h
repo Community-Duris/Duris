@@ -1262,6 +1262,11 @@ struct pc_only_data
 	uint64_t bank_revision; /* Transactional shared account-bank domain revision. */
 	uint64_t wallet_revision; /* Transactional carried-wallet domain revision. */
 	bool death_custody_disputed; /* Runtime-only refused corpse handoff. */
+	uint64_t death_recovery_owner; /* Existing corpse owner relationship, diagnostics only. */
+	uint64_t death_recovery_since_usec;
+	uint64_t death_recovery_reports;
+	uint64_t death_recovery_last_alert_usec;
+	bool death_recovery_failure_reported;
 	uint64_t death_retry_corpse_uid; /* Runtime-only event admission fallback. */
 	uint64_t death_retry_due_usec;
 	int death_retry_delay;

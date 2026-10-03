@@ -19,6 +19,7 @@ PIPELINE = (ROOT / "docs/persistence/CRITICAL_COMMAND_PIPELINE.md").read_text()
 HARNESS = r'''
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/persistence_diagnostics.h"
+#include "persistence/death_recovery_visibility.h"
 
 #include <cassert>
 #include <atomic>
@@ -452,7 +453,7 @@ int main(int argc, char **argv)
         const std::string directory = std::string(argv[2]) + "-uncertain-" + std::to_string(tag);
         apply_state uncertain;
         assert(critical_command_coordinator_init(directory.c_str(), apply, &uncertain, 1));
-        critical_command command = make_command(tag, {{critical_entity_type::item, tag}});
+        critical_command command = make_command(tag, {{critical_entity_type::item, tag}, {critical_entity_type::corpse, (uint64_t{42} << 32) | 9001}});
         assert(critical_command_coordinator_submit_for_publication(command) ==
                critical_submit_result::awaiting_durability);
         wait_until([&] { return critical_command_coordinator_pulse(completions, 16) == 1; });
@@ -460,6 +461,18 @@ int main(int argc, char **argv)
         assert(critical_command_journal_health_copy().records == 1);
         assert(!critical_command_coordinator_acknowledge_publication(command.operation_id));
         assert(critical_command_coordinator_health_copy().blocked == 1);
+        critical_recovery_case recovery[1];
+        size_t total = 0;
+        assert(critical_command_coordinator_recovery_copy(recovery, 1, &total) == 1 && total == 1);
+        assert(critical_command_coordinator_recovery_copy(recovery, 1, &total, 1) == 0 && total == 1);
+        assert(critical_command_coordinator_recovery_copy(recovery, 1, &total) == 1);
+        char correlation[33];
+        death_recovery_correlation((uint64_t{42} << 32) | 9001, correlation);
+        assert(std::string(recovery[0].correlation) == correlation);
+        assert(std::string(recovery[0].state) == "unresolved_retry_exhausted");
+        assert(recovery[0].attempts == CRITICAL_COORDINATOR_MAX_RETRIES + 1);
+        assert(critical_operation_id_equal(recovery[0].operation_id, command.operation_id));
+
         assert(critical_command_journal_health_copy().records == 1);
         critical_command_coordinator_shutdown();
         apply_state reconciled;
@@ -470,6 +483,7 @@ int main(int argc, char **argv)
             return critical_command_coordinator_health_copy().completed == 1;
         });
         assert(critical_command_journal_health_copy().records == 0);
+        assert(critical_command_coordinator_recovery_copy(recovery, 1, &total) == 0 && total == 0);
         critical_command_coordinator_shutdown();
     }
     // DB apply success cannot hide the failed checkpoint that leaves a player
