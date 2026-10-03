@@ -333,7 +333,7 @@ template <typename T> bool read_fields(wire &file, record_type type, T *entry)
 
 bool valid_desc(const copyover_desc &e)
 {
-	return e.fd > 0 && e.fd < FD_SETSIZE && e.player_name[0] && memchr(e.player_name, 0, 50) &&
+	return e.fd > 0 && e.player_name[0] && memchr(e.player_name, 0, 50) &&
 	       memchr(e.host, 0, 50) && memchr(e.host2, 0, 254) && memchr(e.ttype_client, 0, 64) &&
 	       memchr(e.ttype_terminal, 0, 32) && memchr(e.fighting_name, 0, 50) &&
 	       e.fighting_type >= 0 && e.fighting_type <= 2 && e.num_pets >= 0 &&
@@ -661,7 +661,7 @@ bool validate_state(copyover_decoded_state *state, const char **error)
 	std::set<int> fds;
 	std::set<std::string> names;
 	for (int fd : state->listeners)
-		if (fd < -1 || fd >= FD_SETSIZE || (fd >= 0 && !fds.insert(fd).second))
+		if (fd < -1 || (fd >= 0 && !fds.insert(fd).second))
 			return fail(error, "invalid or duplicate listener descriptor");
 	for (const auto &e : state->descriptors)
 		if (!valid_desc(e) || !fds.insert(e.fd).second ||
@@ -670,36 +670,37 @@ bool validate_state(copyover_decoded_state *state, const char **error)
 	// Metadata remains optional. Invalid legacy handoffs resume as absent, just as
 	// before; portable framing/CRC errors reject the entire file.
 	auto &telemetry = state->telemetry;
-	telemetry.erase(
-		std::remove_if(telemetry.begin(), telemetry.end(),
-			       [](const auto &e)
-			       {
-				       if (e.fd <= 0 || e.fd >= FD_SETSIZE ||
-					   !memchr(e.player_name, 0, 50) || e.handoff_valid > 1 ||
-					   e.reserved[0] || e.reserved[1] || e.reserved[2])
-					       return true;
-				       if (!e.handoff_valid)
+	telemetry.erase(std::remove_if(telemetry.begin(), telemetry.end(),
+				       [](const auto &e)
 				       {
-					       const auto &h = e.handoff;
-					       return h.session.id.producer.boot_id ||
-						      h.session.id.producer.process_id ||
-						      h.session.id.session_seq ||
-						      h.session.subject_id || h.session.pid ||
-						      h.session.season_id ||
-						      h.session.environment_id ||
-						      h.previous_producer.boot_id ||
-						      h.previous_producer.process_id ||
-						      h.last_checkpoint_revision ||
-						      h.cumulative.connected_usec ||
-						      h.cumulative.active_usec ||
-						      h.cumulative.idle_usec ||
-						      h.cumulative.unknown_usec ||
-						      h.cumulative.resident_usec ||
-						      h.cumulative.linkdead_usec || h.quality_flags;
-				       }
-				       return false;
-			       }),
-		telemetry.end());
+					       if (e.fd <= 0 || !memchr(e.player_name, 0, 50) ||
+						   e.handoff_valid > 1 || e.reserved[0] ||
+						   e.reserved[1] || e.reserved[2])
+						       return true;
+					       if (!e.handoff_valid)
+					       {
+						       const auto &h = e.handoff;
+						       return h.session.id.producer.boot_id ||
+							      h.session.id.producer.process_id ||
+							      h.session.id.session_seq ||
+							      h.session.subject_id ||
+							      h.session.pid ||
+							      h.session.season_id ||
+							      h.session.environment_id ||
+							      h.previous_producer.boot_id ||
+							      h.previous_producer.process_id ||
+							      h.last_checkpoint_revision ||
+							      h.cumulative.connected_usec ||
+							      h.cumulative.active_usec ||
+							      h.cumulative.idle_usec ||
+							      h.cumulative.unknown_usec ||
+							      h.cumulative.resident_usec ||
+							      h.cumulative.linkdead_usec ||
+							      h.quality_flags;
+					       }
+					       return false;
+				       }),
+			telemetry.end());
 	std::set<uint64_t> item_uids;
 	for (const auto &object : state->objects)
 		if (!valid_object(object, &item_uids))
