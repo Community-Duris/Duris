@@ -127,6 +127,7 @@ std::string describe(player_save_journal_result result)
     case player_save_journal_result::quota_exceeded: return "quota_exceeded";
     case player_save_journal_result::corrupt_data: return "corrupt_data";
     case player_save_journal_result::replay_blocked: return "replay_blocked";
+    case player_save_journal_result::quarantined_pid: return "quarantined_pid";
     }
     return "unknown";
 }
