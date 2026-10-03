@@ -4,7 +4,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 NAME="duris-legacy-migration-$RANDOM-$$"
 PASSWORD="duris-legacy-test-$RANDOM-$$"
-DB_IMAGE="${LEGACY_DB_IMAGE:-mysql:8.0}"
+DB_IMAGE="${DURIS_TEST_DB_IMAGE:-${LEGACY_DB_IMAGE:-mysql:8.0}}"
+if [[ "$DB_IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PASSWORD_ENV=MYSQL_ROOT_PASSWORD; fi
 MIGRATED_DB="duris_legacy_migration_test"
 BOOTSTRAP_DB="duris_fresh_bootstrap_test"
 CONFIG=$(mktemp)
@@ -21,9 +22,11 @@ if mysql --help 2>&1 | grep -q -- '--ssl-mode'; then
 else
     MYSQL_SSL=(--skip-ssl)
 fi
-docker run -d --name "$NAME" -p 127.0.0.1::3306 \
-    -e MYSQL_ROOT_PASSWORD="$PASSWORD" "$DB_IMAGE" >/dev/null
-mapping=$(docker port "$NAME" 3306/tcp)
+source "$ROOT/tests/async/_sql_fixture_network.sh"
+sql_fixture_network
+docker run -d --name "$NAME" "${SQL_FIXTURE_NETWORK[@]}" \
+    -e "$PASSWORD_ENV=$PASSWORD" "$DB_IMAGE" "${SQL_FIXTURE_SERVER[@]}" >/dev/null
+mapping=$(sql_fixture_mapping "$NAME")
 DB_PORT=${mapping##*:}
 
 ready=0
@@ -121,6 +124,36 @@ actual_head=$(MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" -N -B "$MIGRATED_DB" -e \
         "${actual_head:-baseline-only}" "$expected_head" >&2
     exit 1
 }
+ITEM_VERIFY=(env ENVIRONMENT=test DB_HOST=127.0.0.1 DB_PORT="$DB_PORT" DB_USER=root
+    DB_PASSWD="$PASSWORD" DB_NAME="$MIGRATED_DB"
+    bash "$ROOT/migrations/verify_item_ownership_schema.sh")
+"${ITEM_VERIFY[@]}"
+slot_predecessor=$(MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" -N -B "$MIGRATED_DB" -e \
+    "SELECT COLUMN_NAME FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='item_current_owner' AND ordinal_position=(SELECT ordinal_position-1 FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='item_current_owner' AND column_name='equipment_slot')")
+[[ "$slot_predecessor" =~ ^[a-z_]+$ ]]
+MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$MIGRATED_DB" -e \
+    "ALTER TABLE item_current_owner DROP COLUMN equipment_slot"
+if "${ITEM_VERIFY[@]}" >/dev/null 2>&1; then
+    echo 'FAILED: current item-ownership verifier accepted a missing equipment slot' >&2
+    exit 1
+fi
+drift_evidence=${DURIS_MATRIX_ROW_EVIDENCE:-"$ROOT/bin/migration-replay"}
+mkdir -p "$drift_evidence"
+drift_log=$(mktemp "$drift_evidence/adopted-schema-drift.XXXXXX.log")
+if MIGRATION_ENV_FILE="$CONFIG" "$ROOT/migrations/run_migration.sh" >"$drift_log" 2>&1; then
+    echo 'FAILED: migration replay accepted a damaged adopted schema' >&2
+    exit 1
+fi
+grep -q 'normalized metadata fingerprint mismatch' "$drift_log"
+remaining_slot=$(MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" -N -B "$MIGRATED_DB" -e \
+    "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='item_current_owner' AND column_name='equipment_slot'")
+remaining_head=$(MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" -N -B "$MIGRATED_DB" -e \
+    "SELECT migration_id FROM mud_schema_history ORDER BY sequence_number DESC LIMIT 1")
+[[ "$remaining_slot" == 0 && "$remaining_head" == "$actual_head" ]]
+echo 'adopted schema drift: rejected without legacy repair or history changes'
+MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" "$MIGRATED_DB" -e \
+    "ALTER TABLE item_current_owner ADD COLUMN equipment_slot SMALLINT UNSIGNED NOT NULL DEFAULT 0 AFTER $slot_predecessor"
+"${ITEM_VERIFY[@]}"
 ENVIRONMENT=test DB_HOST=127.0.0.1 DB_PORT="$DB_PORT" DB_USER=root \
     DB_PASSWD="$PASSWORD" DB_NAME="$MIGRATED_DB" \
     python3 "$ROOT/scripts/migration_runner.py" run

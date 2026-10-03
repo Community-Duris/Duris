@@ -3,8 +3,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 IMAGE="${TELEMETRY_REPOSITORY_DB_IMAGE:-mariadb:10.11.14}"
-case "$IMAGE" in
-    mysql:8.0.46|mariadb:10.11.14) ;;
+case "${IMAGE%%@*}" in
+    mysql:8.0.46|mariadb:10.11.14|mariadb:10.11.19) ;;
     *) printf 'unsupported telemetry SQL fixture image: %s\n' "$IMAGE" >&2; exit 2 ;;
 esac
 
@@ -31,14 +31,16 @@ cleanup() {
 }
 trap cleanup EXIT
 
+source "$ROOT/tests/async/_sql_fixture_network.sh"
+sql_fixture_network
 docker run -d --name "$name" \
     -e "$password_name=$password" -e "$host_name=%" \
-    -p 127.0.0.1::3306 "$IMAGE" >/dev/null
+    "${SQL_FIXTURE_NETWORK[@]}" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}" >/dev/null
 
 ready=0
 for _ in $(seq 1 120); do
     if docker exec -e MYSQL_PWD="$password" "$name" \
-        "$container_client" --protocol=tcp -h127.0.0.1 -uroot -N -B -e 'SELECT 1' >/dev/null 2>&1; then
+        "$container_client" --protocol=tcp -h127.0.0.1 -P"${SQL_FIXTURE_PRIVATE_PORT:-3306}" -uroot -N -B -e 'SELECT 1' >/dev/null 2>&1; then
         ready=1
         break
     fi
@@ -50,7 +52,7 @@ if [[ "$ready" != 1 ]]; then
     exit 1
 fi
 
-binding=$(docker port "$name" 3306/tcp)
+binding=$(sql_fixture_mapping "$name")
 port=${binding##*:}
 if [[ ! "$port" =~ ^[0-9]+$ ]]; then
     printf 'could not resolve telemetry SQL fixture port: %s\n' "$binding" >&2

@@ -5,6 +5,7 @@
 #include "flatfile/flatfile_craft_progression.h"
 #include "flatfile/flatfile_artifact_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
+#include "flatfile/flatfile_player_snapshot_file.h"
 #include "persistence/persistence_observability.h"
 #include "economy/coin_transfer_command.h"
 #include "player/player_snapshot_codec.h"
@@ -244,8 +245,14 @@ static player_snapshot make_status(player_revision_t revision, int level, int ro
 static void inspect_authority(const std::string &root, int32_t pid, bool item_only = false)
 {
 	std::string error;
+	flatfile_authority_lock lock;
+	require(lock.acquire(root, &error), "inspect authority lock: " + error);
+	for (const char *journal : { ".critical-authority-transaction",
+				     ".player-domain-transaction", ".currency-transaction" })
+		require(!fs::exists(fs::path(root) / "domains" / journal),
+			std::string("inspect refuses pending recovery: ") + journal);
 	player_snapshot snapshot;
-	require(flatfile_player_snapshot_load(root, pid, &snapshot, &error) ==
+	require(flatfile_player_snapshot_read(root, pid, &snapshot, &error) ==
 			flatfile_player_load_result::ok,
 		"inspect player snapshot: " + error);
 	flatfile_identity_record identity;
@@ -254,12 +261,10 @@ static void inspect_authority(const std::string &root, int32_t pid, bool item_on
 		"inspect identity: " + error);
 	flatfile_player_domain_record domains = {};
 	if (!item_only)
-		require(flatfile_player_domain_load(root, pid, identity.account, identity.racewar,
-						    &domains,
-						    &error) == flatfile_player_domain_result::ok,
+		require(flatfile_player_domain_load_locked(root, lock, pid, identity.account,
+							   identity.racewar, &domains, &error) ==
+				flatfile_player_domain_result::ok,
 			"inspect wallet: " + error);
-	flatfile_authority_lock lock;
-	require(lock.acquire(root, &error), "inspect authority lock: " + error);
 	std::cout << "{\"revision\":" << snapshot.revision << ",\"intent\":" << snapshot.save_intent
 		  << ",\"room\":" << snapshot.room_vnum;
 	std::cout << ",\"snapshot_uids\":[";

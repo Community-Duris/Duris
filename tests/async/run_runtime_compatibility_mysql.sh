@@ -8,12 +8,13 @@ LEGACY_DB_NAME="runtime_contract_legacy_test"
 DB_IMAGE="${RUNTIME_DB_IMAGE:-mysql:8.0}"
 cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
+trap 'printf "runtime schema proof failed at line %s (replay=%s step=%s)\n" "$LINENO" "${replay:-legacy}" "${file:-setup}" >&2' ERR
 if [[ "$DB_IMAGE" == mariadb:* ]]; then
     ROOT_PASSWORD_ENV="MARIADB_ROOT_PASSWORD"
 else
     ROOT_PASSWORD_ENV="MYSQL_ROOT_PASSWORD"
 fi
-docker run -d --name "$NAME" -e "$ROOT_PASSWORD_ENV=$PASSWORD" "$DB_IMAGE" >/dev/null
+docker run -d --name "$NAME" -e "$ROOT_PASSWORD_ENV=$PASSWORD" "$DB_IMAGE" --innodb-use-native-aio=OFF >/dev/null
 ready=0
 for _ in $(seq 1 90); do
     if docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -N -e 'SELECT 1' >/dev/null 2>&1; then
@@ -200,12 +201,11 @@ docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c "mysql -h127.0.0.1 -uroot '$D
 # Apply every registered step and its verifier, including an exact replay.
 for replay in 1 2; do
     for file in "${MIGRATION_FILES[@]}"; do
-        # 0022 intentionally adds nullable progression columns to
-        # telemetry_interval. The sealed 0014 verifier checks the original
-        # 154-column shape, so it is valid before 0022 but cannot describe the
-        # later shape on the second idempotence replay. Later verifiers cover
-        # the resulting shape; do not weaken the first-pass check.
-        if [[ "$replay" == 2 && "$(basename "$file")" == "0014_telemetry_storage.sh" ]]; then
+        # Each sealed verifier describes the shape immediately after its own
+        # step. Later migrations replace indexes and extend those shapes. Keep
+        # every first-pass verifier; replay the SQL and check the complete
+        # current fingerprint below rather than reapplying historical shapes.
+        if [[ "$replay" == 2 && "$file" == *.sh ]]; then
             continue
         fi
         if [[ "$file" == *.sql ]]; then

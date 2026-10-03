@@ -13,7 +13,7 @@ cleanup() { docker rm -fv "$NAME" >/dev/null 2>&1 || true; }
 trap cleanup EXIT HUP INT TERM
 if [[ "$IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PASSWORD_ENV=MYSQL_ROOT_PASSWORD; fi
 if [[ "$IMAGE" == mariadb:* ]]; then DB_CLIENT=mariadb; else DB_CLIENT=mysql; fi
-docker run -d --name "$NAME" -p 127.0.0.1::3306 -e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" >/dev/null
+docker run -d --name "$NAME" -p 127.0.0.1::3306 -e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" --innodb-use-native-aio=OFF >/dev/null
 mapping="$(docker port "$NAME" 3306/tcp)"
 published_host=127.0.0.1
 published_port="${mapping##*:}"
@@ -138,48 +138,17 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
     "${MYSQL_CFLAGS[@]}" tests/async/player_load_repository_mysql_harness.cpp \
     src/player/player_load_repository.c src/player/player_load_topology.c src/player/player_death_recovery_query.c src/player/player_death_conflict_repository.c \
     src/player/player_snapshot_codec.c src/persistence/critical_command.c \
+    src/player/player_save_journal.c src/persistence/quest_reward_obligation_repository.c \
+    src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c \
+    src/economy/currency_command.c \
     src/persistence/player_death_restitution_command.c \
     src/persistence/persistence_observability.c \
     "${MYSQL_LIBS[@]}" -lcrypto -o "$ROOT/bin/tests/player_load_repository_mysql_harness"
 PLAYER_LOAD_DISPOSABLE_SCHEMA=1 GAME_ACCOUNT_NAME=coin_matrix_account GAME_ACCOUNT_CHARACTER_NAME=CoinMatrix \
     "$ROOT/bin/tests/player_load_repository_mysql_harness"
 
-# Exercise schema-2 item custody through the same pooled coordinator and
-# retained-receipt reconciliation path, using this runner's disposable schema.
-"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/shopkeeper_item_owner.sql"
-"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/collector_item_owner.sql"
-DB_NAME="$DB_NAME" "$ROOT/migrations/verify_collector_item_owner.sh"
-DB_NAME="$DB_NAME" "$ROOT/migrations/verify_item_ownership_schema.sh"
-export ITEM_TRANSFER_TEST_DB_NAME="$DB_NAME"
-g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
-    "${MYSQL_CFLAGS[@]}" tests/async/item_transfer_mysql_harness.cpp \
-    src/persistence/critical_command.c src/world/epic_command.c src/economy/currency_command.c \
-    src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/item/item_transfer_repository.c \
-    src/item/economic_accounting_item_reference.c \
-    src/economy/auction_command.c src/economy/auction_repository.c \
-    src/combat/combat_outcome_command.c src/combat/combat_outcome_repository.c \
-    src/guild/artifact_guild_command.c src/guild/artifact_guild_repository.c \
-    src/economy/boon_reward_command.c src/economy/boon_reward_repository.c \
-    src/world/zone_touch_command.c src/world/zone_touch_repository.c \
-    src/account/session_audit_command.c src/account/session_audit_repository.c \
-    src/item/item_uid_allocator.c src/flatfile/flatfile_item_uid_allocator.c src/flatfile/flatfile_store.c \
-    src/persistence/persistence_mode.c \
-    src/economy/coin_transfer_command.c src/player/player_snapshot_codec.c \
-    src/economy/collector_command.c src/economy/collector_codec.c \
-    src/economy/collector_policy.c src/economy/collector_repository.c \
-    src/persistence/corpse_lifecycle_command.c src/persistence/corpse_lifecycle_repository.c \
-    src/persistence/player_death_restitution_command.c \
-    src/persistence/player_death_restitution_repository.c \
-    src/persistence/economic_accounting_repository.c \
-    src/persistence/economic_sql_bank_transaction.c \
-    src/persistence/economic_sql_item_transfer_transaction.c \
-    src/economy/economic_currency_adapter.c \
-    src/economy/item_transfer_accounting.c \
-    src/economy/coin_transfer_accounting.c \
-    src/economy/economic_accounting_types.c \
-    src/economy/economic_accounting_plan.c \
-    src/economy/economic_accounting_intent.c src/economy/economic_command_admission.c \
-    src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
-    src/persistence/critical_command_journal.c src/persistence/critical_command_coordinator.c \
-    "${MYSQL_LIBS[@]}" -lcrypto -lz -o "$ROOT/bin/tests/item_transfer_mysql_harness"
-"$ROOT/bin/tests/item_transfer_mysql_harness"
+# The complete item-transfer executable has its own required, isolated matrix
+# row on each engine. Running it again after the coin/load fixtures both repeats
+# every assertion and violates its clean-database precondition (retained mappings
+# can produce unrelated foreign-key failures). Keep its dedicated owner:
+# tests/async/run_item_transfer_schema_mysql.sh.

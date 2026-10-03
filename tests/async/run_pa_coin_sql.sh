@@ -28,13 +28,15 @@ export DURIS_PARALLEL_DB_TEST_SLOT=0
 
 NAME="duris-pa-coin-$$-${RANDOM}"
 PASSWORD="pa-coin-$$-${RANDOM}"
-IMAGE="mariadb:10.11"
+IMAGE="${DURIS_TEST_DB_IMAGE:-mariadb:10.11}"
 TMPDIR="$(mktemp -d -t pa-coin-sql.XXXXXX)"
 cleanup() {
     local status=$?
     if [[ -n "${NAME:-}" ]]; then
+        docker logs "$NAME" 2>&1 | PASSWORD="$PASSWORD" python3 -c \
+            'import os,sys; print(sys.stdin.read().replace(os.environ["PASSWORD"], "<fixture-password>"), end="")' || true
         docker rm -fv "$NAME" >/dev/null 2>&1 || true
-        if docker inspect "$NAME" >/dev/null 2>&1; then
+        if docker container inspect "$NAME" >/dev/null 2>&1; then
             printf 'Disposable SQL container cleanup failed: %s\n' "$NAME" >&2
             status=1
         else
@@ -49,22 +51,30 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 # Pass the generated fixture password in the environment, not in Docker's argv.
-export MARIADB_ROOT_PASSWORD="$PASSWORD"
+if [[ "$IMAGE" == mariadb:* ]]; then PASSWORD_ENV=MARIADB_ROOT_PASSWORD; else PASSWORD_ENV=MYSQL_ROOT_PASSWORD; fi
+export "$PASSWORD_ENV=$PASSWORD"
+source "$ROOT/tests/async/_sql_fixture_network.sh"
+sql_fixture_network
 docker run -d --name "$NAME" --cpus=2 --memory=2g \
-    -p 127.0.0.1::3306 -e MARIADB_ROOT_PASSWORD mariadb:10.11 >/dev/null
-unset MARIADB_ROOT_PASSWORD
-mapping="$(docker port "$NAME" 3306/tcp)"
+    "${SQL_FIXTURE_NETWORK[@]}" -e "$PASSWORD_ENV" "$IMAGE" "${SQL_FIXTURE_SERVER[@]}" >/dev/null
+unset "$PASSWORD_ENV"
+mapping="$(sql_fixture_mapping "$NAME")"
 published_port="${mapping##*:}"
 container_host="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$NAME")"
 export ENVIRONMENT=test DB_USER=root DB_PASSWD="$PASSWORD" MYSQL_PWD="$PASSWORD"
 export DB_NAME=pa_coin_sql_test CURRENCY_TEST_DB_NAME=pa_coin_sql_test
 if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then MYSQL_SSL=(--ssl-mode=PREFERRED); else MYSQL_SSL=(--skip-ssl); fi
 ready=0
-for candidate in "127.0.0.1:$published_port" "host.docker.internal:$published_port" "$container_host:3306"; do
+CANDIDATES=("127.0.0.1:$published_port" "host.docker.internal:$published_port" "$container_host:3306")
+if [[ -n "$SQL_FIXTURE_PRIVATE_PORT" ]]; then
+    CANDIDATES=("127.0.0.1:$published_port")
+fi
+for candidate in "${CANDIDATES[@]}"; do
     [[ "$candidate" == :3306 ]] && continue
     export DB_HOST="${candidate%:*}" DB_PORT="${candidate##*:}"
     MYSQL=(mysql "${MYSQL_SSL[@]}" --protocol=tcp --connect-timeout=3 -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -N -B)
-    for _ in $(seq 1 10); do
+    deadline=$((SECONDS + 90))
+    while ((SECONDS < deadline)); do
         if "${MYSQL[@]}" -e 'SELECT 1' >/dev/null 2>&1; then ready=1; break 2; fi
         sleep 1
     done
@@ -83,30 +93,16 @@ for migration in migrations/immutable/*.sql; do
 done
 "${MYSQL[@]}" "$DB_NAME" < migrations/currency_ledger.sql
 
+SQL_DISPATCH_SOURCES_TEXT="$(python3 tests/async/_sql_dispatch_sources.py)"
+read -r -a SQL_DISPATCH_SOURCES <<< "$SQL_DISPATCH_SOURCES_TEXT"
 read -r -a MYSQL_CFLAGS <<< "$(mysql_config --cflags)"
 read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
 read -r -a CXX_CMD <<< "${CXX:-g++}"
 "${CXX_CMD[@]}" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread \
+    "${SQL_DISPATCH_SOURCES[@]}" \
     -ffunction-sections -fdata-sections -Wl,--gc-sections -Isrc \
     "${MYSQL_CFLAGS[@]}" tests/async/pa_coin_sql_harness.cpp \
     src/persistence/critical_command.c src/economy/currency_command.c src/world/epic_command.c \
-    src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/item/item_transfer_repository.c src/economy/auction_command.c \
-    src/economy/auction_repository.c src/combat/combat_outcome_command.c src/combat/combat_outcome_repository.c \
-    src/guild/artifact_guild_command.c src/guild/artifact_guild_repository.c \
-    src/economy/boon_reward_command.c src/economy/boon_reward_repository.c \
-    src/world/zone_touch_command.c src/world/zone_touch_repository.c \
-    src/account/session_audit_command.c src/account/session_audit_repository.c \
-    src/economy/coin_transfer_command.c src/economy/coin_transfer_accounting.c \
-    src/item/economic_accounting_item_reference.c src/player/player_snapshot_codec.c \
-    src/economy/collector_command.c src/economy/collector_codec.c \
-    src/economy/collector_policy.c src/economy/collector_repository.c \
-    src/persistence/corpse_lifecycle_command.c src/persistence/corpse_lifecycle_repository.c \
-    src/persistence/player_death_restitution_command.c src/persistence/player_death_restitution_repository.c \
-    src/player/player_load_repository.c src/player/player_load_topology.c src/player/player_death_recovery_query.c \
-    src/player/player_death_conflict_repository.c src/persistence/persistence_observability.c \
-    src/persistence/economic_accounting_repository.c src/persistence/economic_sql_bank_transaction.c \
-    src/economy/economic_currency_adapter.c src/economy/economic_accounting_types.c \
-    src/economy/economic_accounting_plan.c src/economy/economic_accounting_intent.c \
-    src/persistence/economic_sql_lifecycle_guard.c src/persistence/critical_command_repository.c \
+    src/combat/combat_outcome_command.c \
     "${MYSQL_LIBS[@]}" -lcrypto -o "$TMPDIR/pa_coin_sql_harness"
 "$TMPDIR/pa_coin_sql_harness"

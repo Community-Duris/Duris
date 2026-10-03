@@ -133,6 +133,7 @@ with tempfile.TemporaryDirectory(prefix="duris-quarantine-restore-") as temporar
 
     # Reuse the native player fixture: it commits a grant and recovery, then a
     # later ordinary save. Qualification must inspect native proof, not revision.
+    (ROOT / "bin/tests").mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="recovery-inspector-", dir=ROOT / "bin/tests") as inspector_dir:
         inspector = Path(inspector_dir) / "inspector"
         subprocess.run(["python3", "tests/async/test_flatfile_player_repository.py",

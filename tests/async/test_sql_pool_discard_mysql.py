@@ -15,12 +15,23 @@ ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
 #include "sql/sql_pool.h"
 #include <chrono>
+#include <atomic>
+#include <future>
+#include <pthread.h>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <thread>
 #include <type_traits>
+
+std::atomic<bool> waiter_entered = false;
+extern "C" int __real_pthread_cond_timedwait(pthread_cond_t *, pthread_mutex_t *, const timespec *);
+extern "C" int __wrap_pthread_cond_timedwait(pthread_cond_t *condition, pthread_mutex_t *mutex, const timespec *deadline) {
+    // Observe the actual production wait boundary; no guessed scheduling sleep.
+    waiter_entered = true;
+    return __real_pthread_cond_timedwait(condition, mutex, deadline);
+}
 
 namespace {
 void require(bool ok, const std::string &message) {
@@ -61,14 +72,23 @@ std::string scalar(MYSQL *connection, const std::string &text) {
     require(row && row[0], "scalar missing");
     return row[0];
 }
-void assert_server_retired(MYSQL *observer, unsigned long id) {
+void assert_server_retired(MYSQL *observer, unsigned long id, bool server_killed) {
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+    std::string sessions, transactions;
     do {
-        if (scalar(observer, "SELECT COUNT(*) FROM information_schema.processlist WHERE ID=" + std::to_string(id)) == "0" &&
-            scalar(observer, "SELECT COUNT(*) FROM information_schema.innodb_trx WHERE trx_mysql_thread_id=" + std::to_string(id)) == "0") return;
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        sessions = scalar(observer, "SELECT COUNT(*) FROM information_schema.processlist WHERE ID=" + std::to_string(id));
+        transactions = scalar(observer, "SELECT COUNT(*) FROM information_schema.innodb_trx WHERE trx_mysql_thread_id=" + std::to_string(id));
+        if (sessions == "0" && transactions == "0") return;
+        // MySQL refreshes INNODB_TRX only after 100ms without a metadata read.
+        // Faster polling can keep a retired transaction in its cache forever.
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
     } while (std::chrono::steady_clock::now() < deadline);
-    require(false, "retired server session/transaction remains live");
+    const auto state = scalar(observer, "SELECT COALESCE(GROUP_CONCAT(CONCAT_WS(':', COMMAND, STATE, TIME)), 'none') FROM information_schema.processlist WHERE ID=" + std::to_string(id));
+    const auto transaction_state = scalar(observer, "SELECT COALESCE(GROUP_CONCAT(CONCAT_WS(':', trx_id, trx_state, trx_operation_state)), 'none') FROM information_schema.innodb_trx WHERE trx_mysql_thread_id=" + std::to_string(id));
+    require(false, "retired server session/transaction remains live id=" + std::to_string(id) +
+            " killed=" + std::to_string(server_killed) + " sessions=" + sessions +
+            " transactions=" + transactions + " session_state=" + state +
+            " transaction_state=" + transaction_state);
 }
 }
 MYSQL *sql_open_configured_connection(unsigned long) { return connect_fixture(); }
@@ -91,18 +111,35 @@ int main() {
             query(observer, "KILL CONNECTION " + std::to_string(id));
             require(mysql_query(bad, "SELECT 1") != 0, "killed session appeared usable");
         }
+        waiter_entered = false;
+        auto waiter = std::async(std::launch::async, [&] {
+            require(mysql_thread_init() == 0, "waiter client init");
+            int active = 0;
+            MYSQL *healthy = sql_pool_acquire_with_status(&active);
+            require(healthy && active == 1, "waiting borrower did not receive replacement capacity");
+            const auto replacement_id = mysql_thread_id(healthy);
+            require(replacement_id != id, "waiting borrower received retired session");
+            require(!(healthy->server_status & SERVER_STATUS_IN_TRANS) &&
+                    (healthy->server_status & SERVER_STATUS_AUTOCOMMIT), "replacement is not clean");
+            query(healthy, "INSERT INTO read_pool_probe(marker) VALUES(2)");
+            sql_pool_release(healthy);
+            mysql_thread_end();
+            return replacement_id;
+        });
+        const auto wait_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+        while (!waiter_entered && std::chrono::steady_clock::now() < wait_deadline)
+            std::this_thread::yield();
+        require(waiter_entered, "borrower never reached actual pool wait");
         sql_pool_discard_connection(bad);
+        require(waiter.wait_for(std::chrono::milliseconds(0)) == std::future_status::timeout,
+                "discard exposed capacity before lease release");
+        if (!server_killed) query(bad, "SELECT 1"); // A marked lease remains owned and usable.
         sql_pool_release(bad);
-        assert_server_retired(observer, id);
-        require(scalar(observer, "SELECT COUNT(*) FROM read_pool_probe") == "0", "retirement committed unacknowledged row");
-        int active = 0;
-        MYSQL *healthy = sql_pool_acquire_with_status(&active);
-        require(healthy && active == 1, "discard permanently exhausted real pool");
-        require(mysql_thread_id(healthy) != id, "old SQL session reused");
-        require(!(healthy->server_status & SERVER_STATUS_IN_TRANS) &&
-                (healthy->server_status & SERVER_STATUS_AUTOCOMMIT), "replacement is not clean");
-        query(healthy, "INSERT INTO read_pool_probe(marker) VALUES(2)");
-        sql_pool_release(healthy);
+        assert_server_retired(observer, id, server_killed);
+        require(scalar(observer, "SELECT COUNT(*) FROM read_pool_probe WHERE marker=1") == "0", "retirement committed unacknowledged row");
+        require(waiter.wait_for(std::chrono::seconds(2)) == std::future_status::ready,
+                "release did not wake waiting borrower within existing deadline");
+        require(waiter.get() != id, "old SQL session reused");
         require(scalar(observer, "SELECT marker FROM read_pool_probe") == "2", "subsequent borrow did not commit");
         query(observer, "DELETE FROM read_pool_probe");
     }
@@ -119,7 +156,8 @@ def compile_sql(binary):
     flags = shlex.split(subprocess.check_output(["mysql_config", "--cflags"], text=True))
     libs = shlex.split(subprocess.check_output(["mysql_config", "--libs"], text=True))
     subprocess.run([os.environ.get("CXX", "g++"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
-                    "-pthread", "-Isrc", *flags, str(source), "src/sql/sql_pool.c", *libs, "-o", str(binary)], cwd=ROOT, check=True)
+                    "-pthread", "-Isrc", *flags, str(source), "src/sql/sql_pool.c",
+                    "-Wl,--wrap=pthread_cond_timedwait", *libs, "-o", str(binary)], cwd=ROOT, check=True)
 
 
 class PoolDiscardSQL(unittest.TestCase):
@@ -127,6 +165,7 @@ class PoolDiscardSQL(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="pool-discard-sql-") as directory:
             binary = Path(directory) / "probe"
             compile_sql(binary)
+            print("POOL-NATIVE compiled", flush=True)
             if os.environ.get("TEST_DB_DISPOSABLE") != "1":
                 self.skipTest("compiled; real SQL needs an empty dedicated disposable DB")
             self.assertEqual(os.environ.get("DB_HOST"), "127.0.0.1")
