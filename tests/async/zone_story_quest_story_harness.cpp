@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 45 &&
-				tracker.summary_for(7, 42).total == 2262,
+		require(catalog.story_mappings.size() == 46 &&
+				tracker.summary_for(7, 42).total == 2237,
 			"native story projection disagreed with the complete source audit");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -1707,6 +1707,133 @@ int main(int argc, char **argv)
 					std::string::npos &&
 				prepared_barovia.progress_for_zone(7, 42, 910).completed == 1,
 			"letter briefing replaced the absent ambush plan or completed its independent quest");
+		const auto &tikitt_map =
+			*std::find_if(catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				      [](const auto &m) { return m.source_area == "tikitt"; });
+		const auto &treasure_key = story_for("tikitt", "assemble-the-royal-treasure-key");
+		const auto &mirror = story_for("tikitt", "a-mirror-for-the-drow");
+		const auto &clover = story_for("tikitt", "ogallaghers-lost-luck");
+		const auto &zynar = story_for("tikitt", "armor-for-zynar");
+		const auto &mangler = story_for("tikitt", "forge-the-madmans-mangler");
+		service supplied_tikitt(catalog);
+		require(supplied_tikitt.discover_zone(7, 42, 441, 44101, 100, "arrival") ==
+				result::applied,
+			"Tikitzopl discovery fixture failed");
+		journal = supplied_tikitt.render_journal(7, 42, 441, 10, 1, 101, false, false);
+		require(journal.find("] " + treasure_key.title) == std::string::npos,
+			"temple discovery exposed an unseen magician");
+		for (const auto &contact : tikitt_map.contacts)
+			require(supplied_tikitt.meet_npc(7, 42, contact.mob_vnum, 44101, 102) ==
+					result::applied,
+				"Tikitzopl encounter fixture failed");
+		const auto tikitt_section = [&](const auto &story)
+		{
+			const auto at = journal.find("] " + story.title + "\r\n");
+			require(at != std::string::npos, "Tikitzopl journal row missing");
+			const auto end = journal.find("\r\n  [", at + 1);
+			return journal.substr(at, end == std::string::npos ? end : end - at);
+		};
+		// Every recipe must consume its own exact currently carried kinds/counts;
+		// optional access/producer history cannot block supplied ingredients.
+		for (const auto &recipe : tikitt_map.stories)
+		{
+			supplies = {};
+			for (const auto &step : recipe.steps)
+				if (step.kind == "carried_item" && !step.optional)
+					supplies.carried[step.item_vnums.front()] = step.count;
+			const auto before_read = supplied_tikitt.serialize_state();
+			journal = supplied_tikitt.render_journal(7, 42, 441, 10, 1, 125, false,
+								 false, &supplies);
+			require(tikitt_section(recipe).find("Next: " + recipe.steps.back().text) !=
+						std::string::npos &&
+					supplied_tikitt.serialize_state() == before_read,
+				"supplied temple recipe required history or awarded an access/kill/quest event");
+			for (const auto &step : recipe.steps)
+			{
+				if (step.kind != "carried_item" || step.optional)
+					continue;
+				const auto item = step.item_vnums.front();
+				supplies.carried[item] = step.count - 1;
+				supplies.equipped[16] = item;
+				const auto other = std::find_if(
+					recipe.steps.begin(), recipe.steps.end(),
+					[&](const auto &candidate)
+					{
+						return candidate.kind == "carried_item" &&
+						       !candidate.optional &&
+						       candidate.item_vnums.front() != item;
+					});
+				if (other != recipe.steps.end())
+					supplies.carried[other->item_vnums.front()] += 10;
+				journal = supplied_tikitt.render_journal(7, 42, 441, 10, 1, 126,
+									 false, false, &supplies);
+				require(tikitt_section(recipe).find("Next: " + step.text) !=
+						std::string::npos,
+					"another ingredient or worn item replaced a missing exact carried root");
+				if (other != recipe.steps.end())
+					supplies.carried[other->item_vnums.front()] -= 10;
+				supplies.equipped.clear();
+				supplies.carried[item] = step.count;
+			}
+		}
+		// Record selected producers, then spend their outputs. Receipt history is
+		// preparation; it cannot substitute for a current base or consumed Orb.
+		for (const auto *id : { "merge-five-stone-pieces", "merge-ten-standard-swords",
+					"merge-four-guard-scimitars", "merge-five-claymores" })
+			record(supplied_tikitt, story_for("tikitt", id).contracts.front(), id, 441,
+			       44313);
+		record(supplied_tikitt, treasure_key.contracts.front(), "tikitt-golden-key", 441,
+		       44313);
+		supplies = {};
+		for (int item : { 44164, 44145, 44147, 44149, 43719 })
+			supplies.carried[item] = 1;
+		journal = supplied_tikitt.render_journal(7, 42, 441, 10, 1, 127, false, false,
+							 &supplies);
+		const auto missing_stone =
+			std::find_if(mangler.steps.begin(), mangler.steps.end(),
+				     [](const auto &step) {
+					     return step.kind == "carried_item" &&
+						    step.item_vnums.front() == 44143;
+				     });
+		require(missing_stone != mangler.steps.end() &&
+				tikitt_section(mangler).find("Next: " + missing_stone->text) !=
+					std::string::npos,
+			"crafting history replaced the spent magical stone");
+		supplies.carried[44143] = 1;
+		supplies.carried.erase(44164);
+		journal = supplied_tikitt.render_journal(7, 42, 441, 10, 1, 128, false, false,
+							 &supplies);
+		const auto missing_orb = std::find_if(mangler.steps.begin(), mangler.steps.end(),
+						      [](const auto &step) {
+							      return step.kind == "carried_item" &&
+								     step.item_vnums.front() ==
+									     44164;
+						      });
+		require(missing_orb != mangler.steps.end() &&
+				tikitt_section(mangler).find("Next: " + missing_orb->text) !=
+					std::string::npos,
+			"golden-key history replaced a missing Orb or bypassed a competing recipe");
+		service credited_tikitt(catalog);
+		for (const auto &recipe : tikitt_map.stories)
+			if (recipe.category == "service")
+				record(credited_tikitt, recipe.contracts.front(), recipe.id.c_str(),
+				       441, 44313);
+		require(credited_tikitt.progress_for_zone(7, 42, 441).completed == 0 &&
+				credited_tikitt.progress_for_zone(7, 42, 441).total == 4,
+			"equipment services inflated temple story achievements");
+		record(credited_tikitt, mirror.contracts.front(), "tikitt-supplied-mirror", 441,
+		       44321);
+		require(credited_tikitt.progress_for_zone(7, 42, 441).completed == 1,
+			"supplied mirrored bracelet invented O'Gallagher's earlier request");
+		for (const auto *story : { &clover, &zynar, &treasure_key })
+			record(credited_tikitt, story->contracts.front(), story->id.c_str(), 441,
+			       44313);
+		service restored_tikitt(catalog);
+		require(restored_tikitt.deserialize_state(credited_tikitt.serialize_state(),
+							  &error) &&
+				restored_tikitt.progress_for_zone(7, 42, 441).completed == 4 &&
+				restored_tikitt.progress_for_zone(7, 42, 441).total == 4,
+			"temple receipt recovery counted services or changed independent outcomes");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

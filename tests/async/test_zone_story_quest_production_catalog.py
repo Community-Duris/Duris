@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import importlib.util
+import collections
 import json
 import pathlib
 import re
@@ -463,7 +464,59 @@ for reset in barovia["reset_commands"]:
         barovia_sources[values[1]] = (command, values[3], values[2])
 assert barovia_sources == {91015: ("O", 91116, 1), 91018: ("P", 91017, 1), 91021: ("E", 91033, 1), 91022: ("P", 91010, 1), 91026: ("O", 91151, 1), 91027: ("O", 91135, 1), 91036: ("G", 91031, 1), 91038: ("G", 91046, 1), 91042: ("G", 91024, 1), 91043: ("O", 91125, 1), 91044: ("G", 91035, 1), 91045: ("E", 91048, 1), 91046: ("G", 91026, 1)}
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia"):
+tikitt = inventory_module.area_evidence(ROOT, "tikitt")
+assert len(tikitt["requests"]) == 29 and len(tikitt["dialogue"]) == 9
+assert len(tikitt["mobs"]) == 76 and len(tikitt["items"]) == 97 and len(tikitt["reset_commands"]) == 340
+assert tikitt["zone"]["reset_mode"] == 0 and not (ROOT / "areas/shp/tikitt.shp").exists()
+assert {(a["kind"], a["vnum"], a["function"]) for a in tikitt["special_assignments"]} == {
+    ("obj", 44170, "artifact_hide"), ("obj", 44179, "madman_mangler"),
+    ("obj", 44172, "madman_shield"), ("obj", 44188, "mentality_mace"),
+    ("obj", 44165, "unmulti_altar")}
+tikitt_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "tikitt")
+tikitt_contacts = {c["mob_vnum"]: c for c in tikitt_mapping["contacts"]}
+assert len(tikitt_contacts) == 19
+for response in tikitt["dialogue"]:
+    assert set(response["body"][0].rstrip("~").split()) & set(tikitt_contacts[response["giver_vnum"]]["topics"])
+for vnum, contact in tikitt_contacts.items():
+    assert contact["keyword"] in tikitt["mobs"][vnum]["keywords"]
+    assert re.fullmatch(r"[a-z0-9_-]{1,64}", contact["keyword"])
+tikitt_stories = {s["id"]: s for s in tikitt_mapping["stories"]}
+assert collections.Counter(s["category"] for s in tikitt_stories.values()) == {"story": 2, "request": 2, "service": 25}
+assert sum(t.get("optional", False) for story in tikitt_stories.values() for t in story["steps"]) == 44
+native_tikitt = {(r["block"]["giver_vnum"], r["block"]["binding"]["completion_key"]): r["block"] for r in tikitt["requests"]}
+for story in tikitt_stories.values():
+    ref = story["contracts"][0]
+    block = native_tikitt[(ref["giver_vnum"], ref["completion_key"])]
+    required = {step["item_vnums"][0]: step["count"] for step in story["steps"] if step["kind"] == "carried_item" and not step.get("optional")}
+    assert required == collections.Counter(v for k, v in block["give"] if k == "I")
+    assert story["steps"][-1]["contracts"] == story["contracts"]
+    optional_receipts = [(r["giver_vnum"], r["completion_key"]) for step in story["steps"] if step.get("optional") and step["kind"] == "completion" for r in step["contracts"]]
+    assert len(optional_receipts) == len(set(optional_receipts))
+assert {t["item_vnums"][0] for t in tikitt_stories["assemble-the-royal-treasure-key"]["steps"] if t["kind"] == "carried_item" and not t.get("optional")} == {44115, 44116, 44117, 44118, 44122}
+assert {t["item_vnums"][0] for t in tikitt_stories["merge-three-sapphire-kinds"]["steps"] if t["kind"] == "carried_item" and not t.get("optional")} == {44164, 43703, 43752, 43753}
+assert {t["item_vnums"][0] for t in tikitt_stories["merge-eight-flesh-ring-kinds"]["steps"] if t["kind"] == "carried_item" and not t.get("optional")} == {44164, 43705, 43707, 43710, 43714, 43715, 43717, 43718, 43739}
+assert sum(r["definition"]["daily_eligible"] for r in tikitt["requests"]) == 29
+tikitt_units = [u for u in catalog_module.story_units(catalog) if u["zone_number"] == 441]
+assert len(tikitt_units) == 29 and sum(u["achievement"] for u in tikitt_units) == 4 and sum(u["daily_candidate"] for u in tikitt_units) == 4
+parent = room = None
+tikitt_sources = collections.defaultdict(list)
+for reset in tikitt["reset_commands"]:
+    command, values = reset["command"], reset["arguments"]
+    if command in ("M", "F"):
+        parent, room = values[1], values[3]
+    if command in ("G", "E"):
+        tikitt_sources[values[1]].append((command, parent, room, values[2]))
+    if command == "P":
+        tikitt_sources[values[1]].append((command, values[3], None, values[2]))
+assert tikitt_sources[44189] == [("P", 44186, None, 1)]  # Cot, not its keyed rack.
+assert tikitt_sources[44164] == [("P", 44165, None, 1)]  # Orb is inside the altar.
+assert tikitt_sources[44122] == [("G", 44151, 44295, 1)]
+assert any(r["command"] == "M" and r["arguments"][1:4] == [44101, 1, 44313] for r in tikitt["reset_commands"])
+assert any(r["command"] == "O" and r["arguments"][1:4] == [44100, 1, 44290] for r in tikitt["reset_commands"])
+assert any(r["command"] == "D" and r["arguments"][1:4] == [44290, 5, 14] for r in tikitt["reset_commands"])
+assert not any(r["command"] == "D" and r["arguments"][1:3] == [44332, 2] for r in tikitt["reset_commands"])
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

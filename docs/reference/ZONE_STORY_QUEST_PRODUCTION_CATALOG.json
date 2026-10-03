@@ -52293,6 +52293,2344 @@
       "stories": []
     },
     {
+      "contacts": [
+        {
+          "description": "The crafty magician waits in the hidden chamber beneath the Necromancy temple. Ask about mages, list or help and examine the room journal for the resistance plan. He assembles the treasure key and offers 25 separate equipment services; no implemented takeover finale follows those recipes.",
+          "keyword": "magician",
+          "mob_vnum": 44101,
+          "name": "a crafty magician",
+          "topics": [
+            "mages",
+            "list",
+            "help"
+          ]
+        },
+        {
+          "description": "The beautiful drow at the Altar of Charisma accepts the mirrored bracelet for mirrored leggings. O'Gallagher's earlier request can produce the bracelet, but a supplied one works without that history.",
+          "keyword": "drow",
+          "mob_vnum": 44156,
+          "name": "a beautiful drow elf",
+          "topics": [
+            "mirrors"
+          ]
+        },
+        {
+          "description": "O'Gallagher at the Altar of Luck seeks his four-leaf clover necklace, actually equipped by the drow warrior at the Altar of Agility. He supplies a mirrored bracelet, while retaining his own earring and emblem stock.",
+          "keyword": "ogallagher",
+          "mob_vnum": 44157,
+          "name": "O'Gallagher",
+          "topics": [
+            "mages"
+          ]
+        },
+        {
+          "description": "Zynar at the Altar of Dexterity accepts Krahn'krayv's armor of the elements for the wooden guards' key. This is a delivery request, not a tracked rescue, undead purge or retaking of the temple.",
+          "keyword": "zynar",
+          "mob_vnum": 44158,
+          "name": "Zynar",
+          "topics": [
+            "hi",
+            "undead",
+            "mages",
+            "help"
+          ]
+        },
+        {
+          "description": "The large golem in the hidden passage carries the flaming key for the fire-side wall leading to the deeper corridors.",
+          "keyword": "golem",
+          "mob_vnum": 44100,
+          "name": "a large golem",
+          "topics": []
+        },
+        {
+          "description": "The master of arms in the guards' training grounds carries the delicate glass component required with four elemental shards. That component is not a working key before the magician's assembly.",
+          "keyword": "master",
+          "mob_vnum": 44151,
+          "name": "the master of arms",
+          "topics": []
+        },
+        {
+          "description": "The earth guardian at the Altar of Earth carries the stone shard. Elemental maze access and personal combat are separate from accepting a supplied shard.",
+          "keyword": "guardian",
+          "mob_vnum": 44126,
+          "name": "the guardian of the altar",
+          "topics": []
+        },
+        {
+          "description": "The water guardian at the Altar of Water carries the water shard.",
+          "keyword": "water",
+          "mob_vnum": 44130,
+          "name": "the guardian of the altar",
+          "topics": []
+        },
+        {
+          "description": "The fire guardian at the Altar of Fire carries the fire shard.",
+          "keyword": "guardian",
+          "mob_vnum": 44134,
+          "name": "the guardian of the altar",
+          "topics": []
+        },
+        {
+          "description": "The air guardian at the Altar of Air carries the wind shard.",
+          "keyword": "guardian",
+          "mob_vnum": 44138,
+          "name": "the guardian of the altar",
+          "topics": []
+        },
+        {
+          "description": "Krahn'krayv equips the armor needed by Zynar or a separate Orb enhancement. One base copy cannot pay both exchanges.",
+          "keyword": "krahnkrayv",
+          "mob_vnum": 44162,
+          "name": "Krahn'krayv, the High Conjurer",
+          "topics": []
+        },
+        {
+          "description": "The drow warrior at the Altar of Agility equips O'Gallagher's clover necklace, an earring and the agility emblem.",
+          "keyword": "drow",
+          "mob_vnum": 44159,
+          "name": "a drow warrior",
+          "topics": []
+        },
+        {
+          "description": "Krahn'gon at the Altar of Prayer equips the prayer earring and emblem. His defeat does not automatically record a liberation stage.",
+          "keyword": "krahngon",
+          "mob_vnum": 44160,
+          "name": "Krahn'gon the High Cleric",
+          "topics": []
+        },
+        {
+          "description": "Krahn'moor at the Altar of Meditation equips the meditation earring and emblem. The name differs in his long description; his exact stock remains the source lead.",
+          "keyword": "krahnmoor",
+          "mob_vnum": 44161,
+          "name": "Krahn'moor, the High Sorcerer",
+          "topics": []
+        },
+        {
+          "description": "Krahn'ehk at the Altar of Necromancy equips the life earring and emblem and has a following pet. Neither the mages nor royal undead are player-triggered transformations.",
+          "keyword": "krahnehk",
+          "mob_vnum": 44163,
+          "name": "Krahn'ehk, the High Necromancer",
+          "topics": []
+        },
+        {
+          "description": "King Arkan'non equips the golden royal sword and his leggings. His undead state is ordinary reset stock, not evidence of a restoration quest.",
+          "keyword": "king",
+          "mob_vnum": 44172,
+          "name": "King Arkan'non",
+          "topics": []
+        },
+        {
+          "description": "Queen Arkan'non equips her royal sleeves. Her throne-room story has no local terminal rescue.",
+          "keyword": "queen",
+          "mob_vnum": 44173,
+          "name": "Queen Arkan'non",
+          "topics": []
+        },
+        {
+          "description": "Quilno equips the gold and silver royal daggers. His ordinary combat specialization has no custom quest outcome.",
+          "keyword": "quilno",
+          "mob_vnum": 44174,
+          "name": "Quilno, the jester",
+          "topics": []
+        },
+        {
+          "description": "The king's pet guards the first treasure room. Its ordinary placement is independent of key assembly or a recorded personal kill.",
+          "keyword": "pet",
+          "mob_vnum": 44175,
+          "name": "the king's pet",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "The Lost Temple of Tikitzopl tells of a resistance against the Krahns and undead. Follow the hidden magician, Zynar's guards' key, four guardian shards and the glass component toward royal treasure and the Orb of Insanity; O'Gallagher and the beautiful drow have separate requests. Item deliveries establish their exact outcomes, while lore, travel, combat and temple liberation need separate evidence. Active, ready accounting is required.",
+      "orientation": [
+        "The temple entrance lies below the Lost City's forest entrance. The foreign temple key opens the approach door; its sacrifice contract remains owned by the Lost City. The magically sealed northern door in the entrance description is scenery: the actual temple route is the hidden trapdoor down.",
+        "Look for the hidden chamber beneath the Necromancy temple to meet the crafty magician. Ask about mages, list or help and examine the room journal for the resistance plan. The separate empty Ancient Crypt below the necromancy altar is not his ordinary placement.",
+        "The large golem in the hidden passage carries the flaming key for the secret fire-side wall. Krahn'krayv equips the armor of the elements in the Temple of Meditation. Give that exact armor to Zynar at the Altar of Dexterity for the wooden guards' key.",
+        "The guards' training grounds contain the master of arms and the glass component. A gem-and-gold key is declared inside a cot in the guards' sleeping chambers and opens the king's chambers. The rack instead contains two yellow vials; its own keyed closure uses that same gem key.",
+        "The earth, water, fire and air guardians carry four different shards. Bring one of each plus the glass component to the magician for the golden treasure key. The glass component is a recipe ingredient; a fire shard is different from the separately collected burning flame.",
+        "Push the majestic royal altar, then use the golden key for its locked passage down to the treasure rooms. Pushing clears the block but does not itself unlock or reveal all access. This key has a one-percent native break chance; the other local access keys have no native break chance.",
+        "Altar inscriptions are clues to the sequence of magical speech doors beyond the treasure rooms. Their accepted last-word keywords differ by door; examined lore and successful unlocking are not recorded as journal achievements. The final southern door is already open in its loaded state.",
+        "The Orb is declared inside the marble high altar beyond those doors. Each of fifteen chosen Orb enhancements consumes a separate Orb together with its exact ingredients. One Orb cannot complete every upgrade, and an earlier key or crafting receipt cannot replace a spent current ingredient.",
+        "The high altar room also has a separate entrance from Winterhaven's gnomish-key teleport room. Entering its array of lights leads to the Lost City Snake Pit, where a ground leaf key opens the exit. This is a one-way return route with its own encounter, source and travel qualification; hints do not award foreign discovery.",
+        "Nine distinct emblems merge into the empowering emblem; nine distinct earrings merge into the Krahns earring. Five sharp stone pieces, ten standard swords, four guard scimitars, five claymores or five base glistening bracelets make separate magical base outputs. Carry every required piece together for the chosen recipe.",
+        "Four weather components merge into the basic weathered shard. Four different royal dagger metals and three royal sword metals make their own bases. Those bases can then compete for an Orb; donated exact bases skip earlier producer receipts.",
+        "Advanced services also use Lost City equipment: eight distinct racial flesh rings, three different same-named sapphire necklaces and High Council weapons. Necklace sources and attributes distinguish the three kinds. Stocked rings and weapons do not establish personal creature kills or body-part creation.",
+        "Return the clover necklace from the drow warrior to O'Gallagher for the mirrored bracelet; give that bracelet to the beautiful drow for mirrored leggings. These two requests remain independent, and donated exact offerings work without the earlier local request.",
+        "The high altar prayer is a separate class-change service: it can remove a multiclass character's secondary class and specialization for 100 epic points. Its debit already waits for committed settlement. It grants no quest credit and is not required to retrieve the Orb or craft equipment.",
+        "MaDMaN armor can use its worn hide power, the shield has a fire retaliation, the mangler has blur/riposte powers and the mace uses a worn mentality command with a five-minute cooldown. An early mace repeat hurts the wielder. These powers do not complete a takeover, reveal a learned quest keyword or prove accepted combat progress.",
+        "Directly carry every exact offering outside equipment and containers. Readiness and journal reads award nothing. Four named requests/story assemblies are potential daily candidates; the 25 equipment services and class-change prayer award no quest achievements or dailies. Fresh active reset stock and actual travel/combat/service episodes still need qualification."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "tikitt",
+      "stories": [
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:43703,I:43752,I:43753,I:44164;receive=I:44192;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "merge-three-sapphire-kinds",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44115,I:44116,I:44117,I:44118,I:44122;receive=I:44101;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "treasure-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: assemble the royal treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The key fits the royal altar passage after pushing the altar. Its native break chance is one percent; a supplied Orb skips this access preparation.",
+              "id": "item-44101",
+              "item_vnums": [
+                44101
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the golden treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "An apeman worshiper in the Lost City equips this sapphire necklace: deftness and life. The other two sapphire kinds share its display name but are separate offerings.",
+              "id": "item-43703",
+              "item_vnums": [
+                43703
+              ],
+              "kind": "carried_item",
+              "text": "Carry a sapphire necklace granting deftness and life"
+            },
+            {
+              "count": 1,
+              "hint": "An apeman worshiper in the Lost City equips this sapphire necklace: agility and intelligence. It is a different kind from the other same-named necklaces.",
+              "id": "item-43752",
+              "item_vnums": [
+                43752
+              ],
+              "kind": "carried_item",
+              "text": "Carry a sapphire necklace granting agility and intelligence"
+            },
+            {
+              "count": 1,
+              "hint": "An apeman worshiper in the Lost City equips this sapphire necklace: strength and wisdom. Three copies of one sapphire kind cannot replace the three distinct kinds.",
+              "id": "item-43753",
+              "item_vnums": [
+                43753
+              ],
+              "kind": "carried_item",
+              "text": "Carry a sapphire necklace granting strength and wisdom"
+            },
+            {
+              "count": 1,
+              "hint": "The Orb is declared inside the marble high altar in the High Altar room. It is consumed by each chosen enhancement, rather than reused as a permanent catalyst. The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "item-44164",
+              "item_vnums": [
+                44164
+              ],
+              "kind": "carried_item",
+              "text": "Carry the magical Orb of Insanity"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43703,I:43752,I:43753,I:44164;receive=I:44192;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is the sapphire necklace of Insanity. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. This exchange consumes one Orb together with every base ingredient. Other enhancements remain separate competing recipes. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. a sapphire necklace, a sapphire necklace, a sapphire necklace, the magical Orb of Insanity \u2192 the sapphire necklace of Insanity. The three sapphire kinds share a name; three copies of one kind do not qualify.",
+          "title": "Merge Three Sapphire Necklace Kinds"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:43705,I:43707,I:43710,I:43714,I:43715,I:43717,I:43718,I:43739,I:44164;receive=I:44191;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "merge-eight-flesh-ring-kinds",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44115,I:44116,I:44117,I:44118,I:44122;receive=I:44101;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "treasure-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: assemble the royal treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The key fits the royal altar passage after pushing the altar. Its native break chance is one percent; a supplied Orb skips this access preparation.",
+              "id": "item-44101",
+              "item_vnums": [
+                44101
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the golden treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "a guardian apeman equips it in A Store Room, Lost City of Tikitzopl.",
+              "id": "item-43705",
+              "item_vnums": [
+                43705
+              ],
+              "kind": "carried_item",
+              "text": "Carry a ring of human flesh"
+            },
+            {
+              "count": 1,
+              "hint": "a guardian apeman equips it in The Weaponry Storeroom, Lost City of Tikitzopl.",
+              "id": "item-43707",
+              "item_vnums": [
+                43707
+              ],
+              "kind": "carried_item",
+              "text": "Carry a ring of gnome flesh"
+            },
+            {
+              "count": 1,
+              "hint": "an apeman noble equips it in A Bedroom in a Large Dwelling, Lost City of Tikitzopl.",
+              "id": "item-43710",
+              "item_vnums": [
+                43710
+              ],
+              "kind": "carried_item",
+              "text": "Carry a ring of barbarian flesh"
+            },
+            {
+              "count": 1,
+              "hint": "an apeman noble equips it in A Large Dwelling, Lost City of Tikitzopl.",
+              "id": "item-43714",
+              "item_vnums": [
+                43714
+              ],
+              "kind": "carried_item",
+              "text": "Carry a ring of halfling flesh"
+            },
+            {
+              "count": 1,
+              "hint": "an apeman noble equips it in A Large Dwelling, Lost City of Tikitzopl.",
+              "id": "item-43715",
+              "item_vnums": [
+                43715
+              ],
+              "kind": "carried_item",
+              "text": "Carry a ring of elven flesh"
+            },
+            {
+              "count": 1,
+              "hint": "an apeman noble equips it in A Large Dwelling, Lost City of Tikitzopl.",
+              "id": "item-43717",
+              "item_vnums": [
+                43717
+              ],
+              "kind": "carried_item",
+              "text": "Carry a ring of trollish flesh"
+            },
+            {
+              "count": 1,
+              "hint": "an inSaNe mAgE equips it in A Torture Room, Lost City of Tikitzopl.",
+              "id": "item-43718",
+              "item_vnums": [
+                43718
+              ],
+              "kind": "carried_item",
+              "text": "Carry a ring of dwarven flesh"
+            },
+            {
+              "count": 1,
+              "hint": "a guardian of the High Council equips it in The Meeting Chamber, Lost City of Tikitzopl.",
+              "id": "item-43739",
+              "item_vnums": [
+                43739
+              ],
+              "kind": "carried_item",
+              "text": "Carry a ring of orcish flesh"
+            },
+            {
+              "count": 1,
+              "hint": "The Orb is declared inside the marble high altar in the High Altar room. It is consumed by each chosen enhancement, rather than reused as a permanent catalyst. The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "item-44164",
+              "item_vnums": [
+                44164
+              ],
+              "kind": "carried_item",
+              "text": "Carry the magical Orb of Insanity"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43705,I:43707,I:43710,I:43714,I:43715,I:43717,I:43718,I:43739,I:44164;receive=I:44191;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is the ring of a MaDMaN. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. This exchange consumes one Orb together with every base ingredient. Other enhancements remain separate competing recipes. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. a ring of human flesh, a ring of gnome flesh, a ring of barbarian flesh, a ring of halfling flesh, a ring of elven flesh, a ring of trollish flesh, a ring of dwarven flesh, a ring of orcish flesh, the magical Orb of Insanity \u2192 the ring of a MaDMaN. Eight distinct racial flesh-ring kinds are needed together, not eight copies of one kind.",
+          "title": "Merge Eight Flesh Ring Kinds"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:43706,I:44164,I:44167;receive=I:44178;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "forge-the-madmans-slasher",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44115,I:44116,I:44117,I:44118,I:44122;receive=I:44101;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "treasure-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: assemble the royal treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The key fits the royal altar passage after pushing the altar. Its native break chance is one percent; a supplied Orb skips this access preparation.",
+              "id": "item-44101",
+              "item_vnums": [
+                44101
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the golden treasure key"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44138,I:44159,I:44160;receive=I:44167;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output. Gifts skip producer history.",
+              "id": "producer-44167",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain a magical royal sword"
+            },
+            {
+              "count": 1,
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output.",
+              "id": "item-44167",
+              "item_vnums": [
+                44167
+              ],
+              "kind": "carried_item",
+              "text": "Carry a magical royal sword"
+            },
+            {
+              "count": 1,
+              "hint": "The Orb is declared inside the marble high altar in the High Altar room. It is consumed by each chosen enhancement, rather than reused as a permanent catalyst. The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "item-44164",
+              "item_vnums": [
+                44164
+              ],
+              "kind": "carried_item",
+              "text": "Carry the magical Orb of Insanity"
+            },
+            {
+              "count": 1,
+              "hint": "Ground stock in The Weaponry Storeroom.",
+              "id": "item-43706",
+              "item_vnums": [
+                43706
+              ],
+              "kind": "carried_item",
+              "text": "Carry a bright silver sword"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43706,I:44164,I:44167;receive=I:44178;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is a MaDMaNs slasher. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. This exchange consumes one Orb together with every base ingredient. Other enhancements remain separate competing recipes. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. a magical royal sword, the magical Orb of Insanity, a bright silver sword \u2192 a MaDMaNs slasher.",
+          "title": "Forge the MaDMaNs Slasher"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:43719,I:44143,I:44145,I:44147,I:44149,I:44164;receive=I:44179;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "forge-the-madmans-mangler",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44115,I:44116,I:44117,I:44118,I:44122;receive=I:44101;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "treasure-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: assemble the royal treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The key fits the royal altar passage after pushing the altar. Its native break chance is one percent; a supplied Orb skips this access preparation.",
+              "id": "item-44101",
+              "item_vnums": [
+                44101
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the golden treasure key"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44142,I:44142,I:44142,I:44142,I:44142;receive=I:44143;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output. Gifts skip producer history.",
+              "id": "producer-44143",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain a magical piece of stone"
+            },
+            {
+              "count": 1,
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output.",
+              "id": "item-44143",
+              "item_vnums": [
+                44143
+              ],
+              "kind": "carried_item",
+              "text": "Carry a magical piece of stone"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44144,I:44144,I:44144,I:44144,I:44144,I:44144,I:44144,I:44144,I:44144,I:44144;receive=I:44145;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output. Gifts skip producer history.",
+              "id": "producer-44145",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain a magical steel sword"
+            },
+            {
+              "count": 1,
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output.",
+              "id": "item-44145",
+              "item_vnums": [
+                44145
+              ],
+              "kind": "carried_item",
+              "text": "Carry a magical steel sword"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44146,I:44146,I:44146,I:44146;receive=I:44147;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output. Gifts skip producer history.",
+              "id": "producer-44147",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain a magical scimitar"
+            },
+            {
+              "count": 1,
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output.",
+              "id": "item-44147",
+              "item_vnums": [
+                44147
+              ],
+              "kind": "carried_item",
+              "text": "Carry a magical scimitar"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44148,I:44148,I:44148,I:44148,I:44148;receive=I:44149;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output. Gifts skip producer history.",
+              "id": "producer-44149",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain a magical claymore"
+            },
+            {
+              "count": 1,
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output.",
+              "id": "item-44149",
+              "item_vnums": [
+                44149
+              ],
+              "kind": "carried_item",
+              "text": "Carry a magical claymore"
+            },
+            {
+              "count": 1,
+              "hint": "The Orb is declared inside the marble high altar in the High Altar room. It is consumed by each chosen enhancement, rather than reused as a permanent catalyst. The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "item-44164",
+              "item_vnums": [
+                44164
+              ],
+              "kind": "carried_item",
+              "text": "Carry the magical Orb of Insanity"
+            },
+            {
+              "count": 1,
+              "hint": "Tekinar, of the High Council equips it in The Meeting Chamber, Lost City of Tikitzopl.",
+              "id": "item-43719",
+              "item_vnums": [
+                43719
+              ],
+              "kind": "carried_item",
+              "text": "Carry the great sword of the High Council"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43719,I:44143,I:44145,I:44147,I:44149,I:44164;receive=I:44179;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is a MaDMaNs mangler. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. This exchange consumes one Orb together with every base ingredient. Other enhancements remain separate competing recipes. The blade's combat blur/riposte powers are separate from receipt progress.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. a magical piece of stone, a magical steel sword, a magical scimitar, a magical claymore, the magical Orb of Insanity, the great sword of the High Council \u2192 a MaDMaNs mangler.",
+          "title": "Forge the MaDMaNs Mangler"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:43720,I:44164,I:44166;receive=I:44177;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "forge-the-madmans-stabber",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44115,I:44116,I:44117,I:44118,I:44122;receive=I:44101;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "treasure-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: assemble the royal treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The key fits the royal altar passage after pushing the altar. Its native break chance is one percent; a supplied Orb skips this access preparation.",
+              "id": "item-44101",
+              "item_vnums": [
+                44101
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the golden treasure key"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44119,I:44120,I:44140,I:44161;receive=I:44166;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output. Gifts skip producer history.",
+              "id": "producer-44166",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain a magical royal dagger"
+            },
+            {
+              "count": 1,
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output.",
+              "id": "item-44166",
+              "item_vnums": [
+                44166
+              ],
+              "kind": "carried_item",
+              "text": "Carry a magical royal dagger"
+            },
+            {
+              "count": 1,
+              "hint": "The Orb is declared inside the marble high altar in the High Altar room. It is consumed by each chosen enhancement, rather than reused as a permanent catalyst. The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "item-44164",
+              "item_vnums": [
+                44164
+              ],
+              "kind": "carried_item",
+              "text": "Carry the magical Orb of Insanity"
+            },
+            {
+              "count": 1,
+              "hint": "Tikitani, of the High Council equips it in The Meeting Chamber, Lost City of Tikitzopl.",
+              "id": "item-43720",
+              "item_vnums": [
+                43720
+              ],
+              "kind": "carried_item",
+              "text": "Carry 'Disemboweler', the dagger of sin"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43720,I:44164,I:44166;receive=I:44177;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is a MaDMaNs stabber. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. This exchange consumes one Orb together with every base ingredient. Other enhancements remain separate competing recipes. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. a magical royal dagger, the magical Orb of Insanity, 'Disemboweler', the dagger of sin \u2192 a MaDMaNs stabber.",
+          "title": "Forge the MaDMaNs Stabber"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:43723,I:44164;receive=I:44188;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "forge-the-mentality-mace",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44115,I:44116,I:44117,I:44118,I:44122;receive=I:44101;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "treasure-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: assemble the royal treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The key fits the royal altar passage after pushing the altar. Its native break chance is one percent; a supplied Orb skips this access preparation.",
+              "id": "item-44101",
+              "item_vnums": [
+                44101
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the golden treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The Orb is declared inside the marble high altar in the High Altar room. It is consumed by each chosen enhancement, rather than reused as a permanent catalyst. The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "item-44164",
+              "item_vnums": [
+                44164
+              ],
+              "kind": "carried_item",
+              "text": "Carry the magical Orb of Insanity"
+            },
+            {
+              "count": 1,
+              "hint": "Tikiapti, of the High Council equips it in The Meeting Chamber, Lost City of Tikitzopl.",
+              "id": "item-43723",
+              "item_vnums": [
+                43723
+              ],
+              "kind": "carried_item",
+              "text": "Carry 'Skullsmasher', the spiked hammer"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43723,I:44164;receive=I:44188;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is the mace of mentality. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. This exchange consumes one Orb together with every base ingredient. Other enhancements remain separate competing recipes. Its worn mentality command invokes reflection with a five-minute cooldown; an early repeat hurts the wielder. This is an item power, not a learned quest keyword.",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. the magical Orb of Insanity, 'Skullsmasher', the spiked hammer \u2192 the mace of mentality.",
+          "title": "Forge the Mace of Mentality"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44105,I:44106,I:44107,I:44108,I:44109,I:44110,I:44111,I:44112,I:44114;receive=I:44113;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "merge-nine-emblems",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "an evil mage equips it in Altar of Knowledge, the temple.",
+              "id": "item-44105",
+              "item_vnums": [
+                44105
+              ],
+              "kind": "carried_item",
+              "text": "Carry the emblem of knowledge"
+            },
+            {
+              "count": 1,
+              "hint": "a traitorous warrior equips it in Altar of Strength, the temple.",
+              "id": "item-44106",
+              "item_vnums": [
+                44106
+              ],
+              "kind": "carried_item",
+              "text": "Carry the emblem of strength"
+            },
+            {
+              "count": 1,
+              "hint": "a beautiful drow elf equips it in Altar of Charisma, the temple.",
+              "id": "item-44107",
+              "item_vnums": [
+                44107
+              ],
+              "kind": "carried_item",
+              "text": "Carry the emblem of charming"
+            },
+            {
+              "count": 1,
+              "hint": "O'Gallagher equips it in Altar of Luck, the temple.",
+              "id": "item-44108",
+              "item_vnums": [
+                44108
+              ],
+              "kind": "carried_item",
+              "text": "Carry the emblem of luck"
+            },
+            {
+              "count": 1,
+              "hint": "a drow warrior equips it in Altar of Agility, the temple.",
+              "id": "item-44109",
+              "item_vnums": [
+                44109
+              ],
+              "kind": "carried_item",
+              "text": "Carry the emblem of agility"
+            },
+            {
+              "count": 1,
+              "hint": "Krahn'moor, the High Sorcerer equips it in Altar of Meditation, the temple.",
+              "id": "item-44110",
+              "item_vnums": [
+                44110
+              ],
+              "kind": "carried_item",
+              "text": "Carry the emblem of meditation"
+            },
+            {
+              "count": 1,
+              "hint": "Krahn'gon the High Cleric equips it in Altar of Prayer, the temple.",
+              "id": "item-44111",
+              "item_vnums": [
+                44111
+              ],
+              "kind": "carried_item",
+              "text": "Carry the emblem of prayer"
+            },
+            {
+              "count": 1,
+              "hint": "Zynar equips it in Altar of Dexterity, the temple.",
+              "id": "item-44112",
+              "item_vnums": [
+                44112
+              ],
+              "kind": "carried_item",
+              "text": "Carry the emblem of dexterity"
+            },
+            {
+              "count": 1,
+              "hint": "Krahn'ehk, the High Necromancer equips it in Altar of Necromancy, the temple.",
+              "id": "item-44114",
+              "item_vnums": [
+                44114
+              ],
+              "kind": "carried_item",
+              "text": "Carry the emblem of life"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44105,I:44106,I:44107,I:44108,I:44109,I:44110,I:44111,I:44112,I:44114;receive=I:44113;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is the all-empowering emblem. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. the emblem of knowledge, the emblem of strength, the emblem of charming, the emblem of luck, the emblem of agility, the emblem of meditation, the emblem of prayer, the emblem of dexterity, the emblem of life \u2192 the all-empowering emblem.",
+          "title": "Merge Nine Attribute Emblems"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44113,I:44164;receive=I:44169;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "enhance-the-empowering-emblem",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44115,I:44116,I:44117,I:44118,I:44122;receive=I:44101;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "treasure-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: assemble the royal treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The key fits the royal altar passage after pushing the altar. Its native break chance is one percent; a supplied Orb skips this access preparation.",
+              "id": "item-44101",
+              "item_vnums": [
+                44101
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the golden treasure key"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44105,I:44106,I:44107,I:44108,I:44109,I:44110,I:44111,I:44112,I:44114;receive=I:44113;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output. Gifts skip producer history.",
+              "id": "producer-44113",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain the all-empowering emblem"
+            },
+            {
+              "count": 1,
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output.",
+              "id": "item-44113",
+              "item_vnums": [
+                44113
+              ],
+              "kind": "carried_item",
+              "text": "Carry the all-empowering emblem"
+            },
+            {
+              "count": 1,
+              "hint": "The Orb is declared inside the marble high altar in the High Altar room. It is consumed by each chosen enhancement, rather than reused as a permanent catalyst. The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "item-44164",
+              "item_vnums": [
+                44164
+              ],
+              "kind": "carried_item",
+              "text": "Carry the magical Orb of Insanity"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44113,I:44164;receive=I:44169;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is the emblem of a MaDMaN. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. This exchange consumes one Orb together with every base ingredient. Other enhancements remain separate competing recipes. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. the all-empowering emblem, the magical Orb of Insanity \u2192 the emblem of a MaDMaN.",
+          "title": "Enhance the Empowering Emblem"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:44115,I:44116,I:44117,I:44118,I:44122;receive=I:44101;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "assemble-the-royal-treasure-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The large golem in the hidden passage carries this key for the secret fire-side wall. It is different from the wooden, glass-component, gem and golden keys.",
+              "id": "item-44103",
+              "item_vnums": [
+                44103
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the golem's flaming key"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44121;receive=I:44102;disappear=0",
+                  "giver_vnum": 44158
+                }
+              ],
+              "hint": "This independent request supplies the wooden guards' key. A supplied glass component and shards skip it.",
+              "id": "guard-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: help Zynar obtain armor"
+            },
+            {
+              "count": 1,
+              "hint": "Zynar awards this actual door key for the guards' chambers. A prior receipt does not substitute for the physical key.",
+              "id": "item-44102",
+              "item_vnums": [
+                44102
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the wooden guards' key"
+            },
+            {
+              "count": 1,
+              "hint": "the guardian of the altar carries it in Altar of Fire, the temple.",
+              "id": "item-44115",
+              "item_vnums": [
+                44115
+              ],
+              "kind": "carried_item",
+              "text": "Carry a shard of fire"
+            },
+            {
+              "count": 1,
+              "hint": "the guardian of the altar carries it in Altar of Air, the temple.",
+              "id": "item-44116",
+              "item_vnums": [
+                44116
+              ],
+              "kind": "carried_item",
+              "text": "Carry a shard of wind"
+            },
+            {
+              "count": 1,
+              "hint": "the guardian of the altar carries it in Altar of Earth, the temple.",
+              "id": "item-44117",
+              "item_vnums": [
+                44117
+              ],
+              "kind": "carried_item",
+              "text": "Carry a shard of stone"
+            },
+            {
+              "count": 1,
+              "hint": "the guardian of the altar carries it in Altar of Water, the temple.",
+              "id": "item-44118",
+              "item_vnums": [
+                44118
+              ],
+              "kind": "carried_item",
+              "text": "Carry a shard of water"
+            },
+            {
+              "count": 1,
+              "hint": "The master of arms carries this glass component in the guards' training grounds. It is a treasure ingredient, not a working door key by itself.",
+              "id": "item-44122",
+              "item_vnums": [
+                44122
+              ],
+              "kind": "carried_item",
+              "text": "Carry a delicate glass key"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44115,I:44116,I:44117,I:44118,I:44122;receive=I:44101;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is a beautiful golden key. This records assembly of the key, not a successful royal-altar switch, unlock, passage, Orb retrieval or takeover. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "Aid the resistance by assembling the exact treasure-access key. a shard of fire, a shard of wind, a shard of stone, a shard of water, a delicate glass key \u2192 a beautiful golden key.",
+          "title": "Assemble the Royal Treasure Key"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44119,I:44120,I:44140,I:44161;receive=I:44166;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "merge-four-royal-daggers",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Quilno, the jester equips it in The King's Throne Room, the temple.",
+              "id": "item-44119",
+              "item_vnums": [
+                44119
+              ],
+              "kind": "carried_item",
+              "text": "Carry a royal dagger of gold"
+            },
+            {
+              "count": 1,
+              "hint": "Quilno, the jester equips it in The King's Throne Room, the temple.",
+              "id": "item-44120",
+              "item_vnums": [
+                44120
+              ],
+              "kind": "carried_item",
+              "text": "Carry a royal dagger of silver"
+            },
+            {
+              "count": 1,
+              "hint": "a dark assassin equips it in Altar of the Dagger, the temple.",
+              "id": "item-44140",
+              "item_vnums": [
+                44140
+              ],
+              "kind": "carried_item",
+              "text": "Carry a royal copper dagger"
+            },
+            {
+              "count": 1,
+              "hint": "The royal dagger of platinum is ground stock in the royal equipment room.",
+              "id": "item-44161",
+              "item_vnums": [
+                44161
+              ],
+              "kind": "carried_item",
+              "text": "Carry a royal dagger of platinum"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44119,I:44120,I:44140,I:44161;receive=I:44166;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is a magical royal dagger. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. a royal dagger of gold, a royal dagger of silver, a royal copper dagger, a royal dagger of platinum \u2192 a magical royal dagger.",
+          "title": "Merge Four Royal Daggers"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44121,I:44164;receive=I:44170;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "enhance-the-elemental-armor",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44115,I:44116,I:44117,I:44118,I:44122;receive=I:44101;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "treasure-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: assemble the royal treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The key fits the royal altar passage after pushing the altar. Its native break chance is one percent; a supplied Orb skips this access preparation.",
+              "id": "item-44101",
+              "item_vnums": [
+                44101
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the golden treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "Krahn'krayv equips the armor in the Temple of Meditation. Zynar and the Orb enhancement both consume this same base armor; one copy cannot serve both deliveries.",
+              "id": "item-44121",
+              "item_vnums": [
+                44121
+              ],
+              "kind": "carried_item",
+              "text": "Carry the armor of the elements"
+            },
+            {
+              "count": 1,
+              "hint": "The Orb is declared inside the marble high altar in the High Altar room. It is consumed by each chosen enhancement, rather than reused as a permanent catalyst. The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "item-44164",
+              "item_vnums": [
+                44164
+              ],
+              "kind": "carried_item",
+              "text": "Carry the magical Orb of Insanity"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44121,I:44164;receive=I:44170;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is the armor of a MaDMaN. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. This exchange consumes one Orb together with every base ingredient. Other enhancements remain separate competing recipes. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. the armor of the elements, the magical Orb of Insanity \u2192 the armor of a MaDMaN.",
+          "title": "Enhance the Armor of the Elements"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44126,I:44127,I:44128,I:44129,I:44130,I:44131,I:44132,I:44133,I:44134;receive=I:44135;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "merge-nine-earrings",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "an evil mage equips it in Altar of Knowledge, the temple.",
+              "id": "item-44126",
+              "item_vnums": [
+                44126
+              ],
+              "kind": "carried_item",
+              "text": "Carry an earring of power"
+            },
+            {
+              "count": 1,
+              "hint": "a traitorous warrior equips it in Altar of Strength, the temple.",
+              "id": "item-44127",
+              "item_vnums": [
+                44127
+              ],
+              "kind": "carried_item",
+              "text": "Carry an earring of courage"
+            },
+            {
+              "count": 1,
+              "hint": "Zynar equips it in Altar of Dexterity, the temple.",
+              "id": "item-44128",
+              "item_vnums": [
+                44128
+              ],
+              "kind": "carried_item",
+              "text": "Carry an earring of deftness"
+            },
+            {
+              "count": 1,
+              "hint": "Krahn'moor, the High Sorcerer equips it in Altar of Meditation, the temple.",
+              "id": "item-44129",
+              "item_vnums": [
+                44129
+              ],
+              "kind": "carried_item",
+              "text": "Carry an earring of meditation"
+            },
+            {
+              "count": 1,
+              "hint": "Krahn'gon the High Cleric equips it in Altar of Prayer, the temple.",
+              "id": "item-44130",
+              "item_vnums": [
+                44130
+              ],
+              "kind": "carried_item",
+              "text": "Carry an earring of prayer"
+            },
+            {
+              "count": 1,
+              "hint": "a drow warrior equips it in Altar of Agility, the temple.",
+              "id": "item-44131",
+              "item_vnums": [
+                44131
+              ],
+              "kind": "carried_item",
+              "text": "Carry an earring of nimbleness"
+            },
+            {
+              "count": 1,
+              "hint": "a beautiful drow elf equips it in Altar of Charisma, the temple.",
+              "id": "item-44133",
+              "item_vnums": [
+                44133
+              ],
+              "kind": "carried_item",
+              "text": "Carry an earring of charisma"
+            },
+            {
+              "count": 1,
+              "hint": "O'Gallagher equips it in Altar of Luck, the temple.",
+              "id": "item-44132",
+              "item_vnums": [
+                44132
+              ],
+              "kind": "carried_item",
+              "text": "Carry an earring of luck"
+            },
+            {
+              "count": 1,
+              "hint": "Krahn'ehk, the High Necromancer equips it in Altar of Necromancy, the temple.",
+              "id": "item-44134",
+              "item_vnums": [
+                44134
+              ],
+              "kind": "carried_item",
+              "text": "Carry an earring of life"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44126,I:44127,I:44128,I:44129,I:44130,I:44131,I:44132,I:44133,I:44134;receive=I:44135;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is the earring of the Krahns. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. an earring of power, an earring of courage, an earring of deftness, an earring of meditation, an earring of prayer, an earring of nimbleness, an earring of charisma, an earring of luck, an earring of life \u2192 the earring of the Krahns.",
+          "title": "Merge Nine Attribute Earrings"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44135,I:44164;receive=I:44171;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "enhance-the-krahns-earring",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44115,I:44116,I:44117,I:44118,I:44122;receive=I:44101;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "treasure-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: assemble the royal treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The key fits the royal altar passage after pushing the altar. Its native break chance is one percent; a supplied Orb skips this access preparation.",
+              "id": "item-44101",
+              "item_vnums": [
+                44101
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the golden treasure key"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44126,I:44127,I:44128,I:44129,I:44130,I:44131,I:44132,I:44133,I:44134;receive=I:44135;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output. Gifts skip producer history.",
+              "id": "producer-44135",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain the earring of the Krahns"
+            },
+            {
+              "count": 1,
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output.",
+              "id": "item-44135",
+              "item_vnums": [
+                44135
+              ],
+              "kind": "carried_item",
+              "text": "Carry the earring of the Krahns"
+            },
+            {
+              "count": 1,
+              "hint": "The Orb is declared inside the marble high altar in the High Altar room. It is consumed by each chosen enhancement, rather than reused as a permanent catalyst. The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "item-44164",
+              "item_vnums": [
+                44164
+              ],
+              "kind": "carried_item",
+              "text": "Carry the magical Orb of Insanity"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44135,I:44164;receive=I:44171;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is the earring of a MaDMaN. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. This exchange consumes one Orb together with every base ingredient. Other enhancements remain separate competing recipes. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. the earring of the Krahns, the magical Orb of Insanity \u2192 the earring of a MaDMaN.",
+          "title": "Enhance the Earring of the Krahns"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44136,I:44164;receive=I:44172;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "enhance-the-tower-shield",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44115,I:44116,I:44117,I:44118,I:44122;receive=I:44101;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "treasure-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: assemble the royal treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The key fits the royal altar passage after pushing the altar. Its native break chance is one percent; a supplied Orb skips this access preparation.",
+              "id": "item-44101",
+              "item_vnums": [
+                44101
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the golden treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "a troll warrior equips it in Altar of the Shield, the temple.",
+              "id": "item-44136",
+              "item_vnums": [
+                44136
+              ],
+              "kind": "carried_item",
+              "text": "Carry a spiked tower shield"
+            },
+            {
+              "count": 1,
+              "hint": "The Orb is declared inside the marble high altar in the High Altar room. It is consumed by each chosen enhancement, rather than reused as a permanent catalyst. The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "item-44164",
+              "item_vnums": [
+                44164
+              ],
+              "kind": "carried_item",
+              "text": "Carry the magical Orb of Insanity"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44136,I:44164;receive=I:44172;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is the spiked shield of a MaDMaN. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. This exchange consumes one Orb together with every base ingredient. Other enhancements remain separate competing recipes. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. a spiked tower shield, the magical Orb of Insanity \u2192 the spiked shield of a MaDMaN.",
+          "title": "Enhance the Spiked Tower Shield"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44138,I:44159,I:44160;receive=I:44167;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "merge-three-royal-swords",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "a humungous warrior carries it in Altar of the Sword, the temple.",
+              "id": "item-44138",
+              "item_vnums": [
+                44138
+              ],
+              "kind": "carried_item",
+              "text": "Carry a royal sword of silver"
+            },
+            {
+              "count": 1,
+              "hint": "King Arkan'non equips it in The King's Throne Room, the temple.",
+              "id": "item-44159",
+              "item_vnums": [
+                44159
+              ],
+              "kind": "carried_item",
+              "text": "Carry a royal sword of gold"
+            },
+            {
+              "count": 1,
+              "hint": "The royal sword of platinum is ground stock in the royal equipment room.",
+              "id": "item-44160",
+              "item_vnums": [
+                44160
+              ],
+              "kind": "carried_item",
+              "text": "Carry the royal sword of platinum"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44138,I:44159,I:44160;receive=I:44167;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is a magical royal sword. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. a royal sword of silver, a royal sword of gold, the royal sword of platinum \u2192 a magical royal sword.",
+          "title": "Merge Three Royal Swords"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44142,I:44142,I:44142,I:44142,I:44142;receive=I:44143;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "merge-five-stone-pieces",
+          "steps": [
+            {
+              "count": 5,
+              "hint": "Ordinary sharp pieces of stone are equipped by a rotting zombie, Bigfoot and two undead assassins; six placements/cap six support the five-piece recipe. A jagged stone shard or a later magical piece is a different kind.",
+              "id": "item-44142",
+              "item_vnums": [
+                44142
+              ],
+              "kind": "carried_item",
+              "text": "Carry 5 copies of a sharp piece of stone"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44142,I:44142,I:44142,I:44142,I:44142;receive=I:44143;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is a magical piece of stone. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. 5 \u00d7 a sharp piece of stone \u2192 a magical piece of stone.",
+          "title": "Merge Five Sharp Stone Pieces"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44144,I:44144,I:44144,I:44144,I:44144,I:44144,I:44144,I:44144,I:44144,I:44144;receive=I:44145;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "merge-ten-standard-swords",
+          "steps": [
+            {
+              "count": 10,
+              "hint": "Standard issue swords are declared across ordinary guards, followers and the four-armed Sun worshiper, with cap 21. Ten separate carried roots are required for the steel-sword service.",
+              "id": "item-44144",
+              "item_vnums": [
+                44144
+              ],
+              "kind": "carried_item",
+              "text": "Carry 10 copies of a standard issue sword"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44144,I:44144,I:44144,I:44144,I:44144,I:44144,I:44144,I:44144,I:44144,I:44144;receive=I:44145;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is a magical steel sword. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. 10 \u00d7 a standard issue sword \u2192 a magical steel sword.",
+          "title": "Merge Ten Standard Swords"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44146,I:44146,I:44146,I:44146;receive=I:44147;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "merge-four-guard-scimitars",
+          "steps": [
+            {
+              "count": 4,
+              "hint": "Royal guard scimitars are equipped by several ordinary and royal guards, with cap five. Four current copies are required; a royal sword is different.",
+              "id": "item-44146",
+              "item_vnums": [
+                44146
+              ],
+              "kind": "carried_item",
+              "text": "Carry 4 copies of a royal guard scimitar"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44146,I:44146,I:44146,I:44146;receive=I:44147;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is a magical scimitar. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. 4 \u00d7 a royal guard scimitar \u2192 a magical scimitar.",
+          "title": "Merge Four Guard Scimitars"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44148,I:44148,I:44148,I:44148,I:44148;receive=I:44149;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "merge-five-claymores",
+          "steps": [
+            {
+              "count": 5,
+              "hint": "Large claymores are equipped by royal guards, including those in the king's foyer and guards' sleeping chambers, with cap six. Five copies are required.",
+              "id": "item-44148",
+              "item_vnums": [
+                44148
+              ],
+              "kind": "carried_item",
+              "text": "Carry 5 copies of a large claymore"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44148,I:44148,I:44148,I:44148,I:44148;receive=I:44149;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is a magical claymore. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. 5 \u00d7 a large claymore \u2192 a magical claymore.",
+          "title": "Merge Five Large Claymores"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44150,I:44164;receive=I:44173;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "enhance-the-royal-sleeves",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44115,I:44116,I:44117,I:44118,I:44122;receive=I:44101;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "treasure-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: assemble the royal treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The key fits the royal altar passage after pushing the altar. Its native break chance is one percent; a supplied Orb skips this access preparation.",
+              "id": "item-44101",
+              "item_vnums": [
+                44101
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the golden treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "Queen Arkan'non equips it in The Queens Throne Room, the temple.",
+              "id": "item-44150",
+              "item_vnums": [
+                44150
+              ],
+              "kind": "carried_item",
+              "text": "Carry the sleeves of Arkan'non"
+            },
+            {
+              "count": 1,
+              "hint": "The Orb is declared inside the marble high altar in the High Altar room. It is consumed by each chosen enhancement, rather than reused as a permanent catalyst. The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "item-44164",
+              "item_vnums": [
+                44164
+              ],
+              "kind": "carried_item",
+              "text": "Carry the magical Orb of Insanity"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44150,I:44164;receive=I:44173;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is the sleeves of a MaDMaN. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. This exchange consumes one Orb together with every base ingredient. Other enhancements remain separate competing recipes. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. the sleeves of Arkan'non, the magical Orb of Insanity \u2192 the sleeves of a MaDMaN.",
+          "title": "Enhance the Royal Sleeves"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44151,I:44164;receive=I:44174;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "enhance-the-royal-leggings",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44115,I:44116,I:44117,I:44118,I:44122;receive=I:44101;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "treasure-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: assemble the royal treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The key fits the royal altar passage after pushing the altar. Its native break chance is one percent; a supplied Orb skips this access preparation.",
+              "id": "item-44101",
+              "item_vnums": [
+                44101
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the golden treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "King Arkan'non equips it in The King's Throne Room, the temple.",
+              "id": "item-44151",
+              "item_vnums": [
+                44151
+              ],
+              "kind": "carried_item",
+              "text": "Carry the leggings of Arkan'non"
+            },
+            {
+              "count": 1,
+              "hint": "The Orb is declared inside the marble high altar in the High Altar room. It is consumed by each chosen enhancement, rather than reused as a permanent catalyst. The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "item-44164",
+              "item_vnums": [
+                44164
+              ],
+              "kind": "carried_item",
+              "text": "Carry the magical Orb of Insanity"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44151,I:44164;receive=I:44174;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is the leggings of a MaDMaN. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. This exchange consumes one Orb together with every base ingredient. Other enhancements remain separate competing recipes. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. the leggings of Arkan'non, the magical Orb of Insanity \u2192 the leggings of a MaDMaN.",
+          "title": "Enhance the Royal Leggings"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44152,I:44152,I:44152,I:44152,I:44152;receive=I:44153;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "merge-five-glistening-bracelets",
+          "steps": [
+            {
+              "count": 5,
+              "hint": "Base glistening bracelets are carried or equipped by royal guards, with cap six. Five base copies make the magical bracelet; the mirrored and magical bracelets are different kinds.",
+              "id": "item-44152",
+              "item_vnums": [
+                44152
+              ],
+              "kind": "carried_item",
+              "text": "Carry 5 copies of a glistening bracelet"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44152,I:44152,I:44152,I:44152,I:44152;receive=I:44153;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is a magical glistening bracelet. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. 5 \u00d7 a glistening bracelet \u2192 a magical glistening bracelet.",
+          "title": "Merge Five Glistening Bracelets"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44153,I:44164;receive=I:44175;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "enhance-the-magical-bracelet",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44115,I:44116,I:44117,I:44118,I:44122;receive=I:44101;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "treasure-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: assemble the royal treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The key fits the royal altar passage after pushing the altar. Its native break chance is one percent; a supplied Orb skips this access preparation.",
+              "id": "item-44101",
+              "item_vnums": [
+                44101
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the golden treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The Orb is declared inside the marble high altar in the High Altar room. It is consumed by each chosen enhancement, rather than reused as a permanent catalyst. The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "item-44164",
+              "item_vnums": [
+                44164
+              ],
+              "kind": "carried_item",
+              "text": "Carry the magical Orb of Insanity"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44152,I:44152,I:44152,I:44152,I:44152;receive=I:44153;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output. Gifts skip producer history.",
+              "id": "producer-44153",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain a magical glistening bracelet"
+            },
+            {
+              "count": 1,
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output.",
+              "id": "item-44153",
+              "item_vnums": [
+                44153
+              ],
+              "kind": "carried_item",
+              "text": "Carry a magical glistening bracelet"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44153,I:44164;receive=I:44175;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is the glistening bracelet of a MaDMaN. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. This exchange consumes one Orb together with every base ingredient. Other enhancements remain separate competing recipes. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. the magical Orb of Insanity, a magical glistening bracelet \u2192 the glistening bracelet of a MaDMaN.",
+          "title": "Enhance the Magical Bracelet"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44154,I:44155,I:44156,I:44157;receive=I:44158;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "merge-four-weather-elements",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Bigfoot equips the snowflake in the blinding snowstorm room.",
+              "id": "item-44154",
+              "item_vnums": [
+                44154
+              ],
+              "kind": "carried_item",
+              "text": "Carry a snowflake"
+            },
+            {
+              "count": 1,
+              "hint": "The obsessed mage equips the solidified water drop in the Monsoon.",
+              "id": "item-44155",
+              "item_vnums": [
+                44155
+              ],
+              "kind": "carried_item",
+              "text": "Carry a solidified drop of water"
+            },
+            {
+              "count": 1,
+              "hint": "The Sun worshiper carries the solid ray of light in the Sun Lit Room.",
+              "id": "item-44156",
+              "item_vnums": [
+                44156
+              ],
+              "kind": "carried_item",
+              "text": "Carry a ray of light"
+            },
+            {
+              "count": 1,
+              "hint": "The huge demon equips the burning flame in the Blazing Inferno.",
+              "id": "item-44157",
+              "item_vnums": [
+                44157
+              ],
+              "kind": "carried_item",
+              "text": "Carry a burning flame"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44154,I:44155,I:44156,I:44157;receive=I:44158;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is a weathered shard. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. a snowflake, a solidified drop of water, a ray of light, a burning flame \u2192 a weathered shard.",
+          "title": "Merge Four Weather Elements"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44158,I:44164;receive=I:44176;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "enhance-the-weathered-shard",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44115,I:44116,I:44117,I:44118,I:44122;receive=I:44101;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "treasure-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: assemble the royal treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The key fits the royal altar passage after pushing the altar. Its native break chance is one percent; a supplied Orb skips this access preparation.",
+              "id": "item-44101",
+              "item_vnums": [
+                44101
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the golden treasure key"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44154,I:44155,I:44156,I:44157;receive=I:44158;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output. Gifts skip producer history.",
+              "id": "producer-44158",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: obtain a weathered shard"
+            },
+            {
+              "count": 1,
+              "hint": "An earlier exchange with a crafty magician produces this exact item. That earlier receipt does not replace a spent physical output.",
+              "id": "item-44158",
+              "item_vnums": [
+                44158
+              ],
+              "kind": "carried_item",
+              "text": "Carry a weathered shard"
+            },
+            {
+              "count": 1,
+              "hint": "The Orb is declared inside the marble high altar in the High Altar room. It is consumed by each chosen enhancement, rather than reused as a permanent catalyst. The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "item-44164",
+              "item_vnums": [
+                44164
+              ],
+              "kind": "carried_item",
+              "text": "Carry the magical Orb of Insanity"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44158,I:44164;receive=I:44176;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is the weathered shard of Insanity. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. This exchange consumes one Orb together with every base ingredient. Other enhancements remain separate competing recipes. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. a weathered shard, the magical Orb of Insanity \u2192 the weathered shard of Insanity.",
+          "title": "Enhance the Weathered Shard"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:44163,I:44164;receive=I:44168;disappear=0",
+              "giver_vnum": 44101
+            }
+          ],
+          "id": "enhance-the-kings-cloak",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44115,I:44116,I:44117,I:44118,I:44122;receive=I:44101;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "treasure-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: assemble the royal treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The key fits the royal altar passage after pushing the altar. Its native break chance is one percent; a supplied Orb skips this access preparation.",
+              "id": "item-44101",
+              "item_vnums": [
+                44101
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Optional: carry the golden treasure key"
+            },
+            {
+              "count": 1,
+              "hint": "The cloak of Kings is ground stock in the royal equipment room. It is distinct from the final MaDMaN cloak.",
+              "id": "item-44163",
+              "item_vnums": [
+                44163
+              ],
+              "kind": "carried_item",
+              "text": "Carry the cloak of Kings"
+            },
+            {
+              "count": 1,
+              "hint": "The Orb is declared inside the marble high altar in the High Altar room. It is consumed by each chosen enhancement, rather than reused as a permanent catalyst. The declared route uses Zynar's wooden guards' key, the master of arms' glass component, four guardian shards and the magician's golden treasure key. The Orb is nested inside the high altar beyond the royal treasure rooms, not loose stock in those rooms. The royal altar must be pushed and its passage unlocked; inscription doors lead onward. A supplied Orb skips that preparation.",
+              "id": "item-44164",
+              "item_vnums": [
+                44164
+              ],
+              "kind": "carried_item",
+              "text": "Carry the magical Orb of Insanity"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44163,I:44164;receive=I:44168;disappear=0",
+                  "giver_vnum": 44101
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is the cloak of a MaDMaN. This equipment service earns no separate quest achievement or daily credit and does not record temple liberation. This exchange consumes one Orb together with every base ingredient. Other enhancements remain separate competing recipes. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a crafty magician"
+            }
+          ],
+          "summary": "An equipment support service. the cloak of Kings, the magical Orb of Insanity \u2192 the cloak of a MaDMaN.",
+          "title": "Enhance the Cloak of Kings"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:44124;receive=I:44125;disappear=0",
+              "giver_vnum": 44156
+            }
+          ],
+          "id": "a-mirror-for-the-drow",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44123;receive=I:44124;disappear=0",
+                  "giver_vnum": 44157
+                }
+              ],
+              "hint": "He creates the mirrored bracelet accepted by the beautiful drow. A supplied exact bracelet does not require this earlier request.",
+              "id": "clover-preparation",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional: return O'Gallagher's clover necklace"
+            },
+            {
+              "count": 1,
+              "hint": "An earlier exchange with O'Gallagher produces this exact item. That earlier receipt does not replace a spent physical output.",
+              "id": "item-44124",
+              "item_vnums": [
+                44124
+              ],
+              "kind": "carried_item",
+              "text": "Carry a mirrored bracelet"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44124;receive=I:44125;disappear=0",
+                  "giver_vnum": 44156
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is some mirrored leggings. This request records its own delivery; it does not complete the other recipient's request. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to a beautiful drow elf"
+            }
+          ],
+          "summary": "An independent named request. a mirrored bracelet \u2192 some mirrored leggings.",
+          "title": "A Mirror for the Beautiful Drow"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:44123;receive=I:44124;disappear=0",
+              "giver_vnum": 44157
+            }
+          ],
+          "id": "ogallaghers-lost-luck",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "A drow warrior equips the four-leaf clover at the Altar of Agility. It is O'Gallagher's exact missing necklace, different from the three foreign sapphire kinds.",
+              "id": "item-44123",
+              "item_vnums": [
+                44123
+              ],
+              "kind": "carried_item",
+              "text": "Carry a four-leaf clover"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44123;receive=I:44124;disappear=0",
+                  "giver_vnum": 44157
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is a mirrored bracelet. This request records its own delivery; it does not complete the other recipient's request. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to O'Gallagher"
+            }
+          ],
+          "summary": "An independent named request. a four-leaf clover \u2192 a mirrored bracelet.",
+          "title": "O'Gallagher's Lost Luck"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:44121;receive=I:44102;disappear=0",
+              "giver_vnum": 44158
+            }
+          ],
+          "id": "armor-for-zynar",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Krahn'krayv equips the armor in the Temple of Meditation. Zynar and the Orb enhancement both consume this same base armor; one copy cannot serve both deliveries.",
+              "id": "item-44121",
+              "item_vnums": [
+                44121
+              ],
+              "kind": "carried_item",
+              "text": "Carry the armor of the elements"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44121;receive=I:44102;disappear=0",
+                  "giver_vnum": 44158
+                }
+              ],
+              "hint": "Directly carry every exact offering outside equipment and containers. Supplied materials qualify without personal recovery, kill, key or producer history. The native reward is a sturdy wooden key. Zynar remains available and does not surrender a persistent follower or clear the undead. The base armor is also used by a separate Orb service. ",
+              "id": "delivery",
+              "kind": "completion",
+              "text": "Deliver the exact offering to Zynar"
+            }
+          ],
+          "summary": "An independent named request. the armor of the elements \u2192 a sturdy wooden key.",
+          "title": "Armor for Zynar"
+        }
+      ]
+    },
+    {
       "contacts": [],
       "coverage": "complete",
       "exclusions": [],

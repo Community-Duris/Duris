@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 45 authored journals, accounting-gated player surfaces, starter/town
+**Status: 46 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -9,8 +9,19 @@ The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
 source dossiers, shipped changes, newly found dependencies, and verification.
 Twin Towers, Plains of Life, Ailvio, Braddistock, Breale, Abandoned Elven
 Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus, Torg, Vast Hidden
-Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl, Ravenloft Catacombs and the Realm of Barovia now have complete source story maps;
-their active-world journeys remain unqualified. Barovia projects nine exchanges into six
+Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter
+Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl, Ravenloft
+Catacombs, the Realm of Barovia and Lost Temple of Tikitzopl now have complete
+source story maps;
+their active-world journeys remain unqualified. Tikitzopl projects 29 exchanges
+into four story/request achievements and potential dailies plus 25 equipment
+services, with nineteen contacts and 44 optional checks. The
+[Tikitzopl dossier](zone-stories/LOST_TEMPLE_OF_TIKITZOPL.md) adds exact repeated
+ingredients, three same-named sapphire kinds, consumed/competing Orbs, actual
+cot/rack and altar/speech-door access, alternative foreign entry and one-way
+return. Preserve existing committed 100-EP class-change ordering; qualify durable
+class outcomes and reflection success/cooldown publication separately. Native
+delivery does not implement temple takeover. Barovia projects nine exchanges into six
 achievements/four potential dailies and three services, with 24 contacts and ten
 optional checks. The [Barovia dossier](zone-stories/THE_REALM_OF_BAROVIA.md) adds
 ordered legacy combat/attempt integration, quest-person item representation, exact
@@ -660,7 +671,12 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   routes, 24 contacts and ten optional checks. Record ordered group combat/session
   policy, quest-person object lineage, foreign gates and selected carrier/letter/
   orb/barricade/reveal repairs without inferred personal prerequisite history.
-- [ ] Complete comprehensive source dossiers for the other 198 roadmap areas.
+- [x] Complete Lost Temple of Tikitzopl source dossier: all 29 Q/nine M blocks,
+  full key/Orb access, ten base and fifteen competing Orb services, independent
+  clover/mirror/Zynar routes, nineteen contacts and 44 optional checks. Record
+  exact quantities/same-name kinds, real parents/speech doors/foreign return,
+  successful power/class outcomes and selected crypt/prose/closure decisions.
+- [ ] Complete comprehensive source dossiers for the other 197 roadmap areas.
 - [ ] Add district/family authoring and shared presentation for large zones.
   Winterhaven's 219 rows fit existing story/objective limits but need a bounded
   512 KiB source-sidecar allowance for detailed guidance. Preserve receipt IDs;
@@ -696,6 +712,7 @@ contract classification; it does not claim complete objective coverage.
 | The Black Pearl | 1 | Complete: two stories, twelve requests and seventeen services across 31 Q/QA; no exclusions | [Source-comprehensive dossier](zone-stories/THE_BLACK_PEARL.md); 26 contacts/all fourteen topics, 25 optional checks, three fragment replacements, exact nine-root sword and courier/skin/gem routes | All campaign contacts/entrance-key spirits held; missing source items/chests, no reciprocal wreck entry, disabled mobile entrance, coin-only gadget and active generation pending | Native projection/receipt checks; restore approved placements and owned campaign introduction, qualify source/access/lineage/party/reveal policies before active gameplay |
 | The Ravenloft Catacombs | 1 | Complete: twelve stories, thirteen requests and eight services across 37 exchanges | [Source-comprehensive dossier](zone-stories/THE_RAVENLOFT_CATACOMBS.md); 25 contacts/all 135 addressed blocks, fourteen optional checks, exact fortune roles and distinct ash/skull finales | Active generation/shopping, stateful paid reading, source/travel evidence and selected mechanism repairs pending | Native projection/receipt checks; committed container parent, accepted lore/session, confirmed unlock/travel and explicitly selected resurrection/faction outcomes pending |
 | The Realm of Barovia | 1 | Complete: five stories, one request and three services across nine exchanges | [Source-comprehensive dossier](zone-stories/THE_REALM_OF_BAROVIA.md); 24 contacts/all 41 addressed blocks, ten optional checks, exact nine-trinket collection and independent note/brooch/heart/daughter routes | Active stock/access, paid clue, legacy combat/attempt bridge, object rescue and selected carrier/letter/orb/barricade policies pending | Native projection/receipt checks; preserve supplied finals and foreign ownership, qualify exact source/transfer/travel and explicit campaign/closure outcomes |
+| Lost Temple of Tikitzopl | 1 | Complete: two stories, two requests and 25 services across 29 exchanges | [Source-comprehensive dossier](zone-stories/LOST_TEMPLE_OF_TIKITZOPL.md); nineteen contacts/all nine addressed blocks, 44 optional checks, exact key/recipe and competing Orb guidance | Active generation and mode-zero availability pending; existing committed 100-EP class debit retained | Native projection/receipt checks; qualify actual source/access/return, exact allocation and successful reflection/class outcomes; builder selects crypt/prose/temple closure |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
 
 ## Twin Towers evidence and decisions

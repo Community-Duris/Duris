@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 45 authored journals.
+2668 distinct Q contracts; 46 authored journals.
 
 Regenerate with:
 
@@ -217,7 +217,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Thetis's Realm (`thetis`) | 3 | 2 | 0 | Fallback | [1 × a torn treasure map → a deep-sea spade, a torn treasure map](../../areas/qst/thetis.qst#L37) | — |
 | Tiamat (`tiamat`) | 8 | 3 | 0 | Fallback | [1 × a fragment of a ruby encrusted key; 1 × a fragment of a ruby encrusted key; 1 × a fragment of a ruby encrusted key → a ruby-encrusted key](../../areas/qst/tiamat.qst#L19) | block_dir, tiamat_human_to_rareloads, zion_shield_absorb_proc |
 | Lost City of Tikitzopl (`tikit`) | 1 | 0 | 0 | Fallback | [1 × a scared kitty cat → the temple key](../../areas/qst/tikit.qst#L2) | — |
-| Lost Temple of Tikitzopl (`tikitt`) | 29 | 9 | 11 | Fallback | [10 × a standard issue sword → a magical steel sword](../../areas/qst/tikitt.qst#L110) | artifact_hide, madman_mangler, madman_shield, mentality_mace, unmulti_altar |
+| Lost Temple of Tikitzopl (`tikitt`) | 29 | 9 | 11 | Yes | [10 × a standard issue sword → a magical steel sword](../../areas/qst/tikitt.qst#L110) | artifact_hide, madman_mangler, madman_shield, mentality_mace, unmulti_altar |
 | The Kingdom of Torg (`torg`) | 15 | 15 | 4 | Yes | [1 × Llznixor's cleaned skull symbol; 1 × Dorn's steel forehead plate; 1 × Tibor's tankard; other required items → a curtain of elemental fire, the Legend of The Lore Keeper](../../areas/qst/torg.qst#L188) | inn, lanella_heart, timoro_die |
 | City of Torrhan (`torrhan`) | 26 | 18 | 14 | Fallback | [1 × a dirty seashell → a dark purple potion, some blackened shark-skin gloves](../../areas/qst/torrhan.qst#L140) | crew_shop_proc, ship_shop_proc |
 | Tower of High Sorcery (`tower`) | 2 | 2 | 0 | Fallback | [1 × a piece of calcite; 1 × a large flask; 1 × a small diamond tattoo → a mysterious ear stud](../../areas/qst/tower.qst#L15) | bulette |

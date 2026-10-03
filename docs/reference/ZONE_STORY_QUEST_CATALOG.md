@@ -13,9 +13,9 @@ named stories without changing native receipt IDs. Twin Towers replaces 84
 contracts with 10 achievement units and 3 daily groups, excluding 40 returned
 offerings and displaying 24 supporting contracts as 12 non-achievement services.
 The global projection now has
-2,262 achievement units and 1,905 daily candidate units after adding starter/town
+2,237 achievement units and 1,880 daily candidate units after adding starter/town
 mappings and deeper journals, equipment/crafting services,
-intermediate outcomes, and explicit missing-item exclusions. There are 45
+intermediate outcomes, and explicit missing-item exclusions. There are 46
 area sidecars and 2,485 projected units including services and administrative
 content. Other areas
 retain native-contract fallback; these counts do not claim full semantic review.
@@ -89,7 +89,16 @@ ordered Doru/Chernovog/Castle Strahd achievement uses legacy group credit and
 login attempt cleanup; delivered proof is not its combat evidence. Object rescue,
 foreign brittle gates, active sources and selected carrier/letter/orb/barricade
 repairs remain explicit qualification work.
-Twenty-two source-comprehensive areas remain distinct from played
+Lost Temple of Tikitzopl adds four independent achievements/potential dailies
+and 25 equipment services across 29 exchanges. Nineteen contacts cover all nine
+addressed blocks; 44 optional checks preserve supplied higher ingredients.
+Repeated counts, distinct attribute/metal/racial kinds, three same-named sapphire
+necklaces and spent Orb/base supplies have source/native regression coverage.
+The dossier explains actual key/altar/speech-door access, cot/rack parents,
+foreign entry/one-way return and independent clover/mirror/Zynar requests.
+Successful reflection/class outcomes, active source generations and builder-selected
+temple closure or crypt/prose repairs remain explicit qualification work.
+Twenty-three source-comprehensive areas remain distinct from played
 active-world qualification.
 All raw definitions, receipt identities, zone registry and source fingerprint
 remain unchanged. Comprehensive source dossiers for these areas are tracked in

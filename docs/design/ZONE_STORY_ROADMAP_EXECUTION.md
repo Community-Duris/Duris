@@ -47,9 +47,10 @@ neither every branch nor every historical prerequisite.
 | 20 | The Black Pearl | [Comprehensive source dossier](zone-stories/THE_BLACK_PEARL.md): 31 Q/QA and fourteen M, 84 rooms, 63 mobs, 98 objects, 391 resets/all 187 families, no local shops/literal specials; disabled ship and foreign keys/procedures/topology reviewed | Revision 1: two stories/twelve requests, seventeen services, 26 contacts/all topics and 25 optional checks; complete exact fragment/courier/hilt/skin/gem guidance | All campaign NPCs and entrance-key spirits held; missing invitation/sewer/scepter/chests; no reciprocal entry/disabled mobile ship; paid gadget and active generation; owned campaign discovery/reveal, replacement lineage and fixed party reward terms |
 | 21 | The Ravenloft Catacombs | [Comprehensive source dossier](zone-stories/THE_RAVENLOFT_CATACOMBS.md): 37 Q/QA and 162 M/MA, 400 rooms, 98 mobs, 327 objects, two shops, 1,457 resets/all 665 families; computed shared roles and bounded foreign sources/routes reviewed | Revision 1: twelve stories/thirteen requests/eight services, one five-artifact family, 25 contacts/all 135 addressed blocks and fourteen optional checks; exact five-coin roles and three distinct skull finales | Active sources/shopping; exact repeated-container parent; key/switch/travel/source evidence; stateful cards; narrated resurrection/forms/key promises and selected mechanism repair |
 | 22 | The Realm of Barovia | [Comprehensive source dossier](zone-stories/THE_REALM_OF_BAROVIA.md): nine exchanges/78 M blocks, 168 rooms, 57 mobs, 66 objects, 405 resets/all 194 families; shared roles, foreign keys/Gertruda and legacy combat/session policy reviewed | Revision 1: five stories/one request/three services, 24 contacts/all 41 addressed blocks and ten optional checks; exact collection, independent letters, heart and daughter routes | Active sources/access; quest-person lineage; ordered group combat/attempt bridge; foreign brittle gates; selected brooch/letter/orb/barricade/reveal policies |
-| 23–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 23 | Lost Temple of Tikitzopl | [Comprehensive source dossier](zone-stories/LOST_TEMPLE_OF_TIKITZOPL.md): 29 Q/nine M, 234 rooms, 76 mobs, 97 objects, 340 resets/all 202 families, five assigned procedures and bounded foreign components/routes reviewed | Revision 1: two stories/two requests/25 services, nineteen contacts/all topics and 44 optional checks; exact key, distinct/duplicate ingredients and competing Orb guidance | Active sources/mode-zero availability; exact allocation/lineage; accepted lore and confirmed access/return; successful reflection/class outcomes and builder-selected crypt/prose/closure |
+| 24–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is the Lost Temple of Tikitzopl, followed by the Jade Empire.
+The next area is the Jade Empire, followed by the Savannah of Broken Trusts.
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -935,3 +936,55 @@ Validation for the Barovia checkpoint:
   raw definitions, terms, registry, fingerprint/revision and the other 44 sidecars
   are unchanged. No played active source/access/combat/fee journey, accounting
   activation, migration, DB/server operation or merge was performed.
+
+## Lost Temple of Tikitzopl checkpoint
+
+Completed priority 23 with the [source dossier](zone-stories/LOST_TEMPLE_OF_TIKITZOPL.md)
+and [reproducible index](../reference/zone-story-audits/tikitt.md). Reviewed all
+38 native blocks, 234 rooms, 76 mobs, 97 objects and 340 resets/all 202 families;
+all five literal object procedures and relevant shared giving, examination,
+switch/door/key, reflection, epic class-change and teleport execution; all fifteen
+foreign recipe kinds, kitty/approach key and actual foreign entrance/return.
+No local shop or data procedure binding exists.
+
+Revision 1 classifies 29 exchanges as two stories, two requests and 25 equipment
+services: four achievements/potential dailies, nineteen contacts and 44 optional
+checks. Exact current copies, distinct attribute/metal/racial kinds and the three
+same-named sapphire necklaces are required. Optional producer/key receipts cannot
+replace spent supplies. Native gifts remain valid. Each Orb service consumes its
+Orb; elemental armor also competes between Zynar and enhancement. The existing
+100-EP altar debit precedes its class mutation, while durable class outcome and
+full reflection/cooldown recovery still need qualification.
+
+| Capability / repair | Evidence and qualification proposal |
+| --- | --- |
+| ZSQ-TIKITT-RECIPES / ALLOCATION | Repeated 5/10/4/5/5 counts fit declared caps; nine distinct emblems/earrings, eight racial rings and three same-name necklaces are not interchangeable. Fifteen services compete for cap-one consumed Orb; recipients also equip crafting stock. Add conditional producers, exact UID allocation and admitted recipient/reset episodes, preserving supplied materials and service exclusion. |
+| ZSQ-TIKITT-ACCESS / CLUES | Gem key is inside cot, rack has vials; push clears block but leaves royal passage locked/secret. Seven accepted speech words precede an already-open final edge. Foreign Winterhaven entry and one-way array/leaf-key return are valid alternatives. Add accepted examination, switch/unlock/open/retrieval and confirmed travel tied to actual target/generation; optional history cannot gate supplied finals. |
+| ZSQ-TIKITT-CLASS-SERVICE | Existing 100-EP debit already waits for committed settlement before secondary class/spec/spell mutation. Preserve it; qualify frozen actor/attempt and durable class effect through admission, failure, disconnect, retry and restart. Prayer is separate from Orb recovery. |
+| ZSQ-TIKITT-POWER-OUTCOME | Mace schedules cooldown/vibration after void reflection call, including refusal or partial mobile creation. Add typed successful/partial outcome and deliberate publication policy; test titan conflict, load failure, early-repeat damage, remove/all/extraction and event recovery. Preserve mangler's re-resolved attack continuations and working armor/shield effects. |
+| ZSQ-TIKITT-NARRATIVE / ORPHANS | Resistance prose has no reviewed takeover or permanent mage/undead closure; Ancient Crypt is blank/empty. Shield procedure retaliates without explicit knockdown. Builder chooses narrative/terminal and bounded text/power/crypt repairs, rather than inferring failure of ordinary bash or inventing quest history. |
+
+The current catalog contains 46 journals, 2,237 achievement units, 1,880 potential
+daily units and 2,485 projected rows, preserving all 2,668 native definitions.
+Twenty-three of 220 roadmap areas are source-comprehensive, with 197 pending.
+Continue with the Jade Empire, then the Savannah of Broken Trusts. Actual active
+source, access, power and class-change journeys remain unqualified. Accounting
+remains mandatory; the full roadmap goal remains in progress.
+
+Validation for the Tikitzopl checkpoint:
+
+- Windows production-catalog/source regression and native all-map schema/journal
+  regression passed for 46 maps. Every recipe was checked with exact supplied
+  ingredients, one missing root, equipped substitutes and extra copies of a
+  different kind. Optional key/producer history, spent stone/Orb, independent
+  mirror/clover outcomes, service exclusion, read-only readiness and saved receipt
+  recovery passed. Source tests verify native terms, all addressed topic aliases,
+  actual cot/altar parents, magician placement and royal switch/reset target.
+- Runtime production and actual arrival/accounting-gate regressions passed.
+  Cached SQL server build, authoritative harness formatting and whitespace checks
+  passed; all 563 reviewed local document links resolve.
+- Review removed a duplicate optional clover receipt and invalid apostrophe
+  command aliases, and verified room journal visibility before object descriptions.
+  All 2,668 native definitions/terms, registry, fingerprint/revision and the other
+  45 mappings are unchanged. No played active source/access/power/class journey,
+  accounting activation, migration, DB/server operation or merge was performed.
