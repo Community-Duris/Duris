@@ -53,9 +53,10 @@ neither every branch nor every historical prerequisite.
 | 26 | Alatorin - the Forge City | [Comprehensive source dossier](zone-stories/ALATORIN.md): 495 contracts/961 blocks, full local world/prototypes/shop/reset and bounded foreign/shared review | Revision 1: 253 rows, 90 achievements/82 potential dailies, 163 services/four returns, 94 contacts/all 296 addressed families, 548 optional checks | Active source/preparation/payment and typed-money admission; target/custody/random/class-gift recovery; exact alternative predicates; builder source/access/prose/slot repairs; district presentation and full-stage campaigns |
 | 27 | The City of Newhaven | [Comprehensive source dossier](zone-stories/NEWHAVEN.md): nine Q/two addressed/53 ambient blocks, all local world/prototypes/four shops/252 resets and bounded foreign/shared review | Revision 1: three named outcomes/six services, seventeen contacts/twelve optional checks; exact source, fee, counterpart and unfinished-lore guidance | Active source/personal proof, five mixed payments, badge choices, tail trap/custody and actual travel/inn; builder-selected pipe/reel, collar-table, stale pool/prose and rift/prisoner endpoints |
 | 28 | Faerie Realm | [Comprehensive source dossier](zone-stories/FAERIE_REALM.md): all seven Q/ten M, 211 rooms/74 mobs/123 objects/one shop, 454 resets/213 families, four local procedures and bounded foreign/shared review | Revision 1: three stories/two services/one rejection, ten contacts/thirteen optional checks; independent retiring outcomes, equivalent forge recipes and exact access/source guidance | Active source/recipient episodes; both mixed fees; held/carried keys, speech/orb travel; unserved combat helpers; targeted Fix effects; builder-selected riddle/prose/missing-target repairs |
-| 29–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 29 | Verspin | [Comprehensive source dossier](zone-stories/VERSPIN.md): all twelve Q/QA/nine addressed/31 ambient blocks, 200 rooms/79 mobs/57 objects/five shops, 389 resets/206 families, two literal services, computed teachers/inn and bounded foreign/shared review | Revision 1: six stories/six services, eighteen contacts/eighteen optional checks; exact five-count/color inputs, optional producer history, foreign proof ownership and actual access guidance | Active source/cap/retirement qualification; five mixed fees; virtual stat/wallet/save effects; denied crew-payment ordering/ship settlement; XP cap policy; builder-selected sign/cap/clue/lore repairs |
+| 30–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Verspin, followed by the Ship Yards and Ultarium.
+The next area is the Ship Yards, followed by Ultarium and the Surface Realm.
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -146,6 +147,9 @@ matches, or a candidate item graph was extracted.
 | ZSQ-REALM-COMBAT | The assigned tree spirit declines periodic registration, handles helpers only on old command 0 and rejects modern combat -102. Its helper state is shared static data. | Choose supported combat/tick dispatch, per-appearance counters, cadence and cap with builder difficulty review before restoration. Qualify concurrent/replaced spirits, death reset, draws and accepted creature publication; no invented helper requirement. |
 | ZSQ-REALM-SOURCE / ACCESS | Spirit and makers start in load/dispersal networks; orb targets the realm approach. Speech unlock leaves closed state; tomb policies differ. Golden-gate destination, two exits and reset object 141120 are missing. | Qualify actual parent/slot/generation, wandering, encounters, held/carried keys, opening/travel/return and retiring recipients. Select restoration or retirement without guessed IDs; distinguish valid optional access from personal source proof. |
 | ZSQ-REALM-FORGE / REPAIR | Alternative makers require the same five distinct parts plus 5,000,000 copper. Fix spell 595 restores one chosen item's condition; no quest repair receipt exists. | Keep paid refusal until atomic material/fee/output settlement. Extend exact device target/custody work for accepted scroll retirement and durable target mutation/recovery. Test missing/substituted parts, both recipients, abort/replay/restart and alternate Fix sources; preserve repair strength. |
+| ZSQ-VERSPIN-CONTENT / SOURCE | Unplaced ten-offer sign has only five recipes; four-red shield exceeds reviewed ordinary cap three; Vulm's crabmen clue differs from actual jewel thief. Persuasion/reunion/contest/purge have no accepted terminal. | Builder selects sign placement/offer correction, bounded supply/recipe balance and clue/description repairs. Qualify actual sources, exact quantities/colors, rare gem, one foreign sigil parent, retirement and supplied terminals; add explicit endpoints before campaign credit. |
+| ZSQ-VERSPIN-STAT / CREW | Nine guarded virtual stat purchases apply +1 rather than creating potions. Crew hiring ignores denied SUB_MONEY before changing crew/chief and saving. | Keep stat refusal until wallet/expected-stat/effect/save settlement is qualified. Reject denied crew debit before mutation, then coordinate wallet/ship revision/save and replay. Preserve native prices/stat caps/hire eligibility; confirm room placement separately. |
+| ZSQ-VERSPIN-XP / ACCESS | Frozen XP preserves actor tenth-level and companion full-level caps. Bartender spectator access does not use secured-pit keys; deep-water/secret/falling paths have ordinary alternatives. | Confirm XP intent before balance changes and preserve admitted recipients/amounts on recovery. Qualify actual reciprocal key/open/travel/water routes and current source evidence; no personal kill or mandatory key/boat history from delivery alone. |
 
 ## Verification record
 
@@ -1236,3 +1240,57 @@ formatting and `git diff --check` passed. Source/invariant review confirmed
 605 local/source-line links, the 23 loaded boundary targets and unchanged
 native definitions and fifty prior maps. These fixtures do not certify played
 combat, source, paid, travel or targeted-repair journeys.
+
+
+## Verspin completed source map — October 3, 2026
+
+Completed priority 29 with the [source dossier](zone-stories/VERSPIN.md),
+[revision-one journal](../../areas/story/verspin.story.json) and reproducible
+[review index](../reference/zone-story-audits/verspin.md). Reviewed every local
+native block, room, prototype, shop and reset family, both literal room services,
+computed teacher/inn properties, packed weapon behavior and shared admission,
+reward, XP, movement and access paths. Bounded foreign evidence includes the
+actual rare gem thief, single sigil parent among three apprentices, all foreign
+reset supplies/rewards and both incoming room records.
+
+The journal separates circus totems, lion collar, stolen amethyst, shrine
+symbols, Transo's three colors and the monk's foreign sigil from Ramous's
+producer and five paid equipment services. Eighteen contacts cover all nine
+addressed families; eighteen optional checks preserve current counts/kinds and
+producer history. Supplied proofs remain valid. Native retirement, group XP and
+foreign supply do not establish personal kills, persuasion, reunion or a full
+tower campaign. All twelve exact contracts and original rewards remain intact.
+
+Expanded repair/qualification plans cover the absent ten-offer sign/five actual
+recipes, four-red/three-cap conflict, misleading gem clue, copied descriptions,
+real spectator versus pit access, secret/falling/water paths, nine virtual stat
+purchases and ignored denied crew payment. Expected-stat/effect/save and
+wallet/ship settlement extend existing service work; actor/companion XP policy
+needs explicit intent before a balanced correction. No native world, price,
+reward, cap or combat-power change is made by the journal.
+
+Current catalog: **52 journals, 1,784 achievement units, 1,542 potential daily
+units and 2,238 projected rows; 29 of 220 roadmap areas are source-comprehensive,
+with 191 remaining.** All 2,668 native definitions, revision two, fingerprint,
+zone registry and prior fifty-one parsed maps remain unchanged. Service
+classification changes denominators without changing native receipts/rewards.
+Continue with Ship Yards, Ultarium and the Surface Realm. Active-world
+qualification remains pending; no accounting activation, migration, DB/server
+operation or merge has been performed.
+
+Focused validation protects exact bindings/topics/reset parents, producer versus
+terminal independence, supplied-bone acceptance, repeated quantities, separate
+colors, service exclusion, foreign proof ownership and receipt recovery. The
+catalog/index/invariant/link review, formatting, whitespace and maintained
+server build complement these fixtures; they do not certify played source,
+combat, paid, stat, crew or travel journeys.
+
+Validation completed: the production catalog/source regression and native
+C++20 regression passed for all 52 maps and all 29 reproducible source indices.
+The supplied-bone route, five-count collections, three exact colors, six service
+exclusions, foreign ownership and six independent outcomes survived recovery.
+The maintained SQL server build completed with current objects; changed-file
+formatting and whitespace passed. Source/invariant review verified 615 local
+links, exact boundary/property/cap evidence and unchanged native definitions,
+revision/fingerprint, registry and fifty-one earlier maps. These fixtures do
+not qualify played source, paid, stat, crew, combat or travel journeys.

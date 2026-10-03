@@ -816,7 +816,86 @@ assert realm_sources == {14036: ("E", 14026, 14199, 1, 100), 14038: ("E", 14026,
 assert makers == [(14073, 14209, 1, 100), (14074, 14209, 1, 100)]
 assert any(r["command"] == "O" and r["arguments"][1:5] == [14001, 1, 14112, 100] for r in realm["reset_commands"])
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm"):
+verspin = inventory_module.area_evidence(ROOT, "verspin")
+assert len(verspin["requests"]) == 12 and len(verspin["dialogue"]) == 9
+assert len(verspin["mobs"]) == 79 and len(verspin["items"]) == 57
+assert len(verspin["reset_commands"]) == 389 and verspin["zone"]["reset_mode"] == 2
+assert {(a["kind"], a["vnum"], a["function"]) for a in verspin["special_assignments"]} == {("room", 28281, "stat_shops"), ("room", 28197, "crew_shop_proc")}
+verspin_mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "verspin")
+assert verspin_mapping["coverage"] == "complete" and verspin_mapping["schema_version"] == 3
+assert collections.Counter(s["category"] for s in verspin_mapping["stories"]) == {"story": 6, "service": 6}
+assert not verspin_mapping["exclusions"]
+verspin_contacts = {c["mob_vnum"]: c for c in verspin_mapping["contacts"]}
+assert len(verspin_contacts) == 18
+for response in verspin["dialogue"]:
+    assert set(response["body"][0].rstrip("~").split()) & set(verspin_contacts[response["giver_vnum"]]["topics"])
+for vnum, contact in verspin_contacts.items():
+    assert contact["keyword"] in verspin["mobs"][vnum]["keywords"]
+assert all(not c["topics"] for v, c in verspin_contacts.items() if v not in (28116, 28145, 28147, 28155, 28173))
+verspin_stories = {s["id"]: s for s in verspin_mapping["stories"]}
+totems = verspin_stories["tottans-five-totems"]
+lion = verspin_stories["the-golden-lions-collar"]
+symbols = verspin_stories["the-shrines-five-symbols"]
+amulets = verspin_stories["transos-three-amulets"]
+monk = verspin_stories["the-monks-corruption-sigil"]
+bone = verspin_stories["ramous-apple-for-a-bone"]
+assert totems["contracts"] == [{"giver_vnum": 28116, "completion_key": "give=I:28144,I:28144,I:28144,I:28144,I:28144;receive=E:65000,I:28145;disappear=0"}]
+assert lion["contracts"] == [{"giver_vnum": 28128, "completion_key": "give=I:28113;receive=I:28114;disappear=1"}]
+assert symbols["contracts"] == [{"giver_vnum": 28147, "completion_key": "give=I:28138,I:28138,I:28138,I:28138,I:28138;receive=E:50000,I:28139;disappear=1"}]
+assert amulets["contracts"] == [{"giver_vnum": 28155, "completion_key": "give=I:28123,I:28124,I:28125;receive=E:70000,I:28141;disappear=0"}]
+assert monk["contracts"] == [{"giver_vnum": 28173, "completion_key": "give=I:74298;receive=E:85000,I:28153;disappear=0"}]
+assert verspin_stories["vulms-stolen-amethyst"]["contracts"] == [{"giver_vnum": 28145, "completion_key": "give=I:28146;receive=E:50000,I:223,I:224,I:225;disappear=0"}]
+assert bone["category"] == "service" and bone["contracts"] == [{"giver_vnum": 28126, "completion_key": "give=I:28112;receive=I:28113;disappear=0"}]
+earlier, = [t for t in lion["steps"] if t["kind"] == "completion" and t.get("optional")]
+assert earlier["contracts"] == bone["contracts"]
+assert [(t["item_vnums"], t["count"]) for t in amulets["steps"] if t["kind"] == "carried_item"] == [([28123], 1), ([28124], 1), ([28125], 1)]
+assert totems["steps"][0]["item_vnums"] == [28144] and totems["steps"][0]["count"] == 5
+assert symbols["steps"][0]["item_vnums"] == [28138] and symbols["steps"][0]["count"] == 5
+knife = verspin_stories["lozins-hunting-knife"]
+shield = verspin_stories["lozins-hunting-shield"]
+assert [(t["item_vnums"], t["count"]) for t in knife["steps"] if t["kind"] == "carried_item"] == [([28124], 2), ([28125], 2)]
+assert shield["steps"][0]["item_vnums"] == [28124] and shield["steps"][0]["count"] == 4
+assert sum(t.get("optional", False) for s in verspin_mapping["stories"] for t in s["steps"]) == 18
+assert all(t.get("optional", False) and len(t["item_vnums"]) == 1 for s in verspin_mapping["stories"] for t in s["steps"] if t["kind"] == "carried_item")
+verspin_units = [u for u in catalog_module.story_units(catalog) if u["zone_number"] == 281]
+assert len(verspin_units) == 12 and sum(u["achievement"] for u in verspin_units) == 6
+assert sum(u["daily_candidate"] for u in verspin_units) == 6
+assert sum(r["definition"]["daily_eligible"] for r in verspin["requests"]) == 7
+paid = [r for r in verspin["requests"] if any(k == "C" for k, _ in r["block"]["give"])]
+assert len(paid) == 5 and all(r["definition"]["daily_exclusion"] == "Unsupported durable offering" for r in paid)
+assert {r["block"]["binding"]["completion_key"] for r in paid} == {s["contracts"][0]["completion_key"] for s in verspin_mapping["stories"] if s["id"].startswith("lozins-")}
+# Exact reset parents expose simultaneous cap limits and foreign-proof ownership.
+parent = room = None
+verspin_sources = collections.defaultdict(list)
+apple_stalls = []
+for reset in verspin["reset_commands"]:
+    c, v = reset["command"], reset["arguments"]
+    if c in ("M", "F"):
+        parent, room = v[1], v[3]
+    if c == "G" and v[1] in (28123, 28124, 28125, 28138, 28144, 28142, 28150):
+        verspin_sources[v[1]].append((parent, room, v[2], v[4]))
+    if c == "P" and v[1] == 28112:
+        apple_stalls.append((v[3], v[2], v[4]))
+assert verspin_sources[28144] == [(28104, r, 5, 100) for r in (28104, 28106, 28107, 28111, 28116)]
+assert verspin_sources[28138] == [(28103, r, 5, 100) for r in (28104, 28111, 28114, 28117, 28136)]
+assert verspin_sources[28124] == [(28101, 28101, 3, 100), (28108, 28113, 3, 100), (28143, 28162, 3, 100)]
+assert verspin_sources[28123] == [(28105, 28111, 3, 100), (28135, 28132, 3, 100), (28143, 28169, 3, 100)]
+assert verspin_sources[28142] == [(28161, 28214, 1, 100)] and verspin_sources[28150] == [(28171, 28255, 1, 100)]
+assert apple_stalls == [(28111, 2, 100), (28110, 2, 100)]
+assert any(r["command"] == "F" and r["arguments"][1:5] == [28128, 1, 28159, 100] for r in verspin["reset_commands"])
+for area, item, expected_parent, expected_room, expected_chance in (("mntcastl", 28146, 37191, 37481, 33), ("bs", 74298, 74249, 74917, 100)):
+    foreign = inventory_module.area_evidence(ROOT, area)
+    parent = room = None
+    sources = []
+    for reset in foreign["reset_commands"]:
+        c, v = reset["command"], reset["arguments"]
+        if c in ("M", "F"):
+            parent, room = v[1], v[3]
+        if c == "G" and v[1] == item:
+            sources.append((parent, room, v[2], v[4]))
+    assert sources == [(expected_parent, expected_room, 1, expected_chance)]
+
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

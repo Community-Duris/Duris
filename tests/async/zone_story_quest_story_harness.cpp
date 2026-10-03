@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 51 &&
-				tracker.summary_for(7, 42).total == 1790,
+		require(catalog.story_mappings.size() == 52 &&
+				tracker.summary_for(7, 42).total == 1784,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -192,8 +192,10 @@ int main(int argc, char **argv)
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
 										    352, 2) == 3 &&
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
-										    140, 2) == 3,
-			"complete Alatorin/Newhaven/Faerie sidecars failed the native file loader");
+										    140, 2) == 3 &&
+				zone_story_quest_catalog::eligible_definition_count(file_catalog,
+										    281, 2) == 6,
+			"complete Alatorin/Newhaven/Faerie/Verspin sidecars failed the native file loader");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
 			const auto mapping = std::find_if(catalog.story_mappings.begin(),
@@ -2175,6 +2177,135 @@ int main(int argc, char **argv)
 				recovered_realm.progress_for_zone(7, 42, 140).completed == 3 &&
 				recovered_realm.progress_for_zone(7, 42, 140).total == 3,
 			"Faerie cold state recovery lost independent delivery receipts");
+		const auto &verspin_lion = story_for("verspin", "the-golden-lions-collar");
+		const auto &verspin_bone = story_for("verspin", "ramous-apple-for-a-bone");
+		const auto &verspin_totems = story_for("verspin", "tottans-five-totems");
+		const auto &verspin_symbols = story_for("verspin", "the-shrines-five-symbols");
+		const auto &verspin_amulets = story_for("verspin", "transos-three-amulets");
+		const auto &verspin_monk = story_for("verspin", "the-monks-corruption-sigil");
+		service supplied_verspin(catalog);
+		require(supplied_verspin.discover_zone(7, 42, 281, 28100, 100, "arrival") ==
+				result::applied,
+			"Verspin discovery failed");
+		for (const auto &[npc, room] : { std::pair{ 28116, 28150 },
+						 { 28126, 28159 },
+						 { 28128, 28159 },
+						 { 28144, 28129 },
+						 { 28145, 28103 },
+						 { 28147, 28188 },
+						 { 28155, 28212 },
+						 { 28173, 28278 } })
+			require(supplied_verspin.meet_npc(7, 42, npc, room, 101) == result::applied,
+				"Verspin contact failed");
+		supplies = {};
+		supplies.carried[28113] = supplies.carried[28114] = 1;
+		const auto verspin_before_view = supplied_verspin.serialize_state();
+		journal = supplied_verspin.render_journal(7, 42, 281, 10, 1, 102, false, false,
+							  &supplies);
+		const auto verspin_section = [&](const auto &story)
+		{
+			const auto start = journal.find(story.title);
+			require(start != std::string::npos,
+				"Verspin story was hidden after meeting");
+			const auto end = journal.find("\r\n  [", start + 1);
+			return journal.substr(start, end == std::string::npos ? end : end - start);
+		};
+		require(verspin_section(verspin_lion)
+						.find("Next: " + verspin_lion.steps.back().text) !=
+					std::string::npos &&
+				verspin_section(verspin_lion)
+						.find("[Ready now] " +
+						      verspin_lion.steps[2].text) !=
+					std::string::npos &&
+				verspin_section(verspin_lion)
+						.find("[Recorded] " + verspin_lion.steps[1].text) ==
+					std::string::npos &&
+				supplied_verspin.serialize_state() == verspin_before_view &&
+				supplied_verspin.progress_for_zone(7, 42, 281).completed == 0,
+			"supplied bone required Ramous history or output possession/viewing granted credit");
+		record(supplied_verspin, verspin_lion.contracts.front(), "verspin-supplied-bone",
+		       281, 28159);
+		require(supplied_verspin.progress_for_zone(7, 42, 281).completed == 1 &&
+				supplied_verspin.progress_for_zone(7, 42, 281).total == 6,
+			"lion receipt counted producer history or other independent outcomes");
+		for (const auto *collection : { &verspin_totems, &verspin_symbols })
+		{
+			supplies = {};
+			const auto &step = collection->steps.front();
+			supplies.carried[step.item_vnums.front()] = 4;
+			supplies.carried[collection == &verspin_totems ? 28138 : 28144] = 5;
+			supplies.equipped[16] = step.item_vnums.front();
+			journal = supplied_verspin.render_journal(7, 42, 281, 10, 1, 121, false,
+								  false, &supplies);
+			require(verspin_section(*collection).find("[Missing now] " + step.text) !=
+					std::string::npos,
+				"four carried proofs plus worn/other-kind stock replaced the five-count check");
+			supplies.carried[step.item_vnums.front()] = 5;
+			journal = supplied_verspin.render_journal(7, 42, 281, 10, 1, 122, false,
+								  false, &supplies);
+			require(verspin_section(*collection).find("[Ready now] " + step.text) !=
+					std::string::npos,
+				"five exact carried proofs did not satisfy optional preparation");
+		}
+		supplies = {};
+		for (int item : { 28123, 28124, 28125 })
+			supplies.carried[item] = 1;
+		for (const auto &step : verspin_amulets.steps)
+		{
+			if (step.kind != "carried_item")
+				continue;
+			const auto item = step.item_vnums.front();
+			journal = supplied_verspin.render_journal(7, 42, 281, 10, 1, 123, false,
+								  false, &supplies);
+			require(verspin_section(verspin_amulets).find("[Ready now] " + step.text) !=
+					std::string::npos,
+				"an exact amulet color was missing");
+			supplies.carried[item] = 0;
+			supplies.carried[item == 28123 ? 28124 : 28123] += 4;
+			supplies.equipped[16] = item;
+			journal = supplied_verspin.render_journal(7, 42, 281, 10, 1, 124, false,
+								  false, &supplies);
+			require(verspin_section(verspin_amulets).find("[Missing now] " + step.text) !=
+					std::string::npos,
+				"extra other-color or worn amulets replaced an exact carried color");
+			supplies.equipped.clear();
+			supplies.carried[item == 28123 ? 28124 : 28123] -= 4;
+			supplies.carried[item] = 1;
+		}
+		supplies.carried[74298] = 1;
+		journal = supplied_verspin.render_journal(7, 42, 281, 10, 1, 125, false, false,
+							  &supplies);
+		require(verspin_section(verspin_monk)
+						.find("[Ready now] " +
+						      verspin_monk.steps.front().text) !=
+					std::string::npos &&
+				supplied_verspin.progress_for_zone(7, 42, 281).completed == 1 &&
+				supplied_verspin.progress_for_zone(7, 42, 550).completed == 0,
+			"foreign sigil possession wrote a local or Bloodstone receipt");
+		const auto &verspin_map = *std::find_if(
+			catalog.story_mappings.begin(), catalog.story_mappings.end(),
+			[](const auto &mapping) { return mapping.source_area == "verspin"; });
+		for (const auto &entry : verspin_map.stories)
+			if (entry.category == "service")
+				record(supplied_verspin, entry.contracts.front(), entry.id.c_str(),
+				       281, entry.id == verspin_bone.id ? 28159 : 28129);
+		service restored_verspin(catalog);
+		require(restored_verspin.deserialize_state(supplied_verspin.serialize_state(),
+							   &error) &&
+				restored_verspin.progress_for_zone(7, 42, 281).completed == 1 &&
+				restored_verspin.progress_for_zone(7, 42, 281).total == 6,
+			"Verspin recovery counted producer or paid equipment services");
+		for (const auto &entry : verspin_map.stories)
+			if (entry.category != "service" && entry.id != verspin_lion.id)
+				record(restored_verspin, entry.contracts.front(), entry.id.c_str(),
+				       281, entry.id == verspin_monk.id ? 28278 : 28150);
+		service recovered_verspin(catalog);
+		require(recovered_verspin.deserialize_state(restored_verspin.serialize_state(),
+							    &error) &&
+				recovered_verspin.progress_for_zone(7, 42, 281).completed == 6 &&
+				recovered_verspin.progress_for_zone(7, 42, 281).total == 6 &&
+				recovered_verspin.progress_for_zone(7, 42, 550).completed == 0,
+			"Verspin recovery merged independent receipts or reassigned foreign proof ownership");
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

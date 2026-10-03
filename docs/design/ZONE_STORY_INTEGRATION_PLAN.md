@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 51 authored journals, accounting-gated player surfaces, starter/town
+**Status: 52 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -12,7 +12,7 @@ Homestead, Krimeneha's Mansion, Bastine, Pine Hollow, Quietus, Torg, Vast Hidden
 Grove, Winterhaven, Shairak/Smokeveil, the Twin Keeps, Bloodstone, Neverwinter
 Woods, the Clawed Caverns, Defense of Longhollow, the Black Pearl, Ravenloft
 Catacombs, the Realm of Barovia, Lost Temple of Tikitzopl, the Jade Empire and
-the Savannah of Broken Trusts, Alatorin, Newhaven and Faerie Realm now have
+the Savannah of Broken Trusts, Alatorin, Newhaven, Faerie Realm and Verspin now have
 complete source story maps;
 their active-world journeys remain unqualified. Savannah projects seventeen
 contracts into five named outcomes and twelve distinct equipment services,
@@ -232,6 +232,23 @@ choose per-appearance state, cadence and difficulty before restoring it. Fix
 acquisition is separate from its target condition repair; existing device
 target/custody work needs a qualified durable effect before repair milestones.
 These findings extend the plan without changing world data or accounting gates.
+
+Verspin's [comprehensive dossier](zone-stories/VERSPIN.md) adds six independent
+stories and six support services across all twelve contracts. Eighteen contacts
+cover all nine addressed families; eighteen optional checks preserve exact
+five-totem/five-symbol counts, three separate amulet colors and supplied lion
+bones without required producer history. Foreign gem/sigil receipts stay owned
+by Verspin. The actual bartender route needs no secured-pit keys.
+
+Its five paid recipes stay guarded. The ten-offer sign has no ordinary placement
+and only five contracts; the four-red shield exceeds the reviewed three-red
+cap. Builders must select balanced sign/source/clue corrections. Nine stat-shop
+potions are guarded virtual effects, requiring wallet plus expected-stat/save
+settlement rather than item acquisition. Legacy crew hiring ignores denied
+debit before mutation; close that ordering gap before qualifying the existing
+wallet/ship settlement plan. XP qualification must preserve admitted frozen
+awards while builders confirm the different actor/companion caps. Static lore
+does not establish persuasion, justice, full tower cleansing or contest victory.
 
 ## Accounting requirement and delivery sequence
 
@@ -918,7 +935,19 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   seventeen contacts and twelve optional checks. Record competing sword kinds,
   retiring appearances, absent collection/tribal terminals, real routes and
   usable-alias inventory/prose/protection decisions with qualification plans.
-- [ ] Complete comprehensive source dossiers for the other 192 roadmap areas.
+- [ ] Complete comprehensive source dossiers for the other 191 roadmap areas.
+- [x] Complete Verspin's twelve-Q/QA, nine-addressed/31-ambient source dossier:
+  all 200 rooms/79 mobs/57 objects/five shops, 389 resets/206 families, both
+  literal room services and computed teachers/inn, bounded foreign/shared
+  sources and actual access. Ship six stories/six services, eighteen contacts
+  and eighteen optional exact/producer checks without altering native content.
+- [ ] Qualify Verspin's active source/caps, supplied proofs, rare foreign gem,
+  one foreign sigil parent, independent retirement, secret/pit/water travel and
+  all paid recipes. Review sign placement/offers, red-cap feasibility and gem
+  clue/description repairs with builders. Add expected-stat/effect settlement
+  for nine virtual purchases; reject denied crew payment before mutation and
+  qualify wallet/ship recovery. Confirm XP recipient/cap policy before balance
+  changes; author explicit persuasion/campaign endpoints before deeper credit.
 - [x] Complete Faerie Realm's seven-Q/ten-M source dossier: all 211 rooms,
   74 mobs, 123 objects, one shop, 454 resets/213 families, four actual local
   procedures, five foreign component sources and all loaded boundary targets.
@@ -1002,6 +1031,7 @@ contract classification; it does not claim complete objective coverage.
 | The City of Newhaven | 1 | Complete: one story, two requests and six services across nine Q | [Source-comprehensive dossier](zone-stories/NEWHAVEN.md); seventeen contacts/all two addressed families, twelve optional checks; rift/counterpart/key/source guidance | Fresh source issuance and five mixed fees remain unqualified; real pipe trade retained as service | Native projection/file-loader checks; qualify supplied/personal proof, tail trap/custody, actual travel/inn and builder-selected source/prose/endpoints |
 | Faerie Realm | 1 | Complete: three stories, two services and one rejection across seven Q | [Source-comprehensive dossier](zone-stories/FAERIE_REALM.md); ten contacts/all ten addressed families, thirteen optional checks; cellar/tomb/orb/source guidance | Three achievement/potential daily units; both five-item fees remain guarded; actual reset/retirement availability unqualified | Native supplied-key journey and receipt recovery; qualify dispatch, exact parts, targeted Fix use and builder-selected gate/source/prose repairs |
 | Remaining active areas | — | Native fallback; optional sidecars integrate incrementally | Existing discovery and terminal receipts; native giver rows appear after physical encounter | Existing offering limits | Previous daily qualification; full semantic mapping unclaimed |
+| Verspin | 1 | Complete: six stories and six services across twelve Q/QA | [Source-comprehensive dossier](zone-stories/VERSPIN.md); eighteen contacts/all nine addressed families, eighteen optional checks; five-count, exact-color, producer and foreign-source guidance | Six achievement/potential daily units; five mixed recipes and nine virtual stat purchases guarded; crew payment ordering and active source/cap availability unqualified | Native supplied-bone journey, exact quantities/colors and independent receipt recovery; qualify source/access, expected-stat/ship settlement, frozen XP and builder-selected sign/cap/clue repairs |
 
 ## Twin Towers evidence and decisions
 

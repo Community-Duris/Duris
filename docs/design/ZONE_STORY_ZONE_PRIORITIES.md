@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 28 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 29 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -22,6 +22,10 @@ guidance, three delivery outcomes, six services and precise source/access gaps.
 Faerie Realm's [completed dossier](zone-stories/FAERIE_REALM.md) adds three
 independent deliveries, equivalent forge services, exact access/source hints
 and combat-dispatch, targeted repair and unfinished-gate qualification plans.
+Verspin's [completed dossier](zone-stories/VERSPIN.md) adds six independent
+deliveries, six support services, exact repeated/color quantities and supplied
+proof routes. Sign/cap/clue repairs, virtual stat settlement, crew payment
+ordering and frozen group-XP policy now have explicit qualification plans.
 Active reset-generation qualification is a shared prerequisite for the pilots.
 
 ## Reviewed first integrations
@@ -56,7 +60,7 @@ Active reset-generation qualification is a shared prerequisite for the pilots.
 | 26 | [Alatorin - the Forge City](zone-stories/ALATORIN.md) (`alatorin`) | Inn kitchens → four royal dishes → culinary tokens; collecting fragments → professional tokens → medals/honor key; ten arcanums → random attributes → nine rings → wondrous power; mining/armor/dragon services; separately owned guild/outpost proofs; Deramuth supplies; First Mountain divine gifts. | Source-comprehensive, revision 1: all 495 contracts classified into 253 rows, 90 achievements/82 potential dailies, 163 services/four returns, 94 contacts/all 296 topic families and 548 optional checks. Exact recipes, rare/nested/foreign sources, consumed keys, typed money rewards and actual mechanisms have qualification plans. Accounting-blocked preparation/payments, released refining inputs, target/custody dispatch, class-gift entitlement, missing token/key sources and builder-selected content repairs remain explicit. |
 | 27 | [The City of Newhaven](zone-stories/NEWHAVEN.md) (`newhaven`) | Living city → rift/corrupted counterpart → recover the blacksmith's wife; ruined berries/tobacco → living recipients; optional badge/bracer/cloak/collar recipes; scholar/erinyes/prisoner lore. | Source-comprehensive, revision 1: three achievements/potential dailies, six services, seventeen contacts/twelve optional checks. Exact pipe-versus-reel mismatch, inside-blocked collar switch, tail trap, mainland beast dispersal and five accounting-blocked fees have explicit qualification/repair plans. No invented rift closure or prisoner rescue. |
 | 28 | [Faerie Realm](zone-stories/FAERIE_REALM.md) (`realm`) | Anna's cellar route → tree signet → Finn's map/ring; cottage-heart blade → Celriya; tree amulet → tomb/Oberon's key → Finn's retiring farewell; five exact planar parts + fee → either maker's Fix service → separate targeted use. | Source-comprehensive, revision 1: three achievements/potential dailies, two services/one rejection, ten contacts/all ten addressed families and thirteen optional checks. Actual orb return, speech/key policy, wandering makers and source parents are documented. Combat helper dispatch, ring/scroll/shop prose, unfinished/missing routes and durable paid/repair effects have explicit qualification/repair plans. |
-| 29 | [Verspin](../../areas/qst/verspin.qst) (`verspin`) | Circus rivalry → five gnomish totems; trade-master amulet combinations → hunting equipment. | Candidate reviewed in Q/M source. Distinguish rivalry resolution from repeated equipment services. |
+| 29 | [Verspin](zone-stories/VERSPIN.md) (`verspin`) | Circus backstage → five totems → pants; apple → Ramous/bone → retiring lion collar; five shrine symbols → retiring holyman; foreign stolen amethyst → three ore pieces; three exact amulet colors → Transo's belt; one Bloodstone sigil → monk's necklace. Five paid Lozin recipes are separate support services. | Source-comprehensive, revision 1: six achievements/potential dailies, six services, eighteen contacts/all nine addressed families and eighteen optional checks. Real source parents/caps, spectator/pit/secret/water access and supplied proofs are documented. Builder-selected sign/cap/clue repairs, guarded stat effects, crew payment ordering and XP policy remain planned. |
 | 30 | [The Ship Yards](../../areas/qst/shipy.qst) (`shipy`) | Chef's six-pike request; glassblower's lost work; shipyard supply requests; trade/support services. | Candidate reviewed in Q/M source. Require fishing/freshness evidence only for explicitly authored sourcing objectives. |
 | 31 | [The Sky City of Ultarium](../../areas/qst/cosmic.qst) (`cosmic`) | Engineer blueprints; separate soul offerings; four-soul Pandora's-box collection. | Candidate reviewed in Q source. Investigate shared-input branches, class services, and soul provenance. |
 | 32 | [The Surface Realm of Duris](../../areas/qst/surface.qst) (`surface`) | Four-traitor proofs; elemental lockets + book → mystic reward; Mountaineer claws; local transformation routes. | Candidate reviewed in Q/M source. Large travel area: assign named stories to actual giver ownership and review heads-versus-hearts prose. |

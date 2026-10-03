@@ -45773,6 +45773,693 @@
     {
       "contacts": [
         {
+          "description": "Circus backstage. Ask hi or gnomes for the five-totem request; the hidden eastern backstage path is ordinary access.",
+          "keyword": "tottan",
+          "mob_vnum": 28116,
+          "name": "Tottan",
+          "topics": [
+            "hi",
+            "hello",
+            "gnomes",
+            "gnome"
+          ]
+        },
+        {
+          "description": "The throne room. His description asks for an apple, which supplies a steak bone through a support exchange. No addressed topic is implemented.",
+          "keyword": "ramous",
+          "mob_vnum": 28126,
+          "name": "Ramous",
+          "topics": []
+        },
+        {
+          "description": "With Ramous in the throne room. Offer the exact steak bone for the collar; the accepted exchange retires this lion appearance.",
+          "keyword": "lion",
+          "mob_vnum": 28128,
+          "name": "Golden lion",
+          "topics": []
+        },
+        {
+          "description": "Southern market trade master. Five native paid equipment recipes exist; the ten-offer sign is not ordinary reset stock. Paid settlement remains guarded.",
+          "keyword": "lozin",
+          "mob_vnum": 28144,
+          "name": "Lozin",
+          "topics": []
+        },
+        {
+          "description": "The gem shop. Ask hi about his stolen amethyst. The ordinary gem source is a foreign jewel thief rather than the crabmen in his clue.",
+          "keyword": "vulm",
+          "mob_vnum": 28145,
+          "name": "Vulm",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "The shrine. Ask hi about the five marble symbols. Persuading clerics is suggested lore, without a recorded dialogue stage.",
+          "keyword": "holyman",
+          "mob_vnum": 28147,
+          "name": "Holyman",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "The Swinging Star on the spectator level. Ask hi, fight, Ramous or amulets; his bargain needs one of each color, without pit keys.",
+          "keyword": "transo",
+          "mob_vnum": 28155,
+          "name": "Transo",
+          "topics": [
+            "hi",
+            "hello",
+            "fight",
+            "ramous",
+            "amulets"
+          ]
+        },
+        {
+          "description": "The monastery. Ask hi or yes about corruption and deliver one foreign apprentice sigil. This receipt belongs to Verspin.",
+          "keyword": "monk",
+          "mob_vnum": 28173,
+          "name": "Master monk of Shinjin",
+          "topics": [
+            "hi",
+            "hello",
+            "yes",
+            "pleasant"
+          ]
+        },
+        {
+          "description": "Weapon shop. Stocks black armor and all five Lozin recipe outputs. A purchase or supplied output is distinct from the trade-master receipt.",
+          "keyword": "brial",
+          "mob_vnum": 28134,
+          "name": "Brial",
+          "topics": []
+        },
+        {
+          "description": "Shop near the royal hall. Stocks the armor of pins for Lozin's hammer recipe and an ordinary potion; no separate quest endpoint.",
+          "keyword": "huge",
+          "mob_vnum": 28136,
+          "name": "Huge man",
+          "topics": []
+        },
+        {
+          "description": "Southern market. Offers leaf boats and containers. Boat possession supports ordinary water travel; boarding a quest ferry is not implemented.",
+          "keyword": "peddler",
+          "mob_vnum": 28139,
+          "name": "Human peddler",
+          "topics": []
+        },
+        {
+          "description": "Five start across the city, carrying the shrine's exact marble holy symbols. Roaming and supplied-item routes remain possible; talking does not grant a symbol receipt.",
+          "keyword": "cleric",
+          "mob_vnum": 28103,
+          "name": "Tharnadian cleric",
+          "topics": []
+        },
+        {
+          "description": "Five start around the city and market and can wander. They carry the circus totems; one also carries a black amulet. Current possession does not prove a personal kill.",
+          "keyword": "shaman",
+          "mob_vnum": 28104,
+          "name": "Travelling gnomish shaman",
+          "topics": []
+        },
+        {
+          "description": "Western and eastern waterways. Some carry red or green amulets. Ambient boat advice is not a ferry quest or an accepted boarding milestone.",
+          "keyword": "boatman",
+          "mob_vnum": 28143,
+          "name": "Boatman",
+          "topics": []
+        },
+        {
+          "description": "Sorcery school. A normal class teacher: asking level gives eligible next-level guidance. Her potion stock and lectures are not story completions.",
+          "keyword": "vespus",
+          "mob_vnum": 28153,
+          "name": "Vespus",
+          "topics": []
+        },
+        {
+          "description": "Warrior school. A normal class teacher with next-level guidance; practice and training lore do not establish quest lesson achievements.",
+          "keyword": "brachik",
+          "mob_vnum": 28154,
+          "name": "Brachik",
+          "topics": []
+        },
+        {
+          "description": "The grand master's chamber. Normal teacher guidance and nine paid virtual stat effects are distinct from the monk's sigil delivery. Paid stat purchases remain guarded.",
+          "keyword": "shinjin",
+          "mob_vnum": 28174,
+          "name": "Shinjin",
+          "topics": []
+        },
+        {
+          "description": "The inn reception. The room supports ordinary inn services; visiting or buying accommodation does not add a quest terminal.",
+          "keyword": "innkeeper",
+          "mob_vnum": 28178,
+          "name": "Innkeeper",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Discover the city, meet its circus, court, shrine, bartender and monastery contacts, then follow six independent accepted stories. Exact supplies and optional earlier help explain each route. Ramous and Lozin offer supporting services. Active, ready accounting is required.",
+      "orientation": [
+        "The ordinary gravel-highway approach enters north at the southern edge of Verspin. Its brass doorway is closed but unkeyed; open it for the market. The southern city exit returns to the same highway approach.",
+        "Explore the circus in the west. Its northwestern tent has a hidden eastern path to the backstage network and Tottan. The five travelling gnomish shamans carry five same-kind totems; the accepted delivery, rather than five personal kills, earns his pants and XP.",
+        "Take an apple from either market stall for Ramous in the throne room. He exchanges it for a steak bone. Give that bone to the golden lion for its collar and departure. A supplied bone skips the apple route; those two receipts remain separate.",
+        "At the shrine, the holyman asks for five marble symbols from Tharnadian clerics. His suggested persuasion has no accepted keyword or symbol-transfer stage. His retiring delivery is the story outcome, and the other wandering cleric's insignia is a different item.",
+        "Vulm's stolen amethyst actually loads on a notorious jewel thief in the Cheltenham castle area, with a one-in-three chance and cap one. His crabmen clue needs correction. Return the exact gem for three distinct ore pieces; no separate gem-shop restoration is recorded.",
+        "Transo's Swinging Star is on the spectator level, reached by the city's western or eastern stairs. It needs no gladiator-pit key. Bring one green, one red and one black amulet for a belt and XP; his plan is to sell the stolen goods to Ramous, without an implemented reunion.",
+        "Red and green amulets each share a cap of three across their actual town/boatman sources. Black amulets have a separate cap and sources. Lozin's knife competes for reds and blacks; his four-red shield recipe exceeds the reviewed ordinary red cap and needs a deliberate feasibility correction.",
+        "Lozin has five actual paid equipment recipes. The sign prototype advertises ten, with no ordinary sign reset and no contracts for the other five offers. Keep the five real recipes as services; their cash settlement remains unavailable with active accounting. Brial also stocks all five outputs.",
+        "The master monk asks for one sigil of corruption from Bloodstone. Three sinister apprentices start together in Maelborg's tower, but only one ordinary sigil is declared after the third. The delivery belongs to Verspin and does not prove every apprentice or tower leader was defeated.",
+        "The secured pit uses two distinct keys from the strong and elite security guards. Reverse gate sides are merely closed. Guard taunts do not add a custom movement barrier. Hidden cave and shaft routes have their own access and falling hazards; they are not Transo prerequisites.",
+        "The waterways use ordinary deep-water movement. A carried or worn leaf boat is one aid; flight and other native movement abilities can also work. Boatmen's ambient offers do not implement a quest ferry, and no boating milestone is inferred from their dialogue.",
+        "Shinjin's nine listed stat potions are virtual paid stat effects, with native stat caps, rather than collectible quest objects. The normal teachers, inn and crew room are separate services. They need qualified settlement/effect evidence before any deeper lesson, purchase or hiring objective.",
+        "The city's honor, fighting, secret agents and blessings provide exploration lore without native contest-victory, spy-purge or blessing receipts. Asking topics explains current stories; it does not grant learned-keyword achievements. Native XP declarations remain subject to level and group award policy."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "verspin",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:28144,I:28144,I:28144,I:28144,I:28144;receive=E:65000,I:28145;disappear=0",
+              "giver_vnum": 28116
+            }
+          ],
+          "id": "tottans-five-totems",
+          "steps": [
+            {
+              "count": 5,
+              "hint": "Five travelling gnomish shamans start around the town and market, sharing a five-totem cap. They can wander. Supplied totems qualify, without proof of who defeated each shaman.",
+              "id": "five-totems",
+              "item_vnums": [
+                28144
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry five gnomish totems"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:28144,I:28144,I:28144,I:28144,I:28144;receive=E:65000,I:28145;disappear=0",
+                  "giver_vnum": 28116
+                }
+              ],
+              "hint": "Find the circus leader backstage through the hidden eastern path from the northwestern tent. The reward declares 65,000 XP, subject to native level/group caps, and silk pants. Asking either gnome or gnomes is explanatory dialogue.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Deliver five totems to Tottan"
+            }
+          ],
+          "summary": "Ask Tottan about gnomes. He wants five gnomish totems to address the circus rivalry. Deliver five actual totems together for silk pants and a native XP award. Acceptance records the delivery; it does not prove five personal kills or that circus attendance has recovered.",
+          "title": "Tottan's five totems"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:28113;receive=I:28114;disappear=1",
+              "giver_vnum": 28128
+            }
+          ],
+          "id": "the-golden-lions-collar",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Take an apple out of either apple stall in the southern market. Both stalls share a two-apple reset cap. An apple can also be supplied; eating it or spending it with another recipient leaves this preparation missing.",
+              "id": "apple",
+              "item_vnums": [
+                28112
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a juicy red apple"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:28112;receive=I:28113;disappear=0",
+                  "giver_vnum": 28126
+                }
+              ],
+              "hint": "Ramous gives the steak bone for one apple. This support receipt is optional: another player may supply the final bone, and no apple receipt is required by the lion.",
+              "id": "ramous-history",
+              "kind": "completion",
+              "optional": true,
+              "text": "Optional history: trade an apple with Ramous"
+            },
+            {
+              "count": 1,
+              "hint": "Ramous supplies the bone through his apple exchange. The lion needs this exact bone, not another food or an apple. Its collar as supplied equipment does not prove your delivery.",
+              "id": "steak-bone",
+              "item_vnums": [
+                28113
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the steak bone"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:28113;receive=I:28114;disappear=1",
+                  "giver_vnum": 28128
+                }
+              ],
+              "hint": "Ramous and his lion start in the throne room. Acceptance gives the lion collar and retires this lion appearance. It does not record an escort or require Ramous to receive his stolen amulets.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Offer the bone to the golden lion"
+            }
+          ],
+          "summary": "Ramous asks for an apple and trades it for a steak bone. Offer the bone to his golden lion for its collar; the lion then leaves its current appearance. The apple exchange explains a producer route, while a supplied bone reaches the same accepted outcome without earlier history.",
+          "title": "The golden lion's collar"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:28146;receive=E:50000,I:223,I:224,I:225;disappear=0",
+              "giver_vnum": 28145
+            }
+          ],
+          "id": "vulms-stolen-amethyst",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The actual ordinary source is the notorious jewel thief in the Cheltenham castle area, with a one-gem cap and a one-in-three load chance. Vulm's crabmen clue needs a content correction; follow the real gem source. A supplied gem also qualifies.",
+              "id": "uncut-amethyst",
+              "item_vnums": [
+                28146
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the uncut amethyst"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:28146;receive=E:50000,I:223,I:224,I:225;disappear=0",
+                  "giver_vnum": 28145
+                }
+              ],
+              "hint": "Vulm starts in the gem shop. The contract gives three different inferior gold ore pieces and declares 50,000 XP, subject to native caps. His shop and trust language adds context without a separate shop-restoration milestone.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Return the amethyst to Vulm"
+            }
+          ],
+          "summary": "Vulm describes the theft of an uncut amethyst. Recover that exact gem and return it for three distinct pieces of inferior gold ore and a native XP award. The accepted return is independent of reopening a shop or proving your own defeat of a thief.",
+          "title": "Vulm's stolen amethyst"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:28138,I:28138,I:28138,I:28138,I:28138;receive=E:50000,I:28139;disappear=1",
+              "giver_vnum": 28147
+            }
+          ],
+          "id": "the-shrines-five-symbols",
+          "steps": [
+            {
+              "count": 5,
+              "hint": "Five Tharnadian clerics start around the town and market, sharing a five-symbol cap. The separate wandering cleric's insignia is a different object. Gifts and supported recovery can supply the exact symbols without proving persuasion or personal kills.",
+              "id": "five-symbols",
+              "item_vnums": [
+                28138
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry five marble holy symbols"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:28138,I:28138,I:28138,I:28138,I:28138;receive=E:50000,I:28139;disappear=1",
+                  "giver_vnum": 28147
+                }
+              ],
+              "hint": "The holyman starts in the shrine. Acceptance gives ornate glasses, declares 50,000 XP subject to native caps, and retires this appearance. Talking to five clerics is not a recorded prerequisite.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Return five symbols to the holyman"
+            }
+          ],
+          "summary": "Ask the holyman about his purpose. He requests five marble holy symbols associated with visiting Tharnadian clerics. Return five together for ornate glasses and a native XP award; he then departs. His suggestion to reason with the clerics is lore without an accepted persuasion stage.",
+          "title": "The shrine's five symbols"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:28123,I:28124,I:28125;receive=E:70000,I:28141;disappear=0",
+              "giver_vnum": 28155
+            }
+          ],
+          "id": "transos-three-amulets",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The green kind starts on a halfling thief, a loud shopper or an eastern boatman, sharing a cap of three. Two extra reds or blacks cannot substitute.",
+              "id": "green-amulet",
+              "item_vnums": [
+                28123
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one green amulet"
+            },
+            {
+              "count": 1,
+              "hint": "Actual red carriers include a mime, a noble and a western boatman. They share a reset cap of three. Red amulets also serve Transo and Lozin's other recipe; extra green or black amulets cannot replace them.",
+              "id": "red-amulets",
+              "item_vnums": [
+                28124
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one red amulet"
+            },
+            {
+              "count": 1,
+              "hint": "Actual black carriers include a commoner, a snobby shopper and a gnomish shaman. This is a separate color from green and red. Transo and the hunting-knife service compete for the same supplies.",
+              "id": "black-amulets",
+              "item_vnums": [
+                28125
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one black amulet"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:28123,I:28124,I:28125;receive=E:70000,I:28141;disappear=0",
+                  "giver_vnum": 28155
+                }
+              ],
+              "hint": "Find Transo in the Swinging Star on the spectator level. The secured gladiator-pit keys are not required for this route. His reward is a suede belt and declared 70,000 XP, subject to native caps. Lozin's recipes compete for red and black amulets.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Deliver the three colors to Transo"
+            }
+          ],
+          "summary": "Ask Transo about fight, Ramous or amulets. He wants one green, one red and one black amulet to sell back to Ramous. Deliver all three colors for a suede belt and a native XP award. The story records this bargain, without claiming justice, a reunion or returning the amulets directly to Ramous.",
+          "title": "Transo's three amulets"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:74298;receive=E:85000,I:28153;disappear=0",
+              "giver_vnum": 28173
+            }
+          ],
+          "id": "the-monks-corruption-sigil",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Three sinister apprentices start in one room of Maelborg's tower in Bloodstone. Only one sigil stock declaration follows the third apprentice, with a cap of one. Do not expect a sigil from each apprentice; a supplied sigil is valid.",
+              "id": "corruption-sigil",
+              "item_vnums": [
+                74298
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one sigil of corruption"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:74298;receive=E:85000,I:28153;disappear=0",
+                  "giver_vnum": 28173
+                }
+              ],
+              "hint": "The monk starts in the monastery. Acceptance gives a flower necklace and declares 85,000 XP, subject to native caps. The receipt belongs to this Verspin request even though its proof comes from Bloodstone.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Return one corruption sigil to the master monk"
+            }
+          ],
+          "summary": "Speak with the master monk about his warning, then bring one sigil of corruption from the Bloodstone tower apprentices. The accepted proof gives a flower necklace and a native XP award. The delivery does not require defeating every apprentice, Maelborg or the entire tower yourself.",
+          "title": "The monk's corruption sigil"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=I:28112;receive=I:28113;disappear=0",
+              "giver_vnum": 28126
+            }
+          ],
+          "id": "ramous-apple-for-a-bone",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Take an apple out of either apple stall in the southern market. Both stalls share a two-apple reset cap. An apple can also be supplied; eating it or spending it with another recipient leaves this preparation missing.",
+              "id": "apple",
+              "item_vnums": [
+                28112
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a juicy red apple"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:28112;receive=I:28113;disappear=0",
+                  "giver_vnum": 28126
+                }
+              ],
+              "hint": "Find Ramous in the throne room. Keep the received bone available for the lion; another player's bone also supplies that story. Lozin competes for the same apples.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Trade the apple with Ramous"
+            }
+          ],
+          "summary": "Ramous exchanges one juicy red apple for a steak bone. This is the supporting producer for the golden lion's separate collar outcome. Its receipt does not complete the lion story or award another achievement or daily unit.",
+          "title": "Ramous's apple-for-bone service"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:10000,I:28112;receive=I:28128;disappear=0",
+              "giver_vnum": 28144
+            }
+          ],
+          "id": "lozins-black-gladius",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Take an apple out of either apple stall in the southern market. Both stalls share a two-apple reset cap. An apple can also be supplied; eating it or spending it with another recipient leaves this preparation missing.",
+              "id": "apple",
+              "item_vnums": [
+                28112
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a juicy red apple"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:10000,I:28112;receive=I:28128;disappear=0",
+                  "giver_vnum": 28144
+                }
+              ],
+              "hint": "Lozin starts in the southern market. The price is ten platinum. Buying the same gladius from Brial is a different source; it does not prove this exchange.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete Lozin's exact gladius recipe"
+            }
+          ],
+          "summary": "Lozin takes one juicy red apple and 10,000 copper for a black gladius. This equipment service awards no achievement or daily unit. Its paid settlement is unavailable with active accounting until material, fee and output are supported together.",
+          "title": "Lozin's black gladius service"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:10000,I:28112,I:28116;receive=I:28126;disappear=0",
+              "giver_vnum": 28144
+            }
+          ],
+          "id": "lozins-verspin-hammer",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Take an apple out of either apple stall in the southern market. Both stalls share a two-apple reset cap. An apple can also be supplied; eating it or spending it with another recipient leaves this preparation missing.",
+              "id": "apple",
+              "item_vnums": [
+                28112
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a juicy red apple"
+            },
+            {
+              "count": 1,
+              "hint": "The huge man starts with this armor at his shop near the royal hall and offers it as stock. Brial also stocks the final hammer; receiving that hammer does not prove the recipe.",
+              "id": "armor-of-pins",
+              "item_vnums": [
+                28116
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the armor of pins"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:10000,I:28112,I:28116;receive=I:28126;disappear=0",
+                  "giver_vnum": 28144
+                }
+              ],
+              "hint": "Bring the two exact materials and ten platinum to the trade master. Apples also serve Ramous and the gladius recipe. A previous apple exchange cannot replace a currently carried apple.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete Lozin's exact hammer recipe"
+            }
+          ],
+          "summary": "Lozin takes one apple, an armor of pins and 10,000 copper for a Verspin hammer. These are two distinct materials plus a fee. This equipment service awards no achievement or daily unit and remains guarded pending supported paid settlement.",
+          "title": "Lozin's Verspin hammer service"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:20000,I:28107;receive=I:28127;disappear=0",
+              "giver_vnum": 28144
+            }
+          ],
+          "id": "lozins-red-steel-armor",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Brial starts with this exact armor and lists it as shop stock. He also stocks the final red steel armor, so the output alone cannot prove Lozin's upgrade.",
+              "id": "black-armor",
+              "item_vnums": [
+                28107
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a black armor of Agony"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:20000,I:28107;receive=I:28127;disappear=0",
+                  "giver_vnum": 28144
+                }
+              ],
+              "hint": "The fee is twenty platinum. Similar black armor or a supplied red armor cannot stand in for the accepted input-and-fee exchange.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete Lozin's exact armor recipe"
+            }
+          ],
+          "summary": "Lozin takes a black armor of Agony and 20,000 copper for red steel armor. Preserve the actual item and fee identities. This service awards no achievement or daily unit and remains guarded pending supported paid settlement.",
+          "title": "Lozin's red steel armor service"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:5000,I:28124,I:28124,I:28125,I:28125;receive=I:28129;disappear=0",
+              "giver_vnum": 28144
+            }
+          ],
+          "id": "lozins-hunting-knife",
+          "steps": [
+            {
+              "count": 2,
+              "hint": "Actual red carriers include a mime, a noble and a western boatman. They share a reset cap of three. Red amulets also serve Transo and Lozin's other recipe; extra green or black amulets cannot replace them.",
+              "id": "red-amulets",
+              "item_vnums": [
+                28124
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 2 red amulets"
+            },
+            {
+              "count": 2,
+              "hint": "Actual black carriers include a commoner, a snobby shopper and a gnomish shaman. This is a separate color from green and red. Transo and the hunting-knife service compete for the same supplies.",
+              "id": "black-amulets",
+              "item_vnums": [
+                28125
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 2 black amulets"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:5000,I:28124,I:28124,I:28125,I:28125;receive=I:28129;disappear=0",
+                  "giver_vnum": 28144
+                }
+              ],
+              "hint": "The fee is five platinum. Transo competes for both colors, and the shield recipe consumes reds. Brial's knife stock is an alternative supply, without this recipe receipt.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete Lozin's exact knife recipe"
+            }
+          ],
+          "summary": "Lozin takes two red amulets, two black amulets and 5,000 copper for a hunting knife. Each color needs two separate objects. This service awards no achievement or daily unit and remains guarded pending supported paid settlement.",
+          "title": "Lozin's hunting knife service"
+        },
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:6000,I:28124,I:28124,I:28124,I:28124;receive=I:28130;disappear=0",
+              "giver_vnum": 28144
+            }
+          ],
+          "id": "lozins-hunting-shield",
+          "steps": [
+            {
+              "count": 4,
+              "hint": "Actual red carriers include a mime, a noble and a western boatman. They share a reset cap of three. Red amulets also serve Transo and Lozin's other recipe; extra green or black amulets cannot replace them.",
+              "id": "red-amulets",
+              "item_vnums": [
+                28124
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 4 red amulets"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:6000,I:28124,I:28124,I:28124,I:28124;receive=I:28130;disappear=0",
+                  "giver_vnum": 28144
+                }
+              ],
+              "hint": "The fee is six platinum. Keep the four-red requirement visible while builders choose a balanced supply or recipe correction. Green and black amulets cannot substitute, and Brial's shield stock does not prove this exchange.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete Lozin's exact shield recipe"
+            }
+          ],
+          "summary": "Lozin takes four red amulets and 6,000 copper for a hunting shield. The reviewed ordinary red sources share a cap of three, so fresh-source feasibility needs repair review. This service awards no achievement or daily unit and remains guarded pending supported paid settlement.",
+          "title": "Lozin's hunting shield service"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Ask Kordor about dracolich and rare materials. His hide-curing exchange supplies the jeweler's material for the bracelet commission.",
           "keyword": "kordor",
           "mob_vnum": 28917,

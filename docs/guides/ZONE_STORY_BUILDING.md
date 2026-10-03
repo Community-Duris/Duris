@@ -234,6 +234,28 @@ owner and initial dispersal room do not establish its current physical location.
 The tree helper's old callback is not reached by modern combat: qualify the
 dispatcher and builder-selected encounter policy before exposing helper goals.
 
+## Producer history, counts and virtual services
+
+The [Verspin dossier](../design/zone-stories/VERSPIN.md) separates Ramous's
+apple-for-bone service from the lion's collar story. Show the earlier receipt
+as optional history; a supplied final bone still qualifies. Possessing a collar
+or another recipient's receipt does not complete the lion. Keep five same-kind
+totems/symbols as count-five checks, while three amulet colors remain separate
+kind-one checks. Validate reset caps against simultaneous recipe quantities;
+four reds cannot be promised from a reviewed shared cap of three without a
+deliberate source/recipe decision.
+
+Review the full custom procedure and caller before choosing objective kinds.
+Shinjin's listed potions directly change stats; they create no objects. They
+need committed wallet/expected-stat/effect/save evidence, not an item-possession
+objective. Crew hiring must honor denied payment before any ship mutation;
+pending-command serialization alone does not establish accounting admission.
+Lozin's unplaced ten-offer sign does not create five missing contracts. Static
+persuasion, honor, reunion and tower-cleansing text remains explanatory until
+builders add accepted outcomes. XP sharing/caps do not prove personal source
+recovery or campaign participation; preserve admitted frozen awards during any
+deliberate balance correction.
+
 ## The gardener dependency
 
 Alvinar's Q contract does not describe the barrier. `gardener_block` in
