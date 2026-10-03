@@ -332,6 +332,7 @@ OBJS =  $(SHIP_OBJS) \
 				 guild/guildhall_procs.o \
 				 guild/guildhall_db.o \
 				 combat/grapple.o \
+				 world/character_maintenance.o \
 				 world/handler.o \
 				 world/hardcore.o \
 				 classes/innates.o \

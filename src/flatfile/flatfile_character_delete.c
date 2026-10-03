@@ -20,6 +20,8 @@
 #include "flatfile/flatfile_shop_trade_materialization.h"
 #include "flatfile/flatfile_world_item_repository.h"
 #include "flatfile/flatfile_world_quest_history.h"
+#include "flatfile/flatfile_zone_story_quest_state.h"
+#include "world/zone_story_quest_production.h"
 
 #include <ctime>
 #include <new>
@@ -63,12 +65,12 @@ flatfile_character_delete_result map_authority(Result result, Result not_found, 
  * Maximum authority operations one character deletion can stage: one per
  * append_operation() call site below (account reward summon, artifact,
  * frag leaderboard, association, ship, player snapshot, player domain,
- * world quest, item repository, locker removal, world-item removal, shop
+ * world quest, zone-story state, item repository, locker removal, world-item removal, shop
  * trade materialization, boon, recipe, spellbook, offline message, identity).
  * Keep this in step with the call sites so the transaction encoder can never
  * reject a fully populated character.
  */
-constexpr size_t character_delete_maximum_operations = 17;
+constexpr size_t character_delete_maximum_operations = 18;
 static_assert(character_delete_maximum_operations <=
 		      flatfile_authority_transaction_maximum_operations,
 	      "character deletion can stage more operations than one authority transaction holds");
@@ -282,6 +284,22 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 	{
 		return map_authority(world_quest, flatfile_world_quest_result::not_found,
 				     flatfile_world_quest_result::io_error);
+	}
+
+	const auto zone_story = flatfile_zone_story_quest_state_prepare_player_remove(
+		root, authority_lock,
+		zone_story_quest_production::ZONE_STORY_QUEST_PRODUCTION_CONTENT_REVISION,
+		static_cast<uint32_t>(pid), &operation, error);
+	if (zone_story == flatfile_zone_story_quest_result::ok)
+	{
+		if (!append_operation(&operations, &operation))
+			return flatfile_character_delete_result::io_error;
+	}
+	else if (zone_story != flatfile_zone_story_quest_result::not_found &&
+		 zone_story != flatfile_zone_story_quest_result::unchanged)
+	{
+		return map_authority(zone_story, flatfile_zone_story_quest_result::not_found,
+				     flatfile_zone_story_quest_result::io_error);
 	}
 
 	const auto item = locker_changed || world_item_changed ?
