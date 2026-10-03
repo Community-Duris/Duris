@@ -2,7 +2,7 @@
 """Executable status journeys after the disposable native death fixture.
 
 Never load .env. Mutation is permitted only with the explicit synthetic gate and
-the two known fixture databases; ordinary status remains strictly read-only.
+the known fixture databases; ordinary status remains strictly read-only.
 """
 import json
 import os
@@ -56,13 +56,19 @@ with tempfile.TemporaryDirectory(prefix="death-status-") as temporary:
     db.run("INSERT INTO player_death_restitution_receipt(restitution_id,source_pid,death_revision,recipient_pid,death_operation_id,evidence_digest,plan_digest,status,actor,reason,candidate_count,delivered_count) VALUES (UNHEX('" + restitution_id + "'),2,1,2,UNHEX('a600000000000000000000000000005a'),UNHEX(REPEAT('00',32)),UNHEX(REPEAT('01',32)),2,'fixture','synthetic delivery',1,1)")
     db.run("INSERT INTO player_death_restitution_item(restitution_id,item_uid,disposition,classification) VALUES (UNHEX('" + restitution_id + "'),401,1,'fixture')")
     db.run("INSERT INTO player_death_restitution_delivery(item_uid,restitution_id,source_pid,death_revision,recipient_pid,source_item_revision,delivered_item_revision,delivered_item_id,metadata_digest,original_payload) SELECT 401,UNHEX('" + restitution_id + "'),2,1,2,3,4,id,UNHEX(REPEAT('00',32)),0x01 FROM player_items WHERE obj_uid=401")
+    pending = read("--after-pid", "1", "--after-revision", "5")["cases"][0]
+    assert pending["recovery_required"] and pending["verification_requires_review"]
+    assert pending["recovery_owner"] == "restitution_verification"
+    # Synthetic afterimage of existing protected verify; an applied receipt
+    # alone cannot close the recovery case.
+    db.run("UPDATE player_death_restitution_receipt SET status=3 WHERE restitution_id=UNHEX('" + restitution_id + "')")
     resolved = read("--include-resolved")
     case = next(case for case in resolved["cases"] if case["pid"] == 2)
     assert case["terminal_custody"] == "restored" and not case["recovery_required"]
     assert case["counts"]["restored"] == 1 and case["counts"]["safely_retired"] == 2
     assert resolved["unresolved_cases"] == 1  # Original wallet remains owed.
     assert all(case["pid"] != 2 for case in read()["cases"])
-    # Neither an applied receipt nor a completed death can conceal lost delivery.
+    # Neither a verified receipt nor a completed death can conceal lost delivery.
     db.run("DELETE FROM player_items WHERE obj_uid=401")
     missing = read("--after-pid", "1", "--after-revision", "5")["cases"][0]
     assert missing["terminal_custody"] == "unresolved"
@@ -99,4 +105,4 @@ with tempfile.TemporaryDirectory(prefix="death-status-") as temporary:
     assert archive["death_disposition"] == "completed_with_retained_conflict"
     assert archive["recovery_required"] and archive["recovery_owner"] == "retained_death_conflict"
 
-print("[PASS] protected SQL status, durable-only child, restart, pagination, delivery loss and successful reconciliation")
+print("[PASS] protected SQL status, durable-only child, restart, pagination, pending verification, delivery loss and successful reconciliation")
