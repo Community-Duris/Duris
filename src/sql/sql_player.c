@@ -1,3 +1,4 @@
+#include "account/account_load.h"
 // sql_player.c
 // player save/load functions for mysql storage
 // part of pfile-to-db migration
@@ -12,6 +13,7 @@
 #include "sql/sql_corpse.h"
 #include "sql/sql_guild.h"
 #include "sql/sql_player_deletion.h"
+#include "persistence/economic_sql_lifecycle_guard.h"
 #include "sql/sql_player.h"
 #include "sql/sql_player_migration.h"
 #include "sql/sql_saved_item.h"
@@ -269,11 +271,12 @@ bool sql_load_player_pets(P_char ch)
 	return false;
 }
 
-bool sql_delete_player(int pid, bool forget_revision)
+bool sql_delete_player(int pid, bool forget_revision,
+		       const economic_sql_currency_writer_guard *writer)
 {
 	return false;
 }
-bool sql_player_deletion_guard(int pid)
+bool sql_player_deletion_guard(int pid, const economic_sql_currency_writer_guard &writer)
 {
 	return false;
 }
@@ -1193,9 +1196,9 @@ static bool sql_try_get_player_pid(const char *name, int *pid_out)
 
 // player delete
 
-bool sql_player_deletion_guard(int pid)
+bool sql_player_deletion_guard(int pid, const economic_sql_currency_writer_guard &writer)
 {
-	if (!DB || pid <= 0 || !sql_in_transaction())
+	if (!DB || pid <= 0 || !sql_in_transaction() || !writer.is_valid_for(DB))
 		return false;
 	if (character_deletion_guard_pid)
 		return character_deletion_guard_pid == pid;
@@ -1240,27 +1243,31 @@ bool sql_player_deletion_guard(int pid)
 	return true;
 }
 
-bool sql_delete_player(int pid, bool forget_revision)
+bool sql_delete_player(int pid, bool forget_revision,
+		       const economic_sql_currency_writer_guard *writer)
 {
 	if (!DB || pid <= 0 || player_save_journal_pid_quarantined(pid))
 		return false;
 
+	economic_sql_currency_writer_guard own_writer;
 	bool own_txn = false;
 	if (!sql_in_transaction())
 	{
-		if (!sql_begin_transaction())
+		if (writer || economic_sql_currency_writer_guard::acquire(DB, &own_writer) ||
+		    !sql_begin_transaction())
 			return false;
 		own_txn = true;
+		writer = &own_writer;
 	}
 	if (own_txn)
 	{
-		if (!sql_player_deletion_guard(pid))
+		if (!sql_player_deletion_guard(pid, *writer))
 		{
 			sql_rollback();
 			return false;
 		}
 	}
-	else if (character_deletion_guard_pid != pid)
+	else if (!writer || !writer->is_valid_for(DB) || character_deletion_guard_pid != pid)
 		return false;
 
 	char query[128];
@@ -5246,97 +5253,7 @@ static bool sql_save_account_characters(struct acct_entry *acc)
 /* Repair selectable account mappings only after safe opening baselines exist. */
 int sql_repair_account_character_projection(const char *account_name)
 {
-	if (!DB || !account_name || !account_name[0])
-		return -1;
-
-	char *escaped_account = sql_escape_string(account_name);
-	if (!escaped_account)
-		return -1;
-
-	char query[4096];
-	char eligibility[1024];
-	const int eligibility_written = snprintf(
-		eligibility, sizeof(eligibility),
-		"pd.active=1 AND LOWER(pd.account_name)=LOWER('%s') AND NOT EXISTS ("
-		"SELECT 1 FROM account_characters tombstone WHERE tombstone.deleted_at IS NOT NULL "
-		"AND (tombstone.pid=pd.pid OR LOWER(tombstone.char_name)=LOWER(pd.name)))",
-		escaped_account);
-	if (eligibility_written < 0 ||
-	    static_cast<size_t>(eligibility_written) >= sizeof(eligibility))
-	{
-		free(escaped_account);
-		return -1;
-	}
-	int written = snprintf(
-		query, sizeof(query),
-		"INSERT INTO currency_wallet_baseline(pid,opening_copper,opening_silver,"
-		"opening_gold,opening_platinum,opening_revision) "
-		"SELECT pd.pid,pd.copper,pd.silver,pd.gold,pd.platinum,pd.wallet_revision "
-		"FROM player_data pd WHERE %s AND pd.wallet_revision=0 "
-		"AND NOT EXISTS (SELECT 1 FROM currency_ledger ledger WHERE ledger.pid=pd.pid) "
-		"AND NOT EXISTS (SELECT 1 FROM currency_wallet_baseline baseline "
-		"WHERE baseline.pid=pd.pid)",
-		eligibility);
-	if (written < 0 || static_cast<size_t>(written) >= sizeof(query) || !sql_run_query(query))
-	{
-		free(escaped_account);
-		return -1;
-	}
-	written = snprintf(
-		query, sizeof(query),
-		"INSERT INTO epic_balance_baseline(pid,opening_balance,opening_revision) "
-		"SELECT pd.pid,pd.epics,pd.epic_revision FROM player_data pd WHERE %s "
-		"AND pd.epic_revision=0 AND NOT EXISTS (SELECT 1 FROM epic_ledger ledger "
-		"WHERE ledger.pid=pd.pid) AND NOT EXISTS (SELECT 1 FROM epic_balance_baseline "
-		"baseline WHERE baseline.pid=pd.pid)",
-		eligibility);
-	if (written < 0 || static_cast<size_t>(written) >= sizeof(query) || !sql_run_query(query))
-	{
-		free(escaped_account);
-		return -1;
-	}
-	written = snprintf(
-		query, sizeof(query),
-		"INSERT INTO combat_frag_baseline(pid,opening_frags,opening_revision) "
-		"SELECT pd.pid,pd.frags,pd.frag_revision FROM player_data pd WHERE %s "
-		"AND pd.frag_revision=0 AND NOT EXISTS (SELECT 1 FROM combat_frag_ledger ledger "
-		"WHERE ledger.pid=pd.pid) AND NOT EXISTS (SELECT 1 FROM combat_frag_baseline "
-		"baseline WHERE baseline.pid=pd.pid)",
-		eligibility);
-	if (written < 0 || static_cast<size_t>(written) >= sizeof(query) || !sql_run_query(query))
-	{
-		free(escaped_account);
-		return -1;
-	}
-
-	written =
-		snprintf(query, sizeof(query),
-			 "INSERT INTO account_characters "
-			 "(id, account_name, pid, char_name, created_at, deleted_at) "
-			 "SELECT active_mapping.id, pd.account_name, pd.pid, pd.name, NOW(), NULL "
-			 "FROM player_data pd "
-			 "LEFT JOIN account_characters active_mapping "
-			 "ON active_mapping.pid=pd.pid AND active_mapping.deleted_at IS NULL "
-			 "JOIN currency_wallet_baseline wallet ON wallet.pid=pd.pid "
-			 "JOIN epic_balance_baseline epic ON epic.pid=pd.pid "
-			 "JOIN combat_frag_baseline combat ON combat.pid=pd.pid "
-			 "WHERE pd.active=1 AND LOWER(pd.account_name)=LOWER('%s') "
-			 "AND NOT EXISTS ("
-			 "SELECT 1 FROM account_characters tombstone "
-			 "WHERE tombstone.deleted_at IS NOT NULL "
-			 "AND (tombstone.pid=pd.pid OR LOWER(tombstone.char_name)=LOWER(pd.name))) "
-			 "ON DUPLICATE KEY UPDATE "
-			 "account_name=VALUES(account_name), pid=VALUES(pid), "
-			 "char_name=VALUES(char_name), deleted_at=NULL",
-			 escaped_account);
-	free(escaped_account);
-	if (written < 0 || static_cast<size_t>(written) >= sizeof(query))
-		return -1;
-	if (!sql_run_query(query))
-		return -1;
-
-	const my_ulonglong affected = mysql_affected_rows(DB);
-	return affected > static_cast<my_ulonglong>(INT_MAX) ? INT_MAX : static_cast<int>(affected);
+	return account_load_repair(DB, account_name);
 }
 
 struct acct_entry *sql_load_account(const char *name)
@@ -5582,7 +5499,9 @@ bool sql_delete_account(const char *name)
 		return false;
 	}
 	std::vector<std::pair<int, std::string>> identities;
-	if (!sql_begin_transaction())
+	economic_sql_currency_writer_guard deletion_writer;
+	if (economic_sql_currency_writer_guard::acquire(DB, &deletion_writer) ||
+	    !sql_begin_transaction())
 	{
 		free(escaped_account);
 		return false;

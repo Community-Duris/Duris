@@ -21,6 +21,12 @@ reports bounded coordinator depth/bytes, high-water marks, captures, coalescing,
 unchanged checkpoints, append failures, overload, dispatch, completion, and replay
 state. Output contains no player identity or snapshot value.
 
+For a refused save, degraded load, or quarantine, use the avatar-only
+`world persistence diagnose player <pid>` report and the read-only
+[persistence incident workflow](PERSISTENCE_DIAGNOSTICS.md). It correlates bounded
+save/command history with the exact custody failure witness and explains which
+native evidence is still required before recovery.
+
 ## Persistence reporting severity
 
 `persistence_report(severity, level, domain, owner, item_uid, event_id, action, format, ...)`

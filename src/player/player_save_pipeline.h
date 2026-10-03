@@ -71,6 +71,14 @@ struct player_save_pipeline_health
 	bool replay_blocked;
 };
 
+// Resident coordinator metadata only; journal/worker/revision observations are separate.
+struct player_save_pipeline_diagnostic
+{
+	player_save_pipeline_health health = {};
+	bool available = false, pid_admission_open = false, retained_save = false;
+};
+player_save_pipeline_diagnostic player_save_pipeline_diagnostic_copy(int pid);
+
 // Publishes startup replay readiness to normal player-load callers. False
 // covers not-started, in-progress, failed, and stopped pipeline states.
 class player_save_pipeline_replay_gate
