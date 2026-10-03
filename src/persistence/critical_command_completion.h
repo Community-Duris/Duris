@@ -1,6 +1,7 @@
 #ifndef CRITICAL_COMMAND_COMPLETION_H
 #define CRITICAL_COMMAND_COMPLETION_H
 
+#include "net/network_wakeup.h"
 #include "persistence/critical_command.h"
 
 #include <array>
@@ -81,6 +82,7 @@ class critical_completion_delivery
 		try
 		{
 			queue(channel).push_back(completion);
+			network_wakeup_notify();
 			return true;
 		}
 		catch (const std::bad_alloc &)
@@ -95,6 +97,7 @@ class critical_completion_delivery
 	void enqueue(critical_completion_channel channel, const critical_completion &completion)
 	{
 		queue(channel).push_back(completion);
+		network_wakeup_notify();
 	}
 
 	const critical_completion *front(critical_completion_channel channel) const noexcept

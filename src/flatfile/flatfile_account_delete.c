@@ -2,6 +2,7 @@
 
 #include "flatfile/flatfile_account_repository.h"
 #include "flatfile/flatfile_authority_transaction.h"
+#include "flatfile/flatfile_accounting_authority.h"
 #include "flatfile/flatfile_character_delete.h"
 #include "flatfile/flatfile_identity_repository.h"
 #include "flatfile/flatfile_item_repository.h"
@@ -10,6 +11,7 @@
 
 #include <algorithm>
 #include <new>
+#include <cerrno>
 #include <utility>
 #include <vector>
 
@@ -112,6 +114,14 @@ flatfile_account_delete_result flatfile_account_delete(const std::string &root,
 			return recovered == flatfile_authority_transaction_result::io_error ?
 				       flatfile_account_delete_result::io_error :
 				       flatfile_account_delete_result::invalid;
+		// Recover a published bundle before refusing unsupported new erasure.
+		const auto admission =
+			flatfile_economic_legacy_domain_gate(root, authority_lock, error);
+		if (admission)
+			return admission == EAGAIN ? flatfile_account_delete_result::conflict :
+			       admission == EIO || admission == ENOMEM ?
+						     flatfile_account_delete_result::io_error :
+						     flatfile_account_delete_result::invalid;
 	}
 
 	flatfile_account_record account;

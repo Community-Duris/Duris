@@ -121,6 +121,101 @@ class ReconciliationTests(unittest.TestCase):
             self.assertNotIn("alias", json.dumps(data))
             self.assertLessEqual(len(data["rows"]), 3)
 
+    def test_checked_copper_totals_for_holdings_origins_and_effects(self):
+        # All denomination fields fit int64 and the postings still balance.
+        # Consistent oversized opening/effect/native values cannot qualify.
+        for platinum in ((2**63 - 1 - 10) // 1000, 2**63 - 1):
+            snapshot = clean_snapshot()
+            for row in snapshot["account_origins"]:
+                if row["account_key"] == WALLET:
+                    row["balance"][3] = platinum
+            for row in snapshot["effects"]:
+                if row["account_key"] == WALLET:
+                    row["before"][3] = row["after"][3] = platinum
+            for row in snapshot["native"]["holdings"]:
+                if row["account_key"] == WALLET:
+                    row["balance"][3] = platinum
+            before = copy.deepcopy(snapshot)
+            if platinum == 2**63 - 1:
+                with self.assertRaisesRegex(SnapshotError, "copper overflow"):
+                    Reconciler().audit(snapshot)
+            else:
+                self.assertEqual(self.codes(snapshot), set())
+            self.assertEqual(snapshot, before)
+
+        # Check each independently, including before-images. A stale closing
+        # report is insufficient when the vector itself is unrepresentable.
+        for domain, side in (("native", "balance"), ("origin", "balance"),
+                             ("effect", "before"), ("effect", "after")):
+            for amount in (2**63 - 1, -(2**63)):
+                with self.subTest(domain=domain, side=side, amount=amount):
+                    snapshot = clean_snapshot()
+                    rows = {"native": snapshot["native"]["holdings"],
+                            "origin": snapshot["account_origins"],
+                            "effect": snapshot["effects"]}[domain]
+                    rows[0][side][3] = amount
+                    before = copy.deepcopy(snapshot)
+                    with self.assertRaisesRegex(SnapshotError, "copper overflow"):
+                        Reconciler().audit(snapshot)
+                    self.assertEqual(snapshot, before)
+
+    def test_cli_refuses_overflow_with_zero_output_limit_without_repair(self):
+        snapshot = clean_snapshot()
+        snapshot["native"]["holdings"][0]["balance"][3] = 2**63 - 1
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "snapshot.json"
+            path.write_text(json.dumps(snapshot), encoding="utf-8")
+            original = path.read_bytes()
+            result = subprocess.run([sys.executable,
+                str(ROOT / "scripts/reconcile_economy_accounting.py"), str(path),
+                "--limit", "0"], capture_output=True, text=True, check=False)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("copper overflow", result.stderr)
+            self.assertEqual(result.stdout, "")
+            self.assertEqual(path.read_bytes(), original)
+            path.write_text(json.dumps(clean_snapshot()), encoding="utf-8")
+            repaired = subprocess.run([sys.executable,
+                str(ROOT / "scripts/reconcile_economy_accounting.py"), str(path),
+                "--limit", "0"], capture_output=True, text=True, check=False)
+            self.assertEqual(repaired.returncode, 0, repaired.stderr)
+            self.assertEqual(json.loads(repaired.stdout)["exception_count"], 0)
+
+    def money_revision_snapshot(self, before):
+        snapshot = clean_snapshot()
+        for origin in snapshot["account_origins"]:
+            origin["revision"] = before
+        for effect in snapshot["effects"]:
+            effect.update(before_revision=before, after_revision=before + 1)
+        for holding in snapshot["native"]["holdings"]:
+            holding["revision"] = before + 1
+        return snapshot
+
+    def test_money_revisions_use_native_unsigned_range(self):
+        for before in (0, 2**63, 2**64 - 2):
+            with self.subTest(before=before):
+                self.assertEqual(self.codes(self.money_revision_snapshot(before)), set())
+
+    def test_boolean_and_overflow_money_revisions_are_not_clean(self):
+        for before in (True, -1, 2**64 - 1, 2**64):
+            with self.subTest(before=before):
+                with self.assertRaises(SnapshotError):
+                    Reconciler().audit(self.money_revision_snapshot(before))
+        for invalid in (True, -1, 2**64):
+            with self.subTest(native_revision=invalid):
+                snapshot = self.money_revision_snapshot(0)
+                snapshot["native"]["holdings"][0]["revision"] = invalid
+                with self.assertRaises(SnapshotError):
+                    Reconciler().audit(snapshot)
+                with self.assertRaises(SnapshotError):
+                    view(snapshot, {}, "holdings", 3)
+        for field in ("before_revision", "after_revision"):
+            for invalid in (True, -1, 2**64):
+                with self.subTest(effect_field=field, value=invalid):
+                    snapshot = clean_snapshot()
+                    snapshot["effects"][0][field] = invalid
+                    with self.assertRaises(SnapshotError):
+                        Reconciler().audit(snapshot)
+
     def test_missing_posting(self):
         snapshot = clean_snapshot()
         snapshot["postings"].pop()
@@ -552,8 +647,104 @@ class ReconciliationTests(unittest.TestCase):
         snapshot["native"]["mapping_creation_coverage"] = {
             "rows": 1, "creator_rows": 0, "root_rows": 0, "missing_roots": 0}
         self.assertEqual(self.codes(snapshot), set())
+        for before_revision in (2**63, 2**64 - 2):
+            high = copy.deepcopy(snapshot)
+            for effect in high["native"]["retirement_roots"][0]["effects"]:
+                effect.update(before_revision=before_revision, after_revision=before_revision + 1)
+            self.assertEqual(self.codes(high), set())
+        for invalid in (True, -1, 2**64):
+            high = copy.deepcopy(snapshot)
+            high["native"]["retirement_roots"][0]["effects"][0]["before_revision"] = invalid
+            with self.assertRaises(SnapshotError):
+                Reconciler().audit(high)
         snapshot["native"]["retired_mappings"][0]["native_id"] = 78
         self.assertIn("mapping_retirement_identity_mismatch", self.codes(snapshot))
+
+    def revision_snapshot(self, before):
+        snapshot = clean_snapshot()
+        snapshot["item_origins"][0]["revision"] = before
+        snapshot["ownership_events"][0].update(before_revision=before, revision=before + 1)
+        snapshot["item_references"][0].update(before_revision=before, after_revision=before + 1)
+        snapshot["native"]["items"][0]["revision"] = before + 1
+        return snapshot
+
+    def test_native_item_revisions_use_the_complete_unsigned_range(self):
+        for before in (2**63 - 1, 2**63, 2**64 - 2):
+            with self.subTest(before=before):
+                self.assertEqual(self.codes(self.revision_snapshot(before)), set())
+
+    def test_impossible_native_item_revision_is_not_clean_evidence(self):
+        for before in (-1, True, 2**64 - 1, 2**64):
+            with self.subTest(before=before):
+                with self.assertRaises(SnapshotError):
+                    Reconciler().audit(self.revision_snapshot(before))
+        for table, field in (("item_origins", "revision"),
+                             ("ownership_events", "before_revision"),
+                             ("ownership_events", "revision"),
+                             ("item_references", "before_revision"),
+                             ("item_references", "after_revision")):
+            for invalid in (True, -1, 2**64):
+                with self.subTest(table=table, field=field, invalid=invalid):
+                    snapshot = clean_snapshot()
+                    snapshot[table][0][field] = invalid
+                    with self.assertRaises(SnapshotError):
+                        Reconciler().audit(snapshot)
+        snapshot = clean_snapshot()
+        snapshot["native"]["items"][0]["revision"] = 2**64
+        with self.assertRaises(SnapshotError):
+            Reconciler().audit(snapshot)
+
+    def test_uid_history_revision_bounds_match_native_authority(self):
+        for scope in ("lineage", "unreferenced", "unattributed"):
+            for before in (2**63, 2**64 - 2, True, -1, 2**64 - 1, 2**64):
+                with self.subTest(scope=scope, before=before):
+                    snapshot = self.revision_snapshot(before)
+                    event = copy.deepcopy(snapshot["ownership_events"][0])
+                    event.update(referenced=False, operation_outcome="committed")
+                    native = snapshot["native"]
+                    if scope == "lineage":
+                        native["uid_history_events"] = [event]
+                    elif scope == "unreferenced":
+                        native["uid_history_events"] = [event]
+                        native["unreferenced_uid_events"] = [event]
+                        native["uid_event_coverage"] = {
+                            "tracked_uids": 1, "ledger_events": 1,
+                            "referenced_events": 0, "unreferenced_events": 1}
+                    else:
+                        native["unattributed_uid_events"] = [event]
+                        native["unattributed_uid_event_coverage"] = {"uids": 1, "events": 1}
+                    if type(before) is int and 0 <= before < 2**64 - 1:
+                        codes = self.codes(snapshot)
+                        self.assertNotIn("broken_uid_history", codes)
+                        self.assertNotIn("stale_native_item", codes)
+                    else:
+                        with self.assertRaises(SnapshotError):
+                            Reconciler().audit(snapshot)
+
+    def test_lineage_uid_reference_uses_unsigned_revision_bounds(self):
+        for before in (2**63, 2**64 - 2, True, -1, 2**64 - 1, 2**64):
+            with self.subTest(before=before):
+                snapshot = self.revision_snapshot(before)
+                reference = copy.deepcopy(snapshot["item_references"][0])
+                reference.update(operation_epoch=EPOCH, operation_outcome="committed",
+                                 operation_item_event_count=1, ledger_uid=81,
+                                 ledger_before_revision=before, ledger_revision=before + 1,
+                                 ledger_root=81, ledger_parent=None, ledger_owner=[1, 7, 0],
+                                 ledger_state="live", ledger_action="move")
+                root = copy.deepcopy(snapshot["operations"][0])
+                root["reference_count"] = 1
+                native = {"lineage_uid_references": [reference],
+                          "lineage_uid_reference_roots": [root],
+                          "lineage_uid_reference_coverage": {"rows": 1, "root_rows": 1}}
+                reconciler = Reconciler()
+                if type(before) is int and 0 <= before < 2**64 - 1:
+                    reconciler.audit_lineage_uid_references(
+                        LINEAGE, EPOCH, "disposable", native, {(OP, 0): reference})
+                    self.assertEqual(dict(reconciler.counts), {})
+                else:
+                    with self.assertRaises(SnapshotError):
+                        reconciler.audit_lineage_uid_references(
+                            LINEAGE, EPOCH, "disposable", native, {(OP, 0): reference})
 
     def test_duplicate_item_revision(self):
         snapshot = clean_snapshot()
@@ -561,6 +752,119 @@ class ReconciliationTests(unittest.TestCase):
         duplicate.update(operation_id="66" * 16, event_index=1)
         snapshot["ownership_events"].append(duplicate)
         self.assertIn("duplicate_uid_revision", self.codes(snapshot))
+
+    def test_orphan_parent_is_checked_independently_of_item_history(self):
+        for history_scope in (False, True):
+            for has_origin in (False, True):
+                with self.subTest(history_scope=history_scope, has_origin=has_origin):
+                    snapshot = clean_snapshot()
+                    if not has_origin:
+                        snapshot["item_origins"] = []
+                    if history_scope:
+                        event = copy.deepcopy(snapshot["ownership_events"][0])
+                        event.update(operation_outcome="committed", referenced=False)
+                        snapshot["native"]["uid_history_events"] = [event]
+                    # Keep history and current state consistent: the missing
+                    # parent must be diagnosed without a stale-state mismatch.
+                    snapshot["native"]["items"][0].update(parent=999, root=999)
+                    snapshot["ownership_events"][0].update(parent=999, root=999)
+                    if history_scope:
+                        snapshot["native"]["uid_history_events"][0].update(
+                            parent=999, root=999)
+                    report = Reconciler().audit(snapshot)
+                    self.assertEqual(report["exception_counts"].get("orphan_item_parent"), 1)
+                    self.assertIn({"code": "orphan_item_parent", "uid": 81,
+                                   "parent_uid": 999}, report["exceptions"])
+                    self.assertNotIn("stale_native_item", report["exception_counts"])
+
+    def test_valid_nested_native_items_and_orphan_ancestors(self):
+        native = {
+            (uid,): {"uid": uid, "revision": 1, "root": 83, "parent": parent,
+                     "owner": [1, 7, 0], "state": "live"}
+            for uid, parent in ((81, 82), (82, 83), (83, None))
+        }
+        origins = {identity: {**item, "origin": "baseline"}
+                   for identity, item in native.items()}
+        clean = Reconciler()
+        clean.audit_items({}, {}, origins, native, {81, 82, 83})
+        self.assertEqual(dict(clean.counts), {})
+
+        del native[(83,)]
+        orphan = Reconciler()
+        orphan.audit_items({}, {}, origins, native, {81, 82, 83})
+        self.assertEqual(orphan.counts["orphan_item_parent"], 1)
+        self.assertIn({"code": "orphan_item_parent", "uid": 82,
+                       "parent_uid": 83}, orphan.exceptions)
+
+    def test_tombstone_parent_is_checked_without_an_origin(self):
+        native = {(81,): {"uid": 81, "revision": 2, "root": 999, "parent": 999,
+                          "owner": [8, 0, 0], "state": "tombstone"}}
+        orphan = Reconciler()
+        orphan.audit_items({}, {}, {}, native, {81})
+        self.assertEqual(orphan.counts["orphan_item_parent"], 1)
+
+    def test_native_topology_work_is_bounded_for_deep_custody(self):
+        class MeasuredNative(dict):
+            reads = 0
+
+            def get(self, identity, default=None):
+                self.reads += 1
+                return super().get(identity, default)
+
+            def __getitem__(self, identity):
+                self.reads += 1
+                return super().__getitem__(identity)
+
+            def __contains__(self, identity):
+                self.reads += 1
+                return super().__contains__(identity)
+
+        count = 1200
+        native = MeasuredNative({
+            (uid,): {"uid": uid, "revision": 1, "root": count,
+                     "parent": uid + 1 if uid < count else None,
+                     "owner": [1, 7, 0], "state": "live"}
+            for uid in range(1, count + 1)
+        })
+        origins = {identity: {**item, "origin": "baseline"}
+                   for identity, item in native.items()}
+        for shape, parent, expected in (
+                ("chain", None, {}), ("cycle", 1, {"cyclic_native_topology": count}),
+                ("orphan", count + 1, {"orphan_item_parent": 1})):
+            with self.subTest(shape=shape):
+                native[(count,)]["parent"] = parent
+                native.reads = 0
+                reconciler = Reconciler(0)
+                reconciler.audit_items({}, {}, origins, native, set(range(1, count + 1)))
+                self.assertEqual(dict(reconciler.counts), expected)
+                self.assertLessEqual(native.reads, 20 * count,
+                                     "a bounded native snapshot must not trigger quadratic ancestor work")
+
+    def test_native_topology_cycle_and_edge_diagnostics(self):
+        base = {
+            (uid,): {"uid": uid, "revision": 1, "root": 2, "parent": parent,
+                     "owner": [1, 7, 0], "state": "live"}
+            for uid, parent in ((1, 2), (2, None), (3, 1))
+        }
+        for name, changes, expected in (
+                ("valid", {}, {}),
+                ("cycle", {2: {"parent": 1}}, {"cyclic_native_topology": 3}),
+                ("self_cycle", {2: {"parent": 2}}, {"cyclic_native_topology": 3}),
+                ("root_identity", {uid: {"root": 99} for uid in (1, 2, 3)},
+                 {"inconsistent_native_topology": 3}),
+                ("edge", {3: {"root": 99}}, {"inconsistent_native_topology": 1}),
+                ("orphan", {2: {"parent": 99}}, {"orphan_item_parent": 1}),
+                ("mixed_cycle", {2: {"parent": 1, "state": "tombstone", "owner": [8, 0, 0]}},
+                 {"inconsistent_native_topology": 2, "cyclic_native_topology": 1})):
+            with self.subTest(name=name):
+                native = copy.deepcopy(base)
+                for uid, change in changes.items():
+                    native[(uid,)].update(change)
+                origins = {identity: {**item, "origin": "baseline"}
+                           for identity, item in native.items()}
+                reconciler = Reconciler()
+                reconciler.audit_items({}, {}, origins, native, {1, 2, 3})
+                self.assertEqual(dict(reconciler.counts), expected)
 
     def test_cli_bounded_exception_result(self):
         snapshot = clean_snapshot()
@@ -615,6 +919,105 @@ class ReconciliationTests(unittest.TestCase):
             {},
         )
         self.assertEqual(reconciler.counts["uid_history_operation_not_committed"], 1)
+
+    def lineage_lifetime_report(self, actions, origin=None):
+        origin = origin or creation_snapshot()["item_origins"][0]
+        events = []
+        for index, action in enumerate(actions):
+            events.append({
+                "operation_id": f"{index + 1:032x}", "event_index": 0, "uid": 81,
+                "before_revision": origin["revision"] + index,
+                "revision": origin["revision"] + index + 1,
+                "root": 81, "parent": None,
+                "owner": [8, 0, 0] if action == "destroy" else [1, 7, 0],
+                "state": "tombstone" if action == "destroy" else "live",
+                "action": action, "operation_outcome": "committed", "referenced": False,
+            })
+        current = {field: events[-1][field]
+                   for field in ("uid", "revision", "root", "parent", "owner", "state")}
+        reconciler = Reconciler()
+        reconciler.audit_lineage_uid_history(
+            "disposable", {"uid_history_events": events}, {(81,): origin}, {(81,): current})
+        return reconciler
+
+    def test_lineage_history_requires_a_creation_event(self):
+        self.assertEqual(self.lineage_lifetime_report(["move"]).counts["missing_item_creation"], 1)
+
+    def test_lineage_history_rejects_duplicate_creation(self):
+        self.assertEqual(self.lineage_lifetime_report(["create", "create"]).counts["duplicate_uid"], 1)
+        origin = clean_snapshot()["item_origins"][0]
+        self.assertEqual(self.lineage_lifetime_report(["create"], origin).counts["duplicate_uid"], 1)
+
+    def test_lineage_history_checks_creation_origin(self):
+        origin = creation_snapshot()["item_origins"][0]
+        origin["state"] = "live"
+        self.assertEqual(self.lineage_lifetime_report(["create"], origin).counts[
+            "invalid_item_creation_origin"], 1)
+
+    def test_lineage_history_preserves_retired_uid_lifetimes(self):
+        for action in ("create", "move"):
+            with self.subTest(action=action):
+                self.assertEqual(self.lineage_lifetime_report(
+                    ["create", "destroy", action]).counts["resurrected_item_uid"], 1)
+
+    def test_lineage_history_rejects_second_retirement(self):
+        report = self.lineage_lifetime_report(["create", "destroy", "destroy"])
+        self.assertEqual(report.counts["duplicate_item_retirement"], 1)
+        origin = clean_snapshot()["item_origins"][0]
+        origin.update(state="tombstone", owner=[8, 0, 0])
+        self.assertEqual(self.lineage_lifetime_report(["destroy"], origin).counts[
+            "duplicate_item_retirement"], 1)
+
+    def test_epoch_history_rejects_retiring_opening_tombstone(self):
+        snapshot = clean_snapshot()
+        snapshot["item_origins"][0].update(state="tombstone", owner=[8, 0, 0])
+        snapshot["ownership_events"][0].update(action="destroy", state="tombstone",
+                                               owner=[8, 0, 0])
+        snapshot["native"]["items"][0].update(state="tombstone", owner=[8, 0, 0])
+        self.assertIn("duplicate_item_retirement", self.codes(snapshot))
+
+    def test_supply_action_requires_matching_custody_state(self):
+        for action, state in (("destroy", "live"), ("create", "tombstone")):
+            for lineage in (False, True):
+                with self.subTest(action=action, state=state, lineage=lineage):
+                    snapshot = clean_snapshot()
+                    event = snapshot["ownership_events"][0]
+                    event.update(action=action, state=state)
+                    snapshot["native"]["items"][0]["state"] = state
+                    if lineage:
+                        event.update(operation_outcome="committed", referenced=False)
+                        report = Reconciler()
+                        report.audit_lineage_uid_history(
+                            "disposable", {"uid_history_events": [event]},
+                            {(81,): snapshot["item_origins"][0]},
+                            {(81,): snapshot["native"]["items"][0]})
+                        codes = report.counts
+                    else:
+                        codes = self.codes(snapshot)
+                    self.assertIn("invalid_item_supply_state", codes)
+
+    def test_destroy_action_retires_uid_even_with_corrupt_live_state(self):
+        report = Reconciler()
+        report.audit_item_lifetime(81, clean_snapshot()["item_origins"][0], [
+            {"action": "destroy", "state": "live", "operation_id": OP},
+            {"action": "move", "state": "live", "operation_id": LEGACY},
+        ])
+        self.assertEqual(report.counts["invalid_item_supply_state"], 1)
+        self.assertEqual(report.counts["resurrected_item_uid"], 1)
+
+    def test_lineage_history_accepts_creation_move_and_retirement(self):
+        for actions in (["create"], ["create", "move"], ["create", "move", "destroy"]):
+            with self.subTest(actions=actions):
+                self.assertEqual(dict(self.lineage_lifetime_report(actions).counts), {})
+        self.assertEqual(dict(self.lineage_lifetime_report(
+            ["move"], clean_snapshot()["item_origins"][0]).counts), {})
+
+    def test_opening_tombstone_cannot_become_live_in_either_history_scope(self):
+        snapshot = clean_snapshot()
+        snapshot["item_origins"][0].update(state="tombstone", owner=[8, 0, 0])
+        self.assertIn("resurrected_item_uid", self.codes(snapshot))
+        report = self.lineage_lifetime_report(["move"], snapshot["item_origins"][0])
+        self.assertEqual(report.counts["resurrected_item_uid"], 1)
 
     def test_uid_history_coverage_matches_the_full_event_and_unreferenced_sets(self):
         event = {
@@ -671,6 +1074,17 @@ class ReconciliationTests(unittest.TestCase):
             {(81,): {"owner": [1, 7, 0], "revision": 2, "state": "live"}},
             LINEAGE)
         self.assertEqual(reconciler.counts, {})
+        for revision in (2**63, 2**64 - 1):
+            high = copy.deepcopy(native)
+            high["coin_piles"][0]["revision"] = revision
+            high["coin_pile_mappings"][0]["revision"] = revision
+            check = Reconciler()
+            check.audit_coin_pile_mappings(
+                "sql_partial", high,
+                {(mapping_key,): {"balance": [4, 0, 0, 0], "revision": revision}},
+                {(81,): {"owner": [1, 7, 0], "revision": revision, "state": "live"}},
+                LINEAGE)
+            self.assertEqual(check.counts, {})
         native["coin_pile_mappings"][0]["balance"] = [3, 0, 0, 0]
         mismatched = Reconciler()
         mismatched.audit_coin_pile_mappings(

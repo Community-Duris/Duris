@@ -25,6 +25,17 @@
 #define ACT_NOEOL 128
 #define ACT_PRIVATE 256
 
+/* Application budgets are independent of the bounded wire transport buffers. */
+static constexpr size_t SESSION_INPUT_MAX_BYTES = 64 * 1024;
+static constexpr size_t SESSION_INPUT_MAX_ENTRIES = 256;
+static constexpr size_t SESSION_OUTPUT_MAX_BYTES = 1024 * 1024;
+static constexpr size_t SESSION_OUTPUT_MAX_ENTRIES = 1024;
+static constexpr size_t SESSION_OOB_MAX_BYTES = 1024 * 1024;
+static constexpr size_t SESSION_OOB_MAX_ENTRIES = 128;
+
+void queue_websocket_input(P_desc descriptor, const char *text);
+bool admit_session_oob(P_desc descriptor, size_t bytes);
+
 #define SEND_TO_Q(messg, desc) write_to_q((messg), &(desc)->output, 1)
 
 /* following was io.h, for asych I/O operations, not used currently.  If we

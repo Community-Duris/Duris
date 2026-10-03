@@ -217,6 +217,7 @@ fi
 if (( DEV_MODE == 1 )); then
   echo "Running in DEV mode"
 fi
+python3 scripts/game_loop_watchdog.py --check-config || exit 78
 if (( CONFIG_CHECK_ONLY == 1 )); then
   exit 0
 fi
@@ -360,7 +361,7 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   if (( MINIMAL_MODE == 1 )); then
     SERVER_ARGS+=(--minimal)
   fi
-  "$RUNTIME_BINARY" "${SERVER_ARGS[@]}" "${MUD_PORT}" # > dms.out
+  python3 scripts/game_loop_watchdog.py -- "$RUNTIME_BINARY" "${SERVER_ARGS[@]}" "${MUD_PORT}"
 
 	# capture the exit code
   RESULT=${PIPESTATUS[0]}
@@ -375,6 +376,7 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
 		55) STOP_REASON="pwipe shutdown";;
 		56) STOP_REASON="mud hung reboot";;
 		57) STOP_REASON="auto reboot with copyover";;
+		78) STOP_REASON="watchdog recovery blocked";;
 		*) STOP_REASON="unknown";;
 	esac
 
@@ -424,6 +426,11 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
          IF('${SHUTDOWN_REASON}' = '', NULL, '${SHUTDOWN_REASON}'));
     " 2>/dev/null
     echo "Logged reboot: ${MUD_UPTIME}s uptime, type: ${DB_SHUTDOWN_TYPE}"
+  fi
+
+  if (( RESULT == 78 )); then
+    echo "Game-loop watchdog requires operator action; refusing a boot loop. Inspect logs/watchdog and console output." >&2
+    exit 78
   fi
 
   echo "Sleeping 10 seconds to prevent coreflood..."

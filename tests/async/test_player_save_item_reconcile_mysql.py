@@ -556,6 +556,16 @@ int main(int argc, char **argv)
         "active item with missing snapshot payload was not refused");
     all_passed &= expect(missing_payload_revision == 2 && missing_payload_rows == 2,
                          "missing-payload refusal changed durable state");
+    all_passed &= expect(
+        missing_payload.custody_diagnosis ==
+            player_save_custody_diagnosis::active_custody_absent_from_snapshot &&
+            missing_payload.custody_witness.item_uid == lag_child &&
+            !missing_payload.custody_witness.expected_present &&
+            missing_payload.custody_witness.observed_present &&
+            missing_payload.custody_witness.observed_root == lag_root &&
+            missing_payload.custody_witness.observed_parent == lag_root &&
+            missing_payload.custody_witness.source_line > 0,
+        "missing-payload failure did not retain its precise custody witness");
     std::cout << "CASE active_owner_missing_payload outcome="
               << (missing_payload.outcome == player_save_apply_outcome::terminal_failure
                           ? "terminal_failure"
@@ -575,6 +585,9 @@ int main(int argc, char **argv)
         orphan_result.outcome == player_save_apply_outcome::terminal_failure &&
             orphan_result.error_code == PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH &&
             orphan_result.custody_diagnosis == player_save_custody_diagnosis::orphaned_saved_item &&
+            orphan_result.custody_witness.item_uid == 9000000000000000110ULL &&
+            orphan_result.custody_witness.expected_present &&
+            !orphan_result.custody_witness.observed_present &&
             query_rows(db, "SELECT id,obj_uid,vnum FROM player_items WHERE pid=" +
                                std::to_string(orphan_pid)) == orphan_before &&
             scalar(db, "SELECT save_revision FROM player_data WHERE pid=" +
@@ -595,6 +608,8 @@ int main(int argc, char **argv)
             orphan_pet_result.error_code == PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH &&
             orphan_pet_result.custody_diagnosis ==
                 player_save_custody_diagnosis::orphaned_saved_pet_item &&
+            orphan_pet_result.custody_witness.item_uid == 9000000000000000121ULL &&
+            orphan_pet_result.custody_witness.source_line > 0 &&
             scalar(db, "SELECT COUNT(*) FROM player_pet_items WHERE pet_id=" +
                            std::to_string(orphan_pet_id)) == 1 &&
             scalar(db, "SELECT COUNT(*) FROM player_pets WHERE id=" +
@@ -626,6 +641,18 @@ int main(int argc, char **argv)
     const auto cycle_projection_before = query_rows(
         db, "SELECT obj_uid,vnum,COALESCE(container_id,0) FROM player_items WHERE pid=" +
                 std::to_string(lag_pid) + " ORDER BY obj_uid");
+    open_journal(cycle_snapshot_dir);
+    const auto cycle_result = player_snapshot_repository_apply(db, cycle_snapshot);
+    all_passed &= expect(
+        cycle_result.outcome == player_save_apply_outcome::terminal_failure &&
+            cycle_result.custody_diagnosis == player_save_custody_diagnosis::invalid_custody_topology &&
+            cycle_result.custody_witness.item_uid == lag_root &&
+            cycle_result.custody_witness.expected_present &&
+            cycle_result.custody_witness.observed_present &&
+            cycle_result.custody_witness.observed_parent == lag_child &&
+            cycle_result.custody_witness.observed_item_revision == 3,
+        "invalid cycle failure did not retain original snapshot/native topology evidence");
+    player_save_journal_shutdown();
     mysql_close(db);
     db = connect_db();
     const bool cycle_blocked = replay_case(db, cycle_snapshot_dir, "invalid_owner_cycle",

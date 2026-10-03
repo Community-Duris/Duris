@@ -205,7 +205,7 @@ with tempfile.TemporaryDirectory(prefix="duris-bank-hydration-") as temporary:
     source.write_text("\n".join((PRELUDE, publication, hydrate, MAIN)))
     binary = temporary / "harness"
     subprocess.run([
-        "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-D__NO_MYSQL__",
+        "g++", "-std=c++20", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wall", "-Wextra", "-Werror", "-D__NO_MYSQL__",
         "-Isrc", "-Isrc/no_mysql", str(source),
         "src/flatfile/flatfile_player_domain_repository.c",
         "src/flatfile/flatfile_authority_transaction.c", "src/flatfile/flatfile_store.c",

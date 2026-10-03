@@ -1,4 +1,5 @@
 #include "account/password_async.h"
+#include "account/account_async.h"
 #include <string>
 #include <memory>
 /*
@@ -1251,14 +1252,17 @@ void ws_cmd_login(struct descriptor_data *d, cJSON *data)
 		tmp_name[i] = tolower(tmp_name[i]);
 	}
 
-	/* check if account exists */
+	/* Flat-file login keeps its existing account-store semantics. */
+#ifdef __NO_MYSQL__
 	if (!account_exists("Accounts", tmp_name))
 	{
 		ws_send_auth_failed(d, "Invalid account or password");
 		return;
 	}
+#endif
 
 	/* allocate and load account - if one exists, free it first */
+	account_async_cancel(d);
 	if (d->account)
 	{
 		d->account = free_account(d->account);
@@ -1272,6 +1276,47 @@ void ws_cmd_login(struct descriptor_data *d, cJSON *data)
 
 	d->account->acct_name = str_dup(tmp_name);
 
+#ifndef __NO_MYSQL__
+	// Keep the web password only in the game-thread continuation. The account
+	// worker receives the account name alone; cancellation cleanses this copy.
+	if (strnlen(password, 4096) >= 4096)
+	{
+		ws_send_auth_failed(d, "Login is busy; try again later");
+		d->account = free_account(d->account);
+		return;
+	}
+	std::shared_ptr<char> secret(new char[4096](),
+				     [](char *saved)
+				     {
+					     OPENSSL_cleanse(saved, 4096);
+					     delete[] saved;
+				     });
+	strlcpy(secret.get(), password, 4096);
+	if (!account_async_start(
+		    d,
+		    [secret](P_desc completed, account_load_outcome outcome)
+		    {
+			    if (outcome != account_load_outcome::loaded)
+			    {
+				    ws_send_auth_failed(completed, "Invalid account or password");
+				    completed->account = free_account(completed->account);
+				    return;
+			    }
+			    completed->login_password_websocket = true;
+			    completed->login_password_job = password_login_submit(
+				    secret.get(), completed->account->acct_password, 0);
+			    if (!completed->login_password_job)
+			    {
+				    ws_send_auth_failed(completed,
+							"Login is busy; try again later");
+				    completed->account = free_account(completed->account);
+			    }
+		    }))
+	{
+		ws_send_auth_failed(d, "Login is busy; try again later");
+		d->account = free_account(d->account);
+	}
+#else
 	if (read_account(d->account) == -1)
 	{
 		ws_send_auth_failed(d, "Invalid account or password");
@@ -1287,6 +1332,7 @@ void ws_cmd_login(struct descriptor_data *d, cJSON *data)
 		ws_send_auth_failed(d, "Login is busy; try again later");
 		d->account = free_account(d->account);
 	}
+#endif
 }
 
 void ws_finish_login(struct descriptor_data *d, int password_valid)
@@ -1560,7 +1606,7 @@ void ws_cmd_game(struct descriptor_data *d, cJSON *data)
 
 	if (cmd && *cmd)
 	{
-		write_to_q(cmd, &d->input, 0);
+		queue_websocket_input(d, cmd);
 	}
 }
 
@@ -4056,8 +4102,8 @@ void ws_cmd_poll_vote(struct descriptor_data *d, cJSON *data)
 /* dispatch */
 void ws_handle_command(struct descriptor_data *d, const char *cmd, cJSON *data)
 {
-	/* No account mutation or entry may overtake password verification. */
-	if (d && (d->login_password_job || d->password_request))
+	/* No account mutation or entry may overtake account/password loading. */
+	if (d && (d->login_password_job || d->password_request || d->account_request))
 		return;
 	static const struct
 	{
@@ -4108,7 +4154,7 @@ void ws_handle_command(struct descriptor_data *d, const char *cmd, cJSON *data)
 
 	/* Unknown messages remain raw game commands for authenticated players. */
 	if (d && d->connected == CON_PLAYING)
-		write_to_q(cmd, &d->input, 0);
+		queue_websocket_input(d, cmd);
 }
 
 /* initialize websocket handlers */
