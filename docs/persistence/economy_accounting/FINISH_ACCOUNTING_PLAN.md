@@ -400,3 +400,8 @@ writer/source completeness and all applicable R1-R8 gates remain open.
 The October 3 current launcher fixture now includes its real watchdog script
 and passes existing configuration/backup checks plus invalid-watchdog refusal.
 Its retained frozen-suite failure is not relabeled as a broad-suite pass.
+
+The schedule-failure fixture initializes all queue-accounting fields and now
+passes strict warnings and sanitizers on the transport integration, retaining
+queued command/counters on refusal. This fixes test drift without modifying
+player-facing spell code. Current broad and real gameplay gates remain open.

@@ -278,3 +278,27 @@ The launcher fixture passes again on integrated native source 4180f745,
 including invalid-watchdog refusal, after the normal unpublished-commit rebase.
 - tmp/current-692-flatfile-launcher-green.local.log: 3ee7202c269659c76b32f0de39beaa5c53d1dbaae226eb258b5975da9a65bdda (LF-normalized)
 - tests/async/test_flatfile_launcher.py: d559d11eca23b804556f3a4107b37d638bd3464ec3818dfbcae1fd3ef474af9e (LF-normalized)
+
+
+## Spell-schedule failure fixture queue initialization
+
+The current production-extracted schedule-failure harness reproduced the frozen
+strict-warning compile failure after txt_q acquired four accounting fields. The
+fixture now initializes the complete queued-command state and verifies bytes,
+entry count and overflow flags remain intact across rejected scheduling.
+Strict warnings, ASan and UBSan pass before and after the PR 692 integration.
+Player-facing spell behavior and native source are unchanged; the declined
+inactive spell-path change is not retried. These focused harness passes do not
+replace current-source gameplay/broad/workload qualification.
+
+- tmp/current-spell-schedule-baseline.local.log: 9583dd51a9f40c2cd46697afee2cb4a7227c533568c3fd41d7a9fac6b4ce5cc3 (LF-normalized)
+- tmp/current-spell-schedule-green.local.log: 9bd0442ec1aedadd38f305356c08392d6ba91a8d9e2fe02010a5e607f05b2f8f (LF-normalized)
+- tmp/current-692-spell-schedule-green.local.log: 9bd0442ec1aedadd38f305356c08392d6ba91a8d9e2fe02010a5e607f05b2f8f (LF-normalized)
+- tests/async/test_spell_schedule_failure_runtime.py: 7fc107145f6766662d0b4588ba7ff6b7e7086e08996da15b5ea2d22f3c242436 (LF-normalized)
+
+Current-source game-loop phase assertions and copyover custody already pass
+without edits on source ce7550d6; the latter exercises real save/exec/recovery,
+six publication faults and decode/materialization rollback under sanitizers.
+These earlier component proofs are not relabeled after transport integration.
+- tmp/current-copyover-custody-baseline.local.log: 72e020ec616d579b33f5c2877bebd943003df63bdb74b2219dc9075587fd23eb
+- tmp/current-game-loop-phase-confirmed.local.log: 31448a14c3ec710f22d04214dbb62aff42727c0d5a86d159daaff162fede212b
