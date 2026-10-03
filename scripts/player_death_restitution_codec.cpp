@@ -258,7 +258,9 @@ int main(int argc, char **argv)
 		  << ",\"save_intent\":" << snapshot.save_intent << ",\"death\":{"
 		  << "\"operation_id_hex\":";
 	write_operation(std::cout, death.operation_id);
-	std::cout << ",\"corpse_room_vnum\":" << death.corpse_room_vnum
+	std::cout << ",\"conflict_evidence_retained\":"
+		  << (death.conflict_evidence ? "true" : "false")
+		  << ",\"corpse_room_vnum\":" << death.corpse_room_vnum
 		  << ",\"wallet_revision\":" << death.wallet_revision << ",\"wallet_before\":";
 	json_array(std::cout, death.wallet_before,
 		   [](std::ostream &stream, int32_t value) { stream << value; });
