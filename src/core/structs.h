@@ -1709,6 +1709,14 @@ typedef struct gnutls_session_int *gnutls_session_t;
 
 struct descriptor_data
 {
+	// A logical descriptor in the world has no client fd or transport state.
+	// The frontend uses the same ID with its real fd. Zero means legacy ownership.
+	uint64_t transport_session;
+	uint64_t transport_command;
+	uint64_t transport_ack;
+	uint64_t transport_output_sequence;
+	bool transport_command_started;
+	bool transport_authenticated;
 	// Session-local cosmetic state, zeroed on allocation/reconnect/copyover.
 	// Plain storage: descriptor allocation does not run C++ constructors.
 	uint64_t output_sequences[(size_t)OutputChannel::Count];

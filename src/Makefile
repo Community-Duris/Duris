@@ -36,6 +36,7 @@ else ifneq ($(BUILD_PROFILE),production)
 $(error BUILD_PROFILE must be development or production)
 endif
 CFLAGS += -D__NO_TESTS__    # exclude built-in test hooks from maintained builds
+CFLAGS += -DDURIS_PERSISTENT_TRANSPORT
 CFLAGS += $(EXTRA_CFLAGS)
 LDFLAGS += $(EXTRA_LDFLAGS)
 
@@ -94,6 +95,7 @@ SHIP_SRCS = \
 SHIP_OBJS = $(SHIP_SRCS:%.c=ships/%.o)
 
 OBJS =  $(SHIP_OBJS) \
+				 net/transport.o \
 				 item/item_actions.o \
 				 item/native_artifact_actions.o \
 				 item/tsunami_actions.o \
