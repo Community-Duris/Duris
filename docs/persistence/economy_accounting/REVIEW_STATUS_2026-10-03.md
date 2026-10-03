@@ -837,7 +837,7 @@ flatfile production binary SHA-256
 f0c37cd6d62caef1a5481ba90b28c74592cd5a4206f10f473481fc4ff2414964.
 The separate observer binary supplies exact native readback only under a test
 macro; production does not enable it. The original frozen broad result remains
-831 passed, 11 skipped and 17 failed; a current-head broad run and full R1â€“R8
+831 passed, 11 skipped and 17 failed; a current-head broad run and full R1Ã¢â‚¬â€œR8
 qualification remain required. Release and activation remain blocked.
 
 
@@ -905,7 +905,8 @@ log is retained, and the correct maintained item-codec owner passes separately.
 Scoped checkpoint coalescing, actual SQL source proof, retained drop publication
 and replay remain unfinished. These APIs do not enable inactive accounting or
 establish full gameplay/persistence/recovery qualification. The frozen e58bb3296
-broad run remains pending and does not contain this subsequent capture change.
+broad run finished with its original failures and does not contain this
+subsequent capture change. The final frozen result and follow-ups appear below.
 
 ## Exact physical properties required for SQL room source proof
 
@@ -1032,10 +1033,10 @@ This proves failure diagnostics, not starter-kit completion or current-head
 player gameplay. Initial boot failures retain their separate existing cleanup
 path. The frozen broad run's invitation-labelled failure was in its initial
 human warrior STAFF starter-kit wait, before restart/invitation/evil selection.
-Its 600-second supervised server-build and 180-second inspector timeouts also
-need serial reproduction without extending either budget. The frozen broad run
-continues at e58bb3296 and excludes subsequent source fixes; final current-head
-integrated qualification remains open.
+Its 600-second supervised server-build and 180-second inspector timeouts remain
+recorded in the failed broad result. Serial follow-ups below retain the original
+budgets. The frozen broad run finished at e58bb3296 and excludes subsequent
+source fixes; final current-head integrated qualification remains open.
 
 
 ## Read-only pending item-action custody preflight
@@ -1081,3 +1082,63 @@ The first repeat passed the initial kit wait but lacked the native linker wrappe
 for its later helper build; that environmental failure remains preserved.
 One passing repeat does not explain the original intermittent creation/network
 starter-kit timeout or qualify current-head gameplay. Those gates remain open.
+
+
+## Retain dependent durability owners after refused critical shutdown
+
+Final app teardown called player-save and locker-async shutdown even when the
+critical coordinator refused to stop. Player-save shutdown clears operation
+holds, so that exceptional branch could discard a still-owned obligation.
+The dependent branch now requires successful coordinator shutdown and retains
+the existing pwipe exclusion. Successful/inactive teardown order is unchanged.
+
+Five original source contracts pass before the fix; the added native actual
+conditional-fragment assertion fails on coordinator refusal. After the guard,
+all six tests pass with strict warnings and ASan/UBSan, covering the complete
+coordinator-result/pwipe matrix. Its leaf shutdown functions are controlled
+counters/retained-state doubles: this is not a linked refused-coordinator/save-
+pipeline integration proof. The exact production fragment changes only the
+branch condition. Specialist evidence:
+`tmp/critical-shutdown-boundary-artifact.local.json`, SHA-256
+3e11b4f7b80dd72538a2de096208a7cc97ebd2226d6e0ac05a878d4eb4d8c9eb.
+
+Both strict production backends pass, and the current flatfile binary boots and
+shuts down normally in a real minimal isolated world. Primary evidence:
+`tmp/critical-shutdown-retention-qualified-summary.local.json`, SHA-256
+86156c86ea621aac84c821cef294d58d01c1af0e3eb43c5d30fd5912408ab204;
+four native/source-contract inputs and 1,229 current LF-normalized production
+source/Makefile inputs verified. Production SQL:
+1a337fe6339ec79febc1ad40a217b24457bb7b6a5d5b48712b43724915ca9c54;
+flatfile: a82cad6ef84f8872fb5c8fb499534de2f6402335b17a273c14c6798512002af4.
+The original isolated build-driver cache-path failure is preserved separately;
+it did not compile or change production source. Restored drop registration,
+authoritative hydration and original-operation ACK ownership remain unfinished.
+
+## Final frozen e58bb3296 broad result and follow-ups
+
+The unmodified frozen run finishes in 8,433.636 seconds: **840 PASS, 11 SKIP,
+10 FAIL**, not interrupted. Report
+`tmp/qualified-e58bb3296-results.local.json`, SHA-256
+7d857ee576195e3d2398b6d9121787e4a896998594bbaf98ca3a5ea31f0753fd.
+Six schema/link-owner failures have subsequent published focused fixes in
+f787dc9be/5f83fbc78. Account recovery originally timed out in supervised server
+compilation; area coin pickup timed out in its 180-second inspector compile.
+Creation and network readiness failed the existing five-second starter-kit wait.
+The original failed report is retained unchanged.
+
+Serial follow-ups use the verified existing frozen binary and unchanged owner
+runtime/budget assertions. Account recovery passes enabled/disabled mail and
+cold relog in 17.407 seconds after acquiring the already qualified artifact;
+this does not relabel its earlier cold-build failure. All three real area pickup
+commands (`get coins statue`, `get all.coins statue`, `take all statue`) pass
+wallet/native authority assertions with the original inspector budget. The
+creation scenario repeat above passes with a diagnostic-only overlay. Network
+readiness passes its existing capacity, queue spacing, latency and idle-CPU
+budgets in 26.257 seconds. These are frozen-source follow-ups, not current-head
+qualification or proof that the intermittent starter-kit failure is resolved.
+
+Follow-up log SHA-256 pins: account recovery
+ca48c22d8aac83dcc59bd701ae67e2f465c4234084de59821ca3e2e5f6ad5726;
+area pickup 2bf1cc8cab9d8d4fbbf2c0a84dc3d52ec925927c4b2069657fe1de93017d6985;
+network readiness d6291769c6d851f04bfb838384c575cac6168d5b731e5768371d16e691b1e083.
+All R1-R8 release gates and the final current-head integrated run remain open.

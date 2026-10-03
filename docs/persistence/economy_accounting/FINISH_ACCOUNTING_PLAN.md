@@ -544,3 +544,18 @@ yet. Plan 1 retains actual preparation/publication/replay work and the separate
 restored-obligation hydration design. A repeat of the frozen failing creation
 scenario passes unchanged waits; intermittent/current-head qualification remains
 open. Exact evidence and scope are in the October 3 review status.
+
+
+Final dependent player-save/locker teardown now retains their operation owners
+when critical shutdown refuses, preserving successful shutdown and pwipe rules.
+The new native conditional-fragment test reproduces refusal loss before the
+fix and passes afterward, alongside all existing contracts, both strict
+production builds and real minimal flat boot/shutdown. Restored-drop obligation
+registration/hydration/publication remains open.
+
+The frozen e58bb3296 broad run is complete: 840 PASS/11 SKIP/10 FAIL. Six focused
+schema/link-owner fixes are published; serial original-source recovery/pickup/
+creation/network follow-ups pass with unchanged runtime/build assertions and
+verified artifact reuse. The failed broad report remains unchanged, intermittent
+starter-kit readiness and current-head integrated qualification remain open,
+and no R1-R8 release gate is promoted. See October 3 status for exact proof pins.
